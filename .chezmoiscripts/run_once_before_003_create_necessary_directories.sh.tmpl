@@ -3,11 +3,16 @@
 {{ if eq .osId "linux-arch" }}
 
     # Create directories to use with $XDG_*
-    mkdir -p ~/.local/bin
-    mkdir -p ~/.local/pvm
-    mkdir -p ~/.local/share
-    mkdir -p ~/.local/state
-    mkdir -p ~/.cache
+    mkdir -p $HOME/.local/bin
+    mkdir -p $HOME/.local/pvm
+    mkdir -p $HOME/.local/share
+    mkdir -p $HOME/.local/state
+    mkdir -p $HOME/.cache
+
+    # Create the .ssh directory
     mkdir -p $HOME/.ssh
+
+    # Create a directory for projects
+    mkdir -p $HOME/Projects
 
 {{ end }}

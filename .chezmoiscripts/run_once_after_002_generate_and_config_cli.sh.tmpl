@@ -1,0 +1,18 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Generate tldr manuals
+    tldr --gen-config > "$(tldr --config-path)"
+
+    # Init nvm
+    source /usr/share/nvm/init-nvm.sh
+
+    # Grant $USER docker permissions 
+    if ! id -nG "$USER" | grep -qw "docker"; then
+        sudo groupadd docker
+        sudo usermod -aG docker $USER
+        newgrp docker
+    fi
+
+{{ end }}

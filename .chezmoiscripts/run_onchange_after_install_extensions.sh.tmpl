@@ -1,0 +1,11 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Install code extensions
+    {{ range .extensions.code -}}
+        echo {{.}}
+        code --install-extension {{.}}
+    {{ end -}}
+
+{{ end }}

@@ -1,0 +1,14 @@
+extensions:
+  code:
+    - ginfuru.ginfuru-better-solarized-dark-theme
+    - tamasfe.even-better-toml
+    - ms-python.black-formatter
+    - ms-python.debugpy
+    - ms-python.python
+    - redhat.vscode-yaml
+    - vue.volar
+    - dbaeumer.vscode-eslint
+    - gitlab.gitlab-workflow
+    - codezombiech.gitignore
+    - foxundermoon.shell-format
+    - golang.go

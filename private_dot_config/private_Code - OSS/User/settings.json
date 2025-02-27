@@ -1,0 +1,10 @@
+{
+    "editor.fontFamily": "\"FiraCode Nerd Font\"",
+    "workbench.colorTheme": "Better Selenized Dark",
+    "git.confirmSync": false,
+    "terminal.explorerKind": "external",
+    "terminal.external.linuxExec": "ghossty",
+    "explorer.confirmPasteNative": false,
+    "explorer.confirmDragAndDrop": false,
+    "redhat.telemetry.enabled": false
+}
