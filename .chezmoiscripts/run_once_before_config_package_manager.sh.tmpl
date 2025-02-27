@@ -1,0 +1,18 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Install yay is not already present
+    if ! command -v yay &> /dev/null; then
+        # Install yay through pacman
+        sudo pacman -S --needed yay
+
+        # Initialize yay
+        yay -Y --gendb
+        yay -Syu --devel
+    fi
+
+    # Configure yay to never display diff packages and always clean build packages
+    yay --save --answerclean NotInstalled --answerdiff None
+
+{{ end }}
