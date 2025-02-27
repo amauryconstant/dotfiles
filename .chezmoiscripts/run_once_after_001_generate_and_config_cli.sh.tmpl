@@ -1,0 +1,7 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    tldr --gen-config > "$(tldr --config-path)"
+
+{{ end }}
