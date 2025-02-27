@@ -1,0 +1,14 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Install zsh and ghostty terminal with starship
+    yay -S --noconfirm ghostty zsh zsh-antidote starship
+
+    # Change shell to zsh
+    chsh -s $(which zsh)
+
+    # Remove all bash files in $HOME
+    find "$HOME" -type d -name '.local' -prune -o -type f -name '*bash*' -exec rm -f {} +
+
+{{ end }}
