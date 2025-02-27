@@ -1,0 +1,1 @@
+init-zsh-cmd fzf "source <(fzf --zsh)"

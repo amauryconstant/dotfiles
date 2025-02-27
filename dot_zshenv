@@ -1,0 +1,18 @@
+#!/bin/zsh
+#
+# .zshenv - Zsh environment file, loaded always.
+#
+
+# ZSH config dir
+export ZDOTDIR=$XDG_CONFIG_HOME/zsh
+
+# Ensure path arrays do not contain duplicates.
+typeset -gU path fpath
+
+# Set the list of directories that zsh searches for commands.
+path=(
+  $HOME/.local/{,s}bin(N)
+  /opt/local/{,s}bin(N)
+  /usr/local/{,s}bin(N)
+  $path
+)
