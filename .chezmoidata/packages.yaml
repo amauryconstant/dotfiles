@@ -9,5 +9,9 @@ packages:
       - uv nvm cargo
       # Development tools
       - docker aws-cli code
+      # Software package systems
+      - appimagelauncher snapd
+      # General software
+      - firefox spotify nextcloud-client
   delete:
     arch: tlrc exa 

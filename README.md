@@ -1,6 +1,6 @@
 # Installation
 
-To install the software run the command 
+To install the environment run the commands
 
 ```sh
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin/

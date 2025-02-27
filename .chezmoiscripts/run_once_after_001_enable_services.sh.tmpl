@@ -5,4 +5,8 @@
     # Enable docker service
     sudo systemctl enable docker.service
 
+    # Enable snap service
+    sudo systemctl enable --now snapd.socket
+    sudo systemctl enable --now snapd.apparmor.service
+
 {{ end }}
