@@ -2,7 +2,7 @@ packages:
   install:
     arch:
       # fonts
-      - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd
+      - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd ttf-fira-sans
       # terminal essentials
       - zoxide fzf tlrc xh fd ripgrep broot git-delta bat eza fastfetch jaq
   delete:

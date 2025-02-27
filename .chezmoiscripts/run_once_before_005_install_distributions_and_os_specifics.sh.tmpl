@@ -1,0 +1,11 @@
+#!/bin/sh
+
+{{ if eq .chezmoi.osRelease.id "endeavouros" }}
+
+    eos-rankmirrors
+    eos-update
+    yay -S --noconfirm nvidia-inst
+    nvidia-inst
+    eos-kernel-nvidia-update-check
+    
+{{ end }}
