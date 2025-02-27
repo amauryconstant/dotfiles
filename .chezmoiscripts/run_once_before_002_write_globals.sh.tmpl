@@ -1,0 +1,32 @@
+#!/bin/sh
+
+{{ if eq .chezmoi.os "linux" }}
+
+    pam_conf_path="/etc/security/pam_env.conf"
+
+    echo "Backing up $pam_conf_path"
+    sudo cp -v $pam_conf_path "$pam_conf_path.bck"
+
+    {{ range $key,$value := .globals.linux }}
+        key="{{$key}}"
+        value="{{$value}}"
+
+        value="${value//HOME/@{HOME\}}"
+
+        # Add to pam_env.conf with DEFAULT set
+        if grep -q "^[^#]*$key " "$pam_conf_path"; then
+            # Update the line if the key exists and is not commented out
+            sudo sed -i "/^[^#]*$key /c\\$key DEFAULT=$value" "$pam_conf_path"
+        else
+            # Add the line to the end of the file if the key does not exist
+            echo "$key DEFAULT=$value" | sudo tee -a "$pam_conf_path" >/dev/null
+        fi
+
+        echo "Added: $key with value $value"
+
+    {{end}}
+
+    echo "Environment variables added successfully."
+    unset $pam_conf_path
+
+{{ end }}

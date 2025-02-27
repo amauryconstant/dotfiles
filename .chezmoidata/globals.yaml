@@ -1,0 +1,16 @@
+globals:
+  linux:
+    # X Config Envs
+    XDG_CACHE_HOME: HOME/.cache
+    XDG_CONFIG_HOME: HOME/.config
+    XDG_DATA_HOME: HOME/.local/share
+    XDG_STATE_HOME: HOME/.local/state
+
+    # Package Version Managers Envs
+    CARGO_HOME: HOME/.local/pvm/cargo
+    NVM_DIR: HOME/.local/pvm/nvm
+    GOPATH: HOME/.local/pvm/go
+
+    # Software Envs
+    EDITOR: code
+    BROWSER: firefox
