@@ -1,0 +1,13 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Remove tldr to avoid incompatibility with tlrc
+    yay -R --noconfirm {{ .packages.delete.arch }}
+
+    # Install all arch packages
+    {{ range .packages.install.arch -}}
+        yay -S --noconfirm {{ . }}
+    {{ end -}}
+
+{{ end }}
