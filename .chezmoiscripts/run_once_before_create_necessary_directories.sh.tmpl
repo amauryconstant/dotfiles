@@ -1,0 +1,12 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Create directories to use with $XDG_*
+    mkdir -p ~/.local/bin
+    mkdir -p ~/.local/pvm
+    mkdir -p ~/.local/share
+    mkdir -p ~/.local/state
+    mkdir -p ~/.cache
+
+{{ end }}
