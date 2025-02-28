@@ -14,4 +14,4 @@ packages:
       # General software
       - firefox spotify nextcloud-client
   delete:
-    arch: tlrc exa 
+    arch: tldr exa 
