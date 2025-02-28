@@ -1,0 +1,29 @@
+[core]
+    pager = delta
+
+[user]
+	email = amoconst@gmail.com
+	name = Amaury Constant
+
+[init]
+	defaultBranch = main
+
+[log]
+  	abbrevCommit = true
+  	follow = true
+  	decorate = false
+
+[merge]
+	ff = only
+    conflictstyle = zdiff3
+
+[push]
+  	default = upstream
+  	followTags = true
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+	side-by-side = true
