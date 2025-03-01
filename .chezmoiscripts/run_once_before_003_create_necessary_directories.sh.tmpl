@@ -11,7 +11,9 @@
 
     # Create the .ssh and .keys directories
     mkdir -p $HOME/.ssh
+    chmod 700 $HOME/.ssh
     mkdir -p $HOME/.keys
+    chmod 700 $HOME/.keys
 
     # Create a directory for projects
     mkdir -p $HOME/Projects
