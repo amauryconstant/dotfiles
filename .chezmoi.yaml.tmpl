@@ -1,5 +1,7 @@
-{{ $email := promptStringOnce . "email" "What is your email address? " -}}
 {{ $fullname := promptStringOnce . "fullname" "What is your full name? " -}}
+{{ $workEmail := promptStringOnce . "workEmail" "What is your work email address? " -}}
+{{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
+{{ $vault := promptStringOnce . "vault" "What is the URL of your Vault? " -}}
 
 {{- $osid := .chezmoi.os -}}
 {{- if hasKey .chezmoi.osRelease "id" -}}
@@ -19,12 +21,29 @@
 {{-   $chassisType = (output "powershell.exe" "-NoProfile" "-NonInteractive" "-Command" "if ((Get-CimInstance -Class Win32_Battery | Measure-Object).Count -gt 0) { Write-Output 'laptop' } else { Write-Output 'desktop' }") | trim }}
 {{- end }}
 
+encryption: "age"
+age:
+    command: "rage"
+    identity: "~/.keys/dotfiles-key.txt"
+    recipient: "age1qn34rhnnzyav6fe7jk74dyhusl3cjmr3p7e00x99slv0g8gunv3sz4k5re"
+
+edit:
+    command: "code"
+    args: ["--wait"]
+
 data:
-    email: {{ $email | quote }}
     fullname: {{ $fullname | quote }}
+    workEmail: {{ $workEmail | quote }}
+    personalEmail: {{ $personalEmail | quote }}
+    vault: {{ $vault | quote }}
     osId: {{ $osid | quote }}
     chassisType: {{ $chassisType | quote }}
 
 diff:
   command: "delta"
   pager: "delta"
+
+hooks:
+    read-source-state:
+        pre:
+            command: ".local/share/chezmoi/.install-password-manager-and-encryption.sh"
