@@ -5,7 +5,11 @@
     # Install code extensions
     {{ range .extensions.code -}}
         echo {{.}}
-        code --install-extension {{.}}
+        code --force --install-extension {{.}}
     {{ end -}}
+
+    echo "Copying firefox polices"
+    sudo mkdir -p /etc/firefox/policies
+    sudo cp -v {{ .chezmoi.config.workingTree }}/.chezmoidata/firefox-policies.json /etc/firefox/policies/policies.json
 
 {{ end }}
