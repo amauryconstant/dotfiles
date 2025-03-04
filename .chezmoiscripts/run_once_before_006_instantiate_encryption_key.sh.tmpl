@@ -3,7 +3,7 @@
 {{ if eq .osId "linux-arch" }}
 
     rbw config set email {{ .personalEmail }}
-    rbw config set base_url {{ .vault }}
+    rbw config set base_url {{ .privateServer | replace "www" "vaultwarden" }}
     rbw login
     rbw sync
     rbw get dotfiles-key > $HOME/.keys/dotfiles-key.txt

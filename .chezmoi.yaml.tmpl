@@ -1,7 +1,8 @@
 {{ $fullname := promptStringOnce . "fullname" "What is your full name? " -}}
 {{ $workEmail := promptStringOnce . "workEmail" "What is your work email address? " -}}
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
-{{ $vault := promptStringOnce . "vault" "What is the URL of your Vault? " -}}
+{{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
+{{ $nameDict := splitn " " 2 $fullname }}
 
 {{- $osid := .chezmoi.os -}}
 {{- if hasKey .chezmoi.osRelease "id" -}}
@@ -21,6 +22,7 @@
 {{-   $chassisType = (output "powershell.exe" "-NoProfile" "-NonInteractive" "-Command" "if ((Get-CimInstance -Class Win32_Battery | Measure-Object).Count -gt 0) { Write-Output 'laptop' } else { Write-Output 'desktop' }") | trim }}
 {{- end }}
 
+
 encryption: "age"
 age:
     command: "rage"
@@ -33,11 +35,13 @@ edit:
 
 data:
     fullname: {{ $fullname | quote }}
+    firstname: {{ $nameDict._0 | quote }}
     workEmail: {{ $workEmail | quote }}
     personalEmail: {{ $personalEmail | quote }}
-    vault: {{ $vault | quote }}
+    privateServer: {{ $privateServer | quote }}
     osId: {{ $osid | quote }}
     chassisType: {{ $chassisType | quote }}
+    currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
 
 diff:
   command: "delta"

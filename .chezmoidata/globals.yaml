@@ -14,3 +14,6 @@ globals:
     # Software Envs
     EDITOR: code
     BROWSER: firefox
+
+    # Projects
+    PROJECTS: HOME/Projects

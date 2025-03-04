@@ -1,0 +1,26 @@
+#!/usr/bin/env chezmoi_modify_manager
+
+source auto
+
+ignore regex "General" "clientVersion|desktopEnterpriseChannel|isVfsEnabled"
+
+ignore regex "Accounts" ".*version|.*journalPath|.*server.*|.*networkProxy.*"
+
+ignore section "Settings"
+
+set "Accounts" "0\\Folders\\1\\localPath" "/home/{{ .firstname | lower }}/Synchronized/"
+add:remove "Accounts" "0\\Folders\\1\\localPath"
+
+set "Accounts" "0\\dav_user" "{{ .firstname | lower }}"
+add:remove "Accounts"  "0\\dav_user"
+
+set "Accounts" "0\\displayName" "{{ .firstname }}"
+add:remove "Accounts"  "0\\displayName"
+
+set "Accounts" "0\\webflow_user" "{{ .firstname | lower }}"
+add:remove "Accounts" "0\\webflow_user"
+
+{{ $nextcloudServer := .privateServer | replace "www" "nextcloud" }}
+
+set "Accounts" "0\\url" "{{ $nextcloudServer }}"
+add:remove "Accounts" "0\\url"
