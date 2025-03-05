@@ -2,7 +2,7 @@
 
 {{ if eq .chezmoi.osRelease.id "endeavouros" }}
 
-    eos-rankmirrors
+    rate-mirrors --protocol https endeavouros | sudo tee /etc/pacman.d/endeavouros-mirrorlist
     eos-update
     yay -S --noconfirm nvidia-inst
     nvidia-inst
