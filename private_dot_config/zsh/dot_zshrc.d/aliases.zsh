@@ -9,8 +9,8 @@ alias cdi=zi
 
 alias http=xh
 
-alias fdf='fd -type f'
-alias fdd='fd -type -d'
+alias fdf='fd --type file'
+alias fdd='fd --type directory'
 
 alias grep=rg
 
