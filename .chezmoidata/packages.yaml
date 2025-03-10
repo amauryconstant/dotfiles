@@ -12,6 +12,6 @@ packages:
       # Software package systems
       - appimagelauncher snapd
       # General software
-      - firefox spotify nextcloud-client
+      - firefox spotify nextcloud-client qbittorrent
   delete:
     arch: tldr exa 
