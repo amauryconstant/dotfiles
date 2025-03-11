@@ -1,10 +1,12 @@
 packages:
   install:
     arch:
-      # fonts
+      # Fonts
       - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd ttf-fira-sans
-      # terminal essentials
+      # Terminal essentials
       - zoxide fzf tlrc xh fd ripgrep broot git-delta bat eza fastfetch jaq rsync
+      # Terminal presentation
+      - vhs
       # Package version managers
       - uv nvm cargo
       # Development tools
