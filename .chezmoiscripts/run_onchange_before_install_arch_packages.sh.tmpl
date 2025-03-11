@@ -7,7 +7,7 @@
 
     # Install all arch packages
     {{ range .packages.install.arch -}}
-        yay -S --noconfirm {{ . }}
+        yay -S --noconfirm --needed {{ . }}
     {{ end -}}
 
 {{ end }}
