@@ -8,7 +8,7 @@ packages:
       # Package version managers
       - uv nvm cargo
       # Development tools
-      - docker aws-cli code
+      - docker docker-compose aws-cli code
       # Software package systems
       - appimagelauncher snapd
       # General software
