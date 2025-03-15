@@ -16,4 +16,4 @@ packages:
       # General software
       - firefox chromium spotify nextcloud-client qbittorrent
   delete:
-    arch: tldr exa 
+    arch: tldr
