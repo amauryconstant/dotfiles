@@ -14,6 +14,6 @@ packages:
       # Software package systems
       - appimagelauncher snapd
       # General software
-      - firefox chromium spotify nextcloud-client qbittorrent
+      - firefox spotify nextcloud-client qbittorrent slack-desktop
   delete:
     arch: tldr
