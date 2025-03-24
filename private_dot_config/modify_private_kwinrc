@@ -4,3 +4,5 @@ source auto
 
 ignore regex "Desktops" "Id_.*"
 ignore regex "Tiling\\]\\[.*" ".*"
+ignore regex "Activities.*" ".*"
+ignore "Xwayland" "Scale"
