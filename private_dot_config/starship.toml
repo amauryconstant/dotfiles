@@ -1,5 +1,10 @@
 [aws]
-symbol = "  "
+symbol = " "
+
+[aws.region_aliases]
+eu-west-1 = 'Dublin'
+eu-west-2 = 'Frankfurt'
+eu-west-3 = 'Paris'
 
 [buf]
 symbol = " "
@@ -86,7 +91,7 @@ symbol = "󰆥 "
 symbol = " "
 
 [nodejs]
-symbol = " "
+symbol = " "
 
 [ocaml]
 symbol = " "
