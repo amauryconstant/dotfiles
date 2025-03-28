@@ -8,7 +8,7 @@ packages:
       # Terminal presentation
       - vhs
       # Package version managers
-      - uv nvm cargo
+      - uv nvm cargo volta
       # Development tools
       - docker docker-compose aws-cli-v2 code
       # Software package systems

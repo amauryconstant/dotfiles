@@ -16,10 +16,6 @@ alias grep=rg
 
 alias cat=bat
 
-alias ls=eza
-alias ll='eza -l'
-alias la='eza -lA'
-
 alias jq=jaq
 
 # Tar

@@ -17,9 +17,12 @@ belak/zsh-utils path:utility
 belak/zsh-utils path:history
 romkatv/zsh-bench kind:path
 ohmyzsh/ohmyzsh path:plugins/extract
+ohmyzsh/ohmyzsh path:plugins/eza
 
 # Package Version Managers
-ohmyzsh/ohmyzsh path:plugins/nvm
+ohmyzsh/ohmyzsh path:plugins/uv
+ohmyzsh/ohmyzsh path:plugins/volta
+# ohmyzsh/ohmyzsh path:plugins/nvm
 
 # # Other Fish-like features
 zsh-users/zsh-autosuggestions               # Auto-suggestions

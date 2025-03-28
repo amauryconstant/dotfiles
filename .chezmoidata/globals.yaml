@@ -10,6 +10,7 @@ globals:
     CARGO_HOME: HOME/.local/pvm/cargo
     NVM_DIR: HOME/.local/pvm/nvm
     GOPATH: HOME/.local/pvm/go
+    VOLTA_HOME: HOME/.local/pvm/volta
 
     # Software Envs
     EDITOR: code
