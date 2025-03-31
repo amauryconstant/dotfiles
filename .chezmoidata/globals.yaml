@@ -8,7 +8,6 @@ globals:
 
     # Package Version Managers Envs
     CARGO_HOME: HOME/.local/pvm/cargo
-    NVM_DIR: HOME/.local/pvm/nvm
     GOPATH: HOME/.local/pvm/go
     VOLTA_HOME: HOME/.local/pvm/volta
 

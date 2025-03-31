@@ -5,6 +5,5 @@
 
 zstyle ':antidote:bundle' use-friendly-names 'yes'
 
-# zstyle ':omz:plugins:nvm' lazy yes
 zstyle ':omz:plugins:extract' lazy yes
 zstyle ':omz:plugins:aws' lazy yes

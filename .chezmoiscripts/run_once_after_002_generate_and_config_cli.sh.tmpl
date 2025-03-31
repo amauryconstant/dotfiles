@@ -5,14 +5,6 @@
     # Generate tldr manuals
     tldr --gen-config > "$(tldr --config-path)"
 
-    # Init nvm
-    export NVM_DIR=${{ .globals.linux.NVM_DIR }}
-    source /usr/share/nvm/init-nvm.sh
-
-    # Init volta
-    export VOLTA_HOME=${{ .globals.linux.NVM_DIR }}
-    volta setup
-
     # Grant $USER docker permissions 
     if ! id -nG "$USER" | grep -qw "docker"; then
         sudo groupadd docker
