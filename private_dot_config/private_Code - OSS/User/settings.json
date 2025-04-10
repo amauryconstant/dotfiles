@@ -9,11 +9,14 @@
   "explorer.confirmDragAndDrop": false,
   "explorer.confirmPasteNative": false,
   "git.confirmSync": false,
+  "git.ignoreRebaseWarning": true,
   "npm.scriptRunner": "yarn",
   "redhat.telemetry.enabled": false,
   "svg.preview.mode": "img",
   "terminal.explorerKind": "external",
   "terminal.external.linuxExec": "ghossty",
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
   "workbench.colorTheme": "Better Selenized Dark",
-  "workbench.editor.enablePreview": false
+  "workbench.editor.enablePreview": false,
+  "workbench.sideBar.location": "right"
 }
