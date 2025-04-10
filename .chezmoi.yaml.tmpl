@@ -47,6 +47,17 @@ diff:
   command: "delta"
   pager: "delta"
 
+merge:
+  command: "mergiraf"
+  args:
+  - "merge"
+  - "-v"
+  - {{ printf "%q" "{{ .Source }}" }}
+  - {{ printf "%q" "{{ .Destination }}" }}
+  - {{ printf "%q" "{{ .Target }}" }}
+  - "-o"
+  - {{ printf "%q" "{{ .Source }}" }}
+
 hooks:
     read-source-state:
         pre:

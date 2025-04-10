@@ -4,13 +4,15 @@ packages:
       # Fonts
       - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd ttf-fira-sans
       # Terminal essentials
-      - zoxide fzf tlrc xh fd ripgrep broot git-delta bat eza fastfetch jaq rsync
+      - zoxide fzf tlrc fd ripgrep broot bat eza fastfetch jaq rsync
       # Terminal presentation
       - vhs
       # Package version managers
       - uv cargo volta
       # Development tools
-      - docker docker-compose aws-cli-v2 code
+      - docker docker-compose code
+      # Development CLIs
+      - aws-cli-v2 xh git-delta mergiraf
       # Software package systems
       - appimagelauncher snapd
       # General software
