@@ -8,7 +8,7 @@ packages:
       # Terminal presentation
       - vhs
       # Package version managers
-      - uv cargo volta
+      - uv cargo volta mise
       # Development tools
       - docker docker-compose code
       # Development CLIs

@@ -23,6 +23,7 @@ ohmyzsh/ohmyzsh path:plugins/aws
 # Package Version Managers
 ohmyzsh/ohmyzsh path:plugins/uv
 ohmyzsh/ohmyzsh path:plugins/volta
+ohmyzsh/ohmyzsh path:plugins/mise
 
 # # Other Fish-like features
 zsh-users/zsh-autosuggestions               # Auto-suggestions
