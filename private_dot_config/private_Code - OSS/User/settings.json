@@ -18,5 +18,7 @@
   "terminal.integrated.enableMultiLinePasteWarning": "never",
   "workbench.colorTheme": "Better Selenized Dark",
   "workbench.editor.enablePreview": false,
-  "workbench.sideBar.location": "right"
+  "workbench.sideBar.location": "right",
+  "terminal.integrated.defaultProfile.linux": "zsh",
+  "terminal.integrated.defaultProfile.osx": "zsh"
 }
