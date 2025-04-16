@@ -1,12 +1,20 @@
 [core]
     pager = delta
+	attributesfile = ~/.config/git/.gitattributes
 
 [user]
 	email = {{ .workEmail }}
 	name = {{ .fullname }}
 
+[delta]
+    navigate = true
+	side-by-side = true
+
 [init]
 	defaultBranch = main
+
+[interactive]
+    diffFilter = delta --color-only
 
 [log]
   	abbrevCommit = true
@@ -17,14 +25,11 @@
 	ff = only
     conflictstyle = zdiff3
 
+[merge "mergiraf"]
+    name = mergiraf
+    driver = mergiraf merge --git %O %A %B -s %S -x %X -y %Y -p %P -l %L
+
 [push]
   	default = upstream
   	followTags = true
 	autoSetupRemote = true
-
-[interactive]
-    diffFilter = delta --color-only
-
-[delta]
-    navigate = true
-	side-by-side = true
