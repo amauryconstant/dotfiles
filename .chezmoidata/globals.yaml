@@ -5,15 +5,3 @@ globals:
     XDG_CONFIG_HOME: HOME/.config
     XDG_DATA_HOME: HOME/.local/share
     XDG_STATE_HOME: HOME/.local/state
-
-    # Package Version Managers Envs
-    CARGO_HOME: HOME/.local/pvm/cargo
-    GOPATH: HOME/.local/pvm/go
-    VOLTA_HOME: HOME/.local/pvm/volta
-
-    # Software Envs
-    EDITOR: code
-    BROWSER: firefox
-
-    # Projects
-    PROJECTS: HOME/Projects

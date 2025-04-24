@@ -1,0 +1,13 @@
+# Put your environment variables here
+
+# Software Envs
+export EDITOR=nano
+export VISUAL=code
+export BROWSER=firefox
+
+# Package Version Managers Envs
+export CARGO_HOME=$HOME/.local/pvm/cargo
+export GOPATH=$HOME/.local/pvm/go
+
+# Projects
+export PROJECTS=$HOME/Projects

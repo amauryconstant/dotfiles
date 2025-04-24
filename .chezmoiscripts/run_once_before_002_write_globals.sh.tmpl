@@ -6,6 +6,8 @@
 
     echo "Backing up $pam_conf_path"
     sudo cp -v $pam_conf_path "$pam_conf_path.bck"
+    sudo rm $pam_conf_path
+    sudo touch $pam_conf_path
 
     {{ range $key,$value := .globals.linux }}
         key="{{$key}}"
