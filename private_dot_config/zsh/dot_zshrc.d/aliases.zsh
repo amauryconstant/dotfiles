@@ -21,3 +21,6 @@ alias jq=jaq
 # Tar
 alias tarls="tar -tvf"
 alias untar="tar -xf"
+
+# PVMs
+alias p=pnpm
