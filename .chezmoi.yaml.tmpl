@@ -44,8 +44,9 @@ data:
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
 
 diff:
-  command: "delta"
   pager: "delta"
+  command: "delta"
+  args: ["--paging=never"]
 
 merge:
   command: "mergiraf"
