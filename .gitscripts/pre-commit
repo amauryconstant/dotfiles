@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Get list of deleted files staged for commit
+deleted_files=$(git diff --cached --name-status | awk '$1 == "D" {print $2}')
+
+if [ -z "$deleted_files" ]; then
+  # No deleted files staged, exit successfully
+  exit 0
+fi
+
+# Run chezmoi destroy for each deleted file
+for file in $deleted_files; do
+  echo "Running chezmoi destroy for deleted file: $file"
+  chezmoi destroy "$file"
+done
+
+exit 0

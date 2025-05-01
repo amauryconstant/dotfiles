@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# This script installs git hooks from the scripts/git-hooks directory to .git/hooks
+
+HOOKS_DIR="{{ .chezmoi.sourceDir }}/.git/hooks/"
+SOURCE_HOOKS_DIR="{{ .chezmoi.sourceDir }}/.gitscripts/"
+
+if [ ! -d "$HOOKS_DIR" ]; then
+  echo "Error: $HOOKS_DIR does not exist. Are you in the root of a git repository?"
+  exit 1
+fi
+
+for hook in "$SOURCE_HOOKS_DIR"/*; do
+  hook_name=$(basename "$hook")
+  target_hook="$HOOKS_DIR/$hook_name"
+
+  echo "Installing $hook_name hook..."
+  cp "$hook" "$target_hook"
+  chmod +x "$target_hook"
+done
+
+echo "All hooks installed successfully."
