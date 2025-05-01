@@ -1,1 +1,0 @@
-init-zsh-cmd zoxide

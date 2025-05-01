@@ -18,6 +18,8 @@ belak/zsh-utils path:history
 romkatv/zsh-bench kind:path
 ohmyzsh/ohmyzsh path:plugins/extract
 ohmyzsh/ohmyzsh path:plugins/eza
+ohmyzsh/ohmyzsh path:plugins/fzf
+z-shell/zsh-zoxide
 ohmyzsh/ohmyzsh path:plugins/aws
 
 # Package Version Managers
