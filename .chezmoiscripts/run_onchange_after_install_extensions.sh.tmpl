@@ -8,6 +8,7 @@
         code --force --install-extension {{.}}
     {{ end -}}
 
+    # firefox-policies.json hash: {{ include ".chezmoidata/firefox-policies.json" | sha256sum }}
     echo "Copying firefox polices"
     sudo mkdir -p /etc/firefox/policies
     sudo cp -v {{ .chezmoi.config.workingTree }}/.chezmoidata/firefox-policies.json /etc/firefox/policies/policies.json
