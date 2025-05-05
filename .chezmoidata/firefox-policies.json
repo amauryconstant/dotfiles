@@ -55,11 +55,6 @@
         },
         "ManualAppUpdateOnly": false,
         "NoDefaultBookmarks": true,
-        "WebsiteFilter": {
-            "Block": [
-                "https://localhost/*"
-            ]
-        },
         "Extensions": {
             "Uninstall": [
                 "amazondotcom@search.mozilla.org",
