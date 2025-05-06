@@ -4,7 +4,7 @@ packages:
       # Fonts
       - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd ttf-fira-sans
       # Terminal essentials
-      - zoxide fzf tlrc fd ripgrep broot bat eza fastfetch jaq rsync
+      - zoxide fzf tlrc fd ripgrep broot bat eza fastfetch jaq rsync usage
       # Terminal presentation
       - vhs
       # Package version managers
