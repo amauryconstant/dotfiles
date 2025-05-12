@@ -17,5 +17,7 @@ packages:
       - appimagelauncher snapd
       # General software
       - firefox spotify nextcloud-client qbittorrent slack-desktop
+      # AI
+      - ollama
   delete:
     arch: tldr

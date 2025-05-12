@@ -1,0 +1,11 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+
+    # Install ai models extensions
+    {{ range .ai.models -}}
+        echo "Installing {{.}}"
+        ollama pull {{.}}
+    {{ end -}}
+
+{{ end }}

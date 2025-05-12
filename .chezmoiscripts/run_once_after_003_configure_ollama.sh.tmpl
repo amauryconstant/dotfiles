@@ -1,0 +1,9 @@
+#!/bin/sh
+
+{{ if eq .osId "linux-arch" }}
+    sudo useradd -r -s /bin/false -U -m -d /usr/share/ollama ollama
+    sudo usermod -a -G ollama $(whoami)
+    sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now ollama
+{{ end }}
