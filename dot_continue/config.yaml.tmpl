@@ -1,0 +1,33 @@
+name: Local Assistant
+version: 1.0.0
+schema: v1
+models:
+  - name: Qwen2.5-Coder 1.5B
+    provider: ollama
+    model: qwen2.5-coder:1.5B
+    roles:
+      - autocomplete
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text:latest
+    roles:
+      - embed
+  - name: Claude 3.5 Sonnet
+    provider: anthropic
+    model: claude-3-5-sonnet-latest
+    apiKey: {{ joinPath .chezmoi.sourceDir "private_dot_keys" "encrypted_just-anthropic-key.txt.age" | include | decrypt }}
+    roles:
+      - chat
+      - edit
+      - apply
+      - summarize
+      - rerank
+
+context:
+  - provider: code
+  - provider: docs
+  - provider: diff
+  - provider: terminal
+  - provider: problems
+  - provider: folder
+  - provider: codebase

@@ -1,3 +1,4 @@
 ai:
   models:
-  - qwen2.5-coder:32b
+  - qwen2.5-coder:1.5b
+  - nomic-embed-text:latest
