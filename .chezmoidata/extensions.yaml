@@ -16,3 +16,4 @@ extensions:
     - knisterpeter.vscode-github
     - esbenp.prettier-vscode
     - jock.svg
+    - continue.continue
