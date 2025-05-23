@@ -6,4 +6,10 @@
     sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
     sudo systemctl daemon-reload
     sudo systemctl enable --now ollama
+{{ else }}
+    echo "ERROR: This script is only supported on Arch Linux systems"
+    echo "Required: osId 'linux-arch'"
+    echo "Detected: '{{ .osId }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
 {{ end }}

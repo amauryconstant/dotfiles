@@ -8,4 +8,10 @@
         ollama pull {{.}}
     {{ end -}}
 
+{{ else }}
+    echo "ERROR: This script is only supported on Arch Linux systems"
+    echo "Required: osId 'linux-arch'"
+    echo "Detected: '{{ .osId }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
 {{ end }}

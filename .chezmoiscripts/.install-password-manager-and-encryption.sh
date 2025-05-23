@@ -13,7 +13,10 @@ Linux)
     
     ;;
 *)
-    echo "unsupported OS"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: Linux (any distribution)"
+    echo "Detected: $(uname -s)"
+    echo "Script: $(basename "$0")"
     exit 1
     ;;
 esac

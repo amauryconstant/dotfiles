@@ -8,4 +8,10 @@
     nvidia-inst
     eos-kernel-nvidia-update-check
     
+{{ else }}
+    echo "ERROR: This script is only supported on EndeavourOS systems"
+    echo "Required: osRelease.id 'endeavouros'"
+    echo "Detected: '{{ .chezmoi.osRelease.id }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
 {{ end }}

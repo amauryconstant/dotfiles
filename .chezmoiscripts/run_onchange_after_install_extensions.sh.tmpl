@@ -13,4 +13,10 @@
     sudo mkdir -p /etc/firefox/policies
     sudo cp -v {{ .chezmoi.config.workingTree }}/.data/firefox-policies.json /etc/firefox/policies/policies.json
 
+{{ else }}
+    echo "ERROR: This script is only supported on Arch Linux systems"
+    echo "Required: osId 'linux-arch'"
+    echo "Detected: '{{ .osId }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
 {{ end }}

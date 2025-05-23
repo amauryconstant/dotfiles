@@ -31,4 +31,10 @@
     echo "Environment variables added successfully."
     unset $pam_conf_path
 
+{{ else }}
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
 {{ end }}
