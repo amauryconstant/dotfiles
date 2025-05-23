@@ -1,0 +1,136 @@
+{
+  "name": "Go Template Injection",
+  "scopeName": "injection.go-template",
+  "injectionSelector": "L:source.shell",
+  "patterns": [
+    {
+      "include": "#template-block"
+    },
+    {
+      "include": "#template-comment"
+    }
+  ],
+  "repository": {
+    "template-block": {
+      "name": "meta.embedded.block.go-template",
+      "begin": "\\{\\{",
+      "end": "\\}\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.begin"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.embedded.end"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#template-keywords"
+        },
+        {
+          "include": "#template-functions"
+        },
+        {
+          "include": "#template-variables"
+        },
+        {
+          "include": "#template-strings"
+        },
+        {
+          "include": "#template-operators"
+        },
+        {
+          "include": "#template-numbers"
+        }
+      ]
+    },
+    "template-comment": {
+      "name": "comment.block",
+      "begin": "\\{\\{/\\*",
+      "end": "\\*/\\}\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.begin"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.end"
+        }
+      }
+    },
+    "template-keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.conditional",
+          "match": "\\b(if|else|end)\\b"
+        },
+        {
+          "name": "keyword.control.flow",
+          "match": "\\b(range|with)\\b"
+        },
+        {
+          "name": "keyword.other",
+          "match": "\\b(template|define|block|break|continue)\\b"
+        }
+      ]
+    },
+    "template-functions": {
+      "name": "entity.name.function",
+      "match": "\\b(and|or|not|len|index|slice|printf|print|println|html|js|urlquery|eq|ne|lt|le|gt|ge|hasPrefix|hasSuffix|contains|split|join|replace|trim|trimSpace|upper|lower|title|default)\\b"
+    },
+    "template-variables": {
+      "patterns": [
+        {
+          "name": "variable.parameter",
+          "match": "\\$[a-zA-Z_][a-zA-Z0-9_]*"
+        },
+        {
+          "name": "variable.other.property",
+          "match": "\\.[a-zA-Z_][a-zA-Z0-9_]*"
+        }
+      ]
+    },
+    "template-strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.other",
+          "begin": "`",
+          "end": "`"
+        }
+      ]
+    },
+    "template-operators": {
+      "name": "keyword.operator",
+      "match": ":=|\\||\\|\\||&&|==|!=|<|<=|>|>=|\\+|\\-|\\*|/|%"
+    },
+    "template-numbers": {
+      "name": "constant.numeric",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    }
+  }
+}

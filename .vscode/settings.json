@@ -1,0 +1,61 @@
+{
+  "files.associations": {
+    "*.sh.tmpl": "shellscript",
+    "*.bash.tmpl": "shellscript",
+    "*.zsh.tmpl": "shellscript",
+    "*.yaml.tmpl": "yaml",
+    "*.yml.tmpl": "yaml",
+    "*.json.tmpl": "json",
+    "*.html.tmpl": "html",
+    "*.css.tmpl": "css",
+    "*.js.tmpl": "javascript",
+    "*.ts.tmpl": "typescript",
+    "*.md.tmpl": "markdown",
+    "*.xml.tmpl": "xml",
+    "*.toml.tmpl": "toml",
+    "*.ini.tmpl": "ini",
+    "*.conf.tmpl": "properties",
+    "*.tmpl": "go-template"
+  },
+  "editor.semanticHighlighting.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "[shellscript]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced"
+  },
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced"
+  },
+  "[json]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced"
+  },
+  "[go-template]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.wordWrap": "on"
+  },
+  "shellcheck.customArgs": [
+    "-e", "SC1083",
+    "-e", "SC1009",
+    "-e", "SC1073",
+    "-e", "SC1072",
+    "-e", "SC2148"
+  ],
+  "shellcheck.ignorePatterns": {
+    "**/*.tmpl": true
+  },
+  "shellcheck.exclude": [
+    "SC1083",
+    "SC1009", 
+    "SC1073",
+    "SC1072",
+    "SC2148"
+  ]
+}
