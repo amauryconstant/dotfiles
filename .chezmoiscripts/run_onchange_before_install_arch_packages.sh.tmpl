@@ -2,13 +2,53 @@
 
 {{ if eq .osId "linux-arch" }}
 
-    # Remove tldr to avoid incompatibility with tlrc
-    yay -R --noconfirm {{ .packages.delete.arch }}
+# Define installation functions
+install_with_pacman() {
+    sudo pacman -S --noconfirm --needed "$@"
+}
 
-    # Install all arch packages
-    {{ range .packages.install.arch -}}
-        yay -S --noconfirm --needed {{ . }}
-    {{ end -}}
+install_with_yay_bin() {
+    # Force yay to only install pre-built packages, fail if source build required
+    yay -S --noconfirm --needed --norebuild --redownload "$@"
+}
+
+install_with_yay_source() {
+    # Force building from source, ignore any pre-built packages
+    yay -S --noconfirm --needed --rebuild "$@"
+}
+
+# Remove conflicting packages first
+echo "Removing conflicting packages..."
+yay -R --noconfirm {{ .packages.delete.arch }}
+
+# Install packages by category
+{{ range $name, $config := .packages.install.arch.packages -}}
+    {{- $strategy := $.packages.install.arch.strategies.default_strategy -}}
+    {{- if hasKey $config "strategy" -}}
+        {{- $strategy = $config.strategy -}}
+    {{- end -}}
+    {{- $packages := $config.list -}}
+    
+    {{- if $packages }}
+echo "Installing {{ $name }}"
+        {{- range $index, $installer := $strategy }}
+            {{- if eq $index 0 }}
+if install_with_{{ $installer }} {{ join " " $packages }}; then
+    echo "✓ Successfully installed {{ $name }} with {{ $installer }}"
+            {{- else }}
+elif install_with_{{ $installer }} {{ join " " $packages }}; then
+    echo "✓ Successfully installed {{ $name }} with {{ $installer }}"
+            {{- end }}
+        {{- end }}
+else
+    echo "✗ Failed to install {{ $name }} with any available method"
+    exit 1
+fi
+
+    {{- end }}
+{{ end -}}
+
+echo "All packages installed successfully!"
 
 {{ else }}
     echo "ERROR: This script is only supported on Arch Linux systems"

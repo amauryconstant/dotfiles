@@ -16,6 +16,27 @@
     yay -S --noconfirm rate-mirrors
     rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
 
+    # Check if Chaotic-AUR is already configured
+    if grep -q "chaotic-aur" /etc/pacman.conf; then
+        echo "✓ Chaotic-AUR already configured"
+        exit 0
+    fi
+
+    # Install Chaotic-AUR keyring and mirrorlist
+    sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+    sudo pacman-key --lsign-key 3056513887B78AEB
+    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+
+    # Add Chaotic-AUR repository to pacman.conf
+    echo "Adding Chaotic-AUR repository to pacman.conf..."
+    sudo tee -a /etc/pacman.conf > /dev/null << 'EOF'
+
+    # Chaotic-AUR repository
+    [chaotic-aur]
+    Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+
 {{ else }}
     echo "ERROR: This script is only supported on Arch Linux systems"
     echo "Required: osId 'linux-arch'"

@@ -1,23 +1,90 @@
 packages:
   install:
     arch:
-      # Fonts
-      - ttf-firacode-nerd otf-opendyslexic-nerd otf-geist-mono-nerd ttf-fira-sans
-      # Terminal essentials
-      - zoxide fzf tlrc fd ripgrep broot bat eza fastfetch jaq rsync usage nvitop btop
-      # Terminal presentation
-      - vhs
-      # Package version managers
-      - uv cargo mise
-      # Development tools
-      - docker docker-compose code
-      # Development CLIs
-      - aws-cli-v2 xh git-delta mergiraf
-      # Software package systems
-      - appimagelauncher snapd
-      # General software
-      - firefox spotify nextcloud-client qbittorrent slack-desktop
-      # AI
-      - ollama
+      strategies:
+        default_strategy: [pacman, yay_bin, yay_source]
+        _install_binary: &_install_binary [pacman, yay_bin]
+        _install_from_source: &_install_from_source [pacman, yay_bin, yay_source]
+
+      packages:
+        fonts:
+          list:
+            - ttf-firacode-nerd
+            - otf-opendyslexic-nerd
+            - otf-geist-mono-nerd
+            - ttf-fira-sans
+
+        terminal_essentials:
+          strategy: *_install_from_source
+          list:
+            - zoxide
+            - fzf
+            - tlrc
+            - fd
+            - ripgrep
+            - broot
+            - bat
+            - eza
+            - xh
+            - jaq
+            - rsync
+
+
+        terminal_utils:
+          strategy: *_install_from_source
+          list:
+            - fastfetch
+            - usage
+            - nvitop
+            - btop
+          
+
+        terminal_presentation:
+          strategy: *_install_from_source
+          list:
+            - vhs
+
+        package_managers:
+          strategy: *_install_from_source
+          list:
+            - uv
+            - cargo
+            - mise
+
+        development_tools:
+          list:
+            - docker
+            - docker-compose
+            - code
+
+        development_clis:
+          strategy: *_install_from_source
+          list:
+            - aws-cli-v2
+            - git-delta
+            - mergiraf
+            - jujustu
+
+        system_software:
+          list:
+            - appimagelauncher
+            - snapd
+
+        general_software:
+          strategy: *_install_binary
+          list:
+            - firefox
+            - chromium
+            - spotify
+            - nextcloud-client
+            - qbittorrent
+            - slack-desktop
+
+        ai_tools:
+          strategy: *_install_from_source
+          list:
+            - ollama
+            - vllm
+
   delete:
     arch: tldr
