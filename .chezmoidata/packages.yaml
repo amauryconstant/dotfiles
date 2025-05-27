@@ -29,7 +29,6 @@ packages:
             - jaq
             - rsync
 
-
         terminal_utils:
           strategy: *_install_from_source
           list:
@@ -37,12 +36,19 @@ packages:
             - usage
             - nvitop
             - btop
-          
 
         terminal_presentation:
           strategy: *_install_from_source
           list:
             - vhs
+
+        languages:
+          strategy: *_install_from_source
+          list:
+            - go
+            - go-tools
+            - python
+            - rust
 
         package_managers:
           strategy: *_install_from_source
@@ -63,7 +69,7 @@ packages:
             - aws-cli-v2
             - git-delta
             - mergiraf
-            - jujustu
+            - jujutsu
 
         system_software:
           list:
