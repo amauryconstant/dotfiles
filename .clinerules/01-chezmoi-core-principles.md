@@ -123,17 +123,46 @@ run_[frequency]_[timing]_[order]_[description].sh.tmpl
 
 ## Cross-Platform Patterns
 
-### OS-Specific Logic
+### Distribution-Agnostic Approach
 ```bash
-{{ if eq .osId "linux-arch" }}
-    # Arch Linux implementation
-{{ else if eq .osId "linux-ubuntu" }}
-    # Ubuntu implementation
+{{ if eq .chezmoi.os "linux" }}
+    # Generic Linux implementation that works across distributions
 {{ else }}
-    echo "Unsupported OS: {{ .osId }}"
+    echo "Unsupported OS: {{ .chezmoi.os }}"
     exit 1
 {{ end }}
 ```
+
+### Distribution-Specific Logic
+```bash
+{{ if eq .chezmoi.os "linux" }}
+    {{ if eq .chezmoi.osRelease.id "arch" or eq .chezmoi.osRelease.id "endeavouros" }}
+        # Arch Linux implementation
+    {{ else if eq .chezmoi.osRelease.id "ubuntu" or eq .chezmoi.osRelease.id "debian" }}
+        # Ubuntu/Debian implementation
+    {{ else if eq .chezmoi.osRelease.id "fedora" }}
+        # Fedora implementation
+    {{ else }}
+        echo "Unsupported Linux distribution: {{ .chezmoi.osRelease.id }}"
+        exit 1
+    {{ end }}
+{{ else }}
+    echo "Unsupported OS: {{ .chezmoi.os }}"
+    exit 1
+{{ end }}
+```
+
+### Prefer Distribution-Agnostic When Possible
+For operations that work the same way across distributions (creating directories, enabling systemd services, etc.), use the simpler check:
+```bash
+{{ if eq .chezmoi.os "linux" }}
+    # Linux-generic code
+{{ else }}
+    # Non-Linux handling
+{{ end }}
+```
+
+Only use distribution-specific checks when necessary (package management, specific system configurations).
 
 ### Chassis Type Detection
 ```bash
