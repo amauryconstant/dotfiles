@@ -17,3 +17,5 @@ extensions:
     - esbenp.prettier-vscode
     - jock.svg
     - continue.continue
+    - bierner.markdown-mermaid
+    - timonwong.shellcheck
