@@ -3,7 +3,7 @@ description: Describes Cline's Memory Bank system, its structure, and workflows 
 author: https://github.com/nickbaumann98
 version: 1.0
 tags: ["memory-bank", "knowledge-base", "core-behavior", "documentation-protocol"]
-globs: ["memory-bank/**/*.md", "*"]
+globs: [".memory-bank/**/*.md", "*"]
 ---
 # Cline's Memory Bank
 
@@ -70,7 +70,7 @@ flowchart TD
    - Evolution of project decisions
 
 ### Additional Context
-Create additional files/folders within memory-bank/ when they help organize:
+Create additional files/folders within .memory-bank/ when they help organize:
 - Complex feature documentation
 - Integration specifications
 - API documentation

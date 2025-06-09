@@ -87,8 +87,8 @@ These rules directly instruct Cline on how it should behave, process information
     * **Positive and Negative Examples:** Show correct and incorrect ways of doing things (e.g., code patterns to use vs. avoid).
     * **Triggers and Conditions:** Define when the rule or specific instructions within it should be activated.
     * **Verification Steps:** Include "thinking" blocks or checklists for the AI to verify its actions against the rule's constraints (e.g., the `<thinking>` block in `mcp-development-protocol.md`).
-    * **Context Management:** Define how Cline should manage context, memory, or state if relevant (e.g., `memory-bank.md`).
-* **Example:** `next-js-supabase.md`, `memory-bank.md`
+    * **Context Management:** Define how Cline should manage context, memory, or state if relevant (e.g., `.memory-bank.md`).
+* **Example:** `next-js-supabase.md`, `.memory-bank.md`
 
 ### d. Meta-Rules
 Rules that define how Cline manages or improves its own rules or processes.
