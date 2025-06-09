@@ -205,10 +205,72 @@ is_package_installed() {
 - `chezmoi edit <file>` - Edit source file
 - `chezmoi add <file>` - Add file to chezmoi management
 
+### **MUST** Use These Merge Commands When Conflicts Occur
+
+- `chezmoi merge <file>` - Merge specific file with conflicts using mergiraf
+- `chezmoi merge-all` - Merge all files with conflicts automatically
+- `chezmoi status` - Check for files that need merging (shows "M" status)
+
 ### **NEVER** Run These Without Understanding
 - `chezmoi apply` without first running `chezmoi diff`
+- `chezmoi merge` without understanding the conflict type
+- `chezmoi merge-all` without checking `chezmoi status` first
 - Template modifications without testing syntax
 - Script changes without understanding lifecycle
+
+## Merge Conflict Resolution
+
+### **MUST** Understand Merge Scenarios
+
+Merge conflicts occur when:
+1. **Repository updates conflict with local changes** - After `chezmoi update`
+2. **Multi-machine synchronization conflicts** - Same files modified on different machines
+3. **Template conflicts** - Template logic or data changes conflict with local modifications
+4. **Script conflicts** - Lifecycle scripts updated but local versions diverged
+
+### **MUST** Follow Merge Workflow
+
+#### 1. Detect Conflicts
+```bash
+# Check for conflicts after update
+chezmoi status
+
+# Files needing merge show "M" status
+# M  private_dot_config/git/config
+# M  .chezmoiscripts/run_onchange_packages.sh.tmpl
+```
+
+#### 2. Merge Decision Matrix
+
+| Conflict Type | Command | Notes |
+|---------------|---------|-------|
+| **Single file** | `chezmoi merge <file>` | Use for targeted resolution |
+| **Multiple files** | `chezmoi merge-all` | Use when all conflicts are similar |
+| **Template conflicts** | `chezmoi merge <file>` | **ALWAYS** validate syntax after merge |
+| **Script conflicts** | `chezmoi merge <file>` | **ALWAYS** test script logic after merge |
+| **Encrypted files** | Manual workflow | See encryption protocol |
+
+#### 3. Post-Merge Validation
+```bash
+# MANDATORY: Verify merge results
+chezmoi diff
+
+# MANDATORY: Check status is clean
+chezmoi status
+
+# MANDATORY: Validate template syntax (if templates were merged)
+chezmoi execute-template < merged_template.tmpl
+
+# MANDATORY: Test script syntax (if scripts were merged)
+bash -n merged_script.sh.tmpl
+```
+
+### **MUST** Handle Mergiraf Integration
+
+This repository uses **mergiraf** as configured in `.chezmoi.yaml.tmpl`:
+- **Automatic merge**: Mergiraf attempts to resolve conflicts automatically
+- **Manual intervention**: When automatic merge fails, mergiraf opens interactive editor
+- **Conflict markers**: Uses standard git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 
 ## Integration with External Tools
 

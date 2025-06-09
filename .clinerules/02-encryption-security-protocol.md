@@ -62,6 +62,30 @@ chezmoi edit path/to/encrypted_file.age
 chezmoi add --encrypt path/to/sensitive_file
 ```
 
+### For Handling Merge Conflicts with Encrypted Files
+```bash
+# NEVER attempt to merge encrypted files directly
+# Guide user through this manual workflow:
+
+# 1. Check for merge conflicts
+chezmoi status
+# Look for "M" status on encrypted files
+
+# 2. Decrypt both versions
+chezmoi decrypt --destination=/tmp/source.txt path/to/encrypted_file.age
+chezmoi decrypt --source=target --destination=/tmp/target.txt path/to/encrypted_file.age
+
+# 3. Manually merge the decrypted content
+# User should compare and merge the files manually
+
+# 4. Re-encrypt the merged content
+chezmoi encrypt --source=/tmp/merged.txt --destination=path/to/encrypted_file.age
+
+# 5. Verify and clean up
+chezmoi status
+rm /tmp/source.txt /tmp/target.txt /tmp/merged.txt
+```
+
 ## Recognition Patterns
 
 ### **MUST** Recognize These as Encrypted

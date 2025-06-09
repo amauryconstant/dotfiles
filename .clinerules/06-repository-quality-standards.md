@@ -28,13 +28,18 @@ This rule establishes quality standards, testing protocols, and maintenance proc
 # 1. MANDATORY: Check current state
 chezmoi diff
 
-# 2. MANDATORY: Dry-run validation
+# 2. MANDATORY: Check for merge conflicts
+chezmoi status
+# If files show "M" status, resolve with merge commands
+# chezmoi merge <file> or chezmoi merge-all
+
+# 3. MANDATORY: Dry-run validation
 chezmoi apply --dry-run
 
-# 3. MANDATORY: Template syntax validation
+# 4. MANDATORY: Template syntax validation
 chezmoi execute-template < template_file.tmpl
 
-# 4. MANDATORY: Script syntax validation
+# 5. MANDATORY: Script syntax validation
 bash -n script_file.sh.tmpl
 ```
 
@@ -368,6 +373,7 @@ Before ANY repository changes:
 
 ## Emergency Procedures
 
+
 ### If Something Goes Wrong
 
 1. **Immediate Response**
@@ -377,7 +383,7 @@ Before ANY repository changes:
    git checkout HEAD~1
    chezmoi apply
    ```
-
+   
 2. **Assessment**
    ```bash
    # Check what changed
@@ -386,7 +392,7 @@ Before ANY repository changes:
    # Verify system state
    chezmoi status
    ```
-
+   
 3. **Recovery**
    ```bash
    # Apply fixes incrementally
@@ -394,6 +400,51 @@ Before ANY repository changes:
    
    # Verify each step
    chezmoi verify
+   ```
+
+
+# [No Replacement Content]
+
+### If Merge Conflicts Occur
+
+1. **Conflict Detection**
+   ```bash
+   # Check for merge conflicts
+   chezmoi status
+   
+   # Look for files with "M" status
+   # M  private_dot_config/git/config
+   # M  .chezmoiscripts/run_onchange_packages.sh.tmpl
+   ```
+
+2. **Targeted Resolution**
+   ```bash
+   # Resolve conflicts one file at a time
+   chezmoi merge private_dot_config/git/config
+   
+   # Or resolve all conflicts at once
+   chezmoi merge-all
+   ```
+
+3. **Post-Merge Validation**
+   ```bash
+   # Verify merge results
+   chezmoi diff
+   
+   # Check status is clean
+   chezmoi status
+   
+   # Validate template syntax if templates were merged
+   chezmoi execute-template < merged_template.tmpl
+   
+   # Test script syntax if scripts were merged
+   bash -n merged_script.sh.tmpl
+   ```
+
+4. **Special Case: Encrypted Files**
+   ```bash
+   # For encrypted files, follow the manual workflow in Rule 02
+   # NEVER attempt to merge encrypted files directly
    ```
 
 ---
