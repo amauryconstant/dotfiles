@@ -1,6 +1,10 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+# Script: run_once_before_003_create_necessary_directories.sh.tmpl
+# Purpose: Create necessary directories for XDG, SSH, keys, and synchronized files
+# Requirements: Linux
+
+{{ if eq .chezmoi.os "linux" }}
 
     # Create directories to use with $XDG_*
     mkdir -p $HOME/.local/bin
@@ -19,9 +23,9 @@
     mkdir -p $HOME/Synchronized
 
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

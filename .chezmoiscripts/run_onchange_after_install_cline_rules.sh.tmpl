@@ -2,10 +2,10 @@
 
 # Script: run_onchange_after_install_cline_rules.sh.tmpl
 # Purpose: Copy Cline rule files from dot_ai/rules/cline to $HOME/Documents/Cline/Rules
-# Requirements: Arch Linux
+# Requirements: Linux
 # Hash: {{ output "find" "dot_ai/rules/cline" "-type" "f" "-exec" "sha256sum" "{}" ";" | sha256sum }}
 
-{{ if eq .osId "linux-arch" }}
+{{ if eq .chezmoi.os "linux" }}
     echo "Installing Cline rules..."
     
     # Create target directory if it doesn't exist
@@ -20,9 +20,9 @@
     
     echo "✓ Cline rules installed successfully"
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

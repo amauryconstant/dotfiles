@@ -1,15 +1,19 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+# Script: run_once_after_003_configure_ollama.sh.tmpl
+# Purpose: Configure Ollama user, permissions, and service
+# Requirements: Linux
+
+{{ if eq .chezmoi.os "linux" }}
     sudo useradd -r -s /bin/false -U -m -d /usr/share/ollama ollama
     sudo usermod -a -G ollama $(whoami)
     sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
     sudo systemctl daemon-reload
     sudo systemctl enable --now ollama
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

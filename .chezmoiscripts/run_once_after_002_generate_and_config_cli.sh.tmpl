@@ -1,6 +1,10 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+# Script: run_once_after_002_generate_and_config_cli.sh.tmpl
+# Purpose: Generate tldr manuals and configure Docker permissions
+# Requirements: Linux
+
+{{ if eq .chezmoi.os "linux" }}
 
     # Generate tldr manuals
     tldr --gen-config > "$(tldr --config-path)"
@@ -13,9 +17,9 @@
     fi
 
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

@@ -1,6 +1,10 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+# Script: run_onchange_after_install_ai_models.sh.tmpl
+# Purpose: Install AI models using Ollama
+# Requirements: Linux
+
+{{ if eq .chezmoi.os "linux" }}
 
     # Install ai models extensions
     {{ range .ai.models -}}
@@ -9,9 +13,9 @@
     {{ end -}}
 
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

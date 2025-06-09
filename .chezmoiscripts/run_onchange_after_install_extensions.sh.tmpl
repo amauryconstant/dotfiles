@@ -1,6 +1,11 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+# Script: run_onchange_after_install_extensions.sh.tmpl
+# Purpose: Install VSCode extensions and configure Firefox policies
+# Requirements: Linux
+# Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
+
+{{ if eq .chezmoi.os "linux" }}
 
     # Install code extensions
     {{ range .extensions.code -}}
@@ -14,9 +19,9 @@
     sudo cp -v {{ .chezmoi.config.workingTree }}/.data/firefox-policies.json /etc/firefox/policies/policies.json
 
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: OS 'linux'"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}
