@@ -11,7 +11,20 @@ globs: ["*"]
 
 **Trigger:** Before using the `attempt_completion` tool for any task that involved user feedback provided at any point during the conversation, or involved multiple non-trivial steps (e.g., multiple file edits, complex logic generation).
 
+**CRITICAL REMINDER:** Always check if reflection is needed before using `attempt_completion`. This is MANDATORY for tasks with:
+- Multiple file edits
+- User feedback during the conversation
+- Complex logic or decision-making
+
 **Process:**
+
+<thinking>
+Before using attempt_completion, have I offered reflection to the user?
+- If this task involved multiple file edits: MUST offer reflection
+- If this task involved user feedback: MUST offer reflection
+- If this task involved complex logic: MUST offer reflection
+- If none of the above: May proceed directly to attempt_completion
+</thinking>
 
 1.  **Offer Reflection:** Ask the user: "Before I complete the task, would you like me to reflect on our interaction and suggest potential improvements to the active `.clinerules`?"
 2.  **Await User Confirmation:** Proceed to `attempt_completion` immediately if the user declines or doesn't respond affirmatively.
