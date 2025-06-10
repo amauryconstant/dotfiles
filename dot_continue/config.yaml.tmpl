@@ -15,7 +15,7 @@ models:
   - name: Claude 3.5 Sonnet
     provider: anthropic
     model: claude-3-5-sonnet-latest
-    apiKey: {{ joinPath .chezmoi.sourceDir "private_dot_keys" "encrypted_just-anthropic-key.txt.age" | include | decrypt }}
+    apiKey: {{ joinPath .chezmoi.sourceDir "private_dot_keys" "encrypted_private_anthropic-key.txt.age" | include | decrypt }}
     roles:
       - chat
       - edit
