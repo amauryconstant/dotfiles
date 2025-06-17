@@ -10,7 +10,19 @@
 
 {{- $osid := .chezmoi.os -}}
 {{- if hasKey .chezmoi.osRelease "id" -}}
-{{-   $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.idLike -}}
+{{-   if eq .chezmoi.osRelease.id "arch" -}}
+{{-     $osid = "linux-arch" -}}
+{{-   else if eq .chezmoi.osRelease.id "fedora" -}}
+{{-     $osid = "linux-fedora" -}}
+{{-   else if eq .chezmoi.osRelease.id "centos" -}}
+{{-     $osid = "linux-fedora" -}}
+{{-   else if eq .chezmoi.osRelease.id "rhel" -}}
+{{-     $osid = "linux-fedora" -}}
+{{-   else if hasKey .chezmoi.osRelease "idLike" -}}
+{{-     $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.idLike -}}
+{{-   else -}}
+{{-     $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.id -}}
+{{-   end -}}
 {{- end -}}
 
 {{- $chassisType := "desktop" }}

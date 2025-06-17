@@ -1,6 +1,7 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+{{ if eq .chezmoi.os "linux" }}
+    {{ if or (eq .chezmoi.osRelease.id "arch") (eq .chezmoi.osRelease.id "endeavouros") }}
     {{- $destinationConfig := index .destinations .destination -}}
 
 # Generate hash for chezmoi run_onchange detection
@@ -334,10 +335,17 @@ echo "- Updated packages using their current correct installation method"
 echo "- Reinstalled packages that were installed with incorrect methods"
 echo "- Installed any missing packages using defined strategies"
 
+    {{ else }}
+        echo "ERROR: This script is only supported on Arch-based systems"
+        echo "Required: Arch Linux or EndeavourOS"
+        echo "Detected: '{{ .chezmoi.osRelease.id }}'"
+        echo "Script: $(basename "$0")"
+        exit 1
+    {{ end }}
 {{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: Linux"
+    echo "Detected: '{{ .chezmoi.os }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

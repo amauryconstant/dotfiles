@@ -145,3 +145,57 @@ This file contains curated, summarized, and actionable insights derived from `ra
 - Use templates for presentation and simple conditionals, not complex business logic.
 - Prefer data-driven configuration over template-driven computation.
 - *Rationale:* This separation makes templates more readable and maintainable while keeping complex logic in more appropriate locations.
+
+## Cross-Distribution Package Management
+
+### **Pattern: Multi-Tier Package Strategy System**
+- Implement multiple installation strategies per distribution with clear fallback order.
+- Use official repositories as primary source, community repositories as secondary, universal packages as tertiary.
+- Abstract strategy selection behind consistent interfaces while allowing distribution-specific optimizations.
+- *Rationale:* This balances reliability (official sources) with availability (community/universal sources) and provides consistent behavior across distributions.
+
+### **Pattern: Comprehensive Package Name Mapping**
+- Create explicit mapping structures for packages that have different names across distributions.
+- Handle cases where packages don't exist on all distributions with graceful fallbacks.
+- Use distribution-specific package lists rather than trying to force universal naming.
+- *Rationale:* Different distributions have different naming conventions and package availability. Explicit mapping provides clarity and reliability.
+
+### **Pattern: Repository Management Abstraction**
+- Implement distribution-specific repository setup (COPR for Fedora, AUR for Arch).
+- Handle repository keys, signatures, and configuration automatically.
+- Provide clear feedback about repository operations and their purposes.
+- *Rationale:* Repository management varies significantly between distributions. Abstracting this complexity improves user experience and reliability.
+
+### **Pattern: Template Syntax Validation for Multi-Distribution Support**
+- Validate Go template syntax carefully when using complex conditionals with multiple distributions.
+- Use proper `or` function syntax: `{{ if or (eq .var "val1") (eq .var "val2") }}`
+- Test template execution across all supported distributions to catch syntax errors early.
+- *Rationale:* Template syntax errors can be subtle and distribution-specific. Proper validation prevents runtime failures.
+
+## Documentation Consolidation Strategies
+
+### **Pattern: Unified Cross-Distribution Documentation**
+- Combine distribution-specific documentation into single comprehensive guides rather than maintaining separate files.
+- Use clear section headers and consistent structure to organize multi-distribution content.
+- Provide side-by-side comparisons where distributions differ significantly.
+- *Rationale:* Unified documentation reduces maintenance burden and provides better overview of cross-distribution patterns and differences.
+
+### **Pattern: Implementation-Driven Documentation Updates**
+- Update documentation immediately after implementation rather than as a separate phase.
+- Include actual code examples and patterns discovered during implementation.
+- Document both successful approaches and alternatives that were considered but rejected.
+- *Rationale:* Implementation-driven documentation is more accurate and complete because it reflects actual working code rather than theoretical designs.
+
+## Memory Bank Management for Complex Projects
+
+### **Pattern: Structured Project Completion Documentation**
+- Document project completion with clear status updates across all memory bank files.
+- Include specific achievements, technical decisions, and lessons learned.
+- Update progress tracking to reflect actual completion rather than planned milestones.
+- *Rationale:* Comprehensive completion documentation provides valuable context for future work and helps maintain accurate project state.
+
+### **Pattern: Cross-Reference Integration in Memory Bank**
+- Maintain consistent cross-references between active context, progress tracking, and project-specific documentation.
+- Update all related files when project status changes to maintain consistency.
+- Use the memory bank as a single source of truth for project state and decisions.
+- *Rationale:* Consistent cross-referencing prevents information fragmentation and ensures all stakeholders have access to current, accurate information.

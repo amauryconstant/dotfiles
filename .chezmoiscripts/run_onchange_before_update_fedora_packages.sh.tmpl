@@ -1,0 +1,429 @@
+#!/bin/sh
+
+{{ if eq .chezmoi.os "linux" }}
+    {{ if or (eq .chezmoi.osRelease.id "fedora") (eq .chezmoi.osRelease.id "centos") }}
+        {{- $destinationConfig := index .destinations .destination -}}
+
+# Generate hash for chezmoi run_onchange detection
+# Hash: {{ include ".chezmoidata/packages.yaml" | sha256sum }}{{ range $name, $config := .packages.install.fedora.packages }}{{ range $config.list }}{{ . }}{{ end }}{{ end }}
+
+echo "Updating packages for destination: {{ .destination }} on Fedora"
+echo "Configured package categories: {{ join ", " $destinationConfig.packages }}"
+
+# Quick check function to determine if updates are needed
+check_updates_needed() {
+    echo "Checking for package updates and strategy compliance for {{ .destination }} destination..."
+    
+    # Quick check for system updates
+    if ! dnf check-update >/dev/null 2>&1; then
+        echo "System updates available"
+        return 0
+    else
+        echo "No system updates available"
+    fi
+    
+    # Quick strategy compliance check
+    local needs_action=false
+    {{ range $name, $config := .packages.install.fedora.packages -}}
+        {{- $strategy := $.packages.install.fedora.strategies.default_strategy -}}
+        {{- if hasKey $config "strategy" -}}
+            {{- $strategy = $config.strategy -}}
+        {{- end -}}
+        {{- $packages := $config.list -}}
+        {{- if $packages }}
+            {{- range $packages }}
+    if ! is_package_installed "{{ . }}"; then
+        echo "Missing package: {{ . }}"
+        needs_action=true
+    else
+        current_source=$(get_package_source "{{ . }}")
+        case "$current_source" in
+            "dnf")
+                {{- if not (has "dnf" $strategy) }}
+                echo "Strategy mismatch: {{ . }} (installed via dnf, strategy: {{ join " " $strategy }})"
+                needs_action=true
+                {{- end }}
+                ;;
+            "copr")
+                {{- if not (has "copr" $strategy) }}
+                echo "Strategy mismatch: {{ . }} (installed via copr, strategy: {{ join " " $strategy }})"
+                needs_action=true
+                {{- end }}
+                ;;
+            "flatpak")
+                {{- if not (has "flatpak" $strategy) }}
+                echo "Strategy mismatch: {{ . }} (installed via flatpak, strategy: {{ join " " $strategy }})"
+                needs_action=true
+                {{- end }}
+                ;;
+        esac
+    fi
+            {{- end }}
+        {{- end }}
+    {{ end -}}
+    
+    if [ "$needs_action" = "true" ]; then
+        echo "Package management actions needed"
+        return 0
+    else
+        echo "All packages are up to date and strategy compliant"
+        return 1
+    fi
+}
+
+# Define utility functions
+get_package_source() {
+    local package="$1"
+    
+    # Check if package is installed via dnf (official repos or COPR)
+    if rpm -q "$package" >/dev/null 2>&1; then
+        # Check if it's from a COPR repository
+        local repo=$(dnf info installed "$package" 2>/dev/null | grep "From repo" | awk '{print $4}')
+        if echo "$repo" | grep -q "copr"; then
+            echo "copr"
+        else
+            echo "dnf"
+        fi
+        return 0
+    fi
+    
+    # Check if package is installed via flatpak
+    if command -v flatpak >/dev/null 2>&1 && flatpak list | grep -q "$package"; then
+        echo "flatpak"
+        return 0
+    fi
+    
+    # Package not installed
+    echo "not_installed"
+    return 1
+}
+
+# Check if package is available in official repos
+is_package_in_official_repos() {
+    local package="$1"
+    dnf info "$package" >/dev/null 2>&1
+}
+
+# Check if package is available in COPR
+is_package_in_copr() {
+    local package="$1"
+    # This is a simplified check - in practice, you'd need to know which COPR repo contains the package
+    dnf search "$package" --enablerepo="*copr*" >/dev/null 2>&1
+}
+
+# Check if package is available as flatpak
+is_package_in_flatpak() {
+    local package="$1"
+    command -v flatpak >/dev/null 2>&1 && flatpak search "$package" >/dev/null 2>&1
+}
+
+# Determine the best update method for a package based on availability and strategy
+get_update_method() {
+    local package="$1"
+    local strategy="$2"
+    local current_source="$3"
+    
+    # If package is not installed, use strategy for installation
+    if [ "$current_source" = "not_installed" ]; then
+        echo "$strategy" | awk '{print $1}'
+        return 0
+    fi
+    
+    # If package is available in official repos and strategy includes dnf, prefer dnf
+    if is_package_in_official_repos "$package"; then
+        if echo "$strategy" | grep -q "dnf"; then
+            echo "dnf"
+            return 0
+        fi
+    fi
+    
+    # For COPR packages or when dnf is not in strategy, use COPR methods
+    if echo "$strategy" | grep -q "copr"; then
+        echo "copr"
+    elif echo "$strategy" | grep -q "flatpak"; then
+        echo "flatpak"
+    else
+        # Fallback to first method in strategy
+        echo "$strategy" | awk '{print $1}'
+    fi
+}
+
+is_package_installed() {
+    local package="$1"
+    rpm -q "$package" >/dev/null 2>&1 || (command -v flatpak >/dev/null 2>&1 && flatpak list | grep -q "$package")
+}
+
+# Define repository management functions
+enable_rpmfusion() {
+    echo "Enabling RPM Fusion repositories..."
+    
+    # Enable RPM Fusion Free
+    if ! rpm -q rpmfusion-free-release >/dev/null 2>&1; then
+        echo "Installing RPM Fusion Free repository..."
+        sudo dnf install -y "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+    fi
+    
+    # Enable RPM Fusion Non-Free
+    if ! rpm -q rpmfusion-nonfree-release >/dev/null 2>&1; then
+        echo "Installing RPM Fusion Non-Free repository..."
+        sudo dnf install -y "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
+    fi
+}
+
+enable_copr_repo() {
+    local repo="$1"
+    echo "Enabling COPR repository: $repo"
+    sudo dnf copr enable -y "$repo"
+}
+
+enable_flathub() {
+    if command -v flatpak >/dev/null 2>&1; then
+        echo "Enabling Flathub repository..."
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    fi
+}
+
+# Define update functions
+update_with_dnf() {
+    sudo dnf update -y "$@"
+}
+
+update_with_copr() {
+    # COPR packages are updated via dnf
+    sudo dnf update -y "$@"
+}
+
+update_with_flatpak() {
+    if command -v flatpak >/dev/null 2>&1; then
+        flatpak update -y "$@"
+    else
+        echo "Flatpak not available for updating $@"
+        return 1
+    fi
+}
+
+# Define installation functions
+install_with_dnf() {
+    sudo dnf install -y "$@"
+}
+
+install_with_copr() {
+    # COPR packages are installed via dnf after enabling the repo
+    sudo dnf install -y "$@"
+}
+
+install_with_flatpak() {
+    if command -v flatpak >/dev/null 2>&1; then
+        flatpak install -y flathub "$@"
+    else
+        echo "Flatpak not available for installing $@"
+        return 1
+    fi
+}
+
+# Define reinstallation function
+reinstall_package() {
+    local package="$1"
+    local strategy="$2"
+    
+    echo "Reinstalling $package with strategy: $strategy"
+    
+    # Remove the package first
+    if is_package_installed "$package"; then
+        echo "Removing $package..."
+        if rpm -q "$package" >/dev/null 2>&1; then
+            sudo dnf remove -y "$package"
+        elif command -v flatpak >/dev/null 2>&1 && flatpak list | grep -q "$package"; then
+            flatpak uninstall -y "$package"
+        fi
+    fi
+    
+    # Install with correct strategy
+    for installer in $strategy; do
+        if install_with_$installer "$package"; then
+            echo "✓ Successfully reinstalled $package with $installer"
+            return 0
+        fi
+    done
+    
+    echo "✗ Failed to reinstall $package with any method in strategy"
+    return 1
+}
+
+# Run quick check first
+if ! check_updates_needed; then
+    echo "No updates needed. Exiting."
+    exit 0
+fi
+
+echo "Starting comprehensive package update process for Fedora..."
+
+# Enable necessary repositories
+echo "Setting up repositories..."
+
+# Enable RPM Fusion if needed
+{{ if .packages.install.fedora.repositories.rpmfusion }}
+enable_rpmfusion
+{{ end }}
+
+# Enable COPR repositories
+{{ range .packages.install.fedora.repositories.copr }}
+enable_copr_repo "{{ . }}"
+{{ end }}
+
+# Enable Flathub
+enable_flathub
+
+# Update repository metadata
+echo "Updating repository metadata..."
+sudo dnf makecache
+
+# Remove conflicting packages first (if any defined)
+{{ if .packages.delete.fedora }}
+echo "Removing conflicting packages..."
+sudo dnf remove -y {{ .packages.delete.fedora }} 2>/dev/null || true
+{{ end }}
+
+# Process packages by category (filtered by destination)
+{{ range $name, $config := .packages.install.fedora.packages -}}
+    {{- $strategy := $.packages.install.fedora.strategies.default_strategy -}}
+    {{- if hasKey $config "strategy" -}}
+        {{- $strategy = $config.strategy -}}
+    {{- end -}}
+    {{- $packages := $config.list -}}
+    
+    {{- if $packages }}
+
+# Check if {{ $name }} category is enabled for destination {{ $.destination }}
+{{ if has $name $destinationConfig.packages }}
+echo "Processing {{ $name }} category (enabled for {{ $.destination }} destination)"
+
+# Group packages by their current installation method and required action
+packages_to_update_dnf=""
+packages_to_update_copr=""
+packages_to_update_flatpak=""
+packages_to_reinstall=""
+packages_to_install=""
+
+        {{- range $packages }}
+# Check package: {{ . }}
+current_source=$(get_package_source "{{ . }}")
+intended_strategy="{{ join " " $strategy }}"
+update_method=$(get_update_method "{{ . }}" "$intended_strategy" "$current_source")
+
+case "$current_source" in
+    "not_installed")
+        packages_to_install="$packages_to_install {{ . }}"
+        ;;
+    *)
+        # Check if current installation method matches the intended strategy
+        strategy_match=false
+        case "$current_source" in
+            "dnf")
+                {{- if has "dnf" $strategy }}
+                strategy_match=true
+                {{- end }}
+                ;;
+            "copr")
+                {{- if has "copr" $strategy }}
+                strategy_match=true
+                {{- end }}
+                ;;
+            "flatpak")
+                {{- if has "flatpak" $strategy }}
+                strategy_match=true
+                {{- end }}
+                ;;
+        esac
+        
+        # If strategy matches and update method is appropriate, update; otherwise reinstall
+        if [ "$strategy_match" = "true" ] && [ "$update_method" = "$current_source" ]; then
+            case "$update_method" in
+                "dnf")
+                    packages_to_update_dnf="$packages_to_update_dnf {{ . }}"
+                    ;;
+                "copr")
+                    packages_to_update_copr="$packages_to_update_copr {{ . }}"
+                    ;;
+                "flatpak")
+                    packages_to_update_flatpak="$packages_to_update_flatpak {{ . }}"
+                    ;;
+            esac
+        else
+            packages_to_reinstall="$packages_to_reinstall {{ . }}"
+        fi
+        ;;
+esac
+        {{- end }}
+
+# Update packages with correct methods
+if [ -n "$packages_to_update_dnf" ]; then
+    echo "Updating dnf packages: $packages_to_update_dnf"
+    update_with_dnf $packages_to_update_dnf
+fi
+
+if [ -n "$packages_to_update_copr" ]; then
+    echo "Updating COPR packages: $packages_to_update_copr"
+    update_with_copr $packages_to_update_copr
+fi
+
+if [ -n "$packages_to_update_flatpak" ]; then
+    echo "Updating flatpak packages: $packages_to_update_flatpak"
+    update_with_flatpak $packages_to_update_flatpak
+fi
+
+# Reinstall packages with wrong installation method
+if [ -n "$packages_to_reinstall" ]; then
+    echo "Reinstalling packages with correct strategy: $packages_to_reinstall"
+    for pkg in $packages_to_reinstall; do
+        reinstall_package "$pkg" "{{ join " " $strategy }}"
+    done
+fi
+
+# Install missing packages
+if [ -n "$packages_to_install" ]; then
+    echo "Installing missing {{ $name }} packages: $packages_to_install"
+        {{- range $index, $installer := $strategy }}
+            {{- if eq $index 0 }}
+    if install_with_{{ $installer }} $packages_to_install; then
+        echo "✓ Successfully installed missing {{ $name }} packages with {{ $installer }}"
+            {{- else }}
+    elif install_with_{{ $installer }} $packages_to_install; then
+        echo "✓ Successfully installed missing {{ $name }} packages with {{ $installer }}"
+            {{- end }}
+        {{- end }}
+    else
+        echo "✗ Failed to install missing {{ $name }} packages with any available method"
+        exit 1
+    fi
+fi
+
+echo "✓ Completed processing {{ $name }} packages"
+{{ else }}
+echo "Skipping {{ $name }} category (not configured for {{ $.destination }} destination)"
+{{ end }}
+
+    {{- end }}
+{{ end -}}
+
+echo "✓ Package update process completed for {{ .destination }} destination on Fedora!"
+echo "Summary of actions taken:"
+echo "- Updated packages using their current correct installation method"
+echo "- Reinstalled packages that were installed with incorrect methods"
+echo "- Installed any missing packages using defined strategies"
+echo "- Enabled necessary repositories (RPM Fusion, COPR, Flathub)"
+
+    {{ else }}
+        echo "ERROR: This script is only supported on Fedora-based systems"
+        echo "Required: Fedora, CentOS Stream, or RHEL"
+        echo "Detected: '{{ .chezmoi.osRelease.id }}'"
+        echo "Script: $(basename "$0")"
+        exit 0
+    {{ end }}
+{{ else }}
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: Linux"
+    echo "Detected: '{{ .chezmoi.os }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
+{{ end }}

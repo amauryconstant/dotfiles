@@ -92,5 +92,159 @@ packages:
             - ollama
             - vllm
 
+    fedora:
+      strategies:
+        default_strategy: [dnf, copr, flatpak]
+        _install_official: &_install_official [dnf]
+        _install_community: &_install_community [dnf, copr]
+        _install_universal: &_install_universal [dnf, copr, flatpak]
+
+      repositories:
+        # Core repositories (enabled by default)
+        core: []
+        
+        # COPR repositories to enable
+        copr:
+          - atim/lazygit
+          - varlad/zellij
+          
+        # RPM Fusion repositories
+        rpmfusion:
+          - free
+          - nonfree
+
+      packages:
+        fonts:
+          list:
+            - fira-code-fonts
+            - google-noto-fonts-common
+            - google-noto-sans-fonts
+            - google-noto-serif-fonts
+
+        terminal_essentials:
+          strategy: *_install_community
+          list:
+            - zoxide
+            - fzf
+            - tldr
+            - fd-find
+            - ripgrep
+            - broot
+            - bat
+            - eza
+            - xh
+            - jq
+            - rsync
+
+        terminal_utils:
+          strategy: *_install_community
+          list:
+            - fastfetch
+            - btop
+
+        terminal_presentation:
+          strategy: *_install_community
+          list:
+            - vhs
+
+        languages:
+          strategy: *_install_official
+          list:
+            - golang
+            - python3
+            - python3-pip
+            - rust
+            - cargo
+
+        package_managers:
+          strategy: *_install_community
+          list:
+            - cargo
+
+        development_tools:
+          strategy: *_install_universal
+          list:
+            - docker-ce
+            - docker-compose-plugin
+
+        development_clis:
+          strategy: *_install_community
+          list:
+            - awscli2
+            - git-delta
+
+        system_software:
+          strategy: *_install_official
+          list:
+            - snapd
+            - flatpak
+
+        general_software:
+          strategy: *_install_universal
+          list:
+            - firefox
+            - chromium
+            - nextcloud-client
+
+        ai_tools:
+          strategy: *_install_community
+          list:
+            - ollama
+
+  # Package name mapping for cross-distribution compatibility
+  mapping:
+    # Terminal essentials
+    fd:
+      arch: fd
+      fedora: fd-find
+    tlrc:
+      arch: tlrc
+      fedora: tldr
+    jaq:
+      arch: jaq
+      fedora: jq
+    
+    # Languages
+    go:
+      arch: go
+      fedora: golang
+    go-tools:
+      arch: go-tools
+      fedora: golang-tools  # May not exist, fallback needed
+    python:
+      arch: python
+      fedora: python3
+    
+    # Development tools
+    docker:
+      arch: docker
+      fedora: docker-ce
+    docker-compose:
+      arch: docker-compose
+      fedora: docker-compose-plugin
+    code:
+      arch: code
+      fedora: code  # From Microsoft repository
+    
+    # Development CLIs
+    aws-cli-v2:
+      arch: aws-cli-v2
+      fedora: awscli2
+    
+    # Fonts
+    ttf-firacode-nerd:
+      arch: ttf-firacode-nerd
+      fedora: fira-code-fonts
+    otf-opendyslexic-nerd:
+      arch: otf-opendyslexic-nerd
+      fedora: # May need flatpak fallback
+    otf-geist-mono-nerd:
+      arch: otf-geist-mono-nerd
+      fedora: # May need flatpak fallback
+    ttf-fira-sans:
+      arch: ttf-fira-sans
+      fedora: google-noto-sans-fonts
+
   delete:
     arch: tldr
+    fedora: # No conflicting packages identified yet
