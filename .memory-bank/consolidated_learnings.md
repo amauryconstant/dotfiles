@@ -91,3 +91,57 @@ This file contains curated, summarized, and actionable insights derived from `ra
 - Test each component in isolation before testing the integrated system.
 - Use dry-run capabilities to preview changes before applying them.
 - *Rationale:* Incremental validation makes it easier to identify and fix issues by limiting the scope of each test.
+
+## Destination-Based Installation Patterns
+
+### **Pattern: User-Centric Installation Profiles**
+- Design installation profiles based on user intent rather than technical categories.
+- Create clear, meaningful destination names that communicate purpose (test/work/leisure).
+- Map technical components to user-focused destinations rather than exposing technical complexity.
+- *Rationale:* Users think in terms of what they want to accomplish, not technical package categories. This improves user experience and reduces decision fatigue.
+
+### **Pattern: Conditional Component Installation**
+- Implement filtering logic that respects both destination requirements and dependency availability.
+- Check for tool availability before attempting to configure it (e.g., VSCode extensions only if VSCode is installed).
+- Provide clear feedback about what's being installed, skipped, and why.
+- *Rationale:* This prevents installation failures and provides a better user experience by adapting to the actual system state.
+
+### **Pattern: Template-Driven Configuration Filtering**
+- Use template conditionals to filter components at the source rather than post-processing.
+- Centralize destination logic in data files rather than scattering it across scripts.
+- Leverage template engines' conditional capabilities for clean, readable filtering logic.
+- *Rationale:* Template-driven filtering is more maintainable and provides better separation of concerns between data and logic.
+
+### **Pattern: Backward-Compatible Feature Addition**
+- Add new features (like destination filtering) as an additional layer rather than replacing existing functionality.
+- Maintain existing APIs and patterns while extending them with new capabilities.
+- Use feature flags or conditional logic to enable new behavior without breaking existing workflows.
+- *Rationale:* This allows for gradual migration and reduces the risk of breaking existing functionality when adding new features.
+
+## Data Structure Design for Configuration Management
+
+### **Pattern: Hierarchical Configuration Data**
+- Structure configuration data hierarchically to support different levels of specificity.
+- Use consistent naming conventions that work with template engines (avoid hyphens in YAML keys).
+- Design data structures that are both human-readable and machine-processable.
+- *Rationale:* Well-structured data is easier to maintain, extend, and process programmatically while remaining understandable to humans.
+
+### **Pattern: Self-Documenting Configuration**
+- Include comprehensive comments in configuration files that explain purpose and usage.
+- Use descriptive names for configuration keys and values.
+- Document the relationship between different configuration sections.
+- *Rationale:* Self-documenting configuration reduces the need for external documentation and makes the system more maintainable.
+
+## Template Engine Best Practices
+
+### **Pattern: Robust Template Error Handling**
+- Validate template variables before use to prevent runtime errors.
+- Provide meaningful error messages when template processing fails.
+- Use template conditionals to handle missing or invalid data gracefully.
+- *Rationale:* Template errors can be difficult to debug, so robust error handling improves the development and user experience.
+
+### **Pattern: Template Logic Separation**
+- Keep complex logic in data files rather than embedding it in templates.
+- Use templates for presentation and simple conditionals, not complex business logic.
+- Prefer data-driven configuration over template-driven computation.
+- *Rationale:* This separation makes templates more readable and maintainable while keeping complex logic in more appropriate locations.

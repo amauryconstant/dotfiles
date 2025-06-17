@@ -2,15 +2,26 @@
 
 # Script: run_onchange_after_install_ai_models.sh.tmpl
 # Purpose: Install AI models using Ollama
-# Requirements: Linux
+# Requirements: Linux, destination with ai_models enabled
 
 {{ if eq .chezmoi.os "linux" }}
-
-    # Install ai models extensions
-    {{ range .ai.models -}}
-        echo "Installing {{.}}"
-        ollama pull {{.}}
-    {{ end -}}
+    {{- $destinationConfig := index .destinations .destination -}}
+    
+    {{ if $destinationConfig.ai_models }}
+        echo "Installing AI models for destination: {{ .destination }}"
+        
+        # Install ai models
+        {{ range .ai.models -}}
+            echo "Installing {{.}}"
+            ollama pull {{.}}
+        {{ end -}}
+        
+        echo "✓ AI models installation completed for {{ .destination }} destination"
+    {{ else }}
+        echo "Skipping AI models installation for destination: {{ .destination }}"
+        echo "AI models are not configured for this destination type"
+        exit 0
+    {{ end }}
 
 {{ else }}
     echo "ERROR: This script is only supported on Linux systems"

@@ -1,20 +1,39 @@
 #!/bin/sh
 
 # Script: run_once_after_001_enable_services.sh.tmpl
-# Purpose: Enable system services for Docker, Snap, and Bluetooth
+# Purpose: Enable system services based on destination configuration
 # Requirements: Linux
 
 {{ if eq .chezmoi.os "linux" }}
+    {{- $destinationConfig := index .destinations .destination -}}
+    
+    echo "Enabling services for destination: {{ .destination }}"
+    
+    # Enable Docker service (only for work destination)
+    {{ if has "docker" $destinationConfig.services }}
+        echo "Enabling Docker service..."
+        sudo systemctl enable docker.service
+        echo "✓ Docker service enabled"
+    {{ else }}
+        echo "Skipping Docker service (not configured for {{ .destination }} destination)"
+    {{ end }}
 
-    # Enable docker service
-    sudo systemctl enable docker.service
+    # Enable Snap services (only if system_software packages are installed - leisure destination)
+    {{ if has "system_software" $destinationConfig.packages }}
+        echo "Enabling Snap services..."
+        sudo systemctl enable --now snapd.socket
+        sudo systemctl enable --now snapd.apparmor.service
+        echo "✓ Snap services enabled"
+    {{ else }}
+        echo "Skipping Snap services (system_software not configured for {{ .destination }} destination)"
+    {{ end }}
 
-    # Enable snap service
-    sudo systemctl enable --now snapd.socket
-    sudo systemctl enable --now snapd.apparmor.service
-
-    # Enable bluetooth
+    # Enable Bluetooth (for all destinations - basic system service)
+    echo "Enabling Bluetooth service..."
     sudo systemctl enable --now bluetooth
+    echo "✓ Bluetooth service enabled"
+    
+    echo "✓ Service configuration completed for {{ .destination }} destination"
 
 {{ else }}
     echo "ERROR: This script is only supported on Linux systems"

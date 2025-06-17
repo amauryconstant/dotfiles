@@ -1,13 +1,17 @@
 #!/bin/sh
 
 {{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination -}}
 
 # Generate hash for chezmoi run_onchange detection
 # Hash: {{ include ".chezmoidata/packages.yaml" | sha256sum }}{{ range $name, $config := .packages.install.arch.packages }}{{ range $config.list }}{{ . }}{{ end }}{{ end }}
 
+echo "Updating packages for destination: {{ .destination }}"
+echo "Configured package categories: {{ join ", " $destinationConfig.packages }}"
+
 # Quick check function to determine if updates are needed
 check_updates_needed() {
-    echo "Checking for package updates and strategy compliance..."
+    echo "Checking for package updates and strategy compliance for {{ .destination }} destination..."
     
     # Quick check for system updates
     if ! pacman -Qu >/dev/null 2>&1 && ! yay -Qu >/dev/null 2>&1; then
@@ -202,7 +206,7 @@ echo "Starting comprehensive package update process..."
 echo "Removing conflicting packages..."
 yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
 
-# Process packages by category
+# Process packages by category (filtered by destination)
 {{ range $name, $config := .packages.install.arch.packages -}}
     {{- $strategy := $.packages.install.arch.strategies.default_strategy -}}
     {{- if hasKey $config "strategy" -}}
@@ -211,6 +215,10 @@ yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
     {{- $packages := $config.list -}}
     
     {{- if $packages }}
+
+# Check if {{ $name }} category is enabled for destination {{ $.destination }}
+{{ if has $name $destinationConfig.packages }}
+echo "Processing {{ $name }} category (enabled for {{ $.destination }} destination)"
 
 # Group packages by their current installation method and required action
 packages_to_update_pacman=""
@@ -313,11 +321,14 @@ if [ -n "$packages_to_install" ]; then
 fi
 
 echo "✓ Completed processing {{ $name }} packages"
+{{ else }}
+echo "Skipping {{ $name }} category (not configured for {{ $.destination }} destination)"
+{{ end }}
 
     {{- end }}
 {{ end -}}
 
-echo "All packages have been updated, reinstalled, or installed successfully!"
+echo "✓ Package update process completed for {{ .destination }} destination!"
 echo "Summary of actions taken:"
 echo "- Updated packages using their current correct installation method"
 echo "- Reinstalled packages that were installed with incorrect methods"

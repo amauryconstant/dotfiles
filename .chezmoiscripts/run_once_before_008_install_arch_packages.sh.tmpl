@@ -1,6 +1,10 @@
 #!/bin/sh
 
 {{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination -}}
+
+echo "Installing packages for destination: {{ .destination }}"
+echo "Configured package categories: {{ join ", " $destinationConfig.packages }}"
 
 # Define installation functions
 install_with_pacman() {
@@ -19,9 +23,9 @@ install_with_yay_source() {
 
 # Remove conflicting packages first
 echo "Removing conflicting packages..."
-yay -R --noconfirm {{ .packages.delete.arch }}
+yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
 
-# Install packages by category
+# Install packages by category (filtered by destination)
 {{ range $name, $config := .packages.install.arch.packages -}}
     {{- $strategy := $.packages.install.arch.strategies.default_strategy -}}
     {{- if hasKey $config "strategy" -}}
@@ -30,7 +34,9 @@ yay -R --noconfirm {{ .packages.delete.arch }}
     {{- $packages := $config.list -}}
     
     {{- if $packages }}
-echo "Installing {{ $name }}"
+# Check if {{ $name }} category is enabled for destination {{ $.destination }}
+{{ if has $name $destinationConfig.packages }}
+echo "Installing {{ $name }} (enabled for {{ $.destination }} destination)"
         {{- range $index, $installer := $strategy }}
             {{- if eq $index 0 }}
 if install_with_{{ $installer }} {{ join " " $packages }}; then
@@ -44,11 +50,14 @@ else
     echo "✗ Failed to install {{ $name }} with any available method"
     exit 1
 fi
+{{ else }}
+echo "Skipping {{ $name }} (not configured for {{ $.destination }} destination)"
+{{ end }}
 
     {{- end }}
 {{ end -}}
 
-echo "All packages installed successfully!"
+echo "✓ Package installation completed for {{ .destination }} destination!"
 
 {{ else }}
     echo "ERROR: This script is only supported on Arch Linux systems"

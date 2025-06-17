@@ -2,6 +2,10 @@
 {{ $workEmail := promptStringOnce . "workEmail" "What is your work email address? " -}}
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
+{{ $destination := promptStringOnce . "destination" "What is your installation destination? (test/work/leisure) " -}}
+{{- if not (has $destination (list "test" "work" "leisure")) -}}
+{{-   $destination = "test" -}}
+{{- end -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
 {{- $osid := .chezmoi.os -}}
@@ -39,6 +43,7 @@ data:
     workEmail: {{ $workEmail | quote }}
     personalEmail: {{ $personalEmail | quote }}
     privateServer: {{ $privateServer | quote }}
+    destination: {{ $destination | quote }}
     osId: {{ $osid | quote }}
     chassisType: {{ $chassisType | quote }}
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}

@@ -2,14 +2,27 @@
 
 # Script: run_once_after_003_configure_ollama.sh.tmpl
 # Purpose: Configure Ollama user, permissions, and service
-# Requirements: Linux
+# Requirements: Linux, destination with ollama service enabled
 
 {{ if eq .chezmoi.os "linux" }}
-    sudo useradd -r -s /bin/false -U -m -d /usr/share/ollama ollama
-    sudo usermod -a -G ollama $(whoami)
-    sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now ollama
+    {{- $destinationConfig := index .destinations .destination -}}
+    
+    {{ if has "ollama" $destinationConfig.services }}
+        echo "Configuring Ollama for destination: {{ .destination }}"
+        
+        sudo useradd -r -s /bin/false -U -m -d /usr/share/ollama ollama
+        sudo usermod -a -G ollama $(whoami)
+        sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now ollama
+        
+        echo "✓ Ollama configuration completed for {{ .destination }} destination"
+    {{ else }}
+        echo "Skipping Ollama configuration for destination: {{ .destination }}"
+        echo "Ollama service is not configured for this destination type"
+        exit 0
+    {{ end }}
+
 {{ else }}
     echo "ERROR: This script is only supported on Linux systems"
     echo "Required: OS 'linux'"
