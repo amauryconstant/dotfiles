@@ -92,6 +92,15 @@ packages:
             - ollama
             - vllm
 
+        printing_scanning:
+          list:
+            - cups
+            - cups-pdf
+            - system-config-printer
+            - sane
+            - sane-airscan
+            - skanpage
+
     fedora:
       strategies:
         default_strategy: [dnf, copr, flatpak]
@@ -191,6 +200,16 @@ packages:
           list:
             - ollama
 
+        printing_scanning:
+          strategy: *_install_official
+          list:
+            - cups
+            - cups-pdf
+            - system-config-printer
+            - sane-backends
+            - sane-airscan
+            - skanpage
+
   # Package name mapping for cross-distribution compatibility
   mapping:
     # Terminal essentials
@@ -237,14 +256,19 @@ packages:
       fedora: fira-code-fonts
     otf-opendyslexic-nerd:
       arch: otf-opendyslexic-nerd
-      fedora: # May need flatpak fallback
+      fedora: ""  # May need flatpak fallback
     otf-geist-mono-nerd:
       arch: otf-geist-mono-nerd
-      fedora: # May need flatpak fallback
+      fedora: ""  # May need flatpak fallback
     ttf-fira-sans:
       arch: ttf-fira-sans
       fedora: google-noto-sans-fonts
+    
+    # Printing and scanning
+    sane:
+      arch: sane
+      fedora: sane-backends
 
   delete:
     arch: tldr
-    fedora: # No conflicting packages identified yet
+    fedora: ""  # No conflicting packages identified yet

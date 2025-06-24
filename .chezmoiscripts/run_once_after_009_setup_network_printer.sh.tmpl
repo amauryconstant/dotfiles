@@ -1,0 +1,295 @@
+#!/bin/sh
+
+# Script: run_once_after_009_setup_network_printer.sh.tmpl
+# Purpose: Install and configure Samsung M2070 Series network printer and scanner
+# Requirements: Linux (Arch or Fedora)
+# Supported Distributions: Arch Linux, EndeavourOS, Fedora, CentOS Stream, RHEL
+# Fallback Behavior: Graceful error messages for unsupported distributions
+
+{{ if eq .chezmoi.os "linux" }}
+    {{ if or (eq .chezmoi.osRelease.id "arch") (eq .chezmoi.osRelease.id "endeavouros") }}
+        # Arch Linux implementation
+        DISTRO="arch"
+    {{ else if or (eq .chezmoi.osRelease.id "fedora") (eq .chezmoi.osRelease.id "centos") (eq .chezmoi.osRelease.id "rhel") }}
+        # Fedora-based implementation
+        DISTRO="fedora"
+    {{ else }}
+        echo "ERROR: This script is only supported on Arch or Fedora-based systems"
+        echo "Required: Arch Linux, EndeavourOS, Fedora, CentOS Stream, or RHEL"
+        echo "Detected: '{{ .chezmoi.osRelease.id }}'"
+        echo "Script: $(basename "$0")"
+        exit 1
+    {{ end }}
+{{ else }}
+    echo "ERROR: This script is only supported on Linux systems"
+    echo "Required: Linux"
+    echo "Detected: '{{ .chezmoi.os }}'"
+    echo "Script: $(basename "$0")"
+    exit 1
+{{ end }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Printer configuration
+PRINTER_NAME="Samsung_M2070_Series"
+PRINTER_IP="192.168.1.40"
+PRINTER_MODEL="Samsung M2070 Series"
+PRINTER_DESCRIPTION="Samsung M2070 Series Network Printer"
+
+# Define utility functions
+log_info() {
+    echo "[INFO] $1"
+}
+
+log_error() {
+    echo "[ERROR] $1" >&2
+}
+
+log_success() {
+    echo "[SUCCESS] $1"
+}
+
+# Check if package is installed (distribution-agnostic)
+is_package_installed() {
+    local package="$1"
+    
+    if [ "$DISTRO" = "arch" ]; then
+        pacman -Qi "$package" >/dev/null 2>&1 || yay -Qi "$package" >/dev/null 2>&1
+    elif [ "$DISTRO" = "fedora" ]; then
+        rpm -q "$package" >/dev/null 2>&1 || (command -v flatpak >/dev/null 2>&1 && flatpak list | grep -q "$package")
+    else
+        return 1
+    fi
+}
+
+# Check if service is enabled and running
+is_service_active() {
+    local service="$1"
+    systemctl is-active --quiet "$service" 2>/dev/null
+}
+
+is_service_enabled() {
+    local service="$1"
+    systemctl is-enabled --quiet "$service" 2>/dev/null
+}
+
+# Check if printer is already configured
+is_printer_configured() {
+    lpstat -p "$PRINTER_NAME" >/dev/null 2>&1
+}
+
+# Check if user is in required groups
+is_user_in_group() {
+    local group="$1"
+    groups | grep -q "\b$group\b"
+}
+
+# Add user to group if not already a member
+add_user_to_group() {
+    local group="$1"
+    if ! is_user_in_group "$group"; then
+        log_info "Adding user to $group group..."
+        sudo usermod -a -G "$group" "$USER"
+        log_success "User added to $group group (requires logout/login to take effect)"
+    else
+        log_info "User already in $group group"
+    fi
+}
+
+# Detect printer URI using lpinfo
+detect_printer_uri() {
+    # Try different protocols (without logging to avoid output capture issues)
+    local uris=(
+        "ipp://$PRINTER_IP/ipp/print"
+        "http://$PRINTER_IP:631/ipp/print"
+        "socket://$PRINTER_IP:9100"
+        "lpd://$PRINTER_IP/queue"
+    )
+    
+    for uri in "${uris[@]}"; do
+        if lpinfo -v 2>/dev/null | grep -q "$uri"; then
+            echo "$uri"
+            return 0
+        fi
+    done
+    
+    # Fallback to socket protocol
+    echo "socket://$PRINTER_IP:9100"
+}
+
+# Configure printer
+configure_printer() {
+    log_info "Configuring Samsung M2070 Series printer..."
+    
+    if is_printer_configured; then
+        log_info "Printer '$PRINTER_NAME' is already configured"
+        return 0
+    fi
+    
+    # Detect printer URI
+    log_info "Detecting printer URI..."
+    local printer_uri
+    printer_uri=$(detect_printer_uri)
+    log_info "Using printer URI: $printer_uri"
+    
+    # Choose driver based on connection type
+    local driver_option
+    if [[ "$printer_uri" == ipp://* ]] || [[ "$printer_uri" == http://* ]]; then
+        log_info "Using IPP Everywhere driver for IPP/HTTP connection..."
+        driver_option="-m everywhere"
+    else
+        log_info "Using generic PostScript driver for socket/LPD connection..."
+        driver_option="-m drv:///sample.drv/generic.ppd"
+    fi
+    
+    # Add printer using lpadmin
+    log_info "Adding printer with appropriate driver..."
+    sudo lpadmin -p "$PRINTER_NAME" \
+        -v "$printer_uri" \
+        $driver_option \
+        -D "$PRINTER_DESCRIPTION" \
+        -L "Network Printer at $PRINTER_IP" \
+        -E
+    
+    # Set as default printer
+    sudo lpadmin -d "$PRINTER_NAME"
+    
+    # Accept jobs
+    sudo cupsenable "$PRINTER_NAME"
+    sudo cupsaccept "$PRINTER_NAME"
+    
+    log_success "Printer configured successfully"
+}
+
+# Configure scanner
+configure_scanner() {
+    log_info "Configuring network scanner..."
+    
+    # Check if sane-airscan is installed
+    if ! is_package_installed "sane-airscan"; then
+        log_error "sane-airscan is not installed. Scanner configuration skipped."
+        return 1
+    fi
+    
+    # Create sane-airscan configuration if it doesn't exist
+    local airscan_conf="/etc/sane.d/airscan.conf"
+    if [ ! -f "$airscan_conf" ]; then
+        log_info "Creating sane-airscan configuration..."
+        sudo tee "$airscan_conf" > /dev/null << EOF
+# Samsung M2070 Series Scanner Configuration
+[devices]
+"Samsung M2070" = http://$PRINTER_IP/eSCL/, WSD
+
+[options]
+discovery = enable
+model = Samsung M2070
+EOF
+        log_success "Scanner configuration created"
+    else
+        log_info "Scanner configuration already exists"
+    fi
+    
+    # Test scanner detection
+    log_info "Testing scanner detection..."
+    if scanimage -L | grep -q "$PRINTER_IP" 2>/dev/null; then
+        log_success "Scanner detected successfully"
+    else
+        log_info "Scanner not immediately detected (may need service restart)"
+    fi
+}
+
+# Main installation process
+main() {
+    log_info "Starting Samsung M2070 Series printer and scanner setup..."
+    log_info "Distribution: $DISTRO"
+    log_info "Printer IP: $PRINTER_IP"
+    
+    # Step 1: Verify required packages are installed
+    log_info "Step 1/6: Verifying required packages..."
+    
+    local required_packages=("cups" "sane-airscan")
+    if [ "$DISTRO" = "arch" ]; then
+        required_packages+=("sane" "system-config-printer")
+    elif [ "$DISTRO" = "fedora" ]; then
+        required_packages+=("sane-backends" "system-config-printer")
+    fi
+    
+    for package in "${required_packages[@]}"; do
+        if ! is_package_installed "$package"; then
+            log_error "Required package '$package' is not installed"
+            log_error "Please run the package installation script first"
+            exit 1
+        fi
+    done
+    log_success "All required packages are installed"
+    
+    # Step 2: Enable and start CUPS service
+    log_info "Step 2/6: Configuring CUPS service..."
+    
+    if ! is_service_enabled "cups.service"; then
+        log_info "Enabling CUPS service..."
+        sudo systemctl enable cups.service
+    fi
+    
+    if ! is_service_active "cups.service"; then
+        log_info "Starting CUPS service..."
+        sudo systemctl start cups.service
+    fi
+    
+    log_success "CUPS service is running"
+    
+    # Step 3: Add user to required groups
+    log_info "Step 3/6: Configuring user permissions..."
+    add_user_to_group "lp"
+    add_user_to_group "scanner"
+    
+    # Step 4: Configure printer
+    log_info "Step 4/6: Configuring printer..."
+    configure_printer
+    
+    # Step 5: Configure scanner
+    log_info "Step 5/6: Configuring scanner..."
+    configure_scanner
+    
+    # Step 6: Test configuration
+    log_info "Step 6/6: Testing configuration..."
+    
+    # Test printer
+    if lpstat -p "$PRINTER_NAME" >/dev/null 2>&1; then
+        log_success "Printer configuration verified"
+    else
+        log_error "Printer configuration failed"
+    fi
+    
+    # Test scanner (basic check)
+    if command -v scanimage >/dev/null 2>&1; then
+        log_success "Scanner tools available"
+    else
+        log_error "Scanner tools not available"
+    fi
+    
+    log_success "Samsung M2070 Series setup completed!"
+    
+    # Print summary
+    echo ""
+    echo "=== Setup Summary ==="
+    echo "Printer Name: $PRINTER_NAME"
+    echo "Printer IP: $PRINTER_IP"
+    echo "Printer URI: $(detect_printer_uri)"
+    echo ""
+    echo "=== Next Steps ==="
+    echo "1. Log out and log back in for group permissions to take effect"
+    echo "2. Test printing: echo 'Test page' | lp -d $PRINTER_NAME"
+    echo "3. Test scanning with skanpage (KDE) or simple-scan"
+    echo "4. Access printer settings: http://localhost:631"
+    echo ""
+    echo "=== Troubleshooting ==="
+    echo "- Check printer status: lpstat -p $PRINTER_NAME"
+    echo "- Check scanner: scanimage -L"
+    echo "- CUPS web interface: http://localhost:631"
+    echo "- Restart CUPS: sudo systemctl restart cups.service"
+}
+
+# Run main function
+main "$@"
