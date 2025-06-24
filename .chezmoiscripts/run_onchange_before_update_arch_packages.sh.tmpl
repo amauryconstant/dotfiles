@@ -71,6 +71,42 @@ check_updates_needed() {
     fi
 }
 
+# Handle known package transitions that cause file conflicts
+handle_package_transitions() {
+    echo "Checking for known package transitions..."
+    
+    # Handle linux-firmware split transition (June 2025)
+    if pacman -Qi linux-firmware >/dev/null 2>&1; then
+        local current_version=$(pacman -Qi linux-firmware | grep Version | awk '{print $3}' | cut -d'-' -f1)
+        local current_date=$(echo "$current_version" | cut -d'.' -f1)
+        
+        # Check if we have the old monolithic version (before 20250613)
+        if [ "$current_date" -lt "20250613" ]; then
+            echo "Detected old linux-firmware package that needs transition handling..."
+            echo "Current version: $current_version"
+            echo "Applying overwrite for NVIDIA firmware files..."
+            
+            # Use --overwrite to handle the file conflicts during transition
+            if sudo pacman -Syu --overwrite="/usr/lib/firmware/nvidia/*" --overwrite="/usr/lib/firmware/amdgpu/*" --overwrite="/usr/lib/firmware/radeon/*" --overwrite="/usr/lib/firmware/intel/*" --noconfirm; then
+                echo "✓ Successfully handled linux-firmware package transition"
+                return 0
+            else
+                echo "✗ Failed to handle linux-firmware package transition"
+                return 1
+            fi
+        fi
+    fi
+    
+    # Add future package transitions here as needed
+    # Example:
+    # if pacman -Qi some-package >/dev/null 2>&1; then
+    #     # Handle some-package transition
+    # fi
+    
+    echo "No package transitions detected"
+    return 0
+}
+
 # Define utility functions
 get_package_source() {
     local package="$1"
@@ -202,6 +238,12 @@ if ! check_updates_needed; then
 fi
 
 echo "Starting comprehensive package update process..."
+
+# Handle package transitions before proceeding with normal updates
+if ! handle_package_transitions; then
+    echo "Package transition handling failed. Exiting."
+    exit 1
+fi
 
 # Remove conflicting packages first
 echo "Removing conflicting packages..."

@@ -43,6 +43,15 @@
    - Secondary: COPR, snap, flatpak
    - Strategies: Official repos, COPR, snaps
 
+#### Package Transitions
+
+Automatic handling of package restructuring that causes file conflicts:
+
+- **linux-firmware split (June 2025)**: Monolithic package split into vendor-specific packages
+- **Detection**: Version-based detection in update scripts
+- **Resolution**: `--overwrite` flags for conflicting firmware directories
+- **Implementation**: `handle_package_transitions()` in `run_onchange_before_update_arch_packages.sh.tmpl`
+
 ### Development Tools
 
 1. **VSCode**

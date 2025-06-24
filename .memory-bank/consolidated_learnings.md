@@ -199,3 +199,29 @@ This file contains curated, summarized, and actionable insights derived from `ra
 - Update all related files when project status changes to maintain consistency.
 - Use the memory bank as a single source of truth for project state and decisions.
 - *Rationale:* Consistent cross-referencing prevents information fragmentation and ensures all stakeholders have access to current, accurate information.
+
+## Package Management Debugging and Proactive Solutions
+
+### **Pattern: Systematic Package Conflict Debugging**
+- Use `pacman -Qo` to identify which package owns conflicting files before attempting resolution.
+- Check package information (`pacman -Si`) to understand package relationships and dependencies.
+- Analyze version differences to identify package restructuring or splits.
+- *Rationale:* Understanding the root cause of conflicts leads to more appropriate and safer resolution strategies.
+
+### **Pattern: Proactive Package Transition Handling**
+- Implement automatic detection of known package transitions using version-based checks.
+- Use `--overwrite` flags for known safe file conflicts rather than forcing package removal.
+- Create extensible frameworks for handling future package transitions as they occur.
+- *Rationale:* Proactive handling prevents user-facing errors and maintains system stability during package ecosystem changes.
+
+### **Pattern: Version-Based Transition Detection**
+- Use package version dates rather than file existence for detecting transitions (more reliable).
+- Implement threshold-based detection: `if [ "$current_date" -lt "YYYYMMDD" ]`.
+- Document transition periods and remove detection code after sufficient time has passed.
+- *Rationale:* Version-based detection is more reliable than file-based detection and provides clear transition boundaries.
+
+### **Pattern: Documentation Integration for Technical Solutions**
+- Integrate technical implementation details into existing documentation rather than creating standalone files.
+- Keep documentation concise and focused on actionable information.
+- Consolidate related information to reduce maintenance burden and improve discoverability.
+- *Rationale:* Integrated documentation is more likely to be maintained and provides better context for technical decisions.
