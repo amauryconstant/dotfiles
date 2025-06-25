@@ -7,7 +7,7 @@ fi
 case "$(uname -s)" in
 Linux)
     # Install rbw and rage through pacman to be able to use encryption from the vault
-    if command -v pacman &> /dev/null; then
+    if command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --noconfirm --needed rbw rage-encryption
     fi
     
