@@ -1,0 +1,87 @@
+#!/bin/sh
+
+# Script: run_once_before_002_install_package_manager.sh.tmpl
+# Purpose: Install and configure package managers (yay, Chaotic-AUR)
+# Requirements: Arch Linux
+# Supported Distributions: Arch Linux, EndeavourOS
+
+{{- template "chezmoi_logger_setup" . }}
+
+{{ if eq .osId "linux-arch" }}
+
+log_step "Setting up package managers for Arch Linux"
+
+# Install yay if not already present
+if ! command -v yay &> /dev/null; then
+    log_info "Installing yay AUR helper"
+    log_dry_run "install" "yay package manager via pacman"
+    
+    if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
+        # Install yay through pacman
+        sudo pacman -S --needed yay
+        
+        # Initialize yay
+        log_info "Initializing yay database"
+        yay -Y --gendb
+        yay -Syu --devel
+    fi
+    
+    log_success "yay AUR helper installed and configured"
+else
+    log_check "yay AUR helper already installed"
+fi
+
+# Install and configure mirror optimization
+log_info "Setting up optimized Arch mirrors"
+log_dry_run "install" "rate-mirrors for mirror optimization"
+
+if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
+    # Install rate-mirrors
+    yay -S --noconfirm rate-mirrors
+    
+    # Rate and update mirrors
+    log_info "Rating and updating Arch mirrors (this may take a moment)"
+    rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
+fi
+
+log_success "Arch mirrors optimized"
+
+# Check if Chaotic-AUR is already configured
+if grep -q "chaotic-aur" /etc/pacman.conf; then
+    log_check "Chaotic-AUR repository already configured"
+else
+    log_info "Setting up Chaotic-AUR repository"
+    log_dry_run "configure" "Chaotic-AUR repository and keyring"
+    
+    if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
+        # Install Chaotic-AUR keyring and mirrorlist
+        log_info "Installing Chaotic-AUR keyring"
+        sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+        sudo pacman-key --lsign-key 3056513887B78AEB
+        
+        log_info "Installing Chaotic-AUR packages"
+        sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+        sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+
+        # Add Chaotic-AUR repository to pacman.conf
+        log_info "Adding Chaotic-AUR repository to pacman.conf"
+        sudo tee -a /etc/pacman.conf > /dev/null << 'EOF'
+
+# Chaotic-AUR repository
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+    fi
+    
+    log_success "Chaotic-AUR repository configured"
+fi
+
+log_success "Package manager setup completed successfully"
+
+{{ else }}
+    log_error "This script is only supported on Arch Linux systems"
+    log_error "Required: osId 'linux-arch'"
+    log_error "Detected: '{{ .osId }}'"
+    log_error "Script: $(basename "$0")"
+    exit 1
+{{ end }}

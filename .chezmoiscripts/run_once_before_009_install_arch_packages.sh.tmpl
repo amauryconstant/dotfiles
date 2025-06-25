@@ -1,0 +1,112 @@
+#!/bin/sh
+
+# Script: run_once_before_009_install_arch_packages.sh.tmpl
+# Purpose: Install packages for Arch Linux based on destination configuration
+# Requirements: Arch Linux
+# Supported Distributions: Arch Linux, EndeavourOS
+
+{{- template "chezmoi_logger_setup" . }}
+
+{{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination -}}
+
+log_system_operation "Setting up development environment for {{ .destination }}"
+
+# Define installation functions with enhanced logging
+install_with_pacman() {
+    local packages="$*"
+    local start_time=$(date +%s)
+    
+    if sudo pacman -S --noconfirm --needed "$@"; then
+        local duration=$(($(date +%s) - start_time))
+        return 0
+    else
+        return 1
+    fi
+}
+
+install_with_yay_bin() {
+    local packages="$*"
+    local start_time=$(date +%s)
+    
+    if yay -S --noconfirm --needed --norebuild --redownload "$@"; then
+        local duration=$(($(date +%s) - start_time))
+        return 0
+    else
+        return 1
+    fi
+}
+
+install_with_yay_source() {
+    local packages="$*"
+    local start_time=$(date +%s)
+    
+    if yay -S --noconfirm --needed --rebuild "$@"; then
+        local duration=$(($(date +%s) - start_time))
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Remove conflicting packages first
+if [ -n "{{ .packages.delete.arch }}" ]; then
+    log_package_operation "remove" "conflicting packages" "" "" "{{ .packages.delete.arch }}"
+    
+    if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
+        if yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null; then
+            log_success "Conflicting packages removed"
+        else
+            log_info "No conflicting packages found (this is normal)"
+        fi
+    fi
+fi
+
+# Install packages by category (filtered by destination)
+{{ range $name, $config := .packages.install.arch.packages -}}
+    {{- $strategy := $.packages.install.arch.strategies.default_strategy -}}
+    {{- if hasKey $config "strategy" -}}
+        {{- $strategy = $config.strategy -}}
+    {{- end -}}
+    {{- $packages := $config.list -}}
+    
+    {{- if $packages }}
+# Check if {{ $name }} category is enabled for destination {{ $.destination }}
+{{ if has $name $destinationConfig.packages }}
+# Process {{ $name }} category
+PACKAGE_COUNT=$(echo "{{ join " " $packages }}" | wc -w)
+log_package_operation "install" "{{ $name }}" "$PACKAGE_COUNT" "{{ index $strategy 0 }}" "{{ join " " $packages }}"
+
+if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
+    INSTALL_START_TIME=$(date +%s)
+        {{- range $index, $installer := $strategy }}
+            {{- if eq $index 0 }}
+    if install_with_{{ $installer }} {{ join " " $packages }}; then
+        INSTALL_DURATION=$(($(date +%s) - INSTALL_START_TIME))
+        log_package_success "{{ $name }}" "{{ $installer }}" "$PACKAGE_COUNT" "$INSTALL_DURATION"
+            {{- else }}
+    elif install_with_{{ $installer }} {{ join " " $packages }}; then
+        INSTALL_DURATION=$(($(date +%s) - INSTALL_START_TIME))
+        log_package_success "{{ $name }}" "{{ $installer }}" "$PACKAGE_COUNT" "$INSTALL_DURATION"
+            {{- end }}
+        {{- end }}
+    else
+        handle_error "Failed to install {{ $name }}" 1 "category={{ $name }} packages={{ join " " $packages }}" "Try running: yay -S {{ join " " $packages }}"
+    fi
+fi
+{{ else }}
+log_debug "Skipping {{ $name }} category (not enabled for {{ $.destination }} destination)"
+{{ end }}
+
+    {{- end }}
+{{ end -}}
+
+log_success "Package installation completed for {{ .destination }} destination!"
+
+{{ else }}
+    log_error "This script is only supported on Arch Linux systems"
+    log_error "Required: osId 'linux-arch'"
+    log_error "Detected: '{{ .osId }}'"
+    log_error "Script: $(basename "$0")"
+    exit 1
+{{ end }}

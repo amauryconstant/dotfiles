@@ -1,0 +1,94 @@
+{{- /* 
+Template: chezmoi_logger_setup
+Purpose: Initialize dual-output logging system for chezmoi scripts
+Usage: Include at the top of all scripts with {{ template "chezmoi_logger_setup" . }}
+*/ -}}
+
+# chezmoi Dual-Output Logging System Setup
+# Auto-generated logging configuration
+
+# chezmoi context variables
+CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+CHEZMOI_DEST_DIR="{{ .chezmoi.homeDir }}"
+CHEZMOI_CACHE_DIR="{{ .chezmoi.homeDir }}/.cache/chezmoi"
+CHEZMOI_CONFIG_DIR="{{ .chezmoi.homeDir }}/.config/chezmoi"
+CHEZMOI_DESTINATION="{{ .destination }}"
+
+# Detect chezmoi execution flags from environment
+CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+CHEZMOI_INTERACTIVE="${CHEZMOI_INTERACTIVE:-false}"
+CHEZMOI_KEEP_GOING="${CHEZMOI_KEEP_GOING:-false}"
+CHEZMOI_PROGRESS="${CHEZMOI_PROGRESS:-auto}"
+
+# Console output configuration - always clean and readable
+CONSOLE_LOG_LEVEL="INFO"  # Always clean output regardless of verbose flag
+
+# File logging configuration - use verbose flag for detail level
+{{- if .logging.respect_verbose }}
+if [ "$CHEZMOI_VERBOSE" = "true" ] || [ "${VERBOSE:-}" = "true" ]; then
+    FILE_LOG_LEVEL="DEBUG"  # Enhanced file logging with verbose flag
+else
+    FILE_LOG_LEVEL="INFO"   # Standard file logging
+fi
+{{- else }}
+FILE_LOG_LEVEL="{{ .logging.level | default "INFO" }}"
+{{- end }}
+
+# For backward compatibility
+CURRENT_LOG_LEVEL="$CONSOLE_LOG_LEVEL"
+
+{{- if .logging.respect_color }}
+# Respect chezmoi color settings and NO_COLOR environment variable
+if [ "${CHEZMOI_COLOR:-auto}" = "off" ] || [ -n "${NO_COLOR:-}" ]; then
+    CONSOLE_COLORS=false
+else
+    CONSOLE_COLORS={{ .logging.console.colors | default true }}
+fi
+{{- else }}
+CONSOLE_COLORS={{ .logging.console.colors | default true }}
+{{- end }}
+
+# Console output settings
+LOG_TO_CONSOLE={{ .logging.console.enabled | default true }}
+CONSOLE_SHOW_PROGRESS={{ .logging.console.show_progress | default true }}
+CONSOLE_SHOW_WARNINGS={{ .logging.console.show_warnings | default true }}
+CONSOLE_SHOW_ERRORS={{ .logging.console.show_errors | default true }}
+CONSOLE_SHOW_SUCCESS={{ .logging.console.show_success | default true }}
+CONSOLE_GROUP_OPERATIONS={{ .logging.console.group_operations | default true }}
+
+# File logging settings
+LOG_TO_FILE={{ .logging.file.enabled | default true }}
+{{- if .logging.use_chezmoi_cache }}
+LOG_FILE="{{ .chezmoi.homeDir }}/.cache/chezmoi/logs/chezmoi-setup.log"
+{{- else }}
+LOG_FILE="{{ .logging.file.path | replace "HOME" .chezmoi.homeDir }}"
+{{- end }}
+
+# File logging format settings
+FILE_LOG_TIMESTAMPS={{ .logging.file.timestamps | default true }}
+FILE_LOG_SCRIPT_CONTEXT={{ .logging.file.script_context | default true }}
+FILE_LOG_COMMAND_DETAILS={{ .logging.file.command_details | default true }}
+FILE_LOG_EXIT_CODES={{ .logging.file.exit_codes | default true }}
+FILE_LOG_EXECUTION_TIME={{ .logging.file.execution_time | default true }}
+FILE_LOG_ENVIRONMENT_VARS={{ .logging.file.environment_vars | default true }}
+
+# Export all logging variables
+export CHEZMOI_SOURCE_DIR CHEZMOI_DEST_DIR CHEZMOI_CACHE_DIR CHEZMOI_CONFIG_DIR CHEZMOI_DESTINATION
+export CHEZMOI_VERBOSE CHEZMOI_DRY_RUN CHEZMOI_INTERACTIVE CHEZMOI_KEEP_GOING CHEZMOI_PROGRESS
+export CURRENT_LOG_LEVEL CONSOLE_LOG_LEVEL FILE_LOG_LEVEL CONSOLE_COLORS LOG_TO_CONSOLE LOG_TO_FILE LOG_FILE
+export CONSOLE_SHOW_PROGRESS CONSOLE_SHOW_WARNINGS CONSOLE_SHOW_ERRORS CONSOLE_SHOW_SUCCESS CONSOLE_GROUP_OPERATIONS
+export FILE_LOG_TIMESTAMPS FILE_LOG_SCRIPT_CONTEXT FILE_LOG_COMMAND_DETAILS FILE_LOG_EXIT_CODES FILE_LOG_EXECUTION_TIME FILE_LOG_ENVIRONMENT_VARS
+
+# Source the logging library
+. "$CHEZMOI_SOURCE_DIR/.chezmoitemplates/chezmoi_logger.sh"
+
+# Initialize logging for this script
+init_chezmoi_logging "$0"
+
+{{- if .logging.respect_dry_run }}
+# Show dry-run mode if active (only to console, file logging handles this automatically)
+if [ "$CHEZMOI_DRY_RUN" = "true" ]; then
+    log_info "Running in DRY-RUN mode - no changes will be made" "🔍"
+fi
+{{- end }}

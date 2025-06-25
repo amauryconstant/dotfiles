@@ -5,3 +5,48 @@ globals:
     XDG_CONFIG_HOME: HOME/.config
     XDG_DATA_HOME: HOME/.local/share
     XDG_STATE_HOME: HOME/.local/state
+
+# Dual-Output Logging System Configuration
+logging:
+  # Log levels: DEBUG, INFO, WARN, ERROR
+  level: "INFO"
+  
+  # Respect chezmoi's built-in flags
+  respect_verbose: true
+  respect_dry_run: true
+  respect_color: true
+  respect_interactive: true
+  
+  # Output destinations with different formats
+  console:
+    enabled: true
+    format: "human"      # human, verbose, minimal
+    colors: true
+    show_progress: true
+    show_warnings: true
+    show_errors: true
+    show_success: true
+    group_operations: true  # Group related operations
+    
+  file:
+    enabled: true
+    format: "verbose"    # always verbose for debugging
+    path: "HOME/.local/state/chezmoi/logs/chezmoi-setup.log"
+    max_files: 10
+    timestamps: true
+    script_context: true
+    command_details: true
+    exit_codes: true
+    execution_time: true
+    environment_vars: true
+  
+  # Enhanced integration with chezmoi
+  use_chezmoi_cache: true
+  use_chezmoi_state: true
+  
+  # Integration with chezmoi commands
+  command_context:
+    apply: "INFO"
+    diff: "DEBUG"
+    status: "WARN"
+    update: "INFO"
