@@ -1,25 +1,39 @@
 #!/bin/sh
+# Chezmoi orchestrator for CLI configuration
 
-# Script: run_once_after_002_generate_and_config_cli.sh.tmpl
-# Purpose: Generate tldr manuals and configure Docker permissions
-# Requirements: Linux
+{{- template "chezmoi_logger_setup" . }}
 
-{{ if eq .chezmoi.os "linux" }}
-
-    # Generate tldr manuals
-    tldr --gen-config > "$(tldr --config-path)"
-
-    # Grant $USER docker permissions 
-    if ! id -nG "$USER" | grep -qw "docker"; then
-        sudo groupadd docker
-        sudo usermod -aG docker $USER
-        newgrp docker
+{{ if eq .osId "linux-arch" }}
+    
+    log_step "Preparing environment for CLI configuration"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/configure-cli.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "CLI configuration failed: $(basename "$SCRIPT_PATH")" $?
+        fi
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
     fi
-
+    
+    log_success "CLI configuration completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .osId }}"
+    log_error "This script requires: linux-arch"
     exit 1
 {{ end }}

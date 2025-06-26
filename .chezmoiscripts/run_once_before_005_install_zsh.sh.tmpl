@@ -1,48 +1,40 @@
 #!/bin/sh
-
-# Script: run_once_before_005_install_zsh.sh.tmpl
-# Purpose: Install zsh, ghostty terminal, and starship prompt
-# Requirements: Arch Linux
-# Supported Distributions: Arch Linux, EndeavourOS
+# Chezmoi orchestrator script for install zsh
 
 {{- template "chezmoi_logger_setup" . }}
 
 {{ if eq .osId "linux-arch" }}
-
-log_step "Installing zsh and terminal environment"
-
-# Define packages to install
-PACKAGES="ghostty zsh zsh-antidote starship"
-
-log_info "Installing terminal packages: $PACKAGES"
-log_dry_run "install" "$PACKAGES via yay"
-
-if [ "${CHEZMOI_DRY_RUN:-false}" != "true" ]; then
-    # Install packages
-    if yay -S --noconfirm $PACKAGES; then
-        log_success "Successfully installed terminal packages"
+    
+    log_step "Preparing environment for zsh installation"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_FIRSTNAME="{{ .firstname }}"
+    export CHEZMOI_FULLNAME="{{ .fullname }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/system/install-zsh.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Script execution failed: $(basename "$SCRIPT_PATH")" $?
+        fi
     else
-        handle_error "Failed to install terminal packages" 1
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
     fi
     
-    # Change shell to zsh
-    log_info "Changing default shell to zsh"
-    if chsh -s $(which zsh); then
-        log_success "Default shell changed to zsh"
-        log_info "Note: You may need to log out and back in for the shell change to take effect"
-    else
-        log_warn "Failed to change default shell to zsh - you may need to do this manually"
-    fi
-else
-    log_info "Would change default shell to zsh"
-fi
-
-log_success "zsh and terminal environment setup completed"
-
+    log_success "Zsh installation completed successfully"
+    
 {{ else }}
-    log_error "This script is only supported on Arch Linux systems"
-    log_error "Required: osId 'linux-arch'"
-    log_error "Detected: '{{ .osId }}'"
-    log_error "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .osId }}"
+    log_error "This script requires: linux-arch"
     exit 1
 {{ end }}

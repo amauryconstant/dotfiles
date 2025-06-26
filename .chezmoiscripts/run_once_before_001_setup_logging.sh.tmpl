@@ -1,73 +1,42 @@
 #!/bin/sh
-
-# Script: run_once_before_001_setup_logging.sh.tmpl
-# Purpose: Set up unified logging system directory structure
-# Requirements: Linux
-# This script runs before all other scripts to ensure logging is available
+# Chezmoi orchestrator script for setup logging
 
 {{- template "chezmoi_logger_setup" . }}
 
 {{ if eq .chezmoi.os "linux" }}
-
-log_system_operation "Setting up dual-output logging system"
-
-# Create log directory structure
-LOG_DIR="$(dirname "$LOG_FILE")"
-log_file_operation "creating" "log directory"
-mkdir -p "$LOG_DIR"
-
-# Create initial log file
-log_file_operation "initializing" "log file"
-touch "$LOG_FILE"
-
-# Set appropriate permissions
-chmod 755 "$LOG_DIR"
-chmod 644 "$LOG_FILE"
-
-# Create log rotation script
-log_file_operation "creating" "log rotation script"
-cat > "$LOG_DIR/rotate_logs.sh" << 'EOF'
-#!/bin/sh
-# Log rotation script for chezmoi logs
-
-LOG_DIR="$1"
-MAX_FILES="${2:-10}"
-
-if [ ! -d "$LOG_DIR" ]; then
-    echo "Log directory does not exist: $LOG_DIR"
-    exit 1
-fi
-
-# Rotate main log file
-if [ -f "$LOG_DIR/chezmoi-setup.log" ]; then
-    # Create dated backup
-    DATE=$(date '+%Y-%m-%d')
-    cp "$LOG_DIR/chezmoi-setup.log" "$LOG_DIR/chezmoi-setup-$DATE.log"
     
-    # Clear main log file
-    > "$LOG_DIR/chezmoi-setup.log"
+    log_step "Preparing environment for logging setup"
     
-    # Remove old log files (keep only MAX_FILES)
-    find "$LOG_DIR" -name "chezmoi-setup-*.log" -type f | \
-        sort -r | \
-        tail -n +$((MAX_FILES + 1)) | \
-        xargs rm -f
-fi
-
-echo "Log rotation completed"
-EOF
-
-chmod +x "$LOG_DIR/rotate_logs.sh"
-
-# Log system information for debugging (only to file to keep console clean)
-_log_to_file "DEBUG" "🔧" "Logging system configuration" "log_dir=$LOG_DIR log_file=$LOG_FILE log_level=$CURRENT_LOG_LEVEL console_colors=$CONSOLE_COLORS console_logging=$LOG_TO_CONSOLE file_logging=$LOG_TO_FILE"
-
-log_success "Dual-output logging system ready"
-
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_FIRSTNAME="{{ .firstname }}"
+    export CHEZMOI_FULLNAME="{{ .fullname }}"
+    export CHEZMOI_LOG_DIR="$(dirname "$LOG_FILE")"
+    export CHEZMOI_LOG_FILE="$LOG_FILE"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/system/setup-logging.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Script execution failed: $(basename "$SCRIPT_PATH")" $?
+        fi
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
+    fi
+    
+    log_success "Logging setup completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .chezmoi.os }}"
+    log_error "This script requires: linux"
     exit 1
 {{ end }}

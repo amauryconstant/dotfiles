@@ -1,31 +1,40 @@
 #!/bin/sh
+# Chezmoi orchestrator script for create directories
 
-# Script: run_once_before_003_create_necessary_directories.sh.tmpl
-# Purpose: Create necessary directories for XDG, SSH, keys, and synchronized files
-# Requirements: Linux
+{{- template "chezmoi_logger_setup" . }}
 
 {{ if eq .chezmoi.os "linux" }}
-
-    # Create directories to use with $XDG_*
-    mkdir -p $HOME/.local/bin
-    mkdir -p $HOME/.local/pvm
-    mkdir -p $HOME/.local/share
-    mkdir -p $HOME/.local/state
-    mkdir -p $HOME/.cache
-
-    # Create the .ssh and .keys directories
-    mkdir -p $HOME/.ssh
-    chmod 700 $HOME/.ssh
-    mkdir -p $HOME/.keys
-    chmod 700 $HOME/.keys
-
-    # Create a directory for synced files
-    mkdir -p $HOME/Synchronized
-
+    
+    log_step "Preparing environment for creating necessary directories"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_FIRSTNAME="{{ .firstname }}"
+    export CHEZMOI_FULLNAME="{{ .fullname }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/system/create-directories.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Script execution failed: $(basename "$SCRIPT_PATH")" $?
+        fi
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
+    fi
+    
+    log_success "Directory creation completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .chezmoi.os }}"
+    log_error "This script requires: linux"
     exit 1
 {{ end }}

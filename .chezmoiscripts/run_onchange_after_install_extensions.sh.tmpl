@@ -1,49 +1,44 @@
 #!/bin/sh
+# Chezmoi orchestrator for VSCode extensions and Firefox policies installation
 
-# Script: run_onchange_after_install_extensions.sh.tmpl
-# Purpose: Install VSCode extensions and configure Firefox policies
-# Requirements: Linux, destination with extensions enabled and VSCode installed
+{{- template "chezmoi_logger_setup" . }}
+
 # Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
 
-{{ if eq .chezmoi.os "linux" }}
-    {{- $destinationConfig := index .destinations .destination -}}
+{{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination }}
     
-    # Check if extensions are enabled for this destination AND VSCode is available
-    {{ if $destinationConfig.extensions }}
-        if command -v code >/dev/null 2>&1; then
-            echo "Installing VSCode extensions for destination: {{ .destination }}"
-            
-            # Install code extensions
-            {{ range .extensions.code -}}
-                echo "Installing extension: {{.}}"
-                code --force --install-extension {{.}}
-            {{ end -}}
-            
-            echo "✓ VSCode extensions installation completed for {{ .destination }} destination"
-        else
-            echo "VSCode not found, skipping extension installation"
-            echo "Extensions are configured for {{ .destination }} but VSCode is not installed"
+    log_step "Preparing environment for extensions installation"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_EXTENSIONS_ENABLED="{{ if $destinationConfig.extensions }}true{{ else }}false{{ end }}"
+    export CHEZMOI_EXTENSIONS_LIST="{{ join "," .extensions.code }}"
+    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/install-extensions.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Extensions installation failed: $(basename "$SCRIPT_PATH")" $?
         fi
-    {{ else }}
-        echo "Skipping VSCode extensions installation for destination: {{ .destination }}"
-        echo "VSCode extensions are not configured for this destination type"
-    {{ end }}
-
-    # Firefox policies (applies to all destinations that have Firefox)
-    if command -v firefox >/dev/null 2>&1; then
-        # firefox-policies.json hash: {{ include ".data/firefox-policies.json" | sha256sum }}
-        echo "Copying Firefox policies"
-        sudo mkdir -p /etc/firefox/policies
-        sudo cp -v {{ .chezmoi.config.workingTree }}/.data/firefox-policies.json /etc/firefox/policies/policies.json
-        echo "✓ Firefox policies configured"
     else
-        echo "Firefox not found, skipping policies configuration"
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
     fi
-
+    
+    log_success "Extensions installation completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .osId }}"
+    log_error "This script requires: linux-arch"
     exit 1
 {{ end }}

@@ -1,40 +1,43 @@
 #!/bin/sh
+# Chezmoi orchestrator script for write globals
+
+{{- template "chezmoi_logger_setup" . }}
 
 {{ if eq .chezmoi.os "linux" }}
-
-    pam_conf_path="/etc/security/pam_env.conf"
-
-    echo "Backing up $pam_conf_path"
-    sudo cp -v $pam_conf_path "$pam_conf_path.bck"
-    sudo rm $pam_conf_path
-    sudo touch $pam_conf_path
-
-    {{ range $key,$value := .globals.linux }}
-        key="{{$key}}"
-        value="{{$value}}"
-
-        value="${value//HOME/@{HOME\}}"
-
-        # Add to pam_env.conf with DEFAULT set
-        if grep -q "^[^#]*$key " "$pam_conf_path"; then
-            # Update the line if the key exists and is not commented out
-            sudo sed -i "/^[^#]*$key /c\\$key DEFAULT=$value" "$pam_conf_path"
-        else
-            # Add the line to the end of the file if the key does not exist
-            echo "$key DEFAULT=$value" | sudo tee -a "$pam_conf_path" >/dev/null
+    
+    log_step "Preparing environment for writing global variables"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_FIRSTNAME="{{ .firstname }}"
+    export CHEZMOI_FULLNAME="{{ .fullname }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Convert globals to comma-separated format for the pure shell script
+    export CHEZMOI_GLOBALS_DATA="{{- $first := true -}}{{- range $key, $value := .globals.linux -}}{{- if not $first -}},{{- end -}}{{ $key }}={{ $value }}{{- $first = false -}}{{- end -}}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/system/write-globals.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Script execution failed: $(basename "$SCRIPT_PATH")" $?
         fi
-
-        echo "Added: $key with value $value"
-
-    {{end}}
-
-    echo "Environment variables added successfully."
-    unset $pam_conf_path
-
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
+    fi
+    
+    log_success "Global variables setup completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .chezmoi.os }}"
+    log_error "This script requires: linux"
     exit 1
 {{ end }}

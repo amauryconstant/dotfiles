@@ -1,32 +1,42 @@
 #!/bin/sh
+# Chezmoi orchestrator for AI models installation
 
-# Script: run_onchange_after_install_ai_models.sh.tmpl
-# Purpose: Install AI models using Ollama
-# Requirements: Linux, destination with ai_models enabled
+{{- template "chezmoi_logger_setup" . }}
 
-{{ if eq .chezmoi.os "linux" }}
-    {{- $destinationConfig := index .destinations .destination -}}
+{{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination }}
     
-    {{ if $destinationConfig.ai_models }}
-        echo "Installing AI models for destination: {{ .destination }}"
-        
-        # Install ai models
-        {{ range .ai.models -}}
-            echo "Installing {{.}}"
-            ollama pull {{.}}
-        {{ end -}}
-        
-        echo "✓ AI models installation completed for {{ .destination }} destination"
-    {{ else }}
-        echo "Skipping AI models installation for destination: {{ .destination }}"
-        echo "AI models are not configured for this destination type"
-        exit 0
-    {{ end }}
-
+    log_step "Preparing environment for AI models installation"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_AI_MODELS_ENABLED="{{ if $destinationConfig.ai_models }}true{{ else }}false{{ end }}"
+    export CHEZMOI_AI_MODELS_LIST="{{ join "," .ai.models }}"
+    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/install-ai-models.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "AI models installation failed: $(basename "$SCRIPT_PATH")" $?
+        fi
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
+    fi
+    
+    log_success "AI models installation completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .osId }}"
+    log_error "This script requires: linux-arch"
     exit 1
 {{ end }}

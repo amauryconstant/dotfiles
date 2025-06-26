@@ -1,32 +1,41 @@
 #!/bin/sh
+# Chezmoi orchestrator for Ollama configuration
 
-# Script: run_once_after_003_configure_ollama.sh.tmpl
-# Purpose: Configure Ollama user, permissions, and service
-# Requirements: Linux, destination with ollama service enabled
+{{- template "chezmoi_logger_setup" . }}
 
-{{ if eq .chezmoi.os "linux" }}
-    {{- $destinationConfig := index .destinations .destination -}}
+{{ if eq .osId "linux-arch" }}
+    {{- $destinationConfig := index .destinations .destination }}
     
-    {{ if has "ollama" $destinationConfig.services }}
-        echo "Configuring Ollama for destination: {{ .destination }}"
-        
-        sudo useradd -r -s /bin/false -U -m -d /usr/share/ollama ollama
-        sudo usermod -a -G ollama $(whoami)
-        sudo cp -v {{ .chezmoi.config.workingTree }}/.data/ollama.service /etc/systemd/system/ollama.service
-        sudo systemctl daemon-reload
-        sudo systemctl enable --now ollama
-        
-        echo "✓ Ollama configuration completed for {{ .destination }} destination"
-    {{ else }}
-        echo "Skipping Ollama configuration for destination: {{ .destination }}"
-        echo "Ollama service is not configured for this destination type"
-        exit 0
-    {{ end }}
-
+    log_step "Preparing environment for Ollama configuration"
+    
+    # Export all necessary environment variables
+    export CHEZMOI_OS_ID="{{ .osId }}"
+    export CHEZMOI_DESTINATION="{{ .destination }}"
+    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    export CHEZMOI_OLLAMA_ENABLED="{{ if has "ollama" $destinationConfig.services }}true{{ else }}false{{ end }}"
+    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
+    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    
+    # Determine script path
+    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/configure-ollama.sh"
+    
+    log_info "Executing: $(basename "$SCRIPT_PATH")"
+    
+    # Execute with error handling
+    if [ -x "$SCRIPT_PATH" ]; then
+        if ! "$SCRIPT_PATH"; then
+            handle_error "Ollama configuration failed: $(basename "$SCRIPT_PATH")" $?
+        fi
+    else
+        log_error "Script not found or not executable: $SCRIPT_PATH"
+        exit 1
+    fi
+    
+    log_success "Ollama configuration completed successfully"
+    
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
+    log_error "Unsupported OS: {{ .osId }}"
+    log_error "This script requires: linux-arch"
     exit 1
 {{ end }}

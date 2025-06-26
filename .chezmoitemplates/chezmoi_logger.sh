@@ -171,6 +171,11 @@ log_debug() {
     _dual_log "DEBUG" "🔍 " "$message" "Debug: $message" "caller=$(get_caller_info)"
 }
 
+log_step() {
+    local message="$1"
+    _dual_log "INFO" "📋 " "$message" "Step: $message" "caller=$(get_caller_info)"
+}
+
 # Context-aware logging functions
 log_package_operation() {
     local operation="$1"  # install, remove, update
