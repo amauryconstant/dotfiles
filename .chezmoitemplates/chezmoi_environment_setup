@@ -9,6 +9,7 @@ Usage: Include in scripts with {{ template "chezmoi_environment_setup" . }}
 # Auto-generated environment configuration
 
 # Core chezmoi context
+export CHEZMOI_OS="{{ .chezmoi.os }}"
 export CHEZMOI_OS_ID="{{ .osId }}"
 export CHEZMOI_DESTINATION="{{ .destination }}"
 export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"

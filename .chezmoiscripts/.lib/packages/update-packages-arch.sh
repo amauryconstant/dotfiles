@@ -352,7 +352,7 @@ validate_environment() {
     require_commands "${REQUIRED_COMMANDS[@]}"
     
     # Validate OS
-    require_os "linux-arch"
+    require_os_id "linux-arch"
     
     # Check if yay is available (warn if not)
     if ! command -v yay >/dev/null 2>&1; then

@@ -37,7 +37,7 @@ validate_environment() {
     require_env_vars "${REQUIRED_ENV_VARS[@]}"
     
     # Validate OS (Arch Linux specific)
-    require_os "linux-arch"
+    require_os_id "linux-arch"
     
     log_debug "Environment validation passed"
 }

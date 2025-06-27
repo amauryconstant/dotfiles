@@ -1,7 +1,6 @@
 #!/bin/sh
 
-{{ if eq .chezmoi.os "linux" }}
-    {{ if or (eq .chezmoi.osRelease.id "fedora") (eq .chezmoi.osRelease.id "centos") }}
+{{ if eq .osId "linux-fedora" }}
         {{- $destinationConfig := index .destinations .destination -}}
 
 # Generate hash for chezmoi run_onchange detection
@@ -413,17 +412,10 @@ echo "- Reinstalled packages that were installed with incorrect methods"
 echo "- Installed any missing packages using defined strategies"
 echo "- Enabled necessary repositories (RPM Fusion, COPR, Flathub)"
 
-    {{ else }}
-        echo "ERROR: This script is only supported on Fedora-based systems"
-        echo "Required: Fedora, CentOS Stream, or RHEL"
-        echo "Detected: '{{ .chezmoi.osRelease.id }}'"
-        echo "Script: $(basename "$0")"
-        exit 0
-    {{ end }}
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: Linux"
-    echo "Detected: '{{ .chezmoi.os }}'"
+    echo "ERROR: This script is only supported on Fedora-based systems"
+    echo "Required: linux-fedora"
+    echo "Detected: '{{ .osId }}'"
     echo "Script: $(basename "$0")"
     exit 1
 {{ end }}

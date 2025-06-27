@@ -176,6 +176,12 @@ log_step() {
     _dual_log "INFO" "📋 " "$message" "Step: $message" "caller=$(get_caller_info)"
 }
 
+log_check() {
+    local message="$1"
+    local symbol="${2:-✓}"
+    _dual_log "INFO" "$symbol " "$message" "Check: $message" "caller=$(get_caller_info)"
+}
+
 # Context-aware logging functions
 log_package_operation() {
     local operation="$1"  # install, remove, update

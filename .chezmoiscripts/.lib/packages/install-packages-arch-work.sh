@@ -306,7 +306,7 @@ validate_environment() {
     require_commands "${REQUIRED_COMMANDS[@]}"
     
     # Validate OS and destination
-    require_os "linux-arch"
+    require_os_id "linux-arch"
     require_destination "work"
     
     # Check if yay is available (warn if not)

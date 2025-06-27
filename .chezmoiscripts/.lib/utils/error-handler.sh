@@ -99,13 +99,26 @@ require_env_vars() {
     fi
 }
 
-# Validate OS compatibility
+# Validate OS compatibility (distribution-independent)
 require_os() {
     local required_os="$1"
-    local current_os="${CHEZMOI_OS_ID:-unknown}"
+    local current_os="${CHEZMOI_OS:-unknown}"
     
     if [ "$current_os" != "$required_os" ]; then
         error_exit "Script requires OS '$required_os', got '$current_os'" \
+                   "$EXIT_INVALID_ARGS" \
+                   "$CATEGORY_ENVIRONMENT" \
+                   "Run this script on the correct operating system"
+    fi
+}
+
+# Validate OS ID compatibility (distribution-specific)
+require_os_id() {
+    local required_os_id="$1"
+    local current_os_id="${CHEZMOI_OS_ID:-unknown}"
+    
+    if [ "$current_os_id" != "$required_os_id" ]; then
+        error_exit "Script requires OS ID '$required_os_id', got '$current_os_id'" \
                    "$EXIT_INVALID_ARGS" \
                    "$CATEGORY_ENVIRONMENT" \
                    "Run this script on the correct operating system"
