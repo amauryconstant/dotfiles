@@ -8,14 +8,8 @@
     
     log_step "Preparing environment for Ollama configuration"
     
-    # Export all necessary environment variables
-    export CHEZMOI_OS_ID="{{ .osId }}"
-    export CHEZMOI_DESTINATION="{{ .destination }}"
-    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+    # Export service-specific environment variables
     export CHEZMOI_OLLAMA_ENABLED="{{ if has "ollama" $destinationConfig.services }}true{{ else }}false{{ end }}"
-    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
-    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
     
     # Determine script path
     SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/configure-ollama.sh"

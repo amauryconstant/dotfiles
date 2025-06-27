@@ -1,0 +1,43 @@
+{{- /* 
+Template: chezmoi_environment_setup
+Purpose: Export standard environment variables for chezmoi scripts
+Usage: Include in scripts with {{ template "chezmoi_environment_setup" . }}
+*/ -}}
+
+# shellcheck disable=all
+# chezmoi Environment Variable Setup
+# Auto-generated environment configuration
+
+# Core chezmoi context
+export CHEZMOI_OS_ID="{{ .osId }}"
+export CHEZMOI_DESTINATION="{{ .destination }}"
+export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+export CHEZMOI_DEST_DIR="{{ .chezmoi.homeDir }}"
+export CHEZMOI_CACHE_DIR="{{ .chezmoi.homeDir }}/.cache/chezmoi"
+export CHEZMOI_CONFIG_DIR="{{ .chezmoi.homeDir }}/.config/chezmoi"
+
+# User context
+export CHEZMOI_FIRSTNAME="{{ .firstname }}"
+export CHEZMOI_FULLNAME="{{ .fullname }}"
+export CHEZMOI_WORK_EMAIL="{{ .workEmail }}"
+export CHEZMOI_PERSONAL_EMAIL="{{ .personalEmail }}"
+export CHEZMOI_PRIVATE_SERVER="{{ .privateServer }}"
+export CHEZMOI_CHASSIS_TYPE="{{ .chassisType }}"
+
+# Execution context
+export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
+export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
+export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+export CHEZMOI_INTERACTIVE="${CHEZMOI_INTERACTIVE:-false}"
+export CHEZMOI_KEEP_GOING="${CHEZMOI_KEEP_GOING:-false}"
+export CHEZMOI_PROGRESS="${CHEZMOI_PROGRESS:-auto}"
+
+# Destination-specific configuration
+{{- $destinationConfig := index .destinations .destination }}
+export CHEZMOI_PACKAGES="{{ join "," $destinationConfig.packages }}"
+export CHEZMOI_SERVICES="{{ join "," $destinationConfig.services }}"
+
+# XDG Base Directory Specification
+{{- range $key, $value := .globals.linux }}
+export {{ $key }}="{{ $value | replace "HOME" "$HOME" }}"
+{{- end }}

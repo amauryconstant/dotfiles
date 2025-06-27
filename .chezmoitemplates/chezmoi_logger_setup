@@ -1,25 +1,13 @@
 {{- /* 
 Template: chezmoi_logger_setup
-Purpose: Initialize dual-output logging system for chezmoi scripts
+Purpose: Initialize dual-output logging system and environment for chezmoi scripts
 Usage: Include at the top of all scripts with {{ template "chezmoi_logger_setup" . }}
 */ -}}
 
 # chezmoi Dual-Output Logging System Setup
-# Auto-generated logging configuration
+# Auto-generated logging and environment configuration
 
-# chezmoi context variables
-CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
-CHEZMOI_DEST_DIR="{{ .chezmoi.homeDir }}"
-CHEZMOI_CACHE_DIR="{{ .chezmoi.homeDir }}/.cache/chezmoi"
-CHEZMOI_CONFIG_DIR="{{ .chezmoi.homeDir }}/.config/chezmoi"
-CHEZMOI_DESTINATION="{{ .destination }}"
-
-# Detect chezmoi execution flags from environment
-CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
-CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-CHEZMOI_INTERACTIVE="${CHEZMOI_INTERACTIVE:-false}"
-CHEZMOI_KEEP_GOING="${CHEZMOI_KEEP_GOING:-false}"
-CHEZMOI_PROGRESS="${CHEZMOI_PROGRESS:-auto}"
+{{- template "chezmoi_environment_setup" . }}
 
 # Console output configuration - always clean and readable
 CONSOLE_LOG_LEVEL="INFO"  # Always clean output regardless of verbose flag
