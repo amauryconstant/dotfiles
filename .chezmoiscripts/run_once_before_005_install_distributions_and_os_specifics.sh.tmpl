@@ -5,7 +5,7 @@
     rate-mirrors --protocol https endeavouros | sudo tee /etc/pacman.d/endeavouros-mirrorlist
     eos-update
     yay -S --noconfirm nvidia-inst
-    nvidia-inst
+    nvidia-inst -of --no-dkms
     eos-kernel-nvidia-update-check
     
 {{ else }}
