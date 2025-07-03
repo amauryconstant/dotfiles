@@ -25,6 +25,7 @@
   "editor.fontFamily": "\"FiraCode Nerd Font\"",
   "explorer.confirmDragAndDrop": false,
   "explorer.confirmPasteNative": false,
+  "git.autofetch": true,
   "git.confirmSync": false,
   "git.ignoreRebaseWarning": true,
   "npm.scriptRunner": "yarn",
