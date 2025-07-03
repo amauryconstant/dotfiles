@@ -36,6 +36,7 @@ packages:
             - usage
             - nvitop
             - btop
+            - topgrade
 
         terminal_presentation:
           strategy: *_install_from_source

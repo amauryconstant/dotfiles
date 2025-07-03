@@ -1,0 +1,51 @@
+# Systemd User Service for Topgrade
+# Purpose: Automated system maintenance using topgrade
+# Template Variables: Uses chezmoi template system for user-specific configuration
+
+{{ if eq .osId "linux-arch" }}
+[Unit]
+Description=Topgrade System Maintenance
+Documentation=https://github.com/topgrade-rs/topgrade
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run topgrade with configuration file
+ExecStart=/usr/bin/topgrade --config /home/{{ .firstname | lower }}/.config/topgrade.toml
+# Set working directory to user home
+WorkingDirectory=/home/{{ .firstname | lower }}
+# Run as the user
+User={{ .firstname | lower }}
+# Environment variables
+Environment=HOME=/home/{{ .firstname | lower }}
+Environment=USER={{ .firstname | lower }}
+Environment=XDG_CONFIG_HOME=/home/{{ .firstname | lower }}/.config
+Environment=XDG_DATA_HOME=/home/{{ .firstname | lower }}/.local/share
+Environment=XDG_CACHE_HOME=/home/{{ .firstname | lower }}/.cache
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=topgrade
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=false
+ProtectHome=false
+# Timeout settings
+TimeoutStartSec=1800
+TimeoutStopSec=300
+
+[Install]
+WantedBy=default.target
+
+{{ else }}
+# Service disabled on unsupported systems
+[Unit]
+Description=Topgrade System Maintenance (Disabled - Unsupported OS)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+
+{{ end }}
