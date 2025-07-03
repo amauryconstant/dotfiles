@@ -1,39 +1,36 @@
 #!/bin/sh
-# Chezmoi orchestrator for git hooks installation
 
-{{- template "chezmoi_logger_setup" . }}
+# Script: run_onchange_before_create_git_hooks.sh.tmpl
+# Purpose: Create git hooks from .gitscripts directory
+# Requirements: Arch Linux, git
 
 {{ if eq .osId "linux-arch" }}
     
-    log_step "Preparing environment for git hooks installation"
+    echo "Creating git hooks..."
     
-    # Export all necessary environment variables
-    export CHEZMOI_OS_ID="{{ .osId }}"
-    export CHEZMOI_DESTINATION="{{ .destination }}"
-    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
-    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
-    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
-    
-    # Determine script path
-    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/create-git-hooks.sh"
-    
-    log_info "Executing: $(basename "$SCRIPT_PATH")"
-    
-    # Execute with error handling
-    if [ -x "$SCRIPT_PATH" ]; then
-        if ! "$SCRIPT_PATH"; then
-            handle_error "Git hooks installation failed: $(basename "$SCRIPT_PATH")" $?
-        fi
-    else
-        log_error "Script not found or not executable: $SCRIPT_PATH"
-        exit 1
+    # Check if .gitscripts directory exists
+    if [ ! -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
+        echo "No .gitscripts directory found, skipping git hooks creation"
+        exit 0
     fi
     
-    log_success "Git hooks installation completed successfully"
+    # Create hooks directory if it doesn't exist
+    mkdir -p "{{ .chezmoi.sourceDir }}/.git/hooks"
+    
+    # Copy and make executable all scripts from .gitscripts
+    for script in "{{ .chezmoi.sourceDir }}/.gitscripts"/*; do
+        if [ -f "$script" ]; then
+            hook_name=$(basename "$script")
+            echo "Installing git hook: $hook_name"
+            cp "$script" "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
+            chmod +x "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
+        fi
+    done
+    
+    echo "✓ Git hooks created successfully"
     
 {{ else }}
-    log_error "Unsupported OS: {{ .osId }}"
-    log_error "This script requires: linux-arch"
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
     exit 1
 {{ end }}

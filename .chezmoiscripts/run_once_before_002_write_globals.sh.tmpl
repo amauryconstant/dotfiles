@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Script: run_once_before_003_write_globals.sh.tmpl
+# Purpose: Write global environment variables to shell profile
+# Requirements: Linux
+
+{{ if eq .chezmoi.os "linux" }}
+    
+    echo "Setting up global environment variables..."
+    
+    # Create the environment file
+    GLOBALS_FILE="$HOME/.config/environment.d/chezmoi-globals.conf"
+    
+    # Create directory if it doesn't exist
+    mkdir -p "$(dirname "$GLOBALS_FILE")"
+    
+    # Write global variables
+    cat > "$GLOBALS_FILE" << 'EOF'
+# Global environment variables managed by chezmoi
+{{- range $key, $value := .globals.linux }}
+{{ $key }}={{ $value | replace "HOME" "$HOME" }}
+{{- end }}
+EOF
+    
+    echo "✓ Global environment variables written to $GLOBALS_FILE"
+    
+{{ else }}
+    echo "ERROR: Unsupported OS: {{ .chezmoi.os }}"
+    echo "This script requires: linux"
+    exit 1
+{{ end }}

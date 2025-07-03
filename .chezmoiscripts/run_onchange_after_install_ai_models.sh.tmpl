@@ -1,42 +1,46 @@
 #!/bin/sh
-# Chezmoi orchestrator for AI models installation
 
-{{- template "chezmoi_logger_setup" . }}
+# Script: run_onchange_after_install_ai_models.sh.tmpl
+# Purpose: Install AI models based on destination configuration
+# Requirements: Arch Linux, ollama
 
 {{ if eq .osId "linux-arch" }}
     {{- $destinationConfig := index .destinations .destination }}
     
-    log_step "Preparing environment for AI models installation"
+    echo "Installing AI models for {{ .destination }} destination..."
     
-    # Export all necessary environment variables
-    export CHEZMOI_OS_ID="{{ .osId }}"
-    export CHEZMOI_DESTINATION="{{ .destination }}"
-    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
-    export CHEZMOI_AI_MODELS_ENABLED="{{ if $destinationConfig.ai_models }}true{{ else }}false{{ end }}"
-    export CHEZMOI_AI_MODELS_LIST="{{ join "," .ai.models }}"
-    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
-    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    # Check if AI models should be installed for this destination
+    {{- if $destinationConfig.ai_models }}
     
-    # Determine script path
-    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/install-ai-models.sh"
-    
-    log_info "Executing: $(basename "$SCRIPT_PATH")"
-    
-    # Execute with error handling
-    if [ -x "$SCRIPT_PATH" ]; then
-        if ! "$SCRIPT_PATH"; then
-            handle_error "AI models installation failed: $(basename "$SCRIPT_PATH")" $?
-        fi
-    else
-        log_error "Script not found or not executable: $SCRIPT_PATH"
-        exit 1
+    # Check if ollama is installed and running
+    if ! command -v ollama >/dev/null 2>&1; then
+        echo "Ollama not found, skipping AI model installation"
+        exit 0
     fi
     
-    log_success "AI models installation completed successfully"
+    # Check if ollama service is running
+    if ! systemctl --user is-active ollama >/dev/null 2>&1; then
+        echo "Starting ollama service..."
+        systemctl --user start ollama
+        sleep 5
+    fi
+    
+    echo "Installing AI models..."
+    
+    # Install each model
+    {{- range .ai.models }}
+    echo "Installing model: {{ . }}"
+    ollama pull {{ . }}
+    {{- end }}
+    
+    echo "✓ AI models installed successfully"
+    
+    {{- else }}
+    echo "AI models disabled for {{ .destination }} destination, skipping..."
+    {{- end }}
     
 {{ else }}
-    log_error "Unsupported OS: {{ .osId }}"
-    log_error "This script requires: linux-arch"
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
     exit 1
 {{ end }}

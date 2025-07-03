@@ -1,11 +1,8 @@
 #!/bin/sh
 
 # Script: run_onchange_before_update_arch_packages.sh.tmpl
-# Purpose: Orchestrator for Arch Linux package updates based on destination configuration
-# Requirements: Arch Linux
-# Supported Distributions: Arch Linux, EndeavourOS
-
-{{- template "chezmoi_logger_setup" . }}
+# Purpose: Update packages for Arch Linux based on destination configuration
+# Requirements: Arch Linux, pacman
 
 {{ if eq .osId "linux-arch" }}
     {{- $destinationConfig := index .destinations .destination }}
@@ -13,40 +10,61 @@
 # Generate hash for chezmoi run_onchange detection
 # Hash: {{ include ".chezmoidata/packages.yaml" | sha256sum }}{{ range $name, $config := .packages.install.arch.packages }}{{ range $config.list }}{{ . }}{{ end }}{{ end }}
 
-    log_step "Preparing environment for {{ .destination }} destination package updates"
+    echo "Updating packages for {{ .destination }} destination..."
     
-    # Export all necessary environment variables
-    export CHEZMOI_OS_ID="{{ .osId }}"
-    export CHEZMOI_DESTINATION="{{ .destination }}"
-    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
-    export CHEZMOI_FIRSTNAME="{{ .firstname }}"
-    export CHEZMOI_FULLNAME="{{ .fullname }}"
-    export CHEZMOI_WORK_EMAIL="{{ .workEmail }}"
-    export CHEZMOI_PERSONAL_EMAIL="{{ .personalEmail }}"
-    export CHEZMOI_PRIVATE_SERVER="{{ .privateServer }}"
-    export CHEZMOI_PACKAGES="{{ join "," $destinationConfig.packages }}"
-    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
-    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
+    # Simple error logging function
+    log_error() {
+        echo "ERROR: $1" >&2
+    }
     
-    # Determine script path (generic update script for all destinations)
-    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/packages/update-packages-arch.sh"
-    
-    log_info "Executing: $(basename "$SCRIPT_PATH")"
-    
-    # Execute with error handling
-    if [ -x "$SCRIPT_PATH" ]; then
-        if ! "$SCRIPT_PATH"; then
-            handle_error "Package update failed: $(basename "$SCRIPT_PATH")" $?
-        fi
-    else
-        log_error "Script not found or not executable: $SCRIPT_PATH"
-        exit 1
+    # Check if updates are needed
+    if ! (pacman -Qu >/dev/null 2>&1 || (command -v yay >/dev/null 2>&1 && yay -Qu >/dev/null 2>&1)); then
+        echo "No updates available. Exiting."
+        exit 0
     fi
     
-    log_success "Package update completed successfully"
+    # Handle linux-firmware transition if needed
+    if pacman -Qi linux-firmware >/dev/null 2>&1; then
+        current_version=$(pacman -Qi linux-firmware | grep Version | awk '{print $3}' | cut -d'-' -f1)
+        current_date=$(echo "$current_version" | cut -d'.' -f1)
+        
+        if [ "$current_date" -lt "20250613" ]; then
+            echo "Handling linux-firmware package transition..."
+            sudo pacman -Syu --overwrite="/usr/lib/firmware/nvidia/*" --overwrite="/usr/lib/firmware/amdgpu/*" --overwrite="/usr/lib/firmware/radeon/*" --overwrite="/usr/lib/firmware/intel/*" --noconfirm
+        fi
+    fi
+    
+    # Remove conflicting packages
+    {{- if .packages.delete.arch }}
+    echo "Removing conflicting packages..."
+    yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
+    {{- end }}
+    
+    # Update system packages
+    echo "Updating system packages..."
+    if command -v yay >/dev/null 2>&1; then
+        yay -Syu --noconfirm
+    else
+        sudo pacman -Syu --noconfirm
+    fi
+    
+    # Ensure destination packages are installed
+    {{- range $name, $config := .packages.install.arch.packages }}
+        {{- if has $name $destinationConfig.packages }}
+    
+    echo "Ensuring {{ $name }} packages are installed..."
+    if command -v yay >/dev/null 2>&1; then
+        yay -S --noconfirm --needed {{ join " " $config.list }}
+    else
+        sudo pacman -S --noconfirm --needed {{ join " " $config.list }}
+    fi
+        {{- end }}
+    {{- end }}
+    
+    echo "✓ Package update completed successfully"
     
 {{ else }}
-    log_error "Unsupported OS: {{ .osId }}"
-    log_error "This script requires: linux-arch"
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
+    exit 1
 {{ end }}

@@ -1,14 +1,14 @@
 ---
-description: Comprehensive guide to chezmoi dotfiles management principles, file naming conventions, and template syntax for this repository
+description: Simplified guide to chezmoi dotfiles management principles and basic usage
 author: Repository Owner
-version: 1.0
+version: 2.0
 tags: ["chezmoi", "core-knowledge", "dotfiles", "templates"]
 globs: ["**/*.tmpl", ".chezmoi*", ".chezmoiscripts/**/*"]
 ---
 
-# Chezmoi Core Principles
+# Chezmoi Core Principles (Simplified)
 
-This repository uses chezmoi for sophisticated dotfiles management with templates, encryption, and cross-platform support. Understanding these core principles is ESSENTIAL for working effectively with this codebase.
+This repository uses chezmoi for dotfiles management with templates and encryption, focused on Arch Linux systems. This guide covers the essential patterns for working with this simplified codebase.
 
 ## File Naming Conventions
 

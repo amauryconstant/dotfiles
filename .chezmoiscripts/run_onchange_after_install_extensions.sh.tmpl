@@ -1,44 +1,49 @@
 #!/bin/sh
-# Chezmoi orchestrator for VSCode extensions and Firefox policies installation
 
-{{- template "chezmoi_logger_setup" . }}
-
-# Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
+# Script: run_onchange_after_install_extensions.sh.tmpl
+# Purpose: Install VSCode extensions based on destination configuration
+# Requirements: Arch Linux, code (VSCode)
 
 {{ if eq .osId "linux-arch" }}
     {{- $destinationConfig := index .destinations .destination }}
+
+# Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
+
+    echo "Installing extensions for {{ .destination }} destination..."
     
-    log_step "Preparing environment for extensions installation"
+    # Check if extensions should be installed for this destination
+    {{- if $destinationConfig.extensions }}
     
-    # Export all necessary environment variables
-    export CHEZMOI_OS_ID="{{ .osId }}"
-    export CHEZMOI_DESTINATION="{{ .destination }}"
-    export CHEZMOI_SOURCE_DIR="{{ .chezmoi.sourceDir }}"
-    export CHEZMOI_EXTENSIONS_ENABLED="{{ if $destinationConfig.extensions }}true{{ else }}false{{ end }}"
-    export CHEZMOI_EXTENSIONS_LIST="{{ join "," .extensions.code }}"
-    export CHEZMOI_LOG_LEVEL="{{ .logging.level }}"
-    export CHEZMOI_DRY_RUN="${CHEZMOI_DRY_RUN:-false}"
-    export CHEZMOI_VERBOSE="${CHEZMOI_VERBOSE:-false}"
-    
-    # Determine script path
-    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/install-extensions.sh"
-    
-    log_info "Executing: $(basename "$SCRIPT_PATH")"
-    
-    # Execute with error handling
-    if [ -x "$SCRIPT_PATH" ]; then
-        if ! "$SCRIPT_PATH"; then
-            handle_error "Extensions installation failed: $(basename "$SCRIPT_PATH")" $?
-        fi
-    else
-        log_error "Script not found or not executable: $SCRIPT_PATH"
-        exit 1
+    # Check if VSCode is installed
+    if ! command -v code >/dev/null 2>&1; then
+        echo "VSCode not found, skipping extension installation"
+        exit 0
     fi
     
-    log_success "Extensions installation completed successfully"
+    echo "Installing VSCode extensions..."
+    
+    # Install each extension
+    {{- range .extensions.code }}
+    echo "Installing extension: {{ . }}"
+    code --install-extension {{ . }}
+    {{- end }}
+    
+    echo "✓ VSCode extensions installed successfully"
+    
+    {{- else }}
+    echo "Extensions disabled for {{ .destination }} destination, skipping..."
+    {{- end }}
+    
+    # Install Firefox policies
+    if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
+        echo "Installing Firefox policies..."
+        sudo mkdir -p /usr/lib/firefox/distribution
+        sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
+        echo "✓ Firefox policies installed"
+    fi
     
 {{ else }}
-    log_error "Unsupported OS: {{ .osId }}"
-    log_error "This script requires: linux-arch"
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
     exit 1
 {{ end }}

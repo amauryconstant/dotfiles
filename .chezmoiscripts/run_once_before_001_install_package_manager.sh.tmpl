@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Script: run_once_before_002_install_package_manager.sh.tmpl
+# Purpose: Install and configure package managers (yay, Chaotic-AUR)
+# Requirements: Arch Linux
+
+{{ if eq .osId "linux-arch" }}
+
+echo "Setting up package managers for Arch Linux..."
+
+# Install yay if not already present
+if ! command -v yay &> /dev/null; then
+    echo "Installing yay AUR helper..."
+    
+    # Install yay through pacman
+    sudo pacman -S --needed yay
+    
+    # Initialize yay
+    echo "Initializing yay database..."
+    yay -Y --gendb
+    yay -Syu --devel
+    
+    echo "✓ yay AUR helper installed and configured"
+else
+    echo "✓ yay AUR helper already installed"
+fi
+
+# Install and configure mirror optimization
+echo "Setting up optimized Arch mirrors..."
+
+# Install rate-mirrors
+yay -S --noconfirm rate-mirrors
+
+# Rate and update mirrors
+echo "Rating and updating Arch mirrors (this may take a moment)..."
+rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
+
+echo "✓ Arch mirrors optimized"
+
+# Check if Chaotic-AUR is already configured
+if grep -q "chaotic-aur" /etc/pacman.conf; then
+    echo "✓ Chaotic-AUR repository already configured"
+else
+    echo "Setting up Chaotic-AUR repository..."
+    
+    # Install Chaotic-AUR keyring and mirrorlist
+    echo "Installing Chaotic-AUR keyring..."
+    sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+    sudo pacman-key --lsign-key 3056513887B78AEB
+    
+    echo "Installing Chaotic-AUR packages..."
+    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+
+    # Add Chaotic-AUR repository to pacman.conf
+    echo "Adding Chaotic-AUR repository to pacman.conf..."
+    sudo tee -a /etc/pacman.conf > /dev/null << 'EOF'
+
+# Chaotic-AUR repository
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+    
+    echo "✓ Chaotic-AUR repository configured"
+fi
+
+echo "✓ Package manager setup completed successfully"
+
+{{ else }}
+    echo "ERROR: This script is only supported on Arch Linux systems"
+    echo "Required: osId 'linux-arch'"
+    echo "Detected: '{{ .osId }}'"
+    exit 1
+{{ end }}

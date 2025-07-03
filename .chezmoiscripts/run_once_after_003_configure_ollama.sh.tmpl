@@ -1,35 +1,48 @@
 #!/bin/sh
-# Chezmoi orchestrator for Ollama configuration
 
-{{- template "chezmoi_logger_setup" . }}
+# Script: run_once_after_003_configure_ollama.sh.tmpl
+# Purpose: Configure Ollama service based on destination configuration
+# Requirements: Arch Linux, ollama
 
 {{ if eq .osId "linux-arch" }}
     {{- $destinationConfig := index .destinations .destination }}
     
-    log_step "Preparing environment for Ollama configuration"
+    echo "Configuring Ollama service..."
     
-    # Export service-specific environment variables
-    export CHEZMOI_OLLAMA_ENABLED="{{ if has "ollama" $destinationConfig.services }}true{{ else }}false{{ end }}"
+    # Check if ollama should be enabled for this destination
+    {{- if has "ollama" $destinationConfig.services }}
     
-    # Determine script path
-    SCRIPT_PATH="${CHEZMOI_SOURCE_DIR}/.chezmoiscripts/.lib/development/configure-ollama.sh"
-    
-    log_info "Executing: $(basename "$SCRIPT_PATH")"
-    
-    # Execute with error handling
-    if [ -x "$SCRIPT_PATH" ]; then
-        if ! "$SCRIPT_PATH"; then
-            handle_error "Ollama configuration failed: $(basename "$SCRIPT_PATH")" $?
-        fi
-    else
-        log_error "Script not found or not executable: $SCRIPT_PATH"
-        exit 1
+    # Check if ollama is installed
+    if ! command -v ollama >/dev/null 2>&1; then
+        echo "Ollama not found, skipping configuration"
+        exit 0
     fi
     
-    log_success "Ollama configuration completed successfully"
+    echo "Enabling and starting Ollama service..."
+    
+    # Enable and start ollama user service
+    systemctl --user enable ollama
+    systemctl --user start ollama
+    
+    # Wait for service to be ready
+    echo "Waiting for Ollama service to be ready..."
+    sleep 5
+    
+    # Verify service is running
+    if systemctl --user is-active ollama >/dev/null 2>&1; then
+        echo "✓ Ollama service is running"
+    else
+        echo "WARNING: Ollama service may not be running properly"
+    fi
+    
+    {{- else }}
+    echo "Ollama service disabled for {{ .destination }} destination, skipping..."
+    {{- end }}
+    
+    echo "✓ Ollama configuration completed"
     
 {{ else }}
-    log_error "Unsupported OS: {{ .osId }}"
-    log_error "This script requires: linux-arch"
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
     exit 1
 {{ end }}

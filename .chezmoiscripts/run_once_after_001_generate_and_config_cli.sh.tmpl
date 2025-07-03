@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Script: run_once_after_002_generate_and_config_cli.sh.tmpl
+# Purpose: Configure CLI tools and shell environment
+# Requirements: Arch Linux
+
+{{ if eq .osId "linux-arch" }}
+    
+    echo "Configuring CLI tools and shell environment..."
+    
+    # Configure zsh as default shell if installed
+    if command -v zsh >/dev/null 2>&1; then
+        echo "Setting zsh as default shell..."
+        chsh -s $(which zsh)
+    fi
+    
+    # Configure git if not already configured
+    if [ -z "$(git config --global user.name)" ]; then
+        echo "Configuring git user settings..."
+        git config --global user.name "{{ .fullname }}"
+        git config --global user.email "{{ .personalEmail }}"
+    fi
+    
+    # Set up shell aliases and functions
+    echo "Setting up shell configuration..."
+    
+    # Ensure .local/bin is in PATH
+    if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.profile"
+    fi
+    
+    echo "✓ CLI configuration completed successfully"
+    
+{{ else }}
+    echo "ERROR: Unsupported OS: {{ .osId }}"
+    echo "This script requires: linux-arch"
+    exit 1
+{{ end }}
