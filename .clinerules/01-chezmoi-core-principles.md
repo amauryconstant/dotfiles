@@ -318,6 +318,61 @@ This repository uses **mergiraf** as configured in `.chezmoi.yaml.tmpl`:
 - Uses mergiraf for merge conflicts
 - Hooks managed through scripts
 
+## Simplicity and Execution Order Principles
+
+### **ALWAYS** Choose the Simplest Solution
+
+1. ✅ **Minimal Code**: Write the least amount of code necessary to accomplish the task
+2. ✅ **Direct Approach**: Use the most straightforward method available
+3. ✅ **Single Responsibility**: Each script should do one thing well
+4. ✅ **Clear Intent**: Code should be self-documenting and obvious in purpose
+5. ✅ **Trust Execution Order**: Assume previous scripts succeeded (chezmoi will stop if they fail)
+
+### **NEVER** Over-Complicate Solutions
+
+❌ **NEVER** add extensive error checking for unlikely scenarios
+❌ **NEVER** implement complex rollback mechanisms unless absolutely critical
+❌ **NEVER** add multiple validation layers for the same thing
+❌ **NEVER** create elaborate testing frameworks within scripts
+❌ **NEVER** re-validate work done by previous scripts in the execution order
+
+### Script Execution Order Trust
+
+Scripts are executed in a specific order by chezmoi:
+1. `run_once_before_*` scripts (in numerical order)
+2. File application
+3. `run_once_after_*` scripts (in numerical order)
+4. `run_onchange_*` scripts (when content changes)
+
+**Trust this order** - assume previous scripts succeeded and prerequisites are met.
+
+```bash
+# ✅ CORRECT: Trust that prerequisites are met
+#!/bin/sh
+{{ if eq .osId "linux-arch" }}
+
+# Assume package manager is installed (from earlier script)
+yay -S some-package
+
+{{ end }}
+```
+
+```bash
+# ❌ WRONG: Over-validation of previous steps
+#!/bin/sh
+{{ if eq .osId "linux-arch" }}
+
+# Don't re-check if package manager exists
+if ! command -v yay >/dev/null 2>&1; then
+    echo "ERROR: yay not found, previous script failed"
+    exit 1
+fi
+
+yay -S some-package
+
+{{ end }}
+```
+
 ## **CRITICAL VERIFICATION STEPS**
 
 Before making ANY changes to this repository:
@@ -328,6 +383,7 @@ Before making ANY changes to this repository:
 4. ✅ **Test script logic** - Understand script lifecycle and dependencies
 5. ✅ **Review encryption impact** - Never modify encrypted file handling
 6. ✅ **Validate file naming** - Follow exact naming conventions
+7. ✅ **Ensure simplicity** - Choose the most straightforward approach
 
 ## Common Mistakes to Avoid
 

@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Script: run_once_after_999_switch_to_ssh_remote.sh.tmpl
+# Purpose: Switch git remote origin from HTTPS to SSH for the dotfiles repository
+# Requirements: SSH keys must be already set up
+# OS Support: linux-arch
+
+{{ if eq .osId "linux-arch" }}
+
+set -euo pipefail
+
+echo "[INFO] Switching repository remote from HTTPS to SSH"
+
+cd ~/.local/share/chezmoi
+
+# Get current remote URL
+current_url=$(git remote get-url origin)
+echo "[INFO] Current remote URL: $current_url"
+
+# Check if already using SSH
+if echo "$current_url" | grep -q "^git@"; then
+    echo "[INFO] Repository is already using SSH remote"
+    exit 0
+fi
+
+# Switch to SSH remote
+ssh_url="git@gitlab.com:amoconst/dotfiles.git"
+echo "[INFO] Switching to SSH URL: $ssh_url"
+
+git remote set-url origin "$ssh_url"
+
+# Verify the change
+new_url=$(git remote get-url origin)
+echo "[SUCCESS] Remote URL updated to: $new_url"
+
+{{ else }}
+    echo "ERROR: This script is only supported on Arch Linux systems"
+    echo "Required: osId 'linux-arch'"
+    echo "Detected: '{{ .osId }}'"
+    exit 1
+{{ end }}

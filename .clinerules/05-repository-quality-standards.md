@@ -19,6 +19,7 @@ This rule establishes quality standards, testing protocols, and maintenance proc
 3. **📝 Documentation Mandatory**: Document all decisions and patterns
 4. **🧪 Testing Essential**: Test changes before deployment
 5. **🔄 Consistency Critical**: Maintain patterns across the repository
+6. **⚡ Simplicity First**: Always choose the simplest solution (see Rule 01)
 
 ## Pre-Change Validation Protocol
 
