@@ -93,26 +93,34 @@ OS Support: linux-arch
 
 ## Script Quality Standards
 
-### **MUST** Include Standard Script Headers
+### **MUST** Follow Standard Script Structure
 
 ```bash
 #!/bin/sh
 
 # Script: script_name.sh.tmpl
 # Purpose: Brief description of what this script does
-# Requirements: List of prerequisites
-# OS Support: Specific OS requirements
+# Requirements: OS/dependencies
 
-{{ if eq .osId "linux-arch" }}
-    # Script implementation
-{{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
-    echo "Script: $(basename "$0")"
-    exit 1
-{{ end }}
+{{ includeTemplate "arch_linux_check" . }}
+
+{{ includeTemplate "log_start" "Script description" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Script implementation (no main function)
+# Use log templates for all output
+
+{{ includeTemplate "log_complete" "Completion message" }}
 ```
+
+### **NEVER** Use These Anti-Patterns
+
+❌ **NEVER** wrap scripts in main functions
+❌ **NEVER** use manual echo statements for logging
+❌ **NEVER** implement custom OS detection logic
+❌ **NEVER** mix distribution support in single scripts
 
 ### **MUST** Include Function Definitions
 
@@ -253,6 +261,14 @@ install_package() {
 {{ if eq $email "" }}
 {{   fail "personalEmail is required but not set" }}
 {{ end }}
+```
+
+#### Logging Standards
+```go
+# Use proper logging templates instead of echo
+{{ includeTemplate "log_info" "Processing configuration..." }}
+{{ includeTemplate "log_success" "Configuration completed" }}
+{{ includeTemplate "log_error" "Configuration failed" }}
 ```
 
 ## Documentation Standards

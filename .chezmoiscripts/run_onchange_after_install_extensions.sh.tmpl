@@ -4,46 +4,40 @@
 # Purpose: Install VSCode extensions based on destination configuration
 # Requirements: Arch Linux, code (VSCode)
 
-{{ if eq .osId "linux-arch" }}
-    {{- $destinationConfig := index .destinations .destination }}
+{{ includeTemplate "arch_linux_check" . }}
+{{- $destinationConfig := index .destinations .destination }}
 
 # Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
 
-    echo "Installing extensions for {{ .destination }} destination..."
-    
-    # Check if extensions should be installed for this destination
-    {{- if $destinationConfig.extensions }}
-    
-    # Check if VSCode is installed
-    if ! command -v code >/dev/null 2>&1; then
-        echo "VSCode not found, skipping extension installation"
-        exit 0
-    fi
-    
-    echo "Installing VSCode extensions..."
-    
-    # Install each extension
-    {{- range .extensions.code }}
-    echo "Installing extension: {{ . }}"
-    code --install-extension {{ . }}
-    {{- end }}
-    
-    echo "✓ VSCode extensions installed successfully"
-    
-    {{- else }}
-    echo "Extensions disabled for {{ .destination }} destination, skipping..."
-    {{- end }}
-    
-    # Install Firefox policies
-    if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
-        echo "Installing Firefox policies..."
-        sudo mkdir -p /usr/lib/firefox/distribution
-        sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
-        echo "✓ Firefox policies installed"
-    fi
-    
-{{ else }}
-    echo "ERROR: Unsupported OS: {{ .osId }}"
-    echo "This script requires: linux-arch"
-    exit 1
-{{ end }}
+{{ includeTemplate "log_start" (printf "Installing extensions for %s destination..." .destination) }}
+
+# Check if extensions should be installed for this destination
+{{- if $destinationConfig.extensions }}
+
+# Check if VSCode is installed
+if ! command -v code >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "VSCode not found, skipping extension installation" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Installing VSCode extensions..." }}
+
+# Install each extension
+{{- range .extensions.code }}
+{{ includeTemplate "log_progress" (printf "Installing extension: %s" .) }}
+code --install-extension {{ . }}
+{{- end }}
+
+{{ includeTemplate "log_success" "VSCode extensions installed successfully" }}
+
+{{- else }}
+{{ includeTemplate "log_skip" (printf "Extensions disabled for %s destination" .destination) }}
+{{- end }}
+
+# Install Firefox policies
+if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
+    {{ includeTemplate "log_step" "Installing Firefox policies..." }}
+    sudo mkdir -p /usr/lib/firefox/distribution
+    sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
+    {{ includeTemplate "log_success" "Firefox policies installed" }}
+fi

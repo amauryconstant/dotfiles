@@ -2,16 +2,25 @@
 
 {{ if eq .chezmoi.osRelease.id "endeavouros" }}
 
-    rate-mirrors --protocol https endeavouros | sudo tee /etc/pacman.d/endeavouros-mirrorlist
-    eos-update
-    yay -S --noconfirm nvidia-inst
-    nvidia-inst -of --no-dkms
-    eos-kernel-nvidia-update-check
-    
+{{ includeTemplate "log_start" "Setting up EndeavourOS-specific configurations..." }}
+
+{{ includeTemplate "log_step" "Optimizing EndeavourOS mirrors..." }}
+rate-mirrors --protocol https endeavouros | sudo tee /etc/pacman.d/endeavouros-mirrorlist
+
+{{ includeTemplate "log_step" "Running EndeavourOS system update..." }}
+eos-update
+
+{{ includeTemplate "log_step" "Installing NVIDIA installer..." }}
+yay -S --noconfirm nvidia-inst
+
+{{ includeTemplate "log_step" "Installing NVIDIA drivers..." }}
+nvidia-inst -of --no-dkms
+
+{{ includeTemplate "log_step" "Running NVIDIA kernel update check..." }}
+eos-kernel-nvidia-update-check
+
+{{ includeTemplate "log_complete" "EndeavourOS-specific setup completed" }}
+
 {{ else }}
-    echo "ERROR: This script is only supported on EndeavourOS systems"
-    echo "Required: osRelease.id 'endeavouros'"
-    echo "Detected: '{{ .chezmoi.osRelease.id }}'"
-    echo "Script: $(basename "$0")"
-    exit 1
+{{ includeTemplate "os_error" (dict "required" "EndeavourOS" "detected" .chezmoi.osRelease.id) }}
 {{ end }}

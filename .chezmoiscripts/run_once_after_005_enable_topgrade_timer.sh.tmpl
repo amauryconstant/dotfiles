@@ -4,65 +4,48 @@
 # Purpose: Enable and start the topgrade systemd timer for automated system maintenance
 # Requirements: Arch Linux, systemd, topgrade
 
-{{ if eq .osId "linux-arch" }}
+{{ includeTemplate "arch_linux_check" . }}
 
-echo "Enabling topgrade systemd timer for automated system maintenance..."
-
-# Simple error logging function
-log_error() {
-    echo "ERROR: $1" >&2
-}
-
-log_info() {
-    echo "[INFO] $1"
-}
+{{ includeTemplate "log_start" "Enabling topgrade systemd timer for automated system maintenance..." }}
 
 # Check if topgrade is installed
 if ! command -v topgrade >/dev/null 2>&1; then
-    log_error "topgrade is not installed. Please install it first."
+    {{ includeTemplate "log_error" "topgrade is not installed. Please install it first." }}
     exit 1
 fi
 
 # Reload systemd user daemon to pick up new service files
-log_info "Reloading systemd user daemon..."
+{{ includeTemplate "log_step" "Reloading systemd user daemon..." }}
 systemctl --user daemon-reload
 
 # Enable the topgrade timer
-log_info "Enabling topgrade timer..."
+{{ includeTemplate "log_step" "Enabling topgrade timer..." }}
 if systemctl --user enable topgrade.timer; then
-    log_info "✓ Topgrade timer enabled successfully"
+    {{ includeTemplate "log_success" "Topgrade timer enabled successfully" }}
 else
-    log_error "Failed to enable topgrade timer"
+    {{ includeTemplate "log_error" "Failed to enable topgrade timer" }}
     exit 1
 fi
 
 # Start the topgrade timer
-log_info "Starting topgrade timer..."
+{{ includeTemplate "log_step" "Starting topgrade timer..." }}
 if systemctl --user start topgrade.timer; then
-    log_info "✓ Topgrade timer started successfully"
+    {{ includeTemplate "log_success" "Topgrade timer started successfully" }}
 else
-    log_error "Failed to start topgrade timer"
+    {{ includeTemplate "log_error" "Failed to start topgrade timer" }}
     exit 1
 fi
 
 # Show timer status
-log_info "Topgrade timer status:"
+{{ includeTemplate "log_info" "Topgrade timer status:" }}
 systemctl --user status topgrade.timer --no-pager -l
 
 # Show next scheduled run
-log_info "Next scheduled topgrade run:"
+{{ includeTemplate "log_info" "Next scheduled topgrade run:" }}
 systemctl --user list-timers topgrade.timer --no-pager
 
-echo "✓ Topgrade timer setup completed successfully"
-echo "  - Timer runs monthly on the first Sunday at 10:00 AM"
-echo "  - Manual execution: topgrade"
-echo "  - Check status: systemctl --user status topgrade.timer"
-echo "  - View logs: journalctl --user -u topgrade.service"
-
-{{ else }}
-echo "ERROR: This script is only supported on Arch Linux systems"
-echo "Required: osId 'linux-arch'"
-echo "Detected: '{{ .osId }}'"
-echo "Script: $(basename "$0")"
-exit 1
-{{ end }}
+{{ includeTemplate "log_complete" "Topgrade timer setup completed successfully" }}
+{{ includeTemplate "log_info" "  - Timer runs monthly on the first Sunday at 10:00 AM" }}
+{{ includeTemplate "log_info" "  - Manual execution: topgrade" }}
+{{ includeTemplate "log_info" "  - Check status: systemctl --user status topgrade.timer" }}
+{{ includeTemplate "log_info" "  - View logs: journalctl --user -u topgrade.service" }}

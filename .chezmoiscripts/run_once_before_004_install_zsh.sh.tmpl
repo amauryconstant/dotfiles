@@ -4,45 +4,39 @@
 # Purpose: Install and configure zsh shell
 # Requirements: Arch Linux
 
-{{ if eq .osId "linux-arch" }}
-    
-    echo "Installing and configuring zsh..."
-    
-    # Install zsh if not already installed
-    if ! command -v zsh >/dev/null 2>&1; then
-        echo "Installing zsh..."
-        sudo pacman -S --noconfirm zsh
-    else
-        echo "✓ zsh already installed"
-    fi
-    
-    # Install oh-my-zsh if not already installed
-    if [ ! -d "$HOME/.oh-my-zsh" ]; then
-        echo "Installing oh-my-zsh..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-    else
-        echo "✓ oh-my-zsh already installed"
-    fi
-    
-    # Install useful zsh plugins
-    ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
-    
-    # zsh-autosuggestions
-    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
-        echo "Installing zsh-autosuggestions..."
-        git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-    fi
-    
-    # zsh-syntax-highlighting
-    if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
-        echo "Installing zsh-syntax-highlighting..."
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-    fi
-    
-    echo "✓ Zsh installation and configuration completed"
-    
-{{ else }}
-    echo "ERROR: Unsupported OS: {{ .osId }}"
-    echo "This script requires: linux-arch"
-    exit 1
-{{ end }}
+{{ includeTemplate "arch_linux_check" . }}
+
+{{ includeTemplate "log_start" "Installing and configuring zsh..." }}
+
+# Install zsh if not already installed
+if ! command -v zsh >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Installing zsh..." }}
+    sudo pacman -S --noconfirm zsh
+else
+    {{ includeTemplate "log_info" "zsh already installed" }}
+fi
+
+# Install oh-my-zsh if not already installed
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+    {{ includeTemplate "log_step" "Installing oh-my-zsh..." }}
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+else
+    {{ includeTemplate "log_info" "oh-my-zsh already installed" }}
+fi
+
+# Install useful zsh plugins
+ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+
+# zsh-autosuggestions
+if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
+    {{ includeTemplate "log_step" "Installing zsh-autosuggestions..." }}
+    git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+fi
+
+# zsh-syntax-highlighting
+if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
+    {{ includeTemplate "log_step" "Installing zsh-syntax-highlighting..." }}
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+fi
+
+{{ includeTemplate "log_complete" "Zsh installation and configuration completed" }}

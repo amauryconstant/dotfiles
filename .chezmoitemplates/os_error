@@ -1,0 +1,5 @@
+{{ includeTemplate "log_error" (printf "This script is only supported on %s systems" .required) }}
+{{ includeTemplate "log_error" (printf "Required: %s" .required) }}
+{{ includeTemplate "log_error" (printf "Detected: '%s'" .detected) }}
+{{ includeTemplate "log_error" "Script: $(basename \"$0\")" }}
+exit 1

@@ -4,41 +4,33 @@
 # Purpose: Enable system services based on destination configuration
 # Requirements: Linux
 
-{{ if eq .chezmoi.os "linux" }}
-    {{- $destinationConfig := index .destinations .destination -}}
-    
-    echo "Enabling services for destination: {{ .destination }}"
-    
-    # Enable Docker service (only for work destination)
-    {{ if has "docker" $destinationConfig.services }}
-        echo "Enabling Docker service..."
-        sudo systemctl enable docker.service
-        echo "✓ Docker service enabled"
-    {{ else }}
-        echo "Skipping Docker service (not configured for {{ .destination }} destination)"
-    {{ end }}
+{{ includeTemplate "linux_check" . }}
+{{- $destinationConfig := index .destinations .destination -}}
 
-    # Enable Snap services (only if system_software packages are installed - leisure destination)
-    {{ if has "system_software" $destinationConfig.packages }}
-        echo "Enabling Snap services..."
-        sudo systemctl enable --now snapd.socket
-        sudo systemctl enable --now snapd.apparmor.service
-        echo "✓ Snap services enabled"
-    {{ else }}
-        echo "Skipping Snap services (system_software not configured for {{ .destination }} destination)"
-    {{ end }}
+{{ includeTemplate "log_start" (printf "Enabling services for destination: %s" .destination) }}
 
-    # Enable Bluetooth (for all destinations - basic system service)
-    echo "Enabling Bluetooth service..."
-    sudo systemctl enable --now bluetooth
-    echo "✓ Bluetooth service enabled"
-    
-    echo "✓ Service configuration completed for {{ .destination }} destination"
-
+# Enable Docker service (only for work destination)
+{{ if has "docker" $destinationConfig.services }}
+    {{ includeTemplate "log_step" "Enabling Docker service..." }}
+    sudo systemctl enable docker.service
+    {{ includeTemplate "log_success" "Docker service enabled" }}
 {{ else }}
-    echo "ERROR: This script is only supported on Linux systems"
-    echo "Required: OS 'linux'"
-    echo "Detected: '{{ .chezmoi.os }}'"
-    echo "Script: $(basename "$0")"
-    exit 1
+    {{ includeTemplate "log_skip" (printf "Docker service (not configured for %s destination)" .destination) }}
 {{ end }}
+
+# Enable Snap services (only if system_software packages are installed - leisure destination)
+{{ if has "system_software" $destinationConfig.packages }}
+    {{ includeTemplate "log_step" "Enabling Snap services..." }}
+    sudo systemctl enable --now snapd.socket
+    sudo systemctl enable --now snapd.apparmor.service
+    {{ includeTemplate "log_success" "Snap services enabled" }}
+{{ else }}
+    {{ includeTemplate "log_skip" (printf "Snap services (system_software not configured for %s destination)" .destination) }}
+{{ end }}
+
+# Enable Bluetooth (for all destinations - basic system service)
+{{ includeTemplate "log_step" "Enabling Bluetooth service..." }}
+sudo systemctl enable --now bluetooth
+{{ includeTemplate "log_success" "Bluetooth service enabled" }}
+
+{{ includeTemplate "log_complete" (printf "Service configuration completed for %s destination" .destination) }}

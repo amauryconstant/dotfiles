@@ -4,35 +4,30 @@
 # Purpose: Install packages for Arch Linux based on destination configuration
 # Requirements: Arch Linux, pacman
 
-{{ if eq .osId "linux-arch" }}
-    {{- $destinationConfig := index .destinations .destination }}
-    
-    echo "Installing packages for {{ .destination }} destination..."
-    
-    # Simple error logging function
-    log_error() {
-        echo "ERROR: $1" >&2
-    }
+{{ includeTemplate "arch_linux_check" . }}
+{{- $destinationConfig := index .destinations .destination }}
+
+{{ includeTemplate "log_start" (printf "Installing packages for %s destination..." .destination) }}
     
     # Package installation with fallback
     install_packages() {
         local packages="$*"
-        echo "Installing: $packages"
+        {{ includeTemplate "log_progress" "Installing: $packages" }}
         
         if sudo pacman -S --noconfirm --needed $packages; then
             return 0
         elif command -v yay >/dev/null 2>&1; then
-            echo "Pacman failed, trying yay..."
+            {{ includeTemplate "log_info" "Pacman failed, trying yay..." }}
             yay -S --noconfirm --needed $packages
         else
-            echo "Failed to install: $packages"
+            {{ includeTemplate "log_error" "Failed to install: $packages" }}
             return 1
         fi
     }
     
     # Remove conflicting packages
     {{- if .packages.delete.arch }}
-    echo "Removing conflicting packages..."
+    {{ includeTemplate "log_step" "Removing conflicting packages..." }}
     yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
     {{- end }}
     
@@ -40,18 +35,12 @@
     {{- range $name, $config := .packages.install.arch.packages }}
         {{- if has $name $destinationConfig.packages }}
     
-    echo "Installing {{ $name }} packages..."
+    {{ includeTemplate "log_step" (printf "Installing %s packages..." $name) }}
     if ! install_packages {{ join " " $config.list }}; then
-        log_error "Failed to install {{ $name }} packages"
+        {{ includeTemplate "log_error" (printf "Failed to install %s packages" $name) }}
         exit 1
     fi
         {{- end }}
     {{- end }}
     
-    echo "✓ Package installation completed successfully"
-    
-{{ else }}
-    echo "ERROR: Unsupported OS: {{ .osId }}"
-    echo "This script requires: linux-arch"
-    exit 1
-{{ end }}
+    {{ includeTemplate "log_complete" "Package installation completed successfully" }}

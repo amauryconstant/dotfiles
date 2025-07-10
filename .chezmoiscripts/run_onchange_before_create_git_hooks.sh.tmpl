@@ -4,33 +4,27 @@
 # Purpose: Create git hooks from .gitscripts directory
 # Requirements: Arch Linux, git
 
-{{ if eq .osId "linux-arch" }}
-    
-    echo "Creating git hooks..."
-    
-    # Check if .gitscripts directory exists
-    if [ ! -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
-        echo "No .gitscripts directory found, skipping git hooks creation"
-        exit 0
+{{ includeTemplate "arch_linux_check" . }}
+
+{{ includeTemplate "log_start" "Creating git hooks..." }}
+
+# Check if .gitscripts directory exists
+if [ ! -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
+    {{ includeTemplate "log_skip" "No .gitscripts directory found, skipping git hooks creation" }}
+    exit 0
+fi
+
+# Create hooks directory if it doesn't exist
+mkdir -p "{{ .chezmoi.sourceDir }}/.git/hooks"
+
+# Copy and make executable all scripts from .gitscripts
+for script in "{{ .chezmoi.sourceDir }}/.gitscripts"/*; do
+    if [ -f "$script" ]; then
+        hook_name=$(basename "$script")
+        {{ includeTemplate "log_step" "Installing git hook: $hook_name" }}
+        cp "$script" "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
+        chmod +x "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
     fi
-    
-    # Create hooks directory if it doesn't exist
-    mkdir -p "{{ .chezmoi.sourceDir }}/.git/hooks"
-    
-    # Copy and make executable all scripts from .gitscripts
-    for script in "{{ .chezmoi.sourceDir }}/.gitscripts"/*; do
-        if [ -f "$script" ]; then
-            hook_name=$(basename "$script")
-            echo "Installing git hook: $hook_name"
-            cp "$script" "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
-            chmod +x "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
-        fi
-    done
-    
-    echo "✓ Git hooks created successfully"
-    
-{{ else }}
-    echo "ERROR: Unsupported OS: {{ .osId }}"
-    echo "This script requires: linux-arch"
-    exit 1
-{{ end }}
+done
+
+{{ includeTemplate "log_success" "Git hooks created successfully" }}

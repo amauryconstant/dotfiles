@@ -63,16 +63,25 @@ From `.chezmoi.yaml.tmpl`:
 - `{{ .osId }}` - OS identifier (e.g., "linux-arch")
 - `{{ .chassisType }}` - "desktop" or "laptop"
 
-### Common Template Patterns
+### **MUST** Use Standard Templates
 
-#### OS Detection
+#### OS Detection Templates
 ```go
-{{ if eq .osId "linux-arch" }}
-    # Arch Linux specific code
-{{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    exit 1
-{{ end }}
+{{ includeTemplate "arch_linux_check" . }}     # For Arch Linux only
+{{ includeTemplate "linux_check" . }}          # For general Linux
+```
+
+#### Logging Templates
+```go
+{{ includeTemplate "log_start" "message" }}     # 🚀 Script start
+{{ includeTemplate "log_step" "message" }}      # 📋 Major steps
+{{ includeTemplate "log_info" "message" }}      # ℹ️ Information
+{{ includeTemplate "log_success" "message" }}   # ✅ Success
+{{ includeTemplate "log_error" "message" }}     # ❌ Errors
+{{ includeTemplate "log_complete" "message" }}  # 🎉 Completion
+{{ includeTemplate "log_progress" "message" }}  # ⏳ Progress
+{{ includeTemplate "log_warning" "message" }}   # ⚠️ Warnings
+{{ includeTemplate "log_skip" "message" }}      # ⏭️ Skipped items
 ```
 
 #### Variable Transformation
@@ -89,7 +98,7 @@ From `.chezmoi.yaml.tmpl`:
 #### Iterating Over Data
 ```go
 {{ range .ai.models -}}
-    echo "Installing {{.}}"
+    {{ includeTemplate "log_info" (printf "Installing %s" .) }}
     ollama pull {{.}}
 {{ end -}}
 ```
@@ -120,6 +129,37 @@ run_[frequency]_[timing]_[order]_[description].sh.tmpl
 - `timing`: `before` or `after`
 - `order`: 3-digit number (001, 002, etc.)
 - `description`: Clear description of purpose
+
+### **MUST** Follow Standard Script Structure
+
+All scripts MUST follow this exact pattern:
+
+```bash
+#!/bin/sh
+
+# Script: [filename]
+# Purpose: [clear description]
+# Requirements: [OS/dependencies]
+
+{{ includeTemplate "[os_check]" . }}
+
+{{ includeTemplate "log_start" "[description]" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Script implementation (no main function)
+# Use log templates for all output
+
+{{ includeTemplate "log_complete" "[completion message]" }}
+```
+
+### **NEVER** Use These Anti-Patterns
+
+❌ **NEVER** wrap scripts in main functions
+❌ **NEVER** use manual echo statements for logging
+❌ **NEVER** implement custom OS detection logic
+❌ **NEVER** mix distribution support in single scripts
 
 ## Cross-Platform Patterns
 

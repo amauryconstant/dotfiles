@@ -5,37 +5,30 @@
 # Requirements: SSH keys must be already set up
 # OS Support: linux-arch
 
-{{ if eq .osId "linux-arch" }}
+{{ includeTemplate "arch_linux_check" . }}
 
 set -euo pipefail
 
-echo "[INFO] Switching repository remote from HTTPS to SSH"
+{{ includeTemplate "log_start" "Switching repository remote from HTTPS to SSH" }}
 
 cd ~/.local/share/chezmoi
 
 # Get current remote URL
 current_url=$(git remote get-url origin)
-echo "[INFO] Current remote URL: $current_url"
+{{ includeTemplate "log_info" "Current remote URL: $current_url" }}
 
 # Check if already using SSH
 if echo "$current_url" | grep -q "^git@"; then
-    echo "[INFO] Repository is already using SSH remote"
+    {{ includeTemplate "log_info" "Repository is already using SSH remote" }}
     exit 0
 fi
 
 # Switch to SSH remote
 ssh_url="git@gitlab.com:amoconst/dotfiles.git"
-echo "[INFO] Switching to SSH URL: $ssh_url"
+{{ includeTemplate "log_step" "Switching to SSH URL: $ssh_url" }}
 
 git remote set-url origin "$ssh_url"
 
 # Verify the change
 new_url=$(git remote get-url origin)
-echo "[SUCCESS] Remote URL updated to: $new_url"
-
-{{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
-    exit 1
-{{ end }}
+{{ includeTemplate "log_success" "Remote URL updated to: $new_url" }}

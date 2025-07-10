@@ -1,19 +1,26 @@
 #!/bin/sh
 
-{{ if eq .osId "linux-arch" }}
+{{ includeTemplate "arch_linux_check" . }}
 
-    rbw config set email {{ .personalEmail }}
-    rbw config set base_url {{ .privateServer | replace "www" "vaultwarden" }}
-    rbw login
-    rbw sync
-    rbw get dotfiles-key > $HOME/.keys/dotfiles-key.txt
-    rbw lock
-    chmod 600 ~/.keys/*
+{{ includeTemplate "log_start" "Setting up encryption key from vault..." }}
 
-{{ else }}
-    echo "ERROR: This script is only supported on Arch Linux systems"
-    echo "Required: osId 'linux-arch'"
-    echo "Detected: '{{ .osId }}'"
-    echo "Script: $(basename "$0")"
-    exit 1
-{{ end }}
+{{ includeTemplate "log_step" "Configuring rbw vault settings..." }}
+rbw config set email {{ .personalEmail }}
+rbw config set base_url {{ .privateServer | replace "www" "vaultwarden" }}
+
+{{ includeTemplate "log_step" "Logging into vault..." }}
+rbw login
+
+{{ includeTemplate "log_step" "Syncing vault data..." }}
+rbw sync
+
+{{ includeTemplate "log_step" "Retrieving dotfiles encryption key..." }}
+rbw get dotfiles-key > $HOME/.keys/dotfiles-key.txt
+
+{{ includeTemplate "log_step" "Securing vault session..." }}
+rbw lock
+
+{{ includeTemplate "log_step" "Setting secure permissions on keys..." }}
+chmod 600 ~/.keys/*
+
+{{ includeTemplate "log_complete" "Encryption key setup completed" }}

@@ -4,43 +4,37 @@
 # Purpose: Install AI models based on destination configuration
 # Requirements: Arch Linux, ollama
 
-{{ if eq .osId "linux-arch" }}
-    {{- $destinationConfig := index .destinations .destination }}
-    
-    echo "Installing AI models for {{ .destination }} destination..."
-    
-    # Check if AI models should be installed for this destination
-    {{- if $destinationConfig.ai_models }}
-    
-    # Check if ollama is installed and running
-    if ! command -v ollama >/dev/null 2>&1; then
-        echo "Ollama not found, skipping AI model installation"
-        exit 0
-    fi
-    
-    # Check if ollama service is running
-    if ! systemctl --user is-active ollama >/dev/null 2>&1; then
-        echo "Starting ollama service..."
-        systemctl --user start ollama
-        sleep 5
-    fi
-    
-    echo "Installing AI models..."
-    
-    # Install each model
-    {{- range .ai.models }}
-    echo "Installing model: {{ . }}"
-    ollama pull {{ . }}
-    {{- end }}
-    
-    echo "✓ AI models installed successfully"
-    
-    {{- else }}
-    echo "AI models disabled for {{ .destination }} destination, skipping..."
-    {{- end }}
-    
-{{ else }}
-    echo "ERROR: Unsupported OS: {{ .osId }}"
-    echo "This script requires: linux-arch"
-    exit 1
-{{ end }}
+{{ includeTemplate "arch_linux_check" . }}
+{{- $destinationConfig := index .destinations .destination }}
+
+{{ includeTemplate "log_start" (printf "Installing AI models for %s destination..." .destination) }}
+
+# Check if AI models should be installed for this destination
+{{- if $destinationConfig.ai_models }}
+
+# Check if ollama is installed and running
+if ! command -v ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Ollama not found, skipping AI model installation" }}
+    exit 0
+fi
+
+# Check if ollama service is running
+if ! systemctl --user is-active ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Starting ollama service..." }}
+    systemctl --user start ollama
+    sleep 5
+fi
+
+{{ includeTemplate "log_step" "Installing AI models..." }}
+
+# Install each model
+{{- range .ai.models }}
+{{ includeTemplate "log_progress" (printf "Installing model: %s" .) }}
+ollama pull {{ . }}
+{{- end }}
+
+{{ includeTemplate "log_success" "AI models installed successfully" }}
+
+{{- else }}
+{{ includeTemplate "log_skip" (printf "AI models disabled for %s destination" .destination) }}
+{{- end }}
