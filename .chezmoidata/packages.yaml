@@ -87,6 +87,12 @@ packages:
             - qbittorrent
             - slack-desktop
 
+        work_software:
+          strategy: *_install_binary
+          list:
+            - chromium
+            - slack-desktop
+
         ai_tools:
           strategy: *_install_from_source
           list:

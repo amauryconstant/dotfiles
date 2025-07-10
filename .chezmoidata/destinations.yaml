@@ -11,11 +11,11 @@ destinations:
     ai_models: false
     services: []
 
-  # WORK: Full development environment
-  # Purpose: Complete development stack with all tools, AI assistance, and IDE
-  # Use case: Primary development machine, professional workstation
+  # WORK: Full development environment with general applications
+  # Purpose: Complete development stack with all tools, AI assistance, IDE, and general applications
+  # Use case: Primary development machine, professional workstation with entertainment/productivity apps
   work:
-    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, ai_tools, printing_scanning]
+    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, ai_tools, general_software, system_software, work_software, printing_scanning]
     extensions: true  # VSCode extensions installed only if 'code' package is present
     ai_models: true   # AI models for development assistance
     services: [docker, ollama]  # Development and AI services
@@ -41,4 +41,5 @@ destinations:
 # - ai_tools: AI/ML tools (ollama, vllm)
 # - general_software: End-user applications (Firefox, Spotify, etc.)
 # - system_software: System utilities (AppImage support, Snap, etc.)
+# - work_software: Work-specific applications (Chromium, Slack, etc.)
 # - printing_scanning: Printing and scanning support (CUPS, SANE, drivers)
