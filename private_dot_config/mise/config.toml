@@ -1,2 +1,7 @@
 [settings]
 experimental = true
+
+[tools]
+bun = "1"
+node = '22'
+"npm:@anthropic-ai/claude-code" = "latest"
