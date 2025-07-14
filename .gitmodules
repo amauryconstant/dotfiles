@@ -1,3 +1,3 @@
-[submodule "external_ai"]
-	path = external_ai
+[submodule "external_dot_ai"]
+	path = external_dot_ai
 	url = https://gitlab.com/amoconst/chezmoi-ai-config.git
