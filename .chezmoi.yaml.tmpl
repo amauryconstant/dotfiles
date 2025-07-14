@@ -3,6 +3,7 @@
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
 {{ $destination := promptStringOnce . "destination" "What is your installation destination? (test/work/leisure) " -}}
+{{ $aiEnabled := promptBoolOnce . "ai_enabled" "Enable AI tools and configuration? " -}}
 {{- if not (has $destination (list "test" "work" "leisure")) -}}
 {{-   $destination = "test" -}}
 {{- end -}}
@@ -59,6 +60,7 @@ data:
     osId: {{ $osid | quote }}
     chassisType: {{ $chassisType | quote }}
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
+    ai_enabled: {{ $aiEnabled }}
 
 diff:
   pager: "delta"

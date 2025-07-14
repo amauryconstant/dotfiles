@@ -93,12 +93,6 @@ packages:
             - chromium
             - slack-desktop
 
-        ai_tools:
-          strategy: *_install_from_source
-          list:
-            - ollama
-            - vllm
-
         printing_scanning:
           list:
             - cups

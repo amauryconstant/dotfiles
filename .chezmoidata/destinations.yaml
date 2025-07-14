@@ -8,17 +8,15 @@ destinations:
   test:
     packages: [fonts, terminal_essentials]
     extensions: false
-    ai_models: false
     services: []
 
   # WORK: Full development environment with general applications
   # Purpose: Complete development stack with all tools, AI assistance, IDE, and general applications
   # Use case: Primary development machine, professional workstation with entertainment/productivity apps
   work:
-    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, ai_tools, general_software, system_software, work_software, printing_scanning]
+    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, general_software, system_software, work_software, printing_scanning]
     extensions: true  # VSCode extensions installed only if 'code' package is present
-    ai_models: true   # AI models for development assistance
-    services: [docker, ollama]  # Development and AI services
+    services: [docker]  # Development services
 
   # LEISURE: Personal/entertainment setup
   # Purpose: Personal computing with media, browsing, and general applications
@@ -26,7 +24,6 @@ destinations:
   leisure:
     packages: [fonts, terminal_essentials, terminal_utils, general_software, system_software, printing_scanning]
     extensions: false  # No development extensions needed
-    ai_models: false   # No AI development tools needed
     services: []       # Minimal services
 
 # Package category descriptions for reference:
@@ -38,7 +35,6 @@ destinations:
 # - package_managers: Development package managers (uv, cargo, mise)
 # - development_tools: Development software (Docker, VSCode)
 # - development_clis: Development CLI tools (git-delta, aws-cli, etc.)
-# - ai_tools: AI/ML tools (ollama, vllm)
 # - general_software: End-user applications (Firefox, Spotify, etc.)
 # - system_software: System utilities (AppImage support, Snap, etc.)
 # - work_software: Work-specific applications (Chromium, Slack, etc.)
