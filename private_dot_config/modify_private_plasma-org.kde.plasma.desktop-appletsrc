@@ -14,10 +14,14 @@ ignore regex "Containments/2/Applets/.*/Configuration" "PreloadWeight"
 ignore regex "Containments/2/Applets/.*/Configuration" "DialogHeight"
 ignore regex "Containments/2/Applets/.*/Configuration" "DialogWidth"
 
-# Ignore system tray sub-applets (they auto-configure)
-ignore regex "Containments/2/Applets/7/Applets" ".*"
-ignore "Containments/2/Applets/7" "Configuration"
-ignore "Containments/2/Applets/7" "General"
+# Ignore system tray sub-applet dynamic state (but keep the applet definitions)
+ignore regex "Containments/2/Applets/7/Applets/.*/Configuration" "PreloadWeight"
+ignore regex "Containments/2/Applets/7/Applets/.*/Configuration" "popup.*"
+ignore regex "Containments/2/Applets/7/Applets/.*/Configuration" "Dialog.*"
+
+# Ignore system tray dynamic configuration but keep General section
+ignore regex "Containments/2/Applets/7/Configuration" "PreloadWeight"
+ignore regex "Containments/2/Applets/7/Configuration" "popup.*"
 
 # Ignore screen-specific positioning
 ignore "Containments/2/Applets/7" "lastScreen"
