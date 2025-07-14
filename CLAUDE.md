@@ -6,6 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux environments.
 
+### Multi-Repository Architecture
+
+This system consists of two interconnected chezmoi repositories:
+
+#### Primary Repository: `/home/amaury/.local/share/chezmoi`
+- **Purpose**: Complete system configuration management
+- **Scope**: Shell, applications, development tools, system services
+- **Key Features**: Advanced templating, age encryption, chezmoi_modify_manager integration
+
+#### Secondary Repository: `/home/amaury/.local/share/chezmoi-ai`
+- **Purpose**: AI assistant rules, configurations, and tooling
+- **Location**: `/home/amaury/.local/share/chezmoi-ai`
+- **Structure**:
+  - `dot_ai/rules/cline/` - Cline AI assistant behavioral rules (numbered 01-06)
+  - `dot_continue/` - Continue AI extension configuration
+  - `.chezmoiscripts/` - AI-related setup scripts (numbered 001-002)
+- **Integration**: Shares template variables and follows same conventions as primary repo
+
 ## 🚨 CRITICAL SAFETY PROTOCOLS 🚨
 
 ### **NEVER** Attempt These Operations
@@ -738,24 +756,127 @@ Before considering a feature complete:
 3. **Validate results** - `chezmoi diff` and syntax checks
 4. **Special case** - Encrypted files require manual workflow
 
-## AI Assistant Best Practices
+## AI Repository Integration Protocol
 
-### When Working with This Repository
-1. **Read existing documentation** - Review rules and context
-2. **Follow security protocols** - Respect encryption boundaries
-3. **Use quality standards** - Validate before applying
-4. **Document decisions** - Update memory bank when needed
-5. **Monitor context** - Watch for 50% usage threshold
-6. **Reflect on complexity** - Offer reflection for complex tasks
+### **CRITICAL** Multi-Repository Workflow
 
-### Critical Reminders
-- **MUST** follow continuous improvement protocol for complex tasks
-- **MUST** validate all changes before applying
-- **MUST** respect encryption security boundaries
-- **MUST** use proper logging templates in scripts
-- **MUST** trust script execution order (don't over-validate)
-- **SHOULD** maintain Memory Bank documentation
-- **SHOULD** use simplest solution that works
+When working on ANY task that involves AI tools, configurations, or assistant behavior, you **MUST** follow this protocol:
+
+#### 1. **Repository Assessment** (MANDATORY)
+```bash
+# Always check both repositories for AI-related content
+ls /home/amaury/.local/share/chezmoi/.chezmoidata/ai.yaml          # AI models data
+ls /home/amaury/.local/share/chezmoi/.chezmoidata/packages.yaml     # AI tool packages  
+ls /home/amaury/.local/share/chezmoi-ai/dot_ai/                     # AI configurations
+ls /home/amaury/.local/share/chezmoi-ai/.chezmoiscripts/            # AI setup scripts
+```
+
+#### 2. **Task Classification** (MANDATORY)
+- **System AI Tools** (ollama, AI packages) → Main repo modifications
+- **AI Configurations** (Continue, Cline rules) → AI repo modifications  
+- **AI Setup/Installation** → Both repositories (coordinated)
+- **AI Assistant Behavior** → AI repo only
+
+#### 3. **Cross-Repository Dependencies** (CRITICAL)
+
+**Template Variable Sharing**:
+- AI repo inherits ALL template variables from main repo
+- Changes to `.chezmoi.yaml.tmpl` affect both repositories
+- Test AI templates when changing user variables
+
+**Script Execution Coordination**:
+- Main repo scripts: `run_once_after_001` through `run_once_after_005`
+- AI repo scripts: `run_once_after_001` through `run_once_after_002` (separate numbering)
+- AI scripts run AFTER main repo scripts complete
+- **NEVER** create conflicting script numbers across repos
+
+**Package Management Flow**:
+```mermaid
+graph TD
+    A[packages.yaml in main repo] --> B[AI tools installed]
+    B --> C[AI repo scripts configure tools]
+    C --> D[AI configurations applied]
+    D --> E[System ready for AI usage]
+```
+
+#### 4. **Validation Protocol** (MANDATORY)
+When making changes that affect both repositories:
+
+```bash
+# Main repository validation
+cd /home/amaury/.local/share/chezmoi
+chezmoi diff
+chezmoi apply --dry-run
+
+# AI repository validation  
+cd /home/amaury/.local/share/chezmoi-ai
+chezmoi diff
+chezmoi apply --dry-run
+
+# Cross-repo template test
+chezmoi execute-template < template_with_shared_variables.tmpl
+```
+
+### **Integration Scenarios and Responses**
+
+#### Scenario: Adding New AI Tool
+1. **Package Definition** → Main repo (`.chezmoidata/packages.yaml`)
+2. **Installation Logic** → Main repo (`.chezmoiscripts/run_once_before_008_install_arch_packages.sh.tmpl`)
+3. **Tool Configuration** → AI repo (`dot_ai/` or `dot_continue/`)
+4. **Setup Scripts** → AI repo (`.chezmoiscripts/run_once_after_*`)
+
+#### Scenario: Modifying AI Assistant Rules
+1. **Rule Changes** → AI repo only (`dot_ai/rules/cline/`)
+2. **No main repo changes** needed
+3. **Follow numbering** → 01-06 sequence in AI repo
+
+#### Scenario: Changing User Variables
+1. **Variable Definition** → Main repo (`.chezmoi.yaml.tmpl`)
+2. **Template Updates** → Both repos (any `.tmpl` files using the variable)
+3. **Cross-repo Testing** → Validate templates in both repositories
+
+#### Scenario: AI Model Management
+1. **Model List** → Main repo (`.chezmoidata/ai.yaml`)
+2. **Installation Script** → AI repo (`run_onchange_after_install_ai_models.sh.tmpl`)
+3. **Trigger** → Changes to ai.yaml automatically trigger AI repo script
+
+### **Repository State Synchronization**
+
+#### **ALWAYS** Verify Repository States
+```bash
+# Check for uncommitted changes in both repos
+cd /home/amaury/.local/share/chezmoi && git status
+cd /home/amaury/.local/share/chezmoi-ai && git status
+
+# Check chezmoi status in both repos
+cd /home/amaury/.local/share/chezmoi && chezmoi status
+cd /home/amaury/.local/share/chezmoi-ai && chezmoi status
+```
+
+#### **Coordinate Repository Updates**
+- **AI tool additions** → Commit to main repo first, then AI repo
+- **Configuration changes** → Can be independent
+- **Template variable changes** → Update main repo, test AI repo, commit both
+
+### AI Assistant Best Practices
+
+#### When Working with Multi-Repository System
+1. **Read documentation in both repos** - Main CLAUDE.md AND AI CLAUDE.md
+2. **Follow security protocols** - Respect encryption boundaries in both repos
+3. **Use quality standards** - Validate before applying in BOTH repositories
+4. **Document decisions** - Update memory bank and relevant CLAUDE.md files
+5. **Monitor context** - Watch for 50% usage threshold per AI repo rules
+6. **Test cross-repo impacts** - Always validate template and script interactions
+
+#### Critical Integration Reminders
+- **MUST** check both repositories for AI-related tasks
+- **MUST** follow script numbering conventions to avoid conflicts
+- **MUST** test template variables across both repositories
+- **MUST** coordinate package management between repos
+- **MUST** validate both repositories before applying changes
+- **MUST** respect the dependency flow: main repo → AI repo
+- **SHOULD** maintain documentation in both CLAUDE.md files
+- **SHOULD** use git to track cross-repo change relationships
 
 ## Emergency Procedures
 
