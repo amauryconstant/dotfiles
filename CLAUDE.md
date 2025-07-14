@@ -338,6 +338,49 @@ add:hide "Accounts" "0\\password"
 add:hide "Auth" "token"
 ```
 
+### Advanced Features
+
+#### Value Transformations
+```bash
+# Keyring password lookup
+set "Database" "Password" "{{ keyring "service" "username" }}"
+
+# Ignore list sorting order (for lists that change order frequently)
+ignore_order "Plugins" "LoadOrder"
+```
+
+#### Self-Updater Support
+```bash
+# Enable automatic updates of chezmoi_modify_manager
+self_update enable
+
+# Check for updates but don't auto-install
+self_update check
+```
+
+### Best Practices for chezmoi_modify_manager
+
+#### **MUST** Follow These Patterns
+1. ✅ **Use `source auto`** - Automatically finds corresponding `.src.ini` files
+2. ✅ **Ignore runtime state** - Filter out window positions, cache, temporary data
+3. ✅ **Set user-specific values** - Use chezmoi templates for personalization
+4. ✅ **Remove dynamic values from source** - Use `add:remove` for template-set values
+5. ✅ **Hide sensitive data** - Use `add:hide` for passwords and tokens
+
+#### **SHOULD** Consider These Practices
+1. ✅ **Group related ignores** - Organize ignore statements by functionality
+2. ✅ **Use regex for patterns** - Efficiently ignore multiple similar keys
+3. ✅ **Document complex logic** - Add comments explaining why specific ignores are needed
+4. ✅ **Test modifications** - Use `chezmoi cat` to preview results before applying
+5. ✅ **Handle edge cases** - Consider what happens when applications update their config format
+
+#### **NEVER** Do These Things
+1. ❌ **Never ignore critical settings** - Only ignore state data, not user preferences
+2. ❌ **Never set hardcoded values** - Use template variables for user-specific data
+3. ❌ **Never modify without testing** - Always validate with `chezmoi cat` first
+4. ❌ **Never commit sensitive data** - Use `add:hide` for passwords and tokens
+5. ❌ **Never assume config structure** - Test with actual application config files
+
 ## AI Assistant Integration
 
 ### Memory Bank System
