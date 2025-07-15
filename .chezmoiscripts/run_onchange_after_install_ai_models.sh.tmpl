@@ -17,9 +17,9 @@ if ! command -v ollama >/dev/null 2>&1; then
 fi
 
 # Check if ollama service is running
-if ! systemctl --user is-active ollama >/dev/null 2>&1; then
+if ! systemctl is-active ollama >/dev/null 2>&1; then
     {{ includeTemplate "log_step" "Starting ollama service..." }}
-    systemctl --user start ollama
+    sudo systemctl start ollama
     sleep 5
 fi
 
