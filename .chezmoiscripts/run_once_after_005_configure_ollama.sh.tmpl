@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Script: run_once_after_005_configure_ollama.sh.tmpl
+# Purpose: Configure Ollama service based on destination configuration
+# Requirements: Arch Linux, ollama
+
+{{ includeTemplate "arch_linux_check" . }}
+
+{{ includeTemplate "log_start" "Configuring Ollama service..." }}
+
+# Check if ollama is installed
+if ! command -v ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Ollama not found, skipping configuration" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Enabling and starting Ollama service..." }}
+
+# Enable and start ollama user service
+systemctl --user enable ollama
+systemctl --user start ollama
+
+# Wait for service to be ready
+{{ includeTemplate "log_step" "Waiting for Ollama service to be ready..." }}
+sleep 5
+
+# Verify service is running
+if systemctl --user is-active ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Ollama service is running" }}
+else
+    {{ includeTemplate "log_error" "Ollama service may not be running properly" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "Ollama configuration completed" }}

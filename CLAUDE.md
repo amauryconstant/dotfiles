@@ -16,14 +16,12 @@ This system uses git submodules to manage AI-related configurations:
 - **Key Features**: Advanced templating, age encryption, chezmoi_modify_manager integration
 
 #### AI Submodule: `external_dot_ai/`
-- **Purpose**: AI assistant rules, configurations, and tooling
+- **Purpose**: AI assistant rules and configurations
 - **Location**: `/home/amaury/.local/share/chezmoi/external_dot_ai/`
 - **Target**: Files are deployed to `~/.ai/`
 - **Structure**:
   - `rules/cline/` - Cline AI assistant behavioral rules → `~/.ai/rules/cline/`
   - `dot_continue.yaml.tmpl` - Continue AI extension configuration → `~/.ai/.continue.yaml`
-  - `.chezmoiscripts/` - AI-related setup scripts
-  - `.chezmoidata/ai.yaml` - AI models and configuration data
 - **Integration**: Inherits template variables from main repository
 
 ## 🚨 CRITICAL SAFETY PROTOCOLS 🚨
@@ -139,8 +137,9 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ├── run_once_before_008_install_arch_packages.sh.tmpl
 ├── run_once_after_001_generate_and_config_cli.sh.tmpl
 ├── run_once_after_002_enable_services.sh.tmpl
-├── run_once_after_003_configure_ollama.sh.tmpl
-├── run_once_after_005_enable_topgrade_timer.sh.tmpl
+├── run_once_after_003_setup_network_printer.sh.tmpl
+├── run_once_after_004_enable_topgrade_timer.sh.tmpl
+├── run_once_after_005_configure_ollama.sh.tmpl
 ├── run_onchange_after_install_ai_models.sh.tmpl
 ├── run_onchange_after_install_extensions.sh.tmpl
 └── run_onchange_before_create_git_hooks.sh.tmpl
@@ -217,9 +216,10 @@ The system supports three installation profiles:
 
 ### **CRITICAL** Package Installation Flow
 1. **Setup Phase**: `run_once_before_*` installs package managers (yay, chaotic-aur)
-2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes packages
-3. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
-4. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
+2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes packages (including AI tools)
+3. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
+4. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
+5. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
 
 ## Common Commands
 
@@ -822,8 +822,8 @@ chezmoi execute-template < external_dot_ai/template_file.tmpl  # Test templates
 #### Scenario: Adding New AI Tool
 1. **Package Definition** → Main repo (`.chezmoidata/packages.yaml`)
 2. **Installation Logic** → Main repo (`.chezmoiscripts/run_once_before_008_install_arch_packages.sh.tmpl`)
-3. **Tool Configuration** → AI submodule (`rules/` or `dot_continue.yaml.tmpl`)
-4. **Setup Scripts** → AI submodule (`.chezmoiscripts/run_once_after_*`)
+3. **Tool Configuration** → Main repo (`.chezmoiscripts/run_once_after_005_configure_ollama.sh.tmpl`)
+4. **AI Assistant Rules** → AI submodule (`rules/` or `dot_continue.yaml.tmpl`)
 
 #### Scenario: Modifying AI Assistant Rules
 1. **Rule Changes** → AI submodule only (`rules/cline/`)
@@ -836,9 +836,9 @@ chezmoi execute-template < external_dot_ai/template_file.tmpl  # Test templates
 3. **Single Repository Testing** → All templates processed together
 
 #### Scenario: AI Model Management
-1. **Model List** → AI submodule (`.chezmoidata/ai.yaml`)
-2. **Installation Script** → AI submodule (`run_onchange_after_install_ai_models.sh.tmpl`)
-3. **Trigger** → Changes to ai.yaml automatically trigger submodule script
+1. **Model List** → Main repository (`.chezmoidata/ai.yaml`)
+2. **Installation Script** → Main repository (`run_onchange_after_install_ai_models.sh.tmpl`)
+3. **Trigger** → Changes to ai.yaml automatically trigger installation script
 
 ### **Submodule State Management**
 

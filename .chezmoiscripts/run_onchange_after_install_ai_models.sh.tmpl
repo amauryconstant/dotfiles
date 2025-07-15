@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Script: run_onchange_after_install_ai_models.sh.tmpl
+# Purpose: Install AI models based on destination configuration
+# Requirements: Arch Linux, ollama
+
+{{ includeTemplate "arch_linux_check" . }}
+
+# Hash: {{ include ".chezmoidata/ai.yaml" | sha256sum }}
+
+{{ includeTemplate "log_start" "Installing AI models..." }}
+
+# Check if ollama is installed and running
+if ! command -v ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Ollama not found, skipping AI model installation" }}
+    exit 0
+fi
+
+# Check if ollama service is running
+if ! systemctl --user is-active ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Starting ollama service..." }}
+    systemctl --user start ollama
+    sleep 5
+fi
+
+{{ includeTemplate "log_step" "Installing AI models..." }}
+
+# Install each model from the external AI configuration
+{{- range .ai.models }}
+{{ includeTemplate "log_step" (printf "Installing model: %s" .) }}
+ollama pull {{ . }}
+{{- end }}
+
+{{ includeTemplate "log_complete" "AI models installed successfully" }}

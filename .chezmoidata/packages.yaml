@@ -102,5 +102,10 @@ packages:
             - sane-airscan
             - skanpage
 
+        ai_tools:
+          strategy: *_install_from_source
+          list:
+            - ollama
+
   delete:
     arch: tldr

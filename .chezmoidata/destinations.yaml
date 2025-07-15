@@ -14,7 +14,7 @@ destinations:
   # Purpose: Complete development stack with all tools, AI assistance, IDE, and general applications
   # Use case: Primary development machine, professional workstation with entertainment/productivity apps
   work:
-    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, general_software, system_software, work_software, printing_scanning]
+    packages: [fonts, terminal_essentials, terminal_utils, terminal_presentation, languages, package_managers, development_tools, development_clis, general_software, system_software, work_software, printing_scanning, ai_tools]
     extensions: true  # VSCode extensions installed only if 'code' package is present
     services: [docker]  # Development services
 
@@ -39,3 +39,4 @@ destinations:
 # - system_software: System utilities (AppImage support, Snap, etc.)
 # - work_software: Work-specific applications (Chromium, Slack, etc.)
 # - printing_scanning: Printing and scanning support (CUPS, SANE, drivers)
+# - ai_tools: AI/ML tools (ollama, AI runtime services)
