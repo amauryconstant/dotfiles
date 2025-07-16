@@ -2,7 +2,6 @@
 # Purpose: Schedule monthly system maintenance using topgrade
 # Template Variables: Uses chezmoi template system for user-specific configuration
 
-{{ if eq .osId "linux-arch" }}
 [Unit]
 Description=Monthly Topgrade System Maintenance Timer
 Documentation=https://github.com/topgrade-rs/topgrade
@@ -20,17 +19,3 @@ AccuracySec=1h
 
 [Install]
 WantedBy=timers.target
-
-{{ else }}
-# Timer disabled on unsupported systems
-[Unit]
-Description=Monthly Topgrade System Maintenance Timer (Disabled - Unsupported OS)
-
-[Timer]
-# Disabled timer
-OnCalendar=
-
-[Install]
-WantedBy=timers.target
-
-{{ end }}

@@ -2,42 +2,11 @@
 {{ $workEmail := promptStringOnce . "workEmail" "What is your work email address? " -}}
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
-{{ $destination := promptStringOnce . "destination" "What is your installation destination? (test/work/leisure) " -}}
 {{ $aiEnabled := promptBoolOnce . "ai_enabled" "Enable AI tools and configuration? " -}}
-{{- if not (has $destination (list "test" "work" "leisure")) -}}
-{{-   $destination = "test" -}}
-{{- end -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
-{{- $osid := .chezmoi.os -}}
-{{- if hasKey .chezmoi.osRelease "id" -}}
-{{-   if eq .chezmoi.osRelease.id "arch" -}}
-{{-     $osid = "linux-arch" -}}
-{{-   else if eq .chezmoi.osRelease.id "fedora" -}}
-{{-     $osid = "linux-fedora" -}}
-{{-   else if eq .chezmoi.osRelease.id "centos" -}}
-{{-     $osid = "linux-fedora" -}}
-{{-   else if eq .chezmoi.osRelease.id "rhel" -}}
-{{-     $osid = "linux-fedora" -}}
-{{-   else if hasKey .chezmoi.osRelease "idLike" -}}
-{{-     $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.idLike -}}
-{{-   else -}}
-{{-     $osid = printf "%s-%s" .chezmoi.os .chezmoi.osRelease.id -}}
-{{-   end -}}
-{{- end -}}
 
-{{- $chassisType := "desktop" }}
-{{- if eq .chezmoi.os "darwin" }}
-{{-   if contains "MacBook" (output "sysctl" "-n" "hw.model") }}
-{{-     $chassisType = "laptop" }}
-{{-   else }}
-{{-     $chassisType = "desktop" }}
-{{-   end }}
-{{- else if eq .chezmoi.os "linux" }}
-{{-   $chassisType = (output "hostnamectl" "--json=short" | mustFromJson).Chassis }}
-{{- else if eq .chezmoi.os "windows" }}
-{{-   $chassisType = (output "powershell.exe" "-NoProfile" "-NonInteractive" "-Command" "if ((Get-CimInstance -Class Win32_Battery | Measure-Object).Count -gt 0) { Write-Output 'laptop' } else { Write-Output 'desktop' }") | trim }}
-{{- end }}
+{{- $chassisType := (output "hostnamectl" "--json=short" | mustFromJson).Chassis | default "desktop" }}
 
 
 encryption: "age"
@@ -56,8 +25,6 @@ data:
     workEmail: {{ $workEmail | quote }}
     personalEmail: {{ $personalEmail | quote }}
     privateServer: {{ $privateServer | quote }}
-    destination: {{ $destination | quote }}
-    osId: {{ $osid | quote }}
     chassisType: {{ $chassisType | quote }}
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
     ai_enabled: {{ $aiEnabled }}

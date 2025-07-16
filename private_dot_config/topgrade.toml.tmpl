@@ -2,8 +2,6 @@
 # Purpose: System-level maintenance and updates for Arch Linux
 # Template Variables: Uses chezmoi template system for user-specific configuration
 
-{{ if eq .osId "linux-arch" }}
-# Only run on supported systems
 [misc]
 # Disable confirmation prompts for automated execution
 assume_yes = true
@@ -57,11 +55,3 @@ arguments = "--rebase --autostash"
 "Clean package cache" = "sudo pacman -Sc --noconfirm"
 # Remove orphaned packages
 "Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
-
-{{ else }}
-# Configuration for unsupported systems
-[misc]
-# Disable all operations on unsupported systems
-disable = ["*"]
-
-{{ end }}

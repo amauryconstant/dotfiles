@@ -1,4 +1,0 @@
-{{ if eq .chezmoi.os "linux" }}
-{{- else -}}
-{{ includeTemplate "os_error" (dict "required" "Linux" "detected" .chezmoi.os) }}
-{{ end }}

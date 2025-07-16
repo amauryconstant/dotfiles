@@ -1,36 +1,25 @@
 #!/bin/sh
 
-# Script: run_once_after_001_enable_services.sh.tmpl
-# Purpose: Enable system services based on destination configuration
-# Requirements: Linux
+# Script: run_once_after_002_enable_services.sh.tmpl
+# Purpose: Enable system services for Arch Linux work environment
+# Requirements: Arch Linux
 
-{{ includeTemplate "linux_check" . }}
-{{- $destinationConfig := index .destinations .destination -}}
+{{ includeTemplate "log_start" "Enabling services for Arch Linux..." }}
 
-{{ includeTemplate "log_start" (printf "Enabling services for destination: %s" .destination) }}
+# Enable Docker service (work destination behavior)
+{{ includeTemplate "log_step" "Enabling Docker service..." }}
+sudo systemctl enable docker.service
+{{ includeTemplate "log_success" "Docker service enabled" }}
 
-# Enable Docker service (only for work destination)
-{{ if has "docker" $destinationConfig.services }}
-    {{ includeTemplate "log_step" "Enabling Docker service..." }}
-    sudo systemctl enable docker.service
-    {{ includeTemplate "log_success" "Docker service enabled" }}
-{{ else }}
-    {{ includeTemplate "log_skip" (printf "Docker service (not configured for %s destination)" .destination) }}
-{{ end }}
-
-# Enable Snap services (only if system_software packages are installed - leisure destination)
-{{ if has "system_software" $destinationConfig.packages }}
-    {{ includeTemplate "log_step" "Enabling Snap services..." }}
-    sudo systemctl enable --now snapd.socket
-    sudo systemctl enable --now snapd.apparmor.service
-    {{ includeTemplate "log_success" "Snap services enabled" }}
-{{ else }}
-    {{ includeTemplate "log_skip" (printf "Snap services (system_software not configured for %s destination)" .destination) }}
-{{ end }}
+# Enable Snap services (work destination includes system_software packages)
+{{ includeTemplate "log_step" "Enabling Snap services..." }}
+sudo systemctl enable --now snapd.socket
+sudo systemctl enable --now snapd.apparmor.service
+{{ includeTemplate "log_success" "Snap services enabled" }}
 
 # Enable Bluetooth (for all destinations - basic system service)
 {{ includeTemplate "log_step" "Enabling Bluetooth service..." }}
 sudo systemctl enable --now bluetooth
 {{ includeTemplate "log_success" "Bluetooth service enabled" }}
 
-{{ includeTemplate "log_complete" (printf "Service configuration completed for %s destination" .destination) }}
+{{ includeTemplate "log_complete" "Service configuration completed" }}

@@ -1,10 +1,8 @@
 #!/bin/sh
 
 # Script: run_onchange_after_install_ai_models.sh.tmpl
-# Purpose: Install AI models based on destination configuration
+# Purpose: Install AI models for Arch Linux work environment
 # Requirements: Arch Linux, ollama
-
-{{ includeTemplate "arch_linux_check" . }}
 
 # Hash: {{ include ".chezmoidata/ai.yaml" | sha256sum }}
 

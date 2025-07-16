@@ -4,8 +4,6 @@
 # Purpose: Enable and start the topgrade systemd timer for automated system maintenance
 # Requirements: Arch Linux, systemd, topgrade
 
-{{ includeTemplate "arch_linux_check" . }}
-
 {{ includeTemplate "log_start" "Enabling topgrade systemd timer for automated system maintenance..." }}
 
 # Check if topgrade is installed

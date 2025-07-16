@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux environments.
+This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux work environments.
+
+**System Configuration**: This repository is configured for a comprehensive work environment with all packages, services, extensions, and AI models installed. The destination concept has been simplified to always deploy the full work configuration.
 
 ### Git Submodule Architecture
 
@@ -68,8 +70,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 {{ .workEmail }}              # Work email address
 {{ .personalEmail }}          # Personal email address
 {{ .privateServer }}          # Private server URL
-{{ .osId }}                   # OS identifier (e.g., "linux-arch")
-{{ .chassisType }}            # "desktop" or "laptop"
+{{ .chassisType }}            # Chassis type from hostnamectl (laptop/desktop)
 
 # Data from .chezmoidata/ files (YAML becomes nested objects)
 {{ .packages.install.arch }}  # Package data
@@ -99,7 +100,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 {{ $server := .privateServer | default "localhost" }}  # Variable assignment with defaults
 
 # Whitespace control
-{{- if eq .osId "linux-arch" -}}               # Remove whitespace
+# Remove whitespace
 {{ includeTemplate "log_info" "message" }}
 {{- end -}}
 
@@ -114,7 +115,6 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ```
 .chezmoidata/
 ├── packages.yaml      # Package management with install strategies
-├── destinations.yaml  # Destination-based installation mapping  
 ├── ai.yaml           # AI models configuration (ollama models)
 ├── extensions.yaml   # VSCode extensions list
 ├── colors.yaml       # Color scheme definitions (oksolar)
@@ -124,8 +124,8 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 **Key Concepts:**
 - **Install Strategies**: `_install_binary`, `_install_from_source` with fallback chains
 - **Package Categories**: fonts, terminal_essentials, development_tools, ai_tools, etc.
-- **Destination Types**: `test` (minimal), `work` (full dev), `leisure` (personal)
 - **Strategy Chains**: `[pacman, yay_bin, yay_source]` for robust package installation
+- **Full Work Environment**: All package categories installed for comprehensive development setup
 
 ### Lifecycle Scripts (.chezmoiscripts/)
 ```
@@ -154,20 +154,16 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ### Template System (.chezmoitemplates/)
 ```
 .chezmoitemplates/
-├── arch_linux_check    # OS validation template
-├── linux_check        # Generic Linux check
 ├── log_start          # 🚀 Script start logging
 ├── log_step           # 📋 Major step logging
 ├── log_success        # ✅ Success logging
 ├── log_error          # ❌ Error logging
-├── log_complete       # 🎉 Completion logging
-└── os_error           # OS error template
+└── log_complete       # 🎉 Completion logging
 ```
 
 **Template Functions:**
-- **OS Detection**: `{{ includeTemplate "arch_linux_check" . }}`
 - **Logging**: `{{ includeTemplate "log_start" "message" }}`
-- **Error Handling**: `{{ includeTemplate "os_error" (dict "required" "linux-arch" "detected" .osId) }}`
+- **Error Handling**: Use standard shell error handling with `set -euo pipefail`
 
 ### Configuration Organization
 - **`private_dot_config/`** - XDG config directory contents
@@ -197,12 +193,13 @@ strategies:
 2. Try `yay_bin` (AUR precompiled)  
 3. Try `yay_source` (AUR from source)
 
-### **MUST** Understand Destination Types
-The system supports three installation profiles:
+### **System Configuration**
+The system is configured for a full work environment with:
 
-- **`test`**: Minimal (fonts, terminal_essentials only)
-- **`work`**: Full development (all packages, extensions, AI models, services)
-- **`leisure`**: Personal (general software, no development tools)
+- **All package categories**: Complete development stack with tools, AI assistance, and general applications
+- **All services enabled**: Docker, Snap, Bluetooth, and other work-related services
+- **Extensions**: VSCode extensions always installed
+- **AI models**: All AI models installed and configured
 
 ### Package Categories
 - **fonts**: Programming fonts (FiraCode, Geist Mono, etc.)
@@ -216,10 +213,11 @@ The system supports three installation profiles:
 
 ### **CRITICAL** Package Installation Flow
 1. **Setup Phase**: `run_once_before_*` installs package managers (yay, chaotic-aur)
-2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes packages (including AI tools)
-3. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
-4. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
-5. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
+2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes all package categories
+3. **Services Phase**: `run_once_after_002_enable_services.sh.tmpl` enables Docker, Snap, and Bluetooth
+4. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
+5. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
+6. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
 
 ## Common Commands
 
@@ -259,9 +257,7 @@ mise install                  # Install tool versions
 
 # Script: [filename]
 # Purpose: [clear description]  
-# Requirements: [OS/dependencies]
-
-{{ includeTemplate "arch_linux_check" . }}
+# Requirements: Arch Linux, [dependencies]
 
 {{ includeTemplate "log_start" "[description]" }}
 
@@ -277,8 +273,8 @@ set -euo pipefail
 ### **NEVER** Use These Anti-Patterns
 ❌ **NEVER** wrap scripts in main functions  
 ❌ **NEVER** use manual echo for logging  
-❌ **NEVER** implement custom OS detection  
-❌ **NEVER** mix distribution support in single scripts  
+❌ **NEVER** add unnecessary OS detection (system assumes Arch Linux)  
+❌ **NEVER** add cross-platform compatibility (focused on Arch Linux only)  
 
 ### **ALWAYS** Trust Script Execution Order
 Scripts execute in order: `run_once_before_*` → file application → `run_once_after_*` → `run_onchange_*`
@@ -338,7 +334,7 @@ set "Paths" "Home" "/home/{{ .firstname | lower }}"
 {{ $nextcloudServer := .privateServer | replace "www" "nextcloud" }}
 set "Server" "URL" "{{ $nextcloudServer }}"
 
-# Conditional settings
+# Conditional settings (based on hostnamectl chassis detection)
 {{ if eq .chassisType "laptop" }}
 set "Power" "SuspendOnLidClose" "true"
 {{ else }}
@@ -453,7 +449,6 @@ chezmoi cat path/to/target/file                      # Preview merged result
 ❌ **NEVER** run `chezmoi apply` without first running `chezmoi diff`  
 ❌ **NEVER** modify templates without syntax validation  
 ❌ **NEVER** change scripts without testing logic  
-❌ **NEVER** ignore OS compatibility requirements  
 ❌ **NEVER** modify chezmoi_modify_manager scripts without validating syntax first  
 ❌ **NEVER** assume chezmoi_modify_manager syntax without checking documentation  
 
@@ -501,7 +496,6 @@ Please decrypt manually and provide the information needed.
 #### Phase 1: Planning and Design
 1. **Understand the feature requirements**
    - What problem does this solve?
-   - Which destination types need this? (test/work/leisure)
    - What dependencies are required?
    - Does this need cross-platform support?
 
@@ -523,12 +517,7 @@ new_category:
     - another-package
 ```
 
-Then update destinations:
-```yaml
-# In .chezmoidata/destinations.yaml
-work:
-  packages: [existing_categories, new_category]
-```
+The system automatically includes all package categories in the work environment configuration.
 
 ##### Creating New Scripts
 **Naming Convention**: `run_[frequency]_[timing]_[order]_[description].sh.tmpl`
@@ -607,7 +596,6 @@ chezmoi verify
 ```
 
 ##### **SHOULD** Test on Different Scenarios
-- Test with different destination types (test/work/leisure)
 - Test with different template variables
 - Test error conditions (missing dependencies, failed installations)
 - Test script execution order dependencies
@@ -637,11 +625,7 @@ new_dev_tools:
     - tool-name
     - related-tool
 
-# 2. Update destinations.yaml
-work:
-  packages: [..., new_dev_tools]
-
-# 3. Create configuration script
+# 2. Create configuration script
 # run_once_after_011_configure_new_tools.sh.tmpl
 ```
 
@@ -653,11 +637,8 @@ new_applications:
   list:
     - app-name
 
-# 2. Update destinations.yaml
-leisure:
-  packages: [..., new_applications]
-work:
-  packages: [..., new_applications]  # if needed for work too
+# 2. Update the hardcoded package list in run_once_before_008_install_arch_packages.sh.tmpl
+# Add "new_applications" to the $workPackages list
 ```
 
 #### Pattern 3: Adding Template-Driven Configuration
@@ -672,9 +653,7 @@ Email = {{ .personalEmail }}
 Path = /home/{{ .firstname | lower }}/app
 
 # 3. Add OS-specific logic if needed
-{{ if eq .osId "linux-arch" }}
-    # Arch-specific configuration
-{{ end }}
+# Arch Linux configuration (system always assumes Arch)
 ```
 
 #### Pattern 4: Adding chezmoi_modify_manager Integration
@@ -705,7 +684,7 @@ add:remove "Paths" "DataDir"
 2. ✅ **Use existing patterns** - Follow established conventions and structures
 3. ✅ **Validate incrementally** - Test at each step, don't batch all changes
 4. ✅ **Document decisions** - Explain why specific approaches were chosen
-5. ✅ **Consider all destinations** - Ensure feature works for test/work/leisure as appropriate
+5. ✅ **Consider work environment** - Ensure feature works for comprehensive work setup
 
 #### **SHOULD** Consider These Practices
 1. ✅ **Plan for extensibility** - Design features that can be easily extended
@@ -739,7 +718,7 @@ Before considering a feature complete:
 ### Critical Questions for Feature Development
 1. 🔍 **Does this feature follow established patterns?**
 2. 🔍 **Have I tested this incrementally and thoroughly?**
-3. 🔍 **Will this work across different machines and destinations?**
+3. 🔍 **Will this work across different machines with the same environment?**
 4. 🔍 **Have I documented the feature and its integration points?**
 5. 🔍 **Are there any security implications I need to consider?**
 

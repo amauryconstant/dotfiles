@@ -2,7 +2,6 @@
 # Purpose: Automated system maintenance using topgrade
 # Template Variables: Uses chezmoi template system for user-specific configuration
 
-{{ if eq .osId "linux-arch" }}
 [Unit]
 Description=Topgrade System Maintenance
 Documentation=https://github.com/topgrade-rs/topgrade
@@ -38,14 +37,3 @@ TimeoutStopSec=300
 
 [Install]
 WantedBy=default.target
-
-{{ else }}
-# Service disabled on unsupported systems
-[Unit]
-Description=Topgrade System Maintenance (Disabled - Unsupported OS)
-
-[Service]
-Type=oneshot
-ExecStart=/bin/true
-
-{{ end }}

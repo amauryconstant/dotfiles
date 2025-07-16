@@ -1,18 +1,12 @@
 #!/bin/sh
 
 # Script: run_onchange_after_install_extensions.sh.tmpl
-# Purpose: Install VSCode extensions based on destination configuration
+# Purpose: Install VSCode extensions for Arch Linux work environment
 # Requirements: Arch Linux, code (VSCode)
-
-{{ includeTemplate "arch_linux_check" . }}
-{{- $destinationConfig := index .destinations .destination }}
 
 # Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
 
-{{ includeTemplate "log_start" (printf "Installing extensions for %s destination..." .destination) }}
-
-# Check if extensions should be installed for this destination
-{{- if $destinationConfig.extensions }}
+{{ includeTemplate "log_start" "Installing extensions for Arch Linux..." }}
 
 # Check if VSCode is installed
 if ! command -v code >/dev/null 2>&1; then
@@ -22,17 +16,13 @@ fi
 
 {{ includeTemplate "log_step" "Installing VSCode extensions..." }}
 
-# Install each extension
+# Install each extension (work destination behavior: always install extensions)
 {{- range .extensions.code }}
 {{ includeTemplate "log_progress" (printf "Installing extension: %s" .) }}
 code --install-extension {{ . }}
 {{- end }}
 
 {{ includeTemplate "log_success" "VSCode extensions installed successfully" }}
-
-{{- else }}
-{{ includeTemplate "log_skip" (printf "Extensions disabled for %s destination" .destination) }}
-{{- end }}
 
 # Install Firefox policies
 if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
@@ -41,3 +31,5 @@ if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
     sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
     {{ includeTemplate "log_success" "Firefox policies installed" }}
 fi
+
+{{ includeTemplate "log_complete" "Extension installation completed" }}

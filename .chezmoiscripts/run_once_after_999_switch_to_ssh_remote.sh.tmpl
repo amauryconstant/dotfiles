@@ -5,8 +5,6 @@
 # Requirements: SSH keys must be already set up
 # OS Support: linux-arch
 
-{{ includeTemplate "arch_linux_check" . }}
-
 set -euo pipefail
 
 {{ includeTemplate "log_start" "Switching repository remote from HTTPS to SSH" }}

@@ -1,4 +1,0 @@
-{{ if eq .osId "linux-arch" }}
-{{- else -}}
-{{ includeTemplate "os_error" (dict "required" "linux-arch" "detected" .osId) }}
-{{ end }}
