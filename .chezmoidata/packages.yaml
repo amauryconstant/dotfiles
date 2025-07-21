@@ -37,10 +37,6 @@ packages:
             - nvitop
             - btop
             - topgrade
-
-        terminal_presentation:
-          strategy: *_install_from_source
-          list:
             - vhs
 
         languages:
@@ -62,7 +58,7 @@ packages:
           list:
             - docker
             - docker-compose
-            - code
+            - lazydocker
 
         development_clis:
           strategy: *_install_from_source
@@ -71,6 +67,7 @@ packages:
             - git-delta
             - mergiraf
             - jujutsu
+            - lazygit
 
         system_software:
           list:
@@ -81,19 +78,20 @@ packages:
           strategy: *_install_binary
           list:
             - firefox
-            - chromium
             - spotify
             - nextcloud-client
             - qbittorrent
-            - slack-desktop
+            - xournalpp
 
         work_software:
           strategy: *_install_binary
           list:
             - chromium
             - slack-desktop
+            - code
 
         printing_scanning:
+          strategy: *_install_binary
           list:
             - cups
             - cups-pdf
