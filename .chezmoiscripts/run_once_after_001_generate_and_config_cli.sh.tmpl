@@ -12,19 +12,4 @@ if command -v zsh >/dev/null 2>&1; then
     chsh -s $(which zsh)
 fi
 
-# Configure git if not already configured
-if [ -z "$(git config --global user.name)" ]; then
-    {{ includeTemplate "log_step" "Configuring git user settings..." }}
-    git config --global user.name "{{ .fullname }}"
-    git config --global user.email "{{ .personalEmail }}"
-fi
-
-# Set up shell aliases and functions
-{{ includeTemplate "log_step" "Setting up shell configuration..." }}
-
-# Ensure .local/bin is in PATH
-if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.profile"
-fi
-
 {{ includeTemplate "log_complete" "CLI configuration completed successfully" }}

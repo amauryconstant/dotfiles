@@ -29,16 +29,13 @@
     {{- end }}
     
     # Install packages by category (work destination: all packages)
-    {{- $workPackages := list "fonts" "terminal_essentials" "terminal_utils" "terminal_presentation" "languages" "package_managers" "development_tools" "development_clis" "general_software" "system_software" "work_software" "printing_scanning" "ai_tools" }}
     {{- range $name, $config := .packages.install.arch.packages }}
-        {{- if has $name $workPackages }}
     
     {{ includeTemplate "log_step" (printf "Installing %s packages..." $name) }}
     if ! install_packages {{ join " " $config.list }}; then
         {{ includeTemplate "log_error" (printf "Failed to install %s packages" $name) }}
         exit 1
     fi
-        {{- end }}
     {{- end }}
     
     {{ includeTemplate "log_complete" "Package installation completed successfully" }}
