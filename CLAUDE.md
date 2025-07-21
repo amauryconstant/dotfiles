@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux work environments.
+This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux development workstations.
 
-**System Configuration**: This repository is configured for a comprehensive work environment with all packages, services, extensions, and AI models installed. The destination concept has been simplified to always deploy the full work configuration.
+**System Configuration**: This repository is configured as a comprehensive system with all packages, services, extensions, and AI models installed. The architecture has been simplified from destination-based profiles to a single comprehensive deployment.
 
 ### Git Submodule Architecture
 
@@ -125,7 +125,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - **Install Strategies**: `_install_binary`, `_install_from_source` with fallback chains
 - **Package Categories**: fonts, terminal_essentials, development_tools, ai_tools, etc.
 - **Strategy Chains**: `[pacman, yay_bin, yay_source]` for robust package installation
-- **Full Work Environment**: All package categories installed for comprehensive development setup
+- **Complete Installation**: All package categories installed for comprehensive development setup
 
 ### Lifecycle Scripts (.chezmoiscripts/)
 ```
@@ -194,12 +194,12 @@ strategies:
 3. Try `yay_source` (AUR from source)
 
 ### **System Configuration**
-The system is configured for a full work environment with:
+The system is configured as a comprehensive development environment with:
 
 - **All package categories**: Complete development stack with tools, AI assistance, and general applications
-- **All services enabled**: Docker, Snap, Bluetooth, and other work-related services
-- **Extensions**: VSCode extensions always installed
-- **AI models**: All AI models installed and configured
+- **System-level services**: Docker, Snap, Bluetooth, and topgrade automation enabled
+- **Extensions**: VSCode extensions automatically installed
+- **AI models**: Ollama models automatically pulled and configured
 
 ### Package Categories
 - **fonts**: Programming fonts (FiraCode, Geist Mono, etc.)
@@ -215,9 +215,10 @@ The system is configured for a full work environment with:
 1. **Setup Phase**: `run_once_before_*` installs package managers (yay, chaotic-aur)
 2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes all package categories
 3. **Services Phase**: `run_once_after_002_enable_services.sh.tmpl` enables Docker, Snap, and Bluetooth
-4. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
-5. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
-6. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
+4. **System Maintenance**: `run_once_after_004_enable_topgrade_timer.sh.tmpl` enables system-level topgrade automation
+5. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
+6. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
+7. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
 
 ## Common Commands
 
@@ -240,9 +241,9 @@ chezmoi merge-all             # Resolve all conflicts
 
 ### System Maintenance
 ```bash
-# Automated updates (configured via systemd)
+# Automated updates (configured via systemd at system level)
 topgrade                       # Comprehensive system updates
-systemctl --user enable topgrade.timer
+sudo systemctl enable topgrade.timer
 
 # Package management
 yay -Syu                      # Update Arch packages + AUR
@@ -517,7 +518,7 @@ new_category:
     - another-package
 ```
 
-The system automatically includes all package categories in the work environment configuration.
+The system automatically includes all package categories in the comprehensive configuration.
 
 ##### Creating New Scripts
 **Naming Convention**: `run_[frequency]_[timing]_[order]_[description].sh.tmpl`
@@ -567,7 +568,7 @@ bash -n new_script.sh.tmpl
 
 # 3. Data validation  
 yamllint .chezmoidata/packages.yaml
-yamllint .chezmoidata/destinations.yaml
+yamllint .chezmoidata/ai.yaml
 
 # 4. Template data inspection
 chezmoi data                                    # View all available data
@@ -637,8 +638,7 @@ new_applications:
   list:
     - app-name
 
-# 2. Update the hardcoded package list in run_once_before_008_install_arch_packages.sh.tmpl
-# Add "new_applications" to the $workPackages list
+# 2. The system automatically includes all package categories in the configuration
 ```
 
 #### Pattern 3: Adding Template-Driven Configuration
@@ -684,7 +684,7 @@ add:remove "Paths" "DataDir"
 2. ✅ **Use existing patterns** - Follow established conventions and structures
 3. ✅ **Validate incrementally** - Test at each step, don't batch all changes
 4. ✅ **Document decisions** - Explain why specific approaches were chosen
-5. ✅ **Consider work environment** - Ensure feature works for comprehensive work setup
+5. ✅ **Consider comprehensive setup** - Ensure feature works for the complete system configuration
 
 #### **SHOULD** Consider These Practices
 1. ✅ **Plan for extensibility** - Design features that can be easily extended
@@ -707,7 +707,7 @@ Before considering a feature complete:
 <thinking>
 1. Have I validated all syntax (templates, scripts, YAML)?
 2. Have I tested the feature with chezmoi diff and dry-run?
-3. Have I considered all relevant destination types?
+3. Have I considered the comprehensive system configuration?
 4. Have I documented the feature and its integration points?
 5. Have I followed the established patterns and conventions?
 6. Have I tested error conditions and edge cases?
@@ -718,7 +718,7 @@ Before considering a feature complete:
 ### Critical Questions for Feature Development
 1. 🔍 **Does this feature follow established patterns?**
 2. 🔍 **Have I tested this incrementally and thoroughly?**
-3. 🔍 **Will this work across different machines with the same environment?**
+3. 🔍 **Will this work across different machines with this configuration?**
 4. 🔍 **Have I documented the feature and its integration points?**
 5. 🔍 **Are there any security implications I need to consider?**
 

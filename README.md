@@ -8,8 +8,9 @@ This is a comprehensive chezmoi dotfiles repository that manages personal config
 - **Advanced templating** with Go text/template and Sprig functions
 - **Age encryption** for sensitive configuration files
 - **Package management** with multiple installation strategies (pacman, yay, source)
-- **Destination profiles** (test, work, leisure) for different system configurations
+- **Simplified configuration** with single work environment deployment
 - **chezmoi_modify_manager** integration for complex configuration files
+- **System-level services** with topgrade automation for maintenance
 
 ### AI Assistant Integration
 - **Cline AI rules** for structured behavioral guidance (`~/.ai/rules/cline/`)
@@ -55,7 +56,8 @@ During initialization, you'll be prompted to enable AI tools and configurations.
 Sophisticated package installation with fallback chains:
 - **Binary packages**: `pacman` → `yay_bin`
 - **Source packages**: `pacman` → `yay_bin` → `yay_source`
-- **Destination-specific**: Different package sets for test/work/leisure
+- **Unified deployment**: Single comprehensive work environment configuration
+- **AI tools integration**: Automated Ollama setup and model management
 
 ## Usage
 
