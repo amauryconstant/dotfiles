@@ -12,6 +12,13 @@ if ! command -v ollama >/dev/null 2>&1; then
     exit 0
 fi
 
+{{ includeTemplate "log_step" "Installing Ollama service file..." }}
+# Copy ollama service file to system location
+sudo cp "{{ .chezmoi.sourceDir }}/.data/ollama.service" /etc/systemd/system/ollama.service
+
+# Reload systemd daemon
+sudo systemctl daemon-reload
+
 {{ includeTemplate "log_step" "Enabling and starting Ollama service..." }}
 
 # Enable and start ollama system service

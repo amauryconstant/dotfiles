@@ -12,13 +12,18 @@ if ! command -v topgrade >/dev/null 2>&1; then
     exit 1
 fi
 
-# Reload systemd user daemon to pick up new service files
-{{ includeTemplate "log_step" "Reloading systemd user daemon..." }}
-systemctl --user daemon-reload
+# Copy systemd service files to system location
+{{ includeTemplate "log_step" "Installing topgrade systemd service files..." }}
+sudo cp "{{ .chezmoi.sourceDir }}/.data/topgrade.service.tmpl" /etc/systemd/system/topgrade.service
+sudo cp "{{ .chezmoi.sourceDir }}/.data/topgrade.timer.tmpl" /etc/systemd/system/topgrade.timer
+
+# Reload systemd daemon to pick up new service files
+{{ includeTemplate "log_step" "Reloading systemd daemon..." }}
+sudo systemctl daemon-reload
 
 # Enable the topgrade timer
 {{ includeTemplate "log_step" "Enabling topgrade timer..." }}
-if systemctl --user enable topgrade.timer; then
+if sudo systemctl enable topgrade.timer; then
     {{ includeTemplate "log_success" "Topgrade timer enabled successfully" }}
 else
     {{ includeTemplate "log_error" "Failed to enable topgrade timer" }}
@@ -27,7 +32,7 @@ fi
 
 # Start the topgrade timer
 {{ includeTemplate "log_step" "Starting topgrade timer..." }}
-if systemctl --user start topgrade.timer; then
+if sudo systemctl start topgrade.timer; then
     {{ includeTemplate "log_success" "Topgrade timer started successfully" }}
 else
     {{ includeTemplate "log_error" "Failed to start topgrade timer" }}
@@ -36,11 +41,11 @@ fi
 
 # Show timer status
 {{ includeTemplate "log_info" "Topgrade timer status:" }}
-systemctl --user status topgrade.timer --no-pager -l
+systemctl status topgrade.timer --no-pager -l
 
 # Show next scheduled run
 {{ includeTemplate "log_info" "Next scheduled topgrade run:" }}
-systemctl --user list-timers topgrade.timer --no-pager
+systemctl list-timers topgrade.timer --no-pager
 
 {{ includeTemplate "log_complete" "Topgrade timer setup completed successfully" }}
 {{ includeTemplate "log_info" "  - Timer runs monthly on the first Sunday at 10:00 AM" }}
