@@ -3,3 +3,5 @@ CLAUDE.md
 
 # Ignore pattern for Chezmoi Modify Manager
 **/*.src.ini
+
+.mcp.json
