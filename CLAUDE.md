@@ -398,29 +398,6 @@ self_update check
 4. ❌ **Never commit sensitive data** - Use `add:hide` for passwords and tokens
 5. ❌ **Never assume config structure** - Test with actual application config files
 
-## AI Assistant Integration
-
-### Memory Bank System
-This repository implements a comprehensive AI knowledge management system:
-
-#### Core Files (Versioned)
-- **`project_brief.md`** - Foundation document, project scope
-- **`product_context.md`** - Why project exists, problems solved
-- **`system_patterns.md`** - Architecture, design patterns
-- **`tech_context.md`** - Technologies, development setup
-
-#### Machine-Specific Files (Not Versioned)
-- **`active_context.md`** - Current work focus, recent changes
-- **`progress.md`** - What works, what's left to build
-- **`raw_reflection_log.md`** - Detailed task reflections
-- **`current_projects/`** - Detailed project documentation
-
-### Behavioral Rules
-1. **Continuous Improvement Protocol** - MUST reflect on complex tasks
-2. **Context Window Management** - Monitor 50% usage threshold
-3. **Knowledge Capture** - Document learnings in memory bank
-4. **Task Handoff** - Use structured handoff process when needed
-
 ## Quality Standards (MANDATORY)
 
 ### **CRITICAL** Pre-Change Validation
