@@ -127,7 +127,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - **Strategy Chains**: `[pacman, yay_bin, yay_source]` for robust package installation
 - **Complete Installation**: All package categories installed for comprehensive development setup
 
-### Lifecycle Scripts (.chezmoiscripts/)
+### Lifecycle Scripts (.chezmoiscripts/) - SETUP ONLY
 ```
 .chezmoiscripts/
 ├── run_once_before_001_install_package_manager.sh.tmpl
@@ -144,6 +144,19 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ├── run_onchange_after_install_extensions.sh.tmpl
 └── run_onchange_before_create_git_hooks.sh.tmpl
 ```
+
+**🚨 CRITICAL: Script Purpose Distinction**
+
+**`.chezmoiscripts/` are for SETUP and CONFIGURATION ONLY:**
+- `run_once_*` → **Initial system setup** (run only once during bootstrap)
+- `run_onchange_*` → **Configuration updates** (when dotfiles content changes)
+- **❌ NEVER for ongoing system maintenance** - that's handled by other tools
+
+**Ongoing System Maintenance Tools:**
+- **topgrade**: System updates, package upgrades (automated via systemd timer)
+- **systemd timers**: Scheduled maintenance tasks (`~/.config/systemd/user/`)
+- **CLI functions**: Manual tools (`private_dot_config/zsh/dot_zfunctions/`)
+- **Standalone scripts**: User-initiated tasks (`private_dot_config/scripts/`)
 
 **Script Execution Order:**
 1. `run_once_before_*` → Setup (package managers, directories, tools)
@@ -170,6 +183,64 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - **`private_dot_keys/`** - Encrypted keys and secrets (🔐 NEVER access directly)
 - **`private_dot_ssh/`** - SSH configuration and encrypted keys
 - **`.memory-bank/`** - AI assistant knowledge base
+
+### Maintenance Tool Organization
+
+**🔧 System Maintenance Architecture (NOT chezmoi scripts):**
+
+#### **CLI Functions** (`private_dot_config/zsh/dot_zfunctions/`)
+```
+dot_zfunctions/
+├── system-health       # System status dashboard
+├── check-packages      # Package health monitoring
+├── backup-system       # Manual system backup
+├── security-scan       # Security audit tools
+├── db-init             # Database initialization
+├── proj-switch         # Project management
+└── service-check       # Service status tools
+```
+
+#### **Standalone Scripts** (`private_dot_config/scripts/`)
+```
+scripts/
+├── maintenance/
+│   ├── system-cleanup.sh
+│   ├── package-health.sh
+│   └── security-audit.sh
+├── backup/
+│   ├── create-backup.sh
+│   └── restore-backup.sh
+└── monitoring/
+    ├── health-monitor.sh
+    └── alert-system.sh
+```
+
+#### **Systemd Timers** (Setup by chezmoi, run independently)
+```bash
+# User timers: ~/.config/systemd/user/
+backup.timer              # Automated backups
+security-audit.timer      # Security scans
+package-health.timer      # Package monitoring
+
+# System timers: /etc/systemd/system/ (configured by chezmoi)
+topgrade.timer           # System updates
+```
+
+#### **Topgrade Integration** (`private_dot_config/topgrade.toml.tmpl`)
+```toml
+[commands]
+"System Health Check" = "system-health --brief"
+"Package Health" = "check-packages --report"
+"Security Status" = "security-scan --quick"
+"Pre-backup" = "backup-system --pre-update"
+```
+
+**🎯 Key Principle: Separation of Concerns**
+- **chezmoi**: Deploys and configures maintenance tools
+- **topgrade**: Handles system updates and upgrades  
+- **systemd**: Schedules automated maintenance tasks
+- **CLI tools**: Provide manual maintenance capabilities
+- **Scripts**: Execute complex maintenance workflows
 
 ### Development Environment
 - **Languages**: Go, Python, Rust (managed via mise)
@@ -239,7 +310,7 @@ chezmoi merge <file>           # Resolve specific file
 chezmoi merge-all             # Resolve all conflicts
 ```
 
-### System Maintenance
+### System Maintenance - NOT Chezmoi's Responsibility
 ```bash
 # Automated updates (configured via systemd at system level)
 topgrade                       # Comprehensive system updates
@@ -248,7 +319,19 @@ sudo systemctl enable topgrade.timer
 # Package management
 yay -Syu                      # Update Arch packages + AUR
 mise install                  # Install tool versions
+
+# Manual maintenance tools (CLI functions)
+system-health                 # Custom system health check
+check-packages               # Package health monitoring
+backup-system               # Manual system backup
+security-scan               # Manual security audit
 ```
+
+**Maintenance Architecture:**
+- **topgrade.toml.tmpl**: Configures system-wide maintenance (managed by chezmoi)
+- **systemd timers**: Schedule automated tasks (setup by chezmoi, run independently)
+- **CLI tools**: Manual maintenance commands (deployed by chezmoi, used by user)
+- **Standalone scripts**: Complex maintenance workflows (managed files, executed manually)
 
 ## Script Standards (MANDATORY)
 
@@ -280,6 +363,43 @@ set -euo pipefail
 ### **ALWAYS** Trust Script Execution Order
 Scripts execute in order: `run_once_before_*` → file application → `run_once_after_*` → `run_onchange_*`
 Trust that previous scripts succeeded (chezmoi stops if they fail).
+
+### **CRITICAL** Script Usage Guidelines
+
+#### **DO Use .chezmoiscripts/ For:**
+✅ **Initial system setup**: Installing package managers, creating directories  
+✅ **Tool installation**: Installing packages, configuring services  
+✅ **Configuration setup**: Setting up systemd timers, configuring tools  
+✅ **Dotfiles-driven changes**: Updates when template data changes  
+
+#### **DO NOT Use .chezmoiscripts/ For:**
+❌ **System updates**: Use topgrade for package updates  
+❌ **Ongoing maintenance**: Use systemd timers and CLI tools  
+❌ **Regular monitoring**: Use scheduled scripts, not chezmoi  
+❌ **User-initiated tasks**: Use CLI functions and standalone scripts  
+
+#### **Alternative Implementation Patterns:**
+
+**For System Monitoring:**
+```bash
+# WRONG: .chezmoiscripts/run_onchange_system_health.sh.tmpl
+# RIGHT: private_dot_config/zsh/dot_zfunctions/system-health
+# RIGHT: Add to topgrade.toml.tmpl custom commands
+```
+
+**For Backup Tasks:**
+```bash
+# WRONG: .chezmoiscripts/run_onchange_backup.sh.tmpl
+# RIGHT: ~/.config/systemd/user/backup.timer (setup by chezmoi)
+# RIGHT: private_dot_config/zsh/dot_zfunctions/backup-now
+```
+
+**For Package Maintenance:**
+```bash
+# WRONG: .chezmoiscripts/run_onchange_package_health.sh.tmpl
+# RIGHT: topgrade.toml.tmpl custom commands
+# RIGHT: private_dot_config/zsh/dot_zfunctions/check-packages
+```
 
 ## chezmoi_modify_manager Integration
 
@@ -482,6 +602,14 @@ Please decrypt manually and provide the information needed.
    - **New script**: Create lifecycle script with proper naming
    - **Configuration change**: Modify existing templates or create new ones
    - **New template**: Add to `.chezmoitemplates/` if reusable
+
+3. **Determine the implementation type** ⚠️ **CRITICAL DECISION**
+   - **Setup/Installation task**: Use `.chezmoiscripts/run_once_*` or `run_onchange_*`
+   - **Ongoing maintenance**: Use CLI functions, systemd timers, or topgrade integration
+   - **User tools**: Create CLI functions in `private_dot_config/zsh/dot_zfunctions/`
+   - **Complex workflows**: Create standalone scripts in `private_dot_config/scripts/`
+   - **Scheduled tasks**: Configure systemd timers (setup via chezmoi, run independently)
+   - **System updates**: Integrate with `topgrade.toml.tmpl` custom commands
 
 #### Phase 2: Implementation Strategy
 

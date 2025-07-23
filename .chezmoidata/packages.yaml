@@ -105,5 +105,13 @@ packages:
           list:
             - ollama
 
+        system_monitoring:
+          strategy: *_install_from_source
+          list:
+            - glances
+            - inxi
+            - lm_sensors
+            - pacman-contrib
+
   delete:
     arch: tldr

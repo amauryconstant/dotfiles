@@ -49,9 +49,16 @@ repos = [
 # Arguments to pass Git when pulling repositories
 arguments = "--rebase --autostash"
 
+# Pre-update commands (run before any updates)
+[pre_commands]
+# System health check before updates
+"System health check" = "system-health --brief"
+
 # Custom commands for system-specific maintenance
 [commands]
 # Clean package cache after updates
 "Clean package cache" = "sudo pacman -Sc --noconfirm"
 # Remove orphaned packages
 "Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
+# Post-update system status
+"Post-update system status" = "system-health --brief"
