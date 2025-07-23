@@ -1,0 +1,272 @@
+#!/usr/bin/env bash
+
+# Chezmoi Manager - Interactive dotfiles management
+# Purpose: User-friendly interface for common chezmoi operations
+# Requirements: chezmoi, gum
+
+chezmoi-manager() {
+    # Check if required tools are available
+    if ! command -v chezmoi >/dev/null 2>&1; then
+        echo "❌ chezmoi is not installed or not in PATH"
+        return 1
+    fi
+    
+    if ! command -v gum >/dev/null 2>&1; then
+        echo "❌ gum is required but not installed. Install with: pacman -S gum"
+        return 1
+    fi
+    
+    # Helper function for styled output
+    print_message() {
+        local type="$1"
+        local message="$2"
+        
+        case "$type" in
+            "title")
+                gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$message"
+                ;;
+            "success")
+                gum style --foreground "#00ff00" "✅ $message"
+                ;;
+            "error")
+                gum style --foreground "#ff0000" --bold "❌ $message"
+                ;;
+            "warning")
+                gum style --foreground "#ffaa00" "⚠️  $message"
+                ;;
+            "info")
+                gum style --foreground "#00aaff" "ℹ️  $message"
+                ;;
+            *)
+                echo "$message"
+                ;;
+        esac
+    }
+    
+    # Main interactive loop
+    while true; do
+        print_message "title" "🏠 Chezmoi Dotfiles Manager"
+        
+        ACTION=$(gum choose --header "Select an action:" \
+            "📊 Status - Check current status" \
+            "🔍 Diff - Preview changes" \
+            "✅ Apply - Apply changes" \
+            "📝 Edit - Edit a managed file" \
+            "➕ Add - Add a new file to management" \
+            "❌ Remove - Remove file from management" \
+            "🔄 Update - Pull from remote and apply" \
+            "🧹 Clean - Dry run to see what would be applied" \
+            "ℹ️  Info - Show chezmoi configuration" \
+            "❓ Help - Show chezmoi help" \
+            "🚪 Exit")
+        
+        case "$ACTION" in
+            "📊 Status - Check current status")
+                print_message "info" "Checking chezmoi status..."
+                echo ""
+                chezmoi status
+                ;;
+                
+            "🔍 Diff - Preview changes")
+                print_message "info" "Showing differences between current state and target state..."
+                echo ""
+                chezmoi diff
+                ;;
+                
+            "✅ Apply - Apply changes")
+                # Safety check with confirmation
+                local status_output=$(chezmoi status 2>/dev/null)
+                if [[ -z "$status_output" ]]; then
+                    print_message "success" "No changes to apply - system is up to date!"
+                else
+                    print_message "warning" "The following changes will be applied:"
+                    echo ""
+                    chezmoi diff | head -20
+                    echo ""
+                    
+                    local confirm=false
+                    if [[ "$HAS_GUM" == true ]]; then
+                        if gum confirm "Apply these changes?"; then
+                            confirm=true
+                        fi
+                    else
+                        echo -n "Apply these changes? [y/N] "
+                        read response
+                        if [[ "$response" =~ ^[Yy]$ ]]; then
+                            confirm=true
+                        fi
+                    fi
+                    
+                    if [[ "$confirm" == true ]]; then
+                        if [[ "$HAS_GUM" == true ]]; then
+                            gum spin --spinner dot --title "Applying changes..." -- chezmoi apply -v
+                        else
+                            echo "Applying changes..."
+                            chezmoi apply -v
+                        fi
+                        print_message "success" "Changes applied successfully!"
+                    else
+                        print_message "info" "Operation cancelled"
+                    fi
+                fi
+                ;;
+                
+            "📝 Edit - Edit a managed file")
+                if [[ "$HAS_GUM" == true ]]; then
+                    local file=$(gum input --placeholder "Enter file path (e.g., ~/.zshrc)" --header "Which file would you like to edit?")
+                else
+                    echo -n "Enter file path to edit (e.g., ~/.zshrc): "
+                    read file
+                fi
+                
+                if [[ -n "$file" ]]; then
+                    print_message "info" "Opening $file for editing..."
+                    chezmoi edit "$file"
+                else
+                    print_message "error" "No file specified"
+                fi
+                ;;
+                
+            "➕ Add - Add a new file to management")
+                if [[ "$HAS_GUM" == true ]]; then
+                    local file=$(gum input --placeholder "Enter file path (e.g., ~/.vimrc)" --header "Which file would you like to add to chezmoi?")
+                else
+                    echo -n "Enter file path to add to chezmoi (e.g., ~/.vimrc): "
+                    read file
+                fi
+                
+                if [[ -n "$file" ]]; then
+                    if [[ -f "$file" || -d "$file" ]]; then
+                        print_message "info" "Adding $file to chezmoi management..."
+                        if chezmoi add "$file"; then
+                            print_message "success" "Successfully added $file to chezmoi"
+                        else
+                            print_message "error" "Failed to add $file to chezmoi"
+                        fi
+                    else
+                        print_message "error" "File $file does not exist"
+                    fi
+                else
+                    print_message "error" "No file specified"
+                fi
+                ;;
+                
+            "❌ Remove - Remove file from management")
+                if [[ "$HAS_GUM" == true ]]; then
+                    local file=$(gum input --placeholder "Enter file path (e.g., ~/.vimrc)" --header "Which file would you like to remove from chezmoi?")
+                else
+                    echo -n "Enter file path to remove from chezmoi (e.g., ~/.vimrc): "
+                    read file
+                fi
+                
+                if [[ -n "$file" ]]; then
+                    local confirm=false
+                    if [[ "$HAS_GUM" == true ]]; then
+                        if gum confirm "Remove $file from chezmoi management?"; then
+                            confirm=true
+                        fi
+                    else
+                        echo -n "Remove $file from chezmoi management? [y/N] "
+                        read response
+                        if [[ "$response" =~ ^[Yy]$ ]]; then
+                            confirm=true
+                        fi
+                    fi
+                    
+                    if [[ "$confirm" == true ]]; then
+                        if chezmoi forget "$file"; then
+                            print_message "success" "Successfully removed $file from chezmoi management"
+                        else
+                            print_message "error" "Failed to remove $file from chezmoi management"
+                        fi
+                    else
+                        print_message "info" "Operation cancelled"
+                    fi
+                else
+                    print_message "error" "No file specified"
+                fi
+                ;;
+                
+            "🔄 Update - Pull from remote and apply")
+                print_message "info" "Updating from remote repository and applying changes..."
+                if [[ "$HAS_GUM" == true ]]; then
+                    gum spin --spinner dot --title "Updating from remote..." -- chezmoi update
+                else
+                    chezmoi update
+                fi
+                print_message "success" "Update completed!"
+                ;;
+                
+            "🧹 Clean - Dry run to see what would be applied")
+                print_message "info" "Performing dry run to show what would be applied..."
+                echo ""
+                chezmoi apply --dry-run
+                ;;
+                
+            "ℹ️  Info - Show chezmoi configuration")
+                if [[ "$HAS_GUM" == true ]]; then
+                    gum style --foreground "#00aaff" --bold --border rounded \
+                        --padding "1 2" "ℹ️  Chezmoi Configuration"
+                    echo ""
+                    
+                    # Format configuration data in a table
+                    local source_path=$(chezmoi source-path)
+                    local target_path=$(chezmoi target-path)
+                    
+                    echo "Setting|Value" > /tmp/chezmoi_config.txt
+                    echo "Source Directory|$source_path" >> /tmp/chezmoi_config.txt
+                    echo "Target Directory|$target_path" >> /tmp/chezmoi_config.txt
+                    echo "OS|$(chezmoi data | grep -o '"os":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "unknown")" >> /tmp/chezmoi_config.txt
+                    echo "Architecture|$(chezmoi data | grep -o '"arch":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "unknown")" >> /tmp/chezmoi_config.txt
+                    echo "Hostname|$(chezmoi data | grep -o '"hostname":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "unknown")" >> /tmp/chezmoi_config.txt
+                    
+                    gum table < /tmp/chezmoi_config.txt
+                    rm -f /tmp/chezmoi_config.txt
+                    
+                    echo ""
+                    gum style --foreground "#666666" --italic "Template Data (showing first 20 lines):"
+                    chezmoi data | head -20
+                    
+                    if [[ $(chezmoi data | wc -l) -gt 20 ]]; then
+                        gum style --foreground "#666666" --italic "... (use 'chezmoi data' for complete output)"
+                    fi
+                else
+                    print_message "info" "Chezmoi configuration information:"
+                    echo ""
+                    chezmoi data
+                    echo ""
+                    print_message "info" "Source directory: $(chezmoi source-path)"
+                    print_message "info" "Target directory: $(chezmoi target-path)"
+                fi
+                ;;
+                
+            "❓ Help - Show chezmoi help")
+                print_message "info" "Chezmoi help information:"
+                echo ""
+                chezmoi help
+                ;;
+                
+            "🚪 Exit"|"")
+                print_message "info" "Goodbye! 👋"
+                break
+                ;;
+                
+            *)
+                print_message "error" "Unknown action. Please try again."
+                ;;
+        esac
+        
+        # Pause before showing menu again (except for exit)
+        if [[ "$ACTION" != "🚪 Exit" && "$ACTION" != "" ]]; then
+            echo ""
+            if [[ "$HAS_GUM" == true ]]; then
+                gum style --foreground "#666666" "Press any key to continue..."
+                read -k 1
+            else
+                echo "Press Enter to continue..."
+                read
+            fi
+            echo ""
+        fi
+    done
+}

@@ -38,6 +38,7 @@ packages:
             - btop
             - topgrade
             - vhs
+            - gum
 
         languages:
           strategy: *_install_from_source
