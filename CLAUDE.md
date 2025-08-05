@@ -184,6 +184,100 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - **`private_dot_ssh/`** - SSH configuration and encrypted keys
 - **`.memory-bank/`** - AI assistant knowledge base
 
+## Shell Initialization Architecture
+
+This repository implements a sophisticated multi-shell initialization system that provides consistent environment setup across sh, bash, and zsh in all execution modes (interactive, non-interactive, login).
+
+### **Core Architecture Pattern**
+
+#### **Layer 1: Common Shell Configuration (`private_dot_config/shell/`)**
+- **`shell/env`** - Core environment setup, sets ENV/BASH_ENV variables, sources `env_functions`
+- **`shell/env_functions`** - POSIX shell functions available to all shells (e.g., `system_health_simple()`, `system_maintenance_simple()`)
+- **`shell/interactive`** - Common interactive shell configuration
+- **`shell/login`** - Login shell environment variables (EDITOR, VISUAL, BROWSER, etc.)
+- **`shell/logout`** - Logout cleanup (clears console for privacy)
+
+#### **Layer 2: Shell-Specific Adapters (Complete Symmetry)**
+
+Each shell follows the same delegation pattern where shell-specific files source common `shell/` files:
+
+**Bash:**
+- **`dot_bash_profile`** - Complex bash login setup with BASH_ENV management
+- **`dot_bashrc`** - Sources `bash/env` + `bash/interactive`
+- **`bash/env`** → sources `shell/env`
+- **`bash/interactive`** → sources `shell/interactive`
+- **`bash/login`** → sources `shell/login`
+- **`bash/logout`** → sources `shell/logout`
+
+**Zsh:**
+- **`dot_zshenv`** - Sources `zsh/env`, sets ZDOTDIR
+- **`zsh/env`** → sources `shell/env`
+- **`zsh/dot_zlogin`** → sources `shell/login`
+- **`zsh/dot_zlogout`** → sources `shell/logout`
+- **`zsh/dot_zshrc`** - Zsh interactive setup with antidote plugins
+- **`zsh/dot_zfunctions/`** - Zsh-specific interactive functions
+
+**POSIX Shell:**
+- **`dot_profile`** - Sources `sh/env` + `sh/login` (for sh-compatible login shells)
+- **`sh/env`** → sources `shell/env`
+- **`sh/interactive`** → sources `shell/interactive`
+- **`sh/login`** → sources `shell/login`
+
+### **Environment Variables Set by `shell/env`:**
+```bash
+ENV=$HOME/.config/sh/interactive      # For sh interactive shells
+BASH_ENV=$HOME/.config/bash/env      # For bash non-interactive shells
+```
+
+These enable automatic loading of appropriate shell configurations in different execution contexts.
+
+### **Function Architecture**
+
+#### **POSIX Functions (`shell/env_functions`):**
+- **Purpose**: Automation, scripts, systemd services, topgrade integration
+- **Examples**: `system_health_simple()`, `system_maintenance_simple()`
+- **Features**: Simple ANSI output, no dependencies, fast execution
+- **Loaded by**: All shells via `shell/env`
+- **Usage**: `system_health_simple --brief`, `system_maintenance_simple --cleanup`
+
+#### **Interactive Functions (`zsh/dot_zfunctions/`):**
+- **Purpose**: Rich terminal interaction
+- **Examples**: `system-health`, `system-maintenance`
+- **Features**: Gum-based UI, interactive menus, progress spinners, tables
+- **Loaded by**: Zsh autoload mechanism
+- **Usage**: Direct terminal commands with full interactive experience
+
+### **Execution Flow by Context**
+
+#### **Login Shells:**
+- **Bash**: `.bash_profile` → `bash/env` → `shell/env` → `env_functions` ✅
+- **POSIX**: `.profile` → `sh/env` + `sh/login` → `shell/env` + `shell/login` ✅
+- **Zsh**: `.zshenv` → `zsh/env` → `shell/env` → `env_functions` ✅
+
+#### **Non-Interactive Shells (systemd, topgrade, scripts):**
+- **Bash**: `$BASH_ENV` → `bash/env` → `shell/env` → `env_functions` ✅
+- **Zsh**: `.zshenv` → `zsh/env` → `shell/env` → `env_functions` ✅
+- **POSIX**: Direct sourcing in scripts as needed
+
+#### **Interactive Shells:**
+- **Bash**: `.bashrc` → `bash/env` + `bash/interactive` → `shell/env` + `shell/interactive` ✅
+- **Zsh**: `.zshenv` + `ZDOTDIR/.zshrc` → loads both POSIX and zsh functions ✅
+
+### **Key Benefits**
+- **Universal Consistency**: Same functions available across all shells
+- **Separation of Concerns**: POSIX functions for automation, rich functions for interaction
+- **Architecture Symmetry**: Each shell follows identical delegation patterns
+- **Reliable Automation**: Non-interactive shells get consistent environment
+- **Rich UX**: Interactive shells get enhanced functionality
+
+### **Integration with Topgrade**
+The system enables topgrade to use POSIX functions for system health monitoring:
+```toml
+"System health check" = "-i source ~/.config/zsh/env && system_health_simple --brief"
+```
+
+This architecture ensures that maintenance tools work reliably in all execution contexts while providing rich interactive experiences when used directly.
+
 ### Maintenance Tool Organization
 
 **🔧 System Maintenance Architecture (NOT chezmoi scripts):**

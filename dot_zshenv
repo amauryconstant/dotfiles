@@ -6,6 +6,9 @@
 # ZSH config dir
 export ZDOTDIR=$XDG_CONFIG_HOME/zsh
 
+# Source shell environment
+. $ZDOTDIR/env
+
 # Ensure path arrays do not contain duplicates.
 typeset -gU path fpath
 
