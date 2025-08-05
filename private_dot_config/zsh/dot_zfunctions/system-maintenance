@@ -5,143 +5,66 @@
 # Requirements: Arch Linux, pacman, optionally yay, topgrade, gum for enhanced UI
 
 system-maintenance() {
-    # Check if gum is available for enhanced UI
-    local HAS_GUM=false
-    if command -v gum >/dev/null 2>&1; then
-        HAS_GUM=true
-    fi
+    # Interactive system maintenance - assumes gum is available
     
     # Helper function for styled output
     print_message() {
         local type="$1"
         local message="$2"
         
-        if [[ "$HAS_GUM" == true ]]; then
-            case "$type" in
-                "title")
-                    gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$message"
-                    ;;
-                "success")
-                    gum style --foreground "#00ff00" "✅ $message"
-                    ;;
-                "error")
-                    gum style --foreground "#ff0000" --bold "❌ $message"
-                    ;;
-                "warning")
-                    gum style --foreground "#ffaa00" "⚠️  $message"
-                    ;;
-                "info")
-                    gum style --foreground "#00aaff" "ℹ️  $message"
-                    ;;
-                *)
-                    echo "$message"
-                    ;;
-            esac
-        else
-            case "$type" in
-                "title")
-                    echo "==============================================="
-                    echo "$message"
-                    echo "==============================================="
-                    ;;
-                "success")
-                    echo "✅ $message"
-                    ;;
-                "error")
-                    echo "❌ $message"
-                    ;;
-                "warning")
-                    echo "⚠️  $message"
-                    ;;
-                "info")
-                    echo "ℹ️  $message"
-                    ;;
-                *)
-                    echo "$message"
-                    ;;
-            esac
-        fi
+        case "$type" in
+            "title")
+                gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$message"
+                ;;
+            "success")
+                gum style --foreground "#00ff00" "✅ $message"
+                ;;
+            "error")
+                gum style --foreground "#ff0000" --bold "❌ $message"
+                ;;
+            "warning")
+                gum style --foreground "#ffaa00" "⚠️  $message"
+                ;;
+            "info")
+                gum style --foreground "#00aaff" "ℹ️  $message"
+                ;;
+            *)
+                echo "$message"
+                ;;
+        esac
     }
     
-    # Function to run command with spinner if gum is available
+    # Function to run command with spinner
     run_with_progress() {
         local title="$1"
         local command="$2"
         
-        if [[ "$HAS_GUM" == true ]]; then
-            gum spin --spinner dot --title "$title" -- sh -c "$command"
-        else
-            echo "$title"
-            eval "$command"
-        fi
+        gum spin --spinner dot --title "$title" -- sh -c "$command"
     }
     
     # Function to ask for confirmation
     confirm_action() {
         local message="$1"
         
-        if [[ "$HAS_GUM" == true ]]; then
-            gum confirm "$message"
-        else
-            echo -n "$message [y/N] "
-            read response
-            [[ "$response" =~ ^[Yy]$ ]]
-        fi
+        gum confirm "$message"
     }
     
     # Main interactive loop
     while true; do
         print_message "title" "🔧 System Maintenance Tool"
         
-        if [[ "$HAS_GUM" == true ]]; then
-            ACTION=$(gum choose --header "Select a maintenance action:" \
-                "🔄 Full System Update - Run topgrade (recommended)" \
-                "📦 Package Updates - Update Arch packages only" \
-                "🍃 AUR Updates - Update AUR packages (requires yay)" \
-                "🧹 System Cleanup - Clean package cache and orphans" \
-                "🔍 System Health Check - Run system health dashboard" \
-                "💾 Disk Cleanup - Clean temporary files and caches" \
-                "🗂️  Log Cleanup - Clean system logs" \
-                "🔐 Security Update - Update and check security status" \
-                "📊 System Information - Detailed system info" \
-                "⚡ Quick Status - Brief system overview" \
-                "🚪 Exit")
-        else
-            echo ""
-            echo "Available maintenance actions:"
-            echo "1) Full System Update - Run topgrade (recommended)"
-            echo "2) Package Updates - Update Arch packages only"
-            echo "3) AUR Updates - Update AUR packages (requires yay)"
-            echo "4) System Cleanup - Clean package cache and orphans"
-            echo "5) System Health Check - Run system health dashboard"
-            echo "6) Disk Cleanup - Clean temporary files and caches"
-            echo "7) Log Cleanup - Clean system logs"
-            echo "8) Security Update - Update and check security status"
-            echo "9) System Information - Detailed system info"
-            echo "10) Quick Status - Brief system overview"
-            echo "11) Exit"
-            echo ""
-            echo -n "Choose an action (1-11): "
-            read choice
-            
-            case "$choice" in
-                1) ACTION="🔄 Full System Update - Run topgrade (recommended)" ;;
-                2) ACTION="📦 Package Updates - Update Arch packages only" ;;
-                3) ACTION="🍃 AUR Updates - Update AUR packages (requires yay)" ;;
-                4) ACTION="🧹 System Cleanup - Clean package cache and orphans" ;;
-                5) ACTION="🔍 System Health Check - Run system health dashboard" ;;
-                6) ACTION="💾 Disk Cleanup - Clean temporary files and caches" ;;
-                7) ACTION="🗂️  Log Cleanup - Clean system logs" ;;
-                8) ACTION="🔐 Security Update - Update and check security status" ;;
-                9) ACTION="📊 System Information - Detailed system info" ;;
-                10) ACTION="⚡ Quick Status - Brief system overview" ;;
-                11) ACTION="🚪 Exit" ;;
-                *) 
-                    print_message "error" "Invalid choice. Please try again."
-                    continue
-                    ;;
-            esac
-        fi
+        ACTION=$(gum choose --header "Select a maintenance action:" \
+            "🔄 Full System Update - Run topgrade (recommended)" \
+            "📦 Package Updates - Update Arch packages only" \
+            "🍃 AUR Updates - Update AUR packages (requires yay)" \
+            "🧹 System Cleanup - Clean package cache and orphans" \
+            "🔍 System Health Check - Run system health dashboard" \
+            "💾 Disk Cleanup - Clean temporary files and caches" \
+            "🗂️  Log Cleanup - Clean system logs" \
+            "🔐 Security Update - Update and check security status" \
+            "📊 System Information - Detailed system info" \
+            "⚡ Quick Status - Brief system overview" \
+            "🚪 Exit")
         
         case "$ACTION" in
             "🔄 Full System Update - Run topgrade (recommended)")
@@ -180,79 +103,51 @@ system-maintenance() {
                 ;;
                 
             "🧹 System Cleanup - Clean package cache and orphans")
-                if [[ "$HAS_GUM" == true ]]; then
-                    gum style --foreground "#ffaa00" --bold --border rounded \
-                        --padding "1 2" "🧹 System Cleanup Session"
-                    echo ""
+                gum style --foreground "#ffaa00" --bold --border rounded \
+                    --padding "1 2" "🧹 System Cleanup Session"
+                echo ""
+                
+                # Log cleanup activities
+                echo "$(date): Starting system cleanup" | gum log --structured --level info
+                
+                # Clean package cache
+                gum style --foreground "#00aaff" "Cleaning package cache..."
+                sudo pacman -Sc --noconfirm
+                echo "Package cache cleaned" | gum log --structured --level info
+                
+                # Find and optionally remove orphaned packages
+                local orphans=$(pacman -Qtdq 2>/dev/null)
+                if [[ -n "$orphans" ]]; then
+                    local orphan_count=$(echo "$orphans" | wc -l)
+                    gum style --foreground "#ffaa00" "Found $orphan_count orphaned package(s):"
                     
-                    # Log cleanup activities
-                    echo "$(date): Starting system cleanup" | gum log --structured --level info
+                    # Create table for orphaned packages
+                    echo "Package|Description" > /tmp/orphans_table.txt
+                    echo "$orphans" | while read pkg; do
+                        desc=$(pacman -Qi "$pkg" 2>/dev/null | grep "Description" | cut -d: -f2- | xargs || echo "No description")
+                        echo "$pkg|$desc" >> /tmp/orphans_table.txt
+                    done
                     
-                    # Clean package cache
-                    gum style --foreground "#00aaff" "Cleaning package cache..."
-                    sudo pacman -Sc --noconfirm
-                    echo "Package cache cleaned" | gum log --structured --level info
+                    gum table < /tmp/orphans_table.txt
+                    rm -f /tmp/orphans_table.txt
                     
-                    # Find and optionally remove orphaned packages
-                    local orphans=$(pacman -Qtdq 2>/dev/null)
-                    if [[ -n "$orphans" ]]; then
-                        local orphan_count=$(echo "$orphans" | wc -l)
-                        gum style --foreground "#ffaa00" "Found $orphan_count orphaned package(s):"
-                        
-                        # Create table for orphaned packages
-                        echo "Package|Description" > /tmp/orphans_table.txt
-                        echo "$orphans" | while read pkg; do
-                            desc=$(pacman -Qi "$pkg" 2>/dev/null | grep "Description" | cut -d: -f2- | xargs || echo "No description")
-                            echo "$pkg|$desc" >> /tmp/orphans_table.txt
-                        done
-                        
-                        gum table < /tmp/orphans_table.txt
-                        rm -f /tmp/orphans_table.txt
-                        
-                        if confirm_action "Remove these orphaned packages?"; then
-                            echo "$orphans" | sudo pacman -Rns -
-                            echo "Removed $orphan_count orphaned packages" | gum log --structured --level info
-                            gum style --foreground "#00ff00" "✅ Orphaned packages removed!"
-                        fi
-                    else
-                        gum style --foreground "#00ff00" "✅ No orphaned packages found"
+                    if confirm_action "Remove these orphaned packages?"; then
+                        echo "$orphans" | sudo pacman -Rns -
+                        echo "Removed $orphan_count orphaned packages" | gum log --structured --level info
+                        gum style --foreground "#00ff00" "✅ Orphaned packages removed!"
                     fi
-                    
-                    # Clean yay cache if available
-                    if command -v yay >/dev/null 2>&1; then
-                        run_with_progress "Cleaning AUR cache..." "yay -Sc --noconfirm"
-                        echo "AUR cache cleaned" | gum log --structured --level info
-                    fi
-                    
-                    echo "$(date): System cleanup completed" | gum log --structured --level info
-                    gum style --foreground "#00ff00" --bold "✅ System cleanup completed!"
                 else
-                    print_message "info" "Starting system cleanup..."
-                    
-                    # Clean package cache
-                    print_message "info" "Cleaning package cache..."
-                    sudo pacman -Sc --noconfirm
-                    
-                    # Find and optionally remove orphaned packages
-                    local orphans=$(pacman -Qtdq 2>/dev/null)
-                    if [[ -n "$orphans" ]]; then
-                        print_message "warning" "Found orphaned packages:"
-                        echo "$orphans"
-                        if confirm_action "Remove these orphaned packages?"; then
-                            echo "$orphans" | sudo pacman -Rns -
-                            print_message "success" "Orphaned packages removed!"
-                        fi
-                    else
-                        print_message "success" "No orphaned packages found"
-                    fi
-                    
-                    # Clean yay cache if available
-                    if command -v yay >/dev/null 2>&1; then
-                        run_with_progress "Cleaning AUR cache..." "yay -Sc --noconfirm"
-                    fi
-                    
-                    print_message "success" "System cleanup completed!"
+                    gum style --foreground "#00ff00" "✅ No orphaned packages found"
                 fi
+                
+                # Clean yay cache if available
+                if command -v yay >/dev/null 2>&1; then
+                    run_with_progress "Cleaning AUR cache..." "yay -Sc --noconfirm"
+                    echo "AUR cache cleaned" | gum log --structured --level info
+                fi
+                
+                echo "$(date): System cleanup completed" | gum log --structured --level info
+                gum style --foreground "#00ff00" --bold "✅ System cleanup completed!"
                 ;;
                 
             "🔍 System Health Check - Run system health dashboard")
@@ -372,13 +267,8 @@ system-maintenance() {
         # Pause before showing menu again (except for exit)
         if [[ "$ACTION" != "🚪 Exit" && "$ACTION" != "" ]]; then
             echo ""
-            if [[ "$HAS_GUM" == true ]]; then
-                gum style --foreground "#666666" "Press any key to continue..."
-                read -k 1
-            else
-                echo "Press Enter to continue..."
-                read
-            fi
+            gum style --foreground "#666666" "Press any key to continue..."
+            read -k 1
             echo ""
         fi
     done

@@ -52,7 +52,7 @@ arguments = "--rebase --autostash"
 # Pre-update commands (run before any updates)
 [pre_commands]
 # System health check before updates
-"System health check" = "system-health --brief"
+"System health check" = "-i source ~/.config/zsh/env && system_health_simple --brief"
 
 # Custom commands for system-specific maintenance
 [commands]
@@ -61,4 +61,4 @@ arguments = "--rebase --autostash"
 # Remove orphaned packages
 "Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
 # Post-update system status
-"Post-update system status" = "system-health --brief"
+"Post-update system status" = "-i source ~/.config/zsh/env && system_health_simple --brief"

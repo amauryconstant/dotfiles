@@ -9,21 +9,11 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Check if gum is available for enhanced UI
-HAS_GUM=false
-if command_exists gum; then
-    HAS_GUM=true
-fi
+# Interactive system health dashboard - assumes gum is available
 
 # Print section header
 print_section() {
-    if [[ "$HAS_GUM" == true ]]; then
-        gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$1"
-    else
-        echo -e "\n\033[0;34m===============================================================================\033[0m"
-        echo -e "\033[1;37m$1\033[0m"
-        echo -e "\033[0;34m===============================================================================\033[0m"
-    fi
+    gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$1"
 }
 
 # Print status with color
@@ -31,44 +21,23 @@ print_status() {
     local status_type="$1"
     local message="$2"
     
-    if [[ "$HAS_GUM" == true ]]; then
-        case "$status_type" in
-            "OK"|"GOOD")
-                gum style --foreground "#00ff00" "✓ $message"
-                ;;
-            "WARN"|"WARNING")
-                gum style --foreground "#ffaa00" "⚠ $message"
-                ;;
-            "ERROR"|"CRITICAL")
-                gum style --foreground "#ff0000" --bold "✗ $message"
-                ;;
-            "INFO")
-                gum style --foreground "#00aaff" "ℹ $message"
-                ;;
-            *)
-                echo "  $message"
-                ;;
-        esac
-    else
-        # Fallback to ANSI colors
-        case "$status_type" in
-            "OK"|"GOOD")
-                echo -e "\033[0;32m✓\033[0m $message"
-                ;;
-            "WARN"|"WARNING")
-                echo -e "\033[1;33m⚠\033[0m $message"
-                ;;
-            "ERROR"|"CRITICAL")
-                echo -e "\033[0;31m✗\033[0m $message"
-                ;;
-            "INFO")
-                echo -e "\033[0;36mℹ\033[0m $message"
-                ;;
-            *)
-                echo "  $message"
-                ;;
-        esac
-    fi
+    case "$status_type" in
+        "OK"|"GOOD")
+            gum style --foreground "#00ff00" "✓ $message"
+            ;;
+        "WARN"|"WARNING")
+            gum style --foreground "#ffaa00" "⚠ $message"
+            ;;
+        "ERROR"|"CRITICAL")
+            gum style --foreground "#ff0000" --bold "✗ $message"
+            ;;
+        "INFO")
+            gum style --foreground "#00aaff" "ℹ $message"
+            ;;
+        *)
+            echo "  $message"
+            ;;
+    esac
 }
 
 # Interactive mode selection if gum is available and no arguments provided
@@ -81,36 +50,19 @@ NETWORK=false
 
 # Handle help flag
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-    if [[ "$HAS_GUM" == true ]]; then
-        gum style --foreground "#00aaff" --bold "System Health Dashboard"
-        echo ""
-        gum style --foreground "#ffaa00" "Interactive mode (default):"
-        echo "  Run without arguments to use interactive menus"
-        echo ""
-        gum style --foreground "#ffaa00" "Command line options:"
-        echo "  --brief      Show brief system overview"
-        echo "  --full       Show comprehensive system information"
-        echo "  --services   Show only service status"
-        echo "  --packages   Show only package information"
-        echo "  --hardware   Show only hardware information"
-        echo "  --network    Show only network status"
-        echo "  --help, -h   Show this help message"
-    else
-        echo "System Health Dashboard"
-        echo ""
-        echo "Usage: system-health [OPTIONS]"
-        echo ""
-        echo "Options:"
-        echo "  --brief      Show brief system overview"
-        echo "  --full       Show comprehensive system information"
-        echo "  --services   Show only service status"
-        echo "  --packages   Show only package information"
-        echo "  --hardware   Show only hardware information"
-        echo "  --network    Show only network status"
-        echo "  --help, -h   Show this help message"
-        echo ""
-        echo "Default: Show standard dashboard (all sections)"
-    fi
+    gum style --foreground "#00aaff" --bold "System Health Dashboard"
+    echo ""
+    gum style --foreground "#ffaa00" "Interactive mode (default):"
+    echo "  Run without arguments to use interactive menus"
+    echo ""
+    gum style --foreground "#ffaa00" "Command line options:"
+    echo "  --brief      Show brief system overview"
+    echo "  --full       Show comprehensive system information"
+    echo "  --services   Show only service status"
+    echo "  --packages   Show only package information"
+    echo "  --hardware   Show only hardware information"
+    echo "  --network    Show only network status"
+    echo "  --help, -h   Show this help message"
     return 0
 fi
 
@@ -142,20 +94,15 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            if [[ "$HAS_GUM" == true ]]; then
-                gum style --foreground "#ff0000" "Unknown option: $1"
-                gum style --foreground "#00aaff" "Use --help for usage information"
-            else
-                echo "Unknown option: $1"
-                echo "Use --help for usage information"
-            fi
+            gum style --foreground "#ff0000" "Unknown option: $1"
+            gum style --foreground "#00aaff" "Use --help for usage information"
             return 1
             ;;
     esac
 done
 
-# Interactive mode selection if no arguments provided and gum is available
-if [[ $# -eq 0 && "$HAS_GUM" == true ]]; then
+# Interactive mode selection if no arguments provided
+if [[ $# -eq 0 ]]; then
     MODE=$(gum choose --header "Select system health check mode:" \
         "📊 Standard Dashboard (All Sections)" \
         "⚡ Brief Overview" \
@@ -192,18 +139,10 @@ if [[ $# -eq 0 && "$HAS_GUM" == true ]]; then
             ;;
         *)
             # User cancelled, exit gracefully
-            if [[ "$HAS_GUM" == true ]]; then
-                gum style --foreground "#ffaa00" "Operation cancelled"
-            fi
+            gum style --foreground "#ffaa00" "Operation cancelled"
             return 0
             ;;
     esac
-elif [[ $# -eq 0 ]]; then
-    # Default behavior when gum is not available and no arguments
-    SERVICES=true
-    PACKAGES=true
-    HARDWARE=true
-    NETWORK=true
 fi
 
 # System Overview (always shown unless --brief or specific sections)
@@ -296,40 +235,25 @@ if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
     fi
     
     # Key services status
-    if [[ "$HAS_GUM" == true ]]; then
-        gum style --foreground "#00aaff" "Key Services Status:"
-        echo ""
-        
-        # Create table for service status
-        echo "Service|Status|State" > /tmp/services_table.txt
-        key_services=("docker" "NetworkManager" "bluetooth" "cups" "sshd")
-        
-        for service in "${key_services[@]}"; do
-            if systemctl is-active --quiet "$service" 2>/dev/null; then
-                echo "$service|✅ Active|Running" >> /tmp/services_table.txt
-            elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
-                echo "$service|⚠️  Inactive|Installed" >> /tmp/services_table.txt
-            else
-                echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
-            fi
-        done
-        
-        gum table < /tmp/services_table.txt
-        rm -f /tmp/services_table.txt
-    else
-        echo -e "\n\033[0;36mKey Services Status:\033[0m"
-        key_services=("docker" "NetworkManager" "bluetooth" "cups" "sshd")
-        
-        for service in "${key_services[@]}"; do
-            if systemctl is-active --quiet "$service" 2>/dev/null; then
-                print_status "OK" "$service: running"
-            elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
-                print_status "WARN" "$service: not running (but installed)"
-            else
-                print_status "INFO" "$service: not installed"
-            fi
-        done
-    fi
+    gum style --foreground "#00aaff" "Key Services Status:"
+    echo ""
+    
+    # Create table for service status
+    echo "Service|Status|State" > /tmp/services_table.txt
+    key_services=("docker" "NetworkManager" "bluetooth" "cups" "sshd")
+    
+    for service in "${key_services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            echo "$service|✅ Active|Running" >> /tmp/services_table.txt
+        elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
+            echo "$service|⚠️  Inactive|Installed" >> /tmp/services_table.txt
+        else
+            echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
+        fi
+    done
+    
+    gum table < /tmp/services_table.txt
+    rm -f /tmp/services_table.txt
 fi
 
 # Package Information
@@ -344,34 +268,22 @@ if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
     
     # Check for updates
     if command_exists checkupdates; then
-        if [[ "$HAS_GUM" == true ]]; then
-            gum style --foreground "#00aaff" "Checking for updates..."
-            updates=$(gum spin --spinner dot --title "Checking package updates..." -- checkupdates 2>/dev/null)
-        else
-            echo -e "\n\033[0;36mChecking for updates...\033[0m"
-            updates=$(checkupdates 2>/dev/null)
-        fi
+        gum style --foreground "#00aaff" "Checking for updates..."
+        updates=$(gum spin --spinner dot --title "Checking package updates..." -- checkupdates 2>/dev/null)
         update_count=$(echo "$updates" | wc -l)
         
         if [[ -n "$updates" && "$updates" != "" ]]; then
             print_status "WARN" "$update_count package update(s) available"
             if [[ "$FULL" == true ]]; then
-                if [[ "$HAS_GUM" == true ]]; then
-                    # Use gum table for better package update display
-                    echo ""
-                    gum style --foreground "#ffaa00" --bold "Available Updates:"
-                    echo "Package|Current|New" > /tmp/updates_table.txt
-                    echo "$updates" | head -10 | awk '{print $1"|"$2"|"$4}' >> /tmp/updates_table.txt
-                    gum table < /tmp/updates_table.txt
-                    rm -f /tmp/updates_table.txt
-                    if [[ $update_count -gt 10 ]]; then
-                        gum style --foreground "#666666" --italic "... and $((update_count - 10)) more"
-                    fi
-                else
-                    echo "$updates" | head -10
-                    if [[ $update_count -gt 10 ]]; then
-                        echo "... and $((update_count - 10)) more"
-                    fi
+                # Use gum table for better package update display
+                echo ""
+                gum style --foreground "#ffaa00" --bold "Available Updates:"
+                echo "Package|Current|New" > /tmp/updates_table.txt
+                echo "$updates" | head -10 | awk '{print $1"|"$2"|"$4}' >> /tmp/updates_table.txt
+                gum table < /tmp/updates_table.txt
+                rm -f /tmp/updates_table.txt
+                if [[ $update_count -gt 10 ]]; then
+                    gum style --foreground "#666666" --italic "... and $((update_count - 10)) more"
                 fi
             fi
         else
@@ -383,12 +295,7 @@ if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
     
     # AUR updates (if yay is available)
     if command_exists yay; then
-        if [[ "$HAS_GUM" == true ]]; then
-            aur_updates=$(gum spin --spinner dot --title "Checking AUR updates..." -- sh -c "yay -Qua 2>/dev/null | wc -l")
-        else
-            echo -e "\n\033[0;36mChecking AUR updates...\033[0m"
-            aur_updates=$(yay -Qua 2>/dev/null | wc -l)
-        fi
+        aur_updates=$(gum spin --spinner dot --title "Checking AUR updates..." -- sh -c "yay -Qua 2>/dev/null | wc -l")
         if [[ $aur_updates -gt 0 ]]; then
             print_status "WARN" "$aur_updates AUR package update(s) available"
         else
@@ -434,11 +341,7 @@ if [[ "$NETWORK" == true ]] || [[ "$FULL" == true ]]; then
     print_section "🌐 NETWORK STATUS"
     
     # Network interfaces
-    if [[ "$HAS_GUM" == true ]]; then
-        gum style --foreground "#00aaff" "Network Interfaces:"
-    else
-        echo -e "\033[0;36mNetwork Interfaces:\033[0m"
-    fi
+    gum style --foreground "#00aaff" "Network Interfaces:"
     ip -br addr show 2>/dev/null | grep -v "lo.*127.0.0.1" | while read -r line; do
         interface=$(echo "$line" | awk '{print $1}')
         interface_status=$(echo "$line" | awk '{print $2}')
@@ -452,34 +355,18 @@ if [[ "$NETWORK" == true ]] || [[ "$FULL" == true ]]; then
     done
     
     # Internet connectivity
-    if [[ "$HAS_GUM" == true ]]; then
-        gum style --foreground "#00aaff" "Connectivity Test:"
-        if gum spin --spinner dot --title "Testing internet connectivity..." -- ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
-            print_status "OK" "Internet connectivity: Available"
-        else
-            print_status "WARN" "Internet connectivity: Limited or unavailable"
-        fi
-        
-        # DNS resolution test
-        if gum spin --spinner dot --title "Testing DNS resolution..." -- nslookup google.com >/dev/null 2>&1; then
-            print_status "OK" "DNS resolution: Working"
-        else
-            print_status "WARN" "DNS resolution: Issues detected"
-        fi
+    gum style --foreground "#00aaff" "Connectivity Test:"
+    if gum spin --spinner dot --title "Testing internet connectivity..." -- ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
+        print_status "OK" "Internet connectivity: Available"
     else
-        echo -e "\n\033[0;36mConnectivity Test:\033[0m"
-        if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
-            print_status "OK" "Internet connectivity: Available"
-        else
-            print_status "WARN" "Internet connectivity: Limited or unavailable"
-        fi
-        
-        # DNS resolution test
-        if nslookup google.com >/dev/null 2>&1; then
-            print_status "OK" "DNS resolution: Working"
-        else
-            print_status "WARN" "DNS resolution: Issues detected"
-        fi
+        print_status "WARN" "Internet connectivity: Limited or unavailable"
+    fi
+    
+    # DNS resolution test
+    if gum spin --spinner dot --title "Testing DNS resolution..." -- nslookup google.com >/dev/null 2>&1; then
+        print_status "OK" "DNS resolution: Working"
+    else
+        print_status "WARN" "DNS resolution: Issues detected"
     fi
     
     # Active connections (if requested in full mode)
@@ -521,12 +408,7 @@ if [[ "$BRIEF" == false && "$SERVICES" == false && "$PACKAGES" == false && "$HAR
         print_status "OK" "Disk space is adequate (${disk_usage}% used)"
     fi
     
-    if [[ "$HAS_GUM" == true ]]; then
-        echo ""
-        gum style --foreground "#00ff00" --bold "✅ System health check completed!"
-        gum style --foreground "#00aaff" "Run 'system-health --help' for more options, or just 'system-health' for interactive mode."
-    else
-        echo -e "\n\033[0;32mSystem health check completed.\033[0m"
-        echo -e "\033[0;36mUse 'system-health --help' for more options.\033[0m"
-    fi
+    echo ""
+    gum style --foreground "#00ff00" --bold "✅ System health check completed!"
+    gum style --foreground "#00aaff" "Run 'system-health --help' for more options, or just 'system-health' for interactive mode."
 fi
