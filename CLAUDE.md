@@ -4,27 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems with advanced AI assistant integration. The repository implements comprehensive templating, encryption, automated maintenance, and knowledge management systems designed for Arch Linux development workstations.
+This is a sophisticated chezmoi dotfiles repository that manages personal configuration files across systems. The repository implements comprehensive templating, encryption, and automated maintenance systems designed for Arch Linux development workstations.
 
-**System Configuration**: This repository is configured as a comprehensive system with all packages, services, extensions, and AI models installed. The architecture has been simplified from destination-based profiles to a single comprehensive deployment.
+**System Configuration**: This repository is configured as a comprehensive system with all packages, services, and extensions installed. The architecture has been simplified from destination-based profiles to a single comprehensive deployment.
 
-### Git Submodule Architecture
+### Repository Architecture
 
-This system uses git submodules to manage AI-related configurations:
-
-#### Primary Repository: `/home/amaury/.local/share/chezmoi`
-- **Purpose**: Complete system configuration management
-- **Scope**: Shell, applications, development tools, system services
-- **Key Features**: Advanced templating, age encryption, chezmoi_modify_manager integration
-
-#### AI Submodule: `external_dot_ai/`
-- **Purpose**: AI assistant rules and configurations
-- **Location**: `/home/amaury/.local/share/chezmoi/external_dot_ai/`
-- **Target**: Files are deployed to `~/.ai/`
-- **Structure**:
-  - `rules/cline/` - Cline AI assistant behavioral rules → `~/.ai/rules/cline/`
-  - `dot_continue.yaml.tmpl` - Continue AI extension configuration → `~/.ai/.continue.yaml`
-- **Integration**: Inherits template variables from main repository
+This is a comprehensive chezmoi dotfiles repository with:
+- **Advanced templating**: Go text/template with custom functions
+- **Age encryption**: Secure handling of sensitive files
+- **chezmoi_modify_manager integration**: Smart configuration file management
 
 ## 🚨 CRITICAL SAFETY PROTOCOLS 🚨
 
@@ -100,9 +89,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 {{ $server := .privateServer | default "localhost" }}  # Variable assignment with defaults
 
 # Whitespace control
-# Remove whitespace
-{{ includeTemplate "log_info" "message" }}
-{{- end -}}
+{{- includeTemplate "log_step" "message" -}}
 
 # Testing templates
 # Use: chezmoi execute-template < template.tmpl
@@ -115,7 +102,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ```
 .chezmoidata/
 ├── packages.yaml      # Package management with install strategies
-├── ai.yaml           # AI models configuration (ollama models)
+├── ai.yaml           # AI models configuration
 ├── extensions.yaml   # VSCode extensions list
 ├── colors.yaml       # Color scheme definitions (oksolar)
 └── globals.yaml      # Global environment variables (XDG paths)
@@ -139,8 +126,6 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ├── run_once_after_002_enable_services.sh.tmpl
 ├── run_once_after_003_setup_network_printer.sh.tmpl
 ├── run_once_after_004_enable_topgrade_timer.sh.tmpl
-├── run_once_after_005_configure_ollama.sh.tmpl
-├── run_onchange_after_install_ai_models.sh.tmpl
 ├── run_onchange_after_install_extensions.sh.tmpl
 └── run_onchange_before_create_git_hooks.sh.tmpl
 ```
@@ -152,11 +137,7 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - `run_onchange_*` → **Configuration updates** (when dotfiles content changes)
 - **❌ NEVER for ongoing system maintenance** - that's handled by other tools
 
-**Ongoing System Maintenance Tools:**
-- **topgrade**: System updates, package upgrades (automated via systemd timer)
-- **systemd timers**: Scheduled maintenance tasks (`~/.config/systemd/user/`)
-- **CLI functions**: Manual tools (`private_dot_config/zsh/dot_zfunctions/`)
-- **Standalone scripts**: User-initiated tasks (`private_dot_config/scripts/`)
+**System maintenance is handled by separate tools** (see System Maintenance Architecture below).
 
 **Script Execution Order:**
 1. `run_once_before_*` → Setup (package managers, directories, tools)
@@ -182,7 +163,6 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 - **`private_dot_config/`** - XDG config directory contents
 - **`private_dot_keys/`** - Encrypted keys and secrets (🔐 NEVER access directly)
 - **`private_dot_ssh/`** - SSH configuration and encrypted keys
-- **`.memory-bank/`** - AI assistant knowledge base
 
 ## Shell Initialization Architecture
 
@@ -278,9 +258,9 @@ The system enables topgrade to use POSIX functions for system health monitoring:
 
 This architecture ensures that maintenance tools work reliably in all execution contexts while providing rich interactive experiences when used directly.
 
-### Maintenance Tool Organization
+## System Maintenance Architecture
 
-**🔧 System Maintenance Architecture (NOT chezmoi scripts):**
+**🔧 System Maintenance (NOT chezmoi scripts):**
 
 #### **CLI Functions** (`private_dot_config/zsh/dot_zfunctions/`)
 ```
@@ -338,7 +318,7 @@ topgrade.timer           # System updates
 
 ### Development Environment
 - **Languages**: Go, Python, Rust (managed via mise)
-- **Tools**: Docker, VSCode, Git (delta, mergiraf), AI tools (Ollama)
+- **Tools**: Docker, VSCode, Git (delta, mergiraf)
 - **Terminal**: Zsh + antidote, enhanced CLI tools (ripgrep, fd, fzf, etc.)
 - **Theme**: Consistent Solarized (oksolar) color scheme
 
@@ -361,10 +341,9 @@ strategies:
 ### **System Configuration**
 The system is configured as a comprehensive development environment with:
 
-- **All package categories**: Complete development stack with tools, AI assistance, and general applications
+- **All package categories**: Complete development stack with tools and general applications
 - **System-level services**: Docker, Snap, Bluetooth, and topgrade automation enabled
 - **Extensions**: VSCode extensions automatically installed
-- **AI models**: Ollama models automatically pulled and configured
 
 ### Package Categories
 - **fonts**: Programming fonts (FiraCode, Geist Mono, etc.)
@@ -372,7 +351,7 @@ The system is configured as a comprehensive development environment with:
 - **terminal_utils**: System monitoring (btop, nvitop, fastfetch, etc.)
 - **languages**: Programming languages (Go, Python, Rust)
 - **development_tools**: Development software (Docker, VSCode)
-- **ai_tools**: AI/ML tools (ollama, vllm)
+- **ai_tools**: AI/ML tools
 - **general_software**: End-user apps (Firefox, Spotify, Nextcloud)
 - **work_software**: Work-specific (Chromium, Slack)
 
@@ -381,9 +360,7 @@ The system is configured as a comprehensive development environment with:
 2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes all package categories
 3. **Services Phase**: `run_once_after_002_enable_services.sh.tmpl` enables Docker, Snap, and Bluetooth
 4. **System Maintenance**: `run_once_after_004_enable_topgrade_timer.sh.tmpl` enables system-level topgrade automation
-5. **AI Configuration Phase**: `run_once_after_005_configure_ollama.sh.tmpl` configures Ollama service
-6. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
-7. **AI Model Phase**: `run_onchange_after_install_ai_models.sh.tmpl` pulls Ollama models
+5. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
 
 ## Common Commands
 
@@ -421,11 +398,7 @@ backup-system               # Manual system backup
 security-scan               # Manual security audit
 ```
 
-**Maintenance Architecture:**
-- **topgrade.toml.tmpl**: Configures system-wide maintenance (managed by chezmoi)
-- **systemd timers**: Schedule automated tasks (setup by chezmoi, run independently)
-- **CLI tools**: Manual maintenance commands (deployed by chezmoi, used by user)
-- **Standalone scripts**: Complex maintenance workflows (managed files, executed manually)
+See **System Maintenance Architecture** section for complete maintenance tool organization.
 
 ## Script Standards (MANDATORY)
 
@@ -683,252 +656,69 @@ Please decrypt manually and provide the information needed.
 
 ## Feature Development Guide
 
-### **MUST** Follow This Development Workflow
+### Development Workflow
 
-#### Phase 1: Planning and Design
-1. **Understand the feature requirements**
-   - What problem does this solve?
-   - What dependencies are required?
-   - Does this need cross-platform support?
-
-2. **Choose the right approach**
-   - **New package**: Add to `packages.yaml` and appropriate category
-   - **New script**: Create lifecycle script with proper naming
-   - **Configuration change**: Modify existing templates or create new ones
-   - **New template**: Add to `.chezmoitemplates/` if reusable
-
-3. **Determine the implementation type** ⚠️ **CRITICAL DECISION**
-   - **Setup/Installation task**: Use `.chezmoiscripts/run_once_*` or `run_onchange_*`
+#### Planning Phase
+1. **Determine implementation type** ⚠️ **CRITICAL DECISION**:
+   - **Setup/Installation**: Use `.chezmoiscripts/run_once_*` or `run_onchange_*`
    - **Ongoing maintenance**: Use CLI functions, systemd timers, or topgrade integration
    - **User tools**: Create CLI functions in `private_dot_config/zsh/dot_zfunctions/`
    - **Complex workflows**: Create standalone scripts in `private_dot_config/scripts/`
-   - **Scheduled tasks**: Configure systemd timers (setup via chezmoi, run independently)
-   - **System updates**: Integrate with `topgrade.toml.tmpl` custom commands
 
-#### Phase 2: Implementation Strategy
+#### Implementation Patterns
 
 ##### Adding New Packages
 ```yaml
 # In .chezmoidata/packages.yaml
 new_category:
   strategy: *_install_from_source  # or *_install_binary
-  list:
-    - package-name
-    - another-package
+  list: [package-name, another-package]
 ```
-
-The system automatically includes all package categories in the comprehensive configuration.
 
 ##### Creating New Scripts
-**Naming Convention**: `run_[frequency]_[timing]_[order]_[description].sh.tmpl`
-- `frequency`: `once` or `onchange`
-- `timing`: `before` or `after`
-- `order`: 3-digit number for execution sequence
-- `description`: Clear purpose description
+**Naming**: `run_[frequency]_[timing]_[order]_[description].sh.tmpl`
 
-**Template Structure**:
+**Template Structure** (see Script Standards section for complete template):
 ```bash
 #!/bin/sh
-
-# Script: run_once_after_010_setup_new_feature.sh.tmpl
-# Purpose: Configure new feature after package installation
-# Requirements: Arch Linux, specific-package
-
-{{ includeTemplate "arch_linux_check" . }}
-
-{{ includeTemplate "log_start" "Setting up new feature..." }}
-
-# Set strict error handling
+{{ includeTemplate "log_start" "Description..." }}
 set -euo pipefail
-
-# Feature implementation
-{{ includeTemplate "log_step" "Configuring feature..." }}
-
-# Implementation code here
-
-{{ includeTemplate "log_complete" "New feature setup completed" }}
+# Implementation
+{{ includeTemplate "log_complete" "Completion message" }}
 ```
 
-##### Adding Configuration Files
-1. **Simple config**: Add to `private_dot_config/` with `.tmpl` extension
-2. **Mixed state/settings**: Use `chezmoi_modify_manager` pattern
-3. **Sensitive data**: Encrypt with age (guide user to manual encryption)
-
-#### Phase 3: Testing and Validation
-
-##### **MANDATORY** Testing Sequence
+#### Validation (see Quality Standards for complete procedures)
 ```bash
-# 1. Template syntax validation
-chezmoi execute-template < new_template.tmpl
-chezmoi execute-template --init < new_template.tmpl  # Test with init data
-
-# 2. Script syntax validation  
-bash -n new_script.sh.tmpl
-
-# 3. Data validation  
-yamllint .chezmoidata/packages.yaml
-yamllint .chezmoidata/ai.yaml
-
-# 4. Template data inspection
-chezmoi data                                    # View all available data
-chezmoi data --format yaml                      # YAML format
-chezmoi execute-template '{{ .chezmoi.os }}'    # Test specific variables
-
-# 5. Preview changes
-chezmoi diff
-
-# 6. Dry run test
-chezmoi apply --dry-run
-
-# 7. Incremental testing
-chezmoi apply path/to/specific/file
-
-# 8. chezmoi_modify_manager testing (if applicable)
-# Note: chezmoi_modify_manager does not support --dry-run flag
-# Instead, use these validation approaches:
-chezmoi_modify_manager --help-syntax                 # Check syntax documentation
-chezmoi execute-template < modify_script.tmpl        # Test template processing  
-chezmoi cat path/to/target/file                      # Preview merged result
-
-# 9. Full validation
-chezmoi status
-chezmoi verify
+chezmoi execute-template < new_template.tmpl  # Template syntax
+bash -n new_script.sh.tmpl                    # Script syntax
+chezmoi diff && chezmoi apply --dry-run       # Preview changes
 ```
 
-##### **SHOULD** Test on Different Scenarios
-- Test with different template variables
-- Test error conditions (missing dependencies, failed installations)
-- Test script execution order dependencies
+### Common Development Patterns
 
-#### Phase 4: Integration and Documentation
+**New Package**: Add to `packages.yaml` → system auto-includes in installation
+**New Config**: Use templates in `private_dot_config/` with template variables
+**Mixed State/Settings**: Use `chezmoi_modify_manager` pattern (see section above)
+**New Script**: Follow naming convention and Script Standards template
 
-##### **MUST** Update Documentation
-1. **Update CLAUDE.md** if the feature changes core workflows
-2. **Add inline comments** explaining complex logic
-3. **Document new template variables** if introduced
-4. **Update package category descriptions** if new categories added
+### Development Best Practices
 
-##### **SHOULD** Consider Integration Points
-- How does this interact with existing scripts?
-- Are there new dependencies to document?
-- Does this affect the Memory Bank or AI assistant rules?
-- Are there security implications?
+**MUST Follow**:
+- Start with smallest change, validate incrementally
+- Use existing patterns and template variables
+- Never skip syntax validation or bypass security protocols
 
-### Common Feature Development Patterns
+**Key Principles**:
+- Test individual components before integration
+- Document decisions and consider security implications
+- Use template variables, never hardcode user-specific values
 
-#### Pattern 1: Adding Development Tools
-```yaml
-# 1. Add to packages.yaml
-new_dev_tools:
-  strategy: *_install_from_source
-  list:
-    - tool-name
-    - related-tool
-
-# 2. Create configuration script
-# run_once_after_011_configure_new_tools.sh.tmpl
-```
-
-#### Pattern 2: Adding Desktop Applications
-```yaml
-# 1. Add to packages.yaml  
-new_applications:
-  strategy: *_install_binary
-  list:
-    - app-name
-
-# 2. The system automatically includes all package categories in the configuration
-```
-
-#### Pattern 3: Adding Template-Driven Configuration
-```bash
-# 1. Create template file
-# private_dot_config/app/config.tmpl
-
-# 2. Use template variables
-[User]
-Name = {{ .fullname }}
-Email = {{ .personalEmail }}
-Path = /home/{{ .firstname | lower }}/app
-
-# 3. Add OS-specific logic if needed
-# Arch Linux configuration (system always assumes Arch)
-```
-
-#### Pattern 4: Adding chezmoi_modify_manager Integration
-```bash
-# 1. Create modify script
-# private_dot_config/modify_app_config.tmpl
-
-#!/usr/bin/env chezmoi_modify_manager
-source auto
-
-# Ignore runtime state
-ignore "State" "LastUsed"
-ignore section "Cache"
-
-# Set user preferences
-set "User" "Name" "{{ .fullname }}"
-set "Paths" "DataDir" "/home/{{ .firstname | lower }}/.local/share/app"
-
-# Remove from source since set dynamically
-add:remove "User" "Name"
-add:remove "Paths" "DataDir"
-```
-
-### Development Workflow Best Practices
-
-#### **MUST** Follow These Practices
-1. ✅ **Start with smallest change** - Test individual components before integration
-2. ✅ **Use existing patterns** - Follow established conventions and structures
-3. ✅ **Validate incrementally** - Test at each step, don't batch all changes
-4. ✅ **Document decisions** - Explain why specific approaches were chosen
-5. ✅ **Consider comprehensive setup** - Ensure feature works for the complete system configuration
-
-#### **SHOULD** Consider These Practices
-1. ✅ **Plan for extensibility** - Design features that can be easily extended
-2. ✅ **Use template variables** - Make configurations user-specific and flexible
-3. ✅ **Add error handling** - Include proper error messages and fallback behavior
-4. ✅ **Test edge cases** - Consider what happens when things go wrong
-5. ✅ **Review existing code** - Look for similar implementations to maintain consistency
-
-#### **NEVER** Do These Things
-1. ❌ **Never skip syntax validation** - Always check templates and scripts
-2. ❌ **Never bypass security protocols** - Respect encryption and safety measures
-3. ❌ **Never ignore execution order** - Consider script dependencies and timing
-4. ❌ **Never hardcode user-specific values** - Use template variables
-5. ❌ **Never modify core templates** - Extend rather than modify existing patterns
-
-### Feature Development Checklist
-
-Before considering a feature complete:
-
-<thinking>
-1. Have I validated all syntax (templates, scripts, YAML)?
-2. Have I tested the feature with chezmoi diff and dry-run?
-3. Have I considered the comprehensive system configuration?
-4. Have I documented the feature and its integration points?
-5. Have I followed the established patterns and conventions?
-6. Have I tested error conditions and edge cases?
-7. Have I updated relevant data files consistently?
-8. Have I respected security protocols and encryption boundaries?
-</thinking>
-
-### Critical Questions for Feature Development
-1. 🔍 **Does this feature follow established patterns?**
-2. 🔍 **Have I tested this incrementally and thoroughly?**
-3. 🔍 **Will this work across different machines with this configuration?**
-4. 🔍 **Have I documented the feature and its integration points?**
-5. 🔍 **Are there any security implications I need to consider?**
-
-## Development Workflow
-
-### Making Changes
-1. **Validate syntax** - Check templates and scripts
-2. **Preview changes** - `chezmoi diff`
-3. **Test incrementally** - `chezmoi apply --dry-run`
-4. **Apply carefully** - `chezmoi apply`
-5. **Verify results** - `chezmoi status`
+### Development Checklist
+1. Validated all syntax (templates, scripts, YAML)?
+2. Tested with `chezmoi diff` and `--dry-run`?
+3. Followed established patterns and conventions?
+4. Documented feature and integration points?
+5. Respected security protocols and encryption boundaries?
 
 ### Merge Conflict Resolution
 1. **Detect conflicts** - `chezmoi status` (look for "M" status)
@@ -936,129 +726,8 @@ Before considering a feature complete:
 3. **Validate results** - `chezmoi diff` and syntax checks
 4. **Special case** - Encrypted files require manual workflow
 
-## AI Submodule Integration Protocol
+For complete validation procedures, see **Quality Standards** section above.
 
-### **CRITICAL** Git Submodule Workflow
-
-When working on ANY task that involves AI tools, configurations, or assistant behavior, you **MUST** follow this protocol:
-
-#### 1. **Repository Assessment** (MANDATORY)
-```bash
-# Check main repo for AI-related content
-ls /home/amaury/.local/share/chezmoi/.chezmoidata/ai.yaml          # AI models data
-ls /home/amaury/.local/share/chezmoi/.chezmoidata/packages.yaml     # AI tool packages  
-ls /home/amaury/.local/share/chezmoi/external_dot_ai/               # AI submodule
-ls /home/amaury/.local/share/chezmoi/external_dot_ai/.chezmoiscripts/ # AI setup scripts
-```
-
-#### 2. **Task Classification** (MANDATORY)
-- **System AI Tools** (ollama, AI packages) → Main repo modifications
-- **AI Configurations** (Continue, Cline rules) → AI submodule modifications  
-- **AI Setup/Installation** → AI submodule scripts
-- **AI Assistant Behavior** → AI submodule only
-
-#### 3. **Submodule Dependencies** (CRITICAL)
-
-**Template Variable Inheritance**:
-- AI submodule inherits ALL template variables from main repo
-- Changes to `.chezmoi.yaml.tmpl` affect AI submodule templates
-- Test AI templates when changing user variables
-
-**Script Execution Flow**:
-- Main repo scripts: `run_once_after_001` through `run_once_after_005`
-- AI submodule scripts: `run_once_after_001` through `run_once_after_002` (independent numbering)
-- AI scripts run as part of main repo `chezmoi apply`
-- **No conflicts** because submodule is processed as part of main repo
-
-**Package Management Flow**:
-```mermaid
-graph TD
-    A[Main repo: packages.yaml] --> B[AI tools installed]
-    B --> C[AI submodule: Configure tools]
-    C --> D[AI configurations applied to ~/.ai/]
-    D --> E[System ready for AI usage]
-```
-
-#### 4. **Validation Protocol** (MANDATORY)
-When making changes that affect AI submodule:
-
-```bash
-# Main repository validation (includes submodule)
-cd /home/amaury/.local/share/chezmoi
-chezmoi diff                    # Shows all changes including submodule
-chezmoi apply --dry-run         # Tests all changes including submodule
-
-# Submodule-specific validation
-cd /home/amaury/.local/share/chezmoi/external_dot_ai
-git status                      # Check submodule git status
-cd /home/amaury/.local/share/chezmoi
-chezmoi execute-template < external_dot_ai/template_file.tmpl  # Test templates
-```
-
-### **Integration Scenarios and Responses**
-
-#### Scenario: Adding New AI Tool
-1. **Package Definition** → Main repo (`.chezmoidata/packages.yaml`)
-2. **Installation Logic** → Main repo (`.chezmoiscripts/run_once_before_008_install_arch_packages.sh.tmpl`)
-3. **Tool Configuration** → Main repo (`.chezmoiscripts/run_once_after_005_configure_ollama.sh.tmpl`)
-4. **AI Assistant Rules** → AI submodule (`rules/` or `dot_continue.yaml.tmpl`)
-
-#### Scenario: Modifying AI Assistant Rules
-1. **Rule Changes** → AI submodule only (`rules/cline/`)
-2. **No main repo changes** needed
-3. **Files deploy to** → `~/.ai/rules/cline/`
-
-#### Scenario: Changing User Variables
-1. **Variable Definition** → Main repo (`.chezmoi.yaml.tmpl`)
-2. **Template Updates** → Both main repo and AI submodule (any `.tmpl` files using the variable)
-3. **Single Repository Testing** → All templates processed together
-
-#### Scenario: AI Model Management
-1. **Model List** → Main repository (`.chezmoidata/ai.yaml`)
-2. **Installation Script** → Main repository (`run_onchange_after_install_ai_models.sh.tmpl`)
-3. **Trigger** → Changes to ai.yaml automatically trigger installation script
-
-### **Submodule State Management**
-
-#### **ALWAYS** Verify Submodule States
-```bash
-# Check main repo and submodule status
-cd /home/amaury/.local/share/chezmoi
-git status                      # Shows submodule state
-git submodule status            # Shows submodule commit status
-chezmoi status                  # Shows all managed files including submodule
-
-# Check submodule repository directly
-cd /home/amaury/.local/share/chezmoi/external_dot_ai
-git status                      # Check for uncommitted changes
-git log --oneline -5            # Recent commits
-```
-
-#### **Coordinate Submodule Updates**
-- **AI tool additions** → Update main repo packages, then AI submodule configs
-- **Configuration changes** → AI submodule only
-- **Template variable changes** → Update main repo, test affects on AI submodule
-- **Submodule commits** → Commit in submodule, then update main repo reference
-
-### AI Assistant Best Practices
-
-#### When Working with Git Submodule System
-1. **Single repository workflow** - All managed through main repo `chezmoi apply`
-2. **Follow security protocols** - Respect encryption boundaries
-3. **Use quality standards** - Validate before applying changes
-4. **Document decisions** - Update memory bank and main CLAUDE.md file
-5. **Monitor context** - Watch for 50% usage threshold per AI rules
-6. **Test submodule impacts** - Always validate template and script interactions
-
-#### Critical Integration Reminders
-- **MUST** check main repo for AI-related tasks (includes submodule)
-- **MUST** follow script numbering conventions (no conflicts due to submodule)
-- **MUST** test template variables with submodule templates
-- **MUST** coordinate package management between main repo and submodule
-- **MUST** validate changes before applying (single `chezmoi apply` command)
-- **MUST** respect the dependency flow: main repo → AI submodule
-- **SHOULD** maintain documentation in main CLAUDE.md file
-- **SHOULD** use git to track submodule changes and main repo references
 
 ## Emergency Procedures
 
@@ -1093,4 +762,12 @@ chezmoi status
 
 ---
 
-**REMEMBER**: This is a sophisticated system with multiple safety layers. Always prioritize security, validation, and documentation. When in doubt, guide the user through manual processes rather than attempting automated solutions.
+## Summary
+
+This chezmoi dotfiles repository provides:
+- **Comprehensive system management** for Arch Linux development workstations
+- **Security-first approach** with age encryption and manual operation guidance  
+- **Separation of concerns** between setup (chezmoi scripts) and maintenance (external tools)
+- **Template-driven configuration** with robust validation procedures
+
+**Key Principle**: Always validate before applying changes. When in doubt, guide users through manual processes rather than automated solutions.

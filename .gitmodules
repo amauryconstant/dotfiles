@@ -1,3 +1,0 @@
-[submodule "external_dotai"]
-	path = external_dotai
-	url = git@gitlab.com:amoconst/dotai.git
