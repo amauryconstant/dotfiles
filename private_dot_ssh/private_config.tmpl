@@ -11,3 +11,11 @@ Host gitlab.com
    HostName gitlab.com
    PreferredAuthentications publickey
    IdentityFile ~/.ssh/gitlab
+
+# OVH Server - Personal
+Host ovh
+  HostName {{ .ovhServerIP }}
+  Port {{ .ovhServerPort }}
+  User debian
+  PreferredAuthentications publickey
+  IdentityFile ~/.ssh/ovh-server

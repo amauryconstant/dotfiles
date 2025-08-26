@@ -2,7 +2,8 @@
 {{ $workEmail := promptStringOnce . "workEmail" "What is your work email address? " -}}
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
-{{ $aiEnabled := promptBoolOnce . "ai_enabled" "Enable AI tools and configuration? " -}}
+{{ $ovhServerIP := promptStringOnce . "ovhServerIP" "What is the IP v4 of your OVH server? " -}}
+{{ $ovhServerPort := promptStringOnce . "ovhServerPort" "What is ssh port of your OVH server? " -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
 
@@ -27,7 +28,8 @@ data:
     privateServer: {{ $privateServer | quote }}
     chassisType: {{ $chassisType | quote }}
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
-    ai_enabled: {{ $aiEnabled }}
+    ovhServerIP: {{ $ovhServerIP }}
+    ovhServerPort: {{ $ovhServerPort }}
 
 diff:
   pager: "delta"
