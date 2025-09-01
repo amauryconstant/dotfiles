@@ -45,14 +45,12 @@ packages:
           strategy: *_install_from_source
           list:
             - go
-            - go-tools
             - python
             - rust
 
         package_managers:
           strategy: *_install_from_source
           list:
-            - uv
             - cargo
             - mise
 
@@ -70,6 +68,7 @@ packages:
             - mergiraf
             - jujutsu
             - lazygit
+            - lazydocker
 
         system_software:
           list:
