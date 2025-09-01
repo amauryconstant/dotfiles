@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # Make the merge driver script executable
-chmod +x "{{ .chezmoi.sourceDir }}/.template-merge-driver.sh"
+chmod +x "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh"
 
 # Change to the chezmoi source directory to run git commands
 cd "{{ .chezmoi.sourceDir }}"
@@ -18,7 +18,7 @@ cd "{{ .chezmoi.sourceDir }}"
 {{ includeTemplate "log_step" "Registering chezmoi-template merge driver..." }}
 
 git config merge.chezmoi-template.name "Chezmoi template merge driver"
-git config merge.chezmoi-template.driver "{{ .chezmoi.sourceDir }}/.template-merge-driver.sh %O %A %B %L %P"
+git config merge.chezmoi-template.driver "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh %O %A %B %L %P"
 
 {{ includeTemplate "log_step" "Verifying merge driver configuration..." }}
 
