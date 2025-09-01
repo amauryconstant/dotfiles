@@ -1,0 +1,7 @@
+# Git attributes for chezmoi repository
+
+# Template files require special merge handling to preserve template syntax
+*.tmpl merge=chezmoi-template
+
+# Encrypted files should not be merged (require manual resolution)
+*.age binary

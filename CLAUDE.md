@@ -721,10 +721,32 @@ chezmoi diff && chezmoi apply --dry-run       # Preview changes
 5. Respected security protocols and encryption boundaries?
 
 ### Merge Conflict Resolution
+
+#### **✅ Template Variable Protection (ACTIVE)**
+**Automated protection system prevents template variable rendering during merge operations.**
+
+**System Components:**
+- **Git Attributes** - `.gitattributes` configures `*.tmpl merge=chezmoi-template`
+- **Custom Merge Driver** - `.template-merge-driver.sh` intelligently preserves `{{ .variable }}` syntax
+- **Auto-Configuration** - `run_once_after_005_configure_template_merge_driver.sh.tmpl` sets up git config
+
+**How Protection Works:**
+1. Git detects `.tmpl` files during merge operations
+2. Custom merge driver prioritizes versions containing template syntax
+3. Template variables remain as `{{ .variable }}` instead of being rendered
+4. Only falls back to standard merge when both versions have templates
+
+#### **Safe Merge Workflow**
+1. **Run checks** - `chezmoi diff` and `chezmoi status`
+2. **Merge operations** - `chezmoi merge <file>` or `chezmoi merge-all` (now safer with protection)
+3. **Validation** - Template syntax automatically preserved by merge driver
+4. **Emergency restore** - `git checkout HEAD -- <file>` if manual intervention needed
+
+#### **Manual Resolution Steps**
 1. **Detect conflicts** - `chezmoi status` (look for "M" status)
-2. **Resolve targeted** - `chezmoi merge <file>` or `chezmoi merge-all`
-3. **Validate results** - `chezmoi diff` and syntax checks
-4. **Special case** - Encrypted files require manual workflow
+2. **Resolve conflicts** - Use `chezmoi merge <file>` or `chezmoi merge-all` with confidence
+3. **Validate results** - Protection system ensures `{{ .variable }}` syntax preserved
+4. **Special cases** - Encrypted files (`.age`) still require manual workflow
 
 For complete validation procedures, see **Quality Standards** section above.
 
