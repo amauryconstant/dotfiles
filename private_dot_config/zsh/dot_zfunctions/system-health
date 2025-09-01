@@ -240,13 +240,29 @@ if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
     
     # Create table for service status
     echo "Service|Status|State" > /tmp/services_table.txt
-    key_services=("docker" "NetworkManager" "bluetooth" "cups" "sshd")
     
-    for service in "${key_services[@]}"; do
+    # Essential services that should be running
+    essential_services=("NetworkManager" "bluetooth" "cups")
+    # Optional services that are OK if disabled
+    optional_services=("docker" "sshd")
+    
+    # Check essential services
+    for service in "${essential_services[@]}"; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             echo "$service|✅ Active|Running" >> /tmp/services_table.txt
         elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
             echo "$service|⚠️  Inactive|Installed" >> /tmp/services_table.txt
+        else
+            echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
+        fi
+    done
+    
+    # Check optional services
+    for service in "${optional_services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            echo "$service|✅ Active|Running" >> /tmp/services_table.txt
+        elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
+            echo "$service|ℹ️  Disabled|Security Default" >> /tmp/services_table.txt
         else
             echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
         fi
