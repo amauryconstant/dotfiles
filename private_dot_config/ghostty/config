@@ -1,2 +1,3 @@
 font-family = "FiraCode Nerd Font"
 theme = selenized-dark
+keybind = shift+enter=text:\x1b\r
