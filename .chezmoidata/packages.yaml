@@ -28,6 +28,7 @@ packages:
             - xh
             - jaq
             - rsync
+            - tree
 
         terminal_utils:
           strategy: *_install_from_source
