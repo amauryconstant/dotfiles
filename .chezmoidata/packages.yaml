@@ -51,14 +51,12 @@ packages:
         package_managers:
           strategy: *_install_from_source
           list:
-            - cargo
             - mise
 
         development_tools:
           list:
             - docker
             - docker-compose
-            - lazydocker
 
         development_clis:
           strategy: *_install_from_source
@@ -69,6 +67,7 @@ packages:
             - jujutsu
             - lazygit
             - lazydocker
+            - posting 
 
         system_software:
           list:
