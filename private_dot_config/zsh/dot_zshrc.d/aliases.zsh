@@ -24,3 +24,5 @@ alias untar="tar -xf"
 
 # PVMs
 alias p=pnpm
+
+alias claude='clear && claude'

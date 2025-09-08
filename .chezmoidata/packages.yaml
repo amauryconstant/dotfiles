@@ -40,6 +40,7 @@ packages:
             - topgrade
             - vhs
             - gum
+            - dust
 
         languages:
           strategy: *_install_from_source
