@@ -7,10 +7,24 @@
 	name = {{ .fullname }}
 
 [alias]
+	# Basics 
 	co = checkout
 	st = status
 	br = branch
 	cm = commit
+
+	# Worktree management with standardized paths
+	wt-add = "!f() { \
+		project=$(basename $(git rev-parse --show-toplevel)); \
+		mkdir -p ~/Workspaces/$project; \
+		git worktree add ~/Workspaces/$project/$1 $1; \
+	}; f"
+	wt-list = worktree list
+	wt-remove = "!f() { \
+		project=$(basename $(git rev-parse --show-toplevel)); \
+		git worktree remove ~/Workspaces/$project/$1; \
+	}; f"
+	wt-prune = worktree prune
 
 [delta]
     navigate = true

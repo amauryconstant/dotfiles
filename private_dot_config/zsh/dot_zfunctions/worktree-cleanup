@@ -1,0 +1,108 @@
+#!/usr/bin/env zsh
+
+# Clean up git worktrees with interactive selection
+# Usage: worktree-cleanup
+
+local project workspace_dir worktrees_to_remove selected_items
+
+# Check if we're in a git repository
+if git rev-parse --git-dir >/dev/null 2>&1; then
+    project=$(basename $(git rev-parse --show-toplevel))
+    workspace_dir="$HOME/Workspaces/$project"
+    gum style --foreground="#268bd2" "🧹 Cleaning up worktrees for project: $project"
+else
+    gum style --foreground="#dc322f" "❌ Must be run from within a git repository"
+    return 1
+fi
+
+# First, prune stale references
+gum spin --spinner dot --title "Pruning stale worktree references..." -- \
+    git worktree prune
+
+# Find all worktrees for this project
+if [[ ! -d "$workspace_dir" ]]; then
+    gum style --foreground="#859900" "✅ No worktrees to clean up"
+    return 0
+fi
+
+# Collect worktree information
+worktrees_info=()
+while IFS= read -r line; do
+    if [[ -n "$line" ]]; then
+        worktree_path=$(echo "$line" | sed 's|/.git||')
+        if [[ -d "$worktree_path" ]]; then
+            branch_name=$(basename "$worktree_path")
+            # Check if branch still exists
+            if git show-ref --verify --quiet "refs/heads/$branch_name" || \
+               git show-ref --verify --quiet "refs/remotes/origin/$branch_name"; then
+                status="active"
+            else
+                status="stale"
+            fi
+            
+            # Get last activity
+            last_activity=$(stat -c %Y "$worktree_path" 2>/dev/null || echo "0")
+            last_activity_date=$(date -d "@$last_activity" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown")
+            
+            worktrees_info+=("$branch_name [$status] (last: $last_activity_date)|$worktree_path")
+        fi
+    fi
+done < <(find "$workspace_dir" -name ".git" -type f -o -name ".git" -type d 2>/dev/null)
+
+if [[ ${#worktrees_info[@]} -eq 0 ]]; then
+    gum style --foreground="#859900" "✅ No worktrees to clean up"
+    return 0
+fi
+
+# Show current worktrees
+echo
+gum style --foreground="#268bd2" "Current worktrees:"
+printf '%s\n' "${worktrees_info[@]}" | cut -d'|' -f1
+
+echo
+gum style --foreground="#b58900" "⚠️  Select worktrees to remove (be careful!):"
+
+# Let user select worktrees to remove
+selected_items=$(printf '%s\n' "${worktrees_info[@]}" | \
+    gum choose --no-limit --height=15 | cut -d'|' -f2)
+
+if [[ -z "$selected_items" ]]; then
+    gum style --foreground="#586e75" "No worktrees selected for removal"
+    return 0
+fi
+
+# Confirm removal
+echo
+gum style --foreground="#dc322f" "⚠️  You are about to remove these worktrees:"
+echo "$selected_items"
+echo
+
+if ! gum confirm "Are you sure you want to remove these worktrees?"; then
+    gum style --foreground="#586e75" "Operation cancelled"
+    return 0
+fi
+
+# Remove selected worktrees
+echo "$selected_items" | while IFS= read -r worktree_path; do
+    if [[ -n "$worktree_path" ]]; then
+        branch_name=$(basename "$worktree_path")
+        
+        gum spin --spinner dot --title "Removing worktree '$branch_name'..." -- \
+            git worktree remove "$worktree_path" --force
+        
+        if [[ $? -eq 0 ]]; then
+            gum style --foreground="#859900" "✅ Removed worktree: $branch_name"
+        else
+            gum style --foreground="#dc322f" "❌ Failed to remove worktree: $branch_name"
+        fi
+    fi
+done
+
+# Clean up empty directories
+if [[ -d "$workspace_dir" ]] && [[ -z "$(ls -A "$workspace_dir" 2>/dev/null)" ]]; then
+    rmdir "$workspace_dir" 2>/dev/null
+    gum style --foreground="#586e75" "Removed empty workspace directory"
+fi
+
+echo
+gum style --foreground="#859900" "✅ Cleanup completed"

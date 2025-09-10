@@ -25,4 +25,11 @@ alias untar="tar -xf"
 # PVMs
 alias p=pnpm
 
+# AI
 alias claude='clear && claude'
+
+# Git Worktree Management
+alias wt='worktree-status'
+alias wtc='worktree-create'
+alias wts='worktree-switch'
+alias wtx='worktree-cleanup'

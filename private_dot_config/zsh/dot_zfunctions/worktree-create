@@ -1,0 +1,76 @@
+#!/usr/bin/env zsh
+
+# Create a new git worktree with standardized path structure
+# Usage: worktree-create [branch-name]
+
+local branch="$1"
+local project current_branch worktree_path
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    gum style --foreground="#dc322f" "❌ Error: Not in a git repository"
+    return 1
+fi
+
+project=$(basename $(git rev-parse --show-toplevel))
+current_branch=$(git branch --show-current)
+
+# If no branch specified, prompt for it
+if [[ -z "$branch" ]]; then
+    gum style --foreground="#268bd2" "📋 Creating worktree for project: $project"
+    echo
+    
+    # Show available remote branches for reference
+    if git branch -r >/dev/null 2>&1; then
+        gum style --foreground="#859900" "Available remote branches:"
+        git branch -r --format='%(refname:short)' | sed 's/origin\///' | head -10
+        echo
+    fi
+    
+    branch=$(gum input --placeholder "Enter branch name (new or existing)" --prompt "Branch: ")
+    
+    if [[ -z "$branch" ]]; then
+        gum style --foreground="#dc322f" "❌ Branch name is required"
+        return 1
+    fi
+fi
+
+worktree_path="$HOME/Workspaces/$project/$branch"
+
+# Check if worktree already exists
+if [[ -d "$worktree_path" ]]; then
+    gum style --foreground="#b58900" "⚠️  Worktree already exists at: $worktree_path"
+    
+    if gum confirm "Switch to existing worktree?"; then
+        cd "$worktree_path"
+        gum style --foreground="#859900" "✅ Switched to existing worktree"
+        return 0
+    else
+        return 1
+    fi
+fi
+
+# Create the workspace directory
+mkdir -p "$HOME/Workspaces/$project"
+
+# Create the worktree with progress indication
+gum spin --spinner dot --title "Creating worktree '$branch'..." -- \
+    git worktree add "$worktree_path" "$branch"
+
+if [[ $? -eq 0 ]]; then
+    echo
+    gum style --border double --margin "1" --padding "1 2" --border-foreground "#859900" \
+        "✅ Worktree created successfully!" \
+        "" \
+        "📁 Location: $worktree_path" \
+        "🌿 Branch: $branch"
+    
+    echo
+    if gum confirm "Switch to new worktree now?"; then
+        cd "$worktree_path"
+        gum style --foreground "#859900" "✅ Switched to worktree: $(pwd)"
+    fi
+else
+    gum style --foreground="#dc322f" "❌ Failed to create worktree"
+    return 1
+fi
