@@ -49,13 +49,9 @@ packages:
             - python
             - rust
 
-        package_managers:
-          strategy: *_install_from_source
-          list:
-            - mise
-
         development_tools:
           list:
+            - mise
             - docker
             - docker-compose
 

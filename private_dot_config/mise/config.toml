@@ -7,3 +7,4 @@ python.uv_venv_auto = true
 bun = "1"
 node = '22'
 "npm:@anthropic-ai/claude-code" = "latest"
+uv = "latest"
