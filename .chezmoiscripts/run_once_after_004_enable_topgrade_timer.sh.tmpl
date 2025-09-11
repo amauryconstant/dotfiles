@@ -12,10 +12,10 @@ if ! command -v topgrade >/dev/null 2>&1; then
     exit 1
 fi
 
-# Copy systemd service files to system location
-{{ includeTemplate "log_step" "Installing topgrade systemd service files..." }}
-sudo cp "{{ .chezmoi.sourceDir }}/.data/topgrade.service.tmpl" /etc/systemd/system/topgrade.service
-sudo cp "{{ .chezmoi.sourceDir }}/.data/topgrade.timer.tmpl" /etc/systemd/system/topgrade.timer
+# Process and install systemd service files to system location
+{{ includeTemplate "log_step" "Processing and installing topgrade systemd service files..." }}
+chezmoi execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.service.tmpl" | sudo tee /etc/systemd/system/topgrade.service > /dev/null
+chezmoi execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.timer.tmpl" | sudo tee /etc/systemd/system/topgrade.timer > /dev/null
 
 # Reload systemd daemon to pick up new service files
 {{ includeTemplate "log_step" "Reloading systemd daemon..." }}

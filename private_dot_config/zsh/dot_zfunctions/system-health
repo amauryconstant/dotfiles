@@ -145,12 +145,12 @@ if [[ "$BRIEF" == true ]]; then
     disk_usage=$(df -h / | awk 'NR==2 {printf "Disk /: %s used / %s total (%s)", $3, $2, $5}')
     ui_info "$disk_usage"
     
-    # Failed services count
-    failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
+    # Failed services count (explicitly exclude disabled services)
+    failed_services=$(systemctl list-units --type=service --state=failed --no-legend --no-pager 2>/dev/null | grep -E '^●.*\.service' | wc -l)
     if [[ $failed_services -eq 0 ]]; then
-        ui_success "All services running normally"
+        ui_success "No failed services detected"
     else
-        ui_warning "$failed_services failed service(s)"
+        ui_warning "$failed_services service(s) in failed state"
     fi
     
     return 0
@@ -190,16 +190,18 @@ fi
 if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
     ui_title "⚙️  SERVICE STATUS"
     
-    # Failed services
-    failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null)
+    # Failed services (only shows services in actual failed state, not disabled)
+    failed_services=$(systemctl list-units --type=service --state=failed --no-legend --no-pager 2>/dev/null | grep -E '^●.*\.service')
     if [[ -z "$failed_services" ]]; then
-        ui_success "All services running normally"
+        ui_success "No services in failed state"
     else
-        ui_error "Failed services detected:"
+        ui_error "Services in failed state:"
         echo "$failed_services" | while read -r line; do
-            service_name=$(echo "$line" | awk '{print $1}')
+            # Extract service name (second field after the ● symbol)
+            service_name=$(echo "$line" | awk '{print $2}')
             ui_error "  $service_name"
         done
+        ui_info "Note: Disabled services are not considered failed" --before 1
     fi
     
     # Key services status
@@ -217,8 +219,12 @@ if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
     for service in "${essential_services[@]}"; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             echo "$service|✅ Active|Running" >> /tmp/services_table.txt
+        elif systemctl is-failed --quiet "$service" 2>/dev/null; then
+            echo "$service|❌ Failed|Needs Attention" >> /tmp/services_table.txt
         elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
-            echo "$service|⚠️  Inactive|Installed" >> /tmp/services_table.txt
+            # Service exists but is not active (could be disabled, inactive, etc.)
+            service_state=$(systemctl is-enabled "$service" 2>/dev/null || echo "unknown")
+            echo "$service|⚠️  Inactive|$service_state" >> /tmp/services_table.txt
         else
             echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
         fi
@@ -228,8 +234,12 @@ if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
     for service in "${optional_services[@]}"; do
         if systemctl is-active --quiet "$service" 2>/dev/null; then
             echo "$service|✅ Active|Running" >> /tmp/services_table.txt
+        elif systemctl is-failed --quiet "$service" 2>/dev/null; then
+            echo "$service|❌ Failed|Needs Attention" >> /tmp/services_table.txt
         elif systemctl list-unit-files --type=service | grep -q "^$service.service"; then
-            echo "$service|ℹ️  Disabled|Security Default" >> /tmp/services_table.txt
+            # Optional service exists but is not active (disabled is expected/OK)
+            service_state=$(systemctl is-enabled "$service" 2>/dev/null || echo "unknown")
+            echo "$service|ℹ️  Disabled|$service_state (OK)" >> /tmp/services_table.txt
         else
             echo "$service|ℹ️  Not Found|Not Installed" >> /tmp/services_table.txt
         fi
