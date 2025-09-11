@@ -6,68 +6,68 @@
 # This file provides standardized color variables for use across all shell
 # functions and scripts. Colors are based on the oksolar color scheme.
 
-# Extract colors from the oksolar array structure
+# Extract colors from the oksolar array structure - only if not already defined
 {{- range .colors.oksolar -}}
 {{- range $colorName, $colorValue := . -}}
 {{- if eq $colorName "base03" }}
-readonly UI_BASE03="#{{ $colorValue }}"  # Dark backgrounds
+[ -z "$UI_BASE03" ] && readonly UI_BASE03="#{{ $colorValue }}"  # Dark backgrounds
 {{- end -}}
 {{- if eq $colorName "base02" }}
-readonly UI_BASE02="#{{ $colorValue }}"  # Background highlights
+[ -z "$UI_BASE02" ] && readonly UI_BASE02="#{{ $colorValue }}"  # Background highlights
 {{- end -}}
 {{- if eq $colorName "base01" }}
-readonly UI_BASE01="#{{ $colorValue }}"  # Secondary text, comments
+[ -z "$UI_BASE01" ] && readonly UI_BASE01="#{{ $colorValue }}"  # Secondary text, comments
 {{- end -}}
 {{- if eq $colorName "base00" }}
-readonly UI_BASE00="#{{ $colorValue }}"  # Body text
+[ -z "$UI_BASE00" ] && readonly UI_BASE00="#{{ $colorValue }}"  # Body text
 {{- end -}}
 {{- if eq $colorName "base0" }}
-readonly UI_BASE0="#{{ $colorValue }}"   # Primary text
+[ -z "$UI_BASE0" ] && readonly UI_BASE0="#{{ $colorValue }}"   # Primary text
 {{- end -}}
 {{- if eq $colorName "base1" }}
-readonly UI_BASE1="#{{ $colorValue }}"   # Optional emphasized text
+[ -z "$UI_BASE1" ] && readonly UI_BASE1="#{{ $colorValue }}"   # Optional emphasized text
 {{- end -}}
 {{- if eq $colorName "base2" }}
-readonly UI_BASE2="#{{ $colorValue }}"   # Background highlights (light)
+[ -z "$UI_BASE2" ] && readonly UI_BASE2="#{{ $colorValue }}"   # Background highlights (light)
 {{- end -}}
 {{- if eq $colorName "base3" }}
-readonly UI_BASE3="#{{ $colorValue }}"   # Background (light)
+[ -z "$UI_BASE3" ] && readonly UI_BASE3="#{{ $colorValue }}"   # Background (light)
 {{- end -}}
 {{- if eq $colorName "yellow" }}
-readonly UI_YELLOW="#{{ $colorValue }}"  # Yellow
+[ -z "$UI_YELLOW" ] && readonly UI_YELLOW="#{{ $colorValue }}"  # Yellow
 {{- end -}}
 {{- if eq $colorName "orange" }}
-readonly UI_ORANGE="#{{ $colorValue }}"  # Orange
+[ -z "$UI_ORANGE" ] && readonly UI_ORANGE="#{{ $colorValue }}"  # Orange
 {{- end -}}
 {{- if eq $colorName "red" }}
-readonly UI_RED="#{{ $colorValue }}"     # Red
+[ -z "$UI_RED" ] && readonly UI_RED="#{{ $colorValue }}"     # Red
 {{- end -}}
 {{- if eq $colorName "magenta" }}
-readonly UI_MAGENTA="#{{ $colorValue }}" # Magenta
+[ -z "$UI_MAGENTA" ] && readonly UI_MAGENTA="#{{ $colorValue }}" # Magenta
 {{- end -}}
 {{- if eq $colorName "violet" }}
-readonly UI_VIOLET="#{{ $colorValue }}"  # Violet
+[ -z "$UI_VIOLET" ] && readonly UI_VIOLET="#{{ $colorValue }}"  # Violet
 {{- end -}}
 {{- if eq $colorName "blue" }}
-readonly UI_BLUE="#{{ $colorValue }}"    # Blue
+[ -z "$UI_BLUE" ] && readonly UI_BLUE="#{{ $colorValue }}"    # Blue
 {{- end -}}
 {{- if eq $colorName "cyan" }}
-readonly UI_CYAN="#{{ $colorValue }}"    # Cyan
+[ -z "$UI_CYAN" ] && readonly UI_CYAN="#{{ $colorValue }}"    # Cyan
 {{- end -}}
 {{- if eq $colorName "green" }}
-readonly UI_GREEN="#{{ $colorValue }}"   # Green
+[ -z "$UI_GREEN" ] && readonly UI_GREEN="#{{ $colorValue }}"   # Green
 {{- end -}}
 {{- end -}}
 {{- end }}
 
-# Semantic color mappings for UI functions
-readonly UI_PRIMARY="$UI_BLUE"      # Primary actions, info messages, headers
-readonly UI_SUCCESS="$UI_GREEN"     # Success states, completed actions
-readonly UI_ERROR="$UI_RED"         # Error states, critical warnings
-readonly UI_WARNING="$UI_ORANGE"    # Warning states, caution messages
-readonly UI_CAUTION="$UI_YELLOW"    # Attention messages, notices
-readonly UI_SECONDARY="$UI_BASE01"  # Secondary text, subdued information
-readonly UI_SUBTLE="$UI_BASE01"     # Subtle text, tips, secondary info
+# Semantic color mappings for UI functions - only if not already defined
+[ -z "$UI_PRIMARY" ] && readonly UI_PRIMARY="$UI_BLUE"      # Primary actions, info messages, headers
+[ -z "$UI_SUCCESS" ] && readonly UI_SUCCESS="$UI_GREEN"     # Success states, completed actions
+[ -z "$UI_ERROR" ] && readonly UI_ERROR="$UI_RED"         # Error states, critical warnings
+[ -z "$UI_WARNING" ] && readonly UI_WARNING="$UI_ORANGE"    # Warning states, caution messages
+[ -z "$UI_CAUTION" ] && readonly UI_CAUTION="$UI_YELLOW"    # Attention messages, notices
+[ -z "$UI_SECONDARY" ] && readonly UI_SECONDARY="$UI_BASE01"  # Secondary text, subdued information
+[ -z "$UI_SUBTLE" ] && readonly UI_SUBTLE="$UI_BASE01"     # Subtle text, tips, secondary info
 
 # Export all color variables for subshells
 export UI_BASE03 UI_BASE02 UI_BASE01 UI_BASE00 UI_BASE0 UI_BASE1 UI_BASE2 UI_BASE3

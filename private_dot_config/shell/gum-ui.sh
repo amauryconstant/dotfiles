@@ -36,6 +36,62 @@ _check_gum() {
 # CORE RENDERING ENGINE
 # =============================================================================
 
+# Parse universal parameters - used by all UI functions
+_parse_ui_params() {
+    before=0
+    after=0
+    indent=0
+    newline=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --newline|--nl) 
+                newline=true
+                shift 
+                ;;
+            --indent) 
+                if [[ -n "$2" && "$2" != --* ]]; then
+                    indent="$2"
+                    shift 2
+                else
+                    shift
+                fi
+                ;;
+            --before) 
+                if [[ -n "$2" && "$2" != --* ]]; then
+                    before="$2"
+                    shift 2
+                else
+                    shift
+                fi
+                ;;
+            --after) 
+                if [[ -n "$2" && "$2" != --* ]]; then
+                    after="$2"
+                    shift 2
+                else
+                    shift
+                fi
+                ;;
+            *) 
+                shift 
+                ;;
+        esac
+    done
+}
+
+# Apply spacing based on parsed parameters
+_apply_spacing() {
+    local timing="$1" # "before" or "after"
+    
+    if [[ "$timing" == "before" ]]; then
+        [ "$before" -gt 0 ] && printf '\n%.0s' $(seq 1 "$before")
+    elif [[ "$timing" == "after" ]]; then
+        [ "$newline" = true ] && echo
+        [ "$after" -gt 0 ] && printf '\n%.0s' $(seq 1 "$after")
+    fi
+}
+
 # Central rendering function with flexible parameter support
 _ui_render() {
     local message="$1"
@@ -44,23 +100,10 @@ _ui_render() {
     shift 3
     
     # Parse universal parameters
-    local newline=false
-    local indent=0
-    local before=0
-    local after=0
-    
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --newline|--nl) newline=true; shift ;;
-            --indent) indent="$2"; shift 2 ;;
-            --before) before="$2"; shift 2 ;;
-            --after) after="$2"; shift 2 ;;
-            *) shift ;;
-        esac
-    done
+    _parse_ui_params "$@"
     
     # Apply before spacing
-    [ "$before" -gt 0 ] && printf '\n%.0s' $(seq 1 "$before")
+    _apply_spacing "before"
     
     # Build indented message
     local prefix=""
@@ -75,8 +118,38 @@ _ui_render() {
     fi
     
     # Apply after spacing
-    [ "$newline" = true ] && echo
-    [ "$after" -gt 0 ] && printf '\n%.0s' $(seq 1 "$after")
+    _apply_spacing "after"
+}
+
+# Helper function for subtitle rendering
+_ui_render_subtitle() {
+    local message="$1"
+    if _check_gum; then
+        gum style --foreground "$UI_PRIMARY" --border rounded --padding "0 2" "$message"
+    else
+        echo
+        echo "--- $message ---"
+    fi
+}
+
+# Helper function for box rendering
+_ui_render_box() {
+    local content="$1"
+    local border_color="$2"
+    
+    if _check_gum; then
+        if [ -n "$border_color" ]; then
+            gum style --border rounded --border-foreground "$border_color" --padding "1 2" --margin "1 0" "$content"
+        else
+            gum style --border rounded --padding "1 2" --margin "1 0" "$content"
+        fi
+    else
+        echo
+        echo "┌─────────────────────────────────────────────────────────────┐"
+        echo "│ $content"
+        echo "└─────────────────────────────────────────────────────────────┘"
+        echo
+    fi
 }
 
 # =============================================================================
@@ -127,28 +200,45 @@ ui_title() {
 
 # Display subtitle with single border
 ui_subtitle() {
-    if _check_gum; then
-        gum style --foreground "$UI_PRIMARY" --border rounded --padding "0 2" "$1"
-    else
-        echo
-        echo "--- $1 ---"
-    fi
+    local message="$1"
+    shift
+    
+    # Parse universal parameters
+    _parse_ui_params "$@"
+    
+    # Apply before spacing
+    _apply_spacing "before"
+    
+    # Render subtitle
+    _ui_render_subtitle "$message"
+    
+    # Apply after spacing
+    _apply_spacing "after"
 }
 
 # Display content in a bordered box
 ui_box() {
     local content="$1"
-    local border_color="${2:-$UI_SECONDARY}"
+    shift
+    local border_color="$UI_SECONDARY"
     
-    if _check_gum; then
-        gum style --border rounded --border-foreground "$border_color" --padding "1 2" --margin "1 0" "$content"
-    else
-        echo
-        echo "┌─────────────────────────────────────────────────────────────┐"
-        echo "│ $content"
-        echo "└─────────────────────────────────────────────────────────────┘"
-        echo
+    # Parse border color parameter first
+    if [[ $# -gt 0 && "$1" != --* ]]; then
+        border_color="$1"
+        shift
     fi
+    
+    # Parse universal parameters
+    _parse_ui_params "$@"
+    
+    # Apply before spacing
+    _apply_spacing "before"
+    
+    # Render box
+    _ui_render_box "$content" "$border_color"
+    
+    # Apply after spacing
+    _apply_spacing "after"
 }
 
 # Display visual separator
@@ -171,33 +261,19 @@ ui_output() {
     local message="$1"
     shift
     
-    # Parse parameters but don't style the message
-    local newline=false
-    local indent=0
-    local before=0
-    local after=0
-    
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --newline|--nl) newline=true; shift ;;
-            --indent) indent="$2"; shift 2 ;;
-            --before) before="$2"; shift 2 ;;
-            --after) after="$2"; shift 2 ;;
-            *) shift ;;
-        esac
-    done
+    # Parse universal parameters
+    _parse_ui_params "$@"
     
     # Apply before spacing
-    [ "$before" -gt 0 ] && printf '\n%.0s' $(seq 1 "$before")
+    _apply_spacing "before"
     
-    # Apply indentation
+    # Apply indentation and output message
     local prefix=""
     [ "$indent" -gt 0 ] && printf -v prefix "%*s" "$indent" ""
     echo "${prefix}${message}"
     
     # Apply after spacing
-    [ "$newline" = true ] && echo
-    [ "$after" -gt 0 ] && printf '\n%.0s' $(seq 1 "$after")
+    _apply_spacing "after"
 }
 
 # =============================================================================
