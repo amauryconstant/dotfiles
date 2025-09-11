@@ -59,6 +59,51 @@ ui_spin "Creating worktree '$branch'..." \
     git worktree add "$worktree_path" "$branch"
 
 if [[ $? -eq 0 ]]; then
+    # Handle mise local configuration if present
+    local main_repo_path=$(git rev-parse --show-toplevel)
+    local mise_configs_found=false
+    
+    # Only copy local config files (not versioned ones)
+    local local_mise_config_files=(
+        ".mise.local.toml"
+        "mise.local.toml"
+    )
+    
+    # Copy local mise config files that exist
+    for config_file in "${local_mise_config_files[@]}"; do
+        if [[ -f "$main_repo_path/$config_file" ]]; then
+            mise_configs_found=true
+            # Create directory structure if needed
+            local config_dir=$(dirname "$worktree_path/$config_file")
+            mkdir -p "$config_dir" 2>/dev/null || true
+            # Copy the config file
+            cp -f "$main_repo_path/$config_file" "$worktree_path/$config_file" 2>/dev/null || true
+        fi
+    done
+    
+    # Copy local mise directories that may contain local configs
+    local local_mise_dirs=(
+        ".mise"
+        "mise"
+    )
+    
+    for mise_dir in "${local_mise_dirs[@]}"; do
+        if [[ -d "$main_repo_path/$mise_dir" ]]; then
+            # Only copy local config files from these directories
+            if [[ -f "$main_repo_path/$mise_dir/config.local.toml" ]]; then
+                mise_configs_found=true
+                mkdir -p "$worktree_path/$mise_dir" 2>/dev/null || true
+                cp -f "$main_repo_path/$mise_dir/config.local.toml" "$worktree_path/$mise_dir/" 2>/dev/null || true
+            fi
+        fi
+    done
+    
+    # Trust the directory for mise if any configs exist (versioned or local)
+    if command -v mise >/dev/null 2>&1; then
+        ui_spin "Trusting mise directory..." \
+            "cd '$worktree_path' && mise trust 2>/dev/null || true"
+    fi
+    
     ui_box "✅ Worktree created successfully!
 
 📁 Location: $worktree_path

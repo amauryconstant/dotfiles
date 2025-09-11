@@ -83,6 +83,12 @@ echo "$selected_items" | while IFS= read -r worktree_path; do
     if [[ -n "$worktree_path" ]]; then
         branch_name=$(basename "$worktree_path")
         
+        # Clean up mise trust for this directory if mise is available
+        if command -v mise >/dev/null 2>&1 && [[ -d "$worktree_path" ]]; then
+            ui_spin "Cleaning up mise trust for '$branch_name'..." \
+                "cd '$worktree_path' && mise trust --untrust 2>/dev/null || true"
+        fi
+        
         ui_spin "Removing worktree '$branch_name'..." \
             git worktree remove "$worktree_path" --force
         
