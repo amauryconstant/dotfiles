@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 debug-zsh-startup() {
     time ZSH_DEBUGRC=1 zsh -i -c exit
 }

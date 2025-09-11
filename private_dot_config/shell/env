@@ -12,4 +12,9 @@ if [ -r "$HOME/.config/shell/env_functions" ]; then
     . "$HOME/.config/shell/env_functions"
 fi
 
+# Source standardized gum UI library for all shells
+if [ -r "$HOME/.config/shell/gum-ui.sh" ]; then
+    . "$HOME/.config/shell/gum-ui.sh"
+fi
+
 umask 0077

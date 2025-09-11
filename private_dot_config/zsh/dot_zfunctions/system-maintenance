@@ -1,59 +1,23 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
 # System Maintenance Tool - Interactive system maintenance operations
 # Purpose: User-friendly interface for common system maintenance tasks
-# Requirements: Arch Linux, pacman, optionally yay, topgrade, gum for enhanced UI
+# Requirements: Arch Linux, pacman, optionally yay, topgrade, gum (UI library)
 
 system-maintenance() {
-    # Interactive system maintenance - assumes gum is available
+    # Interactive system maintenance - uses standardized UI library
     
-    # Helper function for styled output
-    print_message() {
-        local type="$1"
-        local message="$2"
-        
-        case "$type" in
-            "title")
-                gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$message"
-                ;;
-            "success")
-                gum style --foreground "#00ff00" "✅ $message"
-                ;;
-            "error")
-                gum style --foreground "#ff0000" --bold "❌ $message"
-                ;;
-            "warning")
-                gum style --foreground "#ffaa00" "⚠️  $message"
-                ;;
-            "info")
-                gum style --foreground "#00aaff" "ℹ️  $message"
-                ;;
-            *)
-                echo "$message"
-                ;;
-        esac
-    }
+    # Note: Using standardized ui_* functions instead of custom print_message
     
-    # Function to run command with spinner
-    run_with_progress() {
-        local title="$1"
-        local command="$2"
-        
-        gum spin --spinner dot --title "$title" -- sh -c "$command"
-    }
+    # Note: Using standardized ui_spin instead of custom ui_spin
     
-    # Function to ask for confirmation
-    confirm_action() {
-        local message="$1"
-        
-        gum confirm "$message"
-    }
+    # Note: Using standardized ui_confirm instead of custom ui_confirm
     
     # Main interactive loop
     while true; do
-        print_message "title" "🔧 System Maintenance Tool"
+        ui_title "🔧 System Maintenance Tool"
         
-        ACTION=$(gum choose --header "Select a maintenance action:" \
+        ACTION=$(ui_choose "Select a maintenance action:" \
             "🔄 Full System Update - Run topgrade (recommended)" \
             "📦 Package Updates - Update Arch packages only" \
             "🍃 AUR Updates - Update AUR packages (requires yay)" \
@@ -69,57 +33,57 @@ system-maintenance() {
         case "$ACTION" in
             "🔄 Full System Update - Run topgrade (recommended)")
                 if command -v topgrade >/dev/null 2>&1; then
-                    print_message "info" "Running comprehensive system update with topgrade..."
+                    ui_info "Running comprehensive system update with topgrade..."
                     topgrade
-                    print_message "success" "System update completed!"
+                    ui_success "System update completed!"
                 else
-                    print_message "error" "topgrade is not installed. Install with: pacman -S topgrade"
+                    ui_error "topgrade is not installed. Install with: pacman -S topgrade"
                 fi
                 ;;
                 
             "📦 Package Updates - Update Arch packages only")
-                if confirm_action "Update all Arch Linux packages?"; then
-                    run_with_progress "Syncing package databases..." "sudo pacman -Sy"
-                    print_message "info" "Updating packages..."
+                if ui_confirm "Update all Arch Linux packages?"; then
+                    ui_spin "Syncing package databases..." "sudo pacman -Sy"
+                    ui_info "Updating packages..."
                     sudo pacman -Su
-                    print_message "success" "Package update completed!"
+                    ui_success "Package update completed!"
                 else
-                    print_message "info" "Operation cancelled"
+                    ui_info "Operation cancelled"
                 fi
                 ;;
                 
             "🍃 AUR Updates - Update AUR packages (requires yay)")
                 if command -v yay >/dev/null 2>&1; then
-                    if confirm_action "Update all AUR packages?"; then
-                        print_message "info" "Updating AUR packages..."
+                    if ui_confirm "Update all AUR packages?"; then
+                        ui_info "Updating AUR packages..."
                         yay -Sua
-                        print_message "success" "AUR update completed!"
+                        ui_success "AUR update completed!"
                     else
-                        print_message "info" "Operation cancelled"
+                        ui_info "Operation cancelled"
                     fi
                 else
-                    print_message "error" "yay is not installed. Install with: pacman -S yay"
+                    ui_error "yay is not installed. Install with: pacman -S yay"
                 fi
                 ;;
                 
             "🧹 System Cleanup - Clean package cache and orphans")
-                gum style --foreground "#ffaa00" --bold --border rounded \
-                    --padding "1 2" "🧹 System Cleanup Session"
-                echo ""
+                ui_title "🧹 System Cleanup Session" --after 1
                 
                 # Log cleanup activities
-                echo "$(date): Starting system cleanup" | gum log --structured --level info
+                ui_action "Starting system cleanup"
                 
                 # Clean package cache
-                gum style --foreground "#00aaff" "Cleaning package cache..."
+                ui_step "Cleaning package cache..."
                 sudo pacman -Sc --noconfirm
-                echo "Package cache cleaned" | gum log --structured --level info
+                ui_success "Package cache cleaned"
                 
                 # Find and optionally remove orphaned packages
-                local orphans=$(pacman -Qtdq 2>/dev/null)
+                local orphans
+                orphans=$(pacman -Qtdq 2>/dev/null)
                 if [[ -n "$orphans" ]]; then
-                    local orphan_count=$(echo "$orphans" | wc -l)
-                    gum style --foreground "#ffaa00" "Found $orphan_count orphaned package(s):"
+                    local orphan_count
+                    orphan_count=$(echo "$orphans" | wc -l)
+                    ui_warning "Found $orphan_count orphaned package(s):"
                     
                     # Create table for orphaned packages
                     echo "Package|Description" > /tmp/orphans_table.txt
@@ -128,99 +92,98 @@ system-maintenance() {
                         echo "$pkg|$desc" >> /tmp/orphans_table.txt
                     done
                     
-                    gum table < /tmp/orphans_table.txt
+                    ui_table < /tmp/orphans_table.txt
                     rm -f /tmp/orphans_table.txt
                     
-                    if confirm_action "Remove these orphaned packages?"; then
+                    if ui_confirm "Remove these orphaned packages?"; then
                         echo "$orphans" | sudo pacman -Rns -
-                        echo "Removed $orphan_count orphaned packages" | gum log --structured --level info
-                        gum style --foreground "#00ff00" "✅ Orphaned packages removed!"
+                        ui_info "Removed $orphan_count orphaned packages"
+                        ui_success "Orphaned packages removed!"
                     fi
                 else
-                    gum style --foreground "#00ff00" "✅ No orphaned packages found"
+                    ui_success "No orphaned packages found"
                 fi
                 
                 # Clean yay cache if available
                 if command -v yay >/dev/null 2>&1; then
-                    run_with_progress "Cleaning AUR cache..." "yay -Sc --noconfirm"
-                    echo "AUR cache cleaned" | gum log --structured --level info
+                    ui_spin "Cleaning AUR cache..." "yay -Sc --noconfirm"
+                    ui_success "AUR cache cleaned"
                 fi
                 
-                echo "$(date): System cleanup completed" | gum log --structured --level info
-                gum style --foreground "#00ff00" --bold "✅ System cleanup completed!"
+                ui_info "System cleanup completed"
+                ui_complete "System cleanup completed!"
                 ;;
                 
             "🔍 System Health Check - Run system health dashboard")
                 if command -v system-health >/dev/null 2>&1; then
                     system-health
                 else
-                    print_message "error" "system-health function not available"
+                    ui_error "system-health function not available"
                 fi
                 ;;
                 
             "💾 Disk Cleanup - Clean temporary files and caches")
-                print_message "info" "Starting disk cleanup..."
+                ui_info "Starting disk cleanup..."
                 
                 # Show disk usage before cleanup
-                print_message "info" "Current disk usage:"
+                ui_info "Current disk usage:"
                 df -h / | tail -1
-                echo ""
+                ui_spacer
                 
-                if confirm_action "Clean temporary files and caches?"; then
+                if ui_confirm "Clean temporary files and caches?"; then
                     # Clean various cache directories
-                    run_with_progress "Cleaning user cache..." "rm -rf ~/.cache/thumbnails/* 2>/dev/null || true"
-                    run_with_progress "Cleaning browser caches..." "rm -rf ~/.cache/mozilla/* ~/.cache/chromium/* 2>/dev/null || true"
-                    run_with_progress "Cleaning temporary files..." "sudo rm -rf /tmp/* /var/tmp/* 2>/dev/null || true"
+                    ui_spin "Cleaning user cache..." "rm -rf ~/.cache/thumbnails/* 2>/dev/null || true"
+                    ui_spin "Cleaning browser caches..." "rm -rf ~/.cache/mozilla/* ~/.cache/chromium/* 2>/dev/null || true"
+                    ui_spin "Cleaning temporary files..." "sudo rm -rf /tmp/* /var/tmp/* 2>/dev/null || true"
                     
                     # Clean journal logs (keep last week)
                     if command -v journalctl >/dev/null 2>&1; then
-                        run_with_progress "Cleaning old journal logs..." "sudo journalctl --vacuum-time=1week"
+                        ui_spin "Cleaning old journal logs..." "sudo journalctl --vacuum-time=1week"
                     fi
                     
                     # Show disk usage after cleanup
-                    echo ""
-                    print_message "info" "Disk usage after cleanup:"
+                    ui_info "Disk usage after cleanup:" --before 1
                     df -h / | tail -1
-                    print_message "success" "Disk cleanup completed!"
+                    ui_success "Disk cleanup completed!"
                 else
-                    print_message "info" "Operation cancelled"
+                    ui_info "Operation cancelled"
                 fi
                 ;;
                 
             "🗂️  Log Cleanup - Clean system logs")
-                if confirm_action "Clean system logs (keep last 2 weeks)?"; then
+                if ui_confirm "Clean system logs (keep last 2 weeks)?"; then
                     if command -v journalctl >/dev/null 2>&1; then
-                        run_with_progress "Cleaning journal logs..." "sudo journalctl --vacuum-time=2weeks"
-                        print_message "success" "Log cleanup completed!"
+                        ui_spin "Cleaning journal logs..." "sudo journalctl --vacuum-time=2weeks"
+                        ui_success "Log cleanup completed!"
                     else
-                        print_message "error" "journalctl not available"
+                        ui_error "journalctl not available"
                     fi
                 else
-                    print_message "info" "Operation cancelled"
+                    ui_info "Operation cancelled"
                 fi
                 ;;
                 
             "🔐 Security Update - Update and check security status")
-                print_message "info" "Running security-focused maintenance..."
+                ui_info "Running security-focused maintenance..."
                 
                 # Update packages first
-                run_with_progress "Updating packages for security..." "sudo pacman -Syu --noconfirm"
+                ui_spin "Updating packages for security..." "sudo pacman -Syu --noconfirm"
                 
                 # Check for failed services
-                local failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
+                local failed_services
+                failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
                 if [[ $failed_services -gt 0 ]]; then
-                    print_message "warning" "$failed_services failed service(s) detected"
+                    ui_warning "$failed_services failed service(s) detected"
                     systemctl list-units --type=service --state=failed --no-legend
                 else
-                    print_message "success" "All services running normally"
+                    ui_success "All services running normally"
                 fi
                 
-                print_message "success" "Security update completed!"
+                ui_success "Security update completed!"
                 ;;
                 
             "📊 System Information - Detailed system info")
-                print_message "info" "Gathering detailed system information..."
-                echo ""
+                ui_info "Gathering detailed system information..." --after 1
                 
                 if command -v fastfetch >/dev/null 2>&1; then
                     fastfetch
@@ -228,11 +191,11 @@ system-maintenance() {
                     neofetch
                 else
                     # Basic system info
-                    echo "System: $(uname -sr)"
-                    echo "Hostname: $(hostname)"
-                    echo "Uptime: $(uptime -p 2>/dev/null || uptime)"
-                    echo "Memory: $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
-                    echo "Disk: $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')"
+                    ui_info "System: $(uname -sr)"
+                    ui_info "Hostname: $(hostname)"
+                    ui_info "Uptime: $(uptime -p 2>/dev/null || uptime)"
+                    ui_info "Memory: $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
+                    ui_info "Disk: $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')"
                 fi
                 ;;
                 
@@ -240,36 +203,36 @@ system-maintenance() {
                 if command -v system-health >/dev/null 2>&1; then
                     system-health --brief
                 else
-                    print_message "info" "Quick system status:"
-                    echo "Load: $(uptime | awk -F'load average:' '{print $2}')"
-                    echo "Memory: $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
-                    echo "Disk: $(df -h / | awk 'NR==2 {print $5 " used"}')"
+                    ui_info "Quick system status:"
+                    ui_info "Load: $(uptime | awk -F'load average:' '{print $2}')"
+                    ui_info "Memory: $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
+                    ui_info "Disk: $(df -h / | awk 'NR==2 {print $5 " used"}')"
                     
-                    local failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
+                    local failed_services
+                    failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
                     if [[ $failed_services -eq 0 ]]; then
-                        print_message "success" "All services running normally"
+                        ui_success "All services running normally"
                     else
-                        print_message "warning" "$failed_services failed service(s)"
+                        ui_warning "$failed_services failed service(s)"
                     fi
                 fi
                 ;;
                 
             "🚪 Exit"|"")
-                print_message "info" "Goodbye! 👋"
+                ui_info "Goodbye! 👋"
                 break
                 ;;
                 
             *)
-                print_message "error" "Unknown action. Please try again."
+                ui_error "Unknown action. Please try again."
                 ;;
         esac
         
         # Pause before showing menu again (except for exit)
         if [[ "$ACTION" != "🚪 Exit" && "$ACTION" != "" ]]; then
-            echo ""
-            gum style --foreground "#666666" "Press any key to continue..."
-            read -k 1
-            echo ""
+            ui_info "Press any key to continue..." --before 1
+            read -n 1
+            ui_spacer
         fi
     done
 }

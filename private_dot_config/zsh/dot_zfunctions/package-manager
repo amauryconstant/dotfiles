@@ -2,67 +2,18 @@
 
 # Package Manager - Interactive package management tool
 # Purpose: User-friendly interface for package operations
-# Requirements: Arch Linux, pacman, yay, gum
+# Requirements: Arch Linux, pacman, yay, gum (UI library)
 
 package-manager() {
-    # Check if gum is installed
-    if ! command -v gum >/dev/null 2>&1; then
-        echo "❌ gum is required but not installed. Install with: pacman -S gum"
-        return 1
-    fi
+    # Note: Using standardized UI library which handles gum availability
     
-    # Helper function for styled output
-    print_message() {
-        local type="$1"
-        local message="$2"
-        
-        case "$type" in
-            "title")
-                gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$message"
-                ;;
-            "success")
-                gum style --foreground "#00ff00" "✅ $message"
-                ;;
-            "error")
-                gum style --foreground "#ff0000" --bold "❌ $message"
-                ;;
-            "warning")
-                gum style --foreground "#ffaa00" "⚠️  $message"
-                ;;
-            "info")
-                gum style --foreground "#00aaff" "ℹ️  $message"
-                ;;
-            *)
-                echo "$message"
-                ;;
-        esac
-    }
-    
-    # Function to run command with spinner
-    run_with_progress() {
-        local title="$1"
-        local command="$2"
-        gum spin --spinner dot --title "$title" -- sh -c "$command"
-    }
-    
-    # Function to ask for confirmation
-    confirm_action() {
-        local message="$1"
-        gum confirm "$message"
-    }
-    
-    # Function to get user input
-    get_input() {
-        local prompt="$1"
-        local placeholder="$2"
-        gum input --placeholder "$placeholder" --header "$prompt"
-    }
+    # Note: Using standardized ui_* functions instead of custom helper functions
     
     # Main interactive loop
     while true; do
-        print_message "title" "📦 Package Manager"
+        ui_title "📦 Package Manager"
         
-        ACTION=$(gum choose --header "Select a package operation:" \
+        ACTION=$(ui_choose "Select a package operation:" \
             "🔍 Search - Search for packages" \
             "📥 Install - Install packages" \
             "🗑️  Remove - Remove packages" \
@@ -78,75 +29,79 @@ package-manager() {
         
         case "$ACTION" in
             "🔍 Search - Search for packages")
-                local search_term=$(get_input "Enter search term" "package name or keyword")
+                local search_term
+                search_term=$(ui_input "Enter search term" "package name or keyword")
                 if [[ -n "$search_term" ]]; then
-                    gum spin --spinner dot --title "Searching packages..." -- sleep 0.5
-                    print_message "info" "Search results for: $search_term"
-                    echo ""
+                    ui_spin "Searching packages..." "sleep 0.5"
+                    ui_info "Search results for: $search_term" --after 1
                     
-                    local search_results=$(pacman -Ss "$search_term" 2>/dev/null)
+                    local search_results
+                    search_results=$(pacman -Ss "$search_term" 2>/dev/null)
                     if [[ -n "$search_results" ]]; then
                         echo "$search_results" | while IFS= read -r line; do
                             if [[ "$line" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_+-]+ ]]; then
-                                gum style --foreground "#00aaff" --bold "$line"
+                                ui_info "$line"
                             else
-                                gum style --foreground "#666666" "    $line"
+                                ui_text "    $line"
                             fi
                         done
                     else
-                        gum style --foreground "#ffaa00" "No packages found matching '$search_term'"
+                        ui_warning "No packages found matching '$search_term'"
                     fi
                 else
-                    print_message "error" "No search term provided"
+                    ui_error "No search term provided"
                 fi
                 ;;
                 
             "📥 Install - Install packages")
-                local packages=$(get_input "Enter package name(s) to install" "package1 package2 ...")
+                local packages
+                packages=$(ui_input "Enter package name(s) to install" "package1 package2 ...")
                 if [[ -n "$packages" ]]; then
-                    if confirm_action "Install packages: $packages?"; then
-                        print_message "info" "Installing packages..."
-                        sudo pacman -S $packages
-                        print_message "success" "Package installation completed!"
+                    if ui_confirm "Install packages: $packages?"; then
+                        ui_info "Installing packages..."
+                        sudo pacman -S "$packages"
+                        ui_success "Package installation completed!"
                     else
-                        print_message "info" "Operation cancelled"
+                        ui_info "Operation cancelled"
                     fi
                 else
-                    print_message "error" "No packages specified"
+                    ui_error "No packages specified"
                 fi
                 ;;
                 
             "🗑️  Remove - Remove packages")
-                local packages=$(get_input "Enter package name(s) to remove" "package1 package2 ...")
+                local packages
+                packages=$(ui_input "Enter package name(s) to remove" "package1 package2 ...")
                 if [[ -n "$packages" ]]; then
-                    print_message "warning" "The following packages will be removed:"
-                    pacman -Qi $packages 2>/dev/null | grep "Name" | awk '{print "  • " $3}' || echo "  • $packages"
+                    ui_warning "The following packages will be removed:"
+                    pacman -Qi "$packages" 2>/dev/null | grep "Name" | awk '{print "  • " $3}' || echo "  • $packages"
                     
-                    if confirm_action "Remove these packages and their dependencies?"; then
-                        print_message "info" "Removing packages..."
-                        sudo pacman -Rs $packages
-                        print_message "success" "Package removal completed!"
+                    if ui_confirm "Remove these packages and their dependencies?"; then
+                        ui_info "Removing packages..."
+                        sudo pacman -Rs "$packages"
+                        ui_success "Package removal completed!"
                     else
-                        print_message "info" "Operation cancelled"
+                        ui_info "Operation cancelled"
                     fi
                 else
-                    print_message "error" "No packages specified"
+                    ui_error "No packages specified"
                 fi
                 ;;
                 
             "ℹ️  Info - Show package information")
-                local package=$(get_input "Enter package name" "package-name")
+                local package
+                package=$(ui_input "Enter package name" "package-name")
                 if [[ -n "$package" ]]; then
-                    print_message "info" "Package information for: $package"
-                    echo ""
-                    pacman -Qi "$package" 2>/dev/null || pacman -Si "$package" 2>/dev/null || print_message "error" "Package not found"
+                    ui_info "Package information for: $package" --after 1
+                    pacman -Qi "$package" 2>/dev/null || pacman -Si "$package" 2>/dev/null || ui_error "Package not found"
                 else
-                    print_message "error" "No package specified"
+                    ui_error "No package specified"
                 fi
                 ;;
                 
             "📋 List - List installed packages")
-                local list_type=$(gum choose --header "What would you like to list?" \
+                local list_type
+                list_type=$(ui_choose "What would you like to list?" \
                     "All installed packages" \
                     "Explicitly installed packages" \
                     "Recently installed packages" \
@@ -154,53 +109,55 @@ package-manager() {
                 
                 case "$list_type" in
                     "All installed packages")
-                        local total_packages=$(pacman -Q | wc -l)
-                        print_message "info" "All installed packages (Total: $total_packages)"
-                        echo ""
+                        local total_packages
+                        total_packages=$(pacman -Q | wc -l)
+                        ui_info "All installed packages (Total: $total_packages)" --after 1
                         
                         # Use gum filter for searchable package list
-                        local selected_package=$(pacman -Q | gum filter --placeholder "Type to search packages...")
+                        local selected_package
+                        selected_package=$(pacman -Q | ui_filter "Type to search packages...")
                         if [[ -n "$selected_package" ]]; then
-                            local pkg_name=$(echo "$selected_package" | awk '{print $1}')
-                            gum style --foreground "#00aaff" --bold "Package Details: $pkg_name"
-                            echo ""
+                            local pkg_name
+                            pkg_name=$(echo "$selected_package" | awk '{print $1}')
+                            ui_info "Package Details: $pkg_name" --after 1
                             pacman -Qi "$pkg_name" 2>/dev/null || echo "Package details not available"
                         fi
                         ;;
                     "Explicitly installed packages")
-                        print_message "info" "Explicitly installed packages:"
-                        echo ""
+                        ui_info "Explicitly installed packages:" --after 1
                         
                         # Create a table for explicitly installed packages
                         echo "Package|Version|Repository" > /tmp/explicit_packages.txt
                         pacman -Qe | while read -r pkg ver; do
-                            local repo=$(pacman -Qi "$pkg" 2>/dev/null | grep "Repository" | awk '{print $3}' || echo "local")
+                            local repo
+                            repo=$(pacman -Qi "$pkg" 2>/dev/null | grep "Repository" | awk '{print $3}' || echo "local")
                             echo "$pkg|$ver|$repo" >> /tmp/explicit_packages.txt
                         done
                         
-                        gum table < /tmp/explicit_packages.txt
+                        ui_table < /tmp/explicit_packages.txt
                         rm -f /tmp/explicit_packages.txt
                         ;;
                     "Recently installed packages")
-                        print_message "info" "Recently installed packages:"
-                        echo ""
+                        ui_info "Recently installed packages:" --after 1
                         
                         # Format recent installations with better styling
                         grep -E "installed|upgraded" /var/log/pacman.log | tail -20 | while IFS= read -r line; do
-                            local date_time=$(echo "$line" | awk '{print $1, $2}')
-                            local action=$(echo "$line" | grep -o -E "(installed|upgraded)")
-                            local package=$(echo "$line" | awk '{print $4}')
+                            local date_time
+                            date_time=$(echo "$line" | awk '{print $1, $2}')
+                            local action
+                            action=$(echo "$line" | grep -o -E "(installed|upgraded)")
+                            local package
+                            package=$(echo "$line" | awk '{print $4}')
                             
                             if [[ "$action" == "installed" ]]; then
-                                gum style --foreground "#00ff00" "📦 $date_time - INSTALLED: $package"
+                                ui_success "📦 $date_time - INSTALLED: $package"
                             else
-                                gum style --foreground "#00aaff" "🔄 $date_time - UPGRADED: $package"
+                                ui_info "🔄 $date_time - UPGRADED: $package"
                             fi
                         done
                         ;;
                     "Largest packages")
-                        print_message "info" "Largest installed packages:"
-                        echo ""
+                        ui_info "Largest installed packages:" --after 1
                         
                         # Create table for largest packages
                         echo "Size|Package|Description" > /tmp/largest_packages.txt
@@ -212,7 +169,7 @@ package-manager() {
                                 print size"|"name"|"desc
                             }' | sort -hr | head -10 >> /tmp/largest_packages.txt
                         
-                        gum table < /tmp/largest_packages.txt
+                        ui_table < /tmp/largest_packages.txt
                         rm -f /tmp/largest_packages.txt
                         ;;
                 esac
@@ -220,60 +177,64 @@ package-manager() {
                 
             "🔄 Update - Update packages")
                 # Check for available updates first
-                print_message "info" "Checking for available updates..."
-                local updates=$(checkupdates 2>/dev/null)
+                ui_info "Checking for available updates..."
+                local updates
+                updates=$(checkupdates 2>/dev/null)
                 
                 if [[ -n "$updates" ]]; then
-                    local update_count=$(echo "$updates" | wc -l)
-                    print_message "warning" "$update_count package update(s) available:"
+                    local update_count
+                    update_count=$(echo "$updates" | wc -l)
+                    ui_warning "$update_count package update(s) available:"
                     echo "$updates" | head -10
                     if [[ $update_count -gt 10 ]]; then
-                        echo "... and $((update_count - 10)) more"
+                        ui_text "... and $((update_count - 10)) more"
                     fi
                     
-                    if confirm_action "Update all packages?"; then
-                        print_message "info" "Updating packages..."
+                    if ui_confirm "Update all packages?"; then
+                        ui_info "Updating packages..."
                         sudo pacman -Syu
-                        print_message "success" "Package updates completed!"
+                        ui_success "Package updates completed!"
                     else
-                        print_message "info" "Operation cancelled"
+                        ui_info "Operation cancelled"
                     fi
                 else
-                    print_message "success" "System is up to date!"
+                    ui_success "System is up to date!"
                 fi
                 ;;
                 
             "🧹 Clean - Clean package cache")
-                print_message "info" "Package cache cleanup options:"
-                local cache_size=$(du -sh /var/cache/pacman/pkg/ 2>/dev/null | cut -f1 || echo "unknown")
-                print_message "info" "Current cache size: $cache_size"
+                ui_info "Package cache cleanup options:"
+                local cache_size
+                cache_size=$(du -sh /var/cache/pacman/pkg/ 2>/dev/null | cut -f1 || echo "unknown")
+                ui_info "Current cache size: $cache_size"
                 
-                local clean_type=$(gum choose --header "Select cleanup type:" \
+                local clean_type
+                clean_type=$(ui_choose "Select cleanup type:" \
                     "Clean uninstalled packages only" \
                     "Clean all cached packages" \
                     "Clean all except 3 most recent versions")
                 
                 case "$clean_type" in
                     "Clean uninstalled packages only")
-                        if confirm_action "Clean cache of uninstalled packages?"; then
+                        if ui_confirm "Clean cache of uninstalled packages?"; then
                             sudo pacman -Sc
-                            print_message "success" "Cache cleanup completed!"
+                            ui_success "Cache cleanup completed!"
                         fi
                         ;;
                     "Clean all cached packages")
-                        if confirm_action "Clean ALL cached packages? (Warning: this will remove all cached packages)"; then
+                        if ui_confirm "Clean ALL cached packages? (Warning: this will remove all cached packages)"; then
                             sudo pacman -Scc
-                            print_message "success" "Full cache cleanup completed!"
+                            ui_success "Full cache cleanup completed!"
                         fi
                         ;;
                     "Clean all except 3 most recent versions")
                         if command -v paccache >/dev/null 2>&1; then
-                            if confirm_action "Keep only 3 most recent versions of each package?"; then
+                            if ui_confirm "Keep only 3 most recent versions of each package?"; then
                                 sudo paccache -r
-                                print_message "success" "Cache cleanup completed!"
+                                ui_success "Cache cleanup completed!"
                             fi
                         else
-                            print_message "error" "paccache not available (install pacman-contrib)"
+                            ui_error "paccache not available (install pacman-contrib)"
                         fi
                         ;;
                 esac
@@ -281,112 +242,120 @@ package-manager() {
                 
             "🔍 AUR Search - Search AUR packages")
                 if command -v yay >/dev/null 2>&1; then
-                    local search_term=$(get_input "Enter AUR search term" "package name or keyword")
+                    local search_term
+                    search_term=$(ui_input "Enter AUR search term" "package name or keyword")
                     if [[ -n "$search_term" ]]; then
-                        print_message "info" "Searching AUR for: $search_term"
-                        echo ""
+                        ui_info "Searching AUR for: $search_term" --after 1
                         yay -Ss "$search_term"
                     else
-                        print_message "error" "No search term provided"
+                        ui_error "No search term provided"
                     fi
                 else
-                    print_message "error" "yay is not installed. Install with: pacman -S yay"
+                    ui_error "yay is not installed. Install with: pacman -S yay"
                 fi
                 ;;
                 
             "📥 AUR Install - Install from AUR")
                 if command -v yay >/dev/null 2>&1; then
-                    local packages=$(get_input "Enter AUR package name(s)" "aur-package1 aur-package2 ...")
+                    local packages
+                    packages=$(ui_input "Enter AUR package name(s)" "aur-package1 aur-package2 ...")
                     if [[ -n "$packages" ]]; then
-                        if confirm_action "Install AUR packages: $packages?"; then
-                            print_message "info" "Installing AUR packages..."
+                        if ui_confirm "Install AUR packages: $packages?"; then
+                            ui_info "Installing AUR packages..."
                             yay -S $packages
-                            print_message "success" "AUR package installation completed!"
+                            ui_success "AUR package installation completed!"
                         else
-                            print_message "info" "Operation cancelled"
+                            ui_info "Operation cancelled"
                         fi
                     else
-                        print_message "error" "No packages specified"
+                        ui_error "No packages specified"
                     fi
                 else
-                    print_message "error" "yay is not installed. Install with: pacman -S yay"
+                    ui_error "yay is not installed. Install with: pacman -S yay"
                 fi
                 ;;
                 
             "📊 Statistics - Show package statistics")
-                print_message "info" "Package Statistics:"
-                echo ""
+                ui_info "Package Statistics:" --after 1
                 
-                local total_packages=$(pacman -Q | wc -l)
-                local explicit_packages=$(pacman -Qe | wc -l)
-                local dependency_packages=$(pacman -Qd | wc -l)
-                local foreign_packages=$(pacman -Qm | wc -l)
+                local total_packages
+                total_packages=$(pacman -Q | wc -l)
+                local explicit_packages
+                explicit_packages=$(pacman -Qe | wc -l)
+                local dependency_packages
+                dependency_packages=$(pacman -Qd | wc -l)
+                local foreign_packages
+                foreign_packages=$(pacman -Qm | wc -l)
                 
-                echo "📦 Total installed packages: $total_packages"
-                echo "🎯 Explicitly installed: $explicit_packages"
-                echo "🔗 Dependencies: $dependency_packages"
-                echo "🌐 Foreign (AUR/manual): $foreign_packages"
+                ui_info "📦 Total installed packages: $total_packages"
+                ui_info "🎯 Explicitly installed: $explicit_packages"
+                ui_info "🔗 Dependencies: $dependency_packages"
+                ui_info "🌐 Foreign (AUR/manual): $foreign_packages"
                 
                 if command -v checkupdates >/dev/null 2>&1; then
-                    local available_updates=$(checkupdates 2>/dev/null | wc -l)
-                    echo "🔄 Available updates: $available_updates"
+                    local available_updates
+                    available_updates=$(checkupdates 2>/dev/null | wc -l)
+                    ui_info "🔄 Available updates: $available_updates"
                 fi
                 
-                local orphaned=$(pacman -Qtdq 2>/dev/null | wc -l)
-                echo "🗑️  Orphaned packages: $orphaned"
+                local orphaned
+                orphaned=$(pacman -Qtdq 2>/dev/null | wc -l)
+                ui_info "🗑️  Orphaned packages: $orphaned"
                 
                 # Cache size
-                local cache_size=$(du -sh /var/cache/pacman/pkg/ 2>/dev/null | cut -f1 || echo "unknown")
-                echo "💾 Package cache size: $cache_size"
+                local cache_size
+                cache_size=$(du -sh /var/cache/pacman/pkg/ 2>/dev/null | cut -f1 || echo "unknown")
+                ui_info "💾 Package cache size: $cache_size"
                 ;;
                 
             "👥 Dependencies - Show package dependencies")
-                local package=$(get_input "Enter package name" "package-name")
+                local package
+                package=$(ui_input "Enter package name" "package-name")
                 if [[ -n "$package" ]]; then
-                    local dep_type=$(gum choose --header "What dependencies to show?" \
+                    local dep_type
+                    dep_type=$(ui_choose "What dependencies to show?" \
                         "Dependencies of this package" \
                         "Packages that depend on this package" \
                         "Dependency tree")
                     
                     case "$dep_type" in
                         "Dependencies of this package")
-                            print_message "info" "Dependencies of $package:"
+                            ui_info "Dependencies of $package:"
                             pacman -Qi "$package" 2>/dev/null | grep "Depends On" | cut -d: -f2
                             ;;
                         "Packages that depend on this package")
-                            print_message "info" "Packages that depend on $package:"
+                            ui_info "Packages that depend on $package:"
                             pacman -Qi "$package" 2>/dev/null | grep "Required By" | cut -d: -f2
                             ;;
                         "Dependency tree")
                             if command -v pactree >/dev/null 2>&1; then
-                                print_message "info" "Dependency tree for $package:"
+                                ui_info "Dependency tree for $package:"
                                 pactree "$package"
                             else
-                                print_message "error" "pactree not available (install pacman-contrib)"
+                                ui_error "pactree not available (install pacman-contrib)"
                             fi
                             ;;
                     esac
                 else
-                    print_message "error" "No package specified"
+                    ui_error "No package specified"
                 fi
                 ;;
                 
             "🚪 Exit"|"")
-                print_message "info" "Goodbye! 👋"
+                ui_info "Goodbye! 👋"
                 break
                 ;;
                 
             *)
-                print_message "error" "Unknown action. Please try again."
+                ui_error "Unknown action. Please try again."
                 ;;
         esac
         
         # Pause before showing menu again (except for exit)
         if [[ "$ACTION" != "🚪 Exit" && "$ACTION" != "" ]]; then
-            echo ""
-            gum style --foreground "#666666" "Press any key to continue..."
+            ui_info "Press any key to continue..." --before 1
             read -r -n 1
-            echo ""
+            ui_spacer
         fi
     done
 }

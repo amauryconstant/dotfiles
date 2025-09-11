@@ -8,7 +8,7 @@ local project current_branch worktree_path
 
 # Check if we're in a git repository
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
-    gum style --foreground="#dc322f" "❌ Error: Not in a git repository"
+    ui_error "Error: Not in a git repository"
     return 1
 fi
 
@@ -17,20 +17,21 @@ current_branch=$(git branch --show-current)
 
 # If no branch specified, prompt for it
 if [[ -z "$branch" ]]; then
-    gum style --foreground="#268bd2" "📋 Creating worktree for project: $project"
-    echo
+    ui_action "📋 Creating worktree for project: $project" --after 1
     
     # Show available remote branches for reference
     if git branch -r >/dev/null 2>&1; then
-        gum style --foreground="#859900" "Available remote branches:"
-        git branch -r --format='%(refname:short)' | sed 's/origin\///' | head -10
-        echo
+        ui_success "Available remote branches:"
+        git branch -r --format='%(refname:short)' | sed 's/origin\///' | head -10 | while read -r branch_name; do
+            ui_text "$branch_name" --indent 2
+        done
+        ui_spacer
     fi
     
-    branch=$(gum input --placeholder "Enter branch name (new or existing)" --prompt "Branch: ")
+    branch=$(ui_input "Branch" "Enter branch name (new or existing)")
     
     if [[ -z "$branch" ]]; then
-        gum style --foreground="#dc322f" "❌ Branch name is required"
+        ui_error "Branch name is required"
         return 1
     fi
 fi
@@ -39,11 +40,11 @@ worktree_path="$HOME/Workspaces/$project/$branch"
 
 # Check if worktree already exists
 if [[ -d "$worktree_path" ]]; then
-    gum style --foreground="#b58900" "⚠️  Worktree already exists at: $worktree_path"
+    ui_warning "Worktree already exists at: $worktree_path"
     
-    if gum confirm "Switch to existing worktree?"; then
+    if ui_confirm "Switch to existing worktree?"; then
         cd "$worktree_path"
-        gum style --foreground="#859900" "✅ Switched to existing worktree"
+        ui_success "Switched to existing worktree"
         return 0
     else
         return 1
@@ -54,23 +55,19 @@ fi
 mkdir -p "$HOME/Workspaces/$project"
 
 # Create the worktree with progress indication
-gum spin --spinner dot --title "Creating worktree '$branch'..." -- \
+ui_spin "Creating worktree '$branch'..." \
     git worktree add "$worktree_path" "$branch"
 
 if [[ $? -eq 0 ]]; then
-    echo
-    gum style --border double --margin "1" --padding "1 2" --border-foreground "#859900" \
-        "✅ Worktree created successfully!" \
-        "" \
-        "📁 Location: $worktree_path" \
-        "🌿 Branch: $branch"
-    
-    echo
-    if gum confirm "Switch to new worktree now?"; then
+    ui_box "✅ Worktree created successfully!
+
+📁 Location: $worktree_path
+🌿 Branch: $branch" --before 1 --after 1
+    if ui_confirm "Switch to new worktree now?"; then
         cd "$worktree_path"
-        gum style --foreground "#859900" "✅ Switched to worktree: $(pwd)"
+        ui_success "Switched to worktree: $(pwd)"
     fi
 else
-    gum style --foreground="#dc322f" "❌ Failed to create worktree"
+    ui_error "Failed to create worktree"
     return 1
 fi

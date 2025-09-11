@@ -1,44 +1,15 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 
 # System Health Dashboard
 # Purpose: Comprehensive system status overview with interactive UI
-# Requirements: Arch Linux, gum, glances, inxi, lm_sensors, pacman-contrib
+# Requirements: Arch Linux, gum (UI library), glances, inxi, lm_sensors, pacman-contrib
 
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Interactive system health dashboard - assumes gum is available
-
-# Print section header
-print_section() {
-    gum style --foreground "#00aaff" --bold --border double --padding "1 2" --margin "1 0" "$1"
-}
-
-# Print status with color
-print_status() {
-    local status_type="$1"
-    local message="$2"
-    
-    case "$status_type" in
-        "OK"|"GOOD")
-            gum style --foreground "#00ff00" "✓ $message"
-            ;;
-        "WARN"|"WARNING")
-            gum style --foreground "#ffaa00" "⚠ $message"
-            ;;
-        "ERROR"|"CRITICAL")
-            gum style --foreground "#ff0000" --bold "✗ $message"
-            ;;
-        "INFO")
-            gum style --foreground "#00aaff" "ℹ $message"
-            ;;
-        *)
-            echo "  $message"
-            ;;
-    esac
-}
+# Interactive system health dashboard - uses standardized UI library
 
 # Interactive mode selection if gum is available and no arguments provided
 BRIEF=false
@@ -50,19 +21,18 @@ NETWORK=false
 
 # Handle help flag
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-    gum style --foreground "#00aaff" --bold "System Health Dashboard"
-    echo ""
-    gum style --foreground "#ffaa00" "Interactive mode (default):"
-    echo "  Run without arguments to use interactive menus"
-    echo ""
-    gum style --foreground "#ffaa00" "Command line options:"
-    echo "  --brief      Show brief system overview"
-    echo "  --full       Show comprehensive system information"
-    echo "  --services   Show only service status"
-    echo "  --packages   Show only package information"
-    echo "  --hardware   Show only hardware information"
-    echo "  --network    Show only network status"
-    echo "  --help, -h   Show this help message"
+    ui_title "System Health Dashboard"
+    ui_spacer
+    ui_warning "Interactive mode (default):"
+    ui_text "  Run without arguments to use interactive menus" --before 1 --after 1
+    ui_warning "Command line options:"
+    ui_text "  --brief      Show brief system overview"
+    ui_text "  --full       Show comprehensive system information"
+    ui_text "  --services   Show only service status"
+    ui_text "  --packages   Show only package information"
+    ui_text "  --hardware   Show only hardware information"
+    ui_text "  --network    Show only network status"
+    ui_text "  --help, -h   Show this help message"
     return 0
 fi
 
@@ -94,8 +64,8 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            gum style --foreground "#ff0000" "Unknown option: $1"
-            gum style --foreground "#00aaff" "Use --help for usage information"
+            ui_error "Unknown option: $1"
+            ui_info "Use --help for usage information"
             return 1
             ;;
     esac
@@ -103,7 +73,7 @@ done
 
 # Interactive mode selection if no arguments provided
 if [[ $# -eq 0 ]]; then
-    MODE=$(gum choose --header "Select system health check mode:" \
+    MODE=$(ui_choose "Select system health check mode:" \
         "📊 Standard Dashboard (All Sections)" \
         "⚡ Brief Overview" \
         "🔍 Comprehensive Report" \
@@ -139,7 +109,7 @@ if [[ $# -eq 0 ]]; then
             ;;
         *)
             # User cancelled, exit gracefully
-            gum style --foreground "#ffaa00" "Operation cancelled"
+            ui_warning "Operation cancelled"
             return 0
             ;;
     esac
@@ -147,40 +117,40 @@ fi
 
 # System Overview (always shown unless --brief or specific sections)
 if [[ "$BRIEF" == false && "$SERVICES" == false && "$PACKAGES" == false && "$HARDWARE" == false && "$NETWORK" == false ]] || [[ "$FULL" == true ]]; then
-    print_section "🖥️  SYSTEM OVERVIEW"
+    ui_title "🖥️  SYSTEM OVERVIEW"
     
     if command_exists fastfetch; then
         fastfetch --config none --structure "Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:Display:DE:WM:WMTheme:Theme:Icons:Font:Cursor:Terminal:TerminalFont:CPU:GPU:Memory:Disk:LocalIP:Battery:PowerAdapter:Locale:Break:Colors"
     else
-        print_status "WARN" "fastfetch not available - install for better system overview"
-        echo "System: $(uname -sr)"
-        echo "Hostname: $(hostname)"
-        echo "Uptime: $(uptime -p 2>/dev/null || uptime)"
+        ui_warning "fastfetch not available - install for better system overview"
+        ui_info "System: $(uname -sr)"
+        ui_info "Hostname: $(hostname)"
+        ui_info "Uptime: $(uptime -p 2>/dev/null || uptime)"
     fi
 fi
 
 # Brief mode - just essential info
 if [[ "$BRIEF" == true ]]; then
-    print_section "📊 BRIEF SYSTEM STATUS"
+    ui_title "📊 BRIEF SYSTEM STATUS"
     
     # Load average
     load_avg=$(uptime | awk -F'load average:' '{print $2}' | xargs)
-    print_status "INFO" "Load Average: $load_avg"
+    ui_info "Load Average: $load_avg"
     
     # Memory usage
     memory_info=$(free -h | awk '/^Mem:/ {printf "Memory: %s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')
-    print_status "INFO" "$memory_info"
+    ui_info "$memory_info"
     
     # Disk usage for root
     disk_usage=$(df -h / | awk 'NR==2 {printf "Disk /: %s used / %s total (%s)", $3, $2, $5}')
-    print_status "INFO" "$disk_usage"
+    ui_info "$disk_usage"
     
     # Failed services count
     failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
     if [[ $failed_services -eq 0 ]]; then
-        print_status "OK" "All services running normally"
+        ui_success "All services running normally"
     else
-        print_status "WARN" "$failed_services failed service(s)"
+        ui_warning "$failed_services failed service(s)"
     fi
     
     return 0
@@ -188,55 +158,52 @@ fi
 
 # Resource Usage
 if [[ "$SERVICES" == false && "$PACKAGES" == false && "$HARDWARE" == false && "$NETWORK" == false ]] || [[ "$FULL" == true ]]; then
-    print_section "📊 RESOURCE USAGE"
+    ui_title "📊 RESOURCE USAGE"
     
     # CPU and Memory usage
     if command_exists glances; then
-        echo -e "${CYAN}Real-time resource usage (5 second snapshot):${NC}"
+        ui_subtitle "Real-time resource usage (5 second snapshot):"
         timeout 5s glances --time 1 --export stdout 2>/dev/null | head -20 || {
-            print_status "WARN" "glances timeout or not available"
+            ui_warning "glances timeout or not available"
             
             # Fallback to basic commands
-            echo "Load Average: $(uptime | awk -F'load average:' '{print $2}')"
-            echo ""
+            ui_info "Load Average: $(uptime | awk -F'load average:' '{print $2}')" --after 1
             free -h
-            echo ""
+            ui_spacer
             df -h
         }
     else
-        print_status "INFO" "glances not available - showing basic resource info"
-        echo ""
+        ui_info "glances not available - showing basic resource info" --after 1
         free -h
-        echo ""
+        ui_spacer
         df -h
     fi
     
     # Temperature monitoring
     if command_exists sensors; then
-        echo -e "\n${CYAN}System Temperatures:${NC}"
-        sensors 2>/dev/null | grep -E "Core|Package|temp" | head -10 || print_status "INFO" "No temperature sensors detected"
+        ui_subtitle "System Temperatures:" --before 1
+        sensors 2>/dev/null | grep -E "Core|Package|temp" | head -10 || ui_info "No temperature sensors detected"
     fi
 fi
 
 # Service Status
 if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
-    print_section "⚙️  SERVICE STATUS"
+    ui_title "⚙️  SERVICE STATUS"
     
     # Failed services
     failed_services=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null)
     if [[ -z "$failed_services" ]]; then
-        print_status "OK" "All services running normally"
+        ui_success "All services running normally"
     else
-        print_status "ERROR" "Failed services detected:"
+        ui_error "Failed services detected:"
         echo "$failed_services" | while read -r line; do
             service_name=$(echo "$line" | awk '{print $1}')
-            print_status "ERROR" "  $service_name"
+            ui_error "  $service_name"
         done
     fi
     
     # Key services status
-    gum style --foreground "#00aaff" "Key Services Status:"
-    echo ""
+    ui_subtitle "Key Services Status:" --after 1
     
     # Create table for service status
     echo "Service|Status|State" > /tmp/services_table.txt
@@ -268,139 +235,138 @@ if [[ "$SERVICES" == true ]] || [[ "$FULL" == true ]]; then
         fi
     done
     
-    gum table < /tmp/services_table.txt
+    ui_table < /tmp/services_table.txt
     rm -f /tmp/services_table.txt
 fi
 
 # Package Information
 if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
-    print_section "📦 PACKAGE INFORMATION"
+    ui_title "📦 PACKAGE INFORMATION"
     
     # Installed packages count
     total_packages=$(pacman -Q 2>/dev/null | wc -l)
     explicit_packages=$(pacman -Qe 2>/dev/null | wc -l)
     
-    print_status "INFO" "Total packages: $total_packages (${explicit_packages} explicitly installed)"
+    ui_info "Total packages: $total_packages (${explicit_packages} explicitly installed)"
     
     # Check for updates
     if command_exists checkupdates; then
-        gum style --foreground "#00aaff" "Checking for updates..."
-        updates=$(gum spin --spinner dot --title "Checking package updates..." -- checkupdates 2>/dev/null)
+        ui_info "Checking for updates..."
+        updates=$(ui_spin "Checking package updates..." "checkupdates 2>/dev/null")
         update_count=$(echo "$updates" | wc -l)
         
         if [[ -n "$updates" && "$updates" != "" ]]; then
-            print_status "WARN" "$update_count package update(s) available"
+            ui_warning "$update_count package update(s) available"
             if [[ "$FULL" == true ]]; then
                 # Use gum table for better package update display
-                echo ""
-                gum style --foreground "#ffaa00" --bold "Available Updates:"
+                ui_warning "Available Updates:" --before 1
                 echo "Package|Current|New" > /tmp/updates_table.txt
                 echo "$updates" | head -10 | awk '{print $1"|"$2"|"$4}' >> /tmp/updates_table.txt
-                gum table < /tmp/updates_table.txt
+                ui_table < /tmp/updates_table.txt
                 rm -f /tmp/updates_table.txt
                 if [[ $update_count -gt 10 ]]; then
-                    gum style --foreground "#666666" --italic "... and $((update_count - 10)) more"
+                    ui_info "... and $((update_count - 10)) more"
                 fi
             fi
         else
-            print_status "OK" "System is up to date"
+            ui_success "System is up to date"
         fi
     else
-        print_status "INFO" "checkupdates not available - install pacman-contrib for update checking"
+        ui_info "checkupdates not available - install pacman-contrib for update checking"
     fi
     
     # AUR updates (if yay is available)
     if command_exists yay; then
-        aur_updates=$(gum spin --spinner dot --title "Checking AUR updates..." -- sh -c "yay -Qua 2>/dev/null | wc -l")
+        aur_updates=$(ui_spin "Checking AUR updates..." "yay -Qua 2>/dev/null | wc -l")
         if [[ $aur_updates -gt 0 ]]; then
-            print_status "WARN" "$aur_updates AUR package update(s) available"
+            ui_warning "$aur_updates AUR package update(s) available"
         else
-            print_status "OK" "AUR packages are up to date"
+            ui_success "AUR packages are up to date"
         fi
     fi
     
     # Orphaned packages
     orphans=$(pacman -Qtdq 2>/dev/null | wc -l)
     if [[ $orphans -gt 0 ]]; then
-        print_status "WARN" "$orphans orphaned package(s) found (use: pacman -Qtdq | sudo pacman -Rns -)"
+        ui_warning "$orphans orphaned package(s) found (use: pacman -Qtdq | sudo pacman -Rns -)"
     else
-        print_status "OK" "No orphaned packages"
+        ui_success "No orphaned packages"
     fi
 fi
 
 # Hardware Information
 if [[ "$HARDWARE" == true ]] || [[ "$FULL" == true ]]; then
-    print_section "🔧 HARDWARE INFORMATION"
+    ui_title "🔧 HARDWARE INFORMATION"
     
     if command_exists inxi; then
-        echo -e "${CYAN}System Hardware Overview:${NC}"
-        inxi -b 2>/dev/null || print_status "WARN" "inxi command failed"
+        ui_subtitle "System Hardware Overview:"
+        inxi -b 2>/dev/null || ui_warning "inxi command failed"
         
         if [[ "$FULL" == true ]]; then
-            echo -e "\n${CYAN}Detailed Hardware Information:${NC}"
+            ui_subtitle "Detailed Hardware Information:" --before 1
             inxi -Fxz 2>/dev/null | head -50
         fi
     else
-        print_status "INFO" "inxi not available - showing basic hardware info"
-        echo "CPU: $(lscpu | grep 'Model name' | cut -d: -f2 | xargs)"
-        echo "Memory: $(free -h | awk '/^Mem:/ {print $2}')"
-        echo "Architecture: $(uname -m)"
+        ui_info "inxi not available - showing basic hardware info"
+        ui_info "CPU: $(lscpu | grep 'Model name' | cut -d: -f2 | xargs)"
+        ui_info "Memory: $(free -h | awk '/^Mem:/ {print $2}')"
+        ui_info "Architecture: $(uname -m)"
     fi
     
     # Disk health (basic check)
-    echo -e "\n${CYAN}Storage Devices:${NC}"
-    lsblk -f 2>/dev/null | grep -E "(NAME|sd|nvme)" || print_status "INFO" "Storage information unavailable"
+    ui_subtitle "Storage Devices:" --before 1
+    lsblk -f 2>/dev/null | grep -E "(NAME|sd|nvme)" || ui_info "Storage information unavailable"
 fi
 
 # Network Status
 if [[ "$NETWORK" == true ]] || [[ "$FULL" == true ]]; then
-    print_section "🌐 NETWORK STATUS"
+    ui_title "🌐 NETWORK STATUS"
     
     # Network interfaces
-    gum style --foreground "#00aaff" "Network Interfaces:"
+    ui_subtitle "Network Interfaces:"
     ip -br addr show 2>/dev/null | grep -v "lo.*127.0.0.1" | while read -r line; do
         interface=$(echo "$line" | awk '{print $1}')
         interface_status=$(echo "$line" | awk '{print $2}')
         ip_addr=$(echo "$line" | awk '{print $3}' | cut -d'/' -f1)
         
         if [[ "$interface_status" == "UP" ]]; then
-            print_status "OK" "$interface: $ip_addr"
+            ui_success "$interface: $ip_addr"
         else
-            print_status "INFO" "$interface: $interface_status"
+            ui_info "$interface: $interface_status"
         fi
     done
     
     # Internet connectivity
-    gum style --foreground "#00aaff" "Connectivity Test:"
-    if gum spin --spinner dot --title "Testing internet connectivity..." -- ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
-        print_status "OK" "Internet connectivity: Available"
+    ui_subtitle "Connectivity Test:"
+    if ui_spin "Testing internet connectivity..." "ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1"; then
+        ui_success "Internet connectivity: Available"
     else
-        print_status "WARN" "Internet connectivity: Limited or unavailable"
+        ui_warning "Internet connectivity: Limited or unavailable"
     fi
     
     # DNS resolution test
-    if gum spin --spinner dot --title "Testing DNS resolution..." -- nslookup google.com >/dev/null 2>&1; then
-        print_status "OK" "DNS resolution: Working"
+    if ui_spin "Testing DNS resolution..." "nslookup google.com >/dev/null 2>&1"; then
+        ui_success "DNS resolution: Working"
     else
-        print_status "WARN" "DNS resolution: Issues detected"
+        ui_warning "DNS resolution: Issues detected"
     fi
     
     # Active connections (if requested in full mode)
     if [[ "$FULL" == true ]]; then
-        echo -e "\n${CYAN}Active Network Connections:${NC}"
-        ss -tuln 2>/dev/null | head -10 || print_status "INFO" "Network connection info unavailable"
+        ui_subtitle "Active Network Connections:" --before 1
+        ss -tuln 2>/dev/null | head -10 || ui_info "Network connection info unavailable"
     fi
 fi
 
 # System Summary
 if [[ "$BRIEF" == false && "$SERVICES" == false && "$PACKAGES" == false && "$HARDWARE" == false && "$NETWORK" == false ]] || [[ "$FULL" == true ]]; then
-    print_section "📋 SYSTEM SUMMARY"
+    ui_title "📋 SYSTEM SUMMARY"
     
     # Last update check
     if [[ -f /var/log/pacman.log ]]; then
         last_update=$(grep -E "starting full system upgrade|synchronizing package lists" /var/log/pacman.log 2>/dev/null | tail -1 | awk '{print $1, $2}')
         if [[ -n "$last_update" ]]; then
-            print_status "INFO" "Last system update: $last_update"
+            ui_info "Last system update: $last_update"
         fi
     fi
     
@@ -409,22 +375,21 @@ if [[ "$BRIEF" == false && "$SERVICES" == false && "$PACKAGES" == false && "$HAR
     cpu_cores=$(nproc)
     
     if (( $(echo "$load_1min > $cpu_cores" | bc -l 2>/dev/null || echo 0) )); then
-        print_status "WARN" "System load is high: $load_1min (cores: $cpu_cores)"
+        ui_warning "System load is high: $load_1min (cores: $cpu_cores)"
     else
-        print_status "OK" "System load is normal: $load_1min (cores: $cpu_cores)"
+        ui_success "System load is normal: $load_1min (cores: $cpu_cores)"
     fi
     
     # Disk space warning
     disk_usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
     if [[ $disk_usage -gt 90 ]]; then
-        print_status "ERROR" "Root filesystem is ${disk_usage}% full"
+        ui_error "Root filesystem is ${disk_usage}% full"
     elif [[ $disk_usage -gt 80 ]]; then
-        print_status "WARN" "Root filesystem is ${disk_usage}% full"
+        ui_warning "Root filesystem is ${disk_usage}% full"
     else
-        print_status "OK" "Disk space is adequate (${disk_usage}% used)"
+        ui_success "Disk space is adequate (${disk_usage}% used)"
     fi
     
-    echo ""
-    gum style --foreground "#00ff00" --bold "✅ System health check completed!"
-    gum style --foreground "#00aaff" "Run 'system-health --help' for more options, or just 'system-health' for interactive mode."
+    ui_complete "System health check completed!" --before 1
+    ui_info "Run 'system-health --help' for more options, or just 'system-health' for interactive mode."
 fi

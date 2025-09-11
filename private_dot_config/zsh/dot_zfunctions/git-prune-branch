@@ -5,26 +5,22 @@
 # Requirements: git, gum
 
 git-prune-branch() {
-    # Check if gum is installed
-    if ! command -v gum >/dev/null 2>&1; then
-        echo "❌ gum is required but not installed. Install with: pacman -S gum"
-        return 1
-    fi
+    # Note: Using standardized UI library which handles gum availability
     
     # Check if we're in a git repository
     if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        gum style --foreground "#ff0000" --bold "❌ Not in a git repository"
+        ui_error "Not in a git repository"
         return 1
     fi
     
     # Fetch remote updates with progress indication
-    gum spin --spinner dot --title "Fetching remote updates..." -- git fetch -p
+    ui_spin "Fetching remote updates..." "git fetch -p"
     
     # Find branches with gone upstream
     local gone_branches=$(git for-each-ref --format '%(refname) %(upstream:track)' refs/heads | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}')
     
     if [[ -z "$gone_branches" ]]; then
-        gum style --foreground "#00ff00" "✅ No branches to prune - all local branches have valid upstreams"
+        ui_success "No branches to prune - all local branches have valid upstreams"
         return 0
     fi
     
@@ -32,27 +28,24 @@ git-prune-branch() {
     local branch_count=$(echo "$gone_branches" | wc -l)
     
     # Display branches that will be deleted
-    gum style --foreground "#ffaa00" --bold "⚠️  Found $branch_count branch(es) with gone upstream:"
-    echo ""
+    ui_warning "Found $branch_count branch(es) with gone upstream:" --after 1
     echo "$gone_branches" | while read branch; do
-        gum style --foreground "#ff6666" "  • $branch"
+        ui_error "  • $branch"
     done
-    echo ""
+    ui_spacer
     
     # Ask for confirmation
-    if gum confirm "Delete these branches?"; then
-        echo ""
+    if ui_confirm "Delete these branches?"; then
         echo "$gone_branches" | while read branch; do
-            gum style --foreground "#00aaff" "Deleting branch: $branch"
+            ui_action "Deleting branch: $branch" --before 1
             if git branch -D "$branch" 2>/dev/null; then
-                gum style --foreground "#00ff00" "  ✅ Successfully deleted $branch"
+                ui_success "  Successfully deleted $branch"
             else
-                gum style --foreground "#ff0000" "  ❌ Failed to delete $branch"
+                ui_error "  Failed to delete $branch"
             fi
         done
-        echo ""
-        gum style --foreground "#00ff00" --bold "🎉 Branch pruning completed!"
+        ui_complete "Branch pruning completed!" --before 1
     else
-        gum style --foreground "#ffaa00" "Operation cancelled - no branches were deleted"
+        ui_warning "Operation cancelled - no branches were deleted"
     fi
 }

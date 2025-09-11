@@ -9,19 +9,19 @@ local project workspace_dir worktrees_to_remove selected_items
 if git rev-parse --git-dir >/dev/null 2>&1; then
     project=$(basename $(git rev-parse --show-toplevel))
     workspace_dir="$HOME/Workspaces/$project"
-    gum style --foreground="#268bd2" "🧹 Cleaning up worktrees for project: $project"
+    ui_action "🧹 Cleaning up worktrees for project: $project"
 else
-    gum style --foreground="#dc322f" "❌ Must be run from within a git repository"
+    ui_error "Must be run from within a git repository"
     return 1
 fi
 
 # First, prune stale references
-gum spin --spinner dot --title "Pruning stale worktree references..." -- \
+ui_spin "Pruning stale worktree references..." \
     git worktree prune
 
 # Find all worktrees for this project
 if [[ ! -d "$workspace_dir" ]]; then
-    gum style --foreground="#859900" "✅ No worktrees to clean up"
+    ui_success "No worktrees to clean up"
     return 0
 fi
 
@@ -50,35 +50,31 @@ while IFS= read -r line; do
 done < <(find "$workspace_dir" -name ".git" -type f -o -name ".git" -type d 2>/dev/null)
 
 if [[ ${#worktrees_info[@]} -eq 0 ]]; then
-    gum style --foreground="#859900" "✅ No worktrees to clean up"
+    ui_success "No worktrees to clean up"
     return 0
 fi
 
 # Show current worktrees
-echo
-gum style --foreground="#268bd2" "Current worktrees:"
+ui_info "Current worktrees:" --before 1
 printf '%s\n' "${worktrees_info[@]}" | cut -d'|' -f1
 
-echo
-gum style --foreground="#b58900" "⚠️  Select worktrees to remove (be careful!):"
+ui_warning "Select worktrees to remove (be careful!):" --before 1
 
 # Let user select worktrees to remove
 selected_items=$(printf '%s\n' "${worktrees_info[@]}" | \
-    gum choose --no-limit --height=15 | cut -d'|' -f2)
+    ui_choose_multi "" 0 | cut -d'|' -f2)
 
 if [[ -z "$selected_items" ]]; then
-    gum style --foreground="#586e75" "No worktrees selected for removal"
+    ui_info "No worktrees selected for removal"
     return 0
 fi
 
 # Confirm removal
-echo
-gum style --foreground="#dc322f" "⚠️  You are about to remove these worktrees:"
-echo "$selected_items"
-echo
+ui_warning "You are about to remove these worktrees:" --before 1
+ui_output "$selected_items" --before 1 --after 1
 
-if ! gum confirm "Are you sure you want to remove these worktrees?"; then
-    gum style --foreground="#586e75" "Operation cancelled"
+if ! ui_confirm "Are you sure you want to remove these worktrees?"; then
+    ui_info "Operation cancelled"
     return 0
 fi
 
@@ -87,13 +83,13 @@ echo "$selected_items" | while IFS= read -r worktree_path; do
     if [[ -n "$worktree_path" ]]; then
         branch_name=$(basename "$worktree_path")
         
-        gum spin --spinner dot --title "Removing worktree '$branch_name'..." -- \
+        ui_spin "Removing worktree '$branch_name'..." \
             git worktree remove "$worktree_path" --force
         
         if [[ $? -eq 0 ]]; then
-            gum style --foreground="#859900" "✅ Removed worktree: $branch_name"
+            ui_success "Removed worktree: $branch_name"
         else
-            gum style --foreground="#dc322f" "❌ Failed to remove worktree: $branch_name"
+            ui_error "Failed to remove worktree: $branch_name"
         fi
     fi
 done
@@ -101,8 +97,7 @@ done
 # Clean up empty directories
 if [[ -d "$workspace_dir" ]] && [[ -z "$(ls -A "$workspace_dir" 2>/dev/null)" ]]; then
     rmdir "$workspace_dir" 2>/dev/null
-    gum style --foreground="#586e75" "Removed empty workspace directory"
+    ui_info "Removed empty workspace directory"
 fi
 
-echo
-gum style --foreground="#859900" "✅ Cleanup completed"
+ui_complete "Cleanup completed" --before 1

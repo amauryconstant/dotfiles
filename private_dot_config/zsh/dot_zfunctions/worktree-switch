@@ -9,15 +9,15 @@ local project workspace_dir selected worktrees
 if git rev-parse --git-dir >/dev/null 2>&1; then
     project=$(basename $(git rev-parse --show-toplevel))
     workspace_dir="$HOME/Workspaces/$project"
-    gum style --foreground="#268bd2" "📋 Switching worktrees for project: $project"
+    ui_action "📋 Switching worktrees for project: $project"
 else
     workspace_dir="$HOME/Workspaces"
-    gum style --foreground="#268bd2" "📋 Switching between all worktrees"
+    ui_action "📋 Switching between all worktrees"
 fi
 
 # Find all worktrees
 if [[ ! -d "$workspace_dir" ]]; then
-    gum style --foreground="#b58900" "⚠️  No worktrees found in $workspace_dir"
+    ui_warning "No worktrees found in $workspace_dir"
     return 1
 fi
 
@@ -41,16 +41,14 @@ while IFS= read -r line; do
 done < <(find "$workspace_dir" -name ".git" -type f -o -name ".git" -type d 2>/dev/null)
 
 if [[ ${#worktrees[@]} -eq 0 ]]; then
-    gum style --foreground="#b58900" "⚠️  No worktrees found"
-    echo
-    gum style --foreground="#586e75" "Tip: Create a worktree with 'worktree-create <branch-name>'"
+    ui_warning "No worktrees found"
+    ui_info "Tip: Create a worktree with 'worktree-create <branch-name>'" --before 1
     return 1
 fi
 
 # Let user select worktree
-echo
 selected=$(printf '%s\n' "${worktrees[@]}" | \
-    gum choose --height=15 --header="Select worktree to switch to:")
+    ui_choose "Select worktree to switch to:")
 
 if [[ -n "$selected" ]]; then
     worktree_path=$(echo "$selected" | cut -d'|' -f2)
@@ -58,11 +56,10 @@ if [[ -n "$selected" ]]; then
     
     # Show success with current status
     branch=$(git branch --show-current 2>/dev/null || echo "unknown")
-    gum style --border rounded --margin "1" --padding "1 2" --border-foreground "#859900" \
-        "✅ Switched to worktree" \
-        "" \
-        "📁 $(pwd)" \
-        "🌿 Branch: $branch"
+    ui_box "✅ Switched to worktree
+
+📁 $(pwd)
+🌿 Branch: $branch"
 else
-    gum style --foreground="#586e75" "No worktree selected"
+    ui_info "No worktree selected"
 fi

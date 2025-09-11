@@ -10,30 +10,28 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
     project=$(basename $(git rev-parse --show-toplevel))
     workspace_dir="$HOME/Workspaces/$project"
     
-    gum style --border double --margin "1" --padding "1 2" --border-foreground "#268bd2" \
-        "📊 Worktree Status for: $project" \
-        "" \
-        "📁 Main repository: $(git rev-parse --show-toplevel)" \
-        "🌿 Current branch: $(git branch --show-current)"
+    ui_box "📊 Worktree Status for: $project
+
+📁 Main repository: $(git rev-parse --show-toplevel)
+🌿 Current branch: $(git branch --show-current)"
 else
-    gum style --foreground="#dc322f" "❌ Must be run from within a git repository"
+    ui_error "Must be run from within a git repository"
     return 1
 fi
 
-echo
+ui_spacer
 
 # Show git worktree list if any exist
 if git worktree list | grep -q "worktree"; then
-    gum style --foreground="#268bd2" "Git worktrees (from 'git worktree list'):"
+    ui_info "Git worktrees (from 'git worktree list'):"
     git worktree list
-    echo
+    ui_spacer
 fi
 
 # Check workspace directory
 if [[ ! -d "$workspace_dir" ]]; then
-    gum style --foreground="#586e75" "No workspace directory found at: $workspace_dir"
-    echo
-    gum style --foreground="#586e75" "Tip: Create your first worktree with 'worktree-create <branch-name>'"
+    ui_info "No workspace directory found at: $workspace_dir"
+    ui_info "Tip: Create your first worktree with 'worktree-create <branch-name>'" --before 1
     return 0
 fi
 
@@ -85,13 +83,12 @@ while IFS= read -r line; do
 done < <(find "$workspace_dir" -name ".git" -type f -o -name ".git" -type d 2>/dev/null)
 
 if [[ ${#worktree_data[@]} -eq 0 ]]; then
-    gum style --foreground="#586e75" "No worktrees found in workspace directory"
+    ui_info "No worktrees found in workspace directory"
     return 0
 fi
 
 # Display worktree table
-gum style --foreground="#268bd2" "📋 Detailed worktree information:"
-echo
+ui_subtitle "📋 Detailed worktree information:" --after 1
 
 # Table header
 printf "%-20s %-15s %-12s %-12s %-12s %s\n" \
@@ -110,16 +107,16 @@ for entry in "${worktree_data[@]}"; do
     
     # Color coding for status
     case "$status_info" in
-        "clean") status_display="$(gum style --foreground='#859900' '●') clean" ;;
-        "dirty") status_display="$(gum style --foreground='#dc322f' '●') dirty" ;;
-        "untracked") status_display="$(gum style --foreground='#b58900' '●') untracked" ;;
-        *) status_display="$(gum style --foreground='#586e75' '●') $status_info" ;;
+        "clean") status_display="● clean" ;;
+        "dirty") status_display="● dirty" ;;
+        "untracked") status_display="● untracked" ;;
+        *) status_display="● $status_info" ;;
     esac
     
     # Color coding for remote status
     case "$remote_status" in
-        "tracked") remote_display="$(gum style --foreground='#859900' 'tracked')" ;;
-        "local-only") remote_display="$(gum style --foreground='#b58900' 'local-only')" ;;
+        "tracked") remote_display="tracked" ;;
+        "local-only") remote_display="local-only" ;;
         *) remote_display="$remote_status" ;;
     esac
     
@@ -127,19 +124,18 @@ for entry in "${worktree_data[@]}"; do
         "$dir_name" "$branch_name" "$status_display" "$remote_display" "$last_used" "$path"
 done
 
-echo
+ui_spacer
 
 # Summary
 total_worktrees=${#worktree_data[@]}
 clean_count=$(printf '%s\n' "${worktree_data[@]}" | grep -c "|clean|" || true)
 dirty_count=$(printf '%s\n' "${worktree_data[@]}" | grep -c "|dirty|" || true)
 
-gum style --border rounded --margin "1" --padding "1 2" --border-foreground "#586e75" \
-    "📊 Summary" \
-    "" \
-    "Total worktrees: $total_worktrees" \
-    "Clean: $clean_count" \
-    "Dirty: $dirty_count" \
-    "" \
-    "💡 Use 'worktree-switch' to navigate between worktrees" \
-    "💡 Use 'worktree-cleanup' to remove old worktrees"
+ui_box "📊 Summary
+
+Total worktrees: $total_worktrees
+Clean: $clean_count
+Dirty: $dirty_count
+
+💡 Use 'worktree-switch' to navigate between worktrees
+💡 Use 'worktree-cleanup' to remove old worktrees"
