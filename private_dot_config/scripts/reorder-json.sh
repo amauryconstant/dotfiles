@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+reorder-json() {
+    local json_file=$1
+
+    jaq -S . "$json_file" > "$json_file.tmp" && mv "$json_file.tmp" "$json_file"
+}

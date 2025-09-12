@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 reorder-json() {
-    local json_file=$1
-
-    jaq -S . "$json_file" > "$json_file.tmp" && mv "$json_file.tmp" "$json_file"
+    bash "$HOME/.config/scripts/reorder-json.sh" "$@"
 }
