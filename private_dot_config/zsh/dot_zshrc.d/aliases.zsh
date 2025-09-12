@@ -23,3 +23,6 @@ alias wt='worktree-status'
 alias wtc='worktree-create'
 alias wts='worktree-switch'
 alias wtx='worktree-cleanup'
+
+# Symlink
+alias lns='ln -sfn'
