@@ -4,3 +4,5 @@
 **/*.src.ini
 
 .mcp.json
+
+mise.toml
