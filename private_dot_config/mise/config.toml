@@ -1,10 +1,18 @@
 [settings]
 experimental = true
 idiomatic_version_file_enable_tools = ["python"]
-python.uv_venv_auto = true
+
+[settings.python]
+uv_venv_auto = true
+
+[settings.npm]
+bun = true
 
 [tools]
-bun = "1"
-node = '22'
-"npm:@anthropic-ai/claude-code" = "latest"
 uv = "latest"
+bun = "latest"
+node = 'latest'
+
+"npm:@anthropic-ai/claude-code" = "latest"
+"npm:opencode-ai" = "latest"
+"pipx:oraios/serena" = "latest"
