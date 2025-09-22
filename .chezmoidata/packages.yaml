@@ -54,7 +54,7 @@ packages:
             - mise
             - docker
             - docker-compose
-            - buildkit
+            - docker-buildx
 
         development_clis:
           strategy: *_install_from_source
