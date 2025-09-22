@@ -6,6 +6,9 @@
 
 {{ includeTemplate "log_start" "Configuring Ollama service..." }}
 
+# Set strict error handling
+set -euo pipefail
+
 # Check if ollama is installed
 if ! command -v ollama >/dev/null 2>&1; then
     {{ includeTemplate "log_step" "Ollama not found, skipping configuration" }}

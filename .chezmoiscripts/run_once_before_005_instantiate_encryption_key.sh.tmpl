@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Script: run_once_before_006_instantiate_encryption_key.sh.tmpl
+# Purpose: Retrieve and configure dotfiles encryption key from vault
+# Requirements: Arch Linux, rbw, vaultwarden access
+
+{{ includeTemplate "log_start" "Setting up encryption key from vault..." }}
+
+# Set strict error handling
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Configuring rbw vault settings..." }}
+rbw config set email {{ .personalEmail }}
+rbw config set base_url {{ .privateServer | replace "www" "vaultwarden" }}
+
+{{ includeTemplate "log_step" "Logging into vault..." }}
+rbw login
+
+{{ includeTemplate "log_step" "Syncing vault data..." }}
+rbw sync
+
+{{ includeTemplate "log_step" "Retrieving dotfiles encryption key..." }}
+if rbw get dotfiles-key > $HOME/.keys/dotfiles-key.txt; then
+    {{ includeTemplate "log_success" "Encryption key retrieved successfully" }}
+else
+    {{ includeTemplate "log_error" "Failed to retrieve encryption key from vault" }}
+    exit 1
+fi
+
+# Verify key file was created and has content
+if [ ! -s "$HOME/.keys/dotfiles-key.txt" ]; then
+    {{ includeTemplate "log_error" "Encryption key file is empty or missing" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Securing vault session..." }}
+rbw lock
+
+{{ includeTemplate "log_step" "Setting secure permissions on keys..." }}
+chmod 600 ~/.keys/*
+
+# Clear shell history of sensitive commands for security
+history -c 2>/dev/null || true
+
+{{ includeTemplate "log_complete" "Encryption key setup completed securely" }}

@@ -6,6 +6,9 @@
 
 {{ includeTemplate "log_start" "Creating git hooks..." }}
 
+# Set strict error handling
+set -euo pipefail
+
 # Check if .gitscripts directory exists
 if [ ! -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
     {{ includeTemplate "log_skip" "No .gitscripts directory found, skipping git hooks creation" }}
@@ -25,4 +28,4 @@ for script in "{{ .chezmoi.sourceDir }}/.gitscripts"/*; do
     fi
 done
 
-{{ includeTemplate "log_success" "Git hooks created successfully" }}
+{{ includeTemplate "log_complete" "Git hooks setup completed successfully" }}

@@ -17,6 +17,7 @@ packages:
         terminal_essentials:
           strategy: *_install_from_source
           list:
+            - zsh
             - zoxide
             - fzf
             - tlrc

@@ -4,7 +4,12 @@
 # Purpose: Create necessary directories for the system
 # Requirements: Linux
 
-{{ includeTemplate "log_step" "Creating necessary directories..." }}
+{{ includeTemplate "log_start" "Creating necessary directories..." }}
+
+# Set strict error handling
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Creating XDG directories..." }}
 
 # Create XDG directories
 mkdir -p "$HOME/.cache"
@@ -12,6 +17,8 @@ mkdir -p "$HOME/.config"
 mkdir -p "$HOME/.local/share"
 mkdir -p "$HOME/.local/state"
 mkdir -p "$HOME/.local/bin"
+
+{{ includeTemplate "log_step" "Creating user directories..." }}
 
 # Create user directories
 mkdir -p "$HOME/Documents"
@@ -23,8 +30,10 @@ mkdir -p "$HOME/Desktop"
 mkdir -p "$HOME/Templates"
 mkdir -p "$HOME/Public"
 
+{{ includeTemplate "log_step" "Creating development directories..." }}
+
 # Create development directories
 mkdir -p "$HOME/Projects"
 mkdir -p "$HOME/Workspaces"
 
-{{ includeTemplate "log_success" "Necessary directories created successfully" }}
+{{ includeTemplate "log_complete" "Directory creation completed successfully" }}
