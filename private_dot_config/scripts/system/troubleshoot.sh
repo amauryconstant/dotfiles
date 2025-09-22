@@ -4,6 +4,14 @@
 # Purpose: Diagnostic tools and manual fixes for system issues
 # Requirements: Arch Linux, systemd, gum (UI library)
 
+# Source the UI library
+if [ -f "$HOME/.config/shell/gum-ui.sh" ]; then
+    . "$HOME/.config/shell/gum-ui.sh"
+else
+    echo "Error: UI library not found at $HOME/.config/shell/gum-ui.sh" >&2
+    exit 1
+fi
+
 show_troubleshoot_help() {
     ui_title "🛡️ System Troubleshoot Tool - Usage"
     ui_info ""
