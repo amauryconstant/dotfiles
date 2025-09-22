@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-system-maintenance() {
-    bash "$HOME/.config/scripts/system/maintenance.sh" "$@"
-}

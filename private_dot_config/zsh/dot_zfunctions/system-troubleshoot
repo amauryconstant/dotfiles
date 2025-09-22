@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+system-troubleshoot() {
+    bash "$HOME/.config/scripts/system/troubleshoot.sh" "$@"
+}

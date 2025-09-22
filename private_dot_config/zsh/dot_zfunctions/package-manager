@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-package-manager() {
-    bash "$HOME/.config/scripts/system/package-manager.sh" "$@"
-}

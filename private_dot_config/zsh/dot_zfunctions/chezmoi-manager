@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-chezmoi-manager() {
-    bash "$HOME/.config/scripts/chezmoi-manager.sh" "$@"
-}
