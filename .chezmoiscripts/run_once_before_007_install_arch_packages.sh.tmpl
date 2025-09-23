@@ -1,16 +1,36 @@
 #!/bin/sh
 
-# Script: run_once_before_008_install_arch_packages.sh.tmpl
-# Purpose: Install packages for Arch Linux work environment
+# Script: run_once_before_007_install_arch_packages.sh.tmpl
+# Purpose: Install packages for Arch Linux with strategy-aware fallback
 # Requirements: Arch Linux, pacman
 
 {{ includeTemplate "log_start" "Installing packages for Arch Linux..." }}
-    
-    # Package installation with fallback
+
+# Set error handling
+set -euo pipefail
+
+# Check if sophisticated package manager is available and working
+use_package_manager=false
+if [ -f "$HOME/.config/scripts/package-manager.sh" ] && command -v yq >/dev/null 2>&1; then
+    if [ -f "$HOME/.config/shell/gum-ui.sh" ]; then
+        # Test if package manager can read categories
+        . "$HOME/.config/shell/gum-ui.sh" 2>/dev/null || true
+        . "$HOME/.config/scripts/package-manager.sh" 2>/dev/null || true
+        if package-manager health --brief >/dev/null 2>&1; then
+            use_package_manager=true
+            {{ includeTemplate "log_step" "Using sophisticated strategy-aware package manager..." }}
+        fi
+    fi
+fi
+
+if [ "$use_package_manager" = false ]; then
+    {{ includeTemplate "log_step" "Using fallback installation method..." }}
+
+    # Package installation with fallback (original logic)
     install_packages() {
         local packages="$*"
-        {{ includeTemplate "log_progress" "Installing: $packages" }}
-        
+        {{ includeTemplate "log_step" "Installing: $packages" }}
+
         if sudo pacman -S --noconfirm --needed $packages; then
             return 0
         elif command -v yay >/dev/null 2>&1; then
@@ -21,21 +41,37 @@
             return 1
         fi
     }
-    
-    # Remove conflicting packages
-    {{- if .packages.delete.arch }}
-    {{ includeTemplate "log_step" "Removing conflicting packages..." }}
+fi
+
+# Remove conflicting packages
+{{- if .packages.delete.arch }}
+{{ includeTemplate "log_step" "Removing conflicting packages..." }}
+if command -v yay >/dev/null 2>&1; then
     yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
-    {{- end }}
-    
-    # Install packages by category (work destination: all packages)
+else
+    sudo pacman -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
+fi
+{{- end }}
+
+# Install packages by method
+if [ "$use_package_manager" = true ]; then
+    # Use sophisticated package manager
+    if package-manager install-all; then
+        {{ includeTemplate "log_success" "All packages installed successfully using strategy system" }}
+    else
+        {{ includeTemplate "log_error" "Strategy-aware installation failed" }}
+        exit 1
+    fi
+else
+    # Use original category-based installation
     {{- range $name, $config := .packages.install.arch.packages }}
-    
+
     {{ includeTemplate "log_step" (printf "Installing %s packages..." $name) }}
     if ! install_packages {{ join " " $config.list }}; then
         {{ includeTemplate "log_error" (printf "Failed to install %s packages" $name) }}
         exit 1
     fi
     {{- end }}
-    
-    {{ includeTemplate "log_complete" "Package installation completed successfully" }}
+fi
+
+{{ includeTemplate "log_complete" "Package installation completed successfully" }}

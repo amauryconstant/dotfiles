@@ -28,6 +28,7 @@ packages:
             - eza
             - xh
             - jaq
+            - go-yq
             - rsync
             - tree
 

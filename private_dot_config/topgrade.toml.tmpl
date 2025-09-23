@@ -53,6 +53,8 @@ arguments = "--rebase --autostash"
 [pre_commands]
 # System health check before updates
 "System health check" = "system_health_simple --brief"
+# Strategy-aware package health check
+"Package health check" = "package-manager health --brief"
 
 # Custom commands for system-specific maintenance
 [commands]
@@ -62,3 +64,5 @@ arguments = "--rebase --autostash"
 "Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
 # Post-update system status
 "Post-update system status" = "system_health_simple --brief"
+# Post-update package strategy validation
+"Package strategy validation" = "package-manager strategies"
