@@ -45,6 +45,7 @@ max_concurrency = 5
 # Additional git repositories to pull
 repos = [
     "~/.local/share/chezmoi",
+    "~/Projects/*"
 ]
 # Arguments to pass Git when pulling repositories
 arguments = "--rebase --autostash"
@@ -52,9 +53,9 @@ arguments = "--rebase --autostash"
 # Pre-update commands (run before any updates)
 [pre_commands]
 # System health check before updates
-"System health check" = "system_health_simple --brief"
+"System health check" = "/usr/bin/zsh -c 'system_health_simple --brief'"
 # Strategy-aware package health check
-"Package health check" = "package-manager health --brief"
+"Package health check" = "{{ .chezmoi.homeDir }}/.config/scripts/package-manager.sh health --brief"
 
 # Custom commands for system-specific maintenance
 [commands]
@@ -63,6 +64,6 @@ arguments = "--rebase --autostash"
 # Remove orphaned packages
 "Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
 # Post-update system status
-"Post-update system status" = "system_health_simple --brief"
+"Post-update system status" = "/usr/bin/zsh -c 'system_health_simple --brief'"
 # Post-update package strategy validation
-"Package strategy validation" = "package-manager strategies"
+"Package strategy validation" = "{{ .chezmoi.homeDir }}/.config/scripts/package-manager.sh health --brief"

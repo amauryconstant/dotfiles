@@ -11,24 +11,23 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 # Run topgrade with configuration file
-ExecStart=/usr/bin/topgrade --config /home/{{ .firstname | lower }}/.config/topgrade.toml
+ExecStart=/usr/bin/topgrade --config {{ .chezmoi.homeDir }}/.config/topgrade.toml
 # Set working directory to user home
-WorkingDirectory=/home/{{ .firstname | lower }}
-# Run as the user
-User={{ .firstname | lower }}
+WorkingDirectory={{ .chezmoi.homeDir }}
+# User services automatically run as the correct user
 # Environment variables
-Environment=HOME=/home/{{ .firstname | lower }}
-Environment=USER={{ .firstname | lower }}
-Environment=XDG_CONFIG_HOME=/home/{{ .firstname | lower }}/.config
-Environment=XDG_DATA_HOME=/home/{{ .firstname | lower }}/.local/share
-Environment=XDG_CACHE_HOME=/home/{{ .firstname | lower }}/.cache
+Environment=HOME={{ .chezmoi.homeDir }}
+Environment=USER={{ .chezmoi.username }}
+Environment=XDG_CONFIG_HOME={{ .chezmoi.homeDir }}/.config
+Environment=XDG_DATA_HOME={{ .chezmoi.homeDir }}/.local/share
+Environment=XDG_CACHE_HOME={{ .chezmoi.homeDir }}/.cache
 # Logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=topgrade
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
+# Security settings (relaxed for system maintenance)
+NoNewPrivileges=false
+PrivateTmp=false
 ProtectSystem=false
 ProtectHome=false
 # Timeout settings
