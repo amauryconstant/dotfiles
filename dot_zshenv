@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zshenv
 #
 # .zshenv - Zsh environment file, loaded always.
 #

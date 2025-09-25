@@ -1,0 +1,16 @@
+#!/usr/bin/env zsh
+twiggit() {
+    if [[ "$1" == "cd" ]]; then
+        # Handle twiggit cd command
+        local target_path
+        target_path=$(command twiggit cd "${@:2}")
+        if [[ $? -eq 0 ]]; then
+            builtin cd "$target_path"
+        else
+            return $?
+        fi
+    else
+        # Pass through all other twiggit commands
+        command twiggit "$@"
+    fi
+}
