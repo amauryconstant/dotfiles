@@ -1,0 +1,76 @@
+#!/bin/sh
+
+# Script: run_once_before_008_create_maintenance_user.sh.tmpl
+# Purpose: Create dedicated maintenance user for topgrade automated system maintenance
+# Requirements: Arch Linux, sudo
+
+{{ includeTemplate "log_start" "Creating topgrade maintenance user..." }}
+
+set -euo pipefail
+
+# Check if user already exists
+if id topgrade-maintenance >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Maintenance user 'topgrade-maintenance' already exists" }}
+else
+    {{ includeTemplate "log_step" "Creating system user 'topgrade-maintenance'..." }}
+
+    # Create system user with:
+    # -r: system account
+    # -s /usr/sbin/nologin: no login shell (security)
+    # -d /var/lib/topgrade-maintenance: home directory
+    # -m: create home directory
+    sudo useradd -r -s /usr/sbin/nologin -d /var/lib/topgrade-maintenance -m topgrade-maintenance
+
+    {{ includeTemplate "log_success" "System user 'topgrade-maintenance' created" }}
+fi
+
+{{ includeTemplate "log_step" "Creating configuration directory..." }}
+
+# Create topgrade configuration directory
+sudo mkdir -p /etc/topgrade
+
+# Set ownership to maintenance user
+sudo chown topgrade-maintenance:topgrade-maintenance /etc/topgrade
+
+# Set permissions (755 - readable by all, writable by owner)
+sudo chmod 755 /etc/topgrade
+
+{{ includeTemplate "log_success" "Configuration directory created at /etc/topgrade" }}
+
+{{ includeTemplate "log_step" "Verifying home directory..." }}
+
+# Ensure home directory exists and has correct ownership
+sudo mkdir -p /var/lib/topgrade-maintenance
+sudo chown topgrade-maintenance:topgrade-maintenance /var/lib/topgrade-maintenance
+sudo chmod 755 /var/lib/topgrade-maintenance
+
+{{ includeTemplate "log_success" "Home directory verified at /var/lib/topgrade-maintenance" }}
+
+{{ includeTemplate "log_step" "Adding to docker group for container management..." }}
+
+# Add to docker group if it exists
+if getent group docker >/dev/null 2>&1; then
+    sudo usermod -aG docker topgrade-maintenance
+    {{ includeTemplate "log_success" "Added to docker group" }}
+    {{ includeTemplate "log_info" "Maintenance user can now manage Docker containers" }}
+else
+    {{ includeTemplate "log_warning" "Docker group not found - skipping" }}
+    {{ includeTemplate "log_info" "Install Docker and re-run if container management is needed" }}
+fi
+
+{{ includeTemplate "log_step" "Verifying user creation..." }}
+
+# Verify user was created correctly
+if id topgrade-maintenance >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "User verification passed" }}
+    {{ includeTemplate "log_info" "User ID: $(id -u topgrade-maintenance)" }}
+    {{ includeTemplate "log_info" "Group ID: $(id -g topgrade-maintenance)" }}
+    {{ includeTemplate "log_info" "Groups: $(id -Gn topgrade-maintenance)" }}
+    {{ includeTemplate "log_info" "Home: /var/lib/topgrade-maintenance" }}
+    {{ includeTemplate "log_info" "Shell: /usr/sbin/nologin" }}
+else
+    {{ includeTemplate "log_error" "User verification failed" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "Topgrade maintenance user setup completed successfully" }}

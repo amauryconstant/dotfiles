@@ -1,6 +1,7 @@
-# Systemd User Service for Topgrade
-# Purpose: Automated system maintenance using topgrade
-# Template Variables: Uses chezmoi template system for user-specific configuration
+# Systemd System Service for Topgrade
+# Purpose: Automated system maintenance using dedicated maintenance user
+# Template Variables: Uses chezmoi template system for configuration
+# User: topgrade-maintenance (dedicated system user for security isolation)
 
 [Unit]
 Description=Topgrade System Maintenance
@@ -10,29 +11,34 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-# Run topgrade with configuration file
-ExecStart=/usr/bin/topgrade --config {{ .chezmoi.homeDir }}/.config/topgrade.toml
-# Set working directory to user home
-WorkingDirectory={{ .chezmoi.homeDir }}
-# User services automatically run as the correct user
-# Environment variables
-Environment=HOME={{ .chezmoi.homeDir }}
-Environment=USER={{ .chezmoi.username }}
-Environment=XDG_CONFIG_HOME={{ .chezmoi.homeDir }}/.config
-Environment=XDG_DATA_HOME={{ .chezmoi.homeDir }}/.local/share
-Environment=XDG_CACHE_HOME={{ .chezmoi.homeDir }}/.cache
+# Run as dedicated maintenance user for security isolation
+User=topgrade-maintenance
+Group=topgrade-maintenance
+# Run topgrade with system configuration file
+ExecStart=/usr/bin/topgrade --config /etc/topgrade/topgrade.toml
+# Set working directory to maintenance user home
+WorkingDirectory=/var/lib/topgrade-maintenance
+# Environment variables for maintenance user
+Environment=HOME=/var/lib/topgrade-maintenance
+Environment=USER=topgrade-maintenance
+Environment=XDG_CONFIG_HOME=/etc/topgrade
+Environment=XDG_DATA_HOME=/var/lib/topgrade-maintenance/.local/share
+Environment=XDG_CACHE_HOME=/var/lib/topgrade-maintenance/.cache
 # Logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=topgrade
-# Security settings (relaxed for system maintenance)
+# Security settings (enhanced for maintenance user)
 NoNewPrivileges=false
-PrivateTmp=false
+# Protect user home directories from maintenance user access
+ProtectHome=yes
+# Use private /tmp for isolation
+PrivateTmp=yes
+# Allow system modifications (needed for package updates)
 ProtectSystem=false
-ProtectHome=false
 # Timeout settings
 TimeoutStartSec=1800
 TimeoutStopSec=300
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target

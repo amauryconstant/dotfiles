@@ -120,14 +120,21 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 ├── run_once_before_001_install_package_manager.sh.tmpl
 ├── run_once_before_002_write_globals.sh.tmpl
 ├── run_once_before_003_create_necessary_directories.sh.tmpl
-├── run_once_before_004_install_zsh.sh.tmpl
-├── run_once_before_008_install_arch_packages.sh.tmpl
+├── run_once_before_004_install_distributions_and_os_specifics.sh.tmpl
+├── run_once_before_005_instantiate_encryption_key.sh.tmpl
+├── run_once_before_006_install_chezmoi_modify_manager.sh.tmpl
+├── run_once_before_007_install_arch_packages.sh.tmpl
+├── run_once_before_008_create_maintenance_user.sh.tmpl
 ├── run_once_after_001_generate_and_config_cli.sh.tmpl
 ├── run_once_after_002_enable_services.sh.tmpl
 ├── run_once_after_003_setup_network_printer.sh.tmpl
-├── run_once_after_004_enable_topgrade_timer.sh.tmpl
+├── run_once_after_004_setup_topgrade_system.sh.tmpl
+├── run_once_after_005_configure_template_merge_driver.sh.tmpl
+├── run_once_after_006_configure_ollama.sh.tmpl
+├── run_once_after_999_switch_to_ssh_remote.sh.tmpl
+├── run_onchange_before_create_git_hooks.sh.tmpl
 ├── run_onchange_after_install_extensions.sh.tmpl
-└── run_onchange_before_create_git_hooks.sh.tmpl
+└── run_onchange_after_install_ai_models.sh.tmpl
 ```
 
 **🚨 CRITICAL: Script Purpose Distinction**
@@ -357,10 +364,11 @@ The system is configured as a comprehensive development environment with:
 
 ### **CRITICAL** Package Installation Flow
 1. **Setup Phase**: `run_once_before_*` installs package managers (yay, chaotic-aur)
-2. **Package Phase**: `run_once_before_008_install_arch_packages.sh.tmpl` processes all package categories
+2. **Package Phase**: `run_once_before_007_install_arch_packages.sh.tmpl` processes all package categories
 3. **Services Phase**: `run_once_after_002_enable_services.sh.tmpl` enables Docker, Snap, and Bluetooth
-4. **System Maintenance**: `run_once_after_004_enable_topgrade_timer.sh.tmpl` enables system-level topgrade automation
+4. **System Maintenance**: `run_once_after_004_setup_topgrade_system.sh.tmpl` configures sudoers and enables topgrade automation
 5. **Extension Phase**: `run_onchange_after_install_extensions.sh.tmpl` installs VSCode extensions
+6. **AI Models**: `run_onchange_after_install_ai_models.sh.tmpl` installs Ollama AI models
 
 ## Common Commands
 
