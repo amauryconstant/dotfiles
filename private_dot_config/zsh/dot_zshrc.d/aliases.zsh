@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 #
 # aliases.zsh - Set whatever shell aliases you want.
 #

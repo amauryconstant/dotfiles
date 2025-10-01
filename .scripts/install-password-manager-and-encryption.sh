@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 if (command -v rbw >/dev/null 2>&1 && command -v rage >/dev/null 2>&1); then
     exit

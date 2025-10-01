@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Standardized Gum UI Library
 # Purpose: Consistent, reusable UI functions for all shell scripts

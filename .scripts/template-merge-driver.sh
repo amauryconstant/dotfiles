@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Script: .template-merge-driver.sh  
 # Purpose: Custom git merge driver for .tmpl files that preserves template syntax

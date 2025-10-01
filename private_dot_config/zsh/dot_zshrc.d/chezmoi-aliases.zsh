@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 #
 # chezmoi-aliases.zsh - Aliases for chezmoi
 #

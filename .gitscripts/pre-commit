@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Get list of deleted files staged for commit
 deleted_files=$(git diff --cached --name-status | awk '$1 == "D" {print $2}')

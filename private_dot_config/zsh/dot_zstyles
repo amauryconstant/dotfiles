@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 #
 # .zstyles - Set zstyle settings for plugins that need them.
 #
