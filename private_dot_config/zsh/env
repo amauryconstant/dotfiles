@@ -1,0 +1,5 @@
+# Zsh environment adapter file
+# Sources the common shell environment and functions
+# This file is sourced by ~/.zshenv via $ZDOTDIR/env
+
+. $HOME/.config/shell/env

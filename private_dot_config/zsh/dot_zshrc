@@ -3,6 +3,9 @@
 # .zshrc - Zsh file loaded on interactive shell sessions.
 #
 
+# Source common interactive shell configuration
+. $HOME/.config/shell/interactive
+
 if [[ -n "$ZSH_DEBUGRC" ]]; then
   zmodload zsh/zprof
 fi

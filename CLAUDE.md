@@ -201,7 +201,7 @@ Each shell follows the same delegation pattern where shell-specific files source
 - **`zsh/env`** → sources `shell/env`
 - **`zsh/dot_zlogin`** → sources `shell/login`
 - **`zsh/dot_zlogout`** → sources `shell/logout`
-- **`zsh/dot_zshrc`** - Zsh interactive setup with antidote plugins
+- **`zsh/dot_zshrc`** - Sources `shell/interactive`, then Zsh-specific setup with antidote plugins
 - **`zsh/dot_zfunctions/`** - Zsh-specific interactive functions
 
 **POSIX Shell:**
@@ -248,7 +248,7 @@ These enable automatic loading of appropriate shell configurations in different 
 
 #### **Interactive Shells:**
 - **Bash**: `.bashrc` → `bash/env` + `bash/interactive` → `shell/env` + `shell/interactive` ✅
-- **Zsh**: `.zshenv` + `ZDOTDIR/.zshrc` → loads both POSIX and zsh functions ✅
+- **Zsh**: `.zshenv` + `ZDOTDIR/.zshrc` → `zsh/env` + `shell/interactive` + zsh-specific plugins ✅
 
 ### **Key Benefits**
 - **Universal Consistency**: Same functions available across all shells
