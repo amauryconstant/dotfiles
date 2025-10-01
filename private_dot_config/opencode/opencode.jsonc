@@ -21,6 +21,10 @@
     "fetch": {
       "type": "local",
       "command": ["docker", "run", "-i", "--rm", "mcp/fetch"]
+    },
+    "mermaid": {
+      "type": "local",
+      "command": ["bunx", "-y", "mcp-mermaid"]
     }
   },
   "tools": {

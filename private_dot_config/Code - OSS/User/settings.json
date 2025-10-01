@@ -38,5 +38,14 @@
   "terminal.integrated.enableMultiLinePasteWarning": "never",
   "workbench.colorTheme": "Better Selenized Dark",
   "workbench.editor.enablePreview": false,
-  "workbench.sideBar.location": "right"
+  "workbench.sideBar.location": "right",
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  }
 }
