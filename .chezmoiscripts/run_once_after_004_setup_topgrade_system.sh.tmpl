@@ -56,8 +56,8 @@ topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/pacman
 # Allow yay for AUR operations
 topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/yay
 
-# Allow snap operations
-topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/snap
+# Allow flatpak operations
+topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/flatpak
 SUDOERS_EOF
 
 {{ includeTemplate "log_step" "Validating sudoers syntax..." }}

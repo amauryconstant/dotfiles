@@ -65,4 +65,24 @@ EOF
     {{ includeTemplate "log_success" "Chaotic-AUR repository configured" }}
 fi
 
+# Install and configure Flatpak
+{{ includeTemplate "log_step" "Setting up Flatpak package manager..." }}
+
+if ! command -v flatpak &> /dev/null; then
+    {{ includeTemplate "log_progress" "Installing Flatpak..." }}
+    sudo pacman -S --needed --noconfirm flatpak
+    {{ includeTemplate "log_success" "Flatpak installed" }}
+else
+    {{ includeTemplate "log_info" "Flatpak already installed" }}
+fi
+
+# Add Flathub repository (system-wide)
+{{ includeTemplate "log_progress" "Configuring Flathub repository..." }}
+if flatpak remote-list | grep -q "flathub"; then
+    {{ includeTemplate "log_info" "Flathub repository already configured" }}
+else
+    sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    {{ includeTemplate "log_success" "Flathub repository configured" }}
+fi
+
 {{ includeTemplate "log_complete" "Package manager setup completed successfully" }}

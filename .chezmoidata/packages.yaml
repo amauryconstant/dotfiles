@@ -71,8 +71,7 @@ packages:
 
         system_software:
           list:
-            - appimagelauncher
-            - snapd
+            - flatpak
 
         general_software:
           strategy: *_install_binary

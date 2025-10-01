@@ -11,12 +11,6 @@
 sudo systemctl enable docker.service
 {{ includeTemplate "log_success" "Docker service enabled" }}
 
-# Enable Snap services (work destination includes system_software packages)
-{{ includeTemplate "log_step" "Enabling Snap services..." }}
-sudo systemctl enable --now snapd.socket
-sudo systemctl enable --now snapd.apparmor.service
-{{ includeTemplate "log_success" "Snap services enabled" }}
-
 # Enable Bluetooth (for all destinations - basic system service)
 {{ includeTemplate "log_step" "Enabling Bluetooth service..." }}
 sudo systemctl enable --now bluetooth
