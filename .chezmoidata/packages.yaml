@@ -83,6 +83,7 @@ packages:
           strategy: *_install_binary
           list:
             - chromium
+            - code
 
         printing_scanning:
           strategy: *_install_binary
@@ -112,7 +113,6 @@ packages:
       proprietary_apps:
         - com.spotify.Client
         - com.slack.Slack
-        - com.visualstudio.code
 
       cross_platform:
         - com.github.xournalpp.xournalpp
