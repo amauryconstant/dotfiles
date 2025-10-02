@@ -1,21 +1,9 @@
-#!/usr/bin/env zshenv
+#!/usr/bin/env zsh
 #
 # .zshenv - Zsh environment file, loaded always.
 #
+# This file only sets ZDOTDIR to redirect zsh to use XDG-compliant config location.
+# The actual environment setup happens in $ZDOTDIR/.zshenv
 
 # ZSH config dir
 export ZDOTDIR=$XDG_CONFIG_HOME/zsh
-
-# Source shell environment
-. $ZDOTDIR/env
-
-# Ensure path arrays do not contain duplicates.
-typeset -gU path fpath
-
-# Set the list of directories that zsh searches for commands.
-path=(
-  $HOME/.local/{,s}bin(N)
-  /opt/local/{,s}bin(N)
-  /usr/local/{,s}bin(N)
-  $path
-)
