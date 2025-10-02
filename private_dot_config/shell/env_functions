@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Usage: indirect_expand PATH -> $PATH
 indirect_expand () {
     env |sed -n "s/^$1=//p"
@@ -10,15 +12,15 @@ pathremove () {
     local IFS=':'
     local newpath
     local dir
-    local var=${2:-PATH}
+    local var="${2:-PATH}"
     # Bash has ${!var}, but this is not portable.
-    for dir in `indirect_expand "$var"`; do
+    for dir in $(indirect_expand "$var"); do
         IFS=''
         if [ "$dir" != "$1" ]; then
             newpath=$newpath:$dir
         fi
     done
-    export $var=${newpath#:}
+    export "$var"="${newpath#:}"
 }
 
 # Usage: pathprepend /path/to/bin [PATH]
@@ -30,8 +32,9 @@ pathprepend () {
     pathremove "$1" "$2"
     #[ -d "${1}" ] || return
     local var="${2:-PATH}"
-    local value=`indirect_expand "$var"`
-    export ${var}="${1}${value:+:${value}}"
+    local value
+    value=$(indirect_expand "$var")
+    export "${var}"="${1}${value:+:${value}}"
 }
 
 # Usage: pathappend /path/to/bin [PATH]
@@ -40,9 +43,10 @@ pathprepend () {
 pathappend () {
     pathremove "${1}" "${2}"
     #[ -d "${1}" ] || return
-    local var=${2:-PATH}
-    local value=`indirect_expand "$var"`
-    export $var="${value:+${value}:}${1}"
+    local var="${2:-PATH}"
+    local value
+    value=$(indirect_expand "$var")
+    export "$var"="${value:+${value}:}${1}"
 }
 
 # Usage: ssource filename

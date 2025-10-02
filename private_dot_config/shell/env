@@ -1,11 +1,13 @@
+#!/usr/bin/env sh
+
 # We need to set $ENV so that if you use shell X as your login shell,
 # and then start "sh" as a non-login interactive shell the startup scripts will
 # correctly run.
-export ENV=$HOME/.config/sh/interactive
+export ENV="$HOME/.config/sh/interactive"
 
 # We also need to set BASH_ENV, which is run for *non-interactive* shells.
 # (unlike $ENV, which is for interactive shells)
-export BASH_ENV=$HOME/.config/bash/env
+export BASH_ENV="$HOME/.config/bash/env"
 
 # Source shell functions for all shells
 if [ -r "$HOME/.config/shell/env_functions" ]; then

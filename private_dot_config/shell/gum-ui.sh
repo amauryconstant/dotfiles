@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Standardized Gum UI Library
 # Purpose: Consistent, reusable UI functions for all shell scripts
@@ -466,8 +466,10 @@ ui_key_value() {
     local separator="${3:-:}"
     
     if _check_gum; then
-        local key_styled=$(gum style --foreground "$UI_PRIMARY" "$key$separator")
-        local value_styled=$(gum style --foreground "$UI_SECONDARY" "$value")
+        local key_styled
+        local value_styled
+        key_styled=$(gum style --foreground "$UI_PRIMARY" "$key$separator")
+        value_styled=$(gum style --foreground "$UI_SECONDARY" "$value")
         echo "$key_styled $value_styled"
     else
         printf "%-20s %s %s\n" "$key$separator" "" "$value"

@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 # Put your environment variables here
 
 # Software Envs
@@ -6,8 +8,9 @@ export VISUAL=code
 export BROWSER=firefox
 
 # Package Version Managers Envs
-export CARGO_HOME=$HOME/.local/pvm/cargo
-export GOPATH=$HOME/.local/pvm/go
+export CARGO_HOME="$HOME/.local/pvm/cargo"
+export GOPATH="$HOME/.local/pvm/go"
 
 # Projects
-export PROJECTS=$HOME/Projects
+export PROJECTS="$HOME/Projects"
+export WORKTREES="$HOME/Worktrees"

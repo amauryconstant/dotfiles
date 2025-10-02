@@ -1,4 +1,4 @@
-# put your aliases here
+#!/usr/bin/env sh
 
 # if in a terminal
 if [ -t 0 ]; then
@@ -6,6 +6,8 @@ if [ -t 0 ]; then
     mesg n
 
     # enable colours
-   if [ `tput colors` -ge 8 ]; then
+   if [ "$(tput colors)" -ge 8 ]; then
+    export CLICOLOR=1
+    export COLORTERM=truecolor
    fi
 fi
