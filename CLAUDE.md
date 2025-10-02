@@ -56,7 +56,7 @@ private_dot_ssh/        # SSH configuration and encrypted keys
 
 ```
 .chezmoidata/
-├── packages.yaml      # Package management with install strategies
+├── packages.yaml      # Arch native + Flatpak package management
 ├── ai.yaml           # AI models configuration
 ├── extensions.yaml   # VSCode extensions list
 ├── colors.yaml       # Color scheme definitions (oksolar)
@@ -315,33 +315,90 @@ set "Server" "URL" "{{ $nextcloudServer }}"
 
 ## Package Management for Development
 
-### Installation Strategies
+### Dual Package System Architecture
 
 ```yaml
-# In .chezmoidata/packages.yaml
+# packages.yaml - Manages TWO separate package systems
 
-strategies:
-  _install_binary: &_install_binary [pacman, yay_bin]
-  _install_from_source: &_install_from_source [pacman, yay_bin, yay_source]
+packages:
+  install:
+    arch: # Native Arch packages (pacman/yay)
+      strategies:
+        default_strategy: [pacman, yay_bin, yay_source]
+        _install_binary: &_install_binary [pacman, yay_bin]
+        _install_from_source:
+          &_install_from_source [pacman, yay_bin, yay_source]
 
-# Adding new packages
-new_category:
-  strategy: *_install_from_source # or *_install_binary
-  list: [package-name, another-package]
+      packages:
+        category_name:
+          strategy: *_install_binary
+          list: [package-name] # Standard Arch package names
+
+  flatpak: # Flatpak applications
+    packages:
+      category_name:
+        - app.domain.Name # Flatpak application IDs (reverse DNS)
+
+  delete:
+    arch: package-name # Explicit removal list
 ```
 
-**Strategy Execution:**
+**Strategy Execution (Arch packages only):**
 
 1. Try `pacman` (official repos)
 2. Try `yay_bin` (AUR precompiled)
 3. Try `yay_source` (AUR from source)
 
+### Decision Matrix: Flatpak vs Native
+
+**Use Flatpak for:**
+
+- ✅ Proprietary applications (Spotify, Slack, VS Code)
+- ✅ Cross-platform GUI applications (Xournalpp, qBittorrent)
+- ✅ Applications needing sandboxing/isolation
+
+**Use Native Arch for:**
+
+- ✅ All CLI tools and utilities
+- ✅ System services and daemons
+- ✅ Development tools and languages
+- ✅ Linux-first applications
+- ✅ Apps requiring deep system integration (browsers with extensions, sync clients)
+
 ### Lifecycle Scripts Execution Order
 
 1. **`run_once_before_*`** → Setup (package managers, directories, tools)
-2. **File application** → chezmoi applies all configuration files
-3. **`run_once_after_*`** → Configuration (services, final setup)
-4. **`run_onchange_*`** → Content-driven (when data files change)
+2. **`run_onchange_before_install_arch_packages.sh.tmpl`** → Arch packages
+   - Hash: `{{ .packages.install.arch | toJson | sha256sum }}`
+   - State: `~/.local/state/chezmoi/installed_packages.txt`
+   - Triggers: Any change to packages.install.arch section
+   - Actions: Install missing + Remove packages no longer in config
+   - Cleanup: Declarative (tracks previous state, removes orphans)
+3. **File application** → chezmoi applies all configuration files
+4. **`run_once_after_*`** → Configuration (services, final setup)
+5. **`run_onchange_*`** → Content-driven (when data files change)
+6. **`run_onchange_after_install_flatpak_packages.sh.tmpl`** → Flatpak apps
+   - Hash: `{{ .packages.flatpak | toJson | sha256sum }}`
+   - State: None (queries flatpak list directly)
+   - Triggers: Any change to packages.flatpak section
+   - Actions: Install missing + Remove apps no longer in config
+   - Cleanup: Declarative (compares desired vs installed)
+
+**Hash-Based Change Detection (Critical):**
+
+- Each run_onchange script has unique hash based on specific data
+- Arch package changes → Only arch script runs
+- Flatpak changes → Only flatpak script runs
+- Extensions changes → Only extensions script runs
+- No unnecessary executions, clean separation of concerns
+
+### Script Numbering Reference
+
+**Important Notes for AI Agents:**
+
+- `run_onchange` scripts: No numbering (hash-tracked, order independent)
+- When creating new run_once scripts, use next available number
+- 999 reserved for finalization tasks (SSH remote switch)
 
 ## Quality Standards (MANDATORY)
 
@@ -472,7 +529,27 @@ chezmoi diff && chezmoi apply --dry-run       # Preview changes
 
 ### Common Development Patterns
 
-**New Package**: Add to `packages.yaml` → system auto-includes in installation
+**New Arch Package**:
+
+1. Edit `.chezmoidata/packages.yaml`
+2. Add to `packages.install.arch.packages.<category>.list`
+3. Run: `chezmoi apply`
+4. Result: `run_onchange_before` script installs it
+
+**New Flatpak App**:
+
+1. Edit `.chezmoidata/packages.yaml`
+2. Add to `packages.flatpak.packages.<category>` (use Flatpak ID format: `com.app.Name`)
+3. Find Flatpak ID: `flatpak search <app-name>`
+4. Run: `chezmoi apply`
+5. Result: `run_onchange_after` script installs it
+
+**Remove Package/App**:
+
+1. Remove from `packages.yaml` (arch or flatpak section)
+2. Run: `chezmoi apply`
+3. Result: Automatically removed by cleanup logic (no manual uninstall needed)
+
 **New Config**: Use templates in `private_dot_config/` with template variables
 **Mixed State/Settings**: Use `chezmoi_modify_manager` pattern (see section above)
 **New Script**: Follow naming convention and Script Standards template

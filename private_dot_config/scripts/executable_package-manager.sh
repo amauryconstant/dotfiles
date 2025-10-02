@@ -50,6 +50,27 @@ _try_yay_source_install() {
 }
 
 # =============================================================================
+# REMOVAL FUNCTIONS
+# =============================================================================
+
+_try_remove_packages() {
+    local packages=("$@")
+
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        _log_verbose "No packages to remove"
+        return 0
+    fi
+
+    if command -v yay >/dev/null 2>&1; then
+        _execute_or_dry_run "Removing packages: ${packages[*]}" \
+            "yay -R --noconfirm ${packages[*]}"
+    else
+        _execute_or_dry_run "Removing packages: ${packages[*]}" \
+            "sudo pacman -R --noconfirm ${packages[*]}"
+    fi
+}
+
+# =============================================================================
 # STRATEGY PROCESSING FUNCTIONS
 # =============================================================================
 
@@ -174,6 +195,26 @@ _install_category() {
     _install_packages_with_strategy "$category" "${packages[@]}"
 }
 
+_remove_category() {
+    local category="$1"
+
+    # Get packages for this category
+    local packages=()
+    while IFS= read -r package; do
+        [[ -n "$package" && "$package" != "null" ]] && packages+=("$package")
+    done < <(_get_packages_for_category "$category")
+
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        ui_warning "No packages found in category: $category"
+        return 0
+    fi
+
+    ui_info "Removing category '$category' (${#packages[@]} packages)"
+    _log_verbose "Packages: ${packages[*]}"
+
+    _try_remove_packages "${packages[@]}"
+}
+
 _install_all_categories() {
     _check_yq_dependency || return 1
 
@@ -274,22 +315,30 @@ _parse_options() {
 }
 
 show_usage() {
-    echo "Usage: package-manager [options] <command> [options]"
+    echo "Usage: package-manager [options] <command> [args] [options]"
+    echo ""
     echo "Commands:"
-    echo "  install-all        Install all package categories"
-    echo "  install <category> Install specific category"
-    echo "  update-strategy    Update packages using strategy system"
-    echo "  health             Check essential dependencies"
+    echo "  install-all          Install all package categories"
+    echo "  install <category>   Install specific category"
+    echo "  remove <category>    Remove all packages in category"
+    echo "  remove-package <pkg> Remove specific package"
+    echo "  sync                 Declarative sync (install missing + remove extras)"
+    echo "  update-strategy      Update packages using strategy system"
+    echo "  health               Check essential dependencies"
+    echo ""
     echo "Options (can appear before or after command):"
-    echo "  --verbose, -v      Enable verbose output"
-    echo "  --dry-run, -n      Show what would be done"
-    echo "  --brief, -b        Brief output (for automation)"
-    echo "  --help, -h         Show this help"
+    echo "  --verbose, -v        Enable verbose output"
+    echo "  --dry-run, -n        Show what would be done"
+    echo "  --brief, -b          Brief output (for automation)"
+    echo "  --help, -h           Show this help"
     echo ""
     echo "Examples:"
     echo "  package-manager health --brief"
     echo "  package-manager --verbose install fonts"
     echo "  package-manager install-all --dry-run"
+    echo "  package-manager remove work_software"
+    echo "  package-manager remove-package spotify"
+    echo "  package-manager sync"
     return 0
 }
 
@@ -396,6 +445,89 @@ update_strategy() {
     fi
 }
 
+sync_packages() {
+    if [[ "$BRIEF" != "true" ]]; then
+        ui_title "🔄 Declarative Package Sync"
+        ui_info "Syncing installed packages with packages.yaml configuration"
+        ui_spacer
+    fi
+
+    _check_yq_dependency || return 1
+
+    # State file location
+    local state_file="$HOME/.local/state/chezmoi/package-manager-state.txt"
+    mkdir -p "$(dirname "$state_file")"
+
+    # Build list of desired packages from config
+    ui_info "Building desired package list from configuration..."
+    local desired_packages=()
+    local categories=()
+
+    while IFS= read -r category; do
+        [[ -n "$category" && "$category" != "null" ]] && categories+=("$category")
+    done < <(_get_package_categories)
+
+    for category in "${categories[@]}"; do
+        while IFS= read -r package; do
+            [[ -n "$package" && "$package" != "null" ]] && desired_packages+=("$package")
+        done < <(_get_packages_for_category "$category")
+    done
+
+    _log_verbose "Desired packages: ${desired_packages[*]}"
+
+    # Install missing packages
+    ui_subtitle "📦 Installing missing packages..."
+    if ! _install_all_categories; then
+        ui_error "Failed to install packages"
+        return 1
+    fi
+
+    # Get previously tracked packages
+    local previous_packages=()
+    if [[ -f "$state_file" ]]; then
+        while IFS= read -r pkg; do
+            [[ -n "$pkg" ]] && previous_packages+=("$pkg")
+        done < "$state_file"
+    fi
+
+    # Find packages to remove
+    local packages_to_remove=()
+    for pkg in "${previous_packages[@]}"; do
+        local found=false
+        for desired in "${desired_packages[@]}"; do
+            if [[ "$pkg" == "$desired" ]]; then
+                found=true
+                break
+            fi
+        done
+
+        if [[ "$found" == "false" ]]; then
+            # Check if package is actually installed
+            if pacman -Qi "$pkg" >/dev/null 2>&1; then
+                packages_to_remove+=("$pkg")
+            fi
+        fi
+    done
+
+    # Remove packages no longer in config
+    if [[ ${#packages_to_remove[@]} -gt 0 ]]; then
+        ui_subtitle "🗑️  Removing packages no longer in config..."
+        ui_info "Packages to remove: ${packages_to_remove[*]}"
+        _try_remove_packages "${packages_to_remove[@]}"
+    else
+        ui_info "No packages to remove"
+    fi
+
+    # Update state file
+    printf "%s\n" "${desired_packages[@]}" > "$state_file"
+
+    if [[ "$BRIEF" != "true" ]]; then
+        ui_success "Package sync completed successfully" --before 1
+    else
+        ui_success "Package sync completed"
+    fi
+}
+
 
 # =============================================================================
 # MAIN FUNCTION AND ARGUMENT PARSING
@@ -445,7 +577,7 @@ package-manager() {
     shift
 
     # Parse options that can appear after command (for commands that don't take arguments)
-    if [[ "$command" != "install" ]]; then
+    if [[ "$command" != "install" && "$command" != "remove" && "$command" != "remove-package" ]]; then
         while [[ $# -gt 0 ]] && [[ "$1" == --* ]]; do
             case $1 in
                 --verbose|-v)
@@ -483,6 +615,31 @@ package-manager() {
             # Parse any remaining options after category using helper function
             _parse_options "$@" >/dev/null || return 1
             _install_category "$category"
+            ;;
+        "remove")
+            if [[ $# -eq 0 ]]; then
+                ui_error "Category name required for remove command"
+                return 1
+            fi
+            local category="$1"
+            shift
+            # Parse any remaining options after category using helper function
+            _parse_options "$@" >/dev/null || return 1
+            _remove_category "$category"
+            ;;
+        "remove-package")
+            if [[ $# -eq 0 ]]; then
+                ui_error "Package name required for remove-package command"
+                return 1
+            fi
+            local package="$1"
+            shift
+            # Parse any remaining options after package using helper function
+            _parse_options "$@" >/dev/null || return 1
+            _try_remove_packages "$package"
+            ;;
+        "sync")
+            sync_packages
             ;;
         "update-strategy")
             update_strategy

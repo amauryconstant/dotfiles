@@ -21,7 +21,7 @@ fi
 # Check if maintenance user exists
 if ! id topgrade-maintenance >/dev/null 2>&1; then
     {{ includeTemplate "log_error" "Maintenance user 'topgrade-maintenance' does not exist" }}
-    {{ includeTemplate "log_error" "Please ensure run_once_before_008_create_maintenance_user.sh.tmpl ran successfully" }}
+    {{ includeTemplate "log_error" "Please ensure run_once_before_007_create_maintenance_user.sh.tmpl ran successfully" }}
     exit 1
 fi
 

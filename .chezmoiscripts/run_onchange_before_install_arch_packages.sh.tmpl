@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
 
-# Script: run_once_before_007_install_arch_packages.sh.tmpl
+# Script: run_onchange_before_install_arch_packages.sh.tmpl
 # Purpose: Install packages for Arch Linux with strategy-aware fallback
 # Requirements: Arch Linux, pacman
+
+# Hash: {{ .packages.install.arch | toJson | sha256sum }}
 
 {{ includeTemplate "log_start" "Installing packages for Arch Linux..." }}
 
@@ -43,7 +45,16 @@ if [ "$use_package_manager" = false ]; then
     }
 fi
 
-# Remove conflicting packages
+# Build list of desired packages from config
+{{ includeTemplate "log_step" "Building desired package list from config..." }}
+DESIRED_PACKAGES=""
+{{- range $name, $config := .packages.install.arch.packages }}
+{{- range $config.list }}
+DESIRED_PACKAGES="${DESIRED_PACKAGES} {{ . }}"
+{{- end }}
+{{- end }}
+
+# Remove conflicting packages (explicit delete list)
 {{- if .packages.delete.arch }}
 {{ includeTemplate "log_step" "Removing conflicting packages..." }}
 if command -v yay >/dev/null 2>&1; then
@@ -73,5 +84,45 @@ else
     fi
     {{- end }}
 fi
+
+# Cleanup: Remove packages managed by chezmoi but no longer in config
+{{ includeTemplate "log_step" "Checking for packages to remove..." }}
+
+# Create a state file to track what chezmoi has installed
+STATE_FILE="$HOME/.local/state/chezmoi/installed_packages.txt"
+mkdir -p "$(dirname "$STATE_FILE")"
+
+# Get previously tracked packages
+if [ -f "$STATE_FILE" ]; then
+    PREVIOUS_PACKAGES=$(cat "$STATE_FILE")
+else
+    PREVIOUS_PACKAGES=""
+fi
+
+# Find packages to remove (in previous list but not in current list)
+PACKAGES_TO_REMOVE=""
+for pkg in $PREVIOUS_PACKAGES; do
+    if ! echo "$DESIRED_PACKAGES" | grep -qw "$pkg"; then
+        # Check if package is actually installed before trying to remove
+        if pacman -Qi "$pkg" >/dev/null 2>&1; then
+            PACKAGES_TO_REMOVE="${PACKAGES_TO_REMOVE} $pkg"
+        fi
+    fi
+done
+
+# Remove packages no longer in config
+if [ -n "$PACKAGES_TO_REMOVE" ]; then
+    {{ includeTemplate "log_progress" "Removing packages no longer in config: $PACKAGES_TO_REMOVE" }}
+    if command -v yay >/dev/null 2>&1; then
+        yay -R --noconfirm $PACKAGES_TO_REMOVE || {{ includeTemplate "log_error" "Failed to remove some packages" }}
+    else
+        sudo pacman -R --noconfirm $PACKAGES_TO_REMOVE || {{ includeTemplate "log_error" "Failed to remove some packages" }}
+    fi
+else
+    {{ includeTemplate "log_info" "No packages to remove" }}
+fi
+
+# Update state file with current package list
+echo "$DESIRED_PACKAGES" > "$STATE_FILE"
 
 {{ includeTemplate "log_complete" "Package installation completed successfully" }}

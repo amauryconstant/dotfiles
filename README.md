@@ -95,7 +95,7 @@ This is a comprehensive chezmoi dotfiles repository with:
 
 ```
 .chezmoidata/           # Template data sources (YAML)
-├── packages.yaml      # Package management with install strategies
+├── packages.yaml      # Arch native + Flatpak package management
 ├── ai.yaml           # AI models configuration
 ├── extensions.yaml   # VSCode extensions list
 └── colors.yaml       # Color scheme definitions (oksolar)
@@ -243,7 +243,12 @@ System maintenance is handled by separate tools outside of chezmoi scripts:
 #### CLI Functions (`~/.config/zsh/.zfunctions/`)
 - **system-health** - Comprehensive system status dashboard with health metrics
 - **system-troubleshoot** - System troubleshooting and diagnostics
-- **package-manager** - Package management utilities
+- **package-manager** - Manage system packages and applications
+  - `package-manager install <category>` - Install package category
+  - `package-manager remove <category>` - Remove package category
+  - `package-manager sync` - Sync system with configuration
+  - `package-manager health` - Check package system health
+  - All commands support `--dry-run` to preview changes
 - **git-prune-branch** - Git branch cleanup and maintenance
 
 #### Standalone Scripts (`~/.config/scripts/`)
@@ -298,49 +303,57 @@ strategies:
 #### System Configuration
 
 The system is configured as a comprehensive development environment with:
-- **All package categories**: Complete development stack with tools and general applications
-- **System-level services**: Docker, Snap, Bluetooth, and topgrade automation enabled
-- **Extensions**: VSCode extensions automatically installed via `run_onchange_*` scripts
-- **AI Models**: Ollama models automatically pulled via `run_onchange_*` scripts
+- **All package categories**: Complete development stack with tools and applications
+- **System-level services**: Docker, Flatpak, Bluetooth, and topgrade automation enabled
+- **Extensions**: VSCode extensions automatically installed
+- **AI Models**: Ollama models automatically pulled
+- **Automatic package management**: Packages sync automatically with configuration changes
 
 #### Package Categories
 
-- **fonts**: Programming fonts (FiraCode Nerd Font, Geist Mono, JetBrains Mono)
+- **fonts**: Programming fonts (FiraCode Nerd Font, OpenDyslexic, Geist Mono)
 - **terminal_essentials**: Core CLI tools (ripgrep, fd, bat, fzf, eza, zoxide)
-- **terminal_utils**: System monitoring (btop, nvitop, fastfetch, hyperfine)
-- **languages**: Programming languages and version managers (go, python, rust, mise)
-- **development_tools**: Development software (Docker, VSCode, git-delta, difftastic)
-- **ai_tools**: AI/ML tools (ollama, ai-shell, aichat)
-- **general_software**: End-user applications (Firefox, Spotify, Nextcloud Desktop)
-- **work_software**: Work-specific applications (Chromium, Slack)
+- **terminal_utils**: System monitoring (btop, nvitop, fastfetch, topgrade)
+- **languages**: Programming languages (Go, Python, Rust)
+- **development_tools**: Development software (Docker, mise)
+- **development_clis**: Developer CLIs (AWS CLI, git-delta, lazygit, posting)
+- **ai_tools**: AI/ML tools (Ollama for local LLMs)
+- **general_software**: Native applications (Firefox, Nextcloud Desktop)
+- **work_software**: Work applications (Chromium)
+- **flatpak_apps**: Sandboxed applications via Flatpak:
+  - Spotify - Music streaming
+  - Slack - Team communication
+  - VS Code - Code editor
+  - Xournalpp - Note-taking and PDF annotation
+  - qBittorrent - Torrent client
 
 #### Package Installation Flow
 
-1. **Setup Phase** (`run_once_before_001-008`):
-   - Install package managers (yay, chaotic-aur)
-   - Write global environment variables
-   - Create necessary directories
-   - Install distribution-specific packages
-   - Set up encryption keys
-   - Install chezmoi_modify_manager
-   - **Process all package categories**
-   - Create maintenance user
+The system automatically installs and manages packages in these phases:
 
-2. **Configuration Phase** (`run_once_after_001-006`):
-   - Generate and configure CLI tools
-   - Enable system services (Docker, Snap, Bluetooth)
-   - Set up network printer
-   - **Set up topgrade system with sudoers and timer**
-   - Configure template merge driver
-   - Configure Ollama AI system
+1. **Initial Setup**:
+   - Package managers installed (yay for AUR, Flatpak for sandboxed apps)
+   - System directories and encryption keys configured
+   - Maintenance user created for automated updates
 
-3. **Finalization Phase** (`run_once_after_999`):
-   - Switch to SSH remote for repository updates
+2. **Package Installation**:
+   - All Arch Linux packages installed from configuration
+   - Flatpak applications installed for cross-platform software
+   - Packages automatically sync when you change configuration
 
-4. **Content-Driven Updates** (`run_onchange_*`):
-   - Create/update git hooks when hook templates change
-   - Install/update VSCode extensions when extension list changes
-   - Install/update AI models when model list changes
+3. **System Configuration**:
+   - Services enabled (Docker, Bluetooth, topgrade automation)
+   - Network printer configured (if available)
+   - Git hooks and merge drivers configured
+   - AI system (Ollama) configured
+
+4. **Automatic Updates**:
+   - VSCode extensions stay in sync
+   - AI models automatically updated
+   - Applications added/removed based on configuration
+   - No manual intervention needed - just edit config and apply
+
+**Key Benefit**: Change `packages.yaml` and run `chezmoi apply` - everything updates automatically. Add a package to the config and it installs. Remove a package from the config and it uninstalls.
 
 ## Usage
 
@@ -529,7 +542,14 @@ chezmoi apply
 - Keep backups of critical configs before major updates
 
 **Automated Updates:**
-The repository uses `run_onchange_*` scripts that automatically trigger when template data changes (extensions, AI models, etc.). These are safe and designed to be idempotent.
+
+The system uses smart update scripts that automatically trigger when you change configuration files. For example:
+
+- Edit `packages.yaml` → Packages automatically install/remove
+- Edit `extensions.yaml` → VSCode extensions automatically install
+- Edit `ai.yaml` → AI models automatically download
+
+The system only updates what changed, making it fast and efficient. You don't need to manually reinstall or track what needs updating - just change the config and run `chezmoi apply`.
 
 ## Troubleshooting
 
@@ -674,9 +694,20 @@ rm -rf ~/.config/chezmoi
 rm ~/.local/bin/chezmoi
 
 # 4. Remove installed packages (optional)
-# Review .chezmoidata/packages.yaml for package list
-# Manually remove packages you no longer want:
+# The system manages both Arch and Flatpak packages
+
+# View all managed packages:
+cat ~/.local/share/chezmoi/.chezmoidata/packages.yaml
+
+# Remove Arch packages:
 yay -Rns package-name
+
+# Remove Flatpak applications:
+flatpak list --app                    # List installed apps
+flatpak uninstall com.spotify.Client  # Remove specific app
+
+# Or let package-manager do it:
+package-manager remove <category>     # Remove entire category
 ```
 
 ### Partial Rollback

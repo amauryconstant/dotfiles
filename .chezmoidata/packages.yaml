@@ -77,17 +77,12 @@ packages:
           strategy: *_install_binary
           list:
             - firefox
-            - spotify
             - nextcloud-client
-            - qbittorrent
-            - xournalpp
 
         work_software:
           strategy: *_install_binary
           list:
             - chromium
-            - slack-desktop
-            - code
 
         printing_scanning:
           strategy: *_install_binary
@@ -111,6 +106,17 @@ packages:
             - inxi
             - lm_sensors
             - pacman-contrib
+
+  flatpak:
+    packages:
+      proprietary_apps:
+        - com.spotify.Client
+        - com.slack.Slack
+        - com.visualstudio.code
+
+      cross_platform:
+        - com.github.xournalpp.xournalpp
+        - org.qbittorrent.qBittorrent
 
   delete:
     arch: tldr
