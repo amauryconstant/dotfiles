@@ -49,7 +49,7 @@ done
 {{ includeTemplate "log_step" "Removing Flatpak applications not in config..." }}
 if [ -n "$INSTALLED_APPS" ]; then
     for app in $INSTALLED_APPS; do
-        if echo "$DESIRED_APPS" | grep -q "$app"; then
+        if echo "$DESIRED_APPS" | grep -qw "$app"; then
             {{ includeTemplate "log_info" "Keeping: $app" }}
         else
             {{ includeTemplate "log_progress" "Removing: $app" }}
