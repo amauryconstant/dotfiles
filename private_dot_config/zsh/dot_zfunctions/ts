@@ -1,0 +1,18 @@
+#!/usr/bin/env zsh
+
+# Source the UI library first
+if [ -f "$HOME/.config/shell/gum-ui.sh" ]; then
+    . "$HOME/.config/shell/gum-ui.sh"
+else
+    echo "Error: UI library not found at $HOME/.config/shell/gum-ui.sh" >&2
+    return 1
+fi
+
+# Source and execute the tailscale script
+if [ -f "$HOME/.config/scripts/network/tailscale.sh" ]; then
+    . "$HOME/.config/scripts/network/tailscale.sh"
+    main "$@"
+else
+    echo "Error: tailscale script not found at $HOME/.config/scripts/network/tailscale.sh" >&2
+    return 1
+fi

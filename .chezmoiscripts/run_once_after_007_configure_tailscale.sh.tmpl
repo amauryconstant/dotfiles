@@ -1,0 +1,69 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_007_configure_tailscale.sh.tmpl
+# Purpose: Configure Tailscale service for mesh VPN connectivity
+# Requirements: Arch Linux, tailscale
+
+{{ includeTemplate "log_start" "Configuring Tailscale service..." }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Check if tailscale is installed
+if ! command -v tailscale >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Tailscale not found, skipping configuration" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Enabling Tailscale daemon service..." }}
+
+# Enable tailscaled service (system daemon)
+sudo systemctl enable tailscaled
+
+{{ includeTemplate "log_step" "Starting Tailscale daemon service..." }}
+
+# Start tailscaled service
+sudo systemctl start tailscaled
+
+# Wait for service to be ready
+{{ includeTemplate "log_step" "Waiting for Tailscale daemon to be ready..." }}
+sleep 3
+
+# Verify service is running
+if systemctl is-active tailscaled >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Tailscale daemon is running" }}
+else
+    {{ includeTemplate "log_error" "Tailscale daemon may not be running properly" }}
+    exit 1
+fi
+
+# Set operator to allow non-root access
+CURRENT_USER="{{ .chezmoi.username }}"
+{{ includeTemplate "log_step" "Configuring operator permissions for current user..." }}
+sudo tailscale set --operator="$CURRENT_USER"
+
+{{ includeTemplate "log_success" "Operator set to $CURRENT_USER (non-root access enabled)" }}
+
+# Check if already authenticated
+{{ includeTemplate "log_step" "Checking Tailscale status..." }}
+if tailscale status >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Tailscale is already configured and connected" }}
+else
+    {{ includeTemplate "log_step" "Tailscale needs initial authentication" }}
+    {{ includeTemplate "log_step" "Starting authentication process..." }}
+
+    # Run tailscale up to authenticate (opens browser or shows URL)
+    if tailscale up; then
+        {{ includeTemplate "log_success" "Successfully authenticated and connected to Tailscale" }}
+
+        # Show connection info
+        TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
+        {{ includeTemplate "log_step" "Tailscale IPv4: $TAILSCALE_IP" }}
+    else
+        {{ includeTemplate "log_error" "Failed to authenticate with Tailscale" }}
+        {{ includeTemplate "log_step" "You can retry later with: tailscale up" }}
+        exit 1
+    fi
+fi
+
+{{ includeTemplate "log_complete" "Tailscale configuration completed" }}

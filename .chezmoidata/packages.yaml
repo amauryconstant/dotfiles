@@ -73,6 +73,11 @@ packages:
           list:
             - flatpak
 
+        networking_tools:
+          strategy: *_install_binary
+          list:
+            - tailscale
+
         general_software:
           strategy: *_install_binary
           list:
