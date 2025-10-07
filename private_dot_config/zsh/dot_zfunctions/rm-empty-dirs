@@ -1,0 +1,30 @@
+#!/usr/bin/env zsh
+# Recursively delete empty directories in a given path
+rm-empty-dirs() {
+    local target_dir="${1:-.}"
+
+    if [[ ! -d "$target_dir" ]]; then
+        echo "Error: '$target_dir' is not a directory" >&2
+        return 1
+    fi
+
+    echo "Searching for empty directories in: $target_dir"
+
+    # Find and delete empty directories, deepest first
+    # -type d: only directories
+    # -empty: only empty directories
+    # -depth: process contents before directory itself (bottom-up)
+    local count=0
+    while IFS= read -r -d '' dir; do
+        if rmdir "$dir" 2>/dev/null; then
+            echo "Removed: $dir"
+            ((count++))
+        fi
+    done < <(find "$target_dir" -type d -empty -depth -print0)
+
+    if [[ $count -eq 0 ]]; then
+        echo "No empty directories found"
+    else
+        echo "Removed $count empty director$([[ $count -eq 1 ]] && echo y || echo ies)"
+    fi
+}
