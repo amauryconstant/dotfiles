@@ -112,6 +112,15 @@ packages:
           list:
             - ollama
 
+        graphics_drivers:
+          strategy: *_install_binary
+          list:
+            - nvidia-open
+            - nvidia-utils
+            - nvidia-settings
+            - lib32-nvidia-utils
+            - nvidia-hook
+
         system_monitoring:
           strategy: *_install_from_source
           list:
