@@ -1,10 +1,9 @@
 #!/usr/bin/env chezmoi_modify_manager
-
 source auto
 
 ignore regex "General" "clientVersion|desktopEnterpriseChannel|isVfsEnabled"
 
-ignore regex "Accounts" ".*version|.*journalPath|.*server.*|.*networkProxy.*"
+ignore regex "Accounts" ".*version|.*journalPath|.*server.*|.*networkProxy.*|.encryptionCertificateSha256Fingerprint"
 
 ignore section "Settings"
 
