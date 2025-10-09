@@ -2,63 +2,27 @@
 
 # Color definitions for shell UI functions
 # Generated from .chezmoidata/colors.yaml - DO NOT EDIT MANUALLY
-# 
+#
 # This file provides standardized color variables for use across all shell
 # functions and scripts. Colors are based on the oksolar color scheme.
 
-# Extract colors from the oksolar array structure - only if not already defined
-{{- range .colors.oksolar -}}
-{{- range $colorName, $colorValue := . -}}
-{{- if eq $colorName "base03" }}
-[ -z "$UI_BASE03" ] && readonly UI_BASE03="#{{ $colorValue }}"  # Dark backgrounds
-{{- end -}}
-{{- if eq $colorName "base02" }}
-[ -z "$UI_BASE02" ] && readonly UI_BASE02="#{{ $colorValue }}"  # Background highlights
-{{- end -}}
-{{- if eq $colorName "base01" }}
-[ -z "$UI_BASE01" ] && readonly UI_BASE01="#{{ $colorValue }}"  # Secondary text, comments
-{{- end -}}
-{{- if eq $colorName "base00" }}
-[ -z "$UI_BASE00" ] && readonly UI_BASE00="#{{ $colorValue }}"  # Body text
-{{- end -}}
-{{- if eq $colorName "base0" }}
-[ -z "$UI_BASE0" ] && readonly UI_BASE0="#{{ $colorValue }}"   # Primary text
-{{- end -}}
-{{- if eq $colorName "base1" }}
-[ -z "$UI_BASE1" ] && readonly UI_BASE1="#{{ $colorValue }}"   # Optional emphasized text
-{{- end -}}
-{{- if eq $colorName "base2" }}
-[ -z "$UI_BASE2" ] && readonly UI_BASE2="#{{ $colorValue }}"   # Background highlights (light)
-{{- end -}}
-{{- if eq $colorName "base3" }}
-[ -z "$UI_BASE3" ] && readonly UI_BASE3="#{{ $colorValue }}"   # Background (light)
-{{- end -}}
-{{- if eq $colorName "yellow" }}
-[ -z "$UI_YELLOW" ] && readonly UI_YELLOW="#{{ $colorValue }}"  # Yellow
-{{- end -}}
-{{- if eq $colorName "orange" }}
-[ -z "$UI_ORANGE" ] && readonly UI_ORANGE="#{{ $colorValue }}"  # Orange
-{{- end -}}
-{{- if eq $colorName "red" }}
-[ -z "$UI_RED" ] && readonly UI_RED="#{{ $colorValue }}"     # Red
-{{- end -}}
-{{- if eq $colorName "magenta" }}
-[ -z "$UI_MAGENTA" ] && readonly UI_MAGENTA="#{{ $colorValue }}" # Magenta
-{{- end -}}
-{{- if eq $colorName "violet" }}
-[ -z "$UI_VIOLET" ] && readonly UI_VIOLET="#{{ $colorValue }}"  # Violet
-{{- end -}}
-{{- if eq $colorName "blue" }}
-[ -z "$UI_BLUE" ] && readonly UI_BLUE="#{{ $colorValue }}"    # Blue
-{{- end -}}
-{{- if eq $colorName "cyan" }}
-[ -z "$UI_CYAN" ] && readonly UI_CYAN="#{{ $colorValue }}"    # Cyan
-{{- end -}}
-{{- if eq $colorName "green" }}
-[ -z "$UI_GREEN" ] && readonly UI_GREEN="#{{ $colorValue }}"   # Green
-{{- end -}}
-{{- end -}}
-{{- end }}
+# Extract colors from the oksolar map - only if not already defined
+[ -z "$UI_BASE03" ] && readonly UI_BASE03="#{{ .colors.oksolar.base03 }}"  # Dark backgrounds
+[ -z "$UI_BASE02" ] && readonly UI_BASE02="#{{ .colors.oksolar.base02 }}"  # Background highlights
+[ -z "$UI_BASE01" ] && readonly UI_BASE01="#{{ .colors.oksolar.base01 }}"  # Secondary text, comments
+[ -z "$UI_BASE00" ] && readonly UI_BASE00="#{{ .colors.oksolar.base00 }}"  # Body text
+[ -z "$UI_BASE0" ] && readonly UI_BASE0="#{{ .colors.oksolar.base0 }}"   # Primary text
+[ -z "$UI_BASE1" ] && readonly UI_BASE1="#{{ .colors.oksolar.base1 }}"   # Optional emphasized text
+[ -z "$UI_BASE2" ] && readonly UI_BASE2="#{{ .colors.oksolar.base2 }}"   # Background highlights (light)
+[ -z "$UI_BASE3" ] && readonly UI_BASE3="#{{ .colors.oksolar.base3 }}"   # Background (light)
+[ -z "$UI_YELLOW" ] && readonly UI_YELLOW="#{{ .colors.oksolar.yellow }}"  # Yellow
+[ -z "$UI_ORANGE" ] && readonly UI_ORANGE="#{{ .colors.oksolar.orange }}"  # Orange
+[ -z "$UI_RED" ] && readonly UI_RED="#{{ .colors.oksolar.red }}"     # Red
+[ -z "$UI_MAGENTA" ] && readonly UI_MAGENTA="#{{ .colors.oksolar.magenta }}" # Magenta
+[ -z "$UI_VIOLET" ] && readonly UI_VIOLET="#{{ .colors.oksolar.violet }}"  # Violet
+[ -z "$UI_BLUE" ] && readonly UI_BLUE="#{{ .colors.oksolar.blue }}"    # Blue
+[ -z "$UI_CYAN" ] && readonly UI_CYAN="#{{ .colors.oksolar.cyan }}"    # Cyan
+[ -z "$UI_GREEN" ] && readonly UI_GREEN="#{{ .colors.oksolar.green }}"   # Green
 
 # Semantic color mappings for UI functions - only if not already defined
 [ -z "$UI_PRIMARY" ] && readonly UI_PRIMARY="$UI_BLUE"      # Primary actions, info messages, headers
