@@ -55,6 +55,44 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 
 **Impact**: Repository no longer deploys KDE-specific configuration while preserving it for reference.
 
+### Phase 3: Document archinstall Baseline Packages ✅
+**Date**: 2025-10-09
+
+**Changes Made**:
+- Added `archinstall_baseline` section to `.chezmoidata/packages.yaml`
+- Documented 31 packages installed during archinstall setup with Hyprland profile:
+  - **Core System** (5 packages): `base`, `base-devel`, `linux-firmware`, `linux`, `intel-ucode`
+  - **Hyprland Desktop** (12 packages): `hyprland`, `dunst`, `kitty`, `uwsm`, `dolphin`, `wofi`, `xdg-desktop-portal-hyprland`, `qt5-wayland`, `qt6-wayland`, `polkit-kde-agent`, `grim`, `slurp`
+  - **Audio - PipeWire** (7 packages): `pipewire`, `pipewire-alsa`, `pipewire-jack`, `pipewire-pulse`, `gst-plugin-pipewire`, `libpulse`, `wireplumber`
+  - **Network** (1 package): `networkmanager`
+  - **Bootloader & Encryption** (1 package): `cryptsetup` (systemd-boot included in systemd)
+  - **Graphics Drivers** (5 packages): `nvidia-open`, `nvidia-utils`, `nvidia-settings`, `lib32-nvidia-utils`, `nvidia-hook`
+- Moved NVIDIA drivers from `packages.install.arch.packages.graphics_drivers` to `archinstall_baseline.graphics_drivers`
+- Updated Phase 1 note: NVIDIA drivers originally added are now managed by archinstall baseline
+
+**System Configuration Documented**:
+- Bootloader: systemd-boot
+- Encryption: LUKS (via cryptsetup)
+- Graphics: NVIDIA open-source drivers
+
+**Rationale**:
+- Establishes clear baseline of system-installed packages for redundancy checking
+- Documents initial system state from archinstall Hyprland profile installation
+- Prevents duplicate package management between archinstall and chezmoi
+- NVIDIA drivers remain system-managed (updated via `pacman -Syu`) as appropriate for critical hardware drivers
+- Preserves knowledge of what the base system provides vs. what chezmoi manages
+
+**Impact**:
+- Documentation-only change (no package management behavior affected)
+- `archinstall_baseline` section is NOT processed by installation scripts
+- Removed 5 packages from chezmoi management (NVIDIA drivers) to avoid conflicts
+- Future package additions can be checked against this baseline to avoid redundancy
+
+**Next Steps**:
+- After system installation, compare baseline with actual installed packages using `pacman -Qe`
+- Review for additional overlaps with `packages.install.arch` packages
+- Validate CPU microcode package matches hardware (`intel-ucode` vs `amd-ucode`)
+
 ---
 
 **Last Updated**: 2025-10-09

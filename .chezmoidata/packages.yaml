@@ -1,4 +1,53 @@
 packages:
+  # NOTE: archinstall_baseline tracks packages likely installed during initial system setup
+  # These are documented for redundancy checking but NOT managed by chezmoi
+  # Review periodically to identify overlaps with manually managed packages below
+  archinstall_baseline:
+    core_system:
+      - base                    # Base Arch Linux system
+      - base-devel              # Development tools (make, gcc, etc.)
+      - linux-firmware          # Hardware firmware files
+      - linux                   # Linux kernel (or linux-lts/linux-zen/linux-hardened)
+      - intel-ucode            # Intel CPU microcode (or amd-ucode for AMD)
+
+    hyprland_desktop:
+      - hyprland                # Wayland compositor
+      - dunst                   # Notification daemon
+      - kitty                   # Terminal emulator
+      - uwsm                    # Universal Wayland session manager
+      - dolphin                 # KDE file manager
+      - wofi                    # Application launcher
+      - xdg-desktop-portal-hyprland  # Portal for screen sharing
+      - qt5-wayland             # Qt5 Wayland support
+      - qt6-wayland             # Qt6 Wayland support
+      - polkit-kde-agent        # Polkit authentication agent
+      - grim                    # Screenshot utility
+      - slurp                   # Screen area selection
+
+    audio_pipewire:
+      - pipewire                # Modern audio system
+      - pipewire-alsa           # ALSA compatibility layer
+      - pipewire-jack           # JACK compatibility layer
+      - pipewire-pulse          # PulseAudio replacement
+      - gst-plugin-pipewire     # GStreamer integration
+      - libpulse                # PulseAudio client libraries
+      - wireplumber             # PipeWire session manager
+
+    network:
+      - networkmanager          # Network configuration daemon
+
+    bootloader_and_encryption:
+      # systemd-boot (part of systemd package, no additional install needed)
+      - cryptsetup              # LUKS disk encryption utilities
+      # Note: mkinitcpio hooks configured for LUKS (encrypt hook)
+
+    graphics_drivers:
+      - nvidia-open             # Open-source NVIDIA kernel modules
+      - nvidia-utils            # NVIDIA userspace utilities
+      - nvidia-settings         # NVIDIA configuration GUI
+      - lib32-nvidia-utils      # 32-bit NVIDIA support for gaming
+      - nvidia-hook             # Automatic initramfs rebuild on driver updates
+
   install:
     arch:
       strategies:
@@ -111,15 +160,6 @@ packages:
           strategy: *_install_from_source
           list:
             - ollama
-
-        graphics_drivers:
-          strategy: *_install_binary
-          list:
-            - nvidia-open
-            - nvidia-utils
-            - nvidia-settings
-            - lib32-nvidia-utils
-            - nvidia-hook
 
         system_monitoring:
           strategy: *_install_from_source
