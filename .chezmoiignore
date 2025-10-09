@@ -6,3 +6,6 @@
 .mcp.json
 
 mise.toml
+
+# Archive directory for storing old configurations
+archives/
