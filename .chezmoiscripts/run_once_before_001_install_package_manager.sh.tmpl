@@ -88,6 +88,12 @@ Include = /etc/pacman.d/chaotic-mirrorlist
 EOF
     
     {{ includeTemplate "log_success" "Chaotic-AUR repository configured" }}
+
+    # Synchronize package databases to download chaotic-aur database
+    {{ includeTemplate "log_progress" "Synchronizing package databases..." }}
+    sudo pacman -Sy
+
+    {{ includeTemplate "log_success" "Package databases synchronized" }}
 fi
 
 # Install and configure Flatpak
