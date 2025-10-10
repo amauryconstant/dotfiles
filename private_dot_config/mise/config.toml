@@ -16,3 +16,4 @@ node = 'latest'
 "npm:@anthropic-ai/claude-code" = "latest"
 "npm:opencode-ai" = "latest"
 "pipx:oraios/serena" = "latest"
+"npm:@fission-ai/openspec" = "latest"

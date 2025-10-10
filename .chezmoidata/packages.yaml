@@ -17,7 +17,10 @@ packages:
         terminal_essentials:
           strategy: *_install_from_source
           list:
+            - ghostty
+            - starship
             - zsh
+            - zsh-antidote
             - zoxide
             - fzf
             - tlrc

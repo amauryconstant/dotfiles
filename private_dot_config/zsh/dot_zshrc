@@ -19,8 +19,12 @@ autoload -Uz $ZFUNCDIR/*(.:t)
 [[ ! -f ${ZDOTDIR:-$HOME}/.zstyles ]] || source ${ZDOTDIR:-$HOME}/.zstyles
 
 # Create an amazing Zsh config using antidote plugins.
-source /usr/share/zsh-antidote/antidote.zsh
-antidote load
+if [[ -f /usr/share/zsh-antidote/antidote.zsh ]]; then
+  source /usr/share/zsh-antidote/antidote.zsh
+  antidote load
+else
+  echo "⚠️  zsh-antidote not found. Run: yay -S zsh-antidote"
+fi
 
 # Source anything in .zshrc.d.
 for _rc in ${ZDOTDIR:-$HOME}/.zshrc.d/*.zsh; do
