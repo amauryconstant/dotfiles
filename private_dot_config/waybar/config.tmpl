@@ -1,0 +1,379 @@
+// ============================================================================
+// Waybar Configuration
+// ============================================================================
+// Status bar configuration for Hyprland with oksolar color scheme.
+// Documentation: https://github.com/Alexays/Waybar/wiki
+//
+// This file uses JSON5 format (JSON with comments and trailing commas allowed)
+// Chezmoi template processing: Uses {{"{{"}} {{"}}"}} for accessing oksolar colors
+//
+// FILE STRUCTURE:
+// - Bar settings (layer, position, height)
+// - Module layout (left, center, right)
+// - Module configurations (workspaces, clock, system info, etc.)
+//
+// To find module names and properties: man waybar-MODULE (e.g., man waybar-clock)
+// To reload waybar: killall -SIGUSR2 waybar
+// ============================================================================
+
+{
+  // --------------------------------------------------------------------------
+  // Bar Settings
+  // --------------------------------------------------------------------------
+  // Layer: Z-order relative to windows
+  //   "top"     = Above windows (default)
+  //   "bottom"  = Below windows
+  //   "overlay" = Above fullscreen windows
+  "layer": "top",
+
+  // Position: Which screen edge
+  //   Options: "top", "bottom", "left", "right"
+  "position": "top",
+
+  // Height: Bar height in pixels (0 = auto-size)
+  "height": 30,
+
+  // Spacing: Gap between modules in pixels
+  "spacing": 4,
+
+  // Margin: Space around the bar (uncomment to add):
+  // "margin": "5 10 0 10",  // "top right bottom left" in pixels
+
+  // Exclusive: Reserve space (prevent windows from covering bar)
+  // "exclusive": true,
+
+  // --------------------------------------------------------------------------
+  // Module Layout
+  // --------------------------------------------------------------------------
+  // Define which modules appear where on the bar
+  // Available modules: https://github.com/Alexays/Waybar/wiki/Module:-Custom
+
+  "modules-left": [
+    "hyprland/workspaces",  // Workspace buttons (1-5 + any active)
+    "hyprland/window"       // Active window title
+  ],
+
+  "modules-center": [
+    "clock"  // Date/time with calendar tooltip
+  ],
+
+  "modules-right": [
+    "tray",         // System tray (Nextcloud, network, bluetooth icons)
+    "network",      // Network status and bandwidth
+    "pulseaudio",   // Volume control
+    "cpu",          // CPU usage
+    "memory",       // Memory usage
+    "temperature"   // CPU temperature
+  ],
+
+  // Additional useful modules (uncomment and add to layout above):
+  // "battery"           - Battery status (laptops)
+  // "backlight"         - Screen brightness (laptops)
+  // "idle_inhibitor"    - Prevent auto-sleep
+  // "mpd"               - Music Player Daemon
+  // "disk"              - Disk usage
+  // "custom/weather"    - Custom weather script
+
+  // --------------------------------------------------------------------------
+  // Hyprland Workspaces Module
+  // --------------------------------------------------------------------------
+  "hyprland/workspaces": {
+    // Format: How workspace buttons are displayed
+    //   {icon}  = Use format-icons below
+    //   {name}  = Workspace name
+    //   {id}    = Workspace number
+    "format": "{icon}",
+
+    // Icons for each workspace (can use Nerd Font icons)
+    "format-icons": {
+      "1": "1",          // Workspace 1
+      "2": "2",          // Workspace 2
+      "3": "3",          // Workspace 3
+      "4": "4",          // Workspace 4
+      "5": "5",          // Workspace 5
+      "default": "•"     // Any other workspace
+    },
+
+    // Persistent workspaces: Always show these even if empty
+    // Format: "workspace_id": []  (empty array = all monitors)
+    "persistent-workspaces": {
+      "1": [],  // Always show workspace 1
+      "2": [],  // Always show workspace 2
+      "3": [],  // Always show workspace 3
+      "4": [],  // Always show workspace 4
+      "5": []   // Always show workspace 5
+    }
+
+    // Additional options (uncomment to use):
+    // "all-outputs": true,              // Show all workspaces from all monitors
+    // "active-only": false,             // Only show workspaces with windows
+    // "on-scroll-up": "hyprctl dispatch workspace e-1",
+    // "on-scroll-down": "hyprctl dispatch workspace e+1",
+    // "on-click": "activate",           // Click to switch workspace
+    // "sort-by-number": true            // Numerical sort order
+  },
+
+  // --------------------------------------------------------------------------
+  // Hyprland Window Module
+  // --------------------------------------------------------------------------
+  "hyprland/window": {
+    // Format: How window title is displayed
+    //   {}      = Window title
+    //   {title} = Window title (explicit)
+    //   {class} = Window class
+    "format": "{}",
+
+    // Max length: Truncate long titles (in characters)
+    "max-length": 50
+
+    // Separate outputs: Only show title from focused monitor
+    // "separate-outputs": true,
+
+    // Rewrite rules: Transform window titles (uncomment to use)
+    // "rewrite": {
+    //   "(.*) — Mozilla Firefox": "🌎 $1",
+    //   "(.*) - kitty": "  $1"
+    // }
+  },
+
+  // --------------------------------------------------------------------------
+  // Clock Module
+  // --------------------------------------------------------------------------
+  "clock": {
+    // Format: Date/time display (strftime format)
+    //   %A = Full weekday name (Monday)
+    //   %H = Hour 24-hour (00-23)
+    //   %M = Minute (00-59)
+    //   Common formats:
+    //     "%H:%M"           = 14:30
+    //     "%I:%M %p"        = 02:30 PM
+    //     "%Y-%m-%d %H:%M"  = 2025-10-10 14:30
+    "format": "{:%A %H:%M}",
+
+    // Alternate format: Click to toggle between main and alt
+    "format-alt": "{:%Y-%m-%d %H:%M:%S}",
+
+    // Tooltip: Hover text format
+    "tooltip-format": "<tt><small>{calendar}</small></tt>",
+
+    // Calendar: Popup calendar configuration
+    "calendar": {
+      "mode": "month",  // "month" or "year" view
+
+      // Format: Colors and styling using oksolar theme
+      "format": {
+        // Month name: Oksolar blue, bold
+        "months": "<span color='#{{ .colors.oksolar.blue }}'><b>{}</b></span>",
+
+        // Regular days: Oksolar base0 (light gray), bold
+        "days": "<span color='#{{ .colors.oksolar.base0 }}'><b>{}</b></span>",
+
+        // Weekday headers: Oksolar cyan, bold
+        "weekdays": "<span color='#{{ .colors.oksolar.cyan }}'><b>{}</b></span>",
+
+        // Today: Oksolar orange, bold, underlined
+        "today": "<span color='#{{ .colors.oksolar.orange }}'><b><u>{}</u></b></span>"
+      }
+    }
+
+    // Additional options (uncomment to use):
+    // "interval": 60,              // Update interval in seconds
+    // "timezone": "America/New_York",
+    // "locale": "fr_FR.UTF-8",
+    // "on-click-right": "mode"     // Right-click to change calendar mode
+  },
+
+  // --------------------------------------------------------------------------
+  // CPU Module
+  // --------------------------------------------------------------------------
+  "cpu": {
+    // Update interval in seconds
+    "interval": 5,
+
+    // Format:  = CPU icon (Nerd Font)
+    //   {usage}  = CPU usage percentage
+    //   {load}   = Load average
+    "format": "  {usage}%",
+
+    // Show detailed tooltip on hover
+    "tooltip": true
+
+    // Additional options (uncomment to use):
+    // "format-alt": "  {avg_frequency}GHz",  // Click to show frequency
+    // "on-click": "kitty htop"               // Click to open htop
+  },
+
+  // --------------------------------------------------------------------------
+  // Memory Module
+  // --------------------------------------------------------------------------
+  "memory": {
+    // Format:  = RAM icon (Nerd Font)
+    //   {}      = Memory usage percentage
+    //   {used}  = Used memory with unit (e.g., 8.5 GiB)
+    //   {total} = Total memory
+    "format": "  {}%"
+
+    // Additional options (uncomment to use):
+    // "interval": 5,
+    // "format-alt": "  {used:0.1f}G",
+    // "tooltip-format": "RAM: {used:0.1f}G / {total:0.1f}G",
+    // "on-click": "kitty htop"
+  },
+
+  // --------------------------------------------------------------------------
+  // Temperature Module
+  // --------------------------------------------------------------------------
+  "temperature": {
+    // Critical threshold: Temperature (°C) to trigger warning
+    "critical-threshold": 80,
+
+    // Format: {icon} changes based on temperature ranges
+    //   {temperatureC} = Temperature in Celsius
+    //   {temperatureF} = Temperature in Fahrenheit
+    "format": "{icon} {temperatureC}°C",
+
+    // Icons: Different icons for temperature ranges
+    //   [0]  = < 60°C (cool)
+    //   [1]  = 60-80°C (warm)
+    //   [2]  = > 80°C (hot/critical)
+    "format-icons": ["", "", ""]
+
+    // Additional options (uncomment to use):
+    // "thermal-zone": 2,           // Which thermal zone to monitor
+    // "hwmon-path": "/sys/class/hwmon/hwmon2/temp1_input",
+    // "critical-threshold": 85,
+    // "format-critical": "{icon} {temperatureC}°C",
+    // "interval": 2
+  },
+
+  // --------------------------------------------------------------------------
+  // Network Module
+  // --------------------------------------------------------------------------
+  "network": {
+    // Icons for different signal strengths (WiFi)
+    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+
+    // Default format (auto-detects connection type)
+    "format": "{icon}",
+
+    // WiFi format
+    "format-wifi": "{icon}",
+
+    // Ethernet format: 󰀂 = Ethernet icon
+    "format-ethernet": "󰀂",
+
+    // Disconnected format: 󰤮 = No connection icon
+    "format-disconnected": "󰤮",
+
+    // Tooltips: Detailed info on hover
+    "tooltip-format-wifi": "{essid} ({frequency} GHz)\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
+    "tooltip-format-ethernet": "⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
+    "tooltip-format-disconnected": "Disconnected",
+
+    // Update interval for bandwidth (seconds)
+    "interval": 3,
+
+    // Icon spacing
+    "spacing": 1
+
+    // Additional options (uncomment to use):
+    // "interface": "wlan0",        // Specific network interface
+    // "format-alt": "{ipaddr}/{cidr}",  // Click to show IP
+    // "on-click": "nm-connection-editor"  // Click to open network settings
+  },
+
+  // --------------------------------------------------------------------------
+  // PulseAudio Module
+  // --------------------------------------------------------------------------
+  "pulseaudio": {
+    // Format:
+    //   {icon}   = Volume icon (from format-icons below)
+    //   {volume} = Volume percentage (0-100)
+    "format": "{icon} {volume}%",
+
+    // Muted format:  = Muted icon
+    "format-muted": "  Muted",
+
+    // Icons: Different icons based on volume level
+    "format-icons": {
+      "default": [
+        "",  // Low volume (0-33%)
+        "",  // Medium volume (34-66%)
+        ""   // High volume (67-100%)
+      ]
+    },
+
+    // Click action: Toggle mute using pamixer
+    "on-click": "pamixer -t"
+
+    // Additional options (uncomment to use):
+    // "on-click-right": "pavucontrol",  // Right-click to open volume control
+    // "scroll-step": 5,                 // Volume change per scroll (%)
+    // "on-scroll-up": "pamixer -i 5",
+    // "on-scroll-down": "pamixer -d 5",
+    // "max-volume": 150,                // Allow volume above 100%
+    // "ignored-sinks": ["Easy Effects Sink"]  // Don't show these sinks
+  },
+
+  // --------------------------------------------------------------------------
+  // System Tray Module
+  // --------------------------------------------------------------------------
+  "tray": {
+    // Icon size in pixels
+    "icon-size": 16,
+
+    // Spacing between tray icons in pixels
+    "spacing": 8
+
+    // Additional options (uncomment to use):
+    // "show-passive-items": false,  // Hide passive tray items
+    // "reverse-direction": false,   // Reverse icon order
+    // "on-click-middle": "none"     // Middle-click action
+  }
+
+  // ==========================================================================
+  // Additional Module Examples (uncomment and add to modules-* above)
+  // ==========================================================================
+
+  // Battery module (for laptops):
+  // "battery": {
+  //   "states": {
+  //     "warning": 30,
+  //     "critical": 15
+  //   },
+  //   "format": "{icon} {capacity}%",
+  //   "format-charging": " {capacity}%",
+  //   "format-plugged": " {capacity}%",
+  //   "format-icons": ["", "", "", "", ""]
+  // },
+
+  // Backlight module (screen brightness for laptops):
+  // "backlight": {
+  //   "format": "{icon} {percent}%",
+  //   "format-icons": ["", "", "", "", "", "", "", "", ""],
+  //   "on-scroll-up": "brightnessctl set +5%",
+  //   "on-scroll-down": "brightnessctl set 5%-"
+  // },
+
+  // Idle inhibitor (prevent auto-sleep):
+  // "idle_inhibitor": {
+  //   "format": "{icon}",
+  //   "format-icons": {
+  //     "activated": "",
+  //     "deactivated": ""
+  //   }
+  // },
+
+  // Disk usage:
+  // "disk": {
+  //   "interval": 30,
+  //   "format": "  {percentage_used}%",
+  //   "path": "/"
+  // },
+
+  // Custom module example (weather):
+  // "custom/weather": {
+  //   "exec": "curl 'wttr.in/?format=1'",
+  //   "interval": 3600
+  // }
+}

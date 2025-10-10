@@ -1,0 +1,335 @@
+/* ========================================================================== */
+/* Wofi Stylesheet - Oksolar Theme */
+/* ========================================================================== */
+/*
+ * Custom CSS for Wofi application launcher with oksolar color scheme.
+ * Colors are injected via chezmoi templates from .chezmoidata/colors.yaml
+ *
+ * STRUCTURE:
+ * - Universal styles (fonts)
+ * - Main window (background, border, rounding)
+ * - Input box (search field)
+ * - Result containers (layout boxes)
+ * - Entry items (application results)
+ * - Icons
+ *
+ * OKSOLAR COLOR REFERENCE (same as Waybar):
+ * - base03  : Darkest background (#002d38)
+ * - base02  : Dark background    (#093946)
+ * - base01  : Muted text         (#5b7279)
+ * - base0   : Default text       (#839496)
+ * - base1   : Light text         (#93a1a1)
+ * - base3   : Lightest text      (#fdf6e3)
+ * - blue    : Primary accent     (#2b90d8)
+ *
+ * WOFI CSS SELECTORS:
+ * - window         : Main launcher window
+ * - #input         : Search text field
+ * - #inner-box     : Container for results list
+ * - #outer-box     : Outermost container
+ * - #scroll        : Scrollable area
+ * - #entry         : Individual result item
+ * - #text          : Application name text
+ * - #img           : Application icon
+ *
+ * CUSTOMIZATION TIPS:
+ * - Change border-radius for sharper/rounder corners
+ * - Adjust padding for denser/looser spacing
+ * - Modify font-size for different readability
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Universal Styles */
+/* -------------------------------------------------------------------------- */
+* {
+  /* Font: FiraCode Nerd Font for consistent styling with Waybar */
+  font-family: "FiraCode Nerd Font", monospace;
+
+  /* Base font size - slightly larger than Waybar for readability */
+  font-size: 14px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main Launcher Window */
+/* -------------------------------------------------------------------------- */
+window {
+  /* Remove default margin */
+  margin: 0px;
+
+  /* Border: Oksolar blue to match active workspace in waybar */
+  border: 2px solid #{{ .colors.oksolar.blue }};
+
+  /* Background: Oksolar darkest (base03) - matches waybar background */
+  background-color: #{{ .colors.oksolar.base03 }};
+
+  /* Rounded corners (8px matches Hyprland window rounding) */
+  border-radius: 8px;
+
+  /* Optional: Add shadow for depth (uncomment to use) */
+  /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); */
+
+  /* Optional: Transparency (uncomment to use) */
+  /* opacity: 0.95; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* Search Input Field */
+/* -------------------------------------------------------------------------- */
+#input {
+  /* Inner spacing for comfortable typing */
+  padding: 8px;
+
+  /* Margin around input box */
+  margin: 12px;
+
+  /* Remove default border (we'll add custom border on focus) */
+  border: none;
+
+  /* Text color: Oksolar lightest (base3) - high contrast for search text */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Background: Oksolar dark (base02) - darker than window for distinction */
+  background-color: #{{ .colors.oksolar.base02 }};
+
+  /* Remove default focus outline (we'll add custom border) */
+  outline: none;
+
+  /* Rounded corners for input field */
+  border-radius: 4px;
+}
+
+/* Search input: Focus state (when typing) */
+#input:focus {
+  /* Border: Oksolar blue to indicate active input */
+  border: 1px solid #{{ .colors.oksolar.blue }};
+
+  /* Optional: Add glow effect (uncomment to use) */
+  /* box-shadow: 0 0 5px #{{ .colors.oksolar.blue }}; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* Result List Containers */
+/* -------------------------------------------------------------------------- */
+
+/* Inner box: Container for scrollable results */
+#inner-box {
+  /* Margin: Space from window edges (left/right/bottom) */
+  margin: 12px;
+  margin-top: 0px;  /* No top margin (input has its own margin) */
+
+  /* Remove border */
+  border: none;
+
+  /* Transparent background (inherits from window) */
+  background-color: transparent;
+}
+
+/* Outer box: Outermost container */
+#outer-box {
+  /* No spacing - let inner-box control margins */
+  margin: 0px;
+  border: none;
+  padding: 0px;
+}
+
+/* Scroll: Scrollable area for results */
+#scroll {
+  /* No additional spacing */
+  margin: 0px;
+  border: none;
+
+  /* Optional: Style scrollbar (uncomment to use) */
+  /* scrollbar-width: thin; */
+  /* scrollbar-color: #{{ .colors.oksolar.base01 }} #{{ .colors.oksolar.base02 }}; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* Application Entry Items */
+/* -------------------------------------------------------------------------- */
+
+/* Entry: Individual result item (default/unselected state) */
+#entry {
+  /* Margin between entries */
+  margin: 2px;
+
+  /* Remove border */
+  border: none;
+
+  /* Rounded corners for entries */
+  border-radius: 4px;
+
+  /* Transparent background when not selected */
+  background-color: transparent;
+
+  /* Padding inside entry (around icon and text) */
+  padding: 6px;
+
+  /* Optional: Add transition for smooth hover (uncomment to use) */
+  /* transition: all 0.2s ease; */
+}
+
+/* Entry: Selected/highlighted state */
+#entry:selected {
+  /* Background: Oksolar blue (matches active workspace) */
+  background-color: #{{ .colors.oksolar.blue }};
+
+  /* Text color: Oksolar lightest (base3) - high contrast on blue */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Optional: Scale effect on selection (uncomment to use) */
+  /* transform: scale(1.02); */
+}
+
+/* Optional: Hover state (different from selected) */
+/* #entry:hover {
+ *   background-color: #{{ .colors.oksolar.base02 }};
+ * } */
+
+/* -------------------------------------------------------------------------- */
+/* Application Text (Names) */
+/* -------------------------------------------------------------------------- */
+
+/* Text: Application name (default state) */
+#text {
+  /* No margin (controlled by parent entry) */
+  margin: 0px;
+  border: none;
+
+  /* Padding around text */
+  padding: 4px;
+
+  /* Text color: Oksolar light text (base1) */
+  color: #{{ .colors.oksolar.base1 }};
+}
+
+/* Text: Selected state */
+#text:selected {
+  /* Text color: Oksolar lightest (base3) - high contrast */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Font weight: Bold to emphasize selection */
+  font-weight: bold;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Application Icons */
+/* -------------------------------------------------------------------------- */
+#img {
+  /* Margin: Space between icon and text */
+  margin-right: 8px;
+
+  /* Transparent background */
+  background: transparent;
+
+  /* Optional: Icon opacity (uncomment for dimmed icons) */
+  /* opacity: 0.8; */
+}
+
+/* Optional: Selected icon (uncomment for effects) */
+/* #img:selected {
+ *   opacity: 1.0;
+ *   transform: scale(1.1);
+ * } */
+
+/* ========================================================================== */
+/* Optional Enhancements */
+/* ========================================================================== */
+
+/* Alternating row colors for better readability: */
+/* #entry:nth-child(even) {
+ *   background-color: rgba(9, 57, 70, 0.3);
+ * } */
+
+/* Separator between entries: */
+/* #entry {
+ *   border-bottom: 1px solid #{{ .colors.oksolar.base02 }};
+ * }
+ * #entry:last-child {
+ *   border-bottom: none;
+ * } */
+
+/* Category headers (if using dmenu mode with categories): */
+/* #entry.category {
+ *   color: #{{ .colors.oksolar.cyan }};
+ *   font-weight: bold;
+ *   background-color: #{{ .colors.oksolar.base02 }};
+ *   padding: 8px 6px;
+ *   margin-top: 8px;
+ * } */
+
+/* Truncate long application names with ellipsis: */
+/* #text {
+ *   overflow: hidden;
+ *   text-overflow: ellipsis;
+ *   white-space: nowrap;
+ * } */
+
+/* Search match highlighting (if enabled in config): */
+/* #text match {
+ *   color: #{{ .colors.oksolar.orange }};
+ *   font-weight: bold;
+ *   text-decoration: underline;
+ * } */
+
+/* Custom scrollbar styling: */
+/* scrollbar {
+ *   width: 8px;
+ * }
+ *
+ * scrollbar thumb {
+ *   background: #{{ .colors.oksolar.base01 }};
+ *   border-radius: 4px;
+ * }
+ *
+ * scrollbar thumb:hover {
+ *   background: #{{ .colors.oksolar.blue }};
+ * }
+ *
+ * scrollbar track {
+ *   background: #{{ .colors.oksolar.base02 }};
+ * } */
+
+/* ========================================================================== */
+/* Maintenance Notes */
+/* ========================================================================== */
+/*
+ * TO CUSTOMIZE COLORS:
+ * 1. All colors are defined in .chezmoidata/colors.yaml
+ * 2. Change colors there, then run: chezmoi apply
+ * 3. Relaunch wofi to see changes
+ *
+ * TO ADJUST SIZING:
+ * - Window size: Edit width/height in config file (not CSS)
+ * - Font size: Modify font-size in * selector
+ * - Spacing: Adjust padding/margin values
+ * - Icons: Change image_size in config file
+ *
+ * TO CHANGE SHAPES:
+ * - Corner rounding: Modify border-radius values
+ * - Border thickness: Adjust border width in window selector
+ * - Entry shape: Modify border-radius in #entry selector
+ *
+ * SELECTOR HIERARCHY:
+ * window
+ *   ├── #input (search box)
+ *   └── #outer-box
+ *       └── #scroll
+ *           └── #inner-box
+ *               └── #entry (each result)
+ *                   ├── #img (icon)
+ *                   └── #text (application name)
+ *
+ * DEBUGGING STYLES:
+ * 1. Use GTK Inspector: GTK_DEBUG=interactive wofi --show drun
+ * 2. Inspect elements and test CSS changes live
+ * 3. Check for syntax errors: wofi will fail silently with CSS errors
+ *
+ * TESTING CHANGES:
+ * 1. Edit style.css.tmpl (this file)
+ * 2. Run: chezmoi apply
+ * 3. Launch wofi: wofi --show drun
+ * 4. If no changes appear, check:
+ *    - chezmoi apply ran without errors
+ *    - CSS syntax is valid
+ *    - File permissions are correct
+ */

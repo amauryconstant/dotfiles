@@ -1,0 +1,424 @@
+/* ========================================================================== */
+/* Waybar Stylesheet - Oksolar Theme */
+/* ========================================================================== */
+/*
+ * Custom CSS for Waybar status bar with oksolar color scheme.
+ * Colors are injected via chezmoi templates from .chezmoidata/colors.yaml
+ *
+ * STRUCTURE:
+ * - Universal styles (fonts, resets)
+ * - Main window (bar background)
+ * - Workspaces (buttons and states)
+ * - Window title
+ * - Clock
+ * - System modules (CPU, memory, temperature, network, audio)
+ * - System tray
+ *
+ * OKSOLAR COLOR REFERENCE:
+ * - base03  : Darkest background (#002d38)
+ * - base02  : Dark background    (#093946)
+ * - base01  : Muted text         (#5b7279)
+ * - base0   : Default text       (#839496)
+ * - base1   : Light text         (#93a1a1)
+ * - base3   : Lightest text      (#fdf6e3)
+ * - blue    : Primary accent     (#2b90d8)
+ * - cyan    : Secondary accent   (#259d94)
+ * - green   : Success/CPU        (#819500)
+ * - yellow  : Warning/Memory     (#b68800)
+ * - orange  : Alert/Temperature  (#ca4600)
+ * - red     : Error/Critical     (#dc312e)
+ * - violet  : Special/Audio      (#6c71c3)
+ *
+ * CUSTOMIZATION TIPS:
+ * - All colors use chezmoi templates: #{{"{{"}} .colors.oksolar.COLORNAME {{"}}"}}
+ * - Modify font-size for HiDPI displays
+ * - Adjust padding for denser/looser layouts
+ * - Change border-radius in #workspaces button for rounded corners
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Universal Styles */
+/* -------------------------------------------------------------------------- */
+* {
+  /* Remove default borders and rounding */
+  border: none;
+  border-radius: 0;
+
+  /* Font: FiraCode Nerd Font for icons and text */
+  font-family: "FiraCode Nerd Font", monospace;
+
+  /* Base font size - increase for HiDPI (e.g., 16px, 18px) */
+  font-size: 13px;
+
+  /* Prevent excessive height from icons */
+  min-height: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main Bar Window */
+/* -------------------------------------------------------------------------- */
+window#waybar {
+  /* Background: Oksolar darkest (base03) */
+  background-color: #{{ .colors.oksolar.base03 }};
+
+  /* Text color: Oksolar default text (base0) */
+  color: #{{ .colors.oksolar.base0 }};
+
+  /* Smooth background color transitions (for potential themes/modes) */
+  transition-property: background-color;
+  transition-duration: 0.5s;
+
+  /* Optional: Add transparency (uncomment to use) */
+  /* opacity: 0.95; */
+
+  /* Optional: Add bottom border (uncomment to use) */
+  /* border-bottom: 2px solid #{{ .colors.oksolar.base01 }}; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* Workspaces Module */
+/* -------------------------------------------------------------------------- */
+
+/* Workspace buttons: Default state (inactive) */
+#workspaces button {
+  /* Spacing inside buttons */
+  padding: 0 8px;
+
+  /* Transparent background for inactive workspaces */
+  background-color: transparent;
+
+  /* Text color: Oksolar muted (base01) */
+  color: #{{ .colors.oksolar.base01 }};
+
+  /* Optional: Add border between workspaces (uncomment to use) */
+  /* border-right: 1px solid #{{ .colors.oksolar.base02 }}; */
+}
+
+/* Workspace buttons: Hover state */
+#workspaces button:hover {
+  /* Background: Oksolar dark (base02) - slightly lighter than bar */
+  background-color: #{{ .colors.oksolar.base02 }};
+
+  /* Text color: Oksolar light text (base1) - more visible on hover */
+  color: #{{ .colors.oksolar.base1 }};
+
+  /* Optional: Add scaling effect (uncomment to use) */
+  /* transform: scale(1.1); */
+  /* transition: all 0.2s; */
+}
+
+/* Workspace buttons: Active workspace */
+#workspaces button.active {
+  /* Background: Oksolar blue (primary accent) */
+  background-color: #{{ .colors.oksolar.blue }};
+
+  /* Text color: Oksolar lightest (base3) - high contrast on blue */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Optional: Make active workspace bold */
+  /* font-weight: bold; */
+}
+
+/* Workspace buttons: Urgent state (windows demanding attention) */
+#workspaces button.urgent {
+  /* Background: Oksolar red (error/alert) */
+  background-color: #{{ .colors.oksolar.red }};
+
+  /* Text color: Oksolar lightest (base3) - high contrast on red */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Optional: Add animation (uncomment to use) */
+  /* animation: blink 1s linear infinite; */
+}
+
+/* Optional: Blink animation for urgent workspaces */
+/* @keyframes blink {
+ *   0%, 100% { opacity: 1; }
+ *   50% { opacity: 0.5; }
+ * } */
+
+/* -------------------------------------------------------------------------- */
+/* Window Title Module */
+/* -------------------------------------------------------------------------- */
+#window {
+  /* Text color: Oksolar light text (base1) */
+  color: #{{ .colors.oksolar.base1 }};
+
+  /* Font weight: Normal (not bold) */
+  font-weight: normal;
+
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+
+  /* Optional: Italic style for window title */
+  /* font-style: italic; */
+
+  /* Optional: Fade out when no window */
+  /* opacity: 0.8; */
+}
+
+/* Optional: Style when no window is open */
+/* window#waybar.empty #window {
+ *   opacity: 0.5;
+ * } */
+
+/* -------------------------------------------------------------------------- */
+/* Clock Module */
+/* -------------------------------------------------------------------------- */
+#clock {
+  /* Text color: Oksolar blue (matches active workspace) */
+  color: #{{ .colors.oksolar.blue }};
+
+  /* Font weight: Bold to stand out */
+  font-weight: bold;
+
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+
+  /* Optional: Add background (uncomment to use) */
+  /* background-color: #{{ .colors.oksolar.base02 }}; */
+  /* border-radius: 4px; */
+
+  /* Optional: Larger font size */
+  /* font-size: 14px; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* System Information Modules */
+/* -------------------------------------------------------------------------- */
+
+/* Common styling for all system modules */
+#cpu,
+#memory,
+#temperature,
+#network,
+#pulseaudio {
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+
+  /* Default text color: Oksolar light text (base1) */
+  color: #{{ .colors.oksolar.base1 }};
+
+  /* Optional: Add hover effect (uncomment to use) */
+  /* transition: all 0.2s; */
+}
+
+/* Optional: Hover effect for all modules */
+/* #cpu:hover,
+ * #memory:hover,
+ * #temperature:hover,
+ * #network:hover,
+ * #pulseaudio:hover {
+ *   background-color: #{{ .colors.oksolar.base02 }};
+ * } */
+
+/* CPU Module: Green (represents active/processing) */
+#cpu {
+  color: #{{ .colors.oksolar.green }};
+}
+
+/* Memory Module: Yellow (represents resource usage) */
+#memory {
+  color: #{{ .colors.oksolar.yellow }};
+}
+
+/* Temperature Module: Orange (represents heat) */
+#temperature {
+  color: #{{ .colors.oksolar.orange }};
+}
+
+/* Temperature Module: Critical state (over threshold) */
+#temperature.critical {
+  /* Color: Oksolar red (error/danger) */
+  color: #{{ .colors.oksolar.red }};
+
+  /* Font weight: Bold to draw attention */
+  font-weight: bold;
+
+  /* Optional: Add pulsing animation (uncomment to use) */
+  /* animation: pulse 2s ease-in-out infinite; */
+}
+
+/* Optional: Pulse animation for critical temperature */
+/* @keyframes pulse {
+ *   0%, 100% { opacity: 1; }
+ *   50% { opacity: 0.6; }
+ * } */
+
+/* Network Module: Cyan (represents connectivity) */
+#network {
+  color: #{{ .colors.oksolar.cyan }};
+}
+
+/* Network Module: Disconnected state */
+#network.disconnected {
+  /* Color: Oksolar muted (base01) - dimmed to show inactive */
+  color: #{{ .colors.oksolar.base01 }};
+
+  /* Optional: Strike-through text */
+  /* text-decoration: line-through; */
+}
+
+/* PulseAudio Module: Violet (represents media/audio) */
+#pulseaudio {
+  color: #{{ .colors.oksolar.violet }};
+}
+
+/* PulseAudio Module: Muted state */
+#pulseaudio.muted {
+  /* Color: Oksolar muted (base01) - dimmed to show inactive */
+  color: #{{ .colors.oksolar.base01 }};
+
+  /* Optional: Reduce opacity when muted */
+  /* opacity: 0.5; */
+}
+
+/* -------------------------------------------------------------------------- */
+/* System Tray Module */
+/* -------------------------------------------------------------------------- */
+#tray {
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+
+  /* Optional: Add background to separate from other modules */
+  /* background-color: #{{ .colors.oksolar.base02 }}; */
+  /* margin: 0 5px; */
+  /* border-radius: 4px; */
+}
+
+/* Tray icons: Passive state (not demanding attention) */
+#tray > .passive {
+  /* GTK icon effect: Dim inactive icons */
+  -gtk-icon-effect: dim;
+
+  /* Optional: Reduce opacity for passive icons */
+  /* opacity: 0.7; */
+}
+
+/* Tray icons: Needs attention state (notifications) */
+#tray > .needs-attention {
+  /* GTK icon effect: Highlight to draw attention */
+  -gtk-icon-effect: highlight;
+
+  /* Background: Oksolar red (error/alert) to stand out */
+  background-color: #{{ .colors.oksolar.red }};
+
+  /* Optional: Add padding and rounding */
+  /* padding: 0 5px; */
+  /* border-radius: 4px; */
+
+  /* Optional: Add animation (uncomment to use) */
+  /* animation: attention 1s ease-in-out infinite; */
+}
+
+/* Optional: Attention animation for tray items */
+/* @keyframes attention {
+ *   0%, 100% { transform: scale(1); }
+ *   50% { transform: scale(1.1); }
+ * } */
+
+/* ========================================================================== */
+/* Additional Module Styles (add as needed) */
+/* ========================================================================== */
+
+/* Battery module (for laptops): */
+/* #battery {
+ *   color: #{{ .colors.oksolar.green }};
+ * }
+ *
+ * #battery.warning {
+ *   color: #{{ .colors.oksolar.yellow }};
+ * }
+ *
+ * #battery.critical {
+ *   color: #{{ .colors.oksolar.red }};
+ *   font-weight: bold;
+ * }
+ *
+ * #battery.charging {
+ *   color: #{{ .colors.oksolar.cyan }};
+ * } */
+
+/* Backlight module (for laptops): */
+/* #backlight {
+ *   color: #{{ .colors.oksolar.yellow }};
+ * } */
+
+/* Idle inhibitor module: */
+/* #idle_inhibitor {
+ *   color: #{{ .colors.oksolar.base01 }};
+ * }
+ *
+ * #idle_inhibitor.activated {
+ *   color: #{{ .colors.oksolar.orange }};
+ * } */
+
+/* Disk module: */
+/* #disk {
+ *   color: #{{ .colors.oksolar.blue }};
+ * }
+ *
+ * #disk.warning {
+ *   color: #{{ .colors.oksolar.orange }};
+ * }
+ *
+ * #disk.critical {
+ *   color: #{{ .colors.oksolar.red }};
+ * } */
+
+/* Custom modules: */
+/* #custom-weather {
+ *   color: #{{ .colors.oksolar.cyan }};
+ *   padding: 0 10px;
+ * } */
+
+/* ========================================================================== */
+/* Alternative Bar Positions (uncomment if using bottom/left/right) */
+/* ========================================================================== */
+
+/* Bottom bar specific styles: */
+/* window#waybar.bottom {
+ *   border-top: 2px solid #{{ .colors.oksolar.base01 }};
+ *   border-bottom: none;
+ * } */
+
+/* Left bar specific styles: */
+/* window#waybar.left {
+ *   border-right: 2px solid #{{ .colors.oksolar.base01 }};
+ * } */
+
+/* Right bar specific styles: */
+/* window#waybar.right {
+ *   border-left: 2px solid #{{ .colors.oksolar.base01 }};
+ * } */
+
+/* ========================================================================== */
+/* Maintenance Notes */
+/* ========================================================================== */
+/*
+ * TO CUSTOMIZE COLORS:
+ * 1. All colors are defined in .chezmoidata/colors.yaml
+ * 2. Change colors there, then run: chezmoi apply
+ * 3. Reload waybar: killall -SIGUSR2 waybar
+ *
+ * TO ADJUST SPACING:
+ * - Modify padding values in module styles
+ * - Adjust "spacing" in config.tmpl for gap between modules
+ *
+ * TO CHANGE FONTS:
+ * - Modify font-family in * selector
+ * - Adjust font-size for HiDPI or preference
+ * - Ensure font is installed (fc-list to check)
+ *
+ * TO ADD BORDERS/ROUNDING:
+ * - Uncomment optional border/border-radius styles
+ * - Add to individual modules or window#waybar for global effect
+ *
+ * TO ADD ANIMATIONS:
+ * - Uncomment animation styles and @keyframes definitions
+ * - Adjust timing and effects as needed
+ *
+ * DEBUGGING STYLES:
+ * - Use GTK Inspector: GTK_DEBUG=interactive waybar
+ * - Inspect elements and see applied styles in real-time
+ */

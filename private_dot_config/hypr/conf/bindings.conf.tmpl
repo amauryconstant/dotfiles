@@ -1,0 +1,274 @@
+# ============================================================================
+# Keybindings Configuration
+# ============================================================================
+# Keyboard and mouse shortcuts for Hyprland.
+# Documentation: https://wiki.hyprland.org/Configuring/Binds/
+#
+# SYNTAX:
+# bind  = MODIFIERS, KEY, DISPATCHER, PARAMS
+# bindm = MODIFIERS, MOUSE_BUTTON, DISPATCHER
+#
+# MODIFIERS: SUPER, CTRL, ALT, SHIFT (combine with spaces)
+# KEY:       Key name or mouse button (see: xev or wev)
+# DISPATCHER: Action to perform (exec, workspace, killactive, etc.)
+# PARAMS:    Parameters for the dispatcher
+#
+# SPECIAL BINDINGS:
+# - bindr  = Release bind (triggers on key release)
+# - binde  = Repeat bind (repeats while key held)
+# - bindl  = Locked bind (works even when screen is locked)
+# - bindm  = Mouse bind (for drag operations)
+# ============================================================================
+
+# Modifier key: SUPER (Windows key)
+# Change to ALT for Alt-based shortcuts
+$mod = SUPER
+
+# ============================================================================
+# Application Launchers
+# ============================================================================
+
+# Terminal: Super + Return
+bind = $mod, Return, exec, kitty
+
+# Application launcher: Super + D
+# Wofi shows desktop applications from .desktop files
+bind = $mod, D, exec, wofi --show drun
+
+# File manager: Super + E
+bind = $mod, E, exec, dolphin
+
+# ============================================================================
+# Window Management
+# ============================================================================
+
+# Close window: Super + Q
+bind = $mod, Q, killactive
+
+# Exit Hyprland: Super + M
+# WARNING: This logs you out without confirmation!
+bind = $mod, M, exit
+
+# Toggle floating: Super + V
+# Switches window between tiling and floating mode
+bind = $mod, V, togglefloating
+
+# Toggle fullscreen: Super + F (uncomment to enable)
+# bind = $mod, F, fullscreen
+
+# Pseudotile: Super + P
+# Makes floating window behave like tiled (dwindle layout specific)
+bind = $mod, P, pseudo
+
+# Toggle split: Super + J
+# Switches split direction between horizontal/vertical (dwindle layout)
+bind = $mod, J, togglesplit
+
+# ============================================================================
+# Focus Navigation
+# ============================================================================
+
+# Move focus with arrow keys: Super + Arrows
+bind = $mod, left, movefocus, l   # Focus left window
+bind = $mod, right, movefocus, r  # Focus right window
+bind = $mod, up, movefocus, u     # Focus upper window
+bind = $mod, down, movefocus, d   # Focus lower window
+
+# Move focus with vim keys: Super + H/J/K/L
+bind = $mod, h, movefocus, l  # Focus left (vim-style)
+bind = $mod, l, movefocus, r  # Focus right (vim-style)
+bind = $mod, k, movefocus, u  # Focus up (vim-style)
+bind = $mod, j, movefocus, d  # Focus down (vim-style)
+
+# ============================================================================
+# Workspace Navigation
+# ============================================================================
+
+# Switch to workspace: Super + [1-0]
+bind = $mod, 1, workspace, 1
+bind = $mod, 2, workspace, 2
+bind = $mod, 3, workspace, 3
+bind = $mod, 4, workspace, 4
+bind = $mod, 5, workspace, 5
+bind = $mod, 6, workspace, 6
+bind = $mod, 7, workspace, 7
+bind = $mod, 8, workspace, 8
+bind = $mod, 9, workspace, 9
+bind = $mod, 0, workspace, 10
+
+# Cycle through workspaces: Super + Mouse Wheel
+bind = $mod, mouse_down, workspace, e+1  # Next workspace
+bind = $mod, mouse_up, workspace, e-1    # Previous workspace
+
+# Cycle through workspaces with keyboard (uncomment to enable):
+# bind = $mod, Tab, workspace, e+1         # Next workspace
+# bind = $mod SHIFT, Tab, workspace, e-1   # Previous workspace
+
+# Go to previous workspace (uncomment to enable):
+# bind = $mod, grave, workspace, previous  # Super + ` (backtick)
+
+# ============================================================================
+# Move Windows
+# ============================================================================
+
+# Move window to workspace: Super + Shift + [1-0]
+# Window moves but you stay on current workspace
+bind = $mod SHIFT, 1, movetoworkspace, 1
+bind = $mod SHIFT, 2, movetoworkspace, 2
+bind = $mod SHIFT, 3, movetoworkspace, 3
+bind = $mod SHIFT, 4, movetoworkspace, 4
+bind = $mod SHIFT, 5, movetoworkspace, 5
+bind = $mod SHIFT, 6, movetoworkspace, 6
+bind = $mod SHIFT, 7, movetoworkspace, 7
+bind = $mod SHIFT, 8, movetoworkspace, 8
+bind = $mod SHIFT, 9, movetoworkspace, 9
+bind = $mod SHIFT, 10, movetoworkspace, 10
+
+# Move window silently (without switching workspace):
+# bind = $mod SHIFT, 1, movetoworkspacesilent, 1
+
+# Move and follow window to workspace:
+# bind = $mod CTRL, 1, movetoworkspace, 1
+# bind = $mod CTRL, 1, workspace, 1
+
+# Move window within workspace (uncomment to enable):
+# bind = $mod SHIFT, left, movewindow, l
+# bind = $mod SHIFT, right, movewindow, r
+# bind = $mod SHIFT, up, movewindow, u
+# bind = $mod SHIFT, down, movewindow, d
+
+# ============================================================================
+# Mouse Bindings
+# ============================================================================
+
+# Move window: Super + Left Mouse Button (drag)
+# mouse:272 = Left mouse button
+bindm = $mod, mouse:272, movewindow
+
+# Resize window: Super + Right Mouse Button (drag)
+# mouse:273 = Right mouse button
+bindm = $mod, mouse:273, resizewindow
+
+# ============================================================================
+# Screenshots (using grim + slurp)
+# ============================================================================
+
+# Select area screenshot to clipboard: Print Screen
+# Uses slurp for area selection, copies to clipboard via wl-copy
+bind = , Print, exec, grim -g "$(slurp)" - | wl-copy
+
+# Fullscreen screenshot to clipboard: Shift + Print Screen
+bind = SHIFT, Print, exec, grim - | wl-copy
+
+# Select area screenshot to file: Super + Print Screen
+# Saves to ~/Pictures/ with timestamp
+bind = $mod, Print, exec, grim -g "$(slurp)" ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png
+
+# Fullscreen screenshot to file (uncomment to enable):
+# bind = $mod SHIFT, Print, exec, grim ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png
+
+# ============================================================================
+# Media Keys
+# ============================================================================
+
+# Volume control using pamixer
+# Note: Install pamixer or replace with pactl/amixer
+bind = , XF86AudioRaiseVolume, exec, pamixer -i 5  # Volume up 5%
+bind = , XF86AudioLowerVolume, exec, pamixer -d 5  # Volume down 5%
+bind = , XF86AudioMute, exec, pamixer -t           # Toggle mute
+
+# Alternative with pactl (PulseAudio/PipeWire):
+# bind = , XF86AudioRaiseVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ +5%
+# bind = , XF86AudioLowerVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ -5%
+# bind = , XF86AudioMute, exec, pactl set-sink-mute @DEFAULT_SINK@ toggle
+
+# Brightness control (uncomment if needed):
+# bind = , XF86MonBrightnessUp, exec, brightnessctl set +10%
+# bind = , XF86MonBrightnessDown, exec, brightnessctl set 10%-
+
+# Media playback (uncomment if needed):
+# bind = , XF86AudioPlay, exec, playerctl play-pause
+# bind = , XF86AudioPause, exec, playerctl pause
+# bind = , XF86AudioNext, exec, playerctl next
+# bind = , XF86AudioPrev, exec, playerctl previous
+
+# ============================================================================
+# Window Resizing (Resize Mode)
+# ============================================================================
+# Uncomment for resize mode (like i3)
+#
+# bind = $mod, R, submap, resize  # Enter resize mode
+#
+# submap = resize
+# binde = , right, resizeactive, 10 0
+# binde = , left, resizeactive, -10 0
+# binde = , up, resizeactive, 0 -10
+# binde = , down, resizeactive, 0 10
+# bind = , escape, submap, reset  # Exit resize mode
+# bind = , return, submap, reset
+# submap = reset
+# ============================================================================
+
+# ============================================================================
+# Special Workspace (Scratchpad)
+# ============================================================================
+# Uncomment for scratchpad functionality (like i3)
+#
+# bind = $mod, S, togglespecialworkspace, magic     # Toggle scratchpad
+# bind = $mod SHIFT, S, movetoworkspace, special:magic  # Move to scratchpad
+# ============================================================================
+
+# ============================================================================
+# Additional Useful Bindings (uncomment as needed)
+# ============================================================================
+
+# Reload Hyprland configuration:
+# bind = $mod SHIFT, R, exec, hyprctl reload
+
+# Lock screen (requires swaylock or similar):
+# bind = $mod, L, exec, swaylock
+
+# Power menu (requires custom script or wlogout):
+# bind = $mod SHIFT, E, exec, wlogout
+
+# Toggle waybar:
+# bind = $mod, B, exec, killall -SIGUSR1 waybar
+
+# Pin window to all workspaces:
+# bind = $mod SHIFT, P, pin
+
+# Swap windows:
+# bind = $mod SHIFT, Return, layoutmsg, swapwithmaster
+
+# Center floating window:
+# bind = $mod, C, centerwindow
+
+# Cycle through windows:
+# bind = ALT, Tab, cyclenext
+# bind = ALT SHIFT, Tab, cyclenext, prev
+
+# Kill all windows in workspace:
+# bind = $mod SHIFT, Q, exec, hyprctl dispatch killall
+
+# ============================================================================
+# Dispatcher Reference
+# ============================================================================
+# exec                 - Execute shell command
+# killactive           - Close focused window
+# workspace N          - Switch to workspace N
+# movetoworkspace N    - Move window to workspace N
+# movefocus l/r/u/d    - Move focus in direction
+# movewindow l/r/u/d   - Move window in direction
+# resizeactive X Y     - Resize active window
+# togglefloating       - Toggle float/tile
+# fullscreen MODE      - Toggle fullscreen (0=full, 1=maximize, 2=fullscreen)
+# pseudo               - Toggle pseudotile
+# pin                  - Pin to all workspaces
+# centerwindow         - Center floating window
+# cyclenext            - Cycle focus to next window
+# swapnext             - Swap with next window
+# focusmonitor N       - Focus monitor N
+# split RATIO          - Manual split ratio
+# togglesplit          - Toggle split direction
+# exit                 - Exit Hyprland
+# ============================================================================

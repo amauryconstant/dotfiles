@@ -11,7 +11,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 ## Migration History
 
 ### Phase 1: Remove Distribution Dependencies ✅
-**Commit**: `bd0481c` - "Remove the dependency to endeavouros"
+**Commit**: `f257929` - "Remove the dependency to endeavouros"
 
 **Changes Made**:
 - Deleted `.chezmoiscripts/run_once_before_004_install_distributions_and_os_specifics.sh.tmpl`
@@ -33,7 +33,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 **Impact**: System now installs directly on vanilla Arch without EndeavourOS-specific dependencies.
 
 ### Phase 2: Archive KDE Configuration ✅
-**Commit**: `90ffbad` - "Archive KDE configuration files"
+**Commit**: `0f86a8c` - "Archive KDE configuration files"
 
 **Changes Made**:
 - Created `archives/` directory structure with documentation
@@ -56,7 +56,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 **Impact**: Repository no longer deploys KDE-specific configuration while preserving it for reference.
 
 ### Phase 3: Document archinstall Baseline Packages ✅
-**Date**: 2025-10-09
+**Commit**: `3471fa7` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
 
 **Changes Made**:
 - Added `archinstall_baseline` section to `.chezmoidata/packages.yaml`
@@ -88,11 +88,73 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Removed 5 packages from chezmoi management (NVIDIA drivers) to avoid conflicts
 - Future package additions can be checked against this baseline to avoid redundancy
 
-**Next Steps**:
-- After system installation, compare baseline with actual installed packages using `pacman -Qe`
-- Review for additional overlaps with `packages.install.arch` packages
-- Validate CPU microcode package matches hardware (`intel-ucode` vs `amd-ucode`)
+### Phase 4: Implement Hyprland Desktop Environment ✅
+**Commit**: `51dcf6b` - "Add comprehensive Hyprland configuration with waybar"
+
+**Changes Made**:
+- Added `waybar` package to `packages.yaml` wayland_desktop section for status bar functionality
+- Created comprehensive Hyprland configuration with modular structure (2,418 lines added across 15 files):
+  - **Core Configuration** (`~/.config/hypr/`):
+    - `hyprland.conf` - Main entry point sourcing modular configs
+  - **Modular Configuration Files** (`~/.config/hypr/conf/`):
+    - `monitor.conf` - Display setup with scaling and positioning
+    - `autostart.conf` - Essential background services (waybar, dunst, polkit)
+    - `environment.conf` - Wayland environment variables and NVIDIA GPU acceleration
+    - `input.conf` - Keyboard, mouse, and touchpad configuration
+    - `general.conf` - Layout, gaps, borders, and color scheme
+    - `decoration.conf` - Window styling with shadows and blur effects (123 lines)
+    - `animations.conf` - Smooth bezier curves and window transitions (129 lines)
+    - `bindings.conf.tmpl` - Comprehensive keybindings for window/workspace management (274 lines, templated)
+    - `windowrules.conf` - Application-specific window and workspace behavior (147 lines)
+  - **Application Launchers**:
+    - `wofi/config` - Application launcher configuration (221 lines)
+    - `wofi/style.css.tmpl` - Launcher styling with oksolar color scheme (335 lines, templated)
+  - **Status Bar** (`~/.config/waybar/`):
+    - `config.tmpl` - Waybar modules and layout (379 lines, templated)
+    - `style.css.tmpl` - Waybar styling with oksolar colors (424 lines, templated)
+
+**Configuration Highlights**:
+- **Modular Architecture**: Each aspect (input, display, animations, etc.) in separate files for maintainability
+- **Template Integration**: Bindings, waybar, and wofi use Go templates for user-specific customization
+- **oksolar Color Scheme**: Consistent application of custom color scheme across all components
+- **NVIDIA Support**: Explicit environment variables for GPU acceleration and Wayland compatibility
+- **Comprehensive Keybindings**:
+  - Window management (Super+[hjkl], Super+Arrow keys)
+  - Workspace navigation (Super+[0-9])
+  - Application launchers (Super+D for wofi, Super+Q for terminal)
+  - Screenshot utilities (Super+S with grim/slurp)
+- **Status Bar Features**: Network, audio, CPU, memory, temperature, battery, clock modules
+
+**Rationale**:
+- Replaces KDE Plasma with lightweight Hyprland compositor
+- Provides complete desktop environment setup through dotfiles
+- Modular structure allows easy customization and maintenance
+- Template-driven configuration ensures user-specific values (color preferences, keybindings)
+- All configuration version-controlled and reproducible via chezmoi
+
+**Impact**:
+- System now has complete Hyprland desktop environment configuration
+- Waybar provides status bar functionality (15 configuration modules)
+- Wofi provides application launcher with custom styling
+- Total of 2,418 lines of configuration across 15 files
+- Ready for deployment on fresh Arch + Hyprland installation
 
 ---
 
-**Last Updated**: 2025-10-09
+## Next Steps
+
+### Post-Installation Validation
+- Compare baseline with actual installed packages using `pacman -Qe`
+- Review for additional overlaps with `packages.install.arch` packages
+- Validate CPU microcode package matches hardware (`intel-ucode` vs `amd-ucode`)
+
+### Hyprland Configuration Testing
+- Test configuration on actual Hyprland installation
+- Validate NVIDIA-specific environment variables on target hardware
+- Verify all keybindings work as expected
+- Consider creating additional window rules for specific applications
+- May need to adjust monitor configuration based on actual hardware
+
+---
+
+**Last Updated**: 2025-10-10

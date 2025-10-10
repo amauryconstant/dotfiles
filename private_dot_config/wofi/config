@@ -1,0 +1,221 @@
+# ============================================================================
+# Wofi Configuration
+# ============================================================================
+# Application launcher configuration for Hyprland.
+# Documentation: man wofi and man wofi-keys
+#
+# Wofi is a launcher for Wayland (like dmenu/rofi).
+# Launched with: wofi --show drun (configured in Hyprland bindings)
+#
+# FILE FORMAT:
+# - Simple key=value pairs (no quotes needed)
+# - No spaces around '=' sign
+# - Use # for comments
+#
+# To reload: Changes take effect next time wofi is launched
+# To test: Run 'wofi --show drun' from terminal
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Window Dimensions
+# ----------------------------------------------------------------------------
+# Width: Launcher window width in pixels
+# Adjust for different screen sizes (e.g., 800 for larger displays)
+width=600
+
+# Height: Launcher window height in pixels
+# Adjust based on how many results you want visible
+height=400
+
+# ----------------------------------------------------------------------------
+# Window Position
+# ----------------------------------------------------------------------------
+# Location: Where launcher appears on screen
+# Options: center, top_left, top, top_right, right, bottom_right,
+#          bottom, bottom_left, left
+location=center
+
+# ----------------------------------------------------------------------------
+# Display Mode
+# ----------------------------------------------------------------------------
+# Show: What type of entries to display
+# Options:
+#   drun   - Desktop applications (from .desktop files)
+#   run    - All executables in $PATH
+#   dmenu  - Read entries from stdin (dmenu replacement)
+show=drun
+
+# ----------------------------------------------------------------------------
+# Search Behavior
+# ----------------------------------------------------------------------------
+# Matching: How search queries match entries
+# Options:
+#   contains      - Substring matching (e.g., "fire" matches "firefox")
+#   fuzzy         - Non-contiguous character matching (e.g., "frf" matches "firefox")
+#   multi-contains - Multiple substrings separated by spaces
+matching=fuzzy
+
+# Insensitive: Case-insensitive search
+# true  = "Firefox" matches "firefox", "FIREFOX", "FireFox"
+# false = Exact case matching required
+insensitive=true
+
+# ----------------------------------------------------------------------------
+# User Interface
+# ----------------------------------------------------------------------------
+# Prompt: Placeholder text in search box
+prompt=Search Applications...
+
+# Filter rate: Milliseconds delay between keystrokes before filtering
+# Higher = less CPU usage while typing fast, but feels less responsive
+# Lower = more responsive, but more CPU usage
+filter_rate=100
+
+# Allow markup: Enable Pango markup in entries (bold, italics, colors)
+# Requires entries to use proper Pango markup syntax
+allow_markup=true
+
+# Allow images: Show application icons
+# Icons from .desktop files
+allow_images=true
+
+# Image size: Icon size in pixels
+# Common values: 24, 32, 48, 64
+image_size=32
+
+# ----------------------------------------------------------------------------
+# Layout Configuration
+# ----------------------------------------------------------------------------
+# Orientation: List direction
+# Options: vertical, horizontal
+orientation=vertical
+
+# Halign: Horizontal alignment of results list
+# Options: fill, start, end, center
+halign=fill
+
+# Content halign: Horizontal alignment of text within entries
+# Options: fill, start, end, center
+content_halign=fill
+
+# ----------------------------------------------------------------------------
+# Actions
+# ----------------------------------------------------------------------------
+# No actions: Disable desktop action menu (right-click menu)
+# true  = Hide context menu with actions like "Open in Private Window"
+# false = Show context menu with additional actions
+no_actions=true
+
+# ----------------------------------------------------------------------------
+# Terminal Integration
+# ----------------------------------------------------------------------------
+# Term: Terminal emulator for launching terminal applications
+# Used when launching apps that require a terminal (like vim, htop)
+# Must be an installed terminal emulator command
+term=kitty
+
+# ============================================================================
+# Additional Options (uncomment to use)
+# ============================================================================
+
+# Hide scroll: Hide scrollbar
+# hide_scroll=true
+
+# Lines: Number of lines to display (overrides height calculation)
+# lines=10
+
+# Columns: Number of columns for grid layout
+# columns=1
+
+# Sort order: How to sort entries
+# Options: default, alphabetical
+# sort_order=default
+
+# GTK dark: Use dark GTK theme variant
+# gtk_dark=true
+
+# Dynamic lines: Adjust window height based on number of results
+# dynamic_lines=false
+
+# Layer: Wayland layer
+# Options: background, bottom, top, overlay
+# layer=overlay
+
+# Normal window: Use a normal window instead of layer shell
+# normal_window=false
+
+# Password: Character to use for password fields (dmenu mode)
+# password=*
+
+# Exec search: Allow executing arbitrary commands
+# exec_search=false
+
+# Cache file: Location for cache file
+# cache_file=/home/username/.cache/wofi-drun
+
+# Pre-display cmd: Command to run before displaying wofi
+# pre_display_cmd=
+
+# ============================================================================
+# Mode-Specific Behavior
+# ============================================================================
+
+# When using show=run:
+# - Shows all executables in $PATH
+# - Includes shell commands and scripts
+# - Useful for quick command execution
+
+# When using show=dmenu:
+# - Reads entries from stdin
+# - Example: echo -e "Option 1\nOption 2\nOption 3" | wofi --show dmenu
+# - Useful for custom scripts and menus
+
+# ============================================================================
+# Keybindings
+# ============================================================================
+# Default wofi keybindings (see man wofi-keys for full list):
+#
+# Navigation:
+#   Up/Down arrows    - Move selection
+#   Page Up/Down      - Jump multiple entries
+#   Home/End          - First/last entry
+#   Tab               - Next entry
+#   Shift+Tab         - Previous entry
+#
+# Selection:
+#   Enter             - Execute selected entry
+#   Ctrl+Return       - Execute without closing wofi
+#
+# Search:
+#   Ctrl+U            - Clear search
+#   Backspace         - Delete character
+#
+# Window:
+#   Escape            - Close wofi
+#
+# For custom keybindings, see wofi documentation on key configuration
+# ============================================================================
+
+# ============================================================================
+# Troubleshooting
+# ============================================================================
+# If wofi doesn't show:
+# 1. Check Hyprland bindings: Super+D should run 'wofi --show drun'
+# 2. Test manually: Open terminal and run 'wofi --show drun'
+# 3. Check for errors: Run with 'wofi --show drun --log-file wofi.log'
+#
+# If icons don't show:
+# 1. Verify allow_images=true
+# 2. Check icon theme is installed: ls /usr/share/icons/
+# 3. Set GTK icon theme in ~/.config/gtk-3.0/settings.ini
+#
+# If fuzzy search doesn't work:
+# 1. Verify matching=fuzzy
+# 2. Try different search patterns
+# 3. Check filter_rate (high value might delay results)
+#
+# For styling issues:
+# 1. Check ~/.config/wofi/style.css.tmpl exists
+# 2. Run: chezmoi cat ~/.config/wofi/style.css to preview rendered CSS
+# 3. Verify oksolar colors are properly templated
+# ============================================================================

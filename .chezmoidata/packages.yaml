@@ -169,6 +169,11 @@ packages:
             - lm_sensors
             - pacman-contrib
 
+        wayland_desktop:
+          strategy: *_install_binary
+          list:
+            - waybar             # Status bar for Hyprland
+
   flatpak:
     packages:
       proprietary_apps:
