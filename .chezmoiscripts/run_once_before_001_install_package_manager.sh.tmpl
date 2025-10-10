@@ -12,15 +12,40 @@ set -euo pipefail
 # Install yay if not already present
 if ! command -v yay &> /dev/null; then
     {{ includeTemplate "log_step" "Installing yay AUR helper..." }}
-    
-    # Install yay through pacman
-    sudo pacman -S --needed yay
-    
-    # Initialize yay
+
+    # Try direct installation first (works if available in repos like Chaotic-AUR)
+    {{ includeTemplate "log_progress" "Attempting direct installation via pacman..." }}
+    if sudo pacman -S --needed --noconfirm yay 2>/dev/null; then
+        {{ includeTemplate "log_success" "yay installed directly from repository" }}
+    else
+        # Fallback: Build from AUR
+        {{ includeTemplate "log_info" "Direct installation failed, building from AUR..." }}
+
+        # Install build prerequisites
+        {{ includeTemplate "log_progress" "Installing build prerequisites (git, base-devel)..." }}
+        sudo pacman -S --needed --noconfirm git base-devel
+
+        # Build yay from AUR
+        {{ includeTemplate "log_progress" "Cloning yay from AUR..." }}
+        BUILD_DIR=$(mktemp -d)
+        git clone https://aur.archlinux.org/yay.git "$BUILD_DIR/yay"
+
+        {{ includeTemplate "log_progress" "Building and installing yay..." }}
+        cd "$BUILD_DIR/yay"
+        makepkg -si --noconfirm
+
+        # Clean up
+        cd -
+        rm -rf "$BUILD_DIR"
+
+        {{ includeTemplate "log_success" "yay built and installed from AUR" }}
+    fi
+
+    # Initialize yay (common for both installation paths)
     {{ includeTemplate "log_progress" "Initializing yay database..." }}
     yay -Y --gendb
-    yay -Syu --devel
-    
+    yay -Syu --devel --noconfirm
+
     {{ includeTemplate "log_success" "yay AUR helper installed and configured" }}
 else
     {{ includeTemplate "log_info" "yay AUR helper already installed" }}
