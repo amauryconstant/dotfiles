@@ -11,29 +11,28 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 ## Migration History
 
 ### Phase 1: Remove Distribution Dependencies ✅
-**Commit**: `f257929` - "Remove the dependency to endeavouros"
+**Commit**: `e47abba` - "Remove the dependency to endeavouros"
 
 **Changes Made**:
-- Deleted `.chezmoiscripts/run_once_before_004_install_distributions_and_os_specifics.sh.tmpl`
-  - This script contained EndeavourOS-specific setup and welcome screen configuration
-  - No longer needed for vanilla Arch installation
-- Renumbered subsequent `run_once_before_*` scripts (005→004, 006→005, 007→006)
-- Added NVIDIA driver packages to `packages.yaml`:
-  ```yaml
-  graphics_drivers:
-    strategy: *_install_binary
-    list:
-      - nvidia-open        # Open-source NVIDIA kernel modules
-      - nvidia-utils       # NVIDIA userspace utilities
-      - nvidia-settings    # Configuration GUI
-      - lib32-nvidia-utils # 32-bit support for gaming
-      - nvidia-hook        # Automatic initramfs rebuild on driver updates
-  ```
+- Removed `.chezmoiscripts/run_once_before_004_install_distributions_and_os_specifics.sh.tmpl`
+  - This script contained EndeavourOS-specific configurations:
+    - Mirror optimization with `rate-mirrors`
+    - EndeavourOS system update via `eos-update`
+    - NVIDIA driver installation using `nvidia-inst` tool
+    - NVIDIA kernel update checks
+  - No longer needed for vanilla Arch installation (NVIDIA drivers now managed via archinstall baseline)
+- Renumbered subsequent `run_once_before_*` scripts to maintain sequential order:
+  - `005_instantiate_encryption_key.sh.tmpl` → `004_instantiate_encryption_key.sh.tmpl`
+  - `006_install_chezmoi_modify_manager.sh.tmpl` → `005_install_chezmoi_modify_manager.sh.tmpl`
+  - `007_create_maintenance_user.sh.tmpl` → `006_create_maintenance_user.sh.tmpl`
 
-**Impact**: System now installs directly on vanilla Arch without EndeavourOS-specific dependencies.
+**Impact**:
+- System no longer requires EndeavourOS-specific tools or configurations
+- NVIDIA drivers are now installed via archinstall baseline (documented in Phase 3)
+- Clean sequential script numbering maintained (001-006)
 
 ### Phase 2: Archive KDE Configuration ✅
-**Commit**: `0f86a8c` - "Archive KDE configuration files"
+**Commit**: `94c0925` - "Archive KDE configuration files"
 
 **Changes Made**:
 - Created `archives/` directory structure with documentation
@@ -56,7 +55,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 **Impact**: Repository no longer deploys KDE-specific configuration while preserving it for reference.
 
 ### Phase 3: Document archinstall Baseline Packages ✅
-**Commit**: `3471fa7` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
+**Commit**: `c12d8f1` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
 
 **Changes Made**:
 - Added `archinstall_baseline` section to `.chezmoidata/packages.yaml`
@@ -89,7 +88,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Future package additions can be checked against this baseline to avoid redundancy
 
 ### Phase 4: Implement Hyprland Desktop Environment ✅
-**Commit**: `51dcf6b` - "Add comprehensive Hyprland configuration with waybar"
+**Commit**: `a830d9a` - "Add comprehensive Hyprland configuration with waybar"
 
 **Changes Made**:
 - Added `waybar` package to `packages.yaml` wayland_desktop section for status bar functionality
