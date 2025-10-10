@@ -4,6 +4,16 @@ A comprehensive chezmoi dotfiles repository that manages personal configuration 
 
 ## Features
 
+### Desktop Environment
+Modern Wayland-based desktop with tiling window management:
+- **Hyprland**: Wayland compositor with dynamic tiling and animations
+- **Waybar**: Customizable status bar (15 modules: workspaces, system info, tray)
+- **Wofi**: Application launcher for desktop apps
+- **Ghostty**: Primary terminal emulator with GPU acceleration
+- **Dunst**: Notification daemon for desktop notifications
+- **NVIDIA Support**: Hardware acceleration configured for NVIDIA GPUs
+- **oksolar Theming**: Consistent color scheme across desktop and applications
+
 ### Development Environment
 Everything you need for modern software development on Arch Linux:
 - **Languages**: Go, Python, Rust with mise for version management
@@ -48,6 +58,18 @@ Sophisticated dotfiles management with security and flexibility:
 
 ## Installation
 
+### Prerequisites
+
+This repository assumes you have completed a fresh Arch Linux installation using **archinstall** with the **Hyprland desktop profile**. The baseline system should include:
+- Core system packages (base, base-devel, linux, systemd-boot)
+- Hyprland desktop environment (hyprland, dunst, kitty, wofi, dolphin)
+- Audio system (pipewire, wireplumber)
+- Graphics drivers (NVIDIA drivers for NVIDIA GPUs)
+- Network management (NetworkManager, iwd)
+- Display manager (SDDM)
+
+See `.chezmoidata/packages.yaml` → `archinstall_baseline` section for the complete list.
+
 ### Quick Start
 ```sh
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin
@@ -57,7 +79,7 @@ reboot
 
 ### What Gets Installed
 
-The installation process will:
+After the archinstall baseline, this dotfiles repository will:
 1. Install yay AUR helper and configure chaotic-aur repository
 2. Create necessary directories and write global environment variables
 3. Install distribution-specific packages and tools
@@ -312,18 +334,18 @@ The system is configured as a comprehensive development environment with:
 #### Package Categories
 
 - **fonts**: Programming fonts (FiraCode Nerd Font, OpenDyslexic, Geist Mono)
-- **terminal_essentials**: Core CLI tools (ripgrep, fd, bat, fzf, eza, zoxide)
+- **terminal_essentials**: Core CLI tools (ghostty, neovim, ripgrep, fd, bat, fzf, eza, zoxide)
 - **terminal_utils**: System monitoring (btop, nvitop, fastfetch, topgrade)
 - **languages**: Programming languages (Go, Python, Rust)
 - **development_tools**: Development software (Docker, mise)
 - **development_clis**: Developer CLIs (AWS CLI, git-delta, lazygit, posting)
+- **wayland_desktop**: Wayland desktop components (waybar status bar)
 - **ai_tools**: AI/ML tools (Ollama for local LLMs)
 - **general_software**: Native applications (Firefox, Nextcloud Desktop)
-- **work_software**: Work applications (Chromium)
+- **work_software**: Work applications (Chromium, VSCode)
 - **flatpak_apps**: Sandboxed applications via Flatpak:
   - Spotify - Music streaming
   - Slack - Team communication
-  - VS Code - Code editor
   - Xournalpp - Note-taking and PDF annotation
   - qBittorrent - Torrent client
 
@@ -497,6 +519,7 @@ This dotfiles repository sets up a comprehensive development environment with:
   - Custom merge driver for template protection
 
 ### Terminal Tools
+- **Terminal**: Ghostty (primary, GPU-accelerated), Kitty (archinstall baseline)
 - **Shell**: Zsh with antidote plugin manager and Starship prompt
 - **File operations**: ripgrep (rg), fd, eza (ls replacement), zoxide (cd replacement)
 - **File viewing**: bat (cat replacement), hexyl (hex viewer)
@@ -511,8 +534,9 @@ This dotfiles repository sets up a comprehensive development environment with:
 
 ### Theming
 - **Consistent Solarized (oksolar)** color scheme across:
-  - Terminal emulators
-  - Shell prompts
+  - Desktop environment (Waybar, Wofi)
+  - Terminal emulators (Ghostty, Kitty)
+  - Shell prompts (Starship)
   - Syntax highlighting (bat, delta)
   - Development tools
 

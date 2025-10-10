@@ -5,7 +5,9 @@ This file provides technical guidance to Claude Code (claude.ai/code) when devel
 ## Quick Reference
 
 - **Project Type**: Chezmoi dotfiles repository
-- **Target OS**: Arch Linux only (no cross-platform code)
+- **Target OS**: Arch Linux (installed via archinstall with Hyprland profile)
+- **Desktop Environment**: Hyprland + Waybar + Wofi
+- **Terminal**: Ghostty (primary), Kitty (baseline)
 - **Primary Languages**: Go templates (text/template + Sprig), Shell scripts (POSIX sh)
 - **Key Constraint**: Security-first approach with manual encryption operations
 - **Documentation**: See README.md for installation, usage, and system architecture
@@ -48,6 +50,12 @@ chezmoi add --encrypt path/to/sensitive_file  # To encrypt
 .chezmoiscripts/        # Setup and configuration scripts
 .chezmoitemplates/      # Reusable template includes
 private_dot_config/     # XDG config directory contents
+├── hypr/               # Hyprland compositor configuration
+├── waybar/             # Waybar status bar configuration
+├── wofi/               # Wofi launcher configuration
+├── shell/              # Common shell configuration
+├── zsh/                # Zsh-specific configuration
+└── scripts/            # Standalone utility scripts
 private_dot_keys/       # Encrypted keys and secrets (🔐 NEVER access)
 private_dot_ssh/        # SSH configuration and encrypted keys
 ```
@@ -56,11 +64,61 @@ private_dot_ssh/        # SSH configuration and encrypted keys
 
 ```
 .chezmoidata/
-├── packages.yaml      # Arch native + Flatpak package management
+├── packages.yaml      # Package management (arch native + flatpak + archinstall baseline)
+│   ├── archinstall_baseline  # Documented baseline (NOT managed by chezmoi)
+│   ├── install.arch          # Managed Arch packages
+│   ├── flatpak               # Managed Flatpak apps
+│   └── delete                # Packages to remove
 ├── ai.yaml           # AI models configuration
 ├── extensions.yaml   # VSCode extensions list
 ├── colors.yaml       # Color scheme definitions (oksolar)
 └── globals.yaml      # Global environment variables (XDG paths)
+```
+
+**Important Notes:**
+- `archinstall_baseline`: Documents packages from initial archinstall setup (review for overlap detection only)
+- `install.arch` / `flatpak`: Actively managed by chezmoi run_onchange scripts
+- Changes to managed sections automatically trigger package installation/removal
+
+### Desktop Environment Configuration
+
+**Hyprland** (`private_dot_config/hypr/`):
+- **Main entry**: `hyprland.conf` - Sources all modular configs
+- **Modular structure** (9 configuration files):
+  - `conf/monitor.conf` - Display settings (resolution, scaling, position)
+  - `conf/environment.conf` - Environment variables (NVIDIA, Qt/GTK, XDG)
+  - `conf/input.conf` - Keyboard, mouse, touchpad configuration
+  - `conf/general.conf` - Layout, gaps, borders, colors
+  - `conf/decoration.conf` - Visual effects (blur, shadows, rounding)
+  - `conf/animations.conf` - Animation curves and timing
+  - `conf/bindings.conf.tmpl` - Keybindings (uses templates for terminal: ghostty)
+  - `conf/windowrules.conf` - Per-application window behavior
+  - `conf/autostart.conf` - Startup applications (waybar, dunst, nextcloud)
+- **Templates**: Only `bindings.conf.tmpl` uses chezmoi templates
+- **Reload**: `Super+Shift+R` or `hyprctl reload`
+
+**Waybar** (`private_dot_config/waybar/`):
+- **config.tmpl** - Status bar modules (15 modules: workspaces, clock, CPU, memory, temp, network, audio, tray)
+  - Uses oksolar color templates: `{{ .colors.oksolar.* }}`
+  - JSON5 format (JSON with comments)
+- **style.css.tmpl** - CSS styling with oksolar theme integration
+- **Reload**: `killall -SIGUSR2 waybar`
+
+**Wofi** (`private_dot_config/wofi/`):
+- **config** - Application launcher settings (static, no templates)
+- **style.css.tmpl** - CSS styling with oksolar theming
+- **Launch**: `Super+D` (configured in Hyprland bindings)
+
+**Testing Desktop Configs:**
+```bash
+# Preview Waybar config
+chezmoi cat ~/.config/waybar/config
+
+# Validate Hyprland bindings template
+chezmoi execute-template < private_dot_config/hypr/conf/bindings.conf.tmpl
+
+# Test Hyprland reload
+hyprctl reload
 ```
 
 ### Environment Variables
@@ -565,6 +623,19 @@ chezmoi diff && chezmoi apply --dry-run       # Preview changes
 1. Remove from `packages.yaml` (arch or flatpak section)
 2. Run: `chezmoi apply`
 3. Result: Automatically removed by cleanup logic (no manual uninstall needed)
+
+**Desktop Environment Configs**:
+
+1. **Hyprland**: Edit modular conf files in `private_dot_config/hypr/conf/`
+   - Most files are static (no templates)
+   - Only `bindings.conf.tmpl` uses templates (for terminal variable)
+   - Test: `hyprctl reload` or `Super+Shift+R`
+2. **Waybar**: Edit `config.tmpl` or `style.css.tmpl`
+   - Uses `{{ .colors.oksolar.* }}` template variables
+   - Preview: `chezmoi cat ~/.config/waybar/config`
+   - Reload: `killall -SIGUSR2 waybar`
+3. **Wofi**: Edit `config` (static) or `style.css.tmpl` (themed)
+   - Launch: `Super+D`
 
 **New Config**: Use templates in `private_dot_config/` with template variables
 **Mixed State/Settings**: Use `chezmoi_modify_manager` pattern (see section above)
