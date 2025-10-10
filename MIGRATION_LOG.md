@@ -138,6 +138,48 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Total of 2,418 lines of configuration across 15 files
 - Ready for deployment on fresh Arch + Hyprland installation
 
+### Phase 5: Migrate to ghostty and neovim ✅
+**Commit**: (pending) - "Migrate terminal and editor to ghostty and neovim"
+
+**Changes Made**:
+- **Package Management** (`.chezmoidata/packages.yaml`):
+  - Added `neovim` to `terminal_essentials.list` (line 81)
+  - Extended `delete.arch` section to remove redundant baseline packages:
+    - `htop` - Redundant with btop/glances in terminal_utils
+    - `vim` - Replaced by neovim
+    - **Note**: Kept `kitty` from archinstall baseline as backup terminal
+- **Hyprland Keybindings** (`private_dot_config/hypr/conf/bindings.conf.tmpl:32`):
+  - Changed terminal launcher from `kitty` to `ghostty`
+  - Super+Return now launches ghostty as primary terminal
+- **Wofi Integration** (`private_dot_config/wofi/config:115`):
+  - Updated `term=ghostty` for terminal applications launched from wofi
+  - Updated comment reference from `vim, htop` to `nvim, btop`
+- **Waybar Documentation** (`private_dot_config/waybar/config.tmpl`):
+  - Line 203: Updated commented example `"on-click": "kitty htop"` → `"on-click": "ghostty btop"`
+  - Line 220: Updated commented example `"on-click": "kitty htop"` → `"on-click": "ghostty btop"`
+- **Environment Variables** (`private_dot_config/shell/login:6-7`):
+  - Changed `EDITOR=nano` → `EDITOR=nvim`
+  - Changed `VISUAL=code` → `VISUAL=nvim`
+
+**Terminal Architecture**:
+- **Primary**: ghostty (managed by chezmoi, launched via Super+Return)
+- **Backup**: kitty (from archinstall baseline, available via wofi launcher)
+- **Rationale**: Dual-terminal approach provides safety net during initial Hyprland setup
+
+**Rationale**:
+- **ghostty**: Modern GPU-accelerated terminal with better Wayland support
+- **neovim**: Modern vim replacement with LSP support and active development
+- **htop removal**: Redundant with btop (better UI), nvitop (GPU monitoring), and glances (comprehensive monitoring)
+- **vim removal**: Replaced by neovim while maintaining vim-compatible workflow
+- **kitty preservation**: Minimal overhead (~5-10MB) provides emergency fallback terminal
+
+**Impact**:
+- System-wide editor preference set to neovim for git, system tools, and CLI applications
+- Primary terminal switched to ghostty across all Hyprland integrations
+- Consistent tool references across waybar, wofi, and keybindings
+- Cleanup of redundant monitoring tools (htop) and editors (vim)
+- Backup terminal (kitty) available via `Super+D` → type "kitty" if ghostty issues occur
+
 ---
 
 ## Next Steps
@@ -146,11 +188,15 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Compare baseline with actual installed packages using `pacman -Qe`
 - Review for additional overlaps with `packages.install.arch` packages
 - Validate CPU microcode package matches hardware (`intel-ucode` vs `amd-ucode`)
+- Verify ghostty and neovim installation via `run_onchange_before_install_arch_packages.sh.tmpl`
+- Confirm htop and vim removal via deletion script
 
 ### Hyprland Configuration Testing
 - Test configuration on actual Hyprland installation
 - Validate NVIDIA-specific environment variables on target hardware
 - Verify all keybindings work as expected
+- Test ghostty terminal launcher (Super+Return)
+- Verify wofi launches terminal apps in ghostty
 - Consider creating additional window rules for specific applications
 - May need to adjust monitor configuration based on actual hardware
 

@@ -110,9 +110,9 @@ no_actions=true
 # Terminal Integration
 # ----------------------------------------------------------------------------
 # Term: Terminal emulator for launching terminal applications
-# Used when launching apps that require a terminal (like vim, htop)
+# Used when launching apps that require a terminal (like nvim, btop)
 # Must be an installed terminal emulator command
-term=kitty
+term=ghostty
 
 # ============================================================================
 # Additional Options (uncomment to use)

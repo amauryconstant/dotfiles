@@ -8,7 +8,10 @@ packages:
       - base-devel              # Development tools (make, gcc, etc.)
       - linux-firmware          # Hardware firmware files
       - linux                   # Linux kernel (or linux-lts/linux-zen/linux-hardened)
-      - intel-ucode            # Intel CPU microcode (or amd-ucode for AMD)
+      - systemd-boot            # UEFI boot manager
+      - efibootmgr              # EFI boot entry management
+      - sudo                    # Privilege escalation
+      - cryptsetup              # LUKS disk encryption utilities
 
     hyprland_desktop:
       - hyprland                # Wayland compositor
@@ -23,6 +26,16 @@ packages:
       - polkit-kde-agent        # Polkit authentication agent
       - grim                    # Screenshot utility
       - slurp                   # Screen area selection
+      - htop                    # Process viewer
+      - iwd                     # Wireless daemon
+      - nano                    # Text editor (archinstall default)
+      - smartmontools           # Disk health monitoring
+      - vim                     # Vi-improved text editor
+      - wget                    # File download utility
+      - wireless_tools          # Wireless network configuration
+      - wpa_supplicant          # WPA/WPA2 authentication
+      - xdg-utils               # Desktop integration utilities
+      - openssh                 # SSH client and server
 
     audio_pipewire:
       - pipewire                # Modern audio system
@@ -36,17 +49,15 @@ packages:
     network:
       - networkmanager          # Network configuration daemon
 
-    bootloader_and_encryption:
-      # systemd-boot (part of systemd package, no additional install needed)
-      - cryptsetup              # LUKS disk encryption utilities
-      # Note: mkinitcpio hooks configured for LUKS (encrypt hook)
-
     graphics_drivers:
-      - nvidia-open             # Open-source NVIDIA kernel modules
-      - nvidia-utils            # NVIDIA userspace utilities
-      - nvidia-settings         # NVIDIA configuration GUI
-      - lib32-nvidia-utils      # 32-bit NVIDIA support for gaming
-      - nvidia-hook             # Automatic initramfs rebuild on driver updates
+      - dkms                    # Dynamic Kernel Module Support
+      - libva-nvidia-drivers    # VA-API hardware acceleration for NVIDIA
+      - nvidia-open-dkms        # NVIDIA open-source kernel modules (DKMS)
+      - xorg-server             # X.Org display server (for XWayland)
+      - xorg-xinit              # X.Org initialization
+
+    greeter:
+      - sddm                    # Simple Desktop Display Manager
 
   install:
     arch:
@@ -67,6 +78,7 @@ packages:
           strategy: *_install_from_source
           list:
             - ghostty
+            - neovim
             - starship
             - zsh
             - zsh-antidote
@@ -185,4 +197,7 @@ packages:
         - org.qbittorrent.qBittorrent
 
   delete:
-    arch: tldr
+    arch:
+      - tldr
+      - htop    # Redundant with btop/glances
+      - vim     # Replaced by neovim
