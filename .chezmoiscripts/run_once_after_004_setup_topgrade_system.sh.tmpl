@@ -92,15 +92,15 @@ fi
 
 {{ includeTemplate "log_step" "Deploying system configuration to /etc/topgrade/..." }}
 sudo mkdir -p /etc/topgrade
-chezmoi execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade-system.toml.tmpl" | sudo tee /etc/topgrade/topgrade.toml > /dev/null
+"{{ .chezmoi.executable }}" execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade-system.toml.tmpl" | sudo tee /etc/topgrade/topgrade.toml > /dev/null
 sudo chown topgrade-maintenance:topgrade-maintenance /etc/topgrade/topgrade.toml
 sudo chmod 644 /etc/topgrade/topgrade.toml
 {{ includeTemplate "log_success" "System configuration deployed" }}
 
 # Process and install systemd service files to system location
 {{ includeTemplate "log_step" "Installing systemd service files..." }}
-chezmoi execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.service.tmpl" | sudo tee /etc/systemd/system/topgrade.service > /dev/null
-chezmoi execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.timer.tmpl" | sudo tee /etc/systemd/system/topgrade.timer > /dev/null
+"{{ .chezmoi.executable }}" execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.service.tmpl" | sudo tee /etc/systemd/system/topgrade.service > /dev/null
+"{{ .chezmoi.executable }}" execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade.timer.tmpl" | sudo tee /etc/systemd/system/topgrade.timer > /dev/null
 {{ includeTemplate "log_success" "Service files installed" }}
 
 # Reload systemd daemon to pick up new service files
