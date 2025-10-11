@@ -38,6 +38,10 @@ bind = $mod, D, exec, wofi --show drun
 # File manager: Super + E
 bind = $mod, E, exec, dolphin
 
+# Clipboard history: Super + C
+# Shows clipboard history via wofi, select to copy back to clipboard
+bind = $mod, C, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy
+
 # ============================================================================
 # Window Management
 # ============================================================================
@@ -182,9 +186,9 @@ bind = , XF86AudioMute, exec, pamixer -t           # Toggle mute
 # bind = , XF86AudioLowerVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ -5%
 # bind = , XF86AudioMute, exec, pactl set-sink-mute @DEFAULT_SINK@ toggle
 
-# Brightness control (uncomment if needed):
-# bind = , XF86MonBrightnessUp, exec, brightnessctl set +10%
-# bind = , XF86MonBrightnessDown, exec, brightnessctl set 10%-
+# Brightness control (laptop)
+bind = , XF86MonBrightnessUp, exec, brightnessctl set +10%
+bind = , XF86MonBrightnessDown, exec, brightnessctl set 10%-
 
 # Media playback (uncomment if needed):
 # bind = , XF86AudioPlay, exec, playerctl play-pause
@@ -225,11 +229,11 @@ bind = , XF86AudioMute, exec, pamixer -t           # Toggle mute
 # Reload Hyprland configuration:
 # bind = $mod SHIFT, R, exec, hyprctl reload
 
-# Lock screen (requires swaylock or similar):
-# bind = $mod, L, exec, swaylock
+# Lock screen: Super + L
+bind = $mod, L, exec, hyprlock
 
-# Power menu (requires custom script or wlogout):
-# bind = $mod SHIFT, E, exec, wlogout
+# Power menu: Super + Shift + E
+bind = $mod SHIFT, E, exec, wlogout
 
 # Toggle waybar:
 # bind = $mod, B, exec, killall -SIGUSR1 waybar

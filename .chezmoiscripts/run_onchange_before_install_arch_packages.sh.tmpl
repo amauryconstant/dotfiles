@@ -58,9 +58,9 @@ DESIRED_PACKAGES="${DESIRED_PACKAGES} {{ . }}"
 {{- if .packages.delete.arch }}
 {{ includeTemplate "log_step" "Removing conflicting packages..." }}
 if command -v yay >/dev/null 2>&1; then
-    yay -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
+    yay -R --noconfirm {{ join " " .packages.delete.arch }} 2>/dev/null || true
 else
-    sudo pacman -R --noconfirm {{ .packages.delete.arch }} 2>/dev/null || true
+    sudo pacman -R --noconfirm {{ join " " .packages.delete.arch }} 2>/dev/null || true
 fi
 {{- end }}
 

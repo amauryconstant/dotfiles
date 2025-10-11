@@ -185,6 +185,13 @@ packages:
           strategy: *_install_binary
           list:
             - waybar             # Status bar for Hyprland
+            - hyprlock           # Official Hyprland screen locker
+            - hypridle           # Official Hyprland idle management daemon
+            - cliphist           # Clipboard history manager
+            - wlogout            # Power menu for logout/shutdown/reboot
+            - wl-clipboard       # Wayland clipboard utilities
+            - pamixer            # PulseAudio/PipeWire volume control
+            - brightnessctl      # Backlight brightness control
 
   flatpak:
     packages:
