@@ -63,6 +63,22 @@ private_dot_ssh/        # SSH configuration and encrypted keys
 └── globals.yaml      # Global environment variables (XDG paths)
 ```
 
+### Environment Variables
+
+**XDG Base Directory variables are set in shell startup files, NOT via PAM:**
+
+- **Location**: `private_dot_config/shell/login` (sourced by all shells)
+- **Variables**: `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`
+- **Runtime directory**: `XDG_RUNTIME_DIR` is managed by `pam_systemd.so` automatically
+
+**Important**: This repository previously used `/etc/security/pam_env.conf` to set XDG variables at the PAM level, but this caused conflicts with systemd session management and Wayland compositors. XDG variables are now set in shell startup files with proper fallback values, allowing `pam_systemd.so` to manage `XDG_RUNTIME_DIR` without interference.
+
+**Rationale**:
+- Shell-based approach is portable and follows Arch Linux best practices
+- Avoids PAM conflicts with graphical session startup (SDDM/Hyprland)
+- Fallback values (`${VAR:-default}`) ensure robustness
+- `XDG_RUNTIME_DIR` requires special handling by systemd - don't override it
+
 ## Template System Reference
 
 ### Quick Command Reference
