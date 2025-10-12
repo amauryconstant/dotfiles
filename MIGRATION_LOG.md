@@ -272,8 +272,8 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Improved onboarding experience for developers working with the dotfiles
 - Documentation now matches actual implemented architecture
 
-### Phase 8: Correct Migration Log Documentation ✅
-**Commit**: `(pending)` - "Update MIGRATION_LOG.md with correct commit hashes"
+### Phase 8: Enhance Hyprland Desktop with Notifications and Keybinds ✅
+**Commit**: `5db9a51` - "Enhance Hyprland desktop with dunst notifications, wallpaper management, and keybinds system"
 
 **Changes Made**:
 - **Commit Hash Verification**: Corrected all commit hashes in migration history to match actual git repository:
@@ -299,6 +299,77 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Maintains historical accuracy for development team
 - Enables reliable git operations (checkout, bisect, revert) based on documented commits
 - Complete coverage of migration history from Phase 1 through Phase 8
+
+### Phase 9: Configure NetworkManager with iwd Backend ✅
+**Commit**: `(pending)` - "Configure NetworkManager with iwd backend for WiFi management"
+
+**Changes Made**:
+- **Package Management** (`.chezmoidata/packages.yaml`):
+  - Added `networkmanager` to `networking_tools.list` (line 144)
+  - Added `gnome-keyring` to `general_software.list` (line 151) for WiFi password storage
+  - Updated archinstall_baseline documentation:
+    - `iwd` - Clarified as "Wireless daemon (used as NetworkManager backend)" (line 30)
+    - `wpa_supplicant` - Marked as "WPA/WPA2 authentication (replaced by iwd)" (line 36)
+  - Code cleanup: Removed trailing whitespace from `posting` entry (line 134)
+  - Removed obsolete `tldr` from delete.arch section (now using `tlrc`)
+
+- **New Configuration Script** (`.chezmoiscripts/run_once_after_008_configure_networkmanager.sh.tmpl`):
+  - 61 lines implementing comprehensive NetworkManager + iwd backend setup
+  - **NetworkManager Configuration**:
+    - Enables NetworkManager service for boot startup
+    - Creates `/etc/NetworkManager/conf.d/wifi_backend.conf` with `wifi.backend=iwd`
+  - **iwd Backend Setup**:
+    - Enables and starts iwd service (required for NetworkManager WiFi backend)
+    - Disables wpa_supplicant to prevent conflicts with iwd
+  - **Service Management**:
+    - Restarts NetworkManager to apply backend configuration
+    - Verifies NetworkManager is running successfully
+  - **Error Handling**: Checks service status with graceful error messages
+
+- **Hyprland Configuration Updates**:
+  - `autostart.conf` - Added gnome-keyring daemon initialization (4 lines, line 43-46):
+    - Launches with all components: `gpg,pkcs11,secrets,ssh`
+    - Required for nmtui and NetworkManager to store/retrieve network credentials
+    - Enables GUI privilege escalation for system settings (polkit integration)
+  - `autostart.conf` - Removed commented `nm-applet` suggestion (line 56)
+    - TUI approach preferred over system tray icon for network management
+
+- **Waybar Status Bar Updates** (`config.tmpl`):
+  - Added click handler for network module (line 287):
+    - `"on-click": "ghostty --class=network-manager -e nmtui"`
+    - Opens NetworkManager TUI in dedicated ghostty window on network icon click
+    - Provides quick GUI access to WiFi connections, VPN, and network settings
+
+**Architecture Overview**:
+```
+NetworkManager (network configuration daemon)
+    ├─→ iwd backend (modern WiFi management)
+    │   ├─→ Replaces wpa_supplicant
+    │   └─→ Better performance and Wayland support
+    ├─→ gnome-keyring (credential storage)
+    │   ├─→ Stores WiFi passwords securely
+    │   ├─→ SSH key management
+    │   └─→ GPG key caching
+    └─→ nmtui (TUI interface)
+        └─→ Accessible via Waybar click (ghostty terminal)
+```
+
+**Rationale**:
+- **NetworkManager + iwd**: Modern WiFi stack with better performance than wpa_supplicant
+- **iwd Advantages**: Lower resource usage, better Wayland integration, faster connections
+- **gnome-keyring**: Essential for secure WiFi password storage (nmtui dependency)
+- **TUI over GUI**: `nmtui` provides full functionality without system tray clutter
+- **Waybar Integration**: One-click access to network management from status bar
+- **Clean Architecture**: Replaces archinstall's wpa_supplicant with modern iwd backend
+
+**Impact**:
+- System now has complete network management stack configured
+- WiFi credentials stored securely via gnome-keyring integration
+- NetworkManager accessible via waybar network icon click (spawns nmtui in ghostty)
+- iwd backend provides modern WiFi management (replaces wpa_supplicant)
+- Automatic service startup on boot (NetworkManager + iwd + gnome-keyring)
+- Enhanced Wayland compatibility and performance over wpa_supplicant
+- Total configuration: 61 lines of service configuration + 4 lines of autostart + 1 line waybar integration
 
 ---
 

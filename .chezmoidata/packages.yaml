@@ -27,13 +27,13 @@ packages:
       - grim                    # Screenshot utility
       - slurp                   # Screen area selection
       - htop                    # Process viewer
-      - iwd                     # Wireless daemon
+      - iwd                     # Wireless daemon (used as NetworkManager backend)
       - nano                    # Text editor (archinstall default)
       - smartmontools           # Disk health monitoring
       - vim                     # Vi-improved text editor
       - wget                    # File download utility
       - wireless_tools          # Wireless network configuration
-      - wpa_supplicant          # WPA/WPA2 authentication
+      - wpa_supplicant          # WPA/WPA2 authentication (replaced by iwd)
       - xdg-utils               # Desktop integration utilities
       - openssh                 # SSH client and server
 
@@ -131,7 +131,7 @@ packages:
             - jujutsu
             - lazygit
             - lazydocker
-            - posting 
+            - posting
 
         system_software:
           list:
@@ -141,12 +141,14 @@ packages:
           strategy: *_install_binary
           list:
             - tailscale
+            - networkmanager        # Network configuration daemon
 
         general_software:
           strategy: *_install_binary
           list:
             - firefox
             - nextcloud-client
+            - gnome-keyring # WiFi password storage
 
         work_software:
           strategy: *_install_binary
@@ -208,6 +210,5 @@ packages:
 
   delete:
     arch:
-      - tldr
-      - htop    # Redundant with btop/glances
-      - vim     # Replaced by neovim
+      - htop                    # Redundant with btop/glances
+      - vim                     # Replaced by neovim

@@ -1,0 +1,61 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_008_configure_networkmanager.sh.tmpl
+# Purpose: Configure NetworkManager with iwd backend for WiFi management
+# Requirements: Arch Linux, NetworkManager, iwd packages
+
+{{ includeTemplate "log_start" "Configure NetworkManager with iwd backend" }}
+
+# Set strict error handling
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Enable NetworkManager service" }}
+
+# Enable NetworkManager to start at boot
+sudo systemctl enable NetworkManager
+
+{{ includeTemplate "log_step" "Configure iwd as NetworkManager WiFi backend" }}
+
+# Create NetworkManager configuration directory if needed
+sudo mkdir -p /etc/NetworkManager/conf.d
+
+# Configure NetworkManager to use iwd instead of wpa_supplicant
+sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<EOF
+[device]
+wifi.backend=iwd
+EOF
+
+{{ includeTemplate "log_step" "Enable and start iwd service" }}
+
+# Enable iwd to start at boot (required for NetworkManager backend)
+sudo systemctl enable iwd
+
+# Start iwd immediately
+sudo systemctl start iwd
+
+{{ includeTemplate "log_step" "Disable wpa_supplicant to prevent conflicts" }}
+
+# Stop and disable wpa_supplicant (conflicts with iwd)
+if systemctl is-active wpa_supplicant 2>/dev/null; then
+    sudo systemctl stop wpa_supplicant
+fi
+if systemctl is-enabled wpa_supplicant 2>/dev/null; then
+    sudo systemctl disable wpa_supplicant
+fi
+
+{{ includeTemplate "log_step" "Restart NetworkManager to apply backend change" }}
+
+# Restart NetworkManager to pick up iwd backend configuration
+sudo systemctl restart NetworkManager
+
+{{ includeTemplate "log_step" "Verify NetworkManager status" }}
+
+# Check if NetworkManager is running
+if systemctl is-active NetworkManager >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "NetworkManager service is running with iwd backend" }}
+else
+    {{ includeTemplate "log_error" "NetworkManager service failed to start" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "NetworkManager configured successfully with iwd backend" }}
