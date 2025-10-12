@@ -1,0 +1,307 @@
+# ============================================================================
+# Dunst Notification Daemon Configuration
+# ============================================================================
+# Lightweight notification daemon with oksolar color scheme integration.
+# Documentation: https://dunst-project.org/documentation/
+#
+# This configuration matches the oksolar theming used in waybar, wofi, and
+# other desktop components for visual consistency.
+#
+# To reload configuration: killall dunst (dunst will restart automatically)
+# Test notification: notify-send "Test" "This is a test notification"
+# ============================================================================
+
+[global]
+    # ========================================================================
+    # Display Settings
+    # ========================================================================
+
+    # Monitor to display notifications on
+    # 0 = primary monitor, -1 = focused monitor
+    monitor = 0
+
+    # Follow focus: Which monitor to show notifications on
+    # Options: none, mouse, keyboard
+    follow = mouse
+
+    # Geometry: [width]x[height]+[x offset]+[y offset]
+    # Width: notification width (0 = full screen width)
+    # Height: max notification height (0 = no limit)
+    width = (300, 400)
+    height = 300
+
+    # Origin: Which corner notifications appear from
+    # Options: top-left, top-center, top-right, bottom-left, bottom-center, bottom-right
+    origin = top-right
+
+    # Offset: Distance from screen edge in pixels
+    offset = 10x50
+
+    # Scale: HiDPI scaling factor (0 = auto-detect)
+    scale = 0
+
+    # Notification limit: Max number of notifications to show at once
+    notification_limit = 5
+
+    # ========================================================================
+    # Progress Bar (for volume, brightness, etc.)
+    # ========================================================================
+
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+
+    # ========================================================================
+    # Notification Behavior
+    # ========================================================================
+
+    # Indicate hidden notifications
+    indicate_hidden = yes
+
+    # Transparency: 0 (opaque) to 100 (transparent)
+    transparency = 10
+
+    # Separator: Line between notifications
+    # Options: auto, foreground, frame, none
+    separator_height = 2
+    separator_color = frame
+
+    # Padding: Space inside notification
+    padding = 12
+    horizontal_padding = 12
+
+    # Text icon padding
+    text_icon_padding = 10
+
+    # Frame: Border around notifications
+    frame_width = 2
+
+    # Gap: Space between notifications
+    gap_size = 5
+
+    # Sorting: Order notifications by urgency
+    sort = yes
+
+    # Idle threshold: Hide notifications if user is idle (seconds, 0 = disabled)
+    idle_threshold = 120
+
+    # ========================================================================
+    # Text Formatting
+    # ========================================================================
+
+    # Font: Uses Fira Sans to match other oksolar components
+    font = Fira Sans 11
+
+    # Line height: Space between lines (0 = font height)
+    line_height = 0
+
+    # Markup: Enable pango markup in notifications
+    # Options: full, strip, no
+    markup = full
+
+    # Format: Notification text format
+    # %a = app name, %s = summary, %b = body, %i = icon, %I = icon with path
+    # %p = progress value (if set), %n = progress value without % sign
+    # %% = literal %
+    format = "<b>%s</b>\n%b"
+
+    # Alignment: Text alignment within notification
+    # Options: left, center, right
+    alignment = left
+
+    # Vertical alignment: Options: top, center, bottom
+    vertical_alignment = center
+
+    # Show age: Display time since notification
+    show_age_threshold = 60
+
+    # Ellipsize: Where to truncate long text
+    # Options: start, middle, end
+    ellipsize = middle
+
+    # Ignore newlines: Treat \n as space
+    ignore_newline = no
+
+    # Stack duplicates: Group identical notifications
+    stack_duplicates = true
+    hide_duplicate_count = false
+
+    # Show indicators: Show icons for actions/URLs
+    show_indicators = yes
+
+    # ========================================================================
+    # Icons
+    # ========================================================================
+
+    # Enable icons in notifications
+    enable_recursive_icon_lookup = true
+    icon_theme = Adwaita
+    icon_position = left
+
+    # Icon size limits (0 = no limit)
+    min_icon_size = 32
+    max_icon_size = 64
+
+    # Icon path: Additional icon search paths (colon-separated)
+    # icon_path = /usr/share/icons/gnome/16x16/status/:/usr/share/icons/gnome/16x16/devices/
+
+    # ========================================================================
+    # History
+    # ========================================================================
+
+    # Sticky: Notifications stay until dismissed
+    sticky_history = yes
+
+    # History length: Max notifications to keep in history
+    history_length = 50
+
+    # ========================================================================
+    # Advanced
+    # ========================================================================
+
+    # dmenu path: For action menu
+    dmenu = /usr/bin/wofi --dmenu
+
+    # Browser: For opening URLs
+    browser = /usr/bin/firefox --new-tab
+
+    # Always run script: Run scripts even if notification is suppressed
+    always_run_script = true
+
+    # Title: Window title for notification windows
+    title = Dunst
+
+    # Class: Window class for notification windows
+    class = Dunst
+
+    # Corner radius: Rounded corners (0 = square)
+    corner_radius = 10
+
+    # Ignore D-Bus closeNotification: Prevent apps from closing notifications
+    ignore_dbusclose = false
+
+    # ========================================================================
+    # Mouse Actions
+    # ========================================================================
+
+    # Mouse button actions
+    # Options: none, do_action, open_url, close_current, close_all, context, context_all
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+# ============================================================================
+# Urgency-Based Styling (oksolar color scheme)
+# ============================================================================
+# Notifications have three urgency levels: low, normal, critical
+# Each level has different colors, timeouts, and behaviors
+
+[urgency_low]
+    # Low priority: System info, completed tasks
+    # Colors: Oksolar base02 (dark) background, base0 (gray) text
+    background = "#{{ .colors.oksolar.base02 }}"
+    foreground = "#{{ .colors.oksolar.base0 }}"
+    frame_color = "#{{ .colors.oksolar.cyan }}"
+    timeout = 5
+    # icon = /path/to/icon
+
+[urgency_normal]
+    # Normal priority: Most notifications (messages, updates, etc.)
+    # Colors: Oksolar base03 (darker) background, base3 (light) text
+    background = "#{{ .colors.oksolar.base03 }}"
+    foreground = "#{{ .colors.oksolar.base3 }}"
+    frame_color = "#{{ .colors.oksolar.blue }}"
+    timeout = 10
+    # icon = /path/to/icon
+
+[urgency_critical]
+    # Critical priority: Errors, alerts, important warnings
+    # Colors: Oksolar red for high visibility and urgency
+    background = "#{{ .colors.oksolar.red }}"
+    foreground = "#{{ .colors.oksolar.base3 }}"
+    frame_color = "#{{ .colors.oksolar.orange }}"
+    timeout = 0  # Never timeout (require manual dismissal)
+    # icon = /path/to/icon
+
+# ============================================================================
+# Application-Specific Rules
+# ============================================================================
+# Override settings for specific applications
+# Match by: appname, summary, body, icon, category, msg_urgency, stack_tag
+#
+# Available overrides: timeout, urgency, skip_display, history_ignore,
+#                     action_name, word_wrap, ellipsize, alignment,
+#                     hide_text, set_stack_tag, set_transient, set_category,
+#                     background, foreground, frame_color, format, new_icon
+
+# Volume/Brightness notifications (transient, no history)
+[volume]
+    appname = "pamixer"
+    history_ignore = yes
+    timeout = 2
+
+[brightness]
+    appname = "brightnessctl"
+    history_ignore = yes
+    timeout = 2
+
+# Media player notifications (longer timeout, show in history)
+[spotify]
+    appname = "Spotify"
+    timeout = 5
+    urgency = low
+
+[playerctl]
+    appname = "playerctl"
+    timeout = 3
+    urgency = low
+
+# System notifications (important)
+[system]
+    appname = "systemd"
+    urgency = normal
+    timeout = 10
+
+# Network manager notifications
+[networkmanager]
+    appname = "NetworkManager"
+    urgency = low
+    timeout = 5
+
+# Screenshot notifications (quick dismiss)
+[screenshot]
+    summary = "*screenshot*"
+    timeout = 3
+    urgency = low
+
+# Battery warnings (critical priority)
+[battery-low]
+    summary = "*battery*"
+    urgency = critical
+
+# ============================================================================
+# Testing & Troubleshooting
+# ============================================================================
+# Test notifications with different urgency levels:
+#
+# Low:      notify-send -u low "Low Priority" "This is a low priority message"
+# Normal:   notify-send "Normal Priority" "This is a normal message"
+# Critical: notify-send -u critical "Critical!" "This requires attention"
+#
+# Test with icon:
+# notify-send -i dialog-information "With Icon" "This has an icon"
+#
+# Test progress bar:
+# notify-send "Progress" -h int:value:50
+#
+# View current notifications:
+# dunstctl history
+#
+# Close all notifications:
+# dunstctl close-all
+#
+# Reload configuration:
+# killall dunst (dunst auto-restarts)
+# ============================================================================

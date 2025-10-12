@@ -190,11 +190,12 @@ bind = , XF86AudioMute, exec, pamixer -t           # Toggle mute
 bind = , XF86MonBrightnessUp, exec, brightnessctl set +10%
 bind = , XF86MonBrightnessDown, exec, brightnessctl set 10%-
 
-# Media playback (uncomment if needed):
-# bind = , XF86AudioPlay, exec, playerctl play-pause
-# bind = , XF86AudioPause, exec, playerctl pause
-# bind = , XF86AudioNext, exec, playerctl next
-# bind = , XF86AudioPrev, exec, playerctl previous
+# Media playback control using playerctl
+# Controls any MPRIS-compatible media player (Spotify, Firefox, mpv, etc.)
+bind = , XF86AudioPlay, exec, playerctl play-pause
+bind = , XF86AudioPause, exec, playerctl pause
+bind = , XF86AudioNext, exec, playerctl next
+bind = , XF86AudioPrev, exec, playerctl previous
 
 # ============================================================================
 # Window Resizing (Resize Mode)
@@ -216,10 +217,11 @@ bind = , XF86MonBrightnessDown, exec, brightnessctl set 10%-
 # ============================================================================
 # Special Workspace (Scratchpad)
 # ============================================================================
-# Uncomment for scratchpad functionality (like i3)
-#
-# bind = $mod, S, togglespecialworkspace, magic     # Toggle scratchpad
-# bind = $mod SHIFT, S, movetoworkspace, special:magic  # Move to scratchpad
+# Scratchpad: Hidden workspace for quick-access applications
+# Useful for terminal, calculator, notes, system monitor, etc.
+# Super+S toggles visibility, Super+Shift+S moves windows to scratchpad
+bind = $mod, S, togglespecialworkspace, magic     # Toggle scratchpad
+bind = $mod SHIFT, S, movetoworkspace, special:magic  # Move to scratchpad
 # ============================================================================
 
 # ============================================================================
@@ -234,6 +236,10 @@ bind = $mod, L, exec, hyprlock
 
 # Power menu: Super + Shift + E
 bind = $mod SHIFT, E, exec, wlogout
+
+# Keybinding cheatsheet: Super + /
+# Displays all active keybindings dynamically from hyprctl
+bind = $mod, slash, exec, ~/.config/scripts/keybinds_cheatsheet.sh
 
 # Toggle waybar:
 # bind = $mod, B, exec, killall -SIGUSR1 waybar

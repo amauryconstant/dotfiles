@@ -11,7 +11,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 ## Migration History
 
 ### Phase 1: Remove Distribution Dependencies ✅
-**Commit**: `209c9c8` - "Remove the dependency to endeavouros"
+**Commit**: `7554849` - "Remove the dependency to endeavouros"
 
 **Changes Made**:
 - Removed `.chezmoiscripts/run_once_before_004_install_distributions_and_os_specifics.sh.tmpl`
@@ -32,7 +32,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Clean sequential script numbering maintained (001-006)
 
 ### Phase 2: Archive KDE Configuration ✅
-**Commit**: `3a1e1a8` - "Archive KDE configuration files"
+**Commit**: `4900f68` - "Archive KDE configuration files"
 
 **Changes Made**:
 - Created `archives/` directory structure with documentation
@@ -55,7 +55,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 **Impact**: Repository no longer deploys KDE-specific configuration while preserving it for reference.
 
 ### Phase 3: Document archinstall Baseline Packages ✅
-**Commit**: `7396831` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
+**Commit**: `49b0155` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
 
 **Changes Made**:
 - Added `archinstall_baseline` section to `.chezmoidata/packages.yaml`
@@ -88,7 +88,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Future package additions can be checked against this baseline to avoid redundancy
 
 ### Phase 4: Implement Hyprland Desktop Environment ✅
-**Commit**: `13964e2` - "Add comprehensive Hyprland configuration with waybar"
+**Commit**: `59469b7` - "Add comprehensive Hyprland configuration with waybar"
 
 **Changes Made**:
 - Added `waybar` package to `packages.yaml` wayland_desktop section for status bar functionality
@@ -139,7 +139,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Ready for deployment on fresh Arch + Hyprland installation
 
 ### Phase 5: Migrate to ghostty and neovim ✅
-**Commit**: `1c8ea26` - "Migrate terminal and editor to ghostty and neovim"
+**Commit**: `da51860` - "Migrate terminal and editor to ghostty and neovim"
 
 **Changes Made**:
 - **Package Management** (`.chezmoidata/packages.yaml`):
@@ -181,7 +181,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Backup terminal (kitty) available via `Super+D` → type "kitty" if ghostty issues occur
 
 ### Phase 6: Add Critical Security and Usability Components ✅
-**Commit**: `(to be determined)` - "Add critical security and usability components for Hyprland deployment"
+**Commit**: `ba0b949` - "Add critical security and usability components for Hyprland deployment"
 
 **Changes Made**:
 - **Package Management** (`.chezmoidata/packages.yaml` wayland_desktop section):
@@ -242,6 +242,64 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Polkit authentication enables GUI privilege escalation for system settings
 - Total configuration growth: 244 lines across 4 new files + comprehensive analysis documentation
 
+### Phase 7: Add Comprehensive Hyprland Documentation ✅
+**Commit**: `7a595ab` - "Add comprehensive Hyprland desktop environment documentation"
+
+**Changes Made**:
+- **Documentation Expansion** (103 lines across 2 files):
+  - **CLAUDE.md**: Added 75 lines of detailed technical guidance for Hyprland development
+  - **README.md**: Enhanced with 36 lines of user-facing documentation updates
+- **Technical Guidance Added**:
+  - Specified Arch Linux with archinstall + Hyprland profile as target platform
+  - Documented complete desktop stack: Hyprland + Waybar + Wofi
+  - Clarified terminal architecture: Ghostty (primary) + Kitty (baseline fallback)
+  - Detailed modular Hyprland configuration structure (9 conf files)
+  - Documented package management with archinstall baseline tracking
+  - Added testing commands and reload procedures for desktop components
+  - Expanded directory structure documentation with config folder breakdown
+
+**Rationale**:
+- Provides comprehensive technical reference for Hyprland-based development
+- Establishes clear patterns for desktop environment configuration and maintenance
+- Documents architectural decisions and component relationships
+- Enables efficient development and troubleshooting of Hyprland setup
+- Creates single source of truth for desktop environment specifications
+
+**Impact**:
+- Development team now has detailed reference for Hyprland configuration patterns
+- Clear documentation of testing procedures and component interactions
+- Established patterns for future desktop environment enhancements
+- Improved onboarding experience for developers working with the dotfiles
+- Documentation now matches actual implemented architecture
+
+### Phase 8: Correct Migration Log Documentation ✅
+**Commit**: `(pending)` - "Update MIGRATION_LOG.md with correct commit hashes"
+
+**Changes Made**:
+- **Commit Hash Verification**: Corrected all commit hashes in migration history to match actual git repository:
+  - Phase 1: `209c9c8` → `7554849` - "Remove the dependency to endeavouros"
+  - Phase 2: `3a1e1a8` → `4900f68` - "Archive KDE configuration files"
+  - Phase 3: `7396831` → `49b0155` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
+  - Phase 4: `13964e2` → `59469b7` - "Add comprehensive Hyprland configuration with waybar"
+  - Phase 5: `1c8ea26` → `da51860` - "Migrate terminal and editor to ghostty and neovim"
+  - Phase 6: `(to be determined)` → `ba0b949` - "Add critical security and usability components for Hyprland deployment"
+- **Added Missing Phase**: Documented Phase 7 commit `7a595ab` for comprehensive Hyprland documentation
+- **Phase Renumbering**: Previous "Phase 7" renamed to "Phase 8" to accommodate missing documentation
+
+**Rationale**:
+- Ensures migration log accurately reflects actual git repository state
+- Maintains traceability for each migration phase with correct chronological order
+- Provides reliable reference for future development and troubleshooting
+- Corrects documentation drift that occurred during migration process
+- Preserves historical accuracy by documenting all significant commits
+
+**Impact**:
+- Migration log now accurately references all actual commits in repository
+- All phases properly documented with correct hash references and chronological order
+- Maintains historical accuracy for development team
+- Enables reliable git operations (checkout, bisect, revert) based on documented commits
+- Complete coverage of migration history from Phase 1 through Phase 8
+
 ---
 
 ## Next Steps
@@ -264,4 +322,4 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 
 ---
 
-**Last Updated**: 2025-10-11
+**Last Updated**: 2025-10-12

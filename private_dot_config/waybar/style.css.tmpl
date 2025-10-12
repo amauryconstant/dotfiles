@@ -318,31 +318,82 @@ window#waybar {
  * } */
 
 /* ========================================================================== */
+/* Laptop-Specific Module Styles (bluetooth, battery, backlight) */
+/* ========================================================================== */
+{{ if eq .chassisType "laptop" }}
+/* Bluetooth module */
+#bluetooth {
+  /* Default color: Oksolar cyan (represents connectivity) */
+  color: #{{ .colors.oksolar.cyan }};
+
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+}
+
+/* Bluetooth module: Disabled state */
+#bluetooth.disabled {
+  /* Color: Oksolar muted (base01) - dimmed to show inactive */
+  color: #{{ .colors.oksolar.base01 }};
+}
+
+/* Bluetooth module: Connected state */
+#bluetooth.connected {
+  /* Color: Oksolar violet (represents active connection) */
+  color: #{{ .colors.oksolar.violet }};
+}
+
+/* Battery module */
+#battery {
+  /* Default color: Oksolar green (good battery level) */
+  color: #{{ .colors.oksolar.green }};
+
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+}
+
+/* Battery module: Warning state (< 30%) */
+#battery.warning {
+  /* Color: Oksolar yellow (warning) */
+  color: #{{ .colors.oksolar.yellow }};
+}
+
+/* Battery module: Critical state (< 15%) */
+#battery.critical {
+  /* Color: Oksolar red (danger) */
+  color: #{{ .colors.oksolar.red }};
+
+  /* Font weight: Bold to draw attention */
+  font-weight: bold;
+
+  /* Optional: Add pulsing animation (uncomment to use) */
+  /* animation: pulse 2s ease-in-out infinite; */
+}
+
+/* Battery module: Charging state */
+#battery.charging {
+  /* Color: Oksolar cyan (represents power input) */
+  color: #{{ .colors.oksolar.cyan }};
+}
+
+/* Battery module: Plugged state (full, on AC power) */
+#battery.plugged {
+  /* Color: Oksolar blue (represents stable state) */
+  color: #{{ .colors.oksolar.blue }};
+}
+
+/* Backlight module */
+#backlight {
+  /* Color: Oksolar yellow (represents brightness/light) */
+  color: #{{ .colors.oksolar.yellow }};
+
+  /* Spacing: Left and right padding */
+  padding: 0 10px;
+}
+{{ end }}
+
+/* ========================================================================== */
 /* Additional Module Styles (add as needed) */
 /* ========================================================================== */
-
-/* Battery module (for laptops): */
-/* #battery {
- *   color: #{{ .colors.oksolar.green }};
- * }
- *
- * #battery.warning {
- *   color: #{{ .colors.oksolar.yellow }};
- * }
- *
- * #battery.critical {
- *   color: #{{ .colors.oksolar.red }};
- *   font-weight: bold;
- * }
- *
- * #battery.charging {
- *   color: #{{ .colors.oksolar.cyan }};
- * } */
-
-/* Backlight module (for laptops): */
-/* #backlight {
- *   color: #{{ .colors.oksolar.yellow }};
- * } */
 
 /* Idle inhibitor module: */
 /* #idle_inhibitor {

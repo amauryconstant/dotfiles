@@ -181,17 +181,20 @@ packages:
             - lm_sensors
             - pacman-contrib
 
-        wayland_desktop:
+        hyprland_desktop:
           strategy: *_install_binary
           list:
             - waybar             # Status bar for Hyprland
             - hyprlock           # Official Hyprland screen locker
             - hypridle           # Official Hyprland idle management daemon
+            - hyprpaper          # Official Hyprland wallpaper daemon
             - cliphist           # Clipboard history manager
             - wlogout            # Power menu for logout/shutdown/reboot
             - wl-clipboard       # Wayland clipboard utilities
             - pamixer            # PulseAudio/PipeWire volume control
             - brightnessctl      # Backlight brightness control
+            - playerctl          # Media player control (MPRIS)
+            - blueman            # Bluetooth manager GUI (GTK)
 
   flatpak:
     packages:

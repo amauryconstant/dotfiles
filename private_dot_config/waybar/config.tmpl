@@ -60,6 +60,11 @@
   "modules-right": [
     "tray",         // System tray (Nextcloud, network, bluetooth icons)
     "network",      // Network status and bandwidth
+{{ if eq .chassisType "laptop" }}
+    "bluetooth",    // Bluetooth control (laptop only)
+    "backlight",    // Screen brightness (laptop only)
+    "battery",      // Battery status (laptop only)
+{{ end }}
     "pulseaudio",   // Volume control
     "cpu",          // CPU usage
     "memory",       // Memory usage
@@ -329,31 +334,78 @@
     // "show-passive-items": false,  // Hide passive tray items
     // "reverse-direction": false,   // Reverse icon order
     // "on-click-middle": "none"     // Middle-click action
-  }
+  },
 
   // ==========================================================================
-  // Additional Module Examples (uncomment and add to modules-* above)
+  // Laptop-Specific Modules (bluetooth, battery, backlight)
   // ==========================================================================
+{{ if eq .chassisType "laptop" }}
+  // Bluetooth module: Device management and status
+  "bluetooth": {
+    // Format: Icon when bluetooth enabled
+    "format": "",
+
+    // Format when bluetooth disabled
+    "format-disabled": "",
+
+    // Format when devices connected (with count)
+    "format-connected": " {num_connections}",
+
+    // Format with battery level for connected devices
+    "format-connected-battery": "{icon} {num_connections}",
+
+    // Battery level icons (0-100% in 10% increments)
+    "format-icons": ["󰥇", "󰤾", "󰤿", "󰥀", "󰥁", "󰥂", "󰥃", "󰥄", "󰥅", "󰥆", "󰥈"],
+
+    // Tooltip: Controller info
+    "tooltip-format": "{controller_alias}\t{controller_address}\n{num_connections} connected",
+
+    // Tooltip when devices connected: Show device list
+    "tooltip-format-connected": "{controller_alias}\t{controller_address}\n{num_connections} connected\n\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+    "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{icon} {device_battery_percentage}%",
+
+    // Click action: Open bluetooth manager GUI
+    "on-click": "blueman-manager"
+  },
 
   // Battery module (for laptops):
-  // "battery": {
-  //   "states": {
-  //     "warning": 30,
-  //     "critical": 15
-  //   },
-  //   "format": "{icon} {capacity}%",
-  //   "format-charging": " {capacity}%",
-  //   "format-plugged": " {capacity}%",
-  //   "format-icons": ["", "", "", "", ""]
-  // },
+  "battery": {
+    // Warning thresholds
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+
+    // Format: Icon + percentage
+    "format": "{icon} {capacity}%",
+
+    // Format when charging
+    "format-charging": " {capacity}%",
+
+    // Format when plugged (full)
+    "format-plugged": " {capacity}%",
+
+    // Battery level icons (empty to full)
+    "format-icons": ["", "", "", "", ""],
+
+    // Tooltip: Show time remaining
+    "tooltip-format": "{timeTo}\n{capacity}% - {power}W"
+  },
 
   // Backlight module (screen brightness for laptops):
-  // "backlight": {
-  //   "format": "{icon} {percent}%",
-  //   "format-icons": ["", "", "", "", "", "", "", "", ""],
-  //   "on-scroll-up": "brightnessctl set +5%",
-  //   "on-scroll-down": "brightnessctl set 5%-"
-  // },
+  "backlight": {
+    // Format: Icon + percentage
+    "format": "{icon} {percent}%",
+
+    // Brightness level icons (dim to bright)
+    "format-icons": ["", "", "", "", "", "", "", "", ""],
+
+    // Scroll actions: Adjust brightness
+    "on-scroll-up": "brightnessctl set +5%",
+    "on-scroll-down": "brightnessctl set 5%-"
+  },
+{{ end }}
 
   // Idle inhibitor (prevent auto-sleep):
   // "idle_inhibitor": {

@@ -1,0 +1,238 @@
+/* ========================================================================== */
+/* Wofi Keybindings Cheatsheet Style - Oksolar Theme */
+/* ========================================================================== */
+/*
+ * Custom CSS for Hyprland keybindings cheatsheet displayed in wofi.
+ * Optimized for wide layout with monospace font for alignment.
+ * Colors injected via chezmoi templates from .chezmoidata/colors.yaml
+ *
+ * Usage: Used by ~/.config/scripts/keybinds_cheatsheet.sh
+ * Launch: Super + / (or configured keybinding)
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Main Window */
+/* -------------------------------------------------------------------------- */
+window {
+  /* Window dimensions: Wide format for keybinding descriptions */
+  width: 900px;
+  height: 600px;
+
+  /* Background: Oksolar darkest (base03) */
+  background-color: #{{ .colors.oksolar.base03 }};
+
+  /* Border: Oksolar blue accent */
+  border: 2px solid #{{ .colors.oksolar.blue }};
+  border-radius: 8px;
+
+  /* Font: Monospace for aligned columns */
+  font-family: "FiraCode Nerd Font", "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+
+  /* Padding: Space around content */
+  padding: 10px;
+
+  /* Text color: Oksolar default text (base0) */
+  color: #{{ .colors.oksolar.base0 }};
+}
+
+/* -------------------------------------------------------------------------- */
+/* Input Box (Search Field) */
+/* -------------------------------------------------------------------------- */
+#input {
+  /* Background: Oksolar dark (base02) - slightly lighter than window */
+  background-color: #{{ .colors.oksolar.base02 }};
+
+  /* Text color: Oksolar light text (base1) */
+  color: #{{ .colors.oksolar.base1 }};
+
+  /* Border: Oksolar cyan accent for input field */
+  border: 1px solid #{{ .colors.oksolar.cyan }};
+  border-radius: 4px;
+
+  /* Spacing */
+  padding: 8px 12px;
+  margin-bottom: 10px;
+
+  /* Font size: Slightly larger for input */
+  font-size: 14px;
+}
+
+/* Input box: Focus state */
+#input:focus {
+  /* Border: Brighter blue when focused */
+  border-color: #{{ .colors.oksolar.blue }};
+
+  /* Outline: Remove default outline */
+  outline: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scrollbar */
+/* -------------------------------------------------------------------------- */
+#scroll {
+  /* Background: Transparent (uses window background) */
+  background-color: transparent;
+
+  /* Remove default border */
+  border: none;
+}
+
+/* Scrollbar slider (thumb) */
+#scroll slider {
+  /* Background: Oksolar base01 (muted) */
+  background-color: #{{ .colors.oksolar.base01 }};
+
+  /* Rounded corners */
+  border-radius: 4px;
+
+  /* Minimum size */
+  min-width: 8px;
+  min-height: 40px;
+}
+
+/* Scrollbar slider: Hover state */
+#scroll slider:hover {
+  /* Background: Oksolar base0 (lighter on hover) */
+  background-color: #{{ .colors.oksolar.base0 }};
+}
+
+/* -------------------------------------------------------------------------- */
+/* Entry List (Results) */
+/* -------------------------------------------------------------------------- */
+#inner-box {
+  /* Background: Transparent (uses window background) */
+  background-color: transparent;
+
+  /* Spacing */
+  padding: 0;
+  margin: 0;
+}
+
+/* Individual entries */
+#entry {
+  /* Background: Transparent by default */
+  background-color: transparent;
+
+  /* Text color: Oksolar base0 (default text) */
+  color: #{{ .colors.oksolar.base0 }};
+
+  /* Spacing */
+  padding: 6px 12px;
+  margin: 2px 0;
+
+  /* Border radius for hover effect */
+  border-radius: 4px;
+
+  /* Monospace font for alignment */
+  font-family: "FiraCode Nerd Font", monospace;
+  font-size: 13px;
+}
+
+/* Entry: Hover state */
+#entry:hover {
+  /* Background: Oksolar base02 (dark highlight) */
+  background-color: #{{ .colors.oksolar.base02 }};
+
+  /* Text color: Brighter on hover */
+  color: #{{ .colors.oksolar.base1 }};
+}
+
+/* Entry: Selected state */
+#entry:selected {
+  /* Background: Oksolar blue (primary accent) */
+  background-color: #{{ .colors.oksolar.blue }};
+
+  /* Text color: Lightest for high contrast */
+  color: #{{ .colors.oksolar.base3 }};
+
+  /* Font weight: Bold to emphasize selection */
+  font-weight: bold;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Text Formatting (Special Elements) */
+/* -------------------------------------------------------------------------- */
+
+/* Category headers (lines containing ":") */
+#entry:nth-child(odd) {
+  /* Optional: Alternate row coloring */
+  /* background-color: rgba(9, 57, 70, 0.3); */
+}
+
+/* Separator lines (━━━ characters) */
+#text {
+  /* Default text color */
+  color: #{{ .colors.oksolar.base0 }};
+}
+
+/* -------------------------------------------------------------------------- */
+/* Special Styling for Header and Separators */
+/* -------------------------------------------------------------------------- */
+
+/* First entry (header row: "󰌌 Keybindings ... 󱧣 Description") */
+#outer-box > #scroll > #inner-box > #entry:first-child {
+  /* Background: Oksolar base02 (dark) */
+  background-color: #{{ .colors.oksolar.base02 }};
+
+  /* Text color: Oksolar blue (accent) */
+  color: #{{ .colors.oksolar.blue }};
+
+  /* Font: Bold and larger */
+  font-weight: bold;
+  font-size: 14px;
+
+  /* Spacing: Extra padding */
+  padding: 10px 12px;
+
+  /* Border: Bottom separator */
+  border-bottom: 2px solid #{{ .colors.oksolar.cyan }};
+
+  /* Fixed position */
+  margin-bottom: 5px;
+}
+
+/* Second entry (separator line: ━━━━━━) */
+#outer-box > #scroll > #inner-box > #entry:nth-child(2) {
+  /* Color: Oksolar base01 (muted separator) */
+  color: #{{ .colors.oksolar.base01 }};
+
+  /* Prevent selection */
+  pointer-events: none;
+
+  /* Spacing */
+  padding: 2px 12px;
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Category Headers (detected by ending with ":") */
+/* -------------------------------------------------------------------------- */
+
+/* Category titles styling - applied via inline detection in script */
+/* These entries contain ":", such as "Execute Commands:" */
+/* Styled with different background to stand out */
+
+/* -------------------------------------------------------------------------- */
+/* Maintenance Notes */
+/* -------------------------------------------------------------------------- */
+/*
+ * CUSTOMIZATION:
+ * - All colors defined in .chezmoidata/colors.yaml
+ * - Change colors there, then run: chezmoi apply
+ *
+ * FONT:
+ * - Uses FiraCode Nerd Font (installed in system)
+ * - Falls back to JetBrainsMono Nerd Font
+ * - Monospace critical for keybinding alignment
+ *
+ * DIMENSIONS:
+ * - Width: 900px accommodates long keybinding descriptions
+ * - Height: 600px shows ~25-30 entries without scrolling
+ * - Adjust in script: WOFI_WIDTH and WOFI_HEIGHT variables
+ *
+ * TESTING:
+ * - Run: ~/.config/scripts/keybinds_cheatsheet.sh
+ * - Or trigger via keybinding: Super + /
+ * - Use GTK Inspector for live CSS debugging: GTK_DEBUG=interactive wofi
+ */
