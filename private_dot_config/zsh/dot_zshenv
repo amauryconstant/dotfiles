@@ -5,6 +5,9 @@
 # This file runs for ALL zsh shells (interactive and non-interactive).
 # It sources the common POSIX shell environment and functions.
 
+# Source common shell login environment (XDG vars, PATH, etc.)
+. $HOME/.config/shell/login
+
 # Source common shell environment (functions, PATH setup, etc.)
 . $HOME/.config/shell/env
 

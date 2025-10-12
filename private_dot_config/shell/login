@@ -2,6 +2,29 @@
 
 # Put your environment variables here
 
+# XDG Base Directory Specification
+# Set these early so other configs can reference them
+# Use defaults with fallback syntax to be robust
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# PATH setup - Add user binaries early
+# These should be in PATH before any other modifications
+if [ -d "$HOME/.local/bin" ]; then
+    case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) export PATH="$HOME/.local/bin:$PATH" ;;
+    esac
+fi
+if [ -d "$HOME/.local/sbin" ]; then
+    case ":$PATH:" in
+        *":$HOME/.local/sbin:"*) ;;
+        *) export PATH="$HOME/.local/sbin:$PATH" ;;
+    esac
+fi
+
 # Software Envs
 export EDITOR=nano
 export VISUAL=code
