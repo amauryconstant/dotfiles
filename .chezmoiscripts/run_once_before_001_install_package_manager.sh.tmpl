@@ -51,6 +51,26 @@ else
     {{ includeTemplate "log_info" "yay AUR helper already installed" }}
 fi
 
+# Enable multilib repository for 32-bit application support
+{{ includeTemplate "log_step" "Configuring multilib repository for 32-bit applications..." }}
+
+# Check if multilib is already enabled (look for uncommented [multilib])
+if grep -q "^\[multilib\]" /etc/pacman.conf; then
+    {{ includeTemplate "log_success" "multilib repository already enabled" }}
+else
+    {{ includeTemplate "log_progress" "Enabling multilib repository in /etc/pacman.conf..." }}
+
+    # Uncomment [multilib] section and its Include line
+    # This enables 32-bit library support (lib32-* packages)
+    sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
+
+    {{ includeTemplate "log_progress" "Upgrading system with multilib enabled..." }}
+    # -Syuu ensures full system upgrade with new repository
+    sudo pacman -Syuu --noconfirm
+
+    {{ includeTemplate "log_success" "multilib repository enabled (32-bit support active)" }}
+fi
+
 # Install and configure mirror optimization
 {{ includeTemplate "log_step" "Setting up optimized Arch mirrors..." }}
 

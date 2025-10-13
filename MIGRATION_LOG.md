@@ -372,7 +372,7 @@ NetworkManager (network configuration daemon)
 - Total configuration: 61 lines of service configuration + 4 lines of autostart + 1 line waybar integration
 
 ### Phase 10: Centralize Environment Configuration with globals.yaml ✅
-**Commit**: `(pending)` - "Centralize environment configuration with globals.yaml and template-driven config"
+**Commit**: `31c6adb` - "Centralize environment configuration with globals.yaml"
 
 **Changes Made**:
 - **New Data File** (`.chezmoidata/globals.yaml` - 34 lines):
@@ -435,26 +435,99 @@ NetworkManager (network configuration daemon)
 - Total additions: 99 lines (34 globals.yaml + 40 login.tmpl + 25 mimeapps.list.tmpl)
 - Fixed shell path reference bug improving POSIX shell compatibility
 
+### Phase 11: Automated NVIDIA GPU Driver Configuration ⏳
+**Commit**: `(pending)` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
+
+**Changes Made**:
+- **New Configuration Script** (`.chezmoiscripts/run_once_before_007_configure_gpu_drivers.sh.tmpl` - 291 lines):
+  - Comprehensive NVIDIA DKMS driver setup executed early in boot process (before file application)
+  - **GPU Detection**: Automatically detects NVIDIA GPU via `lspci` (skips configuration if not found)
+  - **Conflict Resolution**: Removes incompatible packages (old nvidia-dkms, nvidia-lts) before installation
+  - **Package Installation** (7 packages in correct dependency order):
+    - `dkms` - DKMS framework (must be installed first)
+    - `linux-headers`, `linux-lts-headers` - Kernel headers for both kernels
+    - `nvidia-open-dkms` - Open-source NVIDIA kernel modules (DKMS version)
+    - `nvidia-utils` - NVIDIA userspace utilities
+    - `nvidia-settings` - NVIDIA configuration GUI
+    - `lib32-nvidia-utils` - 32-bit support for gaming/compatibility
+  - **DKMS Module Management**:
+    - Automatically builds modules for current kernel (`dkms autoinstall`)
+    - Verifies modules are built and loaded via `dkms status`
+  - **Initramfs Configuration**:
+    - Creates `/etc/mkinitcpio.conf.d/nvidia.conf` with required modules
+    - Loads: `nvidia nvidia_modeset nvidia_uvm nvidia_drm`
+    - Keeps `kms` hook (required for DKMS early kernel mode setting)
+    - Rebuilds initramfs only when configuration changes
+  - **Kernel Parameter Configuration** (supports both boot methods):
+    - **UKI (Unified Kernel Images)**: Updates `/etc/kernel/cmdline`
+    - **Traditional systemd-boot**: Updates `/boot/loader/entries/*.conf`
+    - Adds: `nvidia-drm.modeset=1 nvidia-drm.fbdev=1` (enables DRM kernel mode setting)
+    - Creates backup files before modifications
+
+- **Package Management Updates** (`.chezmoidata/packages.yaml`):
+  - Moved NVIDIA drivers from `graphics_drivers` section to script-managed approach
+  - Updated documentation (line 177-180): Clarifies drivers managed by `run_once_before_007` script
+  - Rationale: Script ensures correct installation order and dependency handling
+  - Benefits: Prevents conflicts, handles cleanup, configures initramfs/kernel parameters atomically
+
+- **Package Manager Script Updates** (`run_once_before_001_install_package_manager.sh.tmpl`):
+  - Added Chaotic-AUR repository configuration (community repository with precompiled packages)
+  - Repository configuration: `/etc/pacman.conf` includes `[chaotic-aur]` section
+  - Keyring packages: `chaotic-keyring`, `chaotic-mirrorlist` (added to system_software)
+  - Benefits: Faster AUR package installation, reduced compilation time
+
+- **Hyprland Environment Configuration** (`private_dot_config/hypr/conf/environment.conf`):
+  - Enhanced NVIDIA-specific comments and documentation (76 lines total)
+  - Clarified hardware video acceleration settings (`LIBVA_DRIVER_NAME=nvidia`)
+  - Documented hardware cursor workaround (`WLR_NO_HARDWARE_CURSORS=1`)
+  - Added note: "Test with value 0 on nvidia-open-dkms" (newer drivers may not need workaround)
+  - VSync configuration: `__GL_SYNC_TO_VBLANK=1` (prevents screen tearing)
+  - Improved comments explaining each variable's purpose and impact
+
+**Architecture Overview**:
+```
+GPU Driver Configuration Flow:
+1. run_once_before_007 (Early Setup)
+   ├─→ Detect NVIDIA GPU (lspci)
+   ├─→ Remove conflicting packages
+   ├─→ Install DKMS + headers + nvidia-open-dkms
+   ├─→ Build DKMS modules (dkms autoinstall)
+   ├─→ Configure initramfs (nvidia.conf)
+   ├─→ Add kernel parameters (cmdline or boot entry)
+   └─→ Rebuild initramfs + UKI images
+
+2. Hyprland environment.conf (Session Setup)
+   ├─→ LIBVA_DRIVER_NAME=nvidia
+   ├─→ GBM_BACKEND=nvidia-drm
+   ├─→ __GLX_VENDOR_LIBRARY_NAME=nvidia
+   ├─→ WLR_NO_HARDWARE_CURSORS=1
+   └─→ __GL_SYNC_TO_VBLANK=1
+```
+
+**Rationale**:
+- **DKMS Approach**: Kernel modules rebuild automatically on kernel updates (no manual intervention)
+- **nvidia-open-dkms**: Open-source variant provides better Wayland support and community maintenance
+- **Early Execution**: `run_once_before_007` runs before file application, ensuring drivers ready for desktop session
+- **Idempotent Design**: Script safely re-runs if interrupted (checks existing state before modifications)
+- **Dual Kernel Support**: Builds modules for both `linux` and `linux-lts` kernels
+- **UKI Compatibility**: Handles both Unified Kernel Images and traditional boot entries
+- **Chaotic-AUR**: Reduces compilation time for AUR packages on initial system setup
+
+**Impact**:
+- System now has complete automated NVIDIA GPU configuration for Wayland
+- DKMS modules automatically rebuild on kernel updates (no manual intervention)
+- Kernel parameters properly configured for DRM mode setting and fbdev support
+- Initramfs includes all required NVIDIA modules for early KMS
+- Hyprland session environment optimized for NVIDIA GPU acceleration
+- Total configuration: 291 lines of automation + enhanced environment documentation
+- Post-reboot verification workflow clearly documented
+- Chaotic-AUR repository reduces AUR compilation time on fresh installations
+- **⚠️ REBOOT REQUIRED** after initial setup for kernel parameters and modules to take effect
+
 ---
 
 ## Next Steps
 
-### Post-Installation Validation
-- Compare baseline with actual installed packages using `pacman -Qe`
-- Review for additional overlaps with `packages.install.arch` packages
-- Validate CPU microcode package matches hardware (`intel-ucode` vs `amd-ucode`)
-- Verify ghostty and neovim installation via `run_onchange_before_install_arch_packages.sh.tmpl`
-- Confirm htop and vim removal via deletion script
-
-### Hyprland Configuration Testing
-- Test configuration on actual Hyprland installation
-- Validate NVIDIA-specific environment variables on target hardware
-- Verify all keybindings work as expected
-- Test ghostty terminal launcher (Super+Return)
-- Verify wofi launches terminal apps in ghostty
-- Consider creating additional window rules for specific applications
-- May need to adjust monitor configuration based on actual hardware
-
 ---
 
-**Last Updated**: 2025-10-12
+**Last Updated**: 2025-10-13

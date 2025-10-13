@@ -1,64 +1,4 @@
 packages:
-  # NOTE: archinstall_baseline tracks packages likely installed during initial system setup
-  # These are documented for redundancy checking but NOT managed by chezmoi
-  # Review periodically to identify overlaps with manually managed packages below
-  archinstall_baseline:
-    core_system:
-      - base                    # Base Arch Linux system
-      - base-devel              # Development tools (make, gcc, etc.)
-      - linux-firmware          # Hardware firmware files
-      - linux                   # Linux kernel (or linux-lts/linux-zen/linux-hardened)
-      - systemd-boot            # UEFI boot manager
-      - efibootmgr              # EFI boot entry management
-      - sudo                    # Privilege escalation
-      - cryptsetup              # LUKS disk encryption utilities
-
-    hyprland_desktop:
-      - hyprland                # Wayland compositor
-      - dunst                   # Notification daemon
-      - kitty                   # Terminal emulator
-      - uwsm                    # Universal Wayland session manager
-      - dolphin                 # KDE file manager
-      - wofi                    # Application launcher
-      - xdg-desktop-portal-hyprland  # Portal for screen sharing
-      - qt5-wayland             # Qt5 Wayland support
-      - qt6-wayland             # Qt6 Wayland support
-      - polkit-kde-agent        # Polkit authentication agent
-      - grim                    # Screenshot utility
-      - slurp                   # Screen area selection
-      - htop                    # Process viewer
-      - iwd                     # Wireless daemon (used as NetworkManager backend)
-      - nano                    # Text editor (archinstall default)
-      - smartmontools           # Disk health monitoring
-      - vim                     # Vi-improved text editor
-      - wget                    # File download utility
-      - wireless_tools          # Wireless network configuration
-      - wpa_supplicant          # WPA/WPA2 authentication (replaced by iwd)
-      - xdg-utils               # Desktop integration utilities
-      - openssh                 # SSH client and server
-
-    audio_pipewire:
-      - pipewire                # Modern audio system
-      - pipewire-alsa           # ALSA compatibility layer
-      - pipewire-jack           # JACK compatibility layer
-      - pipewire-pulse          # PulseAudio replacement
-      - gst-plugin-pipewire     # GStreamer integration
-      - libpulse                # PulseAudio client libraries
-      - wireplumber             # PipeWire session manager
-
-    network:
-      - networkmanager          # Network configuration daemon
-
-    graphics_drivers:
-      - dkms                    # Dynamic Kernel Module Support
-      - libva-nvidia-drivers    # VA-API hardware acceleration for NVIDIA
-      - nvidia-open-dkms        # NVIDIA open-source kernel modules (DKMS)
-      - xorg-server             # X.Org display server (for XWayland)
-      - xorg-xinit              # X.Org initialization
-
-    greeter:
-      - sddm                    # Simple Desktop Display Manager
-
   install:
     arch:
       strategies:
@@ -117,6 +57,7 @@ packages:
 
         development_tools:
           list:
+            - git
             - mise
             - docker
             - docker-compose
@@ -135,7 +76,42 @@ packages:
 
         system_software:
           list:
+            # Core system
+            - base
+            - base-devel
+            - linux-firmware
+            - linux
+            - linux-lts
+            - efibootmgr
+            - cryptsetup
+            # System utilities
+            - xdg-utils
+            - openssh
+            - wget
+            - nano
+            - smartmontools
+            - wireless_tools
+            - iwd
+            - wpa_supplicant
+            # Package management
             - flatpak
+            - yay
+            - yay-debug
+            # Desktop integration
+            - bluez
+            - bluez-utils
+            # Filesystem tools
+            - btrfs-progs
+            - snapper
+            - zram-generator
+            # Audio firmware
+            - sof-firmware
+            # Third-party repos
+            - chaotic-keyring
+            - chaotic-mirrorlist
+            # Encryption tools
+            - rage-encryption
+            - rbw
 
         networking_tools:
           strategy: *_install_binary
@@ -182,6 +158,7 @@ packages:
             - inxi
             - lm_sensors
             - pacman-contrib
+            - rate-mirrors
 
         hyprland_desktop:
           strategy: *_install_binary
@@ -197,6 +174,32 @@ packages:
             - brightnessctl      # Backlight brightness control
             - playerctl          # Media player control (MPRIS)
             - blueman            # Bluetooth manager GUI (GTK)
+
+        graphics_drivers:
+          strategy: *_install_binary
+          list:
+            # NVIDIA GPU support - MANAGED BY run_once_before_007_configure_gpu_drivers.sh.tmpl
+            # The script detects NVIDIA GPU and installs: nvidia-open-dkms, nvidia-utils,
+            # nvidia-settings, lib32-nvidia-utils, dkms, linux-headers, linux-lts-headers
+            # This ensures proper installation order and configuration before other packages
+
+        audio_system:
+          strategy: *_install_binary
+          list:
+            - pipewire                # Modern audio/video server
+            - pipewire-alsa           # ALSA compatibility layer
+            - pipewire-jack           # JACK compatibility layer
+            - pipewire-pulse          # PulseAudio replacement
+            - gst-plugin-pipewire     # GStreamer integration
+            - libpulse                # PulseAudio client libraries
+            - wireplumber             # PipeWire session manager
+
+        display_system:
+          strategy: *_install_binary
+          list:
+            - sddm                    # Simple Desktop Display Manager
+            - xorg-server             # X.Org display server (for XWayland)
+            - xorg-xinit              # X.Org initialization
 
   flatpak:
     packages:
