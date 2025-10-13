@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+# Put your environment variables here
+# Values sourced from .chezmoidata/globals.yaml for consistency
+
+# XDG Base Directory Specification
+# Set these early so other configs can reference them
+# Use defaults with fallback syntax to be robust
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-{{ .globals.xdg.config_home }}}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .globals.xdg.cache_home }}}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-{{ .globals.xdg.data_home }}}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-{{ .globals.xdg.state_home }}}"
+
+# PATH setup - Add user binaries early
+# These should be in PATH before any other modifications
+if [ -d "{{ .globals.paths.local_bin }}" ]; then
+    case ":$PATH:" in
+        *":{{ .globals.paths.local_bin }}:"*) ;;
+        *) export PATH="{{ .globals.paths.local_bin }}:$PATH" ;;
+    esac
+fi
+if [ -d "{{ .globals.paths.local_sbin }}" ]; then
+    case ":$PATH:" in
+        *":{{ .globals.paths.local_sbin }}:"*) ;;
+        *) export PATH="{{ .globals.paths.local_sbin }}:$PATH" ;;
+    esac
+fi
+
+# Software Envs
+export EDITOR={{ .globals.applications.editor }}
+export VISUAL={{ .globals.applications.visual }}
+export BROWSER={{ .globals.applications.browser }}
+
+# Package Version Managers Envs
+export CARGO_HOME="{{ .globals.paths.cargo_home }}"
+export GOPATH="{{ .globals.paths.gopath }}"
+
+# Projects
+export PROJECTS="{{ .globals.paths.projects }}"
+export WORKTREES="{{ .globals.paths.worktrees }}"

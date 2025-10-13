@@ -1,0 +1,33 @@
+# Global environment variables and default applications
+# Central source of truth for all shell environment and XDG configuration
+
+globals:
+  applications:
+    # Default applications for various tasks
+    # These are used by both shell environment ($EDITOR, $VISUAL, $BROWSER)
+    # and XDG MIME type associations (mimeapps.list)
+    editor: nvim           # Command-line text editor ($EDITOR)
+    visual: code           # Visual/GUI editor ($VISUAL)
+    browser: firefox       # Web browser ($BROWSER)
+
+  xdg:
+    # XDG Base Directory Specification paths
+    # These use fallback syntax in shell/login to be robust
+    config_home: "$HOME/.config"
+    cache_home: "$HOME/.cache"
+    data_home: "$HOME/.local/share"
+    state_home: "$HOME/.local/state"
+    # Note: XDG_RUNTIME_DIR is managed by pam_systemd.so - don't override
+
+  paths:
+    # Custom user path directories
+    local_bin: "$HOME/.local/bin"
+    local_sbin: "$HOME/.local/sbin"
+
+    # Package version managers
+    cargo_home: "$HOME/.local/pvm/cargo"
+    gopath: "$HOME/.local/pvm/go"
+
+    # Project directories
+    projects: "$HOME/Projects"
+    worktrees: "$HOME/Worktrees"

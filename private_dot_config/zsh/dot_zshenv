@@ -5,19 +5,8 @@
 # This file runs for ALL zsh shells (interactive and non-interactive).
 # It sources the common POSIX shell environment and functions.
 
-# Source common shell login environment (XDG vars, PATH, etc.)
-. $HOME/.config/shell/login
-
 # Source common shell environment (functions, PATH setup, etc.)
 . $HOME/.config/shell/env
 
 # Ensure path arrays do not contain duplicates
 typeset -gU path fpath
-
-# Set the list of directories that zsh searches for commands
-path=(
-  $HOME/.local/{,s}bin(N)
-  /opt/local/{,s}bin(N)
-  /usr/local/{,s}bin(N)
-  $path
-)

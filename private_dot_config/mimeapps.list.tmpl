@@ -1,0 +1,24 @@
+# XDG MIME Applications
+# Defines default applications for opening various file types and URL schemes
+# Synchronized with shell environment variables ($EDITOR, $VISUAL, $BROWSER)
+# Source: .chezmoidata/globals.yaml
+
+[Default Applications]
+# Web browser - {{ .globals.applications.browser }}
+text/html={{ .globals.applications.browser }}.desktop
+x-scheme-handler/http={{ .globals.applications.browser }}.desktop
+x-scheme-handler/https={{ .globals.applications.browser }}.desktop
+x-scheme-handler/about={{ .globals.applications.browser }}.desktop
+x-scheme-handler/unknown={{ .globals.applications.browser }}.desktop
+
+# Text editor - {{ .globals.applications.editor }}
+text/plain={{ .globals.applications.editor }}.desktop
+text/x-readme={{ .globals.applications.editor }}.desktop
+text/markdown={{ .globals.applications.editor }}.desktop
+text/x-log={{ .globals.applications.editor }}.desktop
+
+# Visual/GUI editor - {{ .globals.applications.visual }}
+application/x-shellscript={{ .globals.applications.visual }}.desktop
+application/json={{ .globals.applications.visual }}.desktop
+application/yaml={{ .globals.applications.visual }}.desktop
+application/toml={{ .globals.applications.visual }}.desktop

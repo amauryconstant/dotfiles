@@ -301,7 +301,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - Complete coverage of migration history from Phase 1 through Phase 8
 
 ### Phase 9: Configure NetworkManager with iwd Backend ✅
-**Commit**: `(pending)` - "Configure NetworkManager with iwd backend for WiFi management"
+**Commit**: `a8bd346` - "Configure NetworkManager with iwd backend for WiFi management"
 
 **Changes Made**:
 - **Package Management** (`.chezmoidata/packages.yaml`):
@@ -370,6 +370,70 @@ NetworkManager (network configuration daemon)
 - Automatic service startup on boot (NetworkManager + iwd + gnome-keyring)
 - Enhanced Wayland compatibility and performance over wpa_supplicant
 - Total configuration: 61 lines of service configuration + 4 lines of autostart + 1 line waybar integration
+
+### Phase 10: Centralize Environment Configuration with globals.yaml ✅
+**Commit**: `(pending)` - "Centralize environment configuration with globals.yaml and template-driven config"
+
+**Changes Made**:
+- **New Data File** (`.chezmoidata/globals.yaml` - 34 lines):
+  - Created central source of truth for environment variables and default applications
+  - **Applications section**: Default editor (`nvim`), visual editor (`code`), browser (`firefox`)
+  - **XDG section**: Base directory specification paths (config, cache, data, state)
+  - **Paths section**: User binaries, package managers (cargo, go), project directories
+  - All values documented with comments explaining usage context
+
+- **Template Migration** (`private_dot_config/shell/login` → `login.tmpl`):
+  - Converted static shell script to Go template (40 lines)
+  - Replaced hardcoded values with `{{ .globals.* }}` template variables
+  - **XDG variables**: Now reference `{{ .globals.xdg.* }}` with fallback syntax
+  - **PATH setup**: Uses `{{ .globals.paths.local_bin }}` and `{{ .globals.paths.local_sbin }}`
+  - **Software Envs**: `$EDITOR`, `$VISUAL`, `$BROWSER` from `{{ .globals.applications.* }}`
+  - **Package Managers**: `$CARGO_HOME`, `$GOPATH` from `{{ .globals.paths.* }}`
+  - **Project Paths**: `$PROJECTS`, `$WORKTREES` from `{{ .globals.paths.* }}`
+
+- **New XDG MIME Configuration** (`private_dot_config/mimeapps.list.tmpl` - 25 lines):
+  - Created templated MIME type associations synchronized with shell environment
+  - **Browser associations**: HTTP/HTTPS schemes use `{{ .globals.applications.browser }}.desktop`
+  - **Text editor associations**: Plain text, markdown, logs use `{{ .globals.applications.editor }}.desktop`
+  - **Visual editor associations**: Scripts, JSON, YAML, TOML use `{{ .globals.applications.visual }}.desktop`
+  - Single source of truth: MIME types automatically match `$EDITOR`, `$VISUAL`, `$BROWSER` variables
+
+- **Shell Integration Updates**:
+  - `private_dot_config/shell/env` (line 6): Fixed path reference `$HOME/.config/sh/interactive` → `$HOME/.config/shell/interactive`
+  - `private_dot_config/zsh/dot_zshenv`: Removed duplicate PATH setup and `login` sourcing
+    - Deleted redundant `path=(...)` array configuration (zsh-specific, now in login template)
+    - Removed manual sourcing of `login` file (handled by zsh initialization chain)
+    - Kept only essential: sourcing `env` and `typeset -gU path fpath` for deduplication
+
+**Architecture Improvements**:
+```
+.chezmoidata/globals.yaml (Single Source of Truth)
+    ├─→ shell/login.tmpl (Shell Environment Variables)
+    │   ├─→ $EDITOR, $VISUAL, $BROWSER
+    │   ├─→ $XDG_CONFIG_HOME, $XDG_CACHE_HOME, etc.
+    │   └─→ $PATH, $CARGO_HOME, $GOPATH, etc.
+    └─→ mimeapps.list.tmpl (XDG MIME Associations)
+        ├─→ text/* → nvim.desktop
+        ├─→ x-scheme-handler/http* → firefox.desktop
+        └─→ application/* → code.desktop
+```
+
+**Rationale**:
+- **DRY Principle**: Eliminates hardcoded duplication across shell config and MIME types
+- **Single Source of Truth**: Change default browser once in `globals.yaml`, applies everywhere
+- **Consistency**: Shell environment variables automatically match XDG MIME type associations
+- **Maintainability**: Centralized configuration easier to audit and update
+- **Template Best Practice**: Demonstrates proper use of `.chezmoidata/` for shared configuration values
+- **Shell Cleanup**: Removed zsh-specific duplication, improved POSIX shell compatibility
+
+**Impact**:
+- All default applications now managed from single YAML file (`globals.yaml`)
+- XDG MIME type associations automatically synchronized with shell environment
+- Changing default editor/browser requires single edit in `globals.yaml`
+- Template-driven approach enables per-machine customization if needed
+- Improved shell startup efficiency by removing redundant PATH configuration
+- Total additions: 99 lines (34 globals.yaml + 40 login.tmpl + 25 mimeapps.list.tmpl)
+- Fixed shell path reference bug improving POSIX shell compatibility
 
 ---
 
