@@ -119,6 +119,24 @@ packages:
             - tailscale
             - networkmanager        # Network configuration daemon
 
+        file_management:
+          strategy: *_install_binary
+          list:
+            - kio-extras              # Network protocols (SMB, FTP, etc.)
+            - ffmpegthumbs            # Video thumbnails
+            - kdegraphics-thumbnailers # Extended image format thumbnails
+            - qt5ct                   # Qt5 theme configuration
+            - breeze                  # Consistent Qt theme
+            - kde-cli-tools           # "Open Terminal Here" support
+            - file-roller             # Archive handling
+
+        terminal_file_management:
+          strategy: *_install_binary
+          list:
+            - yazi                 # Modern terminal file manager
+            - unar                 # Archive preview
+            - poppler              # PDF preview (pdftotext)
+
         general_software:
           strategy: *_install_binary
           list:
@@ -213,5 +231,5 @@ packages:
 
   delete:
     arch:
-      - htop                    # Redundant with btop/glances
-      - vim                     # Replaced by neovim
+      - htop      # Redundant with btop/glances
+      - vim       # Replaced by neovim

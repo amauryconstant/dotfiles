@@ -9,6 +9,8 @@ globals:
     editor: nvim           # Command-line text editor ($EDITOR)
     visual: code           # Visual/GUI editor ($VISUAL)
     browser: firefox       # Web browser ($BROWSER)
+    file_manager: org.kde.dolphin  # File manager (GUI)
+    terminal: ghostty      # Terminal emulator
 
   xdg:
     # XDG Base Directory Specification paths

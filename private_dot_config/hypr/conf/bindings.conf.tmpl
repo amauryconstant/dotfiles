@@ -29,14 +29,17 @@ $mod = SUPER
 # ============================================================================
 
 # Terminal: Super + Return
-bind = $mod, Return, exec, ghostty
+bind = $mod, Return, exec, {{ .globals.applications.terminal }}
 
 # Application launcher: Super + D
 # Wofi shows desktop applications from .desktop files
 bind = $mod, D, exec, wofi --show drun
 
-# File manager: Super + E
+# File manager: Super + E (GUI)
 bind = $mod, E, exec, dolphin
+
+# Terminal file manager: Super + Shift + E (Yazi)
+bind = $mod SHIFT, E, exec, {{ .globals.applications.terminal }} -e yazi
 
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard

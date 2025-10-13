@@ -22,3 +22,16 @@ application/x-shellscript={{ .globals.applications.visual }}.desktop
 application/json={{ .globals.applications.visual }}.desktop
 application/yaml={{ .globals.applications.visual }}.desktop
 application/toml={{ .globals.applications.visual }}.desktop
+
+# File manager - {{ .globals.applications.file_manager }}
+inode/directory={{ .globals.applications.file_manager }}.desktop
+
+# Archive handling (file-roller)
+application/zip=org.gnome.FileRoller.desktop
+application/x-tar=org.gnome.FileRoller.desktop
+application/x-compressed-tar=org.gnome.FileRoller.desktop
+application/x-7z-compressed=org.gnome.FileRoller.desktop
+application/gzip=org.gnome.FileRoller.desktop
+application/x-bzip=org.gnome.FileRoller.desktop
+application/x-xz=org.gnome.FileRoller.desktop
+application/x-rar=org.gnome.FileRoller.desktop

@@ -23,6 +23,7 @@ ohmyzsh/ohmyzsh path:plugins/extract
 ohmyzsh/ohmyzsh path:plugins/eza
 ohmyzsh/ohmyzsh path:plugins/fzf
 z-shell/zsh-zoxide
+fdw/yazi-zoxide-zsh
 ohmyzsh/ohmyzsh path:plugins/aws
 
 # Package Version Managers
