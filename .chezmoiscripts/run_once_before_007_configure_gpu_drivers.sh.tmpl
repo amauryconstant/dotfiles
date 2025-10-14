@@ -69,6 +69,7 @@ NVIDIA_PACKAGES=(
     "nvidia-utils"            # NVIDIA userspace utilities
     "nvidia-settings"         # NVIDIA configuration GUI
     "lib32-nvidia-utils"      # 32-bit support (depends on nvidia-utils)
+    "libva-nvidia-driver"     # VA-API hardware video acceleration
 )
 
 # Check which packages need to be installed
@@ -126,7 +127,8 @@ NVIDIA_CONF="/etc/mkinitcpio.conf.d/nvidia.conf"
 
 if [ -f "$NVIDIA_CONF" ]; then
     # Check if existing file has correct content (flexible whitespace handling)
-    if grep -Eq "^MODULES=\(nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
+    # Must include i915 for hybrid graphics
+    if grep -Eq "^MODULES=\(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
         {{ includeTemplate "log_success" "Initramfs NVIDIA configuration already correct" }}
     else
         {{ includeTemplate "log_info" "Updating initramfs NVIDIA configuration..." }}
@@ -140,11 +142,14 @@ fi
 # Create/update NVIDIA-specific module configuration only if needed
 if [ "$INITRAMFS_CHANGED" = true ]; then
     # CRITICAL: With DKMS, we KEEP 'kms' in HOOKS (early kernel mode setting)
+    # CRITICAL: On hybrid graphics (Intel + NVIDIA), load i915 BEFORE nvidia modules
+    #           This prevents Electron/Chromium apps from stalling ~1min after boot
     sudo tee "$NVIDIA_CONF" > /dev/null <<EOF
 # NVIDIA DKMS module configuration
 # These modules enable early kernel mode setting (KMS) for NVIDIA GPUs
 # IMPORTANT: DO NOT remove 'kms' from HOOKS when using DKMS
-MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+# IMPORTANT: i915 loaded first to prevent Electron/Chromium stalling on hybrid graphics
+MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 EOF
     {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
 fi
@@ -173,6 +178,7 @@ if [ -f "$CMDLINE_FILE" ]; then
     # Check if NVIDIA kernel parameters are already present
     NEEDS_MODESET=false
     NEEDS_FBDEV=false
+    NEEDS_PRESERVE_VIDEO_MEM=false
 
     if ! grep -q "nvidia-drm.modeset=1" "$CMDLINE_FILE"; then
         NEEDS_MODESET=true
@@ -180,8 +186,11 @@ if [ -f "$CMDLINE_FILE" ]; then
     if ! grep -q "nvidia-drm.fbdev=1" "$CMDLINE_FILE"; then
         NEEDS_FBDEV=true
     fi
+    if ! grep -q "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "$CMDLINE_FILE"; then
+        NEEDS_PRESERVE_VIDEO_MEM=true
+    fi
 
-    if [ "$NEEDS_MODESET" = false ] && [ "$NEEDS_FBDEV" = false ]; then
+    if [ "$NEEDS_MODESET" = false ] && [ "$NEEDS_FBDEV" = false ] && [ "$NEEDS_PRESERVE_VIDEO_MEM" = false ]; then
         {{ includeTemplate "log_success" "NVIDIA kernel parameters already configured" }}
     else
         {{ includeTemplate "log_info" "Adding NVIDIA kernel parameters to kernel command line..." }}
@@ -201,6 +210,9 @@ if [ -f "$CMDLINE_FILE" ]; then
         fi
         if [ "$NEEDS_FBDEV" = true ]; then
             CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia-drm.fbdev=1"
+        fi
+        if [ "$NEEDS_PRESERVE_VIDEO_MEM" = true ]; then
+            CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia.NVreg_PreserveVideoMemoryAllocations=1"
         fi
 
         # Write updated cmdline

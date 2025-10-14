@@ -434,6 +434,53 @@ Battery Module → Left: power profiles, Right: info notification
 - Total changes: 135 lines added (interactivity + styling), 93 lines removed (redundant monitors)
 - Net impact: More functionality with less visual clutter
 
+### Phase 14: Enhanced Power Management and Session Controls ✅
+**Commit**: `(pending)` - "Enhance power management and session controls with wlogout improvements and NVIDIA optimizations"
+
+**Changes Made**:
+- **Service Configuration** (`.chezmoiscripts/run_once_after_002_configure_services.sh.tmpl` - 63 lines):
+  - Replaced basic service enablement with comprehensive management
+  - Enhanced Docker configuration with user group safety checks and clear instructions
+  - Added conditional NVIDIA power management services for laptops
+  - Improved Bluetooth enablement with immediate activation
+
+- **NVIDIA Driver Optimizations** (`.chezmoiscripts/run_once_before_007_configure_gpu_drivers.sh.tmpl`):
+  - Added VA-API hardware video acceleration support
+  - Fixed hybrid graphics (Intel+NVIDIA) to prevent Electron app startup delays
+  - Enhanced memory preservation for stable suspend/resume cycles
+  - Improved kernel parameter detection and validation
+
+- **Hyprland Environment** (`private_dot_config/hypr/conf/environment.conf`):
+  - Enabled VA-API backend for hardware-accelerated video decoding
+  - Updated hardware cursor support for modern NVIDIA drivers (580+)
+  - Added Electron sync flags to eliminate flickering on NVIDIA GPUs
+
+- **Session Management**:
+  - **New Script** (`private_dot_config/scripts/executable_wlogout.sh` - 40 lines): Toggle behavior with process management
+  - **Enhanced Layout** (`private_dot_config/wlogout/layout`): Added Material Design icons and hibernate action
+  - **Theme Integration** (`private_dot_config/wlogout/style.css.tmpl`): oksolar color scheme with improved transparency
+  - **Keybinding Update** (`private_dot_config/hypr/conf/bindings.conf.tmpl`): Changed to Super+Shift+Q to avoid conflicts
+
+- **Package Management** (`.chezmoidata/packages.yaml`):
+  - Removed redundant graphics_drivers documentation section
+  - Clarified that NVIDIA drivers are fully managed by automation script
+
+**Rationale**:
+- Enhanced service safety with proper user guidance and conditional operations
+- Critical hybrid graphics fix prevents 1-minute delays in Electron applications
+- Complete NVIDIA Wayland support from kernel to application level
+- Professional session controls with toggle behavior and consistent theming
+- Ergonomic keybinding placement avoids conflicts with file managers
+
+**Impact**:
+- Docker users get automatic, safe group configuration with clear activation instructions
+- Intel+NVIDIA systems no longer experience Electron application startup stalls
+- Hardware-accelerated video playback works in browsers and media players
+- Modern NVIDIA users benefit from hardware cursor support and improved performance
+- Power menu provides 6 polished actions with Material Design icons and toggle behavior
+- Session controls integrate seamlessly with oksolar desktop theme
+- System maintains stable video memory across power state transitions
+
 ---
 
 ## Next Steps

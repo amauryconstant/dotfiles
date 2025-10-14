@@ -10,65 +10,57 @@
 }
 
 window {
-    background-color: rgba(0, 45, 56, 0.95); /* oksolar base03 with transparency */
+    background-color: rgba(0, 45, 56, 0.80);
 }
 
 button {
-    color: #fbf7ef; /* oksolar base3 */
-    background-color: #093946; /* oksolar base02 */
+    color: #{{ .colors.oksolar.base2 }};
+    background-color: #{{ .colors.oksolar.base03 }};
     border-style: solid;
     border-width: 2px;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 25%;
-    border-radius: 10px;
-    margin: 20px;
-    transition: all 200ms ease-in-out;
+    text-shadow: none;
 }
 
 button:focus, button:active, button:hover {
-    background-color: #2b90d8; /* oksolar blue */
-    color: #fbf7ef; /* oksolar base3 */
-    outline-style: none;
-    border-color: #819500; /* oksolar green */
+    background-color: #{{ .colors.oksolar.base02 }};
 }
 
 #lock {
-    border-color: #ac8300; /* oksolar yellow */
+    border-color: #{{ .colors.oksolar.yellow }};
 }
 
 #lock:focus, #lock:active, #lock:hover {
-    border-color: #ac8300; /* oksolar yellow */
+    color: #{{ .colors.oksolar.yellow }};
 }
 
 #logout {
-    border-color: #d56500; /* oksolar orange */
+    border-color: #{{ .colors.oksolar.orange }};
 }
 
 #logout:focus, #logout:active, #logout:hover {
-    border-color: #d56500; /* oksolar orange */
+    color: #{{ .colors.oksolar.orange }};
 }
 
 #suspend {
-    border-color: #7d80d1; /* oksolar violet */
+    border-color: #{{ .colors.oksolar.violet }};
 }
 
 #suspend:focus, #suspend:active, #suspend:hover {
-    border-color: #7d80d1; /* oksolar violet */
+    color: #{{ .colors.oksolar.violet }};
 }
 
 #reboot {
-    border-color: #259d94; /* oksolar cyan */
+    border-color: #{{ .colors.oksolar.cyan }};
 }
 
 #reboot:focus, #reboot:active, #reboot:hover {
-    border-color: #259d94; /* oksolar cyan */
+    color: #{{ .colors.oksolar.cyan }};
 }
 
 #shutdown {
-    border-color: #f23749; /* oksolar red */
+    border-color: #{{ .colors.oksolar.red }};
 }
 
 #shutdown:focus, #shutdown:active, #shutdown:hover {
-    border-color: #f23749; /* oksolar red */
+    color: #{{ .colors.oksolar.red }};
 }

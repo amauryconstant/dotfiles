@@ -1,0 +1,63 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_002_configure_docker_and_bluetooth.sh.tmpl
+# Purpose: Configure Docker (service + user permissions), Bluetooth, and NVIDIA power management
+# Requirements: Arch Linux, Docker installed, NVIDIA drivers (optional)
+
+{{ includeTemplate "log_start" "Configuring system services (Docker, Bluetooth, NVIDIA power management)..." }}
+
+# Enable Docker service (work destination behavior)
+{{ includeTemplate "log_step" "Enabling Docker service..." }}
+sudo systemctl enable docker.service
+{{ includeTemplate "log_success" "Docker service enabled" }}
+
+# Add current user to docker group for socket access
+{{- $username := .chezmoi.username }}
+{{ includeTemplate "log_step" (printf "Adding user '%s' to docker group..." $username) }}
+if getent group docker >/dev/null 2>&1; then
+    # Check if user is already in docker group
+    if id -nG {{ $username }} | grep -qw docker; then
+        {{ includeTemplate "log_skip" (printf "User '%s' already in docker group" $username) }}
+    else
+        sudo usermod -aG docker {{ $username }}
+        {{ includeTemplate "log_success" (printf "User '%s' added to docker group" $username) }}
+        {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
+    fi
+else
+    {{ includeTemplate "log_warning" "Docker group not found - ensure Docker is installed" }}
+fi
+
+# Enable Bluetooth (for all destinations - basic system service)
+{{ includeTemplate "log_step" "Enabling Bluetooth service..." }}
+sudo systemctl enable --now bluetooth
+{{ includeTemplate "log_success" "Bluetooth service enabled" }}
+
+# Enable NVIDIA power management services (for laptops with NVIDIA GPU)
+# These services handle suspend/resume/hibernate for NVIDIA GPUs
+# Only enable if NVIDIA GPU is detected
+{{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
+if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
+    {{ includeTemplate "log_info" "NVIDIA GPU detected - enabling power management services" }}
+
+    NVIDIA_SERVICES=(
+        "nvidia-suspend.service"
+        "nvidia-hibernate.service"
+        "nvidia-resume.service"
+    )
+
+    for service in "${NVIDIA_SERVICES[@]}"; do
+        {{ includeTemplate "log_step" (printf "Enabling %s..." "$service") }}
+        if systemctl list-unit-files "$service" >/dev/null 2>&1; then
+            sudo systemctl enable "$service"
+            {{ includeTemplate "log_success" (printf "%s enabled" "$service") }}
+        else
+            {{ includeTemplate "log_warning" (printf "%s not found - ensure NVIDIA drivers are installed" "$service") }}
+        fi
+    done
+
+    {{ includeTemplate "log_success" "NVIDIA power management services configured" }}
+else
+    {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA power management" }}
+fi
+
+{{ includeTemplate "log_complete" "Service configuration completed" }}

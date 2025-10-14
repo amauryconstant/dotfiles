@@ -193,14 +193,6 @@ packages:
             - playerctl          # Media player control (MPRIS)
             - blueman            # Bluetooth manager GUI (GTK)
 
-        graphics_drivers:
-          strategy: *_install_binary
-          list:
-            # NVIDIA GPU support - MANAGED BY run_once_before_007_configure_gpu_drivers.sh.tmpl
-            # The script detects NVIDIA GPU and installs: nvidia-open-dkms, nvidia-utils,
-            # nvidia-settings, lib32-nvidia-utils, dkms, linux-headers, linux-lts-headers
-            # This ensures proper installation order and configuration before other packages
-
         audio_system:
           strategy: *_install_binary
           list:
