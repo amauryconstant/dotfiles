@@ -65,10 +65,7 @@
     "backlight",    // Screen brightness (laptop only)
     "battery",      // Battery status (laptop only)
 {{ end }}
-    "pulseaudio",   // Volume control
-    "cpu",          // CPU usage
-    "memory",       // Memory usage
-    "temperature"   // CPU temperature
+    "pulseaudio"    // Volume control
   ],
 
   // Additional useful modules (uncomment and add to layout above):
@@ -188,68 +185,7 @@
     // "on-click-right": "mode"     // Right-click to change calendar mode
   },
 
-  // --------------------------------------------------------------------------
-  // CPU Module
-  // --------------------------------------------------------------------------
-  "cpu": {
-    // Update interval in seconds
-    "interval": 5,
 
-    // Format:  = CPU icon (Nerd Font)
-    //   {usage}  = CPU usage percentage
-    //   {load}   = Load average
-    "format": "  {usage}%",
-
-    // Show detailed tooltip on hover
-    "tooltip": true
-
-    // Additional options (uncomment to use):
-    // "format-alt": "  {avg_frequency}GHz",  // Click to show frequency
-    // "on-click": "ghostty btop"             // Click to open btop
-  },
-
-  // --------------------------------------------------------------------------
-  // Memory Module
-  // --------------------------------------------------------------------------
-  "memory": {
-    // Format:  = RAM icon (Nerd Font)
-    //   {}      = Memory usage percentage
-    //   {used}  = Used memory with unit (e.g., 8.5 GiB)
-    //   {total} = Total memory
-    "format": "  {}%"
-
-    // Additional options (uncomment to use):
-    // "interval": 5,
-    // "format-alt": "  {used:0.1f}G",
-    // "tooltip-format": "RAM: {used:0.1f}G / {total:0.1f}G",
-    // "on-click": "ghostty btop"
-  },
-
-  // --------------------------------------------------------------------------
-  // Temperature Module
-  // --------------------------------------------------------------------------
-  "temperature": {
-    // Critical threshold: Temperature (°C) to trigger warning
-    "critical-threshold": 80,
-
-    // Format: {icon} changes based on temperature ranges
-    //   {temperatureC} = Temperature in Celsius
-    //   {temperatureF} = Temperature in Fahrenheit
-    "format": "{icon} {temperatureC}°C",
-
-    // Icons: Different icons for temperature ranges
-    //   [0]  = < 60°C (cool)
-    //   [1]  = 60-80°C (warm)
-    //   [2]  = > 80°C (hot/critical)
-    "format-icons": ["", "", ""]
-
-    // Additional options (uncomment to use):
-    // "thermal-zone": 2,           // Which thermal zone to monitor
-    // "hwmon-path": "/sys/class/hwmon/hwmon2/temp1_input",
-    // "critical-threshold": 85,
-    // "format-critical": "{icon} {temperatureC}°C",
-    // "interval": 2
-  },
 
   // --------------------------------------------------------------------------
   // Network Module
@@ -264,27 +200,30 @@
     // WiFi format
     "format-wifi": "{icon}",
 
-    // Ethernet format: 󰀂 = Ethernet icon
-    "format-ethernet": "󰀂",
+    // Ethernet format: 󰈀 = Ethernet icon (Material Design)
+    "format-ethernet": "󰈀",
 
-    // Disconnected format: 󰤮 = No connection icon
-    "format-disconnected": "󰤮",
+    // Disconnected format: 󰖪 = No connection icon (Material Design)
+    "format-disconnected": "󰖪",
 
-    // Tooltips: Detailed info on hover
-    "tooltip-format-wifi": "{essid} ({frequency} GHz)\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-    "tooltip-format-ethernet": "⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-    "tooltip-format-disconnected": "Disconnected",
+    // Alternate format: Show IP address
+    "format-alt": "{ipaddr}/{cidr}",
 
-    // Update interval for bandwidth (seconds)
-    "interval": 3,
+    // Enhanced tooltips with technical details
+    "tooltip-format-wifi": "{essid} ({frequency} GHz)\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
+    "tooltip-format-ethernet": "Ethernet\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
+    "tooltip-format-disconnected": "Disconnected\nNo network interface available",
+
+    // Update interval for bandwidth (seconds) - optimized for network monitoring
+    "interval": 5,
 
     // Icon spacing
     "spacing": 1,
 
-    // Additional options (uncomment to use):
-    // "interface": "wlan0",        // Specific network interface
-    // "format-alt": "{ipaddr}/{cidr}",  // Click to show IP
-    "on-click": "ghostty --class=network-manager -e nmtui"  // Click to open NetworkManager TUI
+    // Multi-click actions
+    "on-click": "ghostty --class=network-manager -e nmtui",      // Left-click: NetworkManager TUI
+    "on-click-right": "networkctl status",                       // Right-click: Network status
+    "on-click-middle": "nmcli connection reload"                 // Middle-click: Reload connections
   },
 
   // --------------------------------------------------------------------------
@@ -295,27 +234,41 @@
     //   {icon}   = Volume icon (from format-icons below)
     //   {volume} = Volume percentage (0-100)
     "format": "{icon} {volume}%",
-
-    // Muted format:  = Muted icon
-    "format-muted": "  Muted",
-
-    // Icons: Different icons based on volume level
+    
+    // Bluetooth format with device-specific icons
+    "format-bluetooth": "{icon} {volume}%",
+    "format-bluetooth-muted": "󰝟",
+    
+    // Muted format: 󰝟 = Muted icon (Material Design)
+    "format-muted": "󰝟",
+    
+    // Icons: Different icons based on volume level and device type
     "format-icons": {
+      "headphone": "󰋋",      // Headphones (Material Design)
+      "headset": "󰋎",        // Headset (Material Design)
       "default": [
-        "",  // Low volume (0-33%)
-        "",  // Medium volume (34-66%)
-        ""   // High volume (67-100%)
+        "󰕿",                // Low volume (Material Design)
+        "󰖀",                // Medium volume (Material Design)
+        "󰕾"                 // High volume (Material Design)
       ]
     },
-
-    // Click action: Toggle mute using pamixer
-    "on-click": "pamixer -t"
+    
+    // Enhanced tooltip with device information
+    "tooltip-format": "{sink_desc}\nVolume: {volume}%\n{format_source}",
+    
+    // Conditional execution: Only load if pamixer is available
+    "exec-if": "which pamixer",
+    
+    // Multi-click actions
+    "on-click": "pavucontrol",                    // Left-click: Volume control GUI
+    "on-click-right": "pamixer -t",               // Right-click: Toggle mute
+    "on-click-middle": "pamixer --next-sink",     // Middle-click: Next audio sink
+    
+    // Scroll actions: Fine-grained volume control
+    "on-scroll-up": "pamixer -i 5",
+    "on-scroll-down": "pamixer -d 5",
 
     // Additional options (uncomment to use):
-    // "on-click-right": "pavucontrol",  // Right-click to open volume control
-    // "scroll-step": 5,                 // Volume change per scroll (%)
-    // "on-scroll-up": "pamixer -i 5",
-    // "on-scroll-down": "pamixer -d 5",
     // "max-volume": 150,                // Allow volume above 100%
     // "ignored-sinks": ["Easy Effects Sink"]  // Don't show these sinks
   },
@@ -342,11 +295,14 @@
 {{ if eq .chassisType "laptop" }}
   // Bluetooth module: Device management and status
   "bluetooth": {
+    // Conditional execution: Only load if blueman-manager is available
+    "exec-if": "which blueman-manager",
+    
     // Format: Icon when bluetooth enabled
-    "format": "",
+    "format": "󰂯",
 
     // Format when bluetooth disabled
-    "format-disabled": "",
+    "format-disabled": "󰂲",
 
     // Format when devices connected (with count)
     "format-connected": " {num_connections}",
@@ -373,59 +329,67 @@
   "battery": {
     // Warning thresholds
     "states": {
+      "good": 100,
       "warning": 30,
-      "critical": 15
+      "critical": 10
     },
 
     // Format: Icon + percentage
     "format": "{icon} {capacity}%",
 
-    // Format when charging
-    "format-charging": " {capacity}%",
-
+    // Format when charging (Material Design icons)
+    "format-charging": "󰢜 {capacity}%",
+    "format-charging-full": "󰂋 {capacity}%",
+    
     // Format when plugged (full)
-    "format-plugged": " {capacity}%",
+    "format-plugged": "󰚥 {capacity}%",
+    
+    // Alternate format: Show time remaining
+    "format-alt": "{icon} {time}",
+    
+    // Format when full
+    "format-full": "󰁹 {capacity}%",
 
-    // Battery level icons (empty to full)
-    "format-icons": ["", "", "", "", ""],
+    // Battery level icons (Material Design 10-level progression)
+    "format-icons": [
+      "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰂃", "󰁹"
+    ],
+    
+    // Update interval for responsive monitoring - optimized for battery
+    "interval": 3,
 
-    // Tooltip: Show time remaining
-    "tooltip-format": "{timeTo}\n{capacity}% - {power}W"
+    // Enhanced tooltip with technical details
+    "tooltip-format": "{timeTo}\n{capacity}% - {power}W\nHealth: {health}%",
+    
+    // Multi-click actions
+    "on-click": "powerprofilesctl",               // Left-click: Power profile selector
+    "on-click-right": "echo 'Battery info: $(upower -i $(upower -e | grep BAT) | grep -E \"percentage|state|time to empty\")' | xargs -0 notify-send"  // Right-click: Battery info notification
   },
 
   // Backlight module (screen brightness for laptops):
   "backlight": {
+    // Conditional execution: Only load if light command is available
+    "exec-if": "which light",
+    
     // Format: Icon + percentage
     "format": "{icon} {percent}%",
 
-    // Brightness level icons (dim to bright)
-    "format-icons": ["", "", "", "", "", "", "", "", ""],
+    // Brightness level icons (9-level progression from empty to full) - keeping current icons as requested
+    "format-icons": [
+      "", "", "", "", "", "", "", "", ""
+    ],
 
-    // Scroll actions: Adjust brightness
-    "on-scroll-up": "brightnessctl set +5%",
-    "on-scroll-down": "brightnessctl set 5%-"
+    // Scroll actions: Fine-grained brightness control (1% adjustments)
+    "on-scroll-up": "light -A 1",
+    "on-scroll-down": "light -U 1",
+    
+    // Multi-click actions
+    "on-click": "light -S 25",                    // Left-click: 25% brightness
+    "on-click-right": "light -S 75",              // Right-click: 75% brightness
+    "on-click-middle": "light -S 50",             // Middle-click: 50% brightness
+    
+    // Update interval for responsive feedback
+    "interval": 2
   },
 {{ end }}
-
-  // Idle inhibitor (prevent auto-sleep):
-  // "idle_inhibitor": {
-  //   "format": "{icon}",
-  //   "format-icons": {
-  //     "activated": "",
-  //     "deactivated": ""
-  //   }
-  // },
-
-  // Disk usage:
-  // "disk": {
-  //   "interval": 30,
-  //   "format": "  {percentage_used}%",
-  //   "path": "/"
-  // },
-
-  // Custom module example (weather):
-  // "custom/weather": {
-  //   "exec": "curl 'wttr.in/?format=1'",
-  //   "interval": 3600
-  // }
 }

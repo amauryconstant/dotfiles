@@ -96,15 +96,14 @@ window#waybar {
 
 /* Workspace buttons: Hover state */
 #workspaces button:hover {
-  /* Background: Oksolar dark (base02) - slightly lighter than bar */
-  background-color: #{{ .colors.oksolar.base02 }};
+  /* Background: Oksolar blue (primary accent) */
+  background-color: #{{ .colors.oksolar.blue }};
 
-  /* Text color: Oksolar light text (base1) - more visible on hover */
-  color: #{{ .colors.oksolar.base1 }};
+  /* Text color: Oksolar lightest (base3) - high contrast on blue */
+  color: #{{ .colors.oksolar.base3 }};
 
-  /* Optional: Add scaling effect (uncomment to use) */
-  /* transform: scale(1.1); */
-  /* transition: all 0.2s; */
+  /* Enhanced hover effect */
+  transition: all 0.2s ease;
 }
 
 /* Workspace buttons: Active workspace */
@@ -184,93 +183,76 @@ window#waybar {
 }
 
 /* -------------------------------------------------------------------------- */
-/* System Information Modules */
+/* Enhanced Module Styling with Visual Grouping */
 /* -------------------------------------------------------------------------- */
 
-/* Common styling for all system modules */
-#cpu,
-#memory,
-#temperature,
+/* System monitoring group - visual cohesion */
 #network,
-#pulseaudio {
+#pulseaudio,
+#backlight,
+#battery {
   /* Spacing: Left and right padding */
-  padding: 0 10px;
+  padding: 0 12px;
 
-  /* Default text color: Oksolar light text (base1) */
-  color: #{{ .colors.oksolar.base1 }};
+  /* Zero margins for visual grouping */
+  margin-right: 0px;
 
-  /* Optional: Add hover effect (uncomment to use) */
-  /* transition: all 0.2s; */
+  /* Smooth transitions for hover effects */
+  transition: all 0.2s ease;
+
+  /* Connected borders for visual continuity */
+  border-radius: 0px;
 }
 
-/* Optional: Hover effect for all modules */
-/* #cpu:hover,
- * #memory:hover,
- * #temperature:hover,
- * #network:hover,
- * #pulseaudio:hover {
- *   background-color: #{{ .colors.oksolar.base02 }};
- * } */
-
-/* CPU Module: Green (represents active/processing) */
-#cpu {
-  color: #{{ .colors.oksolar.green }};
-}
-
-/* Memory Module: Yellow (represents resource usage) */
-#memory {
-  color: #{{ .colors.oksolar.yellow }};
-}
-
-/* Temperature Module: Orange (represents heat) */
-#temperature {
-  color: #{{ .colors.oksolar.orange }};
-}
-
-/* Temperature Module: Critical state (over threshold) */
-#temperature.critical {
-  /* Color: Oksolar red (error/danger) */
-  color: #{{ .colors.oksolar.red }};
-
-  /* Font weight: Bold to draw attention */
-  font-weight: bold;
-
-  /* Optional: Add pulsing animation (uncomment to use) */
-  /* animation: pulse 2s ease-in-out infinite; */
-}
-
-/* Optional: Pulse animation for critical temperature */
-/* @keyframes pulse {
- *   0%, 100% { opacity: 1; }
- *   50% { opacity: 0.6; }
- * } */
-
-/* Network Module: Cyan (represents connectivity) */
+/* First module in group - left rounded corners */
 #network {
   color: #{{ .colors.oksolar.cyan }};
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
 }
 
 /* Network Module: Disconnected state */
 #network.disconnected {
-  /* Color: Oksolar muted (base01) - dimmed to show inactive */
   color: #{{ .colors.oksolar.base01 }};
-
-  /* Optional: Strike-through text */
-  /* text-decoration: line-through; */
 }
 
-/* PulseAudio Module: Violet (represents media/audio) */
+/* Middle modules - no rounded corners */
 #pulseaudio {
   color: #{{ .colors.oksolar.violet }};
 }
 
 /* PulseAudio Module: Muted state */
 #pulseaudio.muted {
-  /* Color: Oksolar muted (base01) - dimmed to show inactive */
   color: #{{ .colors.oksolar.base01 }};
+}
 
-  /* Optional: Reduce opacity when muted */
-  /* opacity: 0.5; */
+/* Last module in group - right rounded corners */
+#battery {
+  color: #{{ .colors.oksolar.green }};
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Backlight module - positioned before battery */
+#backlight {
+  color: #{{ .colors.oksolar.yellow }};
+}
+
+/* Enhanced hover effects with module-specific colors */
+#network:hover {
+  background-color: rgba(37, 157, 148, 0.1);  /* Cyan with transparency */
+}
+
+#pulseaudio:hover {
+  background-color: rgba(108, 113, 195, 0.1);  /* Violet with transparency */
+}
+
+#backlight:hover {
+  background-color: rgba(182, 136, 0, 0.1);    /* Yellow with transparency */
+}
+
+#battery:hover {
+  background-color: rgba(129, 149, 0, 0.1);    /* Green with transparency */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -313,8 +295,8 @@ window#waybar {
 
 /* Optional: Attention animation for tray items */
 /* @keyframes attention {
- *   0%, 100% { transform: scale(1); }
- *   50% { transform: scale(1.1); }
+ *   0%, 100% { opacity: 1; }
+ *   50% { opacity: 0.7; }
  * } */
 
 /* ========================================================================== */
@@ -342,31 +324,22 @@ window#waybar {
   color: #{{ .colors.oksolar.violet }};
 }
 
-/* Battery module */
+/* Enhanced Battery module with state-based styling */
 #battery {
   /* Default color: Oksolar green (good battery level) */
   color: #{{ .colors.oksolar.green }};
-
-  /* Spacing: Left and right padding */
-  padding: 0 10px;
 }
 
 /* Battery module: Warning state (< 30%) */
-#battery.warning {
-  /* Color: Oksolar yellow (warning) */
+#battery.warning:not(.charging) {
   color: #{{ .colors.oksolar.yellow }};
 }
 
-/* Battery module: Critical state (< 15%) */
-#battery.critical {
-  /* Color: Oksolar red (danger) */
+/* Battery module: Critical state (< 10%) with enhanced animation */
+#battery.critical:not(.charging) {
   color: #{{ .colors.oksolar.red }};
-
-  /* Font weight: Bold to draw attention */
   font-weight: bold;
-
-  /* Optional: Add pulsing animation (uncomment to use) */
-  /* animation: pulse 2s ease-in-out infinite; */
+  animation: critical-blink 1s linear infinite alternate;
 }
 
 /* Battery module: Charging state */
@@ -381,13 +354,34 @@ window#waybar {
   color: #{{ .colors.oksolar.blue }};
 }
 
-/* Backlight module */
+/* Enhanced Backlight module */
 #backlight {
   /* Color: Oksolar yellow (represents brightness/light) */
   color: #{{ .colors.oksolar.yellow }};
+}
 
-  /* Spacing: Left and right padding */
-  padding: 0 10px;
+/* Enhanced critical battery animation with background flash */
+@keyframes critical-blink {
+  0% {
+    background: transparent;
+    color: #{{ .colors.oksolar.red }};
+  }
+  50% {
+    background: #{{ .colors.oksolar.red }};
+    color: #{{ .colors.oksolar.base3 }};
+  }
+  100% {
+    background: transparent;
+    color: #{{ .colors.oksolar.red }};
+  }
+}
+
+/* Smooth transition animations for state changes */
+#network,
+#pulseaudio,
+#backlight,
+#battery {
+  transition: color 0.3s ease, background-color 0.3s ease;
 }
 {{ end }}
 

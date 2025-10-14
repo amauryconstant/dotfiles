@@ -8,207 +8,20 @@
 
 This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasma setup to a clean Arch Linux installation with Hyprland as the compositor.
 
-**Historical Phases**: Phases 1-5 (EndeavourOS removal through ghostty/neovim migration) have been archived to [MIGRATION_LOG_ARCHIVE.md](./MIGRATION_LOG_ARCHIVE.md).
+**Historical Phases**: Phases 1-9 (EndeavourOS removal through NetworkManager configuration) have been archived to [MIGRATION_LOG_ARCHIVE.md](./MIGRATION_LOG_ARCHIVE.md).
 
 ## Migration History
 
-**Note**: Phases 1-5 archived. See [MIGRATION_LOG_ARCHIVE.md](./MIGRATION_LOG_ARCHIVE.md) for:
+**Note**: Phases 1-9 archived. See [MIGRATION_LOG_ARCHIVE.md](./MIGRATION_LOG_ARCHIVE.md) for:
 - Phase 1: Remove Distribution Dependencies
 - Phase 2: Archive KDE Configuration
 - Phase 3: Document archinstall Baseline Packages
 - Phase 4: Implement Hyprland Desktop Environment
 - Phase 5: Migrate to ghostty and neovim
-
-### Phase 6: Add Critical Security and Usability Components ✅
-**Commit**: `ba0b949` - "Add critical security and usability components for Hyprland deployment"
-
-**Changes Made**:
-- **Package Management** (`.chezmoidata/packages.yaml` wayland_desktop section):
-  - Added 7 packages: `hyprlock`, `hypridle`, `cliphist`, `wlogout`, `wl-clipboard`, `pamixer`, `brightnessctl`
-  - Addresses security gaps (screen locking, idle management) and usability needs (clipboard history, power menu, media controls)
-
-- **New Configuration Files** (4 files, 244 lines total):
-  - `hyprlock.conf` - Screen locker with oksolar theming (103 lines)
-    - Password input field with oksolar colors (blue outline, dark background)
-    - Time/date/user labels with consistent styling
-    - Screenshot background with blur effect
-  - `hypridle.conf.tmpl` - Idle daemon with chassis-specific behavior (37 lines)
-    - Lock screen after 5 minutes of inactivity
-    - Turn off displays after 10 minutes
-    - Suspend after 15 minutes (laptop only, using `{{ if eq .chassisType "laptop" }}`)
-  - `wlogout/layout` - Power menu actions (30 lines)
-    - 5 actions: lock, logout, suspend, reboot, shutdown
-    - JSON layout with keybindings (l, e, u, r, s)
-  - `wlogout/style.css.tmpl` - Power menu styling with oksolar colors (74 lines)
-    - Button styling with hover effects
-    - oksolar color scheme integration via templates
-
-- **Hyprland Configuration Updates**:
-  - `autostart.conf` - Enabled 3 essential daemons:
-    - Uncommented `polkit-kde-agent` (GUI privilege escalation)
-    - Added `wl-paste --watch cliphist store` (clipboard history watcher)
-    - Added `hypridle` (idle management daemon)
-  - `bindings.conf.tmpl` - Added 4 new keybindings:
-    - `Super+L` - Lock screen (hyprlock)
-    - `Super+Shift+E` - Power menu (wlogout)
-    - `Super+C` - Clipboard history (cliphist via wofi)
-    - `XF86MonBrightnessUp/Down` - Brightness control (uncommented, laptop)
-
-- **Supporting Documentation**:
-  - `.claude/agents/hyprland-investigator.md` - Specialized agent for Hyprland analysis (199 lines)
-  - Updated `.gitignore` to exclude analysis working directories
-
-**Configuration Highlights**:
-- **Template Integration**: `hypridle.conf.tmpl` uses chassis detection for laptop-specific suspend behavior
-- **Color Consistency**: All new configs use oksolar color scheme from `.chezmoidata/colors.yaml`
-- **Security Focus**: Screen locking integrated with idle management (lock before suspend)
-- **Usability**: Complete power menu with all session management options
-- **Media Integration**: Brightness and volume controls fully functional
-
-**Rationale**:
-- Closes 7 critical gaps identified in ARCH_HYPRLAND_MIGRATION_ANALYSIS.md
-- **Security**: Screen locking and idle management prevent unauthorized access
-- **Usability**: Power menu, clipboard history, and media controls essential for daily workflow
-- **Production-Ready**: Desktop environment now has all essential components for deployment
-- Analysis-driven approach ensures best practices from Hyprland ecosystem
-
-**Impact**:
-- System now production-ready with complete security and usability features
-- Screen automatically locks after inactivity (configurable timeouts)
-- GUI power menu for logout, suspend, reboot, shutdown operations
-- Clipboard history accessible via keyboard shortcut
-- Media keys functional for volume and brightness control
-- Polkit authentication enables GUI privilege escalation for system settings
-- Total configuration growth: 244 lines across 4 new files + comprehensive analysis documentation
-
-### Phase 7: Add Comprehensive Hyprland Documentation ✅
-**Commit**: `7a595ab` - "Add comprehensive Hyprland desktop environment documentation"
-
-**Changes Made**:
-- **Documentation Expansion** (103 lines across 2 files):
-  - **CLAUDE.md**: Added 75 lines of detailed technical guidance for Hyprland development
-  - **README.md**: Enhanced with 36 lines of user-facing documentation updates
-- **Technical Guidance Added**:
-  - Specified Arch Linux with archinstall + Hyprland profile as target platform
-  - Documented complete desktop stack: Hyprland + Waybar + Wofi
-  - Clarified terminal architecture: Ghostty (primary) + Kitty (baseline fallback)
-  - Detailed modular Hyprland configuration structure (9 conf files)
-  - Documented package management with archinstall baseline tracking
-  - Added testing commands and reload procedures for desktop components
-  - Expanded directory structure documentation with config folder breakdown
-
-**Rationale**:
-- Provides comprehensive technical reference for Hyprland-based development
-- Establishes clear patterns for desktop environment configuration and maintenance
-- Documents architectural decisions and component relationships
-- Enables efficient development and troubleshooting of Hyprland setup
-- Creates single source of truth for desktop environment specifications
-
-**Impact**:
-- Development team now has detailed reference for Hyprland configuration patterns
-- Clear documentation of testing procedures and component interactions
-- Established patterns for future desktop environment enhancements
-- Improved onboarding experience for developers working with the dotfiles
-- Documentation now matches actual implemented architecture
-
-### Phase 8: Enhance Hyprland Desktop with Notifications and Keybinds ✅
-**Commit**: `5db9a51` - "Enhance Hyprland desktop with dunst notifications, wallpaper management, and keybinds system"
-
-**Changes Made**:
-- **Commit Hash Verification**: Corrected all commit hashes in migration history to match actual git repository:
-  - Phase 1: `209c9c8` → `7554849` - "Remove the dependency to endeavouros"
-  - Phase 2: `3a1e1a8` → `4900f68` - "Archive KDE configuration files"
-  - Phase 3: `7396831` → `49b0155` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
-  - Phase 4: `13964e2` → `59469b7` - "Add comprehensive Hyprland configuration with waybar"
-  - Phase 5: `1c8ea26` → `da51860` - "Migrate terminal and editor to ghostty and neovim"
-  - Phase 6: `(to be determined)` → `ba0b949` - "Add critical security and usability components for Hyprland deployment"
-- **Added Missing Phase**: Documented Phase 7 commit `7a595ab` for comprehensive Hyprland documentation
-- **Phase Renumbering**: Previous "Phase 7" renamed to "Phase 8" to accommodate missing documentation
-
-**Rationale**:
-- Ensures migration log accurately reflects actual git repository state
-- Maintains traceability for each migration phase with correct chronological order
-- Provides reliable reference for future development and troubleshooting
-- Corrects documentation drift that occurred during migration process
-- Preserves historical accuracy by documenting all significant commits
-
-**Impact**:
-- Migration log now accurately references all actual commits in repository
-- All phases properly documented with correct hash references and chronological order
-- Maintains historical accuracy for development team
-- Enables reliable git operations (checkout, bisect, revert) based on documented commits
-- Complete coverage of migration history from Phase 1 through Phase 8
-
-### Phase 9: Configure NetworkManager with iwd Backend ✅
-**Commit**: `a8bd346` - "Configure NetworkManager with iwd backend for WiFi management"
-
-**Changes Made**:
-- **Package Management** (`.chezmoidata/packages.yaml`):
-  - Added `networkmanager` to `networking_tools.list` (line 144)
-  - Added `gnome-keyring` to `general_software.list` (line 151) for WiFi password storage
-  - Updated archinstall_baseline documentation:
-    - `iwd` - Clarified as "Wireless daemon (used as NetworkManager backend)" (line 30)
-    - `wpa_supplicant` - Marked as "WPA/WPA2 authentication (replaced by iwd)" (line 36)
-  - Code cleanup: Removed trailing whitespace from `posting` entry (line 134)
-  - Removed obsolete `tldr` from delete.arch section (now using `tlrc`)
-
-- **New Configuration Script** (`.chezmoiscripts/run_once_after_008_configure_networkmanager.sh.tmpl`):
-  - 61 lines implementing comprehensive NetworkManager + iwd backend setup
-  - **NetworkManager Configuration**:
-    - Enables NetworkManager service for boot startup
-    - Creates `/etc/NetworkManager/conf.d/wifi_backend.conf` with `wifi.backend=iwd`
-  - **iwd Backend Setup**:
-    - Enables and starts iwd service (required for NetworkManager WiFi backend)
-    - Disables wpa_supplicant to prevent conflicts with iwd
-  - **Service Management**:
-    - Restarts NetworkManager to apply backend configuration
-    - Verifies NetworkManager is running successfully
-  - **Error Handling**: Checks service status with graceful error messages
-
-- **Hyprland Configuration Updates**:
-  - `autostart.conf` - Added gnome-keyring daemon initialization (4 lines, line 43-46):
-    - Launches with all components: `gpg,pkcs11,secrets,ssh`
-    - Required for nmtui and NetworkManager to store/retrieve network credentials
-    - Enables GUI privilege escalation for system settings (polkit integration)
-  - `autostart.conf` - Removed commented `nm-applet` suggestion (line 56)
-    - TUI approach preferred over system tray icon for network management
-
-- **Waybar Status Bar Updates** (`config.tmpl`):
-  - Added click handler for network module (line 287):
-    - `"on-click": "ghostty --class=network-manager -e nmtui"`
-    - Opens NetworkManager TUI in dedicated ghostty window on network icon click
-    - Provides quick GUI access to WiFi connections, VPN, and network settings
-
-**Architecture Overview**:
-```
-NetworkManager (network configuration daemon)
-    ├─→ iwd backend (modern WiFi management)
-    │   ├─→ Replaces wpa_supplicant
-    │   └─→ Better performance and Wayland support
-    ├─→ gnome-keyring (credential storage)
-    │   ├─→ Stores WiFi passwords securely
-    │   ├─→ SSH key management
-    │   └─→ GPG key caching
-    └─→ nmtui (TUI interface)
-        └─→ Accessible via Waybar click (ghostty terminal)
-```
-
-**Rationale**:
-- **NetworkManager + iwd**: Modern WiFi stack with better performance than wpa_supplicant
-- **iwd Advantages**: Lower resource usage, better Wayland integration, faster connections
-- **gnome-keyring**: Essential for secure WiFi password storage (nmtui dependency)
-- **TUI over GUI**: `nmtui` provides full functionality without system tray clutter
-- **Waybar Integration**: One-click access to network management from status bar
-- **Clean Architecture**: Replaces archinstall's wpa_supplicant with modern iwd backend
-
-**Impact**:
-- System now has complete network management stack configured
-- WiFi credentials stored securely via gnome-keyring integration
-- NetworkManager accessible via waybar network icon click (spawns nmtui in ghostty)
-- iwd backend provides modern WiFi management (replaces wpa_supplicant)
-- Automatic service startup on boot (NetworkManager + iwd + gnome-keyring)
-- Enhanced Wayland compatibility and performance over wpa_supplicant
-- Total configuration: 61 lines of service configuration + 4 lines of autostart + 1 line waybar integration
+- Phase 6: Add Critical Security and Usability Components
+- Phase 7: Add Comprehensive Hyprland Documentation
+- Phase 8: Enhance Hyprland Desktop with Notifications and Keybinds
+- Phase 9: Configure NetworkManager with iwd Backend
 
 ### Phase 10: Centralize Environment Configuration with globals.yaml ✅
 **Commit**: `31c6adb` - "Centralize environment configuration with globals.yaml"
@@ -274,8 +87,8 @@ NetworkManager (network configuration daemon)
 - Total additions: 99 lines (34 globals.yaml + 40 login.tmpl + 25 mimeapps.list.tmpl)
 - Fixed shell path reference bug improving POSIX shell compatibility
 
-### Phase 11: Automated NVIDIA GPU Driver Configuration ⏳
-**Commit**: `(pending)` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
+### Phase 11: Automated NVIDIA GPU Driver Configuration ✅
+**Commit**: `b7505cb` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
 
 **Changes Made**:
 - **New Configuration Script** (`.chezmoiscripts/run_once_before_007_configure_gpu_drivers.sh.tmpl` - 291 lines):
@@ -363,8 +176,8 @@ GPU Driver Configuration Flow:
 - Chaotic-AUR repository reduces AUR compilation time on fresh installations
 - **⚠️ REBOOT REQUIRED** after initial setup for kernel parameters and modules to take effect
 
-### Phase 12: Enhanced File Management with Dolphin and Yazi ⏳
-**Commit**: `(pending)` - "Enhance file management with Dolphin GUI integration and Yazi TUI file manager"
+### Phase 12: Enhanced File Management with Dolphin and Yazi ✅
+**Commit**: `e1dd48c` - "Enhance file management with Dolphin GUI integration and Yazi TUI file manager"
 
 **Changes Made**:
 - **Package Management** (`.chezmoidata/packages.yaml` - 14 new packages):
@@ -484,10 +297,147 @@ globals.yaml (Single Source of Truth)
 - Total additions: 14 packages + 38 lines of configuration across 6 files
 - No changes to archinstall baseline (Dolphin already included, enhanced with ecosystem packages)
 
+### Phase 13: Enhance Waybar Status Bar with Interactive Controls ⏳
+**Commit**: `(pending)` - "Enhance Waybar status bar with interactive controls and visual refinements"
+
+**Changes Made**:
+- **Waybar Configuration Simplification** (`private_dot_config/waybar/config.tmpl`):
+  - **Removed System Monitoring Modules** (3 modules, 93 lines removed):
+    - Removed `cpu` module - Redundant with system monitors (btop, htop)
+    - Removed `memory` module - Accessible via dedicated system monitoring tools
+    - Removed `temperature` module - Available in full monitoring interfaces
+    - Rationale: Status bar should show essential info, not duplicate full monitoring tools
+  - **Enhanced Network Module** (14 new lines):
+    - Multi-click actions for comprehensive network management:
+      - Left-click: `ghostty -e nmtui` - NetworkManager TUI (primary action)
+      - Right-click: `networkctl status` - Quick network status check
+      - Middle-click: `nmcli connection reload` - Reload network connections
+    - Enhanced tooltips with detailed technical info:
+      - WiFi: ESSID, frequency, IP/CIDR, gateway, bandwidth (↓/↑)
+      - Ethernet: IP/CIDR, gateway, bandwidth monitoring
+      - Disconnected: Clear error message
+    - Improved icons: Material Design icons (󰈀 ethernet, 󰖪 disconnected)
+    - Optimized update interval: 5 seconds (balanced monitoring)
+    - Alternate format: Click to toggle IP address display
+  - **Enhanced PulseAudio Module** (20 new lines):
+    - Multi-click actions for complete audio control:
+      - Left-click: `pavucontrol` - Full volume control GUI
+      - Right-click: `pamixer -t` - Quick mute toggle
+      - Middle-click: `pamixer --next-sink` - Switch audio output device
+    - Scroll actions: Fine-grained volume control (±5% per scroll)
+    - Device-specific icons: Headphone (󰋋), Headset (󰋎), Speaker levels
+    - Material Design volume icons: 󰕿 (low), 󰖀 (medium), 󰕾 (high)
+    - Bluetooth audio support: `format-bluetooth` and `format-bluetooth-muted`
+    - Enhanced tooltip: Sink description, volume %, source info
+    - Conditional execution: `exec-if "which pamixer"` (only load if available)
+  - **Enhanced Bluetooth Module (Laptop)** (4 new lines):
+    - Material Design icons: 󰂯 (enabled), 󰂲 (disabled)
+    - 11-level battery icons for connected devices (󰥇-󰥈)
+    - Conditional execution: `exec-if "which blueman-manager"`
+    - Click action: Launch Blueman Manager GUI
+  - **Enhanced Battery Module (Laptop)** (15 new lines):
+    - Material Design icon set (11 icons: 󰁺-󰁹)
+    - Multi-state icons: Charging (󰢜), charging-full (󰂋), plugged (󰚥), full (󰁹)
+    - Multi-click actions:
+      - Left-click: `powerprofilesctl` - Power profile selector
+      - Right-click: Battery info notification via upower
+    - Alternate format: Toggle between percentage and time remaining
+    - Optimized update interval: 3 seconds (responsive monitoring)
+    - Enhanced tooltip: Time remaining, power draw (W), battery health (%)
+    - Adjusted thresholds: Good (100%), Warning (30%), Critical (10%)
+  - **Enhanced Backlight Module (Laptop)** (13 new lines):
+    - Switched from `brightnessctl` to `light` (simpler, more direct control)
+    - Multi-click actions for quick brightness presets:
+      - Left-click: 25% brightness
+      - Right-click: 75% brightness
+      - Middle-click: 50% brightness
+    - Fine-grained scroll control: ±1% adjustments (smooth transitions)
+    - Conditional execution: `exec-if "which light"`
+    - Responsive update interval: 2 seconds
+    - 9-level brightness icons (empty to full progression)
+
+- **Waybar Styling Enhancements** (`private_dot_config/waybar/style.css.tmpl`):
+  - **Visual Grouping System** (38 new lines):
+    - Created unified module group: network, pulseaudio, backlight, battery
+    - Rounded corner design: First module (8px left), last module (8px right)
+    - Zero margins between modules for visual continuity
+    - Increased padding: 12px (improved clickability and aesthetics)
+  - **Enhanced Hover Effects**:
+    - Module-specific semi-transparent backgrounds (10% opacity):
+      - Network: Cyan tint `rgba(37, 157, 148, 0.1)`
+      - PulseAudio: Violet tint `rgba(108, 113, 195, 0.1)`
+      - Backlight: Yellow tint `rgba(182, 136, 0, 0.1)`
+      - Battery: Green tint `rgba(129, 149, 0, 0.1)`
+    - Smooth transitions: `0.2s ease` for all hover state changes
+  - **Workspace Button Improvements**:
+    - Enhanced hover: Blue background (primary accent) with high-contrast text
+    - Consistent active state: Matches hover colors for unified experience
+    - Smooth transitions: `all 0.2s ease`
+  - **Enhanced Battery Animations** (20 new lines):
+    - Critical battery animation: `@keyframes critical-blink`
+      - Background flashes red at 50% keyframe
+      - Text alternates between red on transparent and white on red
+      - 1 second interval, infinite loop, linear timing
+    - State-specific transitions: Smooth color/background changes (0.3s ease)
+    - Smart charging detection: Warning/critical colors only when not charging
+
+- **Project Organization** (`.chezmoiignore`):
+  - Restructured ignore patterns with clear section comments
+  - Moved markdown exclusion to specific pattern: `./*.md` (only root level)
+  - Added new `.resources/` directory for project assets (glyphnames.json)
+  - Organized sections: Chezmoi internals, development files, archives, resources
+
+**Architecture Improvements**:
+```
+Enhanced Waybar Status Bar:
+├─→ Left: Hyprland workspaces + window title
+├─→ Center: Clock with calendar tooltip
+└─→ Right: Visual module group
+    ├─→ System Tray (Nextcloud, system icons)
+    ├─→ Network (multi-click: TUI, status, reload)
+    ├─→ [Bluetooth] (laptop only, GUI manager)
+    ├─→ [Backlight] (laptop only, preset clicks + scroll)
+    ├─→ [Battery] (laptop only, power profiles + info)
+    └─→ PulseAudio (multi-click: GUI, mute, switch sink)
+
+Interactive Control Flow:
+Network Module → Left: nmtui, Right: status, Middle: reload
+Audio Module → Left: pavucontrol, Right: mute, Middle: next sink, Scroll: ±5%
+Backlight Module → Left: 25%, Right: 75%, Middle: 50%, Scroll: ±1%
+Battery Module → Left: power profiles, Right: info notification
+```
+
+**Rationale**:
+- **Simplified Information**: Removed redundant CPU/memory/temp (accessible via btop/htop)
+- **Enhanced Interactivity**: Multi-click actions provide quick access to common tasks
+- **Visual Polish**: Grouped modules with rounded corners and hover effects improve aesthetics
+- **Responsive Controls**: Fine-grained scroll adjustments (1% brightness, 5% volume)
+- **Quick Presets**: Backlight click actions provide instant brightness levels
+- **Material Design**: Consistent icon set across all modules (modern, recognizable)
+- **Smart Feedback**: Enhanced tooltips with technical details for troubleshooting
+- **Battery Intelligence**: Conditional animations (only flash when not charging)
+- **Ergonomic Design**: Increased padding (12px) improves click target size
+- **Tool Consolidation**: Uses `light` instead of `brightnessctl` (simpler, direct control)
+- **Conditional Loading**: Modules only load if required tools are available (`exec-if`)
+
+**Impact**:
+- Cleaner status bar focusing on essential, actionable information
+- Network management: One click to nmtui, right-click for quick status
+- Audio control: Full GUI (pavucontrol) or quick actions (mute, switch sink)
+- Brightness control: Instant presets (25/50/75%) or fine scroll adjustments
+- Power management: Quick access to power profiles and battery details
+- Visual cohesion: Grouped modules with consistent styling and hover effects
+- Professional appearance: Material Design icons and polished animations
+- Enhanced UX: Larger click targets, smooth transitions, intuitive interactions
+- Battery safety: Animated critical warning (background flash) only when not charging
+- Responsive monitoring: Optimized update intervals (2s backlight, 3s battery, 5s network)
+- Total changes: 135 lines added (interactivity + styling), 93 lines removed (redundant monitors)
+- Net impact: More functionality with less visual clutter
+
 ---
 
 ## Next Steps
 
 ---
 
-**Last Updated**: 2025-10-13
+**Last Updated**: 2025-10-14

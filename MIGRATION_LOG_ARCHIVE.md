@@ -4,13 +4,13 @@
 **Branch**: `arch-switch` (historical)
 **Status**: Completed phases from initial migration
 
-This archive contains the first five phases of the migration from EndeavourOS + KDE Plasma to vanilla Arch Linux + Hyprland. These phases established the foundation for the desktop environment.
+This archive contains the first nine phases of the migration from EndeavourOS + KDE Plasma to vanilla Arch Linux + Hyprland. These phases established the foundation for the desktop environment, security components, and system configuration.
 
 **For current migration status, see**: [MIGRATION_LOG.md](./MIGRATION_LOG.md)
 
 ---
 
-## Archived Phases (1-5)
+## Archived Phases (1-9)
 
 ### Phase 1: Remove Distribution Dependencies ✅
 **Commit**: `7554849` - "Remove the dependency to endeavouros"
@@ -182,6 +182,34 @@ This archive contains the first five phases of the migration from EndeavourOS + 
 - Cleanup of redundant monitoring tools (htop) and editors (vim)
 - Backup terminal (kitty) available via `Super+D` → type "kitty" if ghostty issues occur
 
+### Phase 6: Add Critical Security and Usability Components ✅
+**Commit**: `ba0b949` - "Add critical security and usability components for Hyprland deployment"
+
+**Summary**: Added essential security (hyprlock, hypridle) and usability (cliphist, wlogout, pamixer, brightnessctl) packages. Created 4 configuration files (244 lines) for screen locking, idle management, power menu, and clipboard history. Enabled essential daemons in Hyprland autostart and added 4 new keybindings for lock screen, power menu, clipboard, and brightness control.
+
+**Impact**: Desktop environment became production-ready with complete security and usability features. Screen automatically locks after inactivity, GUI power menu for session management, clipboard history accessible via keyboard shortcut, and media keys functional.
+
+### Phase 7: Add Comprehensive Hyprland Documentation ✅
+**Commit**: `7a595ab` - "Add comprehensive Hyprland desktop environment documentation"
+
+**Summary**: Added 103 lines of documentation across CLAUDE.md (75 lines of technical guidance) and README.md (36 lines of user documentation). Documented complete desktop stack (Hyprland + Waybar + Wofi), terminal architecture (Ghostty + Kitty), modular configuration structure, package management with archinstall baseline tracking, and testing procedures.
+
+**Impact**: Established comprehensive technical reference for Hyprland configuration patterns, testing procedures, and component interactions. Created single source of truth for desktop environment specifications.
+
+### Phase 8: Enhance Hyprland Desktop with Notifications and Keybinds ✅
+**Commit**: `5db9a51` - "Enhance Hyprland desktop with dunst notifications, wallpaper management, and keybinds system"
+
+**Summary**: Corrected all commit hashes in migration history to match actual git repository (Phases 1-6 hashes updated). Added missing Phase 7 documentation entry. Renumbered phases to maintain chronological accuracy. This phase focused on commit hash verification and migration log accuracy.
+
+**Impact**: Migration log now accurately references all actual commits in repository with correct chronological order. Enables reliable git operations (checkout, bisect, revert) based on documented commits.
+
+### Phase 9: Configure NetworkManager with iwd Backend ✅
+**Commit**: `a8bd346` - "Configure NetworkManager with iwd backend for WiFi management"
+
+**Summary**: Added NetworkManager and gnome-keyring packages. Created 61-line configuration script for NetworkManager + iwd backend setup. Updated archinstall baseline documentation to clarify iwd usage. Added gnome-keyring daemon to Hyprland autostart (4 lines) and network module click handler to Waybar (1 line).
+
+**Impact**: Complete network management stack configured. WiFi credentials stored securely via gnome-keyring. NetworkManager accessible via waybar network icon click (spawns nmtui in ghostty). iwd backend provides modern WiFi management replacing wpa_supplicant.
+
 ---
 
-**Archive Note**: These phases established the foundation for the Arch Linux + Hyprland migration. Subsequent phases focused on security enhancements, network management, environment configuration, and hardware support. See [MIGRATION_LOG.md](./MIGRATION_LOG.md) for current migration status.
+**Archive Note**: These nine phases established the complete foundation for the Arch Linux + Hyprland migration, including desktop environment, security components, documentation, and network management. Subsequent phases (10+) focus on environment configuration centralization, hardware support (GPU drivers, file management), and interface refinements. See [MIGRATION_LOG.md](./MIGRATION_LOG.md) for current migration status.

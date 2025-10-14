@@ -1,11 +1,14 @@
-*.md
-
 # Ignore pattern for Chezmoi Modify Manager
 **/*.src.ini
 
+# Development
+./mise.toml
 .mcp.json
-
-mise.toml
 
 # Archive directory for storing old configurations
 archives/
+
+# Resources
+.resources/
+./*.md
+LICENSE
