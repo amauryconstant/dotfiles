@@ -1,0 +1,352 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_002_configure_system_services.sh.tmpl
+# Purpose: Consolidated system services configuration (Docker, Bluetooth, Ollama, Tailscale, NetworkManager)
+# Requirements: Arch Linux, systemd
+# Execution: Runs AFTER file application to configure all system services
+#
+# This script consolidates four previously separate scripts:
+# - Docker and Bluetooth services
+# - Ollama AI service
+# - Tailscale VPN service
+# - NetworkManager with iwd backend
+#
+# Benefits of consolidation:
+# - Single systemctl daemon-reload (instead of 4×)
+# - Consistent service verification
+# - Easier to add/remove services
+
+{{ includeTemplate "log_start" "Configure system services (Docker, Bluetooth, Network, AI, VPN)" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# ============================================================================
+# SECTION 1: CORE SERVICES (Docker, Bluetooth, NVIDIA Power)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 1: Core System Services"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Configuring Docker service..." }}
+
+# Enable Docker service
+sudo systemctl enable docker.service
+{{ includeTemplate "log_success" "Docker service enabled" }}
+
+# Add current user to docker group for socket access
+{{- $username := .chezmoi.username }}
+{{ includeTemplate "log_step" "Adding user to docker group..." }}
+
+if getent group docker >/dev/null 2>&1; then
+    # Check if user is already in docker group
+    if id -nG {{ $username }} | grep -qw docker; then
+        {{ includeTemplate "log_skip" "User already in docker group" }}
+    else
+        sudo usermod -aG docker {{ $username }}
+        {{ includeTemplate "log_success" "User added to docker group" }}
+        {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
+    fi
+else
+    {{ includeTemplate "log_warning" "Docker group not found - ensure Docker is installed" }}
+fi
+
+{{ includeTemplate "log_step" "Configuring Bluetooth service..." }}
+
+# Enable Bluetooth (basic system service)
+sudo systemctl enable --now bluetooth
+{{ includeTemplate "log_success" "Bluetooth service enabled" }}
+
+{{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
+
+# Enable NVIDIA power management services (for laptops with NVIDIA GPU)
+# These services handle suspend/resume/hibernate for NVIDIA GPUs
+# Only enable if NVIDIA GPU is detected
+if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
+    {{ includeTemplate "log_info" "NVIDIA GPU detected - enabling power management services" }}
+
+    NVIDIA_SERVICES=(
+        "nvidia-suspend.service"
+        "nvidia-hibernate.service"
+        "nvidia-resume.service"
+    )
+
+    for service in "${NVIDIA_SERVICES[@]}"; do
+        if systemctl list-unit-files "$service" >/dev/null 2>&1; then
+            sudo systemctl enable "$service"
+            {{ includeTemplate "log_success" "$service enabled" }}
+        else
+            {{ includeTemplate "log_warning" "$service not found - ensure NVIDIA drivers are installed" }}
+        fi
+    done
+
+    {{ includeTemplate "log_success" "NVIDIA power management services configured" }}
+else
+    {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA power management" }}
+fi
+
+# ============================================================================
+# SECTION 2: OLLAMA AI SERVICE (Optional)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 2: Ollama AI Service"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Checking for Ollama installation..." }}
+
+# Check if ollama is installed
+if ! command -v ollama >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Ollama not found, skipping configuration" }}
+else
+    {{ includeTemplate "log_success" "Ollama is installed" }}
+
+    {{ includeTemplate "log_step" "Installing Ollama service file..." }}
+    # Copy ollama service file to system location
+    sudo cp "{{ .chezmoi.sourceDir }}/.data/ollama.service" /etc/systemd/system/ollama.service
+
+    {{ includeTemplate "log_step" "Enabling and starting Ollama service..." }}
+
+    # Enable and start ollama system service
+    sudo systemctl enable ollama
+    sudo systemctl start ollama
+
+    # Wait for service to be ready (proper wait loop instead of arbitrary sleep)
+    {{ includeTemplate "log_step" "Waiting for Ollama service to be ready..." }}
+    MAX_WAIT=30
+    WAIT_COUNT=0
+    while ! systemctl is-active ollama >/dev/null 2>&1; do
+        if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+            {{ includeTemplate "log_error" "Ollama service failed to start within ${MAX_WAIT}s" }}
+            exit 1
+        fi
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+
+    {{ includeTemplate "log_success" "Ollama service ready after ${WAIT_COUNT}s" }}
+fi
+
+# ============================================================================
+# SECTION 3: TAILSCALE VPN SERVICE (Optional)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 3: Tailscale VPN Service"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Checking for Tailscale installation..." }}
+
+# Check if tailscale is installed
+if ! command -v tailscale >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Tailscale not found, skipping configuration" }}
+else
+    {{ includeTemplate "log_success" "Tailscale is installed" }}
+
+    {{ includeTemplate "log_step" "Enabling Tailscale daemon service..." }}
+
+    # Enable tailscaled service (system daemon)
+    sudo systemctl enable tailscaled
+
+    {{ includeTemplate "log_step" "Starting Tailscale daemon service..." }}
+
+    # Start tailscaled service
+    sudo systemctl start tailscaled
+
+    # Wait for service to be ready (proper wait loop instead of arbitrary sleep)
+    {{ includeTemplate "log_step" "Waiting for Tailscale daemon to be ready..." }}
+    MAX_WAIT=30
+    WAIT_COUNT=0
+    while ! systemctl is-active tailscaled >/dev/null 2>&1; do
+        if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+            {{ includeTemplate "log_error" "Tailscale daemon failed to start within ${MAX_WAIT}s" }}
+            exit 1
+        fi
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+
+    {{ includeTemplate "log_success" "Tailscale daemon ready after ${WAIT_COUNT}s" }}
+
+    # Set operator to allow non-root access
+    CURRENT_USER="{{ .chezmoi.username }}"
+    {{ includeTemplate "log_step" "Configuring operator permissions for current user..." }}
+    sudo tailscale set --operator="$CURRENT_USER"
+
+    {{ includeTemplate "log_success" "Operator set to $CURRENT_USER (non-root access enabled)" }}
+
+    # Check if already authenticated
+    {{ includeTemplate "log_step" "Checking Tailscale status..." }}
+    if tailscale status >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "Tailscale is already configured and connected" }}
+    else
+        {{ includeTemplate "log_step" "Tailscale needs initial authentication" }}
+        {{ includeTemplate "log_step" "Starting authentication process..." }}
+
+        # Run tailscale up to authenticate (opens browser or shows URL)
+        if tailscale up; then
+            {{ includeTemplate "log_success" "Successfully authenticated and connected to Tailscale" }}
+
+            # Show connection info
+            TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
+            {{ includeTemplate "log_info" "Tailscale IPv4: $TAILSCALE_IP" }}
+        else
+            {{ includeTemplate "log_error" "Failed to authenticate with Tailscale" }}
+            {{ includeTemplate "log_info" "You can retry later with: tailscale up" }}
+            exit 1
+        fi
+    fi
+fi
+
+# ============================================================================
+# SECTION 4: NETWORKMANAGER WITH IWD BACKEND
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 4: NetworkManager with iwd Backend"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Enable NetworkManager service" }}
+
+# Enable NetworkManager to start at boot
+sudo systemctl enable NetworkManager
+
+{{ includeTemplate "log_step" "Configure iwd as NetworkManager WiFi backend" }}
+
+# Create NetworkManager configuration directory if needed
+sudo mkdir -p /etc/NetworkManager/conf.d
+
+# Configure NetworkManager to use iwd instead of wpa_supplicant
+sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<EOF
+[device]
+wifi.backend=iwd
+EOF
+
+{{ includeTemplate "log_step" "Enable and start iwd service" }}
+
+# Enable iwd to start at boot (required for NetworkManager backend)
+sudo systemctl enable iwd
+
+# Start iwd immediately
+sudo systemctl start iwd
+
+{{ includeTemplate "log_step" "Disable wpa_supplicant to prevent conflicts" }}
+
+# Stop and disable wpa_supplicant (conflicts with iwd)
+if systemctl is-active wpa_supplicant 2>/dev/null; then
+    sudo systemctl stop wpa_supplicant
+fi
+if systemctl is-enabled wpa_supplicant 2>/dev/null; then
+    sudo systemctl disable wpa_supplicant
+fi
+
+{{ includeTemplate "log_step" "Restart NetworkManager to apply backend change" }}
+
+# Restart NetworkManager to pick up iwd backend configuration
+sudo systemctl restart NetworkManager
+
+{{ includeTemplate "log_step" "Verify NetworkManager status" }}
+
+# Check if NetworkManager is running
+if systemctl is-active NetworkManager >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "NetworkManager service is running with iwd backend" }}
+else
+    {{ includeTemplate "log_error" "NetworkManager service failed to start" }}
+    exit 1
+fi
+
+# ============================================================================
+# SECTION 5: FINAL DAEMON RELOAD AND VERIFICATION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 5: Final Verification"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Reloading systemd daemon..." }}
+
+# Single systemd daemon-reload for all service changes
+sudo systemctl daemon-reload
+
+{{ includeTemplate "log_success" "Systemd daemon reloaded" }}
+
+{{ includeTemplate "log_step" "Verifying all enabled services..." }}
+
+# Verify core services
+for service in docker.service bluetooth.service NetworkManager.service iwd.service; do
+    if systemctl is-enabled "$service" >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "$service is enabled" }}
+    else
+        {{ includeTemplate "log_warning" "$service is not enabled" }}
+    fi
+done
+
+# Verify optional services (only if installed)
+if command -v ollama >/dev/null 2>&1; then
+    if systemctl is-enabled ollama.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "ollama.service is enabled" }}
+    else
+        {{ includeTemplate "log_warning" "ollama.service is not enabled" }}
+    fi
+fi
+
+if command -v tailscale >/dev/null 2>&1; then
+    if systemctl is-enabled tailscaled.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "tailscaled.service is enabled" }}
+    else
+        {{ includeTemplate "log_warning" "tailscaled.service is not enabled" }}
+    fi
+fi
+
+# ============================================================================
+# FINAL SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  System Services Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "Core Services Configured:"
+echo "  ✓ Docker (enabled, user added to docker group)"
+echo "  ✓ Bluetooth (enabled and active)"
+echo "  ✓ NetworkManager with iwd backend (WiFi)"
+
+if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
+    echo "  ✓ NVIDIA power management (suspend/resume)"
+fi
+
+if command -v ollama >/dev/null 2>&1; then
+    echo ""
+    echo "Optional Services Configured:"
+    echo "  ✓ Ollama AI service (enabled and running)"
+fi
+
+if command -v tailscale >/dev/null 2>&1; then
+    if [ ! -f /tmp/tailscale_configured_flag ] || command -v ollama >/dev/null 2>&1; then
+        echo ""
+    fi
+    if [ ! -f /tmp/tailscale_configured_flag ]; then
+        echo "Optional Services Configured:"
+    fi
+    echo "  ✓ Tailscale VPN (enabled and running)"
+fi
+
+echo ""
+echo "  ⚠️  NOTE: Logout/login required for Docker group membership"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "System services configuration completed successfully" }}

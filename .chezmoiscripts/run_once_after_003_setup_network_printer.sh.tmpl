@@ -9,11 +9,11 @@
 # Set strict error handling
 set -euo pipefail
 
-# Printer configuration
-PRINTER_NAME="Samsung_M2070_Series"
-PRINTER_IP="192.168.1.40"
-PRINTER_MODEL="Samsung M2070 Series"
-PRINTER_DESCRIPTION="Samsung M2070 Series Network Printer"
+# Printer configuration from globals.yaml
+PRINTER_NAME="{{ .globals.printer.name }}"
+PRINTER_IP="{{ .globals.printer.ip }}"
+PRINTER_MODEL="{{ .globals.printer.model }}"
+PRINTER_DESCRIPTION="{{ .globals.printer.description }}"
 
 # Check if package is installed
 is_package_installed() {

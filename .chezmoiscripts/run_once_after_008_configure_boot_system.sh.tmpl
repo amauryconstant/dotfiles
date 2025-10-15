@@ -1,0 +1,667 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_008_configure_boot_system.sh.tmpl
+# Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM)
+# Requirements: Arch Linux, Plymouth, SDDM, Hyprland
+# Execution: Runs AFTER file application to configure complete boot stack
+#
+# This script consolidates three previously separate scripts:
+# - GPU driver configuration (NVIDIA DKMS)
+# - Plymouth graphical boot splash
+# - SDDM display manager
+#
+# Benefits of consolidation:
+# - Single mkinitcpio -P rebuild (instead of 3×)
+# - Atomic boot configuration changes
+# - Consistent backup/rollback strategy
+
+{{ includeTemplate "log_start" "Configure complete boot system (GPU + Plymouth + SDDM)" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Add error trap for cleanup guidance
+trap 'echo ""; {{ includeTemplate "log_error" "Script failed - check logs above for details" }}; echo ""; echo "To rollback changes:"; echo "  1. Restore cmdline backup: sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline 2>/dev/null || true"; echo "  2. Remove NVIDIA config: sudo rm /etc/mkinitcpio.conf.d/nvidia.conf 2>/dev/null || true"; echo "  3. Restore mkinitcpio.conf: sudo cp /etc/mkinitcpio.conf.backup /etc/mkinitcpio.conf 2>/dev/null || true"; echo "  4. Rebuild initramfs: sudo mkinitcpio -P"; exit 1' ERR
+
+# ============================================================================
+# SECTION 1: GPU DRIVER CONFIGURATION (NVIDIA)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 1: GPU Driver Configuration"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Detect GPU vendor" }}
+
+# Detect GPU using lspci
+GPU_VENDOR=$(lspci | grep -i 'vga\|3d\|display' | grep -i nvidia || true)
+NVIDIA_DETECTED=false
+
+if [ -z "$GPU_VENDOR" ]; then
+    {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA configuration" }}
+else
+    {{ includeTemplate "log_info" "NVIDIA GPU detected: $GPU_VENDOR" }}
+    NVIDIA_DETECTED=true
+
+    {{ includeTemplate "log_step" "Configure initramfs NVIDIA modules BEFORE package installation" }}
+
+    # CRITICAL: Configure mkinitcpio BEFORE installing nvidia-open-dkms
+    # This ensures DKMS builds modules with the correct configuration from the start
+
+    # Create mkinitcpio configuration directory
+    sudo mkdir -p /etc/mkinitcpio.conf.d
+
+    # Check if initramfs configuration already exists and is correct
+    NVIDIA_CONF="/etc/mkinitcpio.conf.d/nvidia.conf"
+    NVIDIA_CONF_NEEDS_UPDATE=false
+
+    if [ -f "$NVIDIA_CONF" ]; then
+        # Check if existing file has correct content (flexible whitespace handling)
+        # Must include i915 for hybrid graphics
+        if grep -Eq "^MODULES=\(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
+            {{ includeTemplate "log_success" "Initramfs NVIDIA configuration already correct" }}
+        else
+            {{ includeTemplate "log_info" "Updating initramfs NVIDIA configuration..." }}
+            NVIDIA_CONF_NEEDS_UPDATE=true
+        fi
+    else
+        {{ includeTemplate "log_info" "Creating initramfs NVIDIA configuration..." }}
+        NVIDIA_CONF_NEEDS_UPDATE=true
+    fi
+
+    # Create/update NVIDIA-specific module configuration if needed
+    if [ "$NVIDIA_CONF_NEEDS_UPDATE" = true ]; then
+        # CRITICAL: With DKMS, we KEEP 'kms' in HOOKS (early kernel mode setting)
+        # CRITICAL: On hybrid graphics (Intel + NVIDIA), load i915 BEFORE nvidia modules
+        #           This prevents Electron/Chromium apps from stalling ~1min after boot
+        sudo tee "$NVIDIA_CONF" > /dev/null <<'EOF'
+# NVIDIA DKMS module configuration
+# These modules enable early kernel mode setting (KMS) for NVIDIA GPUs
+# IMPORTANT: DO NOT remove 'kms' from HOOKS when using DKMS
+# IMPORTANT: i915 loaded first to prevent Electron/Chromium stalling on hybrid graphics
+MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+EOF
+        {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
+        {{ includeTemplate "log_info" "DKMS will use this configuration during package installation" }}
+    fi
+
+    {{ includeTemplate "log_step" "Clean up conflicting NVIDIA packages" }}
+
+    # Remove conflicting/old NVIDIA packages that may interfere
+    CONFLICTING_PACKAGES=(
+        "nvidia-utils"
+        "lib32-nvidia-utils"
+        "nvidia"
+        "nvidia-lts"
+        "nvidia-dkms"
+    )
+
+    PACKAGES_TO_REMOVE=()
+    for pkg in "${CONFLICTING_PACKAGES[@]}"; do
+        if pacman -Q "$pkg" >/dev/null 2>&1; then
+            PACKAGES_TO_REMOVE+=("$pkg")
+        fi
+    done
+
+    if [ ${#PACKAGES_TO_REMOVE[@]} -gt 0 ]; then
+        {{ includeTemplate "log_info" "Removing ${#PACKAGES_TO_REMOVE[@]} conflicting package(s): ${PACKAGES_TO_REMOVE[*]}" }}
+
+        # Remove using strongest available method
+        if command -v yay >/dev/null 2>&1; then
+            yay -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
+        else
+            sudo pacman -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
+        fi
+
+        {{ includeTemplate "log_success" "Conflict removal completed" }}
+    else
+        {{ includeTemplate "log_success" "No conflicting packages found" }}
+    fi
+
+    {{ includeTemplate "log_step" "Install NVIDIA DKMS packages and dependencies" }}
+
+    {{ includeTemplate "log_info" "Installing with pre-configured mkinitcpio settings..." }}
+
+    # Define required packages (order matters: dependencies first)
+    NVIDIA_PACKAGES=(
+        "dkms"                    # DKMS framework (must be installed first)
+        "linux-headers"           # Headers for current kernel
+        "linux-lts-headers"       # Headers for LTS kernel
+        "nvidia-open-dkms"        # NVIDIA kernel modules (depends on dkms + headers)
+        "nvidia-utils"            # NVIDIA userspace utilities
+        "nvidia-settings"         # NVIDIA configuration GUI
+        "lib32-nvidia-utils"      # 32-bit support (depends on nvidia-utils)
+        "libva-nvidia-driver"     # VA-API hardware video acceleration
+    )
+
+    # Check which packages need to be installed
+    PACKAGES_TO_INSTALL=()
+    for pkg in "${NVIDIA_PACKAGES[@]}"; do
+        if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+            PACKAGES_TO_INSTALL+=("$pkg")
+        fi
+    done
+
+    # Install missing packages
+    if [ ${#PACKAGES_TO_INSTALL[@]} -gt 0 ]; then
+        {{ includeTemplate "log_info" "Installing ${#PACKAGES_TO_INSTALL[@]} package(s): ${PACKAGES_TO_INSTALL[*]}" }}
+
+        # Use yay if available (for AUR packages), otherwise use pacman
+        # --overwrite '*' handles file conflicts from removed packages
+        if command -v yay >/dev/null 2>&1; then
+            yay -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
+        else
+            sudo pacman -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
+        fi
+
+        {{ includeTemplate "log_success" "NVIDIA packages installed successfully" }}
+    else
+        {{ includeTemplate "log_success" "All NVIDIA packages already installed" }}
+    fi
+
+    {{ includeTemplate "log_step" "Check DKMS module status" }}
+
+    # Check if DKMS modules are built for current kernel
+    KERNEL_VERSION=$(uname -r)
+    {{ includeTemplate "log_info" "Running kernel: $KERNEL_VERSION" }}
+
+    if sudo dkms status nvidia-open | grep -q "$KERNEL_VERSION"; then
+        {{ includeTemplate "log_success" "NVIDIA DKMS modules already built for current kernel" }}
+    else
+        {{ includeTemplate "log_info" "Building NVIDIA DKMS modules for current kernel..." }}
+
+        if sudo dkms autoinstall; then
+            {{ includeTemplate "log_success" "NVIDIA DKMS modules built successfully" }}
+        else
+            {{ includeTemplate "log_error" "DKMS module build failed - manual intervention required" }}
+            exit 1
+        fi
+    fi
+
+    {{ includeTemplate "log_step" "Verify DKMS module build" }}
+
+    # The mkinitcpio configuration was already set before package installation
+    # DKMS should have built modules correctly during nvidia-open-dkms installation
+
+    # Verify that DKMS built the modules
+    if sudo dkms status nvidia-open | grep -q "installed"; then
+        {{ includeTemplate "log_success" "NVIDIA DKMS modules built and installed correctly" }}
+    else
+        {{ includeTemplate "log_warning" "DKMS modules may need manual rebuild" }}
+        {{ includeTemplate "log_info" "Running DKMS autoinstall to ensure modules are built..." }}
+        sudo dkms autoinstall
+    fi
+
+    {{ includeTemplate "log_step" "Enable NVIDIA power management services" }}
+
+    # Re-enable NVIDIA power management services (removed during package reinstall)
+    # These services handle suspend/resume/hibernate for NVIDIA GPUs
+    NVIDIA_SERVICES=(
+        "nvidia-suspend.service"
+        "nvidia-hibernate.service"
+        "nvidia-resume.service"
+    )
+
+    for service in "${NVIDIA_SERVICES[@]}"; do
+        if systemctl list-unit-files "$service" >/dev/null 2>&1; then
+            if systemctl is-enabled "$service" >/dev/null 2>&1; then
+                {{ includeTemplate "log_success" "$service already enabled" }}
+            else
+                sudo systemctl enable "$service"
+                {{ includeTemplate "log_success" "$service enabled" }}
+            fi
+        else
+            {{ includeTemplate "log_warning" "$service not found" }}
+        fi
+    done
+
+    {{ includeTemplate "log_step" "Configure NVIDIA kernel parameters" }}
+
+    # Check if system uses UKI (Unified Kernel Images) or traditional boot entries
+    CMDLINE_FILE="/etc/kernel/cmdline"
+
+    if [ -f "$CMDLINE_FILE" ]; then
+        {{ includeTemplate "log_info" "System uses Unified Kernel Images (UKI)" }}
+
+        # Check if NVIDIA kernel parameters are already present
+        NEEDS_MODESET=false
+        NEEDS_FBDEV=false
+        NEEDS_PRESERVE_VIDEO_MEM=false
+
+        if ! grep -q "nvidia-drm.modeset=1" "$CMDLINE_FILE"; then
+            NEEDS_MODESET=true
+        fi
+        if ! grep -q "nvidia-drm.fbdev=1" "$CMDLINE_FILE"; then
+            NEEDS_FBDEV=true
+        fi
+        if ! grep -q "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "$CMDLINE_FILE"; then
+            NEEDS_PRESERVE_VIDEO_MEM=true
+        fi
+
+        if [ "$NEEDS_MODESET" = false ] && [ "$NEEDS_FBDEV" = false ] && [ "$NEEDS_PRESERVE_VIDEO_MEM" = false ]; then
+            {{ includeTemplate "log_success" "NVIDIA kernel parameters already configured" }}
+        else
+            {{ includeTemplate "log_info" "Adding NVIDIA kernel parameters to kernel command line..." }}
+
+            # Create backup only if it doesn't already exist
+            if [ ! -f "${CMDLINE_FILE}.backup" ]; then
+                sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
+                {{ includeTemplate "log_info" "Created backup: ${CMDLINE_FILE}.backup" }}
+            fi
+
+            # Read current cmdline
+            CURRENT_CMDLINE=$(cat "$CMDLINE_FILE")
+
+            # Add parameters only if missing
+            if [ "$NEEDS_MODESET" = true ]; then
+                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia-drm.modeset=1"
+            fi
+            if [ "$NEEDS_FBDEV" = true ]; then
+                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia-drm.fbdev=1"
+            fi
+            if [ "$NEEDS_PRESERVE_VIDEO_MEM" = true ]; then
+                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+            fi
+
+            # Write updated cmdline
+            echo "$CURRENT_CMDLINE" | sudo tee "$CMDLINE_FILE" > /dev/null
+
+            {{ includeTemplate "log_success" "NVIDIA kernel parameters added to $CMDLINE_FILE" }}
+            NVIDIA_CMDLINE_CHANGED=true
+        fi
+    else
+        # Fallback: Check for traditional systemd-boot entries
+        {{ includeTemplate "log_info" "Checking for traditional systemd-boot entries..." }}
+        BOOT_ENTRIES=$(find /boot/loader/entries -name "*.conf" 2>/dev/null | head -1)
+
+        if [ -z "$BOOT_ENTRIES" ]; then
+            {{ includeTemplate "log_error" "No boot configuration found (neither UKI nor traditional entries)" }}
+            {{ includeTemplate "log_info" "Manual configuration required: Add 'nvidia-drm.modeset=1 nvidia-drm.fbdev=1' to kernel parameters" }}
+            exit 1
+        fi
+
+        {{ includeTemplate "log_info" "Found traditional boot entry: $BOOT_ENTRIES" }}
+
+        # Check if kernel parameters are already present
+        if grep -q "nvidia-drm.modeset=1" "$BOOT_ENTRIES" && grep -q "nvidia-drm.fbdev=1" "$BOOT_ENTRIES"; then
+            {{ includeTemplate "log_success" "NVIDIA kernel parameters already configured" }}
+        else
+            {{ includeTemplate "log_info" "Adding NVIDIA kernel parameters to boot entry..." }}
+
+            # Create backup only if it doesn't already exist
+            if [ ! -f "${BOOT_ENTRIES}.backup" ]; then
+                sudo cp "$BOOT_ENTRIES" "${BOOT_ENTRIES}.backup"
+                {{ includeTemplate "log_info" "Created backup: ${BOOT_ENTRIES}.backup" }}
+            fi
+
+            # Add NVIDIA parameters to options line
+            if ! grep -q "nvidia-drm.modeset=1" "$BOOT_ENTRIES"; then
+                sudo sed -i '/^options/ s/$/ nvidia-drm.modeset=1/' "$BOOT_ENTRIES"
+            fi
+            if ! grep -q "nvidia-drm.fbdev=1" "$BOOT_ENTRIES"; then
+                sudo sed -i '/^options/ s/$/ nvidia-drm.fbdev=1/' "$BOOT_ENTRIES"
+            fi
+
+            {{ includeTemplate "log_success" "NVIDIA kernel parameters added" }}
+            NVIDIA_CMDLINE_CHANGED=true
+        fi
+    fi
+
+    {{ includeTemplate "log_success" "GPU driver configuration complete" }}
+fi
+
+# ============================================================================
+# SECTION 2: PLYMOUTH CONFIGURATION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 2: Plymouth Graphical Boot Splash"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Verify Plymouth installation" }}
+
+if ! command -v plymouth >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Plymouth not installed - skipping Plymouth configuration" }}
+    PLYMOUTH_INSTALLED=false
+else
+    {{ includeTemplate "log_success" "Plymouth is installed" }}
+    PLYMOUTH_INSTALLED=true
+
+    {{ includeTemplate "log_step" "Configure mkinitcpio hooks for Plymouth with encryption" }}
+
+    MKINITCPIO_CONF="/etc/mkinitcpio.conf"
+    MKINITCPIO_BACKUP="${MKINITCPIO_CONF}.backup"
+
+    # Check if plymouth hook is already configured
+    if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
+        {{ includeTemplate "log_success" "Plymouth hook already configured before encrypt hook" }}
+        PLYMOUTH_HOOK_CHANGED=false
+    else
+        {{ includeTemplate "log_info" "Adding plymouth hook before encrypt in mkinitcpio.conf..." }}
+
+        # Create backup only if it doesn't already exist
+        if [ ! -f "$MKINITCPIO_BACKUP" ]; then
+            sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_BACKUP"
+            {{ includeTemplate "log_info" "Created backup: $MKINITCPIO_BACKUP" }}
+        fi
+
+        # Insert plymouth before encrypt in HOOKS array
+        # Current: HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
+        # Target:  HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)
+        sudo sed -i 's/\(HOOKS=([^)]*block\) \(encrypt\)/\1 plymouth \2/' "$MKINITCPIO_CONF"
+
+        # Verify the change was successful
+        if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
+            {{ includeTemplate "log_success" "Plymouth hook added successfully" }}
+            PLYMOUTH_HOOK_CHANGED=true
+        else
+            {{ includeTemplate "log_error" "Failed to add plymouth hook - manual intervention required" }}
+            {{ includeTemplate "log_info" "Please manually edit $MKINITCPIO_CONF to add 'plymouth' before 'encrypt' in HOOKS" }}
+            exit 1
+        fi
+    fi
+
+    {{ includeTemplate "log_step" "Configure Plymouth kernel parameters" }}
+
+    CMDLINE_FILE="/etc/kernel/cmdline"
+
+    if [ -f "$CMDLINE_FILE" ]; then
+        # Check if Plymouth parameters are already present
+        if grep -q "splash" "$CMDLINE_FILE" && grep -q "quiet" "$CMDLINE_FILE"; then
+            {{ includeTemplate "log_success" "Plymouth kernel parameters already configured" }}
+            PLYMOUTH_CMDLINE_CHANGED=false
+        else
+            {{ includeTemplate "log_info" "Adding splash and quiet parameters to kernel cmdline..." }}
+
+            # Create backup only if it doesn't already exist
+            if [ ! -f "${CMDLINE_FILE}.backup" ]; then
+                sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
+                {{ includeTemplate "log_info" "Created backup: ${CMDLINE_FILE}.backup" }}
+            fi
+
+            # Read current cmdline
+            CURRENT_CMDLINE=$(cat "$CMDLINE_FILE")
+
+            # Add splash and quiet parameters
+            NEW_CMDLINE="$CURRENT_CMDLINE"
+            if ! echo "$CURRENT_CMDLINE" | grep -q "splash"; then
+                NEW_CMDLINE="$NEW_CMDLINE splash"
+            fi
+            if ! echo "$CURRENT_CMDLINE" | grep -q "quiet"; then
+                NEW_CMDLINE="$NEW_CMDLINE quiet"
+            fi
+
+            # Write updated cmdline
+            echo "$NEW_CMDLINE" | sudo tee "$CMDLINE_FILE" > /dev/null
+
+            {{ includeTemplate "log_success" "Plymouth kernel parameters added to $CMDLINE_FILE" }}
+            PLYMOUTH_CMDLINE_CHANGED=true
+        fi
+    else
+        {{ includeTemplate "log_warning" "No /etc/kernel/cmdline found - skipping Plymouth kernel parameters" }}
+        PLYMOUTH_CMDLINE_CHANGED=false
+    fi
+
+    {{ includeTemplate "log_step" "Set Plymouth theme" }}
+
+    DESIRED_THEME="{{ .globals.plymouth.theme }}"
+    CURRENT_THEME=$(plymouth-set-default-theme)
+
+    if [ "$CURRENT_THEME" = "$DESIRED_THEME" ]; then
+        {{ includeTemplate "log_success" "Plymouth theme already set to: $DESIRED_THEME" }}
+        PLYMOUTH_THEME_CHANGED=false
+    else
+        {{ includeTemplate "log_info" "Setting Plymouth theme to: $DESIRED_THEME (current: $CURRENT_THEME)" }}
+
+        # Set theme (don't rebuild yet - we'll do it once at the end)
+        sudo plymouth-set-default-theme "$DESIRED_THEME"
+
+        {{ includeTemplate "log_success" "Plymouth theme set to: $DESIRED_THEME" }}
+        PLYMOUTH_THEME_CHANGED=true
+    fi
+
+    {{ includeTemplate "log_success" "Plymouth configuration complete" }}
+fi
+
+# ============================================================================
+# SECTION 3: SDDM CONFIGURATION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 3: SDDM Display Manager"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Verify SDDM installation" }}
+
+if ! command -v sddm >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "SDDM not installed - skipping SDDM configuration" }}
+    SDDM_INSTALLED=false
+else
+    {{ includeTemplate "log_success" "SDDM is installed" }}
+    SDDM_INSTALLED=true
+
+    {{ includeTemplate "log_step" "Create SDDM configuration directory" }}
+
+    SDDM_CONF_DIR="/etc/sddm.conf.d"
+
+    if [ ! -d "$SDDM_CONF_DIR" ]; then
+        {{ includeTemplate "log_info" "Creating $SDDM_CONF_DIR..." }}
+        sudo mkdir -p "$SDDM_CONF_DIR"
+        {{ includeTemplate "log_success" "Created $SDDM_CONF_DIR" }}
+    else
+        {{ includeTemplate "log_success" "$SDDM_CONF_DIR already exists" }}
+    fi
+
+    {{ includeTemplate "log_step" "Backup original SDDM configuration" }}
+
+    SDDM_CONF="/etc/sddm.conf"
+    SDDM_BACKUP="${SDDM_CONF}.backup"
+
+    if [ -f "$SDDM_CONF" ] && [ ! -f "$SDDM_BACKUP" ]; then
+        {{ includeTemplate "log_info" "Creating backup: $SDDM_BACKUP" }}
+        sudo cp "$SDDM_CONF" "$SDDM_BACKUP"
+        {{ includeTemplate "log_success" "Backup created" }}
+    elif [ -f "$SDDM_BACKUP" ]; then
+        {{ includeTemplate "log_success" "Backup already exists: $SDDM_BACKUP" }}
+    else
+        {{ includeTemplate "log_info" "No existing $SDDM_CONF to backup" }}
+    fi
+
+    {{ includeTemplate "log_step" "Configure SDDM for Hyprland/Wayland" }}
+
+    SDDM_HYPRLAND_CONF="$SDDM_CONF_DIR/10-hyprland.conf"
+    DESIRED_THEME="{{ .globals.sddm.theme }}"
+    DESIRED_DISPLAY_SERVER="{{ .globals.sddm.display_server }}"
+
+    {{ includeTemplate "log_info" "Creating $SDDM_HYPRLAND_CONF..." }}
+
+    # Create modular SDDM configuration optimized for Hyprland
+    sudo tee "$SDDM_HYPRLAND_CONF" > /dev/null << 'EOF'
+# SDDM Configuration for Hyprland
+# Managed by chezmoi - DO NOT EDIT MANUALLY
+# To modify: Edit .chezmoidata/globals.yaml and run 'chezmoi apply'
+
+[General]
+# Use Wayland display server for native Hyprland integration
+DisplayServer={{ .globals.sddm.display_server }}
+
+# Enable NumLock by default
+Numlock=on
+
+[Theme]
+# Current theme
+Current={{ .globals.sddm.theme }}
+
+# Enable user avatars
+EnableAvatars=true
+
+[Users]
+# Remember last session (Hyprland)
+RememberLastSession=true
+
+# Remember last user
+RememberLastUser=true
+
+# Restore session instead of creating new
+ReuseSession=true
+
+[Wayland]
+# Wayland compositor for SDDM greeter
+# Note: This is for the greeter only, NOT Hyprland itself
+# Hyprland starts after successful login via SessionCommand
+CompositorCommand=weston --shell=fullscreen-shell.so
+
+# Enable Qt's automatic high-DPI scaling
+EnableHiDPI=true
+
+# Session directories (includes Hyprland.desktop)
+SessionDir=/usr/local/share/wayland-sessions,/usr/share/wayland-sessions
+
+# Session log location
+SessionLogFile=.local/share/sddm/wayland-session.log
+EOF
+
+    {{ includeTemplate "log_success" "Created $SDDM_HYPRLAND_CONF" }}
+
+    {{ includeTemplate "log_step" "Verify SDDM theme installation" }}
+
+    THEME_DIR="/usr/share/sddm/themes/$DESIRED_THEME"
+
+    if [ ! -d "$THEME_DIR" ]; then
+        {{ includeTemplate "log_error" "Theme not found: $THEME_DIR" }}
+        {{ includeTemplate "log_info" "Available themes:" }}
+        ls -1 /usr/share/sddm/themes/
+        {{ includeTemplate "log_info" "Install the theme or update globals.yaml with an available theme" }}
+        exit 1
+    fi
+
+    {{ includeTemplate "log_success" "Theme installed at $THEME_DIR" }}
+
+    {{ includeTemplate "log_step" "Verify Hyprland session availability" }}
+
+    if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+        {{ includeTemplate "log_success" "Hyprland Wayland session available" }}
+    elif [ -f /usr/share/wayland-sessions/hyprland-uwsm.desktop ]; then
+        {{ includeTemplate "log_success" "Hyprland UWSM-managed session available" }}
+    else
+        {{ includeTemplate "log_error" "No Hyprland Wayland session found" }}
+        {{ includeTemplate "log_info" "Available sessions:" }}
+        ls -1 /usr/share/wayland-sessions/ || {{ includeTemplate "log_info" "No Wayland sessions found" }}
+        exit 1
+    fi
+
+    {{ includeTemplate "log_step" "Verify SDDM service status" }}
+
+    if systemctl is-enabled sddm.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "SDDM service is enabled" }}
+    else
+        {{ includeTemplate "log_info" "SDDM service is not enabled - enabling now..." }}
+        sudo systemctl enable sddm.service
+        {{ includeTemplate "log_success" "SDDM service enabled" }}
+    fi
+
+    {{ includeTemplate "log_success" "SDDM configuration complete" }}
+fi
+
+# ============================================================================
+# SECTION 4: SINGLE INITRAMFS REBUILD
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 4: Initramfs Rebuild (Consolidate all changes)"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Checking if initramfs rebuild is needed..." }}
+
+# Check if any changes were made that require rebuild
+REBUILD_NEEDED=false
+
+if [ "$NVIDIA_DETECTED" = true ]; then
+    # Note: initramfs config was set BEFORE package installation, so DKMS already built correctly
+    # Only need to rebuild if kernel cmdline changed or if we updated config after packages installed
+    if [ "${NVIDIA_CMDLINE_CHANGED:-false}" = true ]; then
+        {{ includeTemplate "log_info" "NVIDIA kernel parameters changed - rebuild required" }}
+        REBUILD_NEEDED=true
+    fi
+fi
+
+if [ "$PLYMOUTH_INSTALLED" = true ]; then
+    if [ "${PLYMOUTH_HOOK_CHANGED:-false}" = true ] || [ "${PLYMOUTH_CMDLINE_CHANGED:-false}" = true ] || [ "${PLYMOUTH_THEME_CHANGED:-false}" = true ]; then
+        {{ includeTemplate "log_info" "Plymouth configuration changed - rebuild required" }}
+        REBUILD_NEEDED=true
+    fi
+fi
+
+if [ "$REBUILD_NEEDED" = true ]; then
+    {{ includeTemplate "log_step" "Rebuilding initramfs and UKI images (single consolidated rebuild)..." }}
+    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes at once (GPU + Plymouth)" }}
+
+    # This is the ONLY mkinitcpio -P call - replaces 3 separate rebuilds
+    sudo mkinitcpio -P
+
+    {{ includeTemplate "log_success" "Initramfs and UKI images rebuilt successfully" }}
+else
+    {{ includeTemplate "log_skip" "No changes detected - skipping initramfs rebuild" }}
+fi
+
+# ============================================================================
+# FINAL SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Boot System Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+# GPU Summary
+if [ "$NVIDIA_DETECTED" = true ]; then
+    echo "GPU Configuration:"
+    echo "  ✓ NVIDIA GPU detected and configured"
+    echo "  ✓ DKMS modules ready"
+    echo "  ✓ Kernel parameters: nvidia-drm.modeset=1 nvidia-drm.fbdev=1"
+    echo "  ✓ Power management services enabled (suspend/resume/hibernate)"
+    echo ""
+fi
+
+# Plymouth Summary
+if [ "$PLYMOUTH_INSTALLED" = true ]; then
+    echo "Plymouth Configuration:"
+    echo "  ✓ Theme: {{ .globals.plymouth.theme }}"
+    echo "  ✓ Kernel parameters: splash quiet"
+    echo "  ✓ Hooks: plymouth (before encrypt)"
+    echo ""
+fi
+
+# SDDM Summary
+if [ "$SDDM_INSTALLED" = true ]; then
+    echo "SDDM Configuration:"
+    echo "  ✓ Theme: {{ .globals.sddm.theme }}"
+    echo "  ✓ Display server: {{ .globals.sddm.display_server }}"
+    echo "  ✓ Hyprland session available"
+    echo ""
+fi
+
+echo "  ⚠️  REBOOT REQUIRED for all changes to take effect"
+echo ""
+echo "  Boot sequence after reboot:"
+if [ "$PLYMOUTH_INSTALLED" = true ] && [ "$SDDM_INSTALLED" = true ]; then
+    echo "  Firmware → Plymouth (LUKS password) → [Brief TTY flash] → SDDM → Hyprland"
+elif [ "$SDDM_INSTALLED" = true ]; then
+    echo "  Firmware → SDDM → Hyprland"
+else
+    echo "  Firmware → TTY/DM → Session"
+fi
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Complete boot system configuration finished - REBOOT REQUIRED" }}

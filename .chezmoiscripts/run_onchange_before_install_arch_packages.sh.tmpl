@@ -77,9 +77,9 @@ else
     # Use original category-based installation
     {{- range $name, $config := .packages.install.arch.packages }}
 
-    {{ includeTemplate "log_step" (printf "Installing %s packages..." $name) }}
+    {{ includeTemplate "log_info" "Installing package category..." }}
     if ! install_packages {{ join " " $config.list }}; then
-        {{ includeTemplate "log_error" (printf "Failed to install %s packages" $name) }}
+        {{ includeTemplate "log_error" "Failed to install packages in category" }}
         exit 1
     fi
     {{- end }}

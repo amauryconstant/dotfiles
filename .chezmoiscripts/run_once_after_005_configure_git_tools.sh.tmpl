@@ -1,0 +1,112 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_005_configure_git_tools.sh.tmpl
+# Purpose: Consolidated git tools configuration (merge driver + hooks)
+# Requirements: Arch Linux, git
+# Execution: Runs AFTER file application to configure git tools
+#
+# This script consolidates two previously separate scripts:
+# - Template merge driver configuration
+# - Git hooks installation from .gitscripts/
+#
+# Benefits of consolidation:
+# - Single source of truth for git configuration
+# - Consistent git setup
+
+{{ includeTemplate "log_start" "Configure git tools (merge driver + hooks)..." }}
+
+# Set strict error handling
+set -euo pipefail
+
+# ============================================================================
+# SECTION 1: TEMPLATE MERGE DRIVER
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 1: Template Merge Driver"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Configuring template merge driver..." }}
+
+# Make the merge driver script executable
+chmod +x "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh"
+
+# Change to the chezmoi source directory to run git commands
+cd "{{ .chezmoi.sourceDir }}"
+
+# Configure git to use our custom merge driver for template files
+{{ includeTemplate "log_step" "Registering chezmoi-template merge driver..." }}
+
+git config merge.chezmoi-template.name "Chezmoi template merge driver"
+git config merge.chezmoi-template.driver "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh %O %A %B %L %P"
+
+{{ includeTemplate "log_step" "Verifying merge driver configuration..." }}
+
+# Verify the configuration was set correctly
+if git config --get merge.chezmoi-template.driver >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Template merge driver configured successfully" }}
+    {{ includeTemplate "log_info" "Template files (.tmpl) will now preserve variable syntax during merges" }}
+else
+    {{ includeTemplate "log_error" "Failed to configure template merge driver" }}
+    exit 1
+fi
+
+# ============================================================================
+# SECTION 2: GIT HOOKS
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 2: Git Hooks Installation"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Installing git hooks from .gitscripts/..." }}
+
+# Check if .gitscripts directory exists
+if [ ! -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
+    {{ includeTemplate "log_skip" "No .gitscripts directory found, skipping git hooks installation" }}
+else
+    # Create hooks directory if it doesn't exist
+    mkdir -p "{{ .chezmoi.sourceDir }}/.git/hooks"
+
+    # Copy and make executable all scripts from .gitscripts
+    HOOKS_INSTALLED=0
+    for script in "{{ .chezmoi.sourceDir }}/.gitscripts"/*; do
+        if [ -f "$script" ]; then
+            hook_name=$(basename "$script")
+            {{ includeTemplate "log_info" "Installing git hook: $hook_name" }}
+            cp "$script" "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
+            chmod +x "{{ .chezmoi.sourceDir }}/.git/hooks/$hook_name"
+            HOOKS_INSTALLED=$((HOOKS_INSTALLED + 1))
+        fi
+    done
+
+    if [ $HOOKS_INSTALLED -gt 0 ]; then
+        {{ includeTemplate "log_success" "Installed $HOOKS_INSTALLED git hook(s)" }}
+    else
+        {{ includeTemplate "log_info" "No git hooks found in .gitscripts/" }}
+    fi
+fi
+
+# ============================================================================
+# FINAL SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Git Tools Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  ✓ Template merge driver configured"
+echo "  ✓ Template variable protection active during merges"
+if [ -d "{{ .chezmoi.sourceDir }}/.gitscripts" ]; then
+    echo "  ✓ Git hooks installed from .gitscripts/"
+fi
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Git tools configuration completed successfully" }}

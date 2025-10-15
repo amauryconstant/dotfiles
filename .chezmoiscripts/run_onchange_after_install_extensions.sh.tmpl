@@ -18,7 +18,7 @@ fi
 
 # Install each extension (work destination behavior: always install extensions)
 {{- range .extensions.code }}
-{{ includeTemplate "log_progress" (printf "Installing extension: %s" .) }}
+{{ includeTemplate "log_info" "Installing VSCode extension..." }}
 code --install-extension {{ . }}
 {{- end }}
 

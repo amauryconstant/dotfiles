@@ -28,7 +28,7 @@ fi
 
 # Install each model from the external AI configuration
 {{- range .ai.models }}
-{{ includeTemplate "log_step" (printf "Installing model: %s" .) }}
+{{ includeTemplate "log_info" "Installing AI model..." }}
 ollama pull {{ . }}
 {{- end }}
 

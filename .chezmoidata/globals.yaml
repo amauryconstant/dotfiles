@@ -45,3 +45,11 @@ globals:
     # DisplayServer options: wayland (recommended for Hyprland), x11
     theme: "solarized-sddm-theme"
     display_server: "wayland"
+
+  printer:
+    # Network printer configuration (Samsung M2070 Series)
+    # These values are used by the printer setup script
+    name: "Samsung_M2070_Series"
+    ip: "192.168.1.40"
+    model: "Samsung M2070 Series"
+    description: "Samsung M2070 Series Network Printer"

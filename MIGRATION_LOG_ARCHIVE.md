@@ -4,13 +4,18 @@
 **Branch**: `arch-switch` (historical)
 **Status**: Completed phases from initial migration
 
-This archive contains the first nine phases of the migration from EndeavourOS + KDE Plasma to vanilla Arch Linux + Hyprland. These phases established the foundation for the desktop environment, security components, and system configuration.
+This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma to vanilla Arch Linux + Hyprland. These phases established the complete foundation and maturation of the desktop environment, from initial setup through system configuration optimization.
 
 **For current migration status, see**: [MIGRATION_LOG.md](./MIGRATION_LOG.md)
 
 ---
 
-## Archived Phases (1-9)
+## Archived Phases (1-15)
+
+### Overview
+
+- **Phases 1-9**: Foundation phase establishing the core Hyprland desktop environment, security components, documentation, and network management
+- **Phases 10-15**: Maturation phase implementing centralized configuration, hardware support, interactive interfaces, and professional boot experience
 
 ### Phase 1: Remove Distribution Dependencies ✅
 **Commit**: `7554849` - "Remove the dependency to endeavouros"
@@ -213,3 +218,188 @@ This archive contains the first nine phases of the migration from EndeavourOS + 
 ---
 
 **Archive Note**: These nine phases established the complete foundation for the Arch Linux + Hyprland migration, including desktop environment, security components, documentation, and network management. Subsequent phases (10+) focus on environment configuration centralization, hardware support (GPU drivers, file management), and interface refinements. See [MIGRATION_LOG.md](./MIGRATION_LOG.md) for current migration status.
+
+### Phase 10: Centralize Environment Configuration with globals.yaml ✅
+**Commit**: `31c6adb` - "Centralize environment configuration with globals.yaml"
+
+**Changes Made**:
+- **New Data File** (`.chezmoidata/globals.yaml` - 34 lines):
+  - Created central source of truth for environment variables and default applications
+  - **Applications section**: Default editor (`nvim`), visual editor (`code`), browser (`firefox`)
+  - **XDG section**: Base directory specification paths (config, cache, data, state)
+  - **Paths section**: User binaries, package managers (cargo, go), project directories
+  - All values documented with comments explaining usage context
+
+- **Template Migration** (`private_dot_config/shell/login` → `login.tmpl`):
+  - Converted static shell script to Go template (40 lines)
+  - Replaced hardcoded values with `{{ .globals.* }}` template variables
+  - **XDG variables**: Now reference `{{ .globals.xdg.* }}` with fallback syntax
+  - **PATH setup**: Uses `{{ .globals.paths.local_bin }}` and `{{ .globals.paths.local_sbin }}`
+  - **Software Envs**: `$EDITOR`, `$VISUAL`, `$BROWSER` from `{{ .globals.applications.* }}`
+  - **Package Managers**: `$CARGO_HOME`, `$GOPATH` from `{{ .globals.paths.* }}`
+  - **Project Paths**: `$PROJECTS`, `$WORKTREES` from `{{ .globals.paths.* }}`
+
+- **New XDG MIME Configuration** (`private_dot_config/mimeapps.list.tmpl` - 25 lines):
+  - Created templated MIME type associations synchronized with shell environment
+  - **Browser associations**: HTTP/HTTPS schemes use `{{ .globals.applications.browser }}.desktop`
+  - **Text editor associations**: Plain text, markdown, logs use `{{ .globals.applications.editor }}.desktop`
+  - **Visual editor associations**: Scripts, JSON, YAML, TOML use `{{ .globals.applications.visual }}.desktop`
+  - Single source of truth: MIME types automatically match `$EDITOR`, `$VISUAL`, `$BROWSER` variables
+
+- **Shell Integration Updates**:
+  - `private_dot_config/shell/env` (line 6): Fixed path reference `$HOME/.config/sh/interactive` → `$HOME/.config/shell/interactive`
+  - `private_dot_config/zsh/dot_zshenv`: Removed duplicate PATH setup and `login` sourcing
+    - Deleted redundant `path=(...)` array configuration (zsh-specific, now in login template)
+    - Removed manual sourcing of `login` file (handled by zsh initialization chain)
+    - Kept only essential: sourcing `env` and `typeset -gU path fpath` for deduplication
+
+**Architecture Improvements**:
+```
+.chezmoidata/globals.yaml (Single Source of Truth)
+    ├─→ shell/login.tmpl (Shell Environment Variables)
+    │   ├─→ $EDITOR, $VISUAL, $BROWSER
+    │   ├─→ $XDG_CONFIG_HOME, $XDG_CACHE_HOME, etc.
+    │   └─→ $PATH, $CARGO_HOME, $GOPATH, etc.
+    └─→ mimeapps.list.tmpl (XDG MIME Associations)
+        ├─→ text/* → nvim.desktop
+        ├─→ x-scheme-handler/http* → firefox.desktop
+        └─→ application/* → code.desktop
+```
+
+**Rationale**:
+- **DRY Principle**: Eliminates hardcoded duplication across shell config and MIME types
+- **Single Source of Truth**: Change default browser once in `globals.yaml`, applies everywhere
+- **Consistency**: Shell environment variables automatically match XDG MIME type associations
+- **Maintainability**: Centralized configuration easier to audit and update
+- **Template Best Practice**: Demonstrates proper use of `.chezmoidata/` for shared configuration values
+- **Shell Cleanup**: Removed zsh-specific duplication, improved POSIX shell compatibility
+
+**Impact**:
+- All default applications now managed from single YAML file (`globals.yaml`)
+- XDG MIME type associations automatically synchronized with shell environment
+- Changing default editor/browser requires single edit in `globals.yaml`
+- Template-driven approach enables per-machine customization if needed
+- Improved shell startup efficiency by removing redundant PATH configuration
+- Total additions: 99 lines (34 globals.yaml + 40 login.tmpl + 25 mimeapps.list.tmpl)
+- Fixed shell path reference bug improving POSIX shell compatibility
+
+### Phase 11: Automated NVIDIA GPU Driver Configuration ✅
+**Commit**: `b7505cb` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
+
+**Changes Made**:
+- **New Configuration Script** (`.chezmoiscripts/run_once_before_007_configure_gpu_drivers.sh.tmpl` - 291 lines):
+  - Comprehensive NVIDIA DKMS driver setup executed early in boot process (before file application)
+  - **GPU Detection**: Automatically detects NVIDIA GPU via `lspci` (skips configuration if not found)
+  - **Conflict Resolution**: Removes incompatible packages (old nvidia-dkms, nvidia-lts) before installation
+  - **Package Installation** (7 packages in correct dependency order):
+    - `dkms` - DKMS framework (must be installed first)
+    - `linux-headers`, `linux-lts-headers` - Kernel headers for both kernels
+    - `nvidia-open-dkms` - Open-source NVIDIA kernel modules (DKMS version)
+    - `nvidia-utils` - NVIDIA userspace utilities
+    - `nvidia-settings` - NVIDIA configuration GUI
+    - `lib32-nvidia-utils` - 32-bit support for gaming/compatibility
+  - **DKMS Module Management**:
+    - Automatically builds modules for current kernel (`dkms autoinstall`)
+    - Verifies modules are built and loaded via `dkms status`
+  - **Initramfs Configuration**:
+    - Creates `/etc/mkinitcpio.conf.d/nvidia.conf` with required modules
+    - Loads: `nvidia nvidia_modeset nvidia_uvm nvidia_drm`
+    - Keeps `kms` hook (required for DKMS early kernel mode setting)
+    - Rebuilds initramfs only when configuration changes
+  - **Kernel Parameter Configuration** (supports both boot methods):
+    - **UKI (Unified Kernel Images)**: Updates `/etc/kernel/cmdline`
+    - **Traditional systemd-boot**: Updates `/boot/loader/entries/*.conf`
+    - Adds: `nvidia-drm.modeset=1 nvidia-drm.fbdev=1` (enables DRM kernel mode setting)
+    - Creates backup files before modifications
+
+- **Package Management Updates** (`.chezmoidata/packages.yaml`):
+  - Moved NVIDIA drivers from `graphics_drivers` section to script-managed approach
+  - Updated documentation (line 177-180): Clarifies drivers managed by `run_once_before_007` script
+  - Rationale: Script ensures correct installation order and dependency handling
+  - Benefits: Prevents conflicts, handles cleanup, configures initramfs/kernel parameters atomically
+
+- **Package Manager Script Updates** (`run_once_before_001_install_package_manager.sh.tmpl`):
+  - Added Chaotic-AUR repository configuration (community repository with precompiled packages)
+  - Repository configuration: `/etc/pacman.conf` includes `[chaotic-aur]` section
+  - Keyring packages: `chaotic-keyring`, `chaotic-mirrorlist` (added to system_software)
+  - Benefits: Faster AUR package installation, reduced compilation time
+
+- **Hyprland Environment Configuration** (`private_dot_config/hypr/conf/environment.conf`):
+  - Enhanced NVIDIA-specific comments and documentation (76 lines total)
+  - Clarified hardware video acceleration settings (`LIBVA_DRIVER_NAME=nvidia`)
+  - Documented hardware cursor workaround (`WLR_NO_HARDWARE_CURSORS=1`)
+  - Added note: "Test with value 0 on nvidia-open-dkms" (newer drivers may not need workaround)
+  - VSync configuration: `__GL_SYNC_TO_VBLANK=1` (prevents screen tearing)
+  - Improved comments explaining each variable's purpose and impact
+
+**Architecture Overview**:
+```
+GPU Driver Configuration Flow:
+1. run_once_before_007 (Early Setup)
+   ├─→ Detect NVIDIA GPU (lspci)
+   ├─→ Remove conflicting packages
+   ├─→ Install DKMS + headers + nvidia-open-dkms
+   ├─→ Build DKMS modules (dkms autoinstall)
+   ├─→ Configure initramfs (nvidia.conf)
+   ├─→ Add kernel parameters (cmdline or boot entry)
+   └─→ Rebuild initramfs + UKI images
+
+2. Hyprland environment.conf (Session Setup)
+   ├─→ LIBVA_DRIVER_NAME=nvidia
+   ├─→ GBM_BACKEND=nvidia-drm
+   ├─→ __GLX_VENDOR_LIBRARY_NAME=nvidia
+   ├─→ WLR_NO_HARDWARE_CURSORS=1
+   └─→ __GL_SYNC_TO_VBLANK=1
+```
+
+**Rationale**:
+- **DKMS Approach**: Kernel modules rebuild automatically on kernel updates (no manual intervention)
+- **nvidia-open-dkms**: Open-source variant provides better Wayland support and community maintenance
+- **Early Execution**: `run_once_before_007` runs before file application, ensuring drivers ready for desktop session
+- **Idempotent Design**: Script safely re-runs if interrupted (checks existing state before modifications)
+- **Dual Kernel Support**: Builds modules for both `linux` and `linux-lts` kernels
+- **UKI Compatibility**: Handles both Unified Kernel Images and traditional boot entries
+- **Chaotic-AUR**: Reduces compilation time for AUR packages on initial system setup
+
+**Impact**:
+- System now has complete automated NVIDIA GPU configuration for Wayland
+- DKMS modules automatically rebuild on kernel updates (no manual intervention)
+- Kernel parameters properly configured for DRM mode setting and fbdev support
+- Initramfs includes all required NVIDIA modules for early KMS
+- Hyprland session environment optimized for NVIDIA GPU acceleration
+- Total configuration: 291 lines of automation + enhanced environment documentation
+- Post-reboot verification workflow clearly documented
+- Chaotic-AUR repository reduces AUR compilation time on fresh installations
+- **⚠️ REBOOT REQUIRED** after initial setup for kernel parameters and modules to take effect
+
+### Phase 12: Enhanced File Management with Dolphin and Yazi ✅
+**Commit**: `e1dd48c` - "Enhance file management with Dolphin GUI integration and Yazi TUI file manager"
+
+**Summary**: Added 14 packages across two new categories (file_management with 8 packages for Dolphin ecosystem, terminal_file_management with 3 packages for Yazi TUI). Created 5 configuration files integrating KDE terminal settings, hiding duplicate menu entries, and adding Hyprland keybindings. Enhanced MIME type associations with 13 new lines for directory and archive handling.
+
+**Impact**: Complete dual file management system with GUI (Dolphin via Super+E) providing network protocol support and TUI (Yazi via Super+Shift+E) with vim keybindings and zoxide integration. Dolphin F4 embedded terminal and "Open Terminal Here" context menu launch ghostty via centralized configuration. Translucent windows and floating dialogs provide polished desktop experience.
+
+### Phase 13: Enhance Waybar Status Bar with Interactive Controls ✅
+**Commit**: `848de75` - "Refine Waybar styling with Nerd Fonts glyphs and improve file management"
+
+**Summary**: Simplified Waybar by removing 3 redundant monitoring modules (CPU, memory, temperature - 93 lines). Enhanced network, audio, bluetooth, battery, and backlight modules with multi-click actions (62 new lines of interactivity). Added visual grouping system with rounded corners and module-specific hover effects (38 lines of styling). Implemented critical battery animation with smart charging detection.
+
+**Impact**: Status bar transformed from passive information display to interactive control panel. Network module provides one-click access to nmtui, audio module launches pavucontrol or toggles mute, backlight supports instant presets (25/50/75%) with fine scroll adjustments. Visual polish with grouped modules, Material Design icons, and smooth transitions. More functionality with less visual clutter (net +42 lines).
+
+### Phase 14: Enhanced Power Management and Session Controls ✅
+**Commit**: `5edd015` - "Enhance power management and session controls with NVIDIA optimizations"
+
+**Summary**: Consolidated service configuration script (63 lines) with enhanced Docker user group management and conditional NVIDIA power management for laptops. Fixed critical hybrid graphics issue preventing 1-minute Electron app delays. Enhanced session management with wlogout toggle script (40 lines), Material Design icons, and oksolar theming. Added VA-API hardware acceleration and updated cursor support for modern NVIDIA drivers.
+
+**Impact**: Docker users get safe automatic group configuration with clear activation instructions. Intel+NVIDIA systems no longer experience Electron application startup stalls. Hardware-accelerated video works in browsers and media players. Professional power menu with 6 actions and toggle behavior accessible via Super+Shift+Q.
+
+### Phase 15: Boot Experience and System Configuration ✅
+**Commit**: `ccdf2dd` - "Configure boot experience with Plymouth, SDDM, locale, and topgrade improvements"
+
+**Summary**: Added Plymouth and SDDM configuration to globals.yaml (theme, display server settings). Created 5 comprehensive scripts totaling 870 lines: locale configuration (99 lines), SDDM theme installation (188 lines), Plymouth configuration (169 lines), SDDM service configuration (188 lines), and two dynamic update scripts (168 lines combined). Enhanced topgrade with flatpak sudo support and safe orphan removal.
+
+**Impact**: Professional boot experience with visual consistency from Plymouth splash through SDDM login to Hyprland desktop. Graphical password prompt for encrypted partitions. European date format system-wide (en_GB.UTF-8). Native Wayland login session eliminates X11 dependency. Boot themes manageable from globals.yaml with automatic updates. **⚠️ REBOOT REQUIRED** after initial setup.
+
+---
+
+**Archive Note (Phases 10-15)**: These six phases completed the system configuration maturation, establishing centralized configuration management (globals.yaml), full hardware support (NVIDIA GPU drivers), dual file management (Dolphin + Yazi), interactive status bar controls, comprehensive power management, and professional boot experience. Phase 16 consolidates these scripts for improved maintainability. See [MIGRATION_LOG.md](./MIGRATION_LOG.md) for current migration status.
