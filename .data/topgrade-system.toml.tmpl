@@ -39,6 +39,11 @@ show_arch_news = true
 # Update firmware when available
 upgrade = true
 
+# Flatpak configuration
+[flatpak]
+# Use sudo for system-wide flatpak operations (required for topgrade-maintenance user)
+use_sudo = true
+
 # Git repositories - maintenance user has no personal repositories
 # [git] section intentionally omitted for security isolation
 # Personal git repositories should be managed from user accounts
@@ -51,5 +56,5 @@ upgrade = true
 [commands]
 # Clean package cache after updates
 "Clean package cache" = "sudo pacman -Sc --noconfirm"
-# Remove orphaned packages
-"Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
+# Remove orphaned packages (safe version - checks for orphans before attempting removal)
+"Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"

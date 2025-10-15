@@ -75,8 +75,14 @@ fi
 
 {{ includeTemplate "log_step" "Installing sudoers configuration..." }}
 
-# Install with correct permissions (0440 - read-only)
-sudo install -m 0440 "$SUDOERS_TEMP" "$SUDOERS_FILE"
+# Check if sudoers file already exists and is identical
+if [ -f "$SUDOERS_FILE" ] && cmp -s "$SUDOERS_TEMP" "$SUDOERS_FILE"; then
+    {{ includeTemplate "log_success" "Sudoers configuration already up to date" }}
+else
+    # Install with correct permissions (0440 - read-only)
+    sudo install -m 0440 "$SUDOERS_TEMP" "$SUDOERS_FILE"
+    {{ includeTemplate "log_success" "Sudoers configuration installed" }}
+fi
 
 {{ includeTemplate "log_step" "Verifying complete sudoers system..." }}
 
@@ -90,15 +96,8 @@ fi
 {{ includeTemplate "log_success" "Sudoers configuration completed successfully" }}
 
 # ============================================================================
-# TOPGRADE SERVICE INSTALLATION
+# SYSTEMD SERVICE INSTALLATION (Initial Setup Only)
 # ============================================================================
-
-{{ includeTemplate "log_step" "Deploying system configuration to /etc/topgrade/..." }}
-sudo mkdir -p /etc/topgrade
-"{{ .chezmoi.executable }}" execute-template < "{{ .chezmoi.sourceDir }}/.data/topgrade-system.toml.tmpl" | sudo tee /etc/topgrade/topgrade.toml > /dev/null
-sudo chown topgrade-maintenance:topgrade-maintenance /etc/topgrade/topgrade.toml
-sudo chmod 644 /etc/topgrade/topgrade.toml
-{{ includeTemplate "log_success" "System configuration deployed" }}
 
 # Process and install systemd service files to system location
 {{ includeTemplate "log_step" "Installing systemd service files..." }}
@@ -110,22 +109,30 @@ sudo chmod 644 /etc/topgrade/topgrade.toml
 {{ includeTemplate "log_step" "Reloading systemd daemon..." }}
 sudo systemctl daemon-reload
 
-# Enable the topgrade timer
+# Enable the topgrade timer (idempotent - won't fail if already enabled)
 {{ includeTemplate "log_step" "Enabling topgrade timer..." }}
-if sudo systemctl enable topgrade.timer; then
-    {{ includeTemplate "log_success" "Topgrade timer enabled successfully" }}
+if sudo systemctl is-enabled topgrade.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Topgrade timer already enabled" }}
 else
-    {{ includeTemplate "log_error" "Failed to enable topgrade timer" }}
-    exit 1
+    if sudo systemctl enable topgrade.timer; then
+        {{ includeTemplate "log_success" "Topgrade timer enabled successfully" }}
+    else
+        {{ includeTemplate "log_error" "Failed to enable topgrade timer" }}
+        exit 1
+    fi
 fi
 
-# Start the topgrade timer
+# Start the topgrade timer (idempotent - won't fail if already running)
 {{ includeTemplate "log_step" "Starting topgrade timer..." }}
-if sudo systemctl start topgrade.timer; then
-    {{ includeTemplate "log_success" "Topgrade timer started successfully" }}
+if sudo systemctl is-active topgrade.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Topgrade timer already running" }}
 else
-    {{ includeTemplate "log_error" "Failed to start topgrade timer" }}
-    exit 1
+    if sudo systemctl start topgrade.timer; then
+        {{ includeTemplate "log_success" "Topgrade timer started successfully" }}
+    else
+        {{ includeTemplate "log_error" "Failed to start topgrade timer" }}
+        exit 1
+    fi
 fi
 
 # ============================================================================

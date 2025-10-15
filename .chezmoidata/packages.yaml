@@ -207,6 +207,7 @@ packages:
         display_system:
           strategy: *_install_binary
           list:
+            - plymouth                # Graphical boot splash screen
             - sddm                    # Simple Desktop Display Manager
             - xorg-server             # X.Org display server (for XWayland)
             - xorg-xinit              # X.Org initialization

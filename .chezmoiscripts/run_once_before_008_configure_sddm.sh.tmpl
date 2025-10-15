@@ -1,0 +1,188 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_010_configure_sddm.sh.tmpl
+# Purpose: Configure SDDM display manager with Wayland support for Hyprland
+# Requirements: Arch Linux, SDDM, Hyprland
+# Execution: Runs AFTER file application to configure SDDM for Hyprland/Wayland
+
+{{ includeTemplate "log_start" "Configure SDDM display manager for Hyprland" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Add error trap for cleanup guidance
+trap 'echo ""; {{ includeTemplate "log_error" "Script failed - check logs above for details" }}; echo ""; echo "To rollback changes:"; echo "  1. Restore backup: sudo cp /etc/sddm.conf.backup /etc/sddm.conf"; echo "  2. Remove config directory: sudo rm -rf /etc/sddm.conf.d"; exit 1' ERR
+
+{{ includeTemplate "log_step" "Verify SDDM installation" }}
+
+if ! command -v sddm >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "SDDM not found - ensure package is installed via packages.yaml" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "SDDM is installed" }}
+
+{{ includeTemplate "log_step" "Create SDDM configuration directory" }}
+
+SDDM_CONF_DIR="/etc/sddm.conf.d"
+
+if [ ! -d "$SDDM_CONF_DIR" ]; then
+    {{ includeTemplate "log_info" "Creating $SDDM_CONF_DIR..." }}
+    sudo mkdir -p "$SDDM_CONF_DIR"
+    {{ includeTemplate "log_success" "Created $SDDM_CONF_DIR" }}
+else
+    {{ includeTemplate "log_success" "$SDDM_CONF_DIR already exists" }}
+fi
+
+{{ includeTemplate "log_step" "Backup original SDDM configuration" }}
+
+SDDM_CONF="/etc/sddm.conf"
+SDDM_BACKUP="${SDDM_CONF}.backup"
+
+if [ -f "$SDDM_CONF" ] && [ ! -f "$SDDM_BACKUP" ]; then
+    {{ includeTemplate "log_info" "Creating backup: $SDDM_BACKUP" }}
+    sudo cp "$SDDM_CONF" "$SDDM_BACKUP"
+    {{ includeTemplate "log_success" "Backup created" }}
+elif [ -f "$SDDM_BACKUP" ]; then
+    {{ includeTemplate "log_success" "Backup already exists: $SDDM_BACKUP" }}
+else
+    {{ includeTemplate "log_info" "No existing $SDDM_CONF to backup" }}
+fi
+
+{{ includeTemplate "log_step" "Configure SDDM for Hyprland/Wayland" }}
+
+SDDM_HYPRLAND_CONF="$SDDM_CONF_DIR/10-hyprland.conf"
+DESIRED_THEME="{{ .globals.sddm.theme }}"
+DESIRED_DISPLAY_SERVER="{{ .globals.sddm.display_server }}"
+
+{{ includeTemplate "log_info" "Creating $SDDM_HYPRLAND_CONF..." }}
+
+# Create modular SDDM configuration optimized for Hyprland
+sudo tee "$SDDM_HYPRLAND_CONF" > /dev/null << 'EOF'
+# SDDM Configuration for Hyprland
+# Managed by chezmoi - DO NOT EDIT MANUALLY
+# To modify: Edit .chezmoidata/globals.yaml and run 'chezmoi apply'
+
+[General]
+# Use Wayland display server for native Hyprland integration
+DisplayServer={{ .globals.sddm.display_server }}
+
+# Enable NumLock by default
+Numlock=on
+
+[Theme]
+# Current theme
+Current={{ .globals.sddm.theme }}
+
+# Enable user avatars
+EnableAvatars=true
+
+[Users]
+# Remember last session (Hyprland)
+RememberLastSession=true
+
+# Remember last user
+RememberLastUser=true
+
+# Restore session instead of creating new
+ReuseSession=true
+
+[Wayland]
+# Wayland compositor for SDDM greeter
+# Note: This is for the greeter only, NOT Hyprland itself
+# Hyprland starts after successful login via SessionCommand
+CompositorCommand=weston --shell=fullscreen-shell.so
+
+# Enable Qt's automatic high-DPI scaling
+EnableHiDPI=true
+
+# Session directories (includes Hyprland.desktop)
+SessionDir=/usr/local/share/wayland-sessions,/usr/share/wayland-sessions
+
+# Session log location
+SessionLogFile=.local/share/sddm/wayland-session.log
+EOF
+
+{{ includeTemplate "log_success" "Created $SDDM_HYPRLAND_CONF" }}
+
+{{ includeTemplate "log_step" "Verify SDDM theme installation" }}
+
+THEME_DIR="/usr/share/sddm/themes/$DESIRED_THEME"
+
+if [ ! -d "$THEME_DIR" ]; then
+    {{ includeTemplate "log_error" "Theme not found: $THEME_DIR" }}
+    {{ includeTemplate "log_info" "Available themes:" }}
+    ls -1 /usr/share/sddm/themes/
+    {{ includeTemplate "log_info" "Install the theme or update globals.yaml with an available theme" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "Theme installed at $THEME_DIR" }}
+
+{{ includeTemplate "log_step" "Verify Hyprland session availability" }}
+
+if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+    {{ includeTemplate "log_success" "Hyprland Wayland session available" }}
+elif [ -f /usr/share/wayland-sessions/hyprland-uwsm.desktop ]; then
+    {{ includeTemplate "log_success" "Hyprland UWSM-managed session available" }}
+else
+    {{ includeTemplate "log_error" "No Hyprland Wayland session found" }}
+    {{ includeTemplate "log_info" "Available sessions:" }}
+    ls -1 /usr/share/wayland-sessions/ || {{ includeTemplate "log_info" "No Wayland sessions found" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Verify SDDM service status" }}
+
+if systemctl is-enabled sddm.service >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "SDDM service is enabled" }}
+else
+    {{ includeTemplate "log_info" "SDDM service is not enabled - enabling now..." }}
+    sudo systemctl enable sddm.service
+    {{ includeTemplate "log_success" "SDDM service enabled" }}
+fi
+
+{{ includeTemplate "log_step" "Configuration summary" }}
+
+{{ includeTemplate "log_info" "SDDM configuration:" }}
+echo "  • Theme: $DESIRED_THEME"
+echo "  • Display server: $DESIRED_DISPLAY_SERVER"
+echo "  • Config file: $SDDM_HYPRLAND_CONF"
+echo "  • Wayland greeter: weston --shell=fullscreen-shell.so"
+echo "  • HiDPI support: Enabled"
+
+{{ includeTemplate "log_step" "Post-configuration information" }}
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SDDM Display Manager Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Configuration applied:"
+echo "  • Theme: {{ .globals.sddm.theme }}"
+echo "  • Display server: {{ .globals.sddm.display_server }}"
+echo "  • Config location: $SDDM_HYPRLAND_CONF"
+echo ""
+echo "  ⚠️  REBOOT REQUIRED for SDDM theme to take effect"
+echo ""
+echo "  After reboot, you will see:"
+echo "  ✓ Solarized SDDM login screen"
+echo "  ✓ Native Wayland display server"
+echo "  ✓ Hyprland session available in session selector"
+echo ""
+echo "  Integration with Plymouth:"
+echo "  Boot → Plymouth → [Brief TTY flash] → SDDM → Hyprland"
+echo "  (TTY flash is an upstream Wayland limitation)"
+echo ""
+echo "  To change theme later:"
+echo "  • Edit .chezmoidata/globals.yaml (sddm.theme)"
+echo "  • Run: chezmoi apply"
+echo ""
+echo "  To test SDDM configuration:"
+echo "  • Validate: sddm-greeter --test-mode --theme /usr/share/sddm/themes/{{ .globals.sddm.theme }}"
+echo "  • Check logs: journalctl -u sddm.service"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "SDDM configuration completed - REBOOT REQUIRED" }}

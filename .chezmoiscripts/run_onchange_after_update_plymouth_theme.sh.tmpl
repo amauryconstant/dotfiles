@@ -1,0 +1,77 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_after_update_plymouth_theme.sh.tmpl
+# Purpose: Update Plymouth theme when globals.yaml changes
+# Requirements: Arch Linux, Plymouth installed
+# Execution: Runs whenever plymouth.theme changes in .chezmoidata/globals.yaml
+# Hash: {{ .globals.plymouth | toJson | sha256sum }}
+
+{{ includeTemplate "log_start" "Update Plymouth theme" }}
+
+# Set strict error handling
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Verify Plymouth installation" }}
+
+if ! command -v plymouth >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "Plymouth not installed - cannot update theme" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "Plymouth is installed" }}
+
+{{ includeTemplate "log_step" "Update Plymouth theme" }}
+
+DESIRED_THEME="{{ .globals.plymouth.theme }}"
+CURRENT_THEME=$(plymouth-set-default-theme)
+
+if [ "$CURRENT_THEME" = "$DESIRED_THEME" ]; then
+    {{ includeTemplate "log_success" "Plymouth theme already set to: $DESIRED_THEME" }}
+    {{ includeTemplate "log_skip" "No theme change needed" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_info" "Changing Plymouth theme from '$CURRENT_THEME' to '$DESIRED_THEME'" }}
+
+# Check if theme exists
+if ! plymouth-set-default-theme -l | grep -q "^$DESIRED_THEME$"; then
+    {{ includeTemplate "log_error" "Theme '$DESIRED_THEME' not found" }}
+    {{ includeTemplate "log_info" "Available themes:" }}
+    plymouth-set-default-theme -l
+    exit 1
+fi
+
+{{ includeTemplate "log_info" "Setting theme and rebuilding initramfs..." }}
+
+# -R flag sets theme AND rebuilds initramfs automatically
+sudo plymouth-set-default-theme -R "$DESIRED_THEME"
+
+{{ includeTemplate "log_success" "Plymouth theme updated to: $DESIRED_THEME" }}
+
+{{ includeTemplate "log_step" "Verify theme change" }}
+
+NEW_THEME=$(plymouth-set-default-theme)
+if [ "$NEW_THEME" = "$DESIRED_THEME" ]; then
+    {{ includeTemplate "log_success" "Theme successfully changed to: $NEW_THEME" }}
+else
+    {{ includeTemplate "log_error" "Theme verification failed - expected '$DESIRED_THEME' but got '$NEW_THEME'" }}
+    exit 1
+fi
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Plymouth Theme Updated"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Previous theme: $CURRENT_THEME"
+echo "  New theme: $DESIRED_THEME"
+echo ""
+echo "  ⚠️  REBOOT REQUIRED to see the new theme"
+echo ""
+echo "  Preview available themes:"
+echo "    plymouth-set-default-theme -l"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Plymouth theme update completed - REBOOT REQUIRED" }}

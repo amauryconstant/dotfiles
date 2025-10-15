@@ -33,3 +33,15 @@ globals:
     # Project directories
     projects: "$HOME/Projects"
     worktrees: "$HOME/Worktrees"
+
+  plymouth:
+    # Plymouth boot splash configuration
+    # Available themes: bgrt (OEM logo), spinner, spinfinity, solar, script
+    theme: "bgrt"
+
+  sddm:
+    # SDDM display manager configuration
+    # Available themes: solarized-sddm-theme, elarun, maldives, maya
+    # DisplayServer options: wayland (recommended for Hyprland), x11
+    theme: "solarized-sddm-theme"
+    display_server: "wayland"

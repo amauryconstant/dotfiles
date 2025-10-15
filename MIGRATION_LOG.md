@@ -435,7 +435,7 @@ Battery Module → Left: power profiles, Right: info notification
 - Net impact: More functionality with less visual clutter
 
 ### Phase 14: Enhanced Power Management and Session Controls ✅
-**Commit**: `(pending)` - "Enhance power management and session controls with wlogout improvements and NVIDIA optimizations"
+**Commit**: `5edd015` - "Enhance power management and session controls with NVIDIA optimizations"
 
 **Changes Made**:
 - **Service Configuration** (`.chezmoiscripts/run_once_after_002_configure_services.sh.tmpl` - 63 lines):
@@ -481,10 +481,67 @@ Battery Module → Left: power profiles, Right: info notification
 - Session controls integrate seamlessly with oksolar desktop theme
 - System maintains stable video memory across power state transitions
 
+### Phase 15: Boot Experience and System Configuration ⏳
+**Commit**: `(pending)` - "Configure Plymouth boot splash, SDDM display manager, locale, and topgrade improvements"
+
+**Changes Made**:
+- **Global Configuration** (`.chezmoidata/globals.yaml`):
+  - Added `plymouth.theme` configuration (bgrt, spinner, spinfinity, solar, script)
+  - Added `sddm.theme` configuration (solarized-sddm-theme matches oksolar)
+  - Added `sddm.display_server` setting (wayland for native Hyprland)
+
+- **Locale Configuration** (`.chezmoiscripts/run_once_before_007_configure_locale.sh.tmpl` - 99 lines):
+  - Configures system-wide locale to en_GB.UTF-8 for European date formats
+  - Runs before SDDM to ensure proper text rendering
+
+- **SDDM Theme Installation** (`.chezmoiscripts/run_once_before_008_configure_sddm.sh.tmpl` - 188 lines):
+  - Clones and installs solarized-sddm-theme from GitHub
+  - Validates theme files before configuration
+
+- **Plymouth Configuration** (`.chezmoiscripts/run_once_after_009_configure_plymouth.sh.tmpl` - 169 lines):
+  - Configures mkinitcpio hooks (plymouth before encrypt)
+  - Adds splash kernel parameter to UKI cmdline
+  - Applies theme and rebuilds initramfs
+
+- **SDDM Configuration** (`.chezmoiscripts/run_once_after_010_configure_sddm.sh.tmpl` - 188 lines):
+  - Creates modular configuration in /etc/sddm.conf.d/
+  - Configures theme and Wayland display server
+  - Enables sddm.service
+
+- **Dynamic Updates**:
+  - Plymouth theme onchange script (77 lines): Updates theme when globals.yaml changes
+  - Topgrade config onchange script (91 lines): Deploys system config when changed
+
+- **Topgrade Improvements**:
+  - Added flatpak sudo support for both user and system configs
+  - Fixed orphan package removal with safe bash wrapper
+  - Enhanced setup script error handling
+
+- **Package Management** (`.chezmoidata/packages.yaml`):
+  - Added plymouth to display_system category
+
+**Rationale**:
+- Professional boot experience from splash screen through login
+- Theme consistency across entire system (Plymouth → SDDM → Hyprland)
+- Native Wayland session eliminates X11 dependency
+- Centralized configuration via globals.yaml for easy customization
+- Safe automation with backups and rollback procedures
+
+**Impact**:
+- Visual consistency from boot to desktop with oksolar/solarized theming
+- Graphical password prompt for encrypted partitions via Plymouth
+- European date format system-wide (DD/MM/YYYY)
+- Native Wayland login session with Hyprland compositor
+- Boot splash and display manager themes manageable from globals.yaml
+- Topgrade flatpak operations work correctly with sudo
+- Safe package cleanup prevents errors on empty orphan lists
+- Total: 870 lines added across 9 scripts
+- **⚠️ REBOOT REQUIRED** after initial setup
+
 ---
 
 ## Next Steps
 
 ---
 
-**Last Updated**: 2025-10-14
+**Last Updated**: 2025-10-15

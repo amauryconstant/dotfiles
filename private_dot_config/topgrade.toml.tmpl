@@ -38,6 +38,11 @@ show_arch_news = true
 # Update firmware when available
 upgrade = true
 
+# Flatpak configuration
+[flatpak]
+# Use sudo for system-wide flatpak operations
+use_sudo = true
+
 # Git repositories maintenance
 [git]
 # How many repos to pull at max in parallel
@@ -51,18 +56,17 @@ repos = [
 arguments = "--rebase --autostash --prune"
 
 # Pre-update commands (run before any updates)
-[pre_commands]
-# System health check before updates
-"System health check" = "/usr/bin/zsh -c 'system_health_simple --brief'"
-# Strategy-aware package health check
-"Package health check" = "{{ .chezmoi.homeDir }}/.config/scripts/package-manager.sh health --brief"
+# Commented out - these functions may not be available in all contexts
+# [pre_commands]
+# "System health check" = "/usr/bin/zsh -c 'system_health_simple --brief'"
+# "Package health check" = "{{ .chezmoi.homeDir }}/.config/scripts/package-manager.sh health --brief"
 
 # Custom commands for system-specific maintenance
 [commands]
 # Clean package cache after updates
 "Clean package cache" = "sudo pacman -Sc --noconfirm"
-# Remove orphaned packages
-"Remove orphaned packages" = "sudo pacman -Rns $(pacman -Qtdq) --noconfirm || true"
+# Remove orphaned packages (safe version - checks for orphans before attempting removal)
+"Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"
 # Post-update system status
 "Post-update system status" = "/usr/bin/zsh -c 'system_health_simple --brief'"
 # Post-update package strategy validation

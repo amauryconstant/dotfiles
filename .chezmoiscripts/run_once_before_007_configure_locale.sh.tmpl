@@ -1,0 +1,99 @@
+#!/usr/bin/env sh
+
+# Script: run_once_before_007_configure_locale.sh.tmpl
+# Purpose: Configure system locale to en_GB.UTF-8 for European date format (DD/MM/YYYY)
+# Requirements: Arch Linux, locale-gen, localectl
+# Execution: Runs BEFORE SDDM configuration to ensure proper locale settings
+
+{{ includeTemplate "log_start" "Configure system locale to en_GB.UTF-8" }}
+
+# Set strict error handling
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Check current locale configuration" }}
+
+CURRENT_LOCALE=$(localectl status | grep "System Locale" | cut -d= -f2)
+DESIRED_LOCALE="en_GB.UTF-8"
+
+{{ includeTemplate "log_info" "Current locale: $CURRENT_LOCALE" }}
+{{ includeTemplate "log_info" "Desired locale: $DESIRED_LOCALE" }}
+
+if [ "$CURRENT_LOCALE" = "$DESIRED_LOCALE" ]; then
+    {{ includeTemplate "log_success" "Locale already set to $DESIRED_LOCALE" }}
+    {{ includeTemplate "log_complete" "Locale configuration already correct - no changes needed" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Ensure en_GB.UTF-8 is available in locale.gen" }}
+
+LOCALE_GEN="/etc/locale.gen"
+LOCALE_ENTRY="en_GB.UTF-8 UTF-8"
+
+# Check if locale is already uncommented
+if grep -q "^${LOCALE_ENTRY}" "$LOCALE_GEN"; then
+    {{ includeTemplate "log_success" "en_GB.UTF-8 already enabled in locale.gen" }}
+    NEED_GENERATION=false
+elif grep -q "^#${LOCALE_ENTRY}" "$LOCALE_GEN"; then
+    {{ includeTemplate "log_info" "Uncommenting en_GB.UTF-8 in locale.gen..." }}
+    sudo sed -i "s/^#${LOCALE_ENTRY}/${LOCALE_ENTRY}/" "$LOCALE_GEN"
+    {{ includeTemplate "log_success" "Enabled en_GB.UTF-8 in locale.gen" }}
+    NEED_GENERATION=true
+else
+    {{ includeTemplate "log_error" "en_GB.UTF-8 not found in locale.gen" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Generate locale if needed" }}
+
+if [ "$NEED_GENERATION" = "true" ] || ! locale -a | grep -q "^en_GB.utf8$"; then
+    {{ includeTemplate "log_info" "Generating locales..." }}
+    sudo locale-gen
+    {{ includeTemplate "log_success" "Locale generation complete" }}
+else
+    {{ includeTemplate "log_success" "en_GB.UTF-8 already generated" }}
+fi
+
+{{ includeTemplate "log_step" "Set system locale to en_GB.UTF-8" }}
+
+{{ includeTemplate "log_info" "Updating system locale with localectl..." }}
+sudo localectl set-locale LANG="$DESIRED_LOCALE"
+{{ includeTemplate "log_success" "System locale set to $DESIRED_LOCALE" }}
+
+{{ includeTemplate "log_step" "Verify configuration" }}
+
+NEW_LOCALE=$(grep "^LANG=" /etc/locale.conf | cut -d= -f2)
+{{ includeTemplate "log_info" "Locale in /etc/locale.conf: $NEW_LOCALE" }}
+
+if [ "$NEW_LOCALE" = "$DESIRED_LOCALE" ]; then
+    {{ includeTemplate "log_success" "Locale configuration verified" }}
+else
+    {{ includeTemplate "log_error" "Locale verification failed - expected $DESIRED_LOCALE, got $NEW_LOCALE" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Post-configuration information" }}
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  System Locale Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Locale set to: en_GB.UTF-8"
+echo "  Date format: DD/MM/YYYY (European)"
+echo "  Time format: 24-hour (HH:MM)"
+echo ""
+echo "  ⚠️  REBOOT REQUIRED for changes to take full effect"
+echo ""
+echo "  Impact:"
+echo "  ✓ SDDM login screen will show European date format"
+echo "  ✓ All applications will use DD/MM/YYYY by default"
+echo "  ✓ System logs remain in English (GB variant)"
+echo ""
+echo "  Current session:"
+echo "  • Current session still uses: $CURRENT_LOCALE"
+echo "  • New sessions after reboot will use: $DESIRED_LOCALE"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Locale configuration completed - REBOOT REQUIRED" }}

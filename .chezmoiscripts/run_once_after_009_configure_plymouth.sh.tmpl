@@ -1,0 +1,169 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_009_configure_plymouth.sh.tmpl
+# Purpose: Configure Plymouth graphical boot splash with encrypted partition support
+# Requirements: Arch Linux, Plymouth, systemd-boot (UKI), encrypted root partition
+# Execution: Runs AFTER file application to configure Plymouth for graphical boot
+
+{{ includeTemplate "log_start" "Configure Plymouth graphical boot splash" }}
+
+# Set strict error handling
+set -euo pipefail
+
+# Add error trap for cleanup guidance
+trap 'echo ""; {{ includeTemplate "log_error" "Script failed - check logs above for details" }}; echo ""; echo "To rollback changes:"; echo "  1. Restore backups: sudo cp /etc/mkinitcpio.conf.backup /etc/mkinitcpio.conf && sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline"; echo "  2. Rebuild initramfs: sudo mkinitcpio -P"; exit 1' ERR
+
+{{ includeTemplate "log_step" "Verify Plymouth installation" }}
+
+if ! command -v plymouth >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "Plymouth not found - ensure package is installed via packages.yaml" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "Plymouth is installed" }}
+
+{{ includeTemplate "log_step" "Configure mkinitcpio hooks for Plymouth with encryption" }}
+
+MKINITCPIO_CONF="/etc/mkinitcpio.conf"
+MKINITCPIO_BACKUP="${MKINITCPIO_CONF}.backup"
+
+# Check if plymouth hook is already configured
+if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
+    {{ includeTemplate "log_success" "Plymouth hook already configured before encrypt hook" }}
+    MKINITCPIO_CHANGED=false
+else
+    {{ includeTemplate "log_info" "Adding plymouth hook before encrypt in mkinitcpio.conf..." }}
+
+    # Create backup only if it doesn't already exist
+    if [ ! -f "$MKINITCPIO_BACKUP" ]; then
+        sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_BACKUP"
+        {{ includeTemplate "log_info" "Created backup: $MKINITCPIO_BACKUP" }}
+    fi
+
+    # Insert plymouth before encrypt in HOOKS array
+    # Current: HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
+    # Target:  HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)
+    sudo sed -i 's/\(HOOKS=([^)]*block\) \(encrypt\)/\1 plymouth \2/' "$MKINITCPIO_CONF"
+
+    # Verify the change was successful
+    if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
+        {{ includeTemplate "log_success" "Plymouth hook added successfully" }}
+        MKINITCPIO_CHANGED=true
+    else
+        {{ includeTemplate "log_error" "Failed to add plymouth hook - manual intervention required" }}
+        {{ includeTemplate "log_info" "Please manually edit $MKINITCPIO_CONF to add 'plymouth' before 'encrypt' in HOOKS" }}
+        exit 1
+    fi
+fi
+
+{{ includeTemplate "log_step" "Configure kernel parameters for Plymouth" }}
+
+CMDLINE_FILE="/etc/kernel/cmdline"
+CMDLINE_BACKUP="${CMDLINE_FILE}.backup"
+
+# Check if Plymouth parameters are already present
+if grep -q "splash" "$CMDLINE_FILE" && grep -q "quiet" "$CMDLINE_FILE"; then
+    {{ includeTemplate "log_success" "Plymouth kernel parameters already configured" }}
+    CMDLINE_CHANGED=false
+else
+    {{ includeTemplate "log_info" "Adding splash and quiet parameters to kernel cmdline..." }}
+
+    # Create backup only if it doesn't already exist
+    if [ ! -f "$CMDLINE_BACKUP" ]; then
+        sudo cp "$CMDLINE_FILE" "$CMDLINE_BACKUP"
+        {{ includeTemplate "log_info" "Created backup: $CMDLINE_BACKUP" }}
+    fi
+
+    # Read current cmdline
+    CURRENT_CMDLINE=$(cat "$CMDLINE_FILE")
+
+    # Add splash and quiet parameters
+    NEW_CMDLINE="$CURRENT_CMDLINE"
+    if ! echo "$CURRENT_CMDLINE" | grep -q "splash"; then
+        NEW_CMDLINE="$NEW_CMDLINE splash"
+    fi
+    if ! echo "$CURRENT_CMDLINE" | grep -q "quiet"; then
+        NEW_CMDLINE="$NEW_CMDLINE quiet"
+    fi
+
+    # Write updated cmdline
+    echo "$NEW_CMDLINE" | sudo tee "$CMDLINE_FILE" > /dev/null
+
+    {{ includeTemplate "log_success" "Plymouth kernel parameters added to $CMDLINE_FILE" }}
+    CMDLINE_CHANGED=true
+fi
+
+{{ includeTemplate "log_step" "Set Plymouth theme" }}
+
+DESIRED_THEME="{{ .globals.plymouth.theme }}"
+CURRENT_THEME=$(plymouth-set-default-theme)
+
+if [ "$CURRENT_THEME" = "$DESIRED_THEME" ]; then
+    {{ includeTemplate "log_success" "Plymouth theme already set to: $DESIRED_THEME" }}
+    THEME_CHANGED=false
+else
+    {{ includeTemplate "log_info" "Setting Plymouth theme to: $DESIRED_THEME (current: $CURRENT_THEME)" }}
+
+    # Set theme (don't rebuild yet - we'll do it once at the end)
+    sudo plymouth-set-default-theme "$DESIRED_THEME"
+
+    {{ includeTemplate "log_success" "Plymouth theme set to: $DESIRED_THEME" }}
+    THEME_CHANGED=true
+fi
+
+{{ includeTemplate "log_step" "Rebuild initramfs and UKI images" }}
+
+# Rebuild if anything changed
+if [ "$MKINITCPIO_CHANGED" = true ] || [ "$CMDLINE_CHANGED" = true ] || [ "$THEME_CHANGED" = true ]; then
+    {{ includeTemplate "log_info" "Rebuilding initramfs and UKI images with Plymouth configuration..." }}
+
+    # This rebuilds all kernels (linux, linux-lts) with updated hooks and UKI parameters
+    sudo mkinitcpio -P
+
+    {{ includeTemplate "log_success" "Initramfs and UKI images rebuilt successfully" }}
+else
+    {{ includeTemplate "log_skip" "No changes detected - skipping initramfs rebuild" }}
+fi
+
+{{ includeTemplate "log_step" "Verify configuration" }}
+
+{{ includeTemplate "log_info" "Current Plymouth theme: $(plymouth-set-default-theme)" }}
+{{ includeTemplate "log_info" "Kernel parameters:" }}
+cat "$CMDLINE_FILE" | grep -o "splash\|quiet" || {{ includeTemplate "log_info" "(parameters will be active after reboot)" }}
+
+{{ includeTemplate "log_info" "mkinitcpio HOOKS:" }}
+grep "^HOOKS=" "$MKINITCPIO_CONF" | grep -o "plymouth\|encrypt" || true
+
+{{ includeTemplate "log_step" "Post-configuration information" }}
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Plymouth Graphical Boot Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Configuration applied:"
+echo "  • Theme: {{ .globals.plymouth.theme }}"
+echo "  • Kernel parameters: splash quiet"
+echo "  • Initramfs hook: plymouth (before encrypt)"
+echo ""
+echo "  ⚠️  REBOOT REQUIRED for Plymouth to take effect"
+echo ""
+echo "  After reboot, you will see:"
+echo "  ✓ Graphical LUKS password prompt (Plymouth theme)"
+echo "  ✓ Animated boot splash until SDDM login"
+echo ""
+echo "  Known limitation (Wayland/Hyprland):"
+echo "  • Brief TTY flash between Plymouth and SDDM"
+echo "  • This is an upstream Wayland limitation"
+echo ""
+echo "  During boot:"
+echo "  • Press ESC to view boot messages"
+echo ""
+echo "  To change theme later:"
+echo "  • Edit .chezmoidata/globals.yaml (plymouth.theme)"
+echo "  • Run: chezmoi apply"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Plymouth configuration completed - REBOOT REQUIRED" }}
