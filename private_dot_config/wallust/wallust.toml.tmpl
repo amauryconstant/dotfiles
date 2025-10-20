@@ -1,0 +1,122 @@
+# ============================================================================
+# Wallust Configuration
+# ============================================================================
+# Wallust extracts color palettes from wallpaper images and generates
+# application-specific color configuration files.
+#
+# ALGORITHM:
+# - backend: Color extraction algorithm (kmeans, wal, resize, full, thumb)
+# - color_space: Color space for clustering (lab, labmixed, lch, lchmixed, luv, rgb)
+# - palette: Color palette type (dark16, light16, softdark16, etc.)
+# - threshold: Color differentiation threshold (1-100, higher = more different)
+#
+# TEMPLATES:
+# - Each template defines a source template file and target output location
+# - Templates use wallust variables: {{ "{{" }}background{{ "}}" }}, {{ "{{" }}foreground{{ "}}" }}, {{ "{{" }}color0-15{{ "}}" }}
+# - Filters available: strip, alpha, rgb, rgba, hex, etc.
+#
+# GENERATED FILES:
+# - NOT managed by chezmoi (in wallust/ subdirectories)
+# - Regenerated automatically when wallpaper changes
+# - Sourced/imported by main configuration files
+# ============================================================================
+
+# Color extraction algorithm
+# full: Read all pixels (most accurate, slower but best color diversity)
+# kmeans: K-means clustering (balanced, but may miss colors)
+# wal: pywal-compatible algorithm
+# resized: Fast but less accurate
+backend = "full"
+
+# Color space for clustering
+# labmixed: Lab color space with mixed clustering (recommended for accuracy)
+# lab: Pure Lab color space (perceptually uniform)
+# lch: Lightness-Chroma-Hue
+# rgb: Standard RGB (faster but less perceptually accurate)
+color_space = "labmixed"
+
+# Palette type
+# dark16: 16-color dark palette (suitable for dark themes)
+# light16: 16-color light palette
+# softdark16: Softer dark palette with reduced saturation
+palette = "softdark16"
+
+# Color differentiation threshold (1-100)
+# Higher values = colors must be more different from each other
+# Lower values = allow similar colors in palette
+# 15 provides better color diversity for varied wallpapers
+threshold = 15
+
+# Fallback color generation strategy when primary extraction fails
+# complementary: Generate complementary colors for missing palette entries
+# interpolate: Generate intermediate colors by interpolating between extracted colors
+fallback_generator = "complementary"
+
+# ============================================================================
+# Template Definitions
+# ============================================================================
+# Each [templates.NAME] section defines:
+# - template: Source template file (in ~/.config/wallust/templates/)
+# - target: Output file path (absolute or relative to home)
+# ============================================================================
+
+# Hyprland window manager colors
+[templates.hypr]
+template = 'colors-hyprland.conf'
+target = '{{ .chezmoi.homeDir }}/.config/hypr/wallust/wallust-hyprland.conf'
+
+# Hyprland screen locker colors
+[templates.hyprlock]
+template = 'colors-hyprlock.conf'
+target = '{{ .chezmoi.homeDir }}/.config/hypr/wallust/wallust-hyprlock.conf'
+
+# Waybar status bar colors
+[templates.waybar]
+template = 'colors-waybar.css'
+target = '{{ .chezmoi.homeDir }}/.config/waybar/wallust/colors-waybar.css'
+
+# Wofi application launcher colors
+[templates.wofi]
+template = 'colors-wofi.css'
+target = '{{ .chezmoi.homeDir }}/.config/wofi/wallust/colors-wofi.css'
+
+# Dunst notification daemon colors
+[templates.dunst]
+template = 'colors-dunst'
+target = '{{ .chezmoi.homeDir }}/.config/dunst/wallust/colors-dunst'
+
+# Wlogout power menu colors
+[templates.wlogout]
+template = 'colors-wlogout.css'
+target = '{{ .chezmoi.homeDir }}/.config/wlogout/wallust/colors-wlogout.css'
+
+# Ghostty terminal colors
+[templates.ghostty]
+template = 'colors-ghostty'
+target = '{{ .chezmoi.homeDir }}/.config/ghostty/themes/wallust'
+
+# Shell color variables
+[templates.shell]
+template = 'colors-shell.sh'
+target = '{{ .chezmoi.homeDir }}/.config/shell/wallust/colors-shell.sh'
+
+# ============================================================================
+# Advanced Options (uncomment to customize)
+# ============================================================================
+
+# Check for new images
+# check_contrast: Ensure sufficient contrast between fg/bg
+check_contrast = true
+
+# Contrast threshold (0.0-21.0, WCAG AAA = 7.0)
+# contrast_threshold = 4.5
+
+# Saturation adjustment (-1.0 to 1.0, 0 = no change)
+# Slightly increase saturation to make colors more distinct
+saturation = 0.15
+
+# Brightness adjustment (-1.0 to 1.0, 0 = no change)
+# brightness = 0.0
+
+# Alpha transparency for colors (0-255, 255 = opaque)
+# alpha = 255

@@ -1,0 +1,12 @@
+[Unit]
+Description=Automatic wallpaper rotation timer (every 30 minutes)
+Documentation=man:systemd.timer(5)
+
+[Timer]
+# Trigger every 30 minutes (starting 30min after first login/session start)
+OnUnitActiveSec=30min
+# Use monotonic time (not affected by system clock changes)
+Persistent=true
+
+[Install]
+WantedBy=timers.target

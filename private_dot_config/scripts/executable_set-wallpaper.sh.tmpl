@@ -1,0 +1,67 @@
+#!/usr/bin/env sh
+
+# Script: set-wallpaper.sh
+# Purpose: Change wallpaper and regenerate theme colors
+# Requirements: Arch Linux, swww, wallust
+
+{{ includeTemplate "log_start" "Setting wallpaper and generating colors" }}
+
+set -euo pipefail
+
+# Validate arguments
+if [ $# -eq 0 ]; then
+    {{ includeTemplate "log_error" "No wallpaper path provided" }}
+    echo "Usage: set-wallpaper.sh /path/to/wallpaper.jpg"
+    echo ""
+    echo "Examples:"
+    echo "  set-wallpaper.sh ~/Pictures/Wallpapers/sunset.jpg"
+    echo "  set-wallpaper.sh \$(find ~/Pictures/Wallpapers -type f | shuf -n1)  # Random"
+    exit 1
+fi
+
+WALLPAPER_PATH="$1"
+TRANSITION_TYPE="${2:-fade}"  # Default to fade, allow override
+TRANSITION_DURATION="${3:-2}"  # Default to 2 seconds
+
+# Validate wallpaper file exists
+if [ ! -f "$WALLPAPER_PATH" ]; then
+    {{ includeTemplate "log_error" "Wallpaper file not found: $WALLPAPER_PATH" }}
+    exit 1
+fi
+
+# Check if swww daemon is running
+if ! pgrep -x swww-daemon > /dev/null; then
+    {{ includeTemplate "log_step" "Starting swww daemon" }}
+    swww-daemon 2>/dev/null &
+    sleep 1
+fi
+
+{{ includeTemplate "log_step" "Setting wallpaper with swww" }}
+swww img "$WALLPAPER_PATH" \
+    --transition-type "$TRANSITION_TYPE" \
+    --transition-duration "$TRANSITION_DURATION"
+
+{{ includeTemplate "log_step" "Generating color scheme with wallust" }}
+wallust run -s --dynamic-threshold "$WALLPAPER_PATH"
+
+{{ includeTemplate "log_step" "Reloading desktop components" }}
+
+# Reload Waybar
+if pgrep -x waybar > /dev/null; then
+    killall -SIGUSR2 waybar || true
+fi
+
+# Reload Dunst (it will automatically restart)
+if pgrep -x dunst > /dev/null; then
+    killall dunst || true
+fi
+
+# Reload Ghostty terminal
+if pgrep -x ghostty > /dev/null; then
+    killall -SIGUSR2 ghostty || true
+fi
+
+# Hyprland automatically reloads sourced configs on changes
+# No need to explicitly reload hyprland
+
+{{ includeTemplate "log_complete" "Wallpaper and colors updated successfully" }}

@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_007_setup_wallpaper_timer.sh.tmpl
+# Purpose: Enable and start wallpaper rotation timer
+# Requirements: Arch Linux, systemd
+
+{{ includeTemplate "log_start" "Setting up wallpaper rotation timer" }}
+
+set -euo pipefail
+
+{{ includeTemplate "log_step" "Reloading systemd user daemon" }}
+systemctl --user daemon-reload
+
+{{ includeTemplate "log_step" "Enabling wallpaper-cycle.timer" }}
+systemctl --user enable wallpaper-cycle.timer
+
+{{ includeTemplate "log_step" "Starting wallpaper-cycle.timer" }}
+systemctl --user start wallpaper-cycle.timer
+
+{{ includeTemplate "log_step" "Verifying timer status" }}
+if systemctl --user is-active --quiet wallpaper-cycle.timer; then
+    {{ includeTemplate "log_success" "Wallpaper timer is active" }}
+else
+    {{ includeTemplate "log_error" "Wallpaper timer failed to start" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "Wallpaper rotation configured successfully" }}
+
+echo ""
+echo "Wallpaper will change automatically every 30 minutes"
+echo "Check status: systemctl --user status wallpaper-cycle.timer"
+echo "Manual trigger: systemctl --user start wallpaper-cycle.service"

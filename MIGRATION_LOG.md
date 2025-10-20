@@ -17,7 +17,7 @@ This log documents the migration of dotfiles from an EndeavourOS-based KDE Plasm
 - **Phases 10-15**: Maturation (globals.yaml centralization, NVIDIA GPU drivers, file management, Waybar enhancements, power management, boot experience)
 
 ### Phase 16: Script Consolidation and Automation Improvements ✅
-**Commit**: `(pending)` - "Consolidate configuration scripts and add printer support"
+**Commit**: `6c13e61` - "Consolidate configuration scripts and update migration log"
 
 **Changes Made**:
 - **Script Consolidation** (9 scripts deleted, 3 comprehensive scripts created):
@@ -108,8 +108,61 @@ Single Operations Instead of Multiple:
 
 ---
 
+### Phase 17: Dynamic Wallpaper System with Automatic Color Theming ✅
+**Commit**: `(pending)` - "Implement dynamic wallpaper rotation with wallust color palette integration"
+
+**Changes Made**:
+- **Wallpaper Daemon Replacement** (`.chezmoidata/packages.yaml`):
+  - Replaced `hyprpaper` (static) with `swww` (dynamic transitions, AUR)
+  - Added `wallust` (color palette generator from wallpapers, AUR)
+
+- **Automatic Wallpaper Rotation**:
+  - **New: `run_once_after_007_setup_wallpaper_timer.sh.tmpl`**: Configures systemd timer for 30-minute rotation
+  - **New: `wallpaper-cycle.timer`** + **`wallpaper-cycle.service`**: Systemd units for automated rotation
+  - **New: `random-wallpaper.sh.tmpl`**: Selects random wallpaper from `~/Pictures/wallpapers/`
+  - **New: `set-wallpaper.sh.tmpl`**: Sets wallpaper via swww and triggers wallust color generation
+
+- **CLI Functions** (Zsh):
+  - `random-wallpaper`: User command for manual random wallpaper selection
+  - `set-wallpaper`: User command to set specific wallpaper image
+
+- **Wallust Color Palette System**:
+  - **New: `wallust.toml.tmpl`** (116 lines): K-means clustering in Lab color space, dark16 palette
+  - **8 Color Templates**: Generate application-specific color files for Hyprland, Hyprlock, Waybar, Wofi, Dunst, Wlogout, Ghostty, Shell
+  - Output location: `~/.config/{app}/wallust/` subdirectories (NOT managed by chezmoi)
+  - Triggered automatically when wallpaper changes via `set-wallpaper.sh`
+
+**Architecture**:
+```
+Automatic Rotation (systemd timer every 30min):
+└─→ random-wallpaper → set-wallpaper.sh
+    ├─→ swww: Smooth wallpaper transition
+    └─→ wallust: Extract palette → Generate 8 app color files
+
+Color Integration (applications source generated files):
+├─→ Hyprland, Hyprlock, Waybar, Wofi
+├─→ Dunst, Wlogout, Ghostty, Shell
+└─→ All automatically match wallpaper palette
+```
+
+**Rationale**:
+- **Unified theming**: Desktop environment automatically adapts to wallpaper colors
+- **Perceptual accuracy**: Lab color space ensures visually pleasing palettes
+- **Automation**: Systemd timer provides reliable rotation without manual intervention
+- **Flexibility**: Manual controls available via CLI functions
+- **Separation of concerns**: Generated color files excluded from chezmoi (ephemeral state)
+
+**Impact**:
+- Visual consistency across 8 applications without manual color coordination
+- Automatic wallpaper rotation every 30 minutes with smooth transitions
+- Algorithm-driven aesthetics using K-means clustering
+- User controls: `random-wallpaper`, `set-wallpaper <path>`, systemd timer management
+- Total new files: 17 (1 setup script, 2 utilities, 2 functions, 2 systemd units, 1 config, 8 color templates)
+
+---
+
 ## Next Steps
 
 ---
 
-**Last Updated**: 2025-10-15
+**Last Updated**: 2025-10-20

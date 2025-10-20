@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+
+# Script: random-wallpaper.sh
+# Purpose: Select and set a random wallpaper from ~/Wallpapers directory
+# Requirements: Arch Linux, swww, wallust, find, shuf
+
+{{ includeTemplate "log_start" "Selecting random wallpaper" }}
+
+set -euo pipefail
+
+# Wallpaper directory
+WALLPAPER_DIR="${HOME}/Wallpapers"
+
+# Transition settings (can be overridden by arguments)
+TRANSITION_TYPE="${1:-fade}"      # Default: fade (smoother than simple)
+TRANSITION_DURATION="${2:-2}"     # Default: 2 seconds
+TRANSITION_FPS="${3:-30}"         # Default: 30 fps
+
+# Validate wallpaper directory exists
+if [ ! -d "$WALLPAPER_DIR" ]; then
+    {{ includeTemplate "log_error" "Wallpaper directory not found: $WALLPAPER_DIR" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Finding available wallpapers" }}
+
+# Find all image files and select one randomly
+# Supported formats: jpg, jpeg, png, gif, webp, bmp, tiff, tga, pnm
+WALLPAPER=$(find "$WALLPAPER_DIR" -type f \
+    \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \
+    -o -iname "*.gif" -o -iname "*.webp" -o -iname "*.bmp" \
+    -o -iname "*.tiff" -o -iname "*.tga" -o -iname "*.pnm" \) \
+    | shuf -n 1)
+
+# Validate that a wallpaper was found
+if [ -z "$WALLPAPER" ]; then
+    {{ includeTemplate "log_error" "No wallpapers found in $WALLPAPER_DIR" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Setting selected wallpaper" }}
+
+# Call the main set-wallpaper script with the random wallpaper
+# Pass transition settings as arguments
+# Use fallback for XDG_CONFIG_HOME in case it's not set (e.g., systemd service)
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+exec "$CONFIG_HOME/scripts/set-wallpaper.sh" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"

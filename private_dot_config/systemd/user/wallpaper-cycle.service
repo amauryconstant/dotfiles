@@ -1,0 +1,12 @@
+[Unit]
+Description=Automatic wallpaper rotation service
+Documentation=man:swww(1)
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/scripts/random-wallpaper.sh fade 3
+# Use fade transition with 3 second duration for smooth cycling
+
+[Install]
+WantedBy=default.target

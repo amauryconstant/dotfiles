@@ -184,7 +184,8 @@ packages:
             - waybar             # Status bar for Hyprland
             - hyprlock           # Official Hyprland screen locker
             - hypridle           # Official Hyprland idle management daemon
-            - hyprpaper          # Official Hyprland wallpaper daemon
+            - swww               # Dynamic wallpaper daemon with transitions (AUR)
+            - wallust            # Color palette generator from wallpapers (AUR)
             - cliphist           # Clipboard history manager
             - wlogout            # Power menu for logout/shutdown/reboot
             - wl-clipboard       # Wayland clipboard utilities
