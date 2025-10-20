@@ -101,6 +101,9 @@ packages:
             - system-config-printer
             - sane
             - sane-airscan
+            - samsung-unified-driver-common
+            - samsung-unified-driver-printer
+            - samsung-unified-driver-scanner
             - skanpage
             - imagemagick
 
