@@ -102,6 +102,7 @@ packages:
             - sane
             - sane-airscan
             - skanpage
+            - imagemagick
 
         ai_tools:
           strategy: *_install_from_source
