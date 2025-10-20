@@ -16,7 +16,7 @@ alias untar="tar -xf"
 alias p=pnpm
 
 # AI
-alias claude='clear && claude'
+alias claude='clear && mise exec node@24 -- claude'
 
 
 # Symlink
