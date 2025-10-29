@@ -58,6 +58,9 @@ topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/yay
 
 # Allow flatpak operations
 topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/flatpak
+
+# Allow pacman lock cleanup script (for stale lock detection/removal)
+topgrade-maintenance ALL=(ALL) NOPASSWD: {{ .chezmoi.homeDir }}/.config/scripts/system/pacman-lock-cleanup.sh
 SUDOERS_EOF
 
 {{ includeTemplate "log_step" "Validating sudoers syntax..." }}
