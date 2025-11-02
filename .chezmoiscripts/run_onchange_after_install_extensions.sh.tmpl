@@ -29,6 +29,7 @@ if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
     {{ includeTemplate "log_step" "Installing Firefox policies..." }}
     sudo mkdir -p /usr/lib/firefox/distribution
     sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
+    sudo chmod 644 /usr/lib/firefox/distribution/policies.json
     {{ includeTemplate "log_success" "Firefox policies installed" }}
 fi
 

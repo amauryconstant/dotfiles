@@ -21,7 +21,19 @@ autoload -Uz $ZFUNCDIR/*(.:t)
 # Create an amazing Zsh config using antidote plugins.
 if [[ -f /usr/share/zsh-antidote/antidote.zsh ]]; then
   source /usr/share/zsh-antidote/antidote.zsh
-  antidote load
+
+  # Try to load plugins, but handle offline/initial setup gracefully
+  if ! antidote load 2>/dev/null; then
+    echo "⚠️  antidote plugins not initialized. Attempting to bundle..."
+    # Try to bundle plugins if online, otherwise skip
+    if antidote bundle <${ZDOTDIR:-$HOME}/.zsh_plugins.txt >${ZDOTDIR:-$HOME}/.zsh_plugins.zsh 2>/dev/null; then
+      echo "✓ Plugins bundled successfully"
+      source ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
+    else
+      echo "⚠️  Unable to download plugins (offline?). Using fallback configuration."
+      echo "   Run 'antidote bundle <~/.config/zsh/.zsh_plugins.txt >~/.config/zsh/.zsh_plugins.zsh' when online."
+    fi
+  fi
 else
   echo "⚠️  zsh-antidote not found. Run: yay -S zsh-antidote"
 fi
