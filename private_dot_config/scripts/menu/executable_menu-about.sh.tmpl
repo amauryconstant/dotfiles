@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+# Script: menu-about.sh
+# Purpose: About screen (System information)
+# Requirements: Arch Linux, fastfetch/neofetch
+
+# Launch system info display
+if command -v fastfetch >/dev/null 2>&1; then
+    {{ .globals.applications.terminal }} -e sh -c "fastfetch; echo '\nPress Enter to continue...'; read"
+elif command -v neofetch >/dev/null 2>&1; then
+    {{ .globals.applications.terminal }} -e sh -c "neofetch; echo '\nPress Enter to continue...'; read"
+else
+    # Fallback to basic system info
+    {{ .globals.applications.terminal }} -e sh -c "echo 'System Information'; echo '=================='; uname -a; echo ''; lsb_release -a 2>/dev/null; echo ''; echo 'Hyprland Version:'; hyprctl version; echo '\nPress Enter to continue...'; read"
+fi

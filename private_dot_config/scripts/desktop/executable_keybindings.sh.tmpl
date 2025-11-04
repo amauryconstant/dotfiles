@@ -18,8 +18,8 @@ COLOR_BLUE="{{ .colors.oksolar.blue }}"
 COLOR_CYAN="{{ .colors.oksolar.cyan }}"
 
 # Wofi configuration
-WOFI_WIDTH=900
-WOFI_HEIGHT=600
+WOFI_WIDTH=1200
+WOFI_HEIGHT=800
 WOFI_STYLE="$HOME/.config/wofi/keybinds.css"
 
 # ============================================================================
@@ -191,7 +191,7 @@ fi
 # Process JSON with jaq: Extract and format each binding
 # Output format: category|modmask|key|dispatcher|arg
 processed=$(echo "$bindings_json" | jaq -r '.[] |
-    select(.submap == "default") |
+    select(.submap == "" or .submap == "default") |
     "\(.modmask)|\(.key)|\(.dispatcher)|\(.arg)"' 2>/dev/null)
 
 if [ -z "$processed" ]; then

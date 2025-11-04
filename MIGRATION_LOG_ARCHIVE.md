@@ -18,7 +18,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - **Phases 10-15**: Maturation phase implementing centralized configuration, hardware support, interactive interfaces, and professional boot experience
 
 ### Phase 1: Remove Distribution Dependencies ✅
-**Commit**: `7554849` - "Remove the dependency to endeavouros"
+**Commit**: `7d3449c` - "Remove dependency to endeavouros"
 
 **Changes Made**:
 - Removed `.chezmoiscripts/run_once_before_004_install_distributions_and_os_specifics.sh.tmpl`
@@ -39,7 +39,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - Clean sequential script numbering maintained (001-006)
 
 ### Phase 2: Archive KDE Configuration ✅
-**Commit**: `4900f68` - "Archive KDE configuration files"
+**Commit**: `b336883` - "Archive KDE configuration files"
 
 **Changes Made**:
 - Created `archives/` directory structure with documentation
@@ -62,7 +62,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 **Impact**: Repository no longer deploys KDE-specific configuration while preserving it for reference.
 
 ### Phase 3: Document archinstall Baseline Packages ✅
-**Commit**: `49b0155` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
+**Commit**: `cb738db` - "Document archinstall baseline packages and reorganize NVIDIA drivers"
 
 **Changes Made**:
 - Added `archinstall_baseline` section to `.chezmoidata/packages.yaml`
@@ -95,7 +95,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - Future package additions can be checked against this baseline to avoid redundancy
 
 ### Phase 4: Implement Hyprland Desktop Environment ✅
-**Commit**: `59469b7` - "Add comprehensive Hyprland configuration with waybar"
+**Commit**: `0542d23` - "Add comprehensive Hyprland configuration with waybar"
 
 **Changes Made**:
 - Added `waybar` package to `packages.yaml` wayland_desktop section for status bar functionality
@@ -146,7 +146,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - Ready for deployment on fresh Arch + Hyprland installation
 
 ### Phase 5: Migrate to ghostty and neovim ✅
-**Commit**: `da51860` - "Migrate terminal and editor to ghostty and neovim"
+**Commit**: `08a3a41` - "Migrate terminal and editor to ghostty and neovim"
 
 **Changes Made**:
 - **Package Management** (`.chezmoidata/packages.yaml`):
@@ -188,28 +188,28 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - Backup terminal (kitty) available via `Super+D` → type "kitty" if ghostty issues occur
 
 ### Phase 6: Add Critical Security and Usability Components ✅
-**Commit**: `ba0b949` - "Add critical security and usability components for Hyprland deployment"
+**Commit**: `b12f924` - "Add critical security and usability components for Hyprland deployment"
 
 **Summary**: Added essential security (hyprlock, hypridle) and usability (cliphist, wlogout, pamixer, brightnessctl) packages. Created 4 configuration files (244 lines) for screen locking, idle management, power menu, and clipboard history. Enabled essential daemons in Hyprland autostart and added 4 new keybindings for lock screen, power menu, clipboard, and brightness control.
 
 **Impact**: Desktop environment became production-ready with complete security and usability features. Screen automatically locks after inactivity, GUI power menu for session management, clipboard history accessible via keyboard shortcut, and media keys functional.
 
 ### Phase 7: Add Comprehensive Hyprland Documentation ✅
-**Commit**: `7a595ab` - "Add comprehensive Hyprland desktop environment documentation"
+**Commit**: `a9887ff` - "Add comprehensive Hyprland desktop environment documentation"
 
 **Summary**: Added 103 lines of documentation across CLAUDE.md (75 lines of technical guidance) and README.md (36 lines of user documentation). Documented complete desktop stack (Hyprland + Waybar + Wofi), terminal architecture (Ghostty + Kitty), modular configuration structure, package management with archinstall baseline tracking, and testing procedures.
 
 **Impact**: Established comprehensive technical reference for Hyprland configuration patterns, testing procedures, and component interactions. Created single source of truth for desktop environment specifications.
 
 ### Phase 8: Enhance Hyprland Desktop with Notifications and Keybinds ✅
-**Commit**: `5db9a51` - "Enhance Hyprland desktop with dunst notifications, wallpaper management, and keybinds system"
+**Commit**: `ebed785` - "Enhance Hyprland desktop with dunst notifications, wallpaper management, and keybinds system"
 
 **Summary**: Corrected all commit hashes in migration history to match actual git repository (Phases 1-6 hashes updated). Added missing Phase 7 documentation entry. Renumbered phases to maintain chronological accuracy. This phase focused on commit hash verification and migration log accuracy.
 
 **Impact**: Migration log now accurately references all actual commits in repository with correct chronological order. Enables reliable git operations (checkout, bisect, revert) based on documented commits.
 
 ### Phase 9: Configure NetworkManager with iwd Backend ✅
-**Commit**: `a8bd346` - "Configure NetworkManager with iwd backend for WiFi management"
+**Commit**: `160c266` - "Configure NetworkManager with iwd backend for WiFi management"
 
 **Summary**: Added NetworkManager and gnome-keyring packages. Created 61-line configuration script for NetworkManager + iwd backend setup. Updated archinstall baseline documentation to clarify iwd usage. Added gnome-keyring daemon to Hyprland autostart (4 lines) and network module click handler to Waybar (1 line).
 
@@ -220,7 +220,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 **Archive Note**: These nine phases established the complete foundation for the Arch Linux + Hyprland migration, including desktop environment, security components, documentation, and network management. Subsequent phases (10+) focus on environment configuration centralization, hardware support (GPU drivers, file management), and interface refinements. See [MIGRATION_LOG.md](./MIGRATION_LOG.md) for current migration status.
 
 ### Phase 10: Centralize Environment Configuration with globals.yaml ✅
-**Commit**: `31c6adb` - "Centralize environment configuration with globals.yaml"
+**Commit**: `51975cd` - "Centralize environment configuration with globals.yaml"
 
 **Changes Made**:
 - **New Data File** (`.chezmoidata/globals.yaml` - 34 lines):
@@ -284,7 +284,7 @@ This archive contains Phases 1-15 of the migration from EndeavourOS + KDE Plasma
 - Fixed shell path reference bug improving POSIX shell compatibility
 
 ### Phase 11: Automated NVIDIA GPU Driver Configuration ✅
-**Commit**: `b7505cb` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
+**Commit**: `245e628` - "Add automated NVIDIA GPU driver configuration with DKMS and Wayland support"
 
 **Changes Made**:
 - **New Configuration Script** (`.chezmoiscripts/run_once_before_007_configure_gpu_drivers.sh.tmpl` - 291 lines):
@@ -373,28 +373,28 @@ GPU Driver Configuration Flow:
 - **⚠️ REBOOT REQUIRED** after initial setup for kernel parameters and modules to take effect
 
 ### Phase 12: Enhanced File Management with Dolphin and Yazi ✅
-**Commit**: `e1dd48c` - "Enhance file management with Dolphin GUI integration and Yazi TUI file manager"
+**Commit**: `fa46388` - "Enhance file management with Dolphin GUI integration and Yazi TUI file manager"
 
 **Summary**: Added 14 packages across two new categories (file_management with 8 packages for Dolphin ecosystem, terminal_file_management with 3 packages for Yazi TUI). Created 5 configuration files integrating KDE terminal settings, hiding duplicate menu entries, and adding Hyprland keybindings. Enhanced MIME type associations with 13 new lines for directory and archive handling.
 
 **Impact**: Complete dual file management system with GUI (Dolphin via Super+E) providing network protocol support and TUI (Yazi via Super+Shift+E) with vim keybindings and zoxide integration. Dolphin F4 embedded terminal and "Open Terminal Here" context menu launch ghostty via centralized configuration. Translucent windows and floating dialogs provide polished desktop experience.
 
 ### Phase 13: Enhance Waybar Status Bar with Interactive Controls ✅
-**Commit**: `848de75` - "Refine Waybar styling with Nerd Fonts glyphs and improve file management"
+**Commit**: `f555796` - "Refine Waybar styling with Nerd Fonts glyphs and improve file management"
 
 **Summary**: Simplified Waybar by removing 3 redundant monitoring modules (CPU, memory, temperature - 93 lines). Enhanced network, audio, bluetooth, battery, and backlight modules with multi-click actions (62 new lines of interactivity). Added visual grouping system with rounded corners and module-specific hover effects (38 lines of styling). Implemented critical battery animation with smart charging detection.
 
 **Impact**: Status bar transformed from passive information display to interactive control panel. Network module provides one-click access to nmtui, audio module launches pavucontrol or toggles mute, backlight supports instant presets (25/50/75%) with fine scroll adjustments. Visual polish with grouped modules, Material Design icons, and smooth transitions. More functionality with less visual clutter (net +42 lines).
 
 ### Phase 14: Enhanced Power Management and Session Controls ✅
-**Commit**: `5edd015` - "Enhance power management and session controls with NVIDIA optimizations"
+**Commit**: `8eba322` - "Enhance power management and session controls with NVIDIA optimizations"
 
 **Summary**: Consolidated service configuration script (63 lines) with enhanced Docker user group management and conditional NVIDIA power management for laptops. Fixed critical hybrid graphics issue preventing 1-minute Electron app delays. Enhanced session management with wlogout toggle script (40 lines), Material Design icons, and oksolar theming. Added VA-API hardware acceleration and updated cursor support for modern NVIDIA drivers.
 
 **Impact**: Docker users get safe automatic group configuration with clear activation instructions. Intel+NVIDIA systems no longer experience Electron application startup stalls. Hardware-accelerated video works in browsers and media players. Professional power menu with 6 actions and toggle behavior accessible via Super+Shift+Q.
 
 ### Phase 15: Boot Experience and System Configuration ✅
-**Commit**: `ccdf2dd` - "Configure boot experience with Plymouth, SDDM, locale, and topgrade improvements"
+**Commit**: `0cae940` - "Configure boot experience with Plymouth, SDDM, locale, and topgrade improvements"
 
 **Summary**: Added Plymouth and SDDM configuration to globals.yaml (theme, display server settings). Created 5 comprehensive scripts totaling 870 lines: locale configuration (99 lines), SDDM theme installation (188 lines), Plymouth configuration (169 lines), SDDM service configuration (188 lines), and two dynamic update scripts (168 lines combined). Enhanced topgrade with flatpak sudo support and safe orphan removal.
 

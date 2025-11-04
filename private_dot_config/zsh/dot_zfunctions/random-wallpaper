@@ -1,4 +1,4 @@
 #!/usr/bin/env zsh
 # Wrapper function for random-wallpaper.sh script
 
-${XDG_CONFIG_HOME:-$HOME/.config}/scripts/random-wallpaper.sh "$@"
+${XDG_CONFIG_HOME:-$HOME/.config}/scripts/media/random-wallpaper.sh "$@"

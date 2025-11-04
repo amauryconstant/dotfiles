@@ -44,4 +44,4 @@ fi
 # Pass transition settings as arguments
 # Use fallback for XDG_CONFIG_HOME in case it's not set (e.g., systemd service)
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-exec "$CONFIG_HOME/scripts/set-wallpaper.sh" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"
+exec "$CONFIG_HOME/scripts/media/set-wallpaper.sh" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"

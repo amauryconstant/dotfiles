@@ -14,10 +14,6 @@
 /* Main Window */
 /* -------------------------------------------------------------------------- */
 window {
-  /* Window dimensions: Wide format for keybinding descriptions */
-  width: 900px;
-  height: 600px;
-
   /* Background: Oksolar darkest (base03) */
   background-color: #{{ .colors.oksolar.base03 }};
 
@@ -196,9 +192,6 @@ window {
 #outer-box > #scroll > #inner-box > #entry:nth-child(2) {
   /* Color: Oksolar base01 (muted separator) */
   color: #{{ .colors.oksolar.base01 }};
-
-  /* Prevent selection */
-  pointer-events: none;
 
   /* Spacing */
   padding: 2px 12px;

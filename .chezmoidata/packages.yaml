@@ -184,6 +184,7 @@ packages:
             - waybar             # Status bar for Hyprland
             - hyprlock           # Official Hyprland screen locker
             - hypridle           # Official Hyprland idle management daemon
+            - hyprsunset         # Blue light filter / nightlight (AUR)
             - swww               # Dynamic wallpaper daemon with transitions (AUR)
             - wallust            # Color palette generator from wallpapers (AUR)
             - cliphist           # Clipboard history manager
@@ -193,6 +194,18 @@ packages:
             - brightnessctl      # Backlight brightness control
             - playerctl          # Media player control (MPRIS)
             - blueman            # Bluetooth manager GUI (GTK)
+
+        wayland_utilities:
+          strategy: *_install_binary
+          list:
+            - grim               # Screenshot capture tool
+            - slurp              # Region selector for screenshots
+            - satty              # Screenshot annotation/editor (AUR)
+            - wayfreeze          # Screen freeze for clean captures (AUR)
+            - gpu-screen-recorder # GPU-accelerated screen recording (AUR)
+            - swayosd            # On-screen display notifications (AUR)
+            - localsend          # Local network file sharing (AUR)
+            - xkeyboard-config   # Provides xkbcli for keycode resolution
 
         audio_system:
           strategy: *_install_binary

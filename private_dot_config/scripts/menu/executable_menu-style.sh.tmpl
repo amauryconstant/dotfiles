@@ -1,0 +1,82 @@
+#!/usr/bin/env sh
+
+# Script: menu-style.sh
+# Purpose: Style menu (Theme/Wallpaper/Config)
+# Requirements: Arch Linux, wofi
+
+# Source helpers
+. ~/.config/scripts/menu/menu-helpers.sh
+
+# Menu options - Using Material Design icons from glyphnames.json
+OPTIONS="󰁍 Back|󰔎 Switch Theme|󰸉 Wallpaper (Random)|󰋩 Wallpaper (Set)|󰒓 Edit Hyprland Config"
+
+CHOICE=$(show_menu "Style" "$OPTIONS")
+
+case "$CHOICE" in
+    "󰁍 Back")
+        ~/.config/scripts/menu/system-menu.sh
+        ;;
+    "󰔎 Switch Theme")
+        # Check if theme switcher exists
+        if [ -f ~/.config/scripts/executable_theme-switcher.sh ]; then
+            ~/.config/scripts/executable_theme-switcher.sh
+        else
+            notify "󰏘 Theme" "Theme switcher not found"
+        fi
+        ;;
+    "󰸉 Wallpaper (Random)")
+        ~/.config/scripts/media/random-wallpaper.sh
+        ;;
+    "󰋩 Wallpaper (Set)")
+        # List wallpapers and let user choose
+        WALLPAPER_DIR="${XDG_PICTURES_DIR:-$HOME/Pictures}/wallpapers"
+        if [ -d "$WALLPAPER_DIR" ]; then
+            WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" \) | \
+                sed "s|$WALLPAPER_DIR/||" | \
+                wofi --dmenu --prompt "Select Wallpaper" --width 400 --height 600)
+            if [ -n "$WALLPAPER" ]; then
+                ~/.config/scripts/media/set-wallpaper.sh "$WALLPAPER_DIR/$WALLPAPER"
+            fi
+        else
+            notify "󰋩 Wallpaper" "Wallpaper directory not found: $WALLPAPER_DIR"
+        fi
+        ;;
+    "󰒓 Edit Hyprland Config")
+        # Submenu for config files
+        CONFIG_OPTIONS="󰁍 Back|󰍹 Monitor|󱃾 Environment|󰌌 Input|󰒓 General|󰐮 Decoration|󰫢 Animations|󰌑 Bindings|󰖲 Window Rules|󰐊 Autostart"
+        CONFIG_CHOICE=$(show_menu "Edit Config" "$CONFIG_OPTIONS")
+
+        case "$CONFIG_CHOICE" in
+            "󰁍 Back")
+                ~/.config/scripts/menu/menu-style.sh
+                ;;
+            "󰍹 Monitor")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/monitor.conf
+                ;;
+            "󱃾 Environment")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/environment.conf
+                ;;
+            "󰌌 Input")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/input.conf
+                ;;
+            "󰒓 General")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/general.conf
+                ;;
+            "󰐮 Decoration")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/decoration.conf
+                ;;
+            "󰫢 Animations")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/animations.conf
+                ;;
+            "󰌑 Bindings")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/bindings.conf
+                ;;
+            "󰖲 Window Rules")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/windowrules.conf
+                ;;
+            "󰐊 Autostart")
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/autostart.conf
+                ;;
+        esac
+        ;;
+esac

@@ -1,4 +1,4 @@
 #!/usr/bin/env zsh
 # Wrapper function for set-wallpaper.sh script
 
-${XDG_CONFIG_HOME:-$HOME/.config}/scripts/set-wallpaper.sh "$@"
+${XDG_CONFIG_HOME:-$HOME/.config}/scripts/media/set-wallpaper.sh "$@"

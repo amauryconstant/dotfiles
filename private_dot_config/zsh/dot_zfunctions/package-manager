@@ -9,10 +9,10 @@ else
 fi
 
 # Source and execute the package manager script
-if [ -f "$HOME/.config/scripts/package-manager.sh" ]; then
-    . "$HOME/.config/scripts/package-manager.sh"
+if [ -f "$HOME/.config/scripts/system/package-manager.sh" ]; then
+    . "$HOME/.config/scripts/system/package-manager.sh"
     package-manager "$@"
 else
-    echo "Error: package-manager script not found at $HOME/.config/scripts/package-manager.sh" >&2
+    echo "Error: package-manager script not found at $HOME/.config/scripts/system/package-manager.sh" >&2
     return 1
 fi

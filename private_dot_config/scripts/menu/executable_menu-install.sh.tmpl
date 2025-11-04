@@ -1,0 +1,132 @@
+#!/usr/bin/env sh
+
+# Script: menu-install.sh
+# Purpose: Install menu (Package installation and setup)
+# Requirements: Arch Linux, wofi
+
+# Source helpers
+. ~/.config/scripts/menu/menu-helpers.sh
+
+# Menu options
+OPTIONS="󰁍 Back|󰏗 Install Package|󰚩 AI Models (Ollama)|󰙵 Development Tools|󰘐 Code Editors"
+
+CHOICE=$(show_menu "Install" "$OPTIONS")
+
+case "$CHOICE" in
+    "󰁍 Back")
+        ~/.config/scripts/menu/system-menu.sh
+        ;;
+    "󰏗 Install Package")
+        # Interactive package installation
+        if [ -f ~/.config/scripts/system/package-manager.sh ]; then
+            {{ .globals.applications.terminal }} -e ~/.config/scripts/system/package-manager.sh install
+        else
+            # Fallback to simple search and install
+            PACKAGE=$(echo "" | wofi --dmenu --prompt "Package name to install")
+            if [ -n "$PACKAGE" ]; then
+                if confirm "Install package: $PACKAGE?"; then
+                    {{ .globals.applications.terminal }} -e sh -c "yay -S $PACKAGE; read -p 'Press Enter to continue...'"
+                fi
+            fi
+        fi
+        ;;
+    "󰚩 AI Models (Ollama)")
+        # Ollama model management
+        if command -v ollama >/dev/null 2>&1; then
+            MODEL_OPTIONS="󰁍 Back|󰇚 Pull Model|󰉖 List Models|󰆴 Remove Model"
+            MODEL_CHOICE=$(show_menu "Ollama" "$MODEL_OPTIONS")
+
+            case "$MODEL_CHOICE" in
+                "󰁍 Back")
+                    ~/.config/scripts/menu/menu-install.sh
+                    ;;
+                "󰇚 Pull Model")
+                    MODEL_NAME=$(echo "" | wofi --dmenu --prompt "Model name (e.g., llama3, codellama)")
+                    if [ -n "$MODEL_NAME" ]; then
+                        {{ .globals.applications.terminal }} -e sh -c "ollama pull $MODEL_NAME; read -p 'Press Enter to continue...'"
+                    fi
+                    ;;
+                "󰉖 List Models")
+                    {{ .globals.applications.terminal }} -e sh -c "ollama list; read -p 'Press Enter to continue...'"
+                    ;;
+                "󰆴 Remove Model")
+                    INSTALLED_MODELS=$(ollama list | tail -n +2 | awk '{print $1}')
+                    if [ -n "$INSTALLED_MODELS" ]; then
+                        MODEL_TO_REMOVE=$(echo "$INSTALLED_MODELS" | wofi --dmenu --prompt "Remove model")
+                        if [ -n "$MODEL_TO_REMOVE" ] && confirm "Remove model: $MODEL_TO_REMOVE?"; then
+                            ollama rm "$MODEL_TO_REMOVE"
+                            notify "󰚩 Ollama" "Removed model: $MODEL_TO_REMOVE"
+                        fi
+                    else
+                        notify "󰚩 Ollama" "No models installed"
+                    fi
+                    ;;
+            esac
+        else
+            notify "󰚩 Ollama" "Ollama not installed\nInstall with: yay -S ollama"
+        fi
+        ;;
+    "󰙵 Development Tools")
+        # Common dev tool installation
+        DEV_OPTIONS="󰁍 Back|󰡨 Docker|󱘗 Rust Toolchain|󰌠 Python (mise)|󰎙 Node.js (mise)|󰟓 Go (mise)"
+        DEV_CHOICE=$(show_menu "Development Tools" "$DEV_OPTIONS")
+
+        case "$DEV_CHOICE" in
+            "󰁍 Back")
+                ~/.config/scripts/menu/menu-install.sh
+                ;;
+            "󰡨 Docker")
+                if confirm "Install Docker?"; then
+                    {{ .globals.applications.terminal }} -e sh -c "yay -S docker docker-compose docker-buildx; sudo systemctl enable --now docker; sudo usermod -aG docker $USER; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+            "󱘗 Rust Toolchain")
+                {{ .globals.applications.terminal }} -e sh -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh; read -p 'Press Enter to continue...'"
+                ;;
+            "󰌠 Python (mise)")
+                VERSION=$(echo "3.12\n3.11\n3.10" | wofi --dmenu --prompt "Python version")
+                if [ -n "$VERSION" ]; then
+                    {{ .globals.applications.terminal }} -e sh -c "mise use --global python@$VERSION; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+            "󰎙 Node.js (mise)")
+                VERSION=$(echo "lts\n20\n18" | wofi --dmenu --prompt "Node.js version")
+                if [ -n "$VERSION" ]; then
+                    {{ .globals.applications.terminal }} -e sh -c "mise use --global node@$VERSION; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+            "󰟓 Go (mise)")
+                {{ .globals.applications.terminal }} -e sh -c "mise use --global go@latest; read -p 'Press Enter to continue...'"
+                ;;
+        esac
+        ;;
+    "󰘐 Code Editors")
+        # Editor installation
+        EDITOR_OPTIONS="󰁍 Back|󰨞 VSCode|󰨞 VSCodium|󰕷 Neovim Config|󱓥 Helix"
+        EDITOR_CHOICE=$(show_menu "Code Editors" "$EDITOR_OPTIONS")
+
+        case "$EDITOR_CHOICE" in
+            "󰁍 Back")
+                ~/.config/scripts/menu/menu-install.sh
+                ;;
+            "󰨞 VSCode")
+                if confirm "Install Visual Studio Code?"; then
+                    {{ .globals.applications.terminal }} -e sh -c "yay -S code; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+            "󰨞 VSCodium")
+                if confirm "Install VSCodium (FOSS VSCode)?"; then
+                    {{ .globals.applications.terminal }} -e sh -c "yay -S vscodium-bin; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+            "󰕷 Neovim Config")
+                notify "󰕷 Neovim" "Neovim already installed\nConfigure via dotfiles or use kickstart.nvim"
+                ;;
+            "󱓥 Helix")
+                if confirm "Install Helix editor?"; then
+                    {{ .globals.applications.terminal }} -e sh -c "yay -S helix; read -p 'Press Enter to continue...'"
+                fi
+                ;;
+        esac
+        ;;
+esac

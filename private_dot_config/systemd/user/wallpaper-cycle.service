@@ -5,7 +5,7 @@ After=graphical-session.target
 
 [Service]
 Type=oneshot
-ExecStart=%h/.config/scripts/random-wallpaper.sh fade 3
+ExecStart=%h/.config/scripts/media/random-wallpaper.sh fade 3
 # Use fade transition with 3 second duration for smooth cycling
 
 [Install]
