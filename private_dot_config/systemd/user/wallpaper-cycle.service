@@ -7,6 +7,20 @@ After=graphical-session.target
 Type=oneshot
 ExecStart=%h/.local/lib/scripts/media/random-wallpaper.sh fade 3
 # Use fade transition with 3 second duration for smooth cycling
+# Restart on failure with backoff
+Restart=on-failure
+RestartSec=30s
+StartLimitBurst=3
+StartLimitIntervalSec=300
+# Service timeout to prevent hanging
+TimeoutSec=60s
+# Ensure proper environment variables
+Environment=PATH=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/var/lib/flatpak/exports/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+Environment=XDG_CONFIG_HOME=%h/.config
+Environment=XDG_CACHE_HOME=%h/.cache
+Environment=XDG_DATA_HOME=%h/.local/share
+Environment=XDG_STATE_HOME=%h/.local/state
+Environment=HOME=%h
 
 [Install]
 WantedBy=default.target

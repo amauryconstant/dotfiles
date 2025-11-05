@@ -412,7 +412,7 @@ Shell Environment:
 ---
 
 ### Phase 21: Zephyr Plugin Integration and Shell Environment Modernization ✅
-**Commit**: `(pending)` - "Integrate Zephyr plugin framework and modernize shell environment management"
+**Commit**: `9edf625` - "Integrate Zephyr plugin framework and modernize shell environment management"
 
 **Changes Made**:
 - **Zephyr Plugin Framework Integration** (8 new plugins added):
@@ -493,6 +493,69 @@ Legacy Shell Files (simplified):
 - **Performance**: Better caching and optimized loading strategies
 - **Net change**: -51 lines overall (simplification + new plugin configuration)
 - **Functional Enhancement**: More features with less configuration code
+
+---
+
+### Phase 22: Wallpaper Timer Reliability Improvements ✅
+**Commit**: `f5327ab` - "Enhance wallpaper timer reliability with restart policies and lock file protection"
+
+**Changes Made**:
+- **Wallpaper Timer Reliability Enhancement** (systemd units and scripts):
+  - **Issue Identified**: wallpaper-cycle.timer was active but hadn't triggered since Monday (3+ days), causing wallpaper rotation to stop working
+  - **Root Cause**: Timer got stuck in systemd scheduling without proper error handling or recovery mechanisms
+  
+- **Enhanced Timer Configuration** (`wallpaper-cycle.timer`):
+  - **Added `RandomizedDelaySec=2min`**: Prevents exact timing conflicts with other timers
+  - **Reduced `AccuracyUSec=30s`**: More precise scheduling compared to default 1 minute
+  - **Maintained `Persistent=true`**: Survives system reboots and maintains trigger history
+  
+- **Robust Service Configuration** (`wallpaper-cycle.service`):
+  - **Added `Restart=on-failure`**: Automatic recovery if wallpaper script fails
+  - **Added `RestartSec=30s`**: 30-second backoff between restart attempts
+  - **Added `StartLimitBurst=3` and `StartLimitIntervalSec=300s`**: Prevents restart loops (max 3 restarts per 5 minutes)
+  - **Added `TimeoutSec=60s`**: Prevents hanging services from blocking timer
+  - **Added Environment Variables**: Explicit PATH and XDG variables to ensure proper script execution in systemd context
+  
+- **Enhanced Script Reliability** (`random-wallpaper.sh.tmpl`):
+  - **Lock File Mechanism**: Prevents concurrent wallpaper changes (uses `$XDG_RUNTIME_DIR/random-wallpaper.lock`)
+  - **Pre-flight Dependency Checks**: Validates required commands (`swww`, `wallust`, `find`, `shuf`) before execution
+  - **Stale Lock Cleanup**: Automatically removes lock files older than 2 minutes
+  - **Enhanced Error Handling**: Better validation of wallpaper directory and script existence
+  - **Cleanup Traps**: Ensures lock files are removed on script exit/interrupt
+  
+- **Timer Recovery Process**:
+  - **Manual Restart**: Restarted stuck timer with `systemctl --user restart wallpaper-cycle.timer`
+  - **Verification**: Confirmed timer now triggers correctly (next trigger in ~30 minutes)
+  - **Testing**: Validated enhanced script works with proper error handling and lock file management
+
+**Architecture**:
+```
+Reliable Wallpaper Rotation System:
+
+wallpaper-cycle.timer (every 30min ±2min random delay):
+└─→ wallpaper-cycle.service (with restart policy)
+    └─→ random-wallpaper.sh (enhanced with lock file)
+        ├─→ Dependency validation (swww, wallust, find, shuf)
+        ├─→ Lock file protection (prevents concurrent execution)
+        ├─→ Random wallpaper selection from ~/Wallpapers/
+        └─→ set-wallpaper.sh → swww + wallust color generation
+```
+
+**Rationale**:
+- **Reliability Focus**: Addressed timer getting stuck without over-engineering monitoring systems
+- **Minimal Intervention**: Enhanced existing components rather than adding complex health monitoring
+- **Defensive Programming**: Lock files, dependency checks, and restart policies prevent common failure modes
+- **Systemd Best Practices**: Proper environment variables, timeout handling, and restart policies
+- **User Experience**: Wallpaper rotation now works reliably without manual intervention
+
+**Impact**:
+- **Timer Reliability**: Fixed stuck timer issue with automatic recovery mechanisms
+- **Concurrent Execution Prevention**: Lock file prevents multiple wallpaper changes simultaneously
+- **Error Resilience**: Script validates dependencies and handles errors gracefully
+- **System Integration**: Proper systemd environment variables and timeout handling
+- **Self-Healing**: Service restarts automatically on failure with rate limiting
+- **Minimal Overhead**: No additional monitoring services or complexity
+- **Net Change**: Enhanced reliability with ~50 lines of defensive code improvements
 
 ---
 

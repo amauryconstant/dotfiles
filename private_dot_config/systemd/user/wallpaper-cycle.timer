@@ -7,6 +7,8 @@ Documentation=man:systemd.timer(5)
 OnUnitActiveSec=30min
 # Use monotonic time (not affected by system clock changes)
 Persistent=true
+# Small random delay to prevent exact timing conflicts
+RandomizedDelaySec=2min
 
 [Install]
 WantedBy=timers.target

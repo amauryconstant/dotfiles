@@ -8,6 +8,43 @@
 
 set -euo pipefail
 
+# Lock file to prevent concurrent executions
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/random-wallpaper.lock"
+LOCK_TIMEOUT=120  # 2 minutes
+
+# Function to cleanup lock file on exit
+cleanup_lock() {
+    if [ -f "$LOCK_FILE" ]; then
+        rm -f "$LOCK_FILE"
+    fi
+}
+
+# Set up trap to cleanup lock file
+trap cleanup_lock EXIT INT TERM
+
+# Check for existing lock file
+if [ -f "$LOCK_FILE" ]; then
+    # Check if lock file is older than timeout
+    if [ "$(find "$LOCK_FILE" -mmin +2 2>/dev/null)" ]; then
+        {{ includeTemplate "log_warning" "Removing stale lock file" }}
+        rm -f "$LOCK_FILE"
+    else
+        {{ includeTemplate "log_warning" "Another wallpaper change is in progress, exiting" }}
+        exit 0
+    fi
+fi
+
+# Create lock file with timestamp
+echo "$(date +%s)" > "$LOCK_FILE"
+
+# Pre-flight checks for required dependencies
+for cmd in swww wallust find shuf; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        {{ includeTemplate "log_error" "Required command not found: $cmd" }}
+        exit 1
+    fi
+done
+
 # Wallpaper directory
 WALLPAPER_DIR="${HOME}/Wallpapers"
 
@@ -44,4 +81,9 @@ fi
 # Pass transition settings as arguments
 # Use fallback for XDG_CONFIG_HOME in case it's not set (e.g., systemd service)
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+if [ ! -f "$CONFIG_HOME/scripts/media/set-wallpaper.sh" ]; then
+    {{ includeTemplate "log_error" "set-wallpaper script not found at $CONFIG_HOME/scripts/media/set-wallpaper.sh" }}
+    exit 1
+fi
+
 exec "$CONFIG_HOME/scripts/media/set-wallpaper.sh" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"
