@@ -26,9 +26,9 @@ if [ -d "{{ .globals.paths.local_sbin }}" ]; then
 fi
 
 # Software Envs
-export EDITOR={{ .globals.applications.editor }}
-export VISUAL={{ .globals.applications.visual }}
-export BROWSER={{ .globals.applications.browser }}
+export EDITOR="${EDITOR:-{{ .globals.applications.editor }}}"
+export VISUAL="${VISUAL:-{{ .globals.applications.visual }}}"
+export BROWSER="${BROWSER:-{{ .globals.applications.browser }}}"
 
 # Package Version Managers Envs
 export CARGO_HOME="{{ .globals.paths.cargo_home }}"

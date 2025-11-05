@@ -7,3 +7,26 @@ zstyle ':antidote:bundle' use-friendly-names 'yes'
 
 zstyle ':omz:plugins:extract' lazy yes
 zstyle ':omz:plugins:aws' lazy yes
+
+# Individual plugin settings
+zstyle ':zephyr:plugin:editor' prepend-sudo yes
+zstyle ':zephyr:plugin:editor' magic-enter yes
+zstyle ':zephyr:plugin:editor' dot-expansion yes
+zstyle ':zephyr:plugin:completion' compstyle zephyr
+zstyle ':zephyr:plugin:completion' use-cache yes
+
+# Enable Zephyr XDG Base Directory management
+zstyle ':zephyr:plugin:environment' use-xdg-basedirs yes
+
+# Environment variables (migrated from shell/login)
+zstyle ':zephyr:plugin:environment' EDITOR 'nvim'
+zstyle ':zephyr:plugin:environment' VISUAL 'code'
+zstyle ':zephyr:plugin:environment' BROWSER 'firefox'
+
+# Custom PATH additions (Zephyr handles deduplication)
+zstyle ':zephyr:plugin:environment' prepath ~/.local/bin ~/.local/sbin
+
+# Environment customizations (migrated from shell/env)
+zstyle ':zephyr:plugin:environment' 'SCRIPTS_DIR' "$HOME/.local/lib/scripts"
+zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-ui.sh"
+zstyle ':zephyr:plugin:environment' umask 0077

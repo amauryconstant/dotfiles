@@ -3,10 +3,7 @@
 # $ZDOTDIR/.zshenv - Zsh environment file, loaded always (when ZDOTDIR is set)
 #
 # This file runs for ALL zsh shells (interactive and non-interactive).
-# It sources the common POSIX shell environment and functions.
-
-# Source common shell environment (functions, PATH setup, etc.)
+# It sources the common POSIX shell environment.
+# Source common shell environment (minimal POSIX setup)
 . $HOME/.config/shell/env
 
-# Ensure path arrays do not contain duplicates
-typeset -gU path fpath
