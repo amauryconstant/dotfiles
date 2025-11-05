@@ -15,7 +15,7 @@ Type=oneshot
 User=topgrade-maintenance
 Group=topgrade-maintenance
 # Pre-execution: Remove stale pacman locks before running topgrade
-ExecStartPre=/usr/bin/sudo {{ .chezmoi.homeDir }}/.config/scripts/system/pacman-lock-cleanup.sh
+ExecStartPre=/usr/bin/sudo {{ .chezmoi.homeDir }}/.local/lib/scripts/system/pacman-lock-cleanup.sh
 # Run topgrade with system configuration file
 ExecStart=/usr/bin/topgrade --config /etc/topgrade/topgrade.toml
 # Set working directory to maintenance user home

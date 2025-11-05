@@ -59,7 +59,7 @@ arguments = "--rebase --autostash --prune"
 # Commented out - these functions may not be available in all contexts
 # [pre_commands]
 # "System health check" = "/usr/bin/zsh -c 'system_health_simple --brief'"
-# "Package health check" = "{{ .chezmoi.homeDir }}/.config/scripts/package-manager.sh health --brief"
+# "Package health check" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh health --brief"
 
 # Custom commands for system-specific maintenance
 [commands]
@@ -68,6 +68,6 @@ arguments = "--rebase --autostash --prune"
 # Remove orphaned packages (safe version - checks for orphans before attempting removal)
 "Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"
 # Post-update system status
-"Post-update system status" = "/usr/bin/zsh -c 'system_health_simple --brief'"
+"Post-update system status" = "/usr/bin/zsh -c '~/.local/lib/scripts/system/system-health.sh --brief'"
 # Post-update package strategy validation
-"Package strategy validation" = "{{ .chezmoi.homeDir }}/.config/scripts/system/package-manager.sh health --brief"
+"Package strategy validation" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh health --brief"

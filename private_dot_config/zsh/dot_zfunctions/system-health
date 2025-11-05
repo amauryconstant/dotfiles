@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-system-health() {
-    bash "$HOME/.config/scripts/system/health.sh" "$@"
-}

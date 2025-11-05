@@ -14,9 +14,10 @@ if [ -r "$HOME/.config/shell/env_functions" ]; then
     . "$HOME/.config/shell/env_functions"
 fi
 
-# Source standardized gum UI library for all shells
-if [ -r "$HOME/.config/shell/gum-ui.sh" ]; then
-    . "$HOME/.config/shell/gum-ui.sh"
-fi
+# Define scripts directory for all shell scripts
+export SCRIPTS_DIR="$HOME/.local/lib/scripts"
+export UI_LIB="$SCRIPTS_DIR/core/gum-ui.sh"
+
+# UI library is now lazy-loaded on demand - no longer sourced at startup
 
 umask 0077

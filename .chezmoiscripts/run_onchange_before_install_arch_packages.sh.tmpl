@@ -13,11 +13,11 @@ set -euo pipefail
 
 # Check if sophisticated package manager is available and working
 use_package_manager=false
-if [ -f "$HOME/.config/scripts/system/package-manager.sh" ] && command -v yq >/dev/null 2>&1; then
-    if [ -f "$HOME/.config/shell/gum-ui.sh" ]; then
+if [ -f "$HOME/.local/lib/scripts/system/package-manager.sh" ] && command -v yq >/dev/null 2>&1; then
+    if [ -f "$HOME/.local/lib/core/gum-ui.sh" ]; then
         # Test if package manager can read categories
-        . "$HOME/.config/shell/gum-ui.sh" 2>/dev/null || true
-        . "$HOME/.config/scripts/system/package-manager.sh" 2>/dev/null || true
+        . "$HOME/.local/lib/core/gum-ui.sh" 2>/dev/null || true
+        . "$HOME/.local/lib/scripts/system/package-manager.sh" 2>/dev/null || true
         if package-manager health --brief >/dev/null 2>&1; then
             use_package_manager=true
             {{ includeTemplate "log_step" "Using sophisticated strategy-aware package manager..." }}

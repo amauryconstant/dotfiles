@@ -1,0 +1,78 @@
+#!/usr/bin/env sh
+
+# Script: menu-update.sh
+# Purpose: Update menu (System and configuration updates)
+# Requirements: Arch Linux, wofi
+
+# Source helpers
+. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+
+# Menu options
+OPTIONS="󰁍 Back|󰚰 System Update (topgrade)|󰑓 Config Refresh (chezmoi)|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
+
+CHOICE=$(show_menu "Update" "$OPTIONS")
+
+case "$CHOICE" in
+    "󰁍 Back")
+        ~/.local/lib/scripts/user-interface/system-menu.sh
+        ;;
+    "󰚰 System Update (topgrade)")
+        if command -v topgrade >/dev/null 2>&1; then
+            {{ .globals.applications.terminal }} -e topgrade
+        else
+            if confirm "Topgrade not installed. Install it?"; then
+                {{ .globals.applications.terminal }} -e sh -c "yay -S topgrade; topgrade; read -p 'Press Enter to continue...'"
+            fi
+        fi
+        ;;
+    "󰑓 Config Refresh (chezmoi)")
+        if confirm "Apply latest dotfiles configuration?"; then
+            {{ .globals.applications.terminal }} -e sh -c "chezmoi diff && chezmoi apply; read -p 'Press Enter to continue...'"
+            notify "󰑓 Chezmoi" "Configuration refreshed"
+        fi
+        ;;
+    "󰣐 Firmware Update")
+        if command -v fwupdmgr >/dev/null 2>&1; then
+            FW_OPTIONS="󰁍 Back|󰋗 Check for Updates|󰇚 Download Updates|󰁯 Install Updates|󰾰 Show Devices"
+            FW_CHOICE=$(show_menu "Firmware Update" "$FW_OPTIONS")
+
+            case "$FW_CHOICE" in
+                "󰁍 Back")
+                    ~/.local/lib/scripts/user-interface/menu-update.sh
+                    ;;
+                "󰋗 Check for Updates")
+                    {{ .globals.applications.terminal }} -e sh -c "fwupdmgr refresh; fwupdmgr get-updates; read -p 'Press Enter to continue...'"
+                    ;;
+                "󰇚 Download Updates")
+                    {{ .globals.applications.terminal }} -e sh -c "fwupdmgr refresh; fwupdmgr download; read -p 'Press Enter to continue...'"
+                    ;;
+                "󰁯 Install Updates")
+                    if confirm "Install firmware updates?\n(May require reboot)"; then
+                        {{ .globals.applications.terminal }} -e sh -c "fwupdmgr update; read -p 'Press Enter to continue...'"
+                    fi
+                    ;;
+                "󰾰 Show Devices")
+                    {{ .globals.applications.terminal }} -e sh -c "fwupdmgr get-devices; read -p 'Press Enter to continue...'"
+                    ;;
+            esac
+        else
+            notify "󰣐 Firmware" "fwupd not installed\nInstall with: yay -S fwupd"
+        fi
+        ;;
+    "󰅐 Sync Time")
+        if confirm "Sync system time with NTP?"; then
+            {{ .globals.applications.terminal }} -e sh -c "sudo timedatectl set-ntp true; sudo timedatectl status; read -p 'Press Enter to continue...'"
+            notify "󰅐 Time" "System time synchronized"
+        fi
+        ;;
+    "󰒋 Update Mirrorlist")
+        if command -v rate-mirrors >/dev/null 2>&1; then
+            if confirm "Update Arch mirrorlist?\n(Finds fastest mirrors)"; then
+                {{ .globals.applications.terminal }} -e sh -c "rate-mirrors --save=/tmp/mirrorlist arch && sudo cp /tmp/mirrorlist /etc/pacman.d/mirrorlist; read -p 'Press Enter to continue...'"
+                notify "󰒋 Mirrorlist" "Updated with fastest mirrors"
+            fi
+        else
+            notify "󰒋 Mirrorlist" "rate-mirrors not installed\nInstall with: yay -S rate-mirrors"
+        fi
+        ;;
+esac

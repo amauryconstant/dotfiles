@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Launch or Focus - Direct CLI Access
+# Purpose: Focus existing window or launch application
+# Requirements: Arch Linux, hyprctl, jaq
+
+# Use environment variables defined in shell/env
+LAUNCH_SCRIPT="$SCRIPTS_DIR/desktop/launch-or-focus.sh"
+
+# Execute launch-or-focus script
+if [ -f "$LAUNCH_SCRIPT" ]; then
+    "$LAUNCH_SCRIPT" "$@"
+else
+    echo "Error: Launch-or-focus script not found at $LAUNCH_SCRIPT" >&2
+    exit 1
+fi

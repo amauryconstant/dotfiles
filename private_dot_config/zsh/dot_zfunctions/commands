@@ -1,0 +1,54 @@
+#!/usr/bin/env zsh
+
+# commands - List all available custom commands and tools
+# Purpose: Discover available CLI tools and their descriptions
+# Usage: commands [search_term]
+
+commands() {
+    local search_term="$1"
+    local script_dir="$HOME/.local/lib/scripts"
+    local bin_dir="$HOME/.local/bin"
+    
+    echo "🔧 Available Custom Commands:"
+    echo ""
+    
+    # List lazy-loaded commands from ~/.local/bin
+    if [[ -n "$search_term" ]]; then
+        echo "🔍 Searching for: $search_term"
+        echo ""
+    fi
+    
+    # Get list of CLI wrappers
+    local wrappers=($(ls -1 "$bin_dir" | grep -v "^test-"))
+    
+    for wrapper in "${wrappers[@]}"; do
+        if [[ -n "$search_term" ]] && [[ ! "$wrapper" =~ "$search_term" ]]; then
+            continue
+        fi
+        
+        # Get description from wrapper header
+        local desc=$(grep "^# Purpose:" "$bin_dir/$wrapper" 2>/dev/null | cut -d: -f2- | sed 's/^ *//')
+        if [[ -z "$desc" ]]; then
+            desc="CLI wrapper for $wrapper"
+        fi
+        
+        printf "  %-20s %s\n" "$wrapper" "$desc"
+    done
+    
+    echo ""
+    echo "📚 Available Script Categories:"
+    echo ""
+    
+    # List script categories
+    local categories=($(ls -1 "$script_dir" | grep -v "^lib$"))
+    
+    for category in "${categories[@]}"; do
+        local count=$(ls -1 "$script_dir/$category" 2>/dev/null | wc -l)
+        printf "  %-20s %d scripts\n" "$category" "$count"
+    done
+    
+    echo ""
+    echo "💡 Usage:"
+    echo "  commands [search]    - Search for specific commands"
+    echo "  <command> --help     - Get help for specific command"
+}

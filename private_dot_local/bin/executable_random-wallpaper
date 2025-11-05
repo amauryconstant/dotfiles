@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Random Wallpaper - Direct CLI Access
+# Purpose: Set random wallpaper from collection
+# Requirements: Arch Linux, wallpaper management tools
+
+# Use environment variables defined in shell/env
+WALLPAPER_SCRIPT="$SCRIPTS_DIR/media/random-wallpaper.sh"
+
+# Execute random wallpaper script
+if [ -f "$WALLPAPER_SCRIPT" ]; then
+    "$WALLPAPER_SCRIPT" "$@"
+else
+    echo "Error: Random wallpaper script not found at $WALLPAPER_SCRIPT" >&2
+    exit 1
+fi

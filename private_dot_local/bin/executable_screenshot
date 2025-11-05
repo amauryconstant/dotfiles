@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Screenshot Tool - Direct CLI Access
+# Purpose: Take screenshots with various options
+# Requirements: Arch Linux, screenshot tools
+
+# Use environment variables defined in shell/env
+SCREENSHOT_SCRIPT="$SCRIPTS_DIR/media/screenshot.sh"
+
+# Execute screenshot script
+if [ -f "$SCREENSHOT_SCRIPT" ]; then
+    "$SCREENSHOT_SCRIPT" "$@"
+else
+    echo "Error: Screenshot script not found at $SCREENSHOT_SCRIPT" >&2
+    exit 1
+fi

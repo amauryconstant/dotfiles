@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Package Manager - Direct CLI Access
+# Purpose: Strategy-based package installation with fallback chains
+# Requirements: Arch Linux, pacman, yay, gum (UI library)
+
+# Use environment variables defined in shell/env
+PACKAGE_SCRIPT="$SCRIPTS_DIR/system/package-manager.sh"
+
+# Source UI library
+if [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+else
+    echo "Error: UI library not found at $UI_LIB" >&2
+    exit 1
+fi
+
+# Execute package manager script
+if [ -f "$PACKAGE_SCRIPT" ]; then
+    "$PACKAGE_SCRIPT" "$@"
+else
+    echo "Error: Package manager script not found at $PACKAGE_SCRIPT" >&2
+    exit 1
+fi

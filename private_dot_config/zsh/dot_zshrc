@@ -10,10 +10,43 @@ if [[ -n "$ZSH_DEBUGRC" ]]; then
   zmodload zsh/zprof
 fi
 
-# Lazy-load (autoload) Zsh function files from a directory.
+# Lazy-load (autoload) lightweight Zsh function files from a directory.
 ZFUNCDIR=${ZDOTDIR:-$HOME}/.zfunctions
 fpath=($ZFUNCDIR $fpath)
-autoload -Uz $ZFUNCDIR/*(.:t)
+
+# Only autoload lightweight functions immediately
+autoload -Uz $ZFUNCDIR/br(.:t) $ZFUNCDIR/commands(.:t) $ZFUNCDIR/debug-zsh-startup(.:t) $ZFUNCDIR/init-zsh-cmd(.:t) $ZFUNCDIR/ts(.:t) $ZFUNCDIR/reorder-json(.:t) $ZFUNCDIR/rm-empty-dirs(.:t) $ZFUNCDIR/twiggit(.:t)
+
+# Lazy loading system for heavy commands
+_lazy_load_commands() {
+    # Command registry: "command:script_path"
+    local commands_registry=(
+        "system-health:$HOME/.local/bin/system-health"
+        "package-manager:$HOME/.local/bin/package-manager"
+        "random-wallpaper:$HOME/.local/bin/random-wallpaper"
+        "set-wallpaper:$HOME/.local/bin/set-wallpaper"
+        "tailscale:$HOME/.local/bin/tailscale"
+        "screenshot:$HOME/.local/bin/screenshot"
+        "launch-or-focus:$HOME/.local/bin/launch-or-focus"
+        "git-prune-branch:$HOME/.local/bin/git-prune-branch"
+        "system-troubleshoot:$HOME/.local/bin/system-troubleshoot"
+        "system-maintenance:$HOME/.local/bin/system-maintenance"
+    )
+    
+    for entry in "$commands_registry[@]"; do
+        local cmd="${entry%%:*}"
+        local script="${entry##*:}"
+        
+        # Create lazy loading wrapper
+        eval "$cmd() { 
+            unset -f $cmd
+            '$script' \"\$@\"
+        }"
+    done
+}
+
+# Initialize lazy loading
+_lazy_load_commands
 
 # Set any zstyles you might use for configuration.
 [[ ! -f ${ZDOTDIR:-$HOME}/.zstyles ]] || source ${ZDOTDIR:-$HOME}/.zstyles

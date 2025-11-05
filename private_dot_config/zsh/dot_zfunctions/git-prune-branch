@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-git-prune-branch() {
-    bash "$HOME/.config/scripts/git/prune-branch.sh" "$@"
-}

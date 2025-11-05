@@ -1,4 +1,0 @@
-#!/usr/bin/env zsh
-reorder-json() {
-    bash "$HOME/.config/scripts/utils/reorder-json.sh" "$@"
-}

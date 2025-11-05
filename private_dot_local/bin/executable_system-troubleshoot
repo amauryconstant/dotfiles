@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# System Troubleshoot - Direct CLI Access
+# Purpose: System troubleshooting utilities
+# Requirements: Arch Linux, system utilities
+
+# Use environment variables defined in shell/env
+TROUBLESHOOT_SCRIPT="$SCRIPTS_DIR/system/troubleshoot.sh"
+
+# Execute system troubleshoot script
+if [ -f "$TROUBLESHOOT_SCRIPT" ]; then
+    "$TROUBLESHOOT_SCRIPT" "$@"
+else
+    echo "Error: System troubleshoot script not found at $TROUBLESHOOT_SCRIPT" >&2
+    exit 1
+fi

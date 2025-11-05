@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# System Maintenance - Direct CLI Access
+# Purpose: System maintenance utilities (pacman lock cleanup)
+# Requirements: Arch Linux, pacman
+
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/dotfiles-scripts"
+
+# Execute system maintenance script
+if [ -f "$SCRIPT_DIR/system/pacman-lock-cleanup.sh" ]; then
+    "$SCRIPT_DIR/system/pacman-lock-cleanup.sh" "$@"
+else
+    echo "Error: System maintenance script not found at $SCRIPT_DIR/system/pacman-lock-cleanup.sh" >&2
+    exit 1
+fi

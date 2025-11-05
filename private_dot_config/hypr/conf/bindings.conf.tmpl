@@ -30,7 +30,7 @@ $mod = SUPER
 
 # Terminal: Super + Return
 # Enhanced to preserve current working directory
-bind = $mod, Return, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.config/scripts/terminal/terminal-cwd.sh)
+bind = $mod, Return, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd.sh)
 
 # Application launcher: Super + D
 # Wofi shows desktop applications from .desktop files
@@ -38,7 +38,7 @@ bind = $mod, D, exec, wofi --show drun
 
 # File manager: Super + E (GUI)
 # Uses launch-or-focus for single-instance behavior
-bind = $mod, E, exec, ~/.config/scripts/desktop/launch-or-focus.sh dolphin
+bind = $mod, E, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh dolphin
 
 # Terminal file manager: Super + Shift + E (Yazi)
 bind = $mod SHIFT, E, exec, {{ .globals.applications.terminal }} -e yazi
@@ -48,12 +48,12 @@ bind = $mod, W, exec, firefox
 bind = $mod SHIFT, W, exec, firefox --private-window
 
 # VS Code: Super + O (Visual editor)
-bind = $mod, O, exec, ~/.config/scripts/desktop/launch-or-focus.sh code
-bind = $mod SHIFT, O, exec, code "$(~/.config/scripts/terminal/terminal-cwd.sh)"
+bind = $mod, O, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh code
+bind = $mod SHIFT, O, exec, code "$(~/.local/lib/scripts/terminal/terminal-cwd.sh)"
 
 # Neovim: Super + K (Terminal editor)
 bind = $mod, K, exec, {{ .globals.applications.terminal }} -e nvim
-bind = $mod SHIFT, K, exec, {{ .globals.applications.terminal }} -e nvim "$(~/.config/scripts/terminal/terminal-cwd.sh)"
+bind = $mod SHIFT, K, exec, {{ .globals.applications.terminal }} -e nvim "$(~/.local/lib/scripts/terminal/terminal-cwd.sh)"
 
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard
@@ -186,18 +186,18 @@ bindm = $mod, mouse:273, resizewindow
 
 # Smart screenshot with Satty editor: Print Screen
 # Auto-snaps to window if selection is tiny, opens annotation editor
-bind = , Print, exec, ~/.config/scripts/media/screenshot.sh smart
+bind = , Print, exec, ~/.local/lib/scripts/media/screenshot.sh smart
 
 # Quick screenshot to clipboard: Shift + Print Screen
 # Bypasses editor, direct to clipboard for speed
-bind = SHIFT, Print, exec, ~/.config/scripts/media/screenshot.sh smart clipboard
+bind = SHIFT, Print, exec, ~/.local/lib/scripts/media/screenshot.sh smart clipboard
 
 # Color picker: Super + Print Screen
 # Pick color and copy hex code to clipboard
 bind = $mod, Print, exec, pkill hyprpicker || hyprpicker -a
 
 # Fullscreen screenshot with editor: Super + Shift + Print Screen
-bind = $mod SHIFT, Print, exec, ~/.config/scripts/media/screenshot.sh fullscreen
+bind = $mod SHIFT, Print, exec, ~/.local/lib/scripts/media/screenshot.sh fullscreen
 
 # ============================================================================
 # Media Keys
@@ -263,21 +263,21 @@ bind = $mod SHIFT, S, movetoworkspace, special:magic  # Move to scratchpad
 bind = $mod, L, exec, hyprlock
 
 # Power menu: Super + Shift + Q
-bind = $mod SHIFT, Q, exec, ~/.config/scripts/desktop/wlogout.sh
+bind = $mod SHIFT, Q, exec, ~/.local/lib/scripts/desktop/wlogout.sh
 
 # Keybinding cheatsheet: Super + /
 # Displays all active keybindings dynamically from hyprctl
-bind = $mod, slash, exec, ~/.config/scripts/desktop/keybindings.sh
+bind = $mod, slash, exec, ~/.local/lib/scripts/desktop/keybindings.sh
 
 # Monitor management: Super + M
 # Cycle through monitor configurations
-bind = $mod, M, exec, ~/.config/scripts/desktop/monitor-switch.sh
-bind = $mod SHIFT, M, exec, ~/.config/scripts/desktop/monitor-mirror.sh
+bind = $mod, M, exec, ~/.local/lib/scripts/desktop/monitor-switch.sh
+bind = $mod SHIFT, M, exec, ~/.local/lib/scripts/desktop/monitor-mirror.sh
 
 # Utilities menu: Super + U
 # Quick access to system utilities and settings
-bind = $mod, U, exec, ~/.config/scripts/menu/utilities-menu.sh
-bind = $mod SHIFT, U, exec, ~/.config/scripts/desktop/system-settings.sh
+bind = $mod, U, exec, ~/.local/lib/scripts/user-interface/utilities-menu.sh
+bind = $mod SHIFT, U, exec, ~/.local/lib/scripts/desktop/system-settings.sh
 
 # ============================================================================
 # Enhanced Desktop Utilities (Omarchy-inspired)
@@ -285,37 +285,37 @@ bind = $mod SHIFT, U, exec, ~/.config/scripts/desktop/system-settings.sh
 
 # Screen recording: Super + R (toggle on/off)
 # Super + Shift + R for recording with audio
-bind = $mod, R, exec, ~/.config/scripts/desktop/screenrecord.sh
-bind = $mod SHIFT, R, exec, ~/.config/scripts/desktop/screenrecord.sh --with-audio
+bind = $mod, R, exec, ~/.local/lib/scripts/desktop/screenrecord.sh
+bind = $mod SHIFT, R, exec, ~/.local/lib/scripts/desktop/screenrecord.sh --with-audio
 
 # Gap toggle: Super + G
 # Toggle gaps/borders for presentation/immersive mode
-bind = $mod, G, exec, ~/.config/scripts/desktop/workspace-gaps-toggle.sh
-bind = $mod SHIFT, G, exec, ~/.config/scripts/desktop/workspace-gaps-reset.sh
+bind = $mod, G, exec, ~/.local/lib/scripts/desktop/workspace-gaps-toggle.sh
+bind = $mod SHIFT, G, exec, ~/.local/lib/scripts/desktop/workspace-gaps-reset.sh
 
 # Audio output switcher: Super + A
 # Cycle through available audio outputs
-bind = $mod, A, exec, ~/.config/scripts/desktop/audio-switch.sh
+bind = $mod, A, exec, ~/.local/lib/scripts/desktop/audio-switch.sh
 bind = $mod SHIFT, A, exec, pavucontrol
 
 # Nightlight toggle: Super + N
 # Toggle blue light filter (6000K ↔ 4000K)
-bind = $mod, N, exec, ~/.config/scripts/desktop/nightlight-toggle.sh
-bind = $mod SHIFT, N, exec, ~/.config/scripts/desktop/nightlight-config.sh
+bind = $mod, N, exec, ~/.local/lib/scripts/desktop/nightlight-toggle.sh
+bind = $mod SHIFT, N, exec, ~/.local/lib/scripts/desktop/nightlight-config.sh
 
 # Idle lock toggle: Super + I
 # Disable automatic screen locking (presentation mode)
-bind = $mod, I, exec, ~/.config/scripts/desktop/idle-toggle.sh
-bind = $mod SHIFT, I, exec, ~/.config/scripts/desktop/immediate-lock.sh
+bind = $mod, I, exec, ~/.local/lib/scripts/desktop/idle-toggle.sh
+bind = $mod SHIFT, I, exec, ~/.local/lib/scripts/desktop/immediate-lock.sh
 
 # Waybar toggle: Super + B
 # Show/hide status bar for distraction-free mode
-bind = $mod, B, exec, ~/.config/scripts/desktop/waybar-toggle.sh
-bind = $mod SHIFT, B, exec, ~/.config/scripts/desktop/waybar-style.sh
+bind = $mod, B, exec, ~/.local/lib/scripts/desktop/waybar-toggle.sh
+bind = $mod SHIFT, B, exec, ~/.local/lib/scripts/desktop/waybar-style.sh
 
 # System monitor: Super + T
 # Uses launch-or-focus for single-instance btop
-bind = $mod, T, exec, ~/.config/scripts/desktop/launch-or-focus.sh btop "{{ .globals.applications.terminal }} -e btop"
+bind = $mod, T, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh btop "{{ .globals.applications.terminal }} -e btop"
 bind = $mod SHIFT, T, exec, {{ .globals.applications.terminal }} -e htop
 
 # ============================================================================
@@ -324,11 +324,11 @@ bind = $mod SHIFT, T, exec, {{ .globals.applications.terminal }} -e htop
 
 # Main system menu: Super + Space
 # Provides access to all system functions (Apps, Learn, Trigger, Style, Setup, Install, Remove, Update, About, System)
-bind = $mod, Space, exec, ~/.config/scripts/menu/system-menu.sh
+bind = $mod, Space, exec, ~/.local/lib/scripts/user-interface/system-menu.sh
 
 # Quick access to submenus (optional shortcuts)
-bind = $mod ALT, S, exec, ~/.config/scripts/menu/menu-system.sh    # System (power menu)
-bind = $mod ALT, T, exec, ~/.config/scripts/menu/menu-trigger.sh   # Trigger (capture/toggle)
+bind = $mod ALT, S, exec, ~/.local/lib/scripts/user-interface/menu-system.sh    # System (power menu)
+bind = $mod ALT, T, exec, ~/.local/lib/scripts/user-interface/menu-trigger.sh   # Trigger (capture/toggle)
 
 # ============================================================================
 # Additional Useful Bindings Reference
