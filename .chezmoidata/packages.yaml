@@ -122,12 +122,11 @@ packages:
         file_management:
           strategy: *_install_binary
           list:
-            - kio-extras              # Network protocols (SMB, FTP, etc.)
+            - gvfs                    # Network protocols (SMB, FTP, etc.)
+            - tumbler                 # Thumbnail generation service
             - ffmpegthumbs            # Video thumbnails
-            - kdegraphics-thumbnailers # Extended image format thumbnails
-            - qt5ct                   # Qt5 theme configuration
-            - breeze                  # Consistent Qt theme
-            - kde-cli-tools           # "Open Terminal Here" support
+            - thunar                  # Lightweight GTK file manager
+            - thunar-archive-plugin   # Archive integration
             - file-roller             # Archive handling
 
         terminal_file_management:
@@ -184,6 +183,7 @@ packages:
             - waybar             # Status bar for Hyprland
             - hyprlock           # Official Hyprland screen locker
             - hypridle           # Official Hyprland idle management daemon
+            - hyprpolkitagent    # Native Hyprland polkit authentication agent
             - hyprsunset         # Blue light filter / nightlight (AUR)
             - swww               # Dynamic wallpaper daemon with transitions (AUR)
             - wallust            # Color palette generator from wallpapers (AUR)
@@ -239,5 +239,13 @@ packages:
 
   delete:
     arch:
+      # Redundant tools
       - htop      # Redundant with btop/glances
       - vim       # Replaced by neovim
+      
+      # archinstall Hyprland profile packages (replaced)
+      - kitty                    # Replaced by Ghostty
+      - kitty-shell-integration  # Kitty integration package
+      - kitty-terminfo           # Kitty terminfo package
+      - dolphin                  # Replaced by Thunar
+      - polkit-kde-agent         # Replaced by hyprpolkitagent

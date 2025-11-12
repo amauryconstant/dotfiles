@@ -9,7 +9,7 @@ globals:
     editor: nvim           # Command-line text editor ($EDITOR)
     visual: code           # Visual/GUI editor ($VISUAL)
     browser: firefox       # Web browser ($BROWSER)
-    file_manager: org.kde.dolphin  # File manager (GUI)
+    file_manager: org.xfce.thunar  # File manager (GUI)
     terminal: ghostty      # Terminal emulator
 
   xdg:

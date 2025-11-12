@@ -49,6 +49,12 @@ source = ~/.config/hypr/conf/environment.conf
 - Easier to read and maintain
 - Manual editing preferred for compositor settings
 
+## Current Applications
+
+**File Manager**: Thunar (GTK-based, lightweight)
+**Polkit Agent**: hyprpolkitagent (native Hyprland integration)
+**Terminal**: Ghostty (configured via bindings.conf.tmpl)
+
 **Template examples**:
 ```go
 # bindings.conf.tmpl

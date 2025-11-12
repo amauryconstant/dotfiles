@@ -301,11 +301,12 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ✅ Development tools and languages
 ✅ Linux-first applications
 ✅ Deep system integration (browsers with extensions, sync clients)
+✅ Desktop environment components (Thunar, Hyprland polkit agent)
 
 ### Lifecycle Scripts Execution
 
 1. **`run_once_before_*`** → Setup (package managers, dirs, tools)
-2. **`run_onchange_before_install_arch_packages.sh.tmpl`** → Arch packages (hash-triggered)
+2. **`run_onchange_before_install_arch_packages.sh.tmpl`** → Arch packages (hash-triggered, cascade removal)
 3. **File application** → chezmoi applies configs
 4. **`run_once_after_*`** → Configuration (services, setup)
 5. **`run_onchange_*`** → Content-driven (data file changes)

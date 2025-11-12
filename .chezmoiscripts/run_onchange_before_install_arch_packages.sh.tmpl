@@ -57,9 +57,14 @@ DESIRED_PACKAGES="${DESIRED_PACKAGES} {{ . }}"
 # Remove conflicting packages (explicit delete list)
 {{- if .packages.delete.arch }}
 {{ includeTemplate "log_step" "Removing conflicting packages..." }}
+# First try cascade removal to handle dependencies
 if command -v yay >/dev/null 2>&1; then
+    yay -R --noconfirm --cascade {{ join " " .packages.delete.arch }} 2>/dev/null || true
+    # If cascade fails, try regular removal
     yay -R --noconfirm {{ join " " .packages.delete.arch }} 2>/dev/null || true
 else
+    sudo pacman -R --noconfirm --cascade {{ join " " .packages.delete.arch }} 2>/dev/null || true
+    # If cascade fails, try regular removal  
     sudo pacman -R --noconfirm {{ join " " .packages.delete.arch }} 2>/dev/null || true
 fi
 {{- end }}

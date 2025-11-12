@@ -18,8 +18,9 @@ This repository implements a complete desktop environment configuration with foc
 - **Hyprland Compositor**: Wayland-native tiling with modular configuration (9 conf files)
 - **Dynamic Theming**: Automatic color palette generation from wallpapers via `wallust`
 - **Wallpaper Rotation**: Systemd timer with 30-minute intervals, smooth `swww` transitions
-- **Adaptive UI**: 8 applications auto-theme (Hyprland, Waybar, Wofi, Dunst, Ghostty, etc.)
+- **Adaptive UI**: 8 applications auto-theme (Hyprland, Waybar, Wofi, Dunst, Ghostty, Thunar, etc.)
 - **Status Bar**: Waybar with 15 modules (workspaces, system info, network, audio)
+- **Native Integration**: Hyprland polkit agent, GTK-based file manager (Thunar)
 
 ### Intelligent System Management
 - **Hierarchical Menu System**: `Super+Space` launches 10-category system control interface
