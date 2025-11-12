@@ -1,0 +1,55 @@
+# ============================================================================
+# Monitor Configuration
+# ============================================================================
+# Syntax: monitor=NAME,RESOLUTION,POSITION,SCALE
+#
+# NAME        : Monitor identifier (use 'hyprctl monitors' to see names)
+#               Use ',' (empty) as wildcard to apply to all monitors
+# RESOLUTION  : WIDTHxHEIGHT@REFRESH or 'preferred' for native resolution
+# POSITION    : X,Y coordinates (e.g., 0x0, 1920x0) or 'auto' for automatic
+# SCALE       : Scaling factor (1 = 100%, 1.5 = 150%, 2 = 200%)
+#
+# COMMON EXAMPLES:
+# - Single 4K monitor with 150% scaling: monitor=,3840x2160,auto,1.5
+# - Laptop with HiDPI display: monitor=eDP-1,preferred,auto,2
+# - Two 1080p monitors side-by-side:
+#     monitor=DP-1,1920x1080@60,0x0,1
+#     monitor=HDMI-A-1,1920x1080@60,1920x0,1
+# - Disable a monitor: monitor=HDMI-A-1,disable
+#
+# To identify your monitors, run: hyprctl monitors
+# ============================================================================
+
+{{ if eq .chassisType "desktop" }}
+# ============================================================================
+# Desktop Multi-Monitor Configuration
+# ============================================================================
+# Primary Monitor: DP-4 (4K @ 144Hz with 2x scaling)
+# - Resolution: 3840x2160 @ 144Hz
+# - Position: 0x560 (vertically offset for alignment)
+# - Scale: 2.0 (for HiDPI clarity)
+monitor=DP-4,3840x2160@144,0x560,2
+
+# Secondary Monitor: HDMI-A-1 (1440p @ 60Hz)
+# - Resolution: 2560x1440 @ 60Hz
+# - Position: 2560x0 (to the right of primary, accounting for scaling)
+# - Scale: 1.0 (native resolution)
+monitor=HDMI-A-1,2560x1440@60,2560x0,1
+{{ else }}
+# ============================================================================
+# Laptop Configuration with Docking Station Support
+# ============================================================================
+# Built-in display: Auto-detect native resolution and scaling
+# When docked: External monitors will be auto-positioned
+# - Use 'hyprctl monitors' to see connected displays
+# - Uncomment specific configurations below if auto-detection doesn't work
+monitor=,preferred,auto,1
+
+# Docking Station Override Examples (uncomment if needed):
+# Primary: Built-in laptop display
+# monitor=eDP-1,preferred,auto,2
+
+# External monitor when docked (auto-positioned to the right)
+# monitor=DP-1,preferred,auto,1
+# monitor=HDMI-A-1,preferred,auto,1
+{{ end }}

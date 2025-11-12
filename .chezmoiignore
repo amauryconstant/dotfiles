@@ -8,7 +8,7 @@
 # Archive directory for storing old configurations
 archives/
 
-# Resources
+# Resources and Documentation
 .resources/
-./*.md
+**/**.md
 LICENSE
