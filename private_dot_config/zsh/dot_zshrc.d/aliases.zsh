@@ -8,6 +8,9 @@ alias http=xh
 alias fdf='fd --type file'
 alias fdd='fd --type directory'
 
+# Tree alternative
+alias tree='eza --tree'
+
 # Tar
 alias tarls="tar -tvf"
 alias untar="tar -xf"
@@ -17,7 +20,6 @@ alias p=pnpm
 
 # AI
 alias claude='clear && mise exec node@24 -- claude'
-
 
 # Symlink
 alias lns='ln -sfn'
