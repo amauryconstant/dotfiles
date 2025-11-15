@@ -86,12 +86,28 @@
 
 **Shared utilities**: `menu-helpers.sh` (common functions)
 
+### System Scripts (7 scripts)
+**Purpose**: System maintenance, health monitoring, SSH key management
+**Tools**: pacman, yay, systemctl, ssh-keygen
+**Integration**: CLI wrappers, scheduled tasks
+
+**Scripts**:
+- `package-manager.sh` - Strategy-based package installation (pacman/yay)
+- `system-health.sh` - System health monitoring and diagnostics
+- `system-maintenance.sh` - Automated maintenance tasks
+- `troubleshoot.sh` - System troubleshooting wizard
+- `regenerate-ssh-key.sh` - SSH key regeneration + chezmoi reimport
+  - Features: ED25519 keys, automatic backup, encryption, chezmoi integration
+  - Usage: `regen-ssh-key <keyname>` (e.g., github, gitlab, ovh-server)
+  - Backup: Timestamped to `~/.ssh/backup-{YYYY-MM-DD-HHMMSS}/`
+  - Encryption: Automatic via `chezmoi add --encrypt`
+- Additional system utilities
+
 ### Other Categories
 
 | Category | Purpose | Script Count | Key Scripts |
 |----------|---------|--------------|-------------|
 | `core/` | Foundation libraries | 2 | gum-ui.sh, colors.sh.tmpl |
-| `system/` | Maintenance, health | 6 | package-manager.sh, system-health.sh |
 | `terminal/` | Terminal utilities | 1 | terminal-cwd.sh |
 | `network/` | Network tools | 1 | tailscale.sh |
 | `git/` | Git utilities | 1 | prune-branch.sh |

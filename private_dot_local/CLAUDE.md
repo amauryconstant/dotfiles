@@ -22,13 +22,13 @@
 
 ```
 ~/.local/
-├── bin/                    # 10 CLI wrappers (in PATH)
+├── bin/                    # 11 CLI wrappers (in PATH)
 │   └── executable_*        # Lightweight shims
-└── lib/scripts/            # 44 implementation scripts
+└── lib/scripts/            # 45 implementation scripts
     ├── core/               # Foundation libraries
     ├── desktop/            # Hyprland utilities
     ├── media/              # Wallpaper, screenshots
-    ├── system/             # Maintenance, health
+    ├── system/             # Maintenance, health, SSH
     ├── user-interface/     # Menu system
     └── [7 more categories]
 ```
@@ -110,6 +110,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `system-health` | `system/system-health.sh` | Health monitoring |
 | `system-maintenance` | `system/system-maintenance.sh` | System maintenance |
 | `system-troubleshoot` | `system/troubleshoot.sh` | Diagnostic tool |
+| `regen-ssh-key` | `system/regenerate-ssh-key.sh` | SSH key regeneration |
 | `screenshot` | `media/screenshot.sh` | Screenshot with Satty |
 | `random-wallpaper` | `media/random-wallpaper.sh` | Random wallpaper |
 | `set-wallpaper` | `media/set-wallpaper.sh` | Set specific wallpaper |
