@@ -12,5 +12,5 @@ elif command -v systemsettings5 >/dev/null 2>&1; then
 elif command -v xfce4-settings-manager >/dev/null 2>&1; then
     xfce4-settings-manager &
 else
-    notify "󰒓 Settings" "No system settings application found"
+    notify-send "󰒓 Settings" "No system settings application found"
 fi

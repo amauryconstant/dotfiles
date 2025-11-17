@@ -8,8 +8,9 @@ alias http=xh
 alias fdf='fd --type file'
 alias fdd='fd --type directory'
 
-# Tree alternative
 alias tree='eza --tree'
+
+alias jq='jaq'
 
 # Tar
 alias tarls="tar -tvf"

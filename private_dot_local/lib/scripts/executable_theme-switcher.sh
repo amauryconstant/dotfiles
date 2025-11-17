@@ -11,29 +11,29 @@ if command -v wofi >/dev/null 2>&1; then
     case "$THEME" in
         "󰔎 Oksolar Dark")
             # Apply oksolar dark theme
-            notify "󰏘 Theme" "Applied Oksolar Dark"
+            notify-send "󰏘 Theme" "Applied Oksolar Dark"
             ;;
         "󰔜 Oksolar Light")
             # Apply oksolar light theme
-            notify "󰏘 Theme" "Applied Oksolar Light"
+            notify-send "󰏘 Theme" "Applied Oksolar Light"
             ;;
         "󰖩 Tokyo Night")
             # Apply tokyo night theme
-            notify "󰏘 Theme" "Applied Tokyo Night"
+            notify-send "󰏘 Theme" "Applied Tokyo Night"
             ;;
         "󰗚 Gruvbox")
             # Apply gruvbox theme
-            notify "󰏘 Theme" "Applied Gruvbox"
+            notify-send "󰏘 Theme" "Applied Gruvbox"
             ;;
         "󰅜 Dracula")
             # Apply dracula theme
-            notify "󰏘 Theme" "Applied Dracula"
+            notify-send "󰏘 Theme" "Applied Dracula"
             ;;
         "󰔓 Nord")
             # Apply nord theme
-            notify "󰏘 Theme" "Applied Nord"
+            notify-send "󰏘 Theme" "Applied Nord"
             ;;
     esac
 else
-    notify "󰏘 Theme" "wofi not available for theme switching"
+    notify-send "󰏘 Theme" "wofi not available for theme switching"
 fi

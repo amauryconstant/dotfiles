@@ -4,82 +4,92 @@
 # Purpose: Non-interactive system maintenance for automation
 # Requirements: Arch Linux, pacman, paru (optional)
 
+# Source UI library
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
 # Non-interactive system maintenance
 # Usage: system-maintenance [--update|--cleanup|--help]
 system-maintenance() {
     case "$1" in
         --help|-h)
-            printf "Usage: system-maintenance [--update|--cleanup|--help]\n"
-            printf "Simple system maintenance for automation\n"
-            printf "\n"
-            printf "Options:\n"
-            printf "  --update     Update all packages (pacman -Syu)\n"
-            printf "  --cleanup    Clean package cache and orphaned packages\n"
-            printf "  --help, -h   Show this help message\n"
-            printf "\n"
-            printf "Without options, shows available maintenance tasks\n"
+            ui_info "Usage: system-maintenance [--update|--cleanup|--help]"
+            ui_info "Simple system maintenance for automation"
+            echo ""
+            ui_info "Options:"
+            ui_info "  --update     Update all packages (pacman -Syu)"
+            ui_info "  --cleanup    Clean package cache and orphaned packages"
+            ui_info "  --help, -h   Show this help message"
+            echo ""
+            ui_info "Without options, shows available maintenance tasks"
             return 0
             ;;
         --update)
-            printf "\033[1;34m=== SYSTEM UPDATE ===\033[0m\n"
+            ui_title "SYSTEM UPDATE"
             if command -v pacman >/dev/null 2>&1; then
-                printf "\033[0;36mUpdating packages...\033[0m\n"
+                ui_step "Updating packages..."
                 if sudo pacman -Syu --noconfirm; then
-                    printf "\033[0;32m✓ System update completed\033[0m\n"
+                    ui_success "System update completed"
                     return 0
                 else
-                    printf "\033[0;31m✗ System update failed\033[0m\n" >&2
+                    ui_error "System update failed"
                     return 1
                 fi
             else
-                printf "\033[0;31mError: pacman not available\033[0m\n" >&2
+                ui_error "pacman not available"
                 return 1
             fi
             ;;
         --cleanup)
-            printf "\033[1;34m=== SYSTEM CLEANUP ===\033[0m\n"
-            
+            ui_title "SYSTEM CLEANUP"
+
             # Clean package cache
             if command -v pacman >/dev/null 2>&1; then
-                printf "\033[0;36mCleaning package cache...\033[0m\n"
+                ui_step "Cleaning package cache..."
                 sudo pacman -Sc --noconfirm >/dev/null 2>&1
             fi
-            
+
             # Remove orphaned packages
             if command -v pacman >/dev/null 2>&1; then
                 orphans=$(pacman -Qtdq 2>/dev/null)
                 if [ -n "$orphans" ]; then
                     orphan_count=$(echo "$orphans" | wc -l)
-                    printf "\033[0;36mRemoving %d orphaned package(s)...\033[0m\n" "$orphan_count"
+                    ui_step "Removing $orphan_count orphaned package(s)..."
                     echo "$orphans" | sudo pacman -Rns - --noconfirm >/dev/null 2>&1 || true
-                    printf "\033[0;32m✓ Orphaned packages removed\033[0m\n"
+                    ui_success "Orphaned packages removed"
                 else
-                    printf "\033[0;32m✓ No orphaned packages found\033[0m\n"
+                    ui_success "No orphaned packages found"
                 fi
             fi
-            
+
             # Clean paru cache if available
             if command -v paru >/dev/null 2>&1; then
-                printf "\033[0;36mCleaning AUR cache...\033[0m\n"
+                ui_step "Cleaning AUR cache..."
                 paru -Sc --noconfirm >/dev/null 2>&1 || true
             fi
-            
-            printf "\033[0;32m✓ System cleanup completed\033[0m\n"
+
+            ui_success "System cleanup completed"
             return 0
             ;;
         "")
-            printf "\033[1;34m=== SYSTEM MAINTENANCE ===\033[0m\n"
-            printf "Available maintenance options:\n"
-            printf "  --update     Update all packages\n"
-            printf "  --cleanup    Clean caches and orphaned packages\n"
-            printf "  --help       Show detailed help\n"
-            printf "\n"
-            printf "Usage: system-maintenance [option]\n"
+            ui_title "SYSTEM MAINTENANCE"
+            ui_info "Available maintenance options:"
+            ui_info "  --update     Update all packages"
+            ui_info "  --cleanup    Clean caches and orphaned packages"
+            ui_info "  --help       Show detailed help"
+            echo ""
+            ui_info "Usage: system-maintenance [option]"
             return 0
             ;;
         *)
-            printf "\033[0;31mError: Unknown option '%s'\033[0m\n" "$1" >&2
-            printf "Use --help for usage information\n" >&2
+            ui_error "Unknown option '$1'"
+            ui_info "Use --help for usage information"
             return 1
             ;;
     esac

@@ -10,5 +10,5 @@ if command -v wdisplays >/dev/null 2>&1; then
 elif command -v nwg-displays >/dev/null 2>&1; then
     nwg-displays &
 else
-    notify "󰍹 Displays" "No display configuration tool found\nInstall wdisplays or nwg-displays"
+    notify-send "󰍹 Displays" "No display configuration tool found\nInstall wdisplays or nwg-displays"
 fi

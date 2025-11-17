@@ -36,7 +36,12 @@
 
 ### Desktop Utilities (16 scripts)
 **Purpose**: Hyprland desktop utilities
-**Dependencies**: hyprctl, gum-ui, jaq (JSON)
+**Dependencies**: hyprctl, notify-send, jaq (JSON)
+
+**UI Pattern Exception**:
+- **Background utilities** (monitor-*.sh, waybar-*.sh, idle-toggle.sh, etc.): Use `notify-send` instead of gum-ui
+- **Rationale**: Triggered by keybindings, require minimal overhead, native desktop notifications appropriate
+- **CLI tools** (launch-or-focus.sh): Use standard gum-ui library
 
 **Window Management**:
 - `launch-or-focus.sh` - Single-instance apps (focus if exists, launch if not)
@@ -47,8 +52,22 @@
 - `keybindings.sh` - Keybinding reference (`Super+?`)
 
 **Display & Monitors**:
-- `monitor-switch.sh` - Switch display configs
-- `monitor-*` scripts - Display management utilities
+- `monitor-switch.sh` - Switch display configs (uses `notify-send`)
+- `monitor-mirror.sh` - Mirror displays (uses `notify-send`)
+- Other monitor utilities - Display management (use `notify-send`)
+
+**Appearance & Style**:
+- `waybar-toggle.sh`, `waybar-style.sh` - Waybar controls (use `notify-send`)
+- `nightlight-toggle.sh`, `nightlight-config.sh` - Blue light filter (use `notify-send`)
+- `workspace-gaps-toggle.sh`, `workspace-gaps-reset.sh` - Gap controls (use `notify-send`)
+- `idle-toggle.sh` - Idle management (uses `notify-send`)
+
+**Other Utilities**:
+- `audio-switch.sh` - Audio device switching (uses `notify-send`)
+- `screenrecord.sh` - Screen recording (uses `notify-send`)
+- `system-settings.sh` - Launch system settings (uses `notify-send`)
+- `wlogout.sh` - Logout menu launcher
+- `theme-switcher.sh` - Theme selection menu (uses `notify-send`)
 
 ### Media Scripts (3 scripts)
 **Purpose**: Media capture and wallpaper management
@@ -85,6 +104,9 @@
 | 󰐥 | System | `menu-system.sh` | Power management |
 
 **Shared utilities**: `menu-helpers.sh` (common functions)
+- Provides `notify()` wrapper around `notify-send` for consistent notifications
+- Provides `show_menu()` function for wofi integration
+- All menu-*.sh scripts source this library
 
 ### System Scripts (7 scripts)
 **Purpose**: System maintenance, health monitoring, SSH key management
@@ -101,7 +123,8 @@
   - Usage: `regen-ssh-key <keyname>` (e.g., github, gitlab, ovh-server)
   - Backup: Timestamped to `~/.ssh/backup-{YYYY-MM-DD-HHMMSS}/`
   - Encryption: Automatic via `chezmoi add --encrypt`
-- Additional system utilities
+- `system-health-dashboard.sh` - Real-time system monitoring dashboard
+- `pacman-lock-cleanup.sh` - Clean stale pacman locks
 
 ### Other Categories
 
@@ -200,28 +223,175 @@ fi
 
 ## Script Standards
 
-**Structure**:
+### UI Pattern Standards
+
+**Default**: All scripts use gum-ui library (`ui_*` functions) for consistent terminal UI
+
+**Exceptions** (use only when necessary):
+
+| Exception Type | UI Pattern | Example | When to Use |
+|---------------|------------|---------|-------------|
+| **Background utilities** | notify-send | monitor-*.sh, waybar-*.sh | Keybinding-triggered, require minimal overhead |
+| **Menu system** | menu-helpers.sh | menu-*.sh scripts | Wofi integration, notification wrapper |
+
+### Standard Pattern (Default):
 ```bash
 #!/usr/bin/env sh
 
-# Script: [filename]
-# Purpose: [clear description]
-# Requirements: [dependencies]
+# Script: system-health.sh
+# Purpose: System health monitoring
+# Requirements: systemctl, gum-ui
 
 # Source UI library
-. "$UI_LIB"
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
 
 # Implementation
-ui_step "Task description"
-# ... logic ...
-ui_success "Task complete"
+ui_title "System Status"
+ui_info "Load: $(uptime | awk -F'load average:' '{print $2}')"
+ui_success "All services running"
+```
+
+### Exception Pattern: Background Utilities
+
+**Only for keybinding-triggered scripts requiring minimal overhead**:
+
+```bash
+#!/usr/bin/env sh
+
+# Script: monitor-switch.sh
+# Purpose: Switch display configuration
+# Requirements: wdisplays or nwg-displays
+
+if command -v wdisplays >/dev/null 2>&1; then
+    wdisplays &
+else
+    notify-send "󰍹 Displays" "No display tool found"
+fi
+```
+
+### Exception Pattern: Menu System
+
+**Only for menu-*.sh scripts using wofi integration**:
+```bash
+#!/usr/bin/env sh
+
+# Script: menu-update.sh
+# Purpose: System update menu
+
+. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+
+CHOICE=$(show_menu "Update" "System\nFirmware\nMirrors")
+case "$CHOICE" in
+    "System") topgrade ;;
+    "Firmware") fwupdmgr update ;;
+esac
+notify "Update" "Complete"
 ```
 
 **Anti-patterns**:
+❌ Use raw echo/printf instead of ui_* functions (except in exceptions above)
+❌ Use gum-ui in background utilities (unnecessary overhead)
+❌ Use undefined `notify` function (only defined in menu-helpers.sh)
+❌ Use notify-send in regular CLI tools (use ui_* functions)
 ❌ Duplicate UI library code
-❌ Skip gum-ui library
-❌ Use raw echo instead of UI functions
 ❌ Create templates in bin/
+
+## Nerd Fonts Glyph Usage
+
+**Resource**: `.resources/glyphnames.json` (10,799 glyphs from Nerd Fonts v3.4.0)
+**Tool**: `jaq` (Rust-based jq alternative, aliased to jq)
+
+### Finding Glyphs with jaq
+
+**Search by name** (case-insensitive):
+```bash
+# Find monitor-related glyphs
+jaq -r 'to_entries[] | select(.key | test("monitor"; "i")) | "\(.key): \(.value.char)"' \
+  ~/.local/share/chezmoi/.resources/glyphnames.json
+
+# Output: md-monitor: 󰍹
+```
+
+**Search by category** (prefix):
+```bash
+# Material Design icons only
+jaq -r 'to_entries[] | select(.key | startswith("md-")) | "\(.key): \(.value.char)"' \
+  ~/.local/share/chezmoi/.resources/glyphnames.json | head -20
+
+# Codicons only
+jaq -r 'to_entries[] | select(.key | startswith("cod-")) | "\(.key): \(.value.char)"' \
+  ~/.local/share/chezmoi/.resources/glyphnames.json | head -20
+```
+
+**Search by keyword** (finds related concepts):
+```bash
+# Find all "power" related glyphs
+jaq -r 'to_entries[] | select(.key | test("power|battery|energy"; "i")) | "\(.key): \(.value.char)"' \
+  ~/.local/share/chezmoi/.resources/glyphnames.json
+```
+
+**Get specific glyph**:
+```bash
+# Get the actual character for a known name
+jaq -r '."md-monitor".char' ~/.local/share/chezmoi/.resources/glyphnames.json
+# Output: 󰍹
+```
+
+### Icon Selection Guidelines
+
+**Prefer Material Design icons** (md-) for consistency:
+- **md-** prefix: Material Design (primary choice)
+- **cod-** prefix: Codicons (development tools)
+- **fa-** prefix: Font Awesome (fallback)
+- **oct-** prefix: Octicons (GitHub-related)
+- **pom-** prefix: Pomicons (system/hardware)
+
+**Common categories**:
+```bash
+# System icons
+md-power, md-restart, md-shutdown, md-lock
+
+# File operations
+md-file, md-folder, md-document, md-archive
+
+# Development
+md-code-braces, md-git, md-github, md-terminal
+
+# Media
+md-image, md-camera, md-video, md-music
+
+# UI controls
+md-check, md-close, md-arrow-*, md-chevron-*
+```
+
+### Reference Documentation
+
+**Menu icons**: See `.resources/MENU_ICONS.md` for complete menu system icon mapping
+
+**Examples in codebase**:
+- Desktop scripts: monitor-*.sh, waybar-*.sh (notification icons)
+- Menu system: menu-*.sh (wofi menus)
+- UI library: gum-ui.sh (status icons)
+
+### Quick Reference Commands
+
+```bash
+# List all available icon prefixes
+jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/.resources/glyphnames.json | sort -u
+
+# Count icons by prefix
+jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/.resources/glyphnames.json | sort | uniq -c | sort -rn
+
+# Interactive search (requires fzf)
+jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
+  ~/.local/share/chezmoi/.resources/glyphnames.json | \
+  fzf --preview 'echo {2}' --preview-window=up:1
+```
 
 ## Adding New Scripts
 
@@ -230,11 +400,18 @@ ui_success "Task complete"
 2. Create script in `lib/scripts/{category}/`
 3. Create wrapper in `bin/executable_{name}` (if CLI tool)
 4. Source `$UI_LIB` in script
-5. Test with `chezmoi apply`
+5. **Select appropriate glyphs** using jq queries above
+6. Test with `chezmoi apply`
 
 **Template decision**:
 - Need template vars? → `script.sh.tmpl` in lib/
 - Static script? → `script.sh` in lib/
+
+**Icon selection**:
+- Search `.resources/glyphnames.json` with jaq (aliased to jq)
+- Prefer Material Design (md-) icons
+- Reference `.resources/MENU_ICONS.md` for consistency
+- Use jaq queries from "Nerd Fonts Glyph Usage" section above
 
 ## Integration Points
 

@@ -12,29 +12,29 @@ if command -v wofi >/dev/null 2>&1; then
         "󰍹 Default")
             # Reload default style
             killall -SIGUSR2 waybar
-            notify "󰘯 Waybar" "Applied default style"
+            notify-send "󰘯 Waybar" "Applied default style"
             ;;
         "󰖩 Dark")
             # Apply dark theme (placeholder)
             killall -SIGUSR2 waybar
-            notify "󰘯 Waybar" "Applied dark style"
+            notify-send "󰘯 Waybar" "Applied dark style"
             ;;
         "󰔜 Light")
             # Apply light theme (placeholder)
             killall -SIGUSR2 waybar
-            notify "󰘯 Waybar" "Applied light style"
+            notify-send "󰘯 Waybar" "Applied light style"
             ;;
         "󰥔 Minimal")
             # Apply minimal theme (placeholder)
             killall -SIGUSR2 waybar
-            notify "󰘯 Waybar" "Applied minimal style"
+            notify-send "󰘯 Waybar" "Applied minimal style"
             ;;
         "󰔓 Compact")
             # Apply compact theme (placeholder)
             killall -SIGUSR2 waybar
-            notify "󰘯 Waybar" "Applied compact style"
+            notify-send "󰘯 Waybar" "Applied compact style"
             ;;
     esac
 else
-    notify "󰘯 Waybar" "wofi not available for style configuration"
+    notify-send "󰘯 Waybar" "wofi not available for style configuration"
 fi
