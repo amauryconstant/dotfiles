@@ -21,7 +21,7 @@ case "$CHOICE" in
             {{ .globals.applications.terminal }} -e topgrade
         else
             if confirm "Topgrade not installed. Install it?"; then
-                {{ .globals.applications.terminal }} -e sh -c "yay -S topgrade; topgrade; read -p 'Press Enter to continue...'"
+                {{ .globals.applications.terminal }} -e sh -c "paru -S topgrade; topgrade; read -p 'Press Enter to continue...'"
             fi
         fi
         ;;
@@ -56,7 +56,7 @@ case "$CHOICE" in
                     ;;
             esac
         else
-            notify "󰣐 Firmware" "fwupd not installed\nInstall with: yay -S fwupd"
+            notify "󰣐 Firmware" "fwupd not installed\nInstall with: paru -S fwupd"
         fi
         ;;
     "󰅐 Sync Time")
@@ -72,7 +72,7 @@ case "$CHOICE" in
                 notify "󰒋 Mirrorlist" "Updated with fastest mirrors"
             fi
         else
-            notify "󰒋 Mirrorlist" "rate-mirrors not installed\nInstall with: yay -S rate-mirrors"
+            notify "󰒋 Mirrorlist" "rate-mirrors not installed\nInstall with: paru -S rate-mirrors"
         fi
         ;;
 esac

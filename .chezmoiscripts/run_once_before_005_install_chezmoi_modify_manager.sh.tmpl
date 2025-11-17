@@ -2,7 +2,7 @@
 
 # Script: run_once_before_007_install_chezmoi_modify_manager.sh.tmpl
 # Purpose: Install chezmoi_modify_manager for intelligent config file management
-# Requirements: Arch Linux, yay
+# Requirements: Arch Linux, paru
 
 {{ includeTemplate "log_start" "Installing chezmoi_modify_manager..." }}
 
@@ -17,8 +17,8 @@ fi
 
 {{ includeTemplate "log_step" "Installing chezmoi_modify_manager from AUR..." }}
 
-# Install chezmoi_modify_manager using yay
-if yay -S --noconfirm chezmoi_modify_manager; then
+# Install chezmoi_modify_manager using paru
+if paru -S --noconfirm chezmoi_modify_manager; then
     {{ includeTemplate "log_success" "chezmoi_modify_manager installed successfully" }}
 else
     {{ includeTemplate "log_error" "Failed to install chezmoi_modify_manager" }}

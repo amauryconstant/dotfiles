@@ -88,11 +88,11 @@
 
 ### System Scripts (7 scripts)
 **Purpose**: System maintenance, health monitoring, SSH key management
-**Tools**: pacman, yay, systemctl, ssh-keygen
+**Tools**: pacman, paru, systemctl, ssh-keygen
 **Integration**: CLI wrappers, scheduled tasks
 
 **Scripts**:
-- `package-manager.sh` - Strategy-based package installation (pacman/yay)
+- `package-manager.sh` - Module-based package installation (pacman/paru)
 - `system-health.sh` - System health monitoring and diagnostics
 - `system-maintenance.sh` - Automated maintenance tasks
 - `troubleshoot.sh` - System troubleshooting wizard

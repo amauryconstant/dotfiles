@@ -68,7 +68,7 @@ if [[ -f /usr/share/zsh-antidote/antidote.zsh ]]; then
     fi
   fi
 else
-  echo "⚠️  zsh-antidote not found. Run: yay -S zsh-antidote"
+  echo "⚠️  zsh-antidote not found. Run: paru -S zsh-antidote"
 fi
 
 # Source anything in .zshrc.d.

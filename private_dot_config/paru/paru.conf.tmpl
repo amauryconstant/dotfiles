@@ -1,0 +1,49 @@
+#
+# ~/.config/paru/paru.conf
+# Paru AUR helper configuration
+# Template: Uses chezmoi template system for user-specific paths
+#
+
+[options]
+# Core behavior matching previous yay config
+BottomUp
+BatchInstall
+CleanAfter
+CombinedUpgrade
+PgpFetch
+Provides
+RemoveMake = ask
+
+# Search and sorting preferences
+SearchBy = name-desc
+SortBy = votes
+
+# Development packages (disabled by default)
+# DevelSuffixes = -git -cvs -svn -bzr -darcs -always -hg -fossil
+
+# Directories
+CloneDir = /home/{{ .firstname | lower }}/.cache/paru
+
+# AUR settings
+AurUrl = https://aur.archlinux.org
+AurRpcUrl = https://aur.archlinux.org/rpc?
+
+# Build settings
+KeepSrc = false
+
+# Review and interaction
+SkipReview = false
+FailFast = false
+InstallDebug = false
+NewsOnUpgrade = true
+UseAsk = false
+SaveChanges = false
+SudoLoop
+
+[bin]
+# Custom binary paths (if needed)
+# FileManager = vifm
+# Sudo = doas
+# Git = /usr/bin/git
+# Gpg = /usr/bin/gpg
+# Makepkg = /usr/bin/makepkg

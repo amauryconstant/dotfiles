@@ -296,9 +296,9 @@ if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
         ui_info "checkupdates not available - install pacman-contrib for update checking"
     fi
     
-    # AUR updates (if yay is available)
-    if command_exists yay; then
-        aur_updates=$(ui_spin "Checking AUR updates..." "yay -Qua 2>/dev/null | wc -l")
+    # AUR updates (if paru is available)
+    if command_exists paru; then
+        aur_updates=$(ui_spin "Checking AUR updates..." "paru -Qua 2>/dev/null | wc -l")
         if [[ $aur_updates -gt 0 ]]; then
             ui_warning "$aur_updates AUR package update(s) available"
         else

@@ -2,7 +2,7 @@
 
 # System Maintenance Tool
 # Purpose: Non-interactive system maintenance for automation
-# Requirements: Arch Linux, pacman, yay (optional)
+# Requirements: Arch Linux, pacman, paru (optional)
 
 # Non-interactive system maintenance
 # Usage: system-maintenance [--update|--cleanup|--help]
@@ -58,10 +58,10 @@ system-maintenance() {
                 fi
             fi
             
-            # Clean yay cache if available
-            if command -v yay >/dev/null 2>&1; then
+            # Clean paru cache if available
+            if command -v paru >/dev/null 2>&1; then
                 printf "\033[0;36mCleaning AUR cache...\033[0m\n"
-                yay -Sc --noconfirm >/dev/null 2>&1 || true
+                paru -Sc --noconfirm >/dev/null 2>&1 || true
             fi
             
             printf "\033[0;32m✓ System cleanup completed\033[0m\n"

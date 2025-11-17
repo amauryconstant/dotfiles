@@ -107,8 +107,8 @@ EOF
         {{ includeTemplate "log_info" "Removing ${#PACKAGES_TO_REMOVE[@]} conflicting package(s): ${PACKAGES_TO_REMOVE[*]}" }}
 
         # Remove using strongest available method
-        if command -v yay >/dev/null 2>&1; then
-            yay -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
+        if command -v paru >/dev/null 2>&1; then
+            paru -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
         else
             sudo pacman -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
         fi
@@ -146,10 +146,10 @@ EOF
     if [ ${#PACKAGES_TO_INSTALL[@]} -gt 0 ]; then
         {{ includeTemplate "log_info" "Installing ${#PACKAGES_TO_INSTALL[@]} package(s): ${PACKAGES_TO_INSTALL[*]}" }}
 
-        # Use yay if available (for AUR packages), otherwise use pacman
+        # Use paru if available (for AUR packages), otherwise use pacman
         # --overwrite '*' handles file conflicts from removed packages
-        if command -v yay >/dev/null 2>&1; then
-            yay -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
+        if command -v paru >/dev/null 2>&1; then
+            paru -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
         else
             sudo pacman -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
         fi

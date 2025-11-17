@@ -25,7 +25,7 @@ case "$CHOICE" in
             PACKAGE=$(echo "" | wofi --dmenu --prompt "Package name to install")
             if [ -n "$PACKAGE" ]; then
                 if confirm "Install package: $PACKAGE?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "yay -S $PACKAGE; read -p 'Press Enter to continue...'"
+                    {{ .globals.applications.terminal }} -e sh -c "paru -S $PACKAGE; read -p 'Press Enter to continue...'"
                 fi
             fi
         fi
@@ -63,7 +63,7 @@ case "$CHOICE" in
                     ;;
             esac
         else
-            notify "󰚩 Ollama" "Ollama not installed\nInstall with: yay -S ollama"
+            notify "󰚩 Ollama" "Ollama not installed\nInstall with: paru -S ollama"
         fi
         ;;
     "󰙵 Development Tools")
@@ -77,7 +77,7 @@ case "$CHOICE" in
                 ;;
             "󰡨 Docker")
                 if confirm "Install Docker?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "yay -S docker docker-compose docker-buildx; sudo systemctl enable --now docker; sudo usermod -aG docker $USER; read -p 'Press Enter to continue...'"
+                    {{ .globals.applications.terminal }} -e sh -c "paru -S docker docker-compose docker-buildx; sudo systemctl enable --now docker; sudo usermod -aG docker $USER; read -p 'Press Enter to continue...'"
                 fi
                 ;;
             "󱘗 Rust Toolchain")
@@ -111,12 +111,12 @@ case "$CHOICE" in
                 ;;
             "󰨞 VSCode")
                 if confirm "Install Visual Studio Code?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "yay -S code; read -p 'Press Enter to continue...'"
+                    {{ .globals.applications.terminal }} -e sh -c "paru -S code; read -p 'Press Enter to continue...'"
                 fi
                 ;;
             "󰨞 VSCodium")
                 if confirm "Install VSCodium (FOSS VSCode)?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "yay -S vscodium-bin; read -p 'Press Enter to continue...'"
+                    {{ .globals.applications.terminal }} -e sh -c "paru -S vscodium-bin; read -p 'Press Enter to continue...'"
                 fi
                 ;;
             "󰕷 Neovim Config")
@@ -124,7 +124,7 @@ case "$CHOICE" in
                 ;;
             "󱓥 Helix")
                 if confirm "Install Helix editor?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "yay -S helix; read -p 'Press Enter to continue...'"
+                    {{ .globals.applications.terminal }} -e sh -c "paru -S helix; read -p 'Press Enter to continue...'"
                 fi
                 ;;
         esac

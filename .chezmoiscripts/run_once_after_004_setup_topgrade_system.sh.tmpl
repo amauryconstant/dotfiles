@@ -53,8 +53,8 @@ cat > "$SUDOERS_TEMP" << 'SUDOERS_EOF'
 # Allow all pacman operations (updates, installations, removals)
 topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/pacman
 
-# Allow yay for AUR operations
-topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/yay
+# Allow paru for AUR operations
+topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/paru
 
 # Allow flatpak operations
 topgrade-maintenance ALL=(ALL) NOPASSWD: /usr/bin/flatpak

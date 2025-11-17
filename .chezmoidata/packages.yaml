@@ -1,247 +1,280 @@
 packages:
-  install:
-    arch:
-      strategies:
-        default_strategy: [pacman, yay_bin, yay_source]
-        _install_binary: &_install_binary [pacman, yay_bin]
-        _install_from_source:
-          &_install_from_source [pacman, yay_bin, yay_source]
+  # Module definitions (flat structure, pacman + flatpak at same level)
+  # Note: All Flatpak packages are installed in user scope
+  modules:
+    # ============================================================
+    # BASE SYSTEM (Always enabled)
+    # ============================================================
 
+    base:
+      enabled: true
+      description: "Essential system packages"
+      conflicts: []
+      post_install_hook: ""
       packages:
-        fonts:
-          list:
-            - ttf-firacode-nerd      # Monospace font with ligatures
-            - otf-opendyslexic-nerd  # Dyslexia-friendly font
-            - otf-geist-mono-nerd    # Vercel's monospace font
-            - ttf-fira-sans          # Sans-serif system font
+        - base             # Minimal Arch package set
+        - base-devel       # Development tools metapackage
+        - linux-firmware   # Firmware files for hardware
+        - linux            # Latest kernel
+        - linux-lts        # Long-term support kernel (fallback)
+        - efibootmgr       # UEFI boot manager utility
+        - cryptsetup       # LUKS disk encryption tools
+        - rage-encryption  # age encryption tool (Rust)
 
-        # ============================================================
-        # SHELL & TERMINAL
-        # ============================================================
+    system_utilities:
+      enabled: true
+      description: "Core system utilities"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - xdg-utils        # Desktop integration utilities
+        - openssh          # SSH client and server
+        - wget             # Non-interactive network downloader
+        - nano             # Simple terminal text editor
+        - smartmontools    # SMART disk health monitoring
+        - btrfs-progs      # Btrfs filesystem utilities
+        - snapper          # Btrfs/LVM snapshot manager
+        - sof-firmware     # Intel audio DSP firmware
 
-        shell_environment:
-          strategy: *_install_from_source
-          list:
-            - ghostty          # Modern GPU terminal (cutting edge)
-            - starship         # Fast customizable shell prompt
-            - zsh              # POSIX shell with advanced features
-            - zsh-antidote     # Fast zsh plugin manager
-            - zoxide           # Smarter cd with frecency algorithm
+    network:
+      enabled: true
+      description: "Network connectivity and tools"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - iwd              # Modern WiFi daemon
+        - wpa_supplicant   # WiFi authentication daemon
+        - tailscale        # Mesh VPN service
+        - networkmanager   # Network configuration daemon
+        - bluez            # Bluetooth protocol stack
+        - bluez-utils      # Bluetooth command-line utilities
 
-        terminal_tools:
-          list:
-            # Core CLI utilities
-            - fd               # Fast find with sane defaults
-            - ripgrep          # Fastest regex search tool
-            - bat              # Cat with syntax highlighting
-            - eza              # Modern ls with git integration
-            - xh               # User-friendly curl alternative
-            - jaq              # Fast jq alternative in Rust
-            - go-yq            # YAML processor (jq for YAML)
-            - rsync            # Incremental file transfer
-            - tlrc             # Community-driven simplified manpages
-            - fzf              # Fuzzy finder for CLI
-            # System monitoring & diagnostics
-            - fastfetch        # Fast neofetch alternative
-            - nvitop           # htop-like GPU monitor (NVIDIA)
-            - btop             # Modern resource monitor
-            - topgrade         # Universal system upgrade tool
-            - dust             # Disk usage with tree visualization
-            - inxi             # Comprehensive system info tool
-            - lm_sensors       # Hardware sensor monitoring
-            # Shell utilities
-            - usage            # Cheat sheet for CLI commands
-            - vhs              # Record terminal sessions as GIFs
-            - gum              # Glamorous shell UI toolkit
-            - rbw              # Unofficial Bitwarden CLI
-            # File management & navigation
-            - broot            # Tree navigator for large directories
-            - yazi             # Blazing fast TUI file manager
-            - unar             # Universal archive extractor
-            - poppler          # PDF rendering utilities
+    package_management:
+      enabled: true
+      description: "Package managers and repositories"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - flatpak          # Universal package manager
+        - paru         # AUR helper (Rust, faster than yay)
+        - pacman-contrib   # Contributed pacman scripts
+        - rate-mirrors     # Mirror ranking utility
+        - chaotic-keyring  # Chaotic-AUR repository keys
+        - chaotic-mirrorlist # Chaotic-AUR mirror list
 
-        # ============================================================
-        # DEVELOPMENT
-        # ============================================================
+    # ============================================================
+    # SHELL & TERMINAL
+    # ============================================================
 
-        languages_runtimes:
-          strategy: *_install_binary
-          list:
-            - go               # Go programming language
-            - python           # Python runtime
-            - rust             # Rust compiler and cargo
+    shell_environment:
+      enabled: true
+      description: "Shell and terminal emulator"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - ghostty          # Modern GPU terminal
+        - starship         # Fast customizable shell prompt
+        - zsh              # POSIX shell with advanced features
+        - zsh-antidote     # Fast zsh plugin manager
+        - zoxide           # Smarter cd with frecency algorithm
 
-        development_core:
-          list:
-            - neovim           # Modal text editor with LSP support
-            - git              # Distributed version control
-            - mise             # Polyglot runtime manager (asdf alternative)
-            - docker           # Container runtime platform
-            - docker-buildx    # Docker extended build capabilities
+    terminal_tools:
+      enabled: true
+      description: "Essential CLI utilities"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        # Core CLI utilities
+        - fd               # Fast find with sane defaults
+        - ripgrep          # Fastest regex search tool
+        - bat              # Cat with syntax highlighting
+        - eza              # Modern ls with git integration
+        - xh               # User-friendly curl alternative
+        - jaq              # Fast jq alternative in Rust
+        - go-yq            # YAML processor (jq for YAML)
+        - rsync            # Incremental file transfer
+        - tlrc             # Community-driven simplified manpages
+        - fzf              # Fuzzy finder for CLI
+        # System monitoring & diagnostics
+        - fastfetch        # Fast neofetch alternative
+        - nvitop           # htop-like GPU monitor (NVIDIA)
+        - btop             # Modern resource monitor
+        - topgrade         # Universal system upgrade tool
+        - dust             # Disk usage with tree visualization
+        - inxi             # Comprehensive system info tool
+        - lm_sensors       # Hardware sensor monitoring
+        # Shell utilities
+        - usage            # Cheat sheet for CLI commands
+        - vhs              # Record terminal sessions as GIFs
+        - gum              # Glamorous shell UI toolkit
+        - rbw              # Unofficial Bitwarden CLI
+        # File management & navigation
+        - broot            # Tree navigator for large directories
+        - yazi             # Blazing fast TUI file manager
+        - unarchiver       # Universal archive extractor (unar, lsar)
+        - poppler          # PDF rendering utilities
 
-        development_clis:
-          strategy: *_install_from_source
-          list:
-            # # Build tooling
-            - cmake # hyprpm dependency
-            - meson # hyprpm dependency
-            - cpio # hyprpm dependency
-            # Development CLIs
-            - aws-cli-v2       # AWS command line interface
-            - git-delta        # Syntax-highlighting git diff pager
-            - mergiraf         # 3-way merge tool with better conflicts
-            - jujutsu          # Git-compatible VCS (experimental)
-            - lazygit          # Terminal UI for git commands
-            - lazydocker       # Terminal UI for docker management
-            - posting          # Modern API client (Postman alternative)
+    fonts:
+      enabled: true
+      description: "Font packages"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - ttf-firacode-nerd      # Monospace font with ligatures
+        - otf-opendyslexic-nerd  # Dyslexia-friendly font
+        - otf-geist-mono-nerd    # Vercel's monospace font
+        - ttf-fira-sans          # Sans-serif system font
 
-        ai_tools:
-          strategy: *_install_binary
-          list:
-            - ollama           # Local LLM runtime
+    # ============================================================
+    # DEVELOPMENT
+    # ============================================================
 
-        # ============================================================
-        # SYSTEM
-        # ============================================================
+    development_core:
+      enabled: true
+      description: "Core development tools"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - neovim           # Modal text editor with LSP support
+        - git              # Distributed version control
+        - mise             # Polyglot runtime manager (asdf alternative)
+        - docker           # Container runtime platform
+        - docker-buildx    # Docker extended build capabilities
+        - go               # Go programming language
+        - python           # Python runtime
+        - rust             # Rust compiler and cargo
 
-        system_base:
-          list:
-            # Core system
-            - base             # Minimal Arch package set
-            - base-devel       # Development tools metapackage
-            - linux-firmware   # Firmware files for hardware
-            - linux            # Latest kernel
-            - linux-lts        # Long-term support kernel (fallback)
-            - efibootmgr       # UEFI boot manager utility
-            - cryptsetup       # LUKS disk encryption tools
-            - rage-encryption  # age encryption tool (Rust)
-            # System utilities
-            - xdg-utils        # Desktop integration utilities
-            - openssh          # SSH client and server
-            - wget             # Non-interactive network downloader
-            - nano             # Simple terminal text editor
-            - smartmontools    # SMART disk health monitoring
-            # Network
-            - iwd              # Modern WiFi daemon
-            - wpa_supplicant   # WiFi authentication daemon
-            - tailscale        # Mesh VPN service
-            - networkmanager   # Network configuration daemon
-            # Package management
-            - flatpak          # Universal package manager
-            - yay              # AUR helper with pacman syntax
-            - pacman-contrib   # Contributed pacman scripts
-            - rate-mirrors     # Mirror ranking utility
-            # Bluetooth
-            - bluez            # Bluetooth protocol stack
-            - bluez-utils      # Bluetooth command-line utilities
-            # Filesystem tools
-            - btrfs-progs      # Btrfs filesystem utilities
-            - snapper          # Btrfs/LVM snapshot manager
-            # Firmware
-            - sof-firmware     # Intel audio DSP firmware
-            # Third-party repos
-            - chaotic-keyring  # Chaotic-AUR repository keys
-            - chaotic-mirrorlist # Chaotic-AUR mirror list
+    development_clis:
+      enabled: true
+      description: "Development CLI tools"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        # Build tooling
+        - cmake            # hyprpm dependency
+        - meson            # hyprpm dependency
+        - cpio             # hyprpm dependency
+        # Development CLIs
+        - aws-cli-v2       # AWS command line interface
+        - git-delta        # Syntax-highlighting git diff pager
+        - mergiraf         # 3-way merge tool with better conflicts
+        - jujutsu          # Git-compatible VCS (experimental)
+        - lazygit          # Terminal UI for git commands
+        - lazydocker       # Terminal UI for docker management
+        - posting          # Modern API client (Postman alternative)
 
-        audio_system:
-          strategy: *_install_binary
-          list:
-            - pipewire         # Modern audio/video server
-            - pipewire-alsa    # ALSA compatibility layer
-            - pipewire-jack    # JACK pro-audio compatibility
-            - pipewire-pulse   # PulseAudio replacement
-            - gst-plugin-pipewire # GStreamer integration
-            - libpulse         # PulseAudio client libraries
-            - wireplumber      # PipeWire session manager
+    ai_tools:
+      enabled: true
+      description: "AI and machine learning tools"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - ollama           # Local LLM runtime
 
-        printing_scanning:
-          strategy: *_install_binary
-          list:
-            - cups             # UNIX printing system
-            - cups-pdf         # PDF virtual printer
-            - system-config-printer # Printer setup GUI
-            - sane             # Scanner access library
-            - sane-airscan     # eSCL/AirScan scanner driver
-            - samsung-unified-driver-common  # Samsung driver base
-            - samsung-unified-driver-printer # Samsung printer driver
-            - samsung-unified-driver-scanner # Samsung scanner driver
-            - skanpage         # Simple scanning application
-            - imagemagick      # Image manipulation toolkit
+    # ============================================================
+    # DESKTOP ENVIRONMENT
+    # ============================================================
 
-        # ============================================================
-        # DESKTOP ENVIRONMENT
-        # ============================================================
+    desktop_hyprland:
+      enabled: true
+      description: "Hyprland Wayland compositor"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - waybar           # Status bar for Wayland
+        - hyprlock         # Official Hyprland screen locker
+        - hypridle         # Official Hyprland idle daemon
+        - hyprpolkitagent  # Hyprland-native polkit agent
+        - hyprsunset       # Blue light filter (gamma adjustment)
+        - swww             # Dynamic wallpaper daemon with transitions
+        - wallust          # Color palette generator from wallpapers
+        - cliphist         # Clipboard history manager
+        - wlogout          # Logout/shutdown menu
+        - wl-clipboard     # Wayland clipboard CLI utilities
+        - pamixer          # PulseAudio/PipeWire mixer CLI
+        - brightnessctl    # Screen brightness controller
+        - playerctl        # MPRIS media player controller
+        - blueman          # GTK Bluetooth manager GUI
+        - grim             # Wayland screenshot utility
+        - slurp            # Select screen region for screenshots
+        - satty            # Screenshot annotation tool
+        - wayfreeze-git    # Freeze screen for clean recording
+        - gpu-screen-recorder # Hardware-accelerated screen recording
+        - swayosd          # OSD overlay for volume/brightness
+        - localsend        # Local network file sharing (AirDrop alternative)
+        - xkeyboard-config # Keyboard layout definitions
+        - hyprpicker       # Wayland color picker
+        - imv              # Lightweight image viewer for Wayland
+        - plymouth         # Graphical boot splash screen
+        - sddm             # Simple Desktop Display Manager
+        - solarized-sddm-theme # Solarized theme for SDDM
+        - xorg-server      # X server for XWayland compatibility
 
-        desktop_hyprland:
-          strategy: *_install_binary
-          list:
-            - waybar           # Status bar for Wayland
-            - hyprlock         # Official Hyprland screen locker
-            - hypridle         # Official Hyprland idle daemon
-            - hyprpolkitagent  # Hyprland-native polkit agent
-            - hyprsunset       # Blue light filter (gamma adjustment)
-            - swww             # Dynamic wallpaper daemon with transitions
-            - wallust          # Color palette generator from wallpapers
-            - cliphist         # Clipboard history manager
-            - wlogout          # Logout/shutdown menu
-            - wl-clipboard     # Wayland clipboard CLI utilities
-            - pamixer          # PulseAudio/PipeWire mixer CLI
-            - brightnessctl    # Screen brightness controller
-            - playerctl        # MPRIS media player controller
-            - blueman          # GTK Bluetooth manager GUI
-            - grim             # Wayland screenshot utility
-            - slurp            # Select screen region for screenshots
-            - satty            # Screenshot annotation tool
-            - wayfreeze        # Freeze screen for clean recording
-            - gpu-screen-recorder # Hardware-accelerated screen recording
-            - swayosd          # OSD overlay for volume/brightness
-            - localsend        # Local network file sharing (AirDrop alternative)
-            - xkeyboard-config # Keyboard layout definitions
-            - hyprpicker       # Wayland color picker
-            - imv              # Lightweight image viewer for Wayland
-            - plymouth         # Graphical boot splash screen
-            - sddm             # Simple Desktop Display Manager
-            - solarized-sddm-theme # Solarized theme for SDDM
-            - xorg-server      # X server for XWayland compatibility
+    desktop_gui_apps:
+      enabled: true
+      description: "GUI applications"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        # Web browsers
+        - firefox          # Privacy-focused web browser
+        - chromium         # Open-source Chrome base
+        # Development
+        - code             # Visual Studio Code editor
+        # Backup
+        - nextcloud-client # Nextcloud desktop sync client
+        # System services
+        - gnome-keyring    # Credential storage (WiFi passwords)
+        # File management (GUI)
+        - gvfs             # Virtual filesystem (SMB/FTP support)
+        - tumbler          # Thumbnail generator for Thunar
+        - thunar           # Lightweight GTK file manager
+        - thunar-archive-plugin # Archive right-click integration
+        - file-roller      # Archive manager GUI
+        # Various
+        - flatpak:com.spotify.Client  # Music streaming (Flatpak)
+        - flatpak:com.slack.Slack  # Team communication (Flatpak)
+        - flatpak:com.github.xournalpp.xournalpp  # PDF annotation (Flatpak)
+        - flatpak:org.qbittorrent.qBittorrent  # BitTorrent client (Flatpak)
 
-        desktop_gui_apps:
-          strategy: *_install_binary
-          list:
-            # Web browsers
-            - firefox          # Privacy-focused web browser
-            - chromium         # Open-source Chrome base
-            # Development
-            - code             # Visual Studio Code editor
-            # Backup
-            - nextcloud-client # Nextcloud desktop sync client
-            # System services
-            - gnome-keyring    # Credential storage (WiFi passwords)
-            # File management (GUI)
-            - gvfs             # Virtual filesystem (SMB/FTP support)
-            - tumbler          # Thumbnail generator for Thunar
-            - thunar           # Lightweight GTK file manager
-            - thunar-archive-plugin # Archive right-click integration
-            - file-roller      # Archive manager GUI
+    audio_system:
+      enabled: true
+      description: "Audio system (PipeWire)"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - pipewire         # Modern audio/video server
+        - pipewire-alsa    # ALSA compatibility layer
+        - pipewire-jack    # JACK pro-audio compatibility
+        - pipewire-pulse   # PulseAudio replacement
+        - gst-plugin-pipewire # GStreamer integration
+        - libpulse         # PulseAudio client libraries
+        - wireplumber      # PipeWire session manager
 
-  flatpak:
-    packages:
-      proprietary_apps:
-        - com.spotify.Client
-        - com.slack.Slack
+    printing_scanning:
+      enabled: true
+      description: "Printing and scanning support"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - cups             # UNIX printing system
+        - cups-pdf         # PDF virtual printer
+        - system-config-printer # Printer setup GUI
+        - sane             # Scanner access library
+        - sane-airscan     # eSCL/AirScan scanner driver
+        - samsung-unified-driver-common  # Samsung driver base
+        - samsung-unified-driver-printer # Samsung printer driver
+        - samsung-unified-driver-scanner # Samsung scanner driver
+        - skanpage         # Simple scanning application
+        - imagemagick      # Image manipulation toolkit
 
-      cross_platform:
-        - com.github.xournalpp.xournalpp
-        - org.qbittorrent.qBittorrent
-
+  # Packages to remove (explicit cleanup)
   delete:
-    arch:
-      # Redundant tools
-      - htop # Redundant with btop/glances
-      - vim # Replaced by neovim
-
-      # archinstall Hyprland profile packages (replaced)
-      - kitty # Replaced by Ghostty
-      - kitty-shell-integration
-      - kitty-terminfo
-      - dolphin # Replaced by Thunar
-      - polkit-kde-agent # Replaced by hyprpolkitagent
+    - yay              # Replaced by paru-bin
+    - htop             # Redundant with btop/glances
+    - vim              # Replaced by neovim
+    - kitty            # Replaced by Ghostty
+    - kitty-shell-integration
+    - kitty-terminfo
+    - dolphin          # Replaced by Thunar
+    - polkit-kde-agent # Replaced by hyprpolkitagent

@@ -1,139 +1,75 @@
 #!/usr/bin/env sh
 
-# Script: run_once_before_002_install_package_manager.sh.tmpl
-# Purpose: Install and configure package managers (yay, Chaotic-AUR)
+# Script: run_once_before_001_install_package_manager.sh.tmpl
+# Purpose: Install and configure package managers (paru, Chaotic-AUR)
 # Requirements: Arch Linux
 
 {{ includeTemplate "log_start" "Setting up package managers for Arch Linux..." }}
 
-# Set strict error handling
 set -euo pipefail
 
-# Install yay if not already present
-if ! command -v yay &> /dev/null; then
-    {{ includeTemplate "log_step" "Installing yay AUR helper..." }}
+# Install paru if not already present
+if ! command -v paru &> /dev/null; then
+    {{ includeTemplate "log_step" "Installing paru AUR helper..." }}
 
-    # Try direct installation first (works if available in repos like Chaotic-AUR)
-    {{ includeTemplate "log_progress" "Attempting direct installation via pacman..." }}
-    if sudo pacman -S --needed --noconfirm yay 2>/dev/null; then
-        {{ includeTemplate "log_success" "yay installed directly from repository" }}
-    else
-        # Fallback: Build from AUR
-        {{ includeTemplate "log_info" "Direct installation failed, building from AUR..." }}
-
-        # Install build prerequisites
-        {{ includeTemplate "log_progress" "Installing build prerequisites (git, base-devel)..." }}
+    # Try pacman first (works if Chaotic-AUR already configured)
+    if ! sudo pacman -S --needed --noconfirm paru 2>/dev/null; then
+        # Build from AUR (source version for full features)
         sudo pacman -S --needed --noconfirm git base-devel
-
-        # Build yay from AUR
-        {{ includeTemplate "log_progress" "Cloning yay from AUR..." }}
         BUILD_DIR=$(mktemp -d)
-        git clone https://aur.archlinux.org/yay.git "$BUILD_DIR/yay"
-
-        {{ includeTemplate "log_progress" "Building and installing yay..." }}
-        cd "$BUILD_DIR/yay"
-        makepkg -si --noconfirm
-
-        # Clean up
-        cd -
+        git clone https://aur.archlinux.org/paru.git "$BUILD_DIR/paru"
+        (cd "$BUILD_DIR/paru" && makepkg -si --noconfirm)
         rm -rf "$BUILD_DIR"
-
-        {{ includeTemplate "log_success" "yay built and installed from AUR" }}
     fi
-
-    # Initialize yay (common for both installation paths)
-    {{ includeTemplate "log_progress" "Initializing yay database..." }}
-    yay -Y --gendb
-    yay -Syu --devel --noconfirm
-
-    {{ includeTemplate "log_success" "yay AUR helper installed and configured" }}
+    {{ includeTemplate "log_success" "paru AUR helper installed" }}
 else
-    {{ includeTemplate "log_info" "yay AUR helper already installed" }}
+    {{ includeTemplate "log_info" "paru already installed" }}
 fi
 
-# Enable multilib repository for 32-bit application support
-{{ includeTemplate "log_step" "Configuring multilib repository for 32-bit applications..." }}
-
-# Check if multilib is already enabled (look for uncommented [multilib])
-if grep -q "^\[multilib\]" /etc/pacman.conf; then
-    {{ includeTemplate "log_success" "multilib repository already enabled" }}
-else
-    {{ includeTemplate "log_progress" "Enabling multilib repository in /etc/pacman.conf..." }}
-
-    # Uncomment [multilib] section and its Include line
-    # This enables 32-bit library support (lib32-* packages)
+# Enable multilib repository for 32-bit support
+if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
+    {{ includeTemplate "log_step" "Enabling multilib repository..." }}
     sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
-
-    {{ includeTemplate "log_progress" "Upgrading system with multilib enabled..." }}
-    # -Syuu ensures full system upgrade with new repository
     sudo pacman -Syuu --noconfirm
-
-    {{ includeTemplate "log_success" "multilib repository enabled (32-bit support active)" }}
+    {{ includeTemplate "log_success" "multilib repository enabled" }}
+else
+    {{ includeTemplate "log_info" "multilib already enabled" }}
 fi
 
-# Install and configure mirror optimization
-{{ includeTemplate "log_step" "Setting up optimized Arch mirrors..." }}
-
-# Install rate-mirrors
-yay -S --noconfirm rate-mirrors
-
-# Rate and update mirrors
-{{ includeTemplate "log_progress" "Rating and updating Arch mirrors (this may take a moment)..." }}
+# Optimize mirrors for faster downloads
+{{ includeTemplate "log_step" "Optimizing Arch mirrors..." }}
+paru -S --noconfirm --needed rate-mirrors
 rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
+{{ includeTemplate "log_success" "Mirrors optimized" }}
 
-{{ includeTemplate "log_success" "Arch mirrors optimized" }}
-
-# Check if Chaotic-AUR is already configured
-if grep -q "chaotic-aur" /etc/pacman.conf; then
-    {{ includeTemplate "log_info" "Chaotic-AUR repository already configured" }}
-else
+# Setup Chaotic-AUR repository
+if ! grep -q "chaotic-aur" /etc/pacman.conf; then
     {{ includeTemplate "log_step" "Setting up Chaotic-AUR repository..." }}
-    
-    # Install Chaotic-AUR keyring and mirrorlist
-    {{ includeTemplate "log_progress" "Installing Chaotic-AUR keyring..." }}
+
     sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
     sudo pacman-key --lsign-key 3056513887B78AEB
-    
-    {{ includeTemplate "log_progress" "Installing Chaotic-AUR packages..." }}
-    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
-    sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+    sudo pacman -U --noconfirm \
+        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' \
+        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
 
-    # Add Chaotic-AUR repository to pacman.conf
-    {{ includeTemplate "log_progress" "Adding Chaotic-AUR repository to pacman.conf..." }}
     sudo tee -a /etc/pacman.conf > /dev/null << 'EOF'
 
 # Chaotic-AUR repository
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist
 EOF
-    
-    {{ includeTemplate "log_success" "Chaotic-AUR repository configured" }}
 
-    # Synchronize package databases to download chaotic-aur database
-    {{ includeTemplate "log_progress" "Synchronizing package databases..." }}
     sudo pacman -Sy
-
-    {{ includeTemplate "log_success" "Package databases synchronized" }}
+    {{ includeTemplate "log_success" "Chaotic-AUR repository configured" }}
+else
+    {{ includeTemplate "log_info" "Chaotic-AUR already configured" }}
 fi
 
-# Install and configure Flatpak
-{{ includeTemplate "log_step" "Setting up Flatpak package manager..." }}
-
-if ! command -v flatpak &> /dev/null; then
-    {{ includeTemplate "log_progress" "Installing Flatpak..." }}
-    sudo pacman -S --needed --noconfirm flatpak
-    {{ includeTemplate "log_success" "Flatpak installed" }}
-else
-    {{ includeTemplate "log_info" "Flatpak already installed" }}
-fi
-
-# Add Flathub repository (system-wide)
-{{ includeTemplate "log_progress" "Configuring Flathub repository..." }}
-if flatpak remote-list | grep -q "flathub"; then
-    {{ includeTemplate "log_info" "Flathub repository already configured" }}
-else
+# Setup Flatpak
+{{ includeTemplate "log_step" "Setting up Flatpak..." }}
+command -v flatpak &> /dev/null || sudo pacman -S --needed --noconfirm flatpak
+flatpak remote-list | grep -q "flathub" || \
     sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    {{ includeTemplate "log_success" "Flathub repository configured" }}
-fi
+{{ includeTemplate "log_success" "Flatpak configured" }}
 
 {{ includeTemplate "log_complete" "Package manager setup completed successfully" }}

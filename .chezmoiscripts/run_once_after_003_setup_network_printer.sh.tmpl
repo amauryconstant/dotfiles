@@ -18,7 +18,7 @@ PRINTER_DESCRIPTION="{{ .globals.printer.description }}"
 # Check if package is installed
 is_package_installed() {
     local package="$1"
-    pacman -Qi "$package" >/dev/null 2>&1 || yay -Qi "$package" >/dev/null 2>&1
+    pacman -Qi "$package" >/dev/null 2>&1 || paru -Qi "$package" >/dev/null 2>&1
 }
 
 # Check if service is enabled and running

@@ -280,13 +280,23 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Dual System Architecture
 
-**Native Arch** (pacman/yay): CLI tools, system services, dev tools, deep integration
+**Native Arch** (paru): CLI tools, system services, dev tools, deep integration
 **Flatpak**: Proprietary apps, cross-platform GUI apps, sandboxing
 
-### Strategy Execution (Arch only)
-1. Try `pacman` (official repos)
-2. Try `yay_bin` (AUR precompiled)
-3. Try `yay_source` (AUR from source)
+### Package Manager
+
+**Tool**: `package-manager.sh` (2,311 lines, complete rewrite)
+**Features**: NixOS-style version pinning, module system, dcli integration
+**Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v2.0`
+
+**Key capabilities**:
+- Module-based package organization with conflict detection
+- Version constraints (exact, >=, <) for reproducible builds
+- Lockfile generation (like NixOS flake.lock)
+- Interactive downgrade selection with numbered menus
+- Rolling package detection (-git packages)
+- Comprehensive validation and status checks
+- Optional Timeshift backup integration
 
 ### Decision Matrix
 
@@ -306,13 +316,14 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ### Lifecycle Scripts Execution
 
 1. **`run_once_before_*`** → Setup (package managers, dirs, tools)
-2. **`run_onchange_before_install_arch_packages.sh.tmpl`** → Arch packages (hash-triggered, cascade removal)
+2. **`run_onchange_before_install_packages.sh.tmpl`** → All packages (Arch + Flatpak) via `package-manager sync` (hash-triggered)
 3. **File application** → chezmoi applies configs
 4. **`run_once_after_*`** → Configuration (services, setup)
 5. **`run_onchange_*`** → Content-driven (data file changes)
-6. **`run_onchange_after_install_flatpak_packages.sh.tmpl`** → Flatpak apps (hash-triggered)
 
-**Hash-based change detection**: Each `run_onchange` script has unique hash based on specific data section. Arch/Flatpak/Extensions changes trigger only relevant scripts.
+**Hash-based change detection**: Each `run_onchange` script has unique hash based on specific data section. Changes to packages.yaml trigger unified package installation.
+
+**Package manager integration**: Script calls `package-manager sync --prune` which handles both Arch and Flatpak packages, respects version constraints, handles conflicts, and validates packages.
 
 **Script Numbering**:
 - **run_onchange**: No numbering (hash-tracked, order independent)
@@ -331,21 +342,20 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Execution Order
 
-1. `run_once_before_*` (001-007)
+1. `run_once_before_*` (001-006)
 2. File application (configs, templates)
 3. `run_once_after_*` (001-007, 999)
 4. `run_onchange_*` (hash-based, any order)
 
-### Current Scripts (21 total)
+### Current Scripts (19 total)
 
-**run_once_before_* (7)**:
+**run_once_before_* (6)**:
 - 001: Package manager setup
 - 002: Directory creation
-- 003: OS-specific packages
-- 004: Encryption key setup
+- 003: Encryption key setup
+- 004: Locale configuration
 - 005: chezmoi_modify_manager install
 - 006: Maintenance user creation
-- 007: Locale configuration
 
 **run_once_after_* (8)**:
 - 001: CLI generation
@@ -357,9 +367,8 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 - 007: Boot system
 - 999: SSH remote switch
 
-**run_onchange_* (6)**:
-- before_install_arch_packages: Arch package installation
-- after_install_flatpak_packages: Flatpak app installation
+**run_onchange_* (5)**:
+- before_install_packages: Unified package management (Arch + Flatpak)
 - after_install_extensions: VSCode extensions
 - after_install_ai_models: Ollama models
 - after_update_plymouth_theme: Plymouth theme
@@ -368,8 +377,7 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ### Hash Triggers
 
 Changes to `.chezmoidata/` files trigger specific scripts:
-- `packages.install.arch` → `run_onchange_before_install_arch_packages.sh.tmpl`
-- `packages.flatpak` → `run_onchange_after_install_flatpak_packages.sh.tmpl`
+- `packages` → `run_onchange_before_install_packages.sh.tmpl` (both Arch and Flatpak)
 - `extensions.code` → `run_onchange_after_install_extensions.sh.tmpl`
 - `ai.models` → `run_onchange_after_install_ai_models.sh.tmpl`
 

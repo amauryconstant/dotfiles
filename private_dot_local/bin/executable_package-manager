@@ -2,7 +2,7 @@
 
 # Package Manager - Direct CLI Access
 # Purpose: Strategy-based package installation with fallback chains
-# Requirements: Arch Linux, pacman, yay, gum (UI library)
+# Requirements: Arch Linux, pacman, paru, gum (UI library)
 
 # Use environment variables defined in shell/env
 PACKAGE_SCRIPT="$SCRIPTS_DIR/system/package-manager.sh"

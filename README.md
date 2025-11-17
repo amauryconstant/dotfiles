@@ -56,7 +56,7 @@ This repository implements a complete desktop environment configuration with foc
 │   └── globals.yaml              # Global variables (XDG, apps, printer)
 │
 ├── .chezmoiscripts/              # Lifecycle automation scripts
-│   ├── run_once_before_*.sh.tmpl # Pre-setup (6 scripts: yay, dirs, packages)
+│   ├── run_once_before_*.sh.tmpl # Pre-setup (6 scripts: paru, dirs, packages)
 │   ├── run_once_after_*.sh.tmpl  # Post-setup (8 scripts: services, git, boot)
 │   └── run_onchange_*.sh.tmpl    # Hash-triggered (5 scripts: packages, extensions)
 │
@@ -317,18 +317,11 @@ commands | grep wallpaper  # Search for specific commands
 
 ### Package Management
 
-**Multi-Strategy Installation**:
-```yaml
-strategies:
-  _install_binary: [pacman, yay_bin]           # Faster, precompiled
-  _install_from_source: [pacman, yay_bin, yay_source]  # Flexible, builds locally
-```
-
 Strategy execution: Try official repos → Try AUR binary → Try AUR source (if strategy allows)
 
 **Dual Package System**:
 
-| Use Arch Native (pacman/yay) | Use Flatpak |
+| Use Arch Native (pacman/paru) | Use Flatpak |
 |------------------------------|-------------|
 | ✅ CLI tools and utilities | ✅ Proprietary apps (Spotify, Slack) |
 | ✅ System services and daemons | ✅ Cross-platform GUI apps |
@@ -413,7 +406,7 @@ All lifecycle scripts run automatically via chezmoi. No manual intervention requ
 
 | Phase | Scripts | Purpose | Trigger |
 |-------|---------|---------|---------|
-| **1. Pre-Setup** | `run_once_before_*` (6 scripts) | Install yay AUR helper, configure repos, create directories, install essential packages, set up Age encryption, create maintenance user | First `chezmoi apply` |
+| **1. Pre-Setup** | `run_once_before_*` (6 scripts) | Install paru AUR helper, configure repos, create directories, install essential packages, set up Age encryption, create maintenance user | First `chezmoi apply` |
 | **2. Package Install** | `run_onchange_before_*` (1 script) | Install all Arch packages with multi-strategy fallback | Hash change in `packages.yaml` |
 | **3. Configuration** | `run_once_after_*` (8 scripts) | Generate CLI configs, configure services (Docker, Bluetooth, Ollama, Tailscale), set up printer, configure git tools, wallpaper timer, boot system (GPU, locale, Plymouth, SDDM) | First `chezmoi apply` |
 | **4. Content Updates** | `run_onchange_after_*` (3 scripts) | Install VSCode extensions, pull AI models, install Flatpak apps | Hash change in respective YAML files |
@@ -717,7 +710,7 @@ age-keygen -o ~/.config/chezmoi/key.txt
 **Package installation failures**:
 ```bash
 # AUR timeout - increase build time
-yay -S <package> --timeout 3600
+paru -S <package> --timeout 3600
 
 # Fallback to binary strategy
 # Edit .chezmoidata/packages.yaml
@@ -859,7 +852,7 @@ rm ~/.local/bin/chezmoi
 cat ~/.local/share/chezmoi/.chezmoidata/packages.yaml
 
 # Remove Arch packages by category
-yay -Rns $(yay -Qqs <package-prefix>)
+paru -Rns $(paru -Qqs <package-prefix>)
 
 # Remove Flatpak applications
 flatpak list --app                    # List installed

@@ -20,7 +20,7 @@
 | `system-health-dashboard.sh` | Interactive dashboard | TUI with gum |
 | `system-maintenance.sh` | Maintenance tasks | `--update`, `--cleanup` modes |
 | `troubleshoot.sh` | Diagnostic tool | Interactive troubleshooting |
-| `package-manager.sh` | Strategy-based pkg install | Fallback chains (pacman → yay_bin → yay_source) |
+| `package-manager.sh` v2.0 | Module-based pkg management | NixOS-style version pinning, dcli features (2,311 lines) |
 | `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
 
 ## system-health.sh
@@ -110,28 +110,192 @@ system-troubleshoot
 
 **Output**: Guided diagnostics with fixes
 
-## package-manager.sh
+## package-manager.sh v2.0
 
-**Purpose**: Strategy-based package installation
+**Purpose**: Module-based declarative package management with NixOS-style version pinning
 
-**Strategy execution**:
-1. Try `pacman` (official repos)
-2. Try `yay_bin` (AUR precompiled)
-3. Try `yay_source` (AUR from source)
+**Version**: 2.0.0 (2,311 lines, complete rewrite with dcli features)
 
-**Fallback chain**: Each strategy tried in order until success
+**Key features**:
+- Module system with conflict detection
+- NixOS-style version constraints (exact, >=, <)
+- Lockfile generation for reproducibility
+- Interactive downgrade selection
+- Rolling package detection (-git packages)
+- Batch package validation with timeout
+- Optional Timeshift backup integration
+- Comprehensive validation and status checks
 
-**Usage**:
+### Command Categories
+
+**Module Management**:
 ```bash
-package-manager install <package>
-package-manager install <package> --strategy pacman,yay_bin
-package-manager remove <package>
-package-manager search <query>
+package-manager module list                    # Show all modules with status
+package-manager module enable base shell       # Enable modules
+package-manager module enable                  # Interactive selection
+package-manager module disable development     # Disable modules
 ```
 
-**Strategy override**: `--strategy` flag for specific chain
+**Version Pinning**:
+```bash
+package-manager pin firefox 120.0              # Exact version
+package-manager pin neovim ">=0.9.0"           # Minimum version
+package-manager pin python "<3.12"             # Maximum version
+package-manager unpin firefox                  # Remove constraint
+package-manager lock                           # Generate lockfile
+package-manager versions firefox               # Show version info
+package-manager outdated                       # List constraint violations
+```
 
-**Integration**: Used by `.chezmoidata/packages.yaml` system
+**Package Operations**:
+```bash
+package-manager install firefox                # Install single package
+package-manager remove firefox                 # Remove package
+package-manager sync                           # Sync to packages.yaml
+package-manager sync --prune                   # Sync + remove orphans
+```
+
+**Status & Validation**:
+```bash
+package-manager status                         # Comprehensive status
+package-manager validate                       # Validate YAML structure
+package-manager validate --check-packages      # Validate + check existence
+```
+
+**Legacy Commands** (preserved for compatibility):
+```bash
+package-manager health                         # Check dependencies
+package-manager update-strategy                # Update packages
+```
+
+### Version Constraint Syntax
+
+**In packages.yaml**:
+```yaml
+packages:
+  modules:
+    base:
+      packages:
+        - firefox                              # No constraint (latest)
+        - name: neovim                         # Exact version
+          version: "0.9.5"
+        - name: python                         # Minimum version
+          version: ">=3.11"
+        - name: nodejs                         # Maximum version
+          version: "<21.0.0"
+```
+
+**Constraint types**:
+- **Exact**: `version: "1.2.3"` → Install exactly 1.2.3
+- **Minimum**: `version: ">=1.2.3"` → Install 1.2.3 or newer
+- **Maximum**: `version: "<2.0.0"` → Install anything below 2.0.0
+
+### State Files
+
+**Location**: `~/.local/state/package-manager/` (NOT in chezmoi)
+
+**package-state.yaml** (Rich metadata):
+```yaml
+packages:
+  - name: "firefox"
+    version: "120.0-1"
+    type: "pacman"                             # or "flatpak"
+    module: "desktop_gui_apps"
+    constraint: "120.0"                        # or ">=1.0", "<2.0", null
+    pinned: true
+    installed_at: "2025-11-16T12:34:56+00:00"
+    last_updated: "2025-11-16T12:34:56+00:00"
+```
+
+**locked-versions.yaml** (Reproducible builds):
+```yaml
+# Generated: 2025-11-16 12:34:56
+# Host: archlinux
+packages:
+  base:
+    firefox: "120.0-1"
+    base-devel: "1-2"
+  shell_environment:
+    zsh: "5.9-4"
+    hyprland-git: "0.35.0.r1"                  # rolling (-git package)
+```
+
+### Features from dcli Integration
+
+1. **vercmp** - Accurate version comparison (handles epochs)
+2. **Interactive downgrade** - Numbered menu for version selection
+3. **Package validation** - Batch checking with 5-second timeout
+4. **Module conflicts** - Auto-detection with resolution prompts
+5. **Interactive modules** - Fallback menus when no args
+6. **Rolling packages** - Detection and warnings for -git packages
+7. **Comprehensive validate** - YAML, conflicts, naming, duplicates
+8. **Timeshift backup** - Optional integration before sync
+
+### Advanced Usage
+
+**Constraint-aware sync**:
+```bash
+# packages.yaml has: { name: "firefox", version: "<121.0" }
+# System has: firefox 121.0-1 (violates constraint)
+package-manager sync
+# → Prompts for interactive downgrade to compatible version
+```
+
+**Module conflict resolution**:
+```bash
+# kde_desktop conflicts with gnome_desktop
+package-manager module enable gnome_desktop
+# → Auto-detects conflict, prompts to disable kde_desktop
+```
+
+**Orphan removal**:
+```bash
+package-manager sync --prune
+# → Removes packages not in any enabled module
+```
+
+**Validation workflow**:
+```bash
+package-manager validate --check-packages      # Validate + check existence
+package-manager lock                           # Generate lockfile
+package-manager status                         # Review system state
+package-manager sync                           # Apply changes
+```
+
+### Integration Points
+
+**packages.yaml** (`.chezmoidata/packages.yaml`):
+- Flat module structure: `packages.modules.<name>`
+- No `post_install_hook` (use chezmoi scripts instead)
+- No `flatpak.scope` (always user scope)
+- Prefix Flatpak packages: `flatpak:com.spotify.Client`
+
+**Run scripts**:
+- `run_onchange_before_install_packages.sh.tmpl` → Calls package-manager sync for both Arch and Flatpak
+- Hash-triggered on packages.yaml changes
+
+**Topgrade integration**:
+```toml
+[commands]
+"Package Validation" = "package-manager validate"
+"System Status" = "package-manager status"
+```
+
+### Migration from v1.0
+
+**Removed features**:
+- Strategy system (pacman → yay_bin → yay_source)
+- `--strategy` flag
+- Search command (use paru directly)
+
+**Replaced by**:
+- Single paru command for all installs
+- Module-based organization
+- Version constraint system
+
+**Breaking changes**:
+- State files moved to `~/.local/state/package-manager/`
+- No longer uses chezmoi state directory
 
 ## pacman-lock-cleanup.sh
 
