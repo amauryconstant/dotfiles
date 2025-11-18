@@ -1,0 +1,58 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_012_setup_default_theme.sh.tmpl
+# Purpose: Initialize default theme symlink and Ghostty themes directory
+# Requirements: Arch Linux
+
+{{ includeTemplate "log_start" "Setting up default theme system" }}
+
+set -euo pipefail
+
+THEMES_DIR="$HOME/.config/themes"
+CURRENT_LINK="$THEMES_DIR/current"
+DEFAULT_THEME="solarized-dark"
+GHOSTTY_THEMES_DIR="$HOME/.config/ghostty/themes"
+
+# Create themes directory if it doesn't exist
+if [ ! -d "$THEMES_DIR" ]; then
+    {{ includeTemplate "log_step" "Creating themes directory" }}
+    mkdir -p "$THEMES_DIR"
+fi
+
+# Set up default theme symlink if it doesn't exist
+if [ ! -L "$CURRENT_LINK" ]; then
+    if [ -d "$THEMES_DIR/$DEFAULT_THEME" ]; then
+        {{ includeTemplate "log_step" "Creating default theme symlink: $DEFAULT_THEME" }}
+        ln -s "$THEMES_DIR/$DEFAULT_THEME" "$CURRENT_LINK"
+    else
+        {{ includeTemplate "log_error" "Default theme directory not found: $DEFAULT_THEME" }}
+        {{ includeTemplate "log_step" "Available themes:" }}
+        ls -1 "$THEMES_DIR" | grep -v current || echo "No themes found"
+        exit 1
+    fi
+else
+    CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+    {{ includeTemplate "log_success" "Theme symlink already exists: $CURRENT_THEME" }}
+fi
+
+# Set up Ghostty themes directory symlink
+if [ ! -d "$GHOSTTY_THEMES_DIR" ]; then
+    {{ includeTemplate "log_step" "Creating Ghostty themes directory" }}
+    mkdir -p "$GHOSTTY_THEMES_DIR"
+fi
+
+if [ ! -L "$GHOSTTY_THEMES_DIR/current" ]; then
+    {{ includeTemplate "log_step" "Creating Ghostty current theme symlink" }}
+    ln -sf "$THEMES_DIR/current/ghostty.conf" "$GHOSTTY_THEMES_DIR/current"
+else
+    {{ includeTemplate "log_success" "Ghostty theme symlink already exists" }}
+fi
+
+{{ includeTemplate "log_complete" "Theme system setup complete" }}
+
+# Display current theme
+CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+echo ""
+echo "Current theme: $CURRENT_THEME"
+echo "Switch themes: theme switch <theme-name>"
+echo "List themes: theme list"

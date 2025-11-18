@@ -1,0 +1,23 @@
+/* Gruvbox Dark Wlogout Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #282828;      /* dark0 - main background */
+@define-color bg-secondary #3c3836;    /* dark1 - elevated surfaces */
+@define-color bg-tertiary #504945;     /* dark2 - popovers */
+@define-color bg-overlay #1d2021;      /* darker than dark0 */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #ebdbb2;      /* light1 - main text */
+@define-color fg-secondary #d5c4a1;    /* light2 - subtitles */
+@define-color fg-muted #a89984;        /* light4 - disabled */
+@define-color fg-contrast #282828;     /* dark0 - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #83a598;  /* bright_blue - primary actions */
+@define-color accent-info #8ec07c;     /* bright_aqua - connectivity */
+@define-color accent-success #b8bb26;  /* bright_green - success */
+@define-color accent-warning #fabd2f;  /* bright_yellow - warnings */
+@define-color accent-error #fb4934;    /* bright_red - errors */
+@define-color accent-highlight #d3869b; /* bright_purple - secondary actions */
+@define-color accent-secondary #8ec07c; /* bright_aqua - alternative */
+@define-color accent-tertiary #fe8019; /* bright_orange - tertiary actions */

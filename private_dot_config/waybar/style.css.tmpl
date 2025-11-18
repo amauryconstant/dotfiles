@@ -1,9 +1,13 @@
 /* ========================================================================== */
-/* Waybar Stylesheet - Oksolar Theme */
+/* Waybar Stylesheet - Theme System */
 /* ========================================================================== */
+
+/* Import current theme colors */
+@import "../themes/current/waybar.css";
+
 /*
- * Custom CSS for Waybar status bar with oksolar color scheme.
- * Colors are injected via chezmoi templates from .chezmoidata/colors.yaml
+ * Custom CSS for Waybar status bar with dynamic theme support.
+ * Colors are imported from the active theme.
  *
  * STRUCTURE:
  * - Universal styles (fonts, resets)
@@ -14,28 +18,15 @@
  * - System modules (CPU, memory, temperature, network, audio)
  * - System tray
  *
- * OKSOLAR COLOR REFERENCE:
- * - base03  : Darkest background (#002d38)
- * - base02  : Dark background    (#093946)
- * - base01  : Muted text         (#5b7279)
- * - base0   : Default text       (#839496)
- * - base1   : Light text         (#93a1a1)
- * - base3   : Lightest text      (#fdf6e3)
- * - blue    : Primary accent     (#2b90d8)
- * - cyan    : Secondary accent   (#259d94)
- * - green   : Success/CPU        (#819500)
- * - yellow  : Warning/Memory     (#b68800)
- * - orange  : Alert/Temperature  (#ca4600)
- * - red     : Error/Critical     (#dc312e)
- * - violet  : Special/Audio      (#6c71c3)
- *
  * CUSTOMIZATION TIPS:
- * - All colors use chezmoi templates: #{{"{{"}} .colors.oksolar.COLORNAME {{"}}"}}
+ * - Colors are defined in ~/.config/themes/current/waybar.css
  * - Modify font-size for HiDPI displays
  * - Adjust padding for denser/looser layouts
  * - Change border-radius in #workspaces button for rounded corners
  */
 
+/* -------------------------------------------------------------------------- */
+/* Universal Styles */
 /* -------------------------------------------------------------------------- */
 /* Universal Styles */
 /* -------------------------------------------------------------------------- */
@@ -59,10 +50,10 @@
 /* -------------------------------------------------------------------------- */
 window#waybar {
   /* Background: Oksolar darkest (base03) */
-  background-color: #{{ .colors.oksolar.base03 }};
+  background-color: @bg-primary;
 
   /* Text color: Oksolar default text (base0) */
-  color: #{{ .colors.oksolar.base0 }};
+  color: @fg-primary;
 
   /* Smooth background color transitions (for potential themes/modes) */
   transition-property: background-color;
@@ -72,7 +63,7 @@ window#waybar {
   /* opacity: 0.95; */
 
   /* Optional: Add bottom border (uncomment to use) */
-  /* border-bottom: 2px solid #{{ .colors.oksolar.base01 }}; */
+  /* border-bottom: 2px solid @bg-secondary; */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -88,19 +79,19 @@ window#waybar {
   background-color: transparent;
 
   /* Text color: Oksolar muted (base01) */
-  color: #{{ .colors.oksolar.base01 }};
+  color: @fg-muted;
 
   /* Optional: Add border between workspaces (uncomment to use) */
-  /* border-right: 1px solid #{{ .colors.oksolar.base02 }}; */
+  /* border-right: 1px solid @bg-secondary; */
 }
 
 /* Workspace buttons: Hover state */
 #workspaces button:hover {
   /* Background: Oksolar blue (primary accent) */
-  background-color: #{{ .colors.oksolar.blue }};
+  background-color: @accent-primary;
 
   /* Text color: Oksolar lightest (base3) - high contrast on blue */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Enhanced hover effect */
   transition: all 0.2s ease;
@@ -109,10 +100,10 @@ window#waybar {
 /* Workspace buttons: Active workspace */
 #workspaces button.active {
   /* Background: Oksolar blue (primary accent) */
-  background-color: #{{ .colors.oksolar.blue }};
+  background-color: @accent-primary;
 
   /* Text color: Oksolar lightest (base3) - high contrast on blue */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Optional: Make active workspace bold */
   /* font-weight: bold; */
@@ -121,10 +112,10 @@ window#waybar {
 /* Workspace buttons: Urgent state (windows demanding attention) */
 #workspaces button.urgent {
   /* Background: Oksolar red (error/alert) */
-  background-color: #{{ .colors.oksolar.red }};
+  background-color: @accent-error;
 
   /* Text color: Oksolar lightest (base3) - high contrast on red */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Optional: Add animation (uncomment to use) */
   /* animation: blink 1s linear infinite; */
@@ -141,7 +132,7 @@ window#waybar {
 /* -------------------------------------------------------------------------- */
 #window {
   /* Text color: Oksolar light text (base1) */
-  color: #{{ .colors.oksolar.base1 }};
+  color: @fg-secondary;
 
   /* Font weight: Normal (not bold) */
   font-weight: normal;
@@ -166,7 +157,7 @@ window#waybar {
 /* -------------------------------------------------------------------------- */
 #clock {
   /* Text color: Oksolar blue (matches active workspace) */
-  color: #{{ .colors.oksolar.blue }};
+  color: @accent-primary;
 
   /* Font weight: Bold to stand out */
   font-weight: bold;
@@ -175,7 +166,7 @@ window#waybar {
   padding: 0 10px;
 
   /* Optional: Add background (uncomment to use) */
-  /* background-color: #{{ .colors.oksolar.base02 }}; */
+  /* background-color: @bg-secondary; */
   /* border-radius: 4px; */
 
   /* Optional: Larger font size */
@@ -206,36 +197,36 @@ window#waybar {
 
 /* First module in group - left rounded corners */
 #network {
-  color: #{{ .colors.oksolar.cyan }};
+  color: @accent-info;
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
 }
 
 /* Network Module: Disconnected state */
 #network.disconnected {
-  color: #{{ .colors.oksolar.base01 }};
+  color: @fg-muted;
 }
 
 /* Middle modules - no rounded corners */
 #pulseaudio {
-  color: #{{ .colors.oksolar.violet }};
+  color: @accent-highlight;
 }
 
 /* PulseAudio Module: Muted state */
 #pulseaudio.muted {
-  color: #{{ .colors.oksolar.base01 }};
+  color: @fg-muted;
 }
 
 /* Last module in group - right rounded corners */
 #battery {
-  color: #{{ .colors.oksolar.green }};
+  color: @accent-success;
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
 }
 
 /* Backlight module - positioned before battery */
 #backlight {
-  color: #{{ .colors.oksolar.yellow }};
+  color: @accent-warning;
 }
 
 /* Enhanced hover effects with module-specific colors */
@@ -263,7 +254,7 @@ window#waybar {
   padding: 0 10px;
 
   /* Optional: Add background to separate from other modules */
-  /* background-color: #{{ .colors.oksolar.base02 }}; */
+  /* background-color: @bg-secondary; */
   /* margin: 0 5px; */
   /* border-radius: 4px; */
 }
@@ -283,7 +274,7 @@ window#waybar {
   -gtk-icon-effect: highlight;
 
   /* Background: Oksolar red (error/alert) to stand out */
-  background-color: #{{ .colors.oksolar.red }};
+  background-color: @accent-error;
 
   /* Optional: Add padding and rounding */
   /* padding: 0 5px; */
@@ -306,7 +297,7 @@ window#waybar {
 /* Bluetooth module */
 #bluetooth {
   /* Default color: Oksolar cyan (represents connectivity) */
-  color: #{{ .colors.oksolar.cyan }};
+  color: @accent-info;
 
   /* Spacing: Left and right padding */
   padding: 0 10px;
@@ -315,29 +306,29 @@ window#waybar {
 /* Bluetooth module: Disabled state */
 #bluetooth.disabled {
   /* Color: Oksolar muted (base01) - dimmed to show inactive */
-  color: #{{ .colors.oksolar.base01 }};
+  color: @fg-muted;
 }
 
 /* Bluetooth module: Connected state */
 #bluetooth.connected {
   /* Color: Oksolar violet (represents active connection) */
-  color: #{{ .colors.oksolar.violet }};
+  color: @accent-highlight;
 }
 
 /* Enhanced Battery module with state-based styling */
 #battery {
   /* Default color: Oksolar green (good battery level) */
-  color: #{{ .colors.oksolar.green }};
+  color: @accent-success;
 }
 
 /* Battery module: Warning state (< 30%) */
 #battery.warning:not(.charging) {
-  color: #{{ .colors.oksolar.yellow }};
+  color: @accent-warning;
 }
 
 /* Battery module: Critical state (< 10%) with enhanced animation */
 #battery.critical:not(.charging) {
-  color: #{{ .colors.oksolar.red }};
+  color: @accent-error;
   font-weight: bold;
   animation: critical-blink 1s linear infinite alternate;
 }
@@ -345,34 +336,34 @@ window#waybar {
 /* Battery module: Charging state */
 #battery.charging {
   /* Color: Oksolar cyan (represents power input) */
-  color: #{{ .colors.oksolar.cyan }};
+  color: @accent-info;
 }
 
 /* Battery module: Plugged state (full, on AC power) */
 #battery.plugged {
   /* Color: Oksolar blue (represents stable state) */
-  color: #{{ .colors.oksolar.blue }};
+  color: @accent-primary;
 }
 
 /* Enhanced Backlight module */
 #backlight {
   /* Color: Oksolar yellow (represents brightness/light) */
-  color: #{{ .colors.oksolar.yellow }};
+  color: @accent-warning;
 }
 
 /* Enhanced critical battery animation with background flash */
 @keyframes critical-blink {
   0% {
     background: transparent;
-    color: #{{ .colors.oksolar.red }};
+    color: @accent-error;
   }
   50% {
-    background: #{{ .colors.oksolar.red }};
-    color: #{{ .colors.oksolar.base3 }};
+    background: @accent-error;
+    color: @fg-contrast;
   }
   100% {
     background: transparent;
-    color: #{{ .colors.oksolar.red }};
+    color: @accent-error;
   }
 }
 
@@ -391,29 +382,29 @@ window#waybar {
 
 /* Idle inhibitor module: */
 /* #idle_inhibitor {
- *   color: #{{ .colors.oksolar.base01 }};
+ *   color: @fg-muted;
  * }
  *
  * #idle_inhibitor.activated {
- *   color: #{{ .colors.oksolar.orange }};
+ *   color: @accent-tertiary;
  * } */
 
 /* Disk module: */
 /* #disk {
- *   color: #{{ .colors.oksolar.blue }};
+ *   color: @accent-primary;
  * }
  *
  * #disk.warning {
- *   color: #{{ .colors.oksolar.orange }};
+ *   color: @accent-tertiary;
  * }
  *
  * #disk.critical {
- *   color: #{{ .colors.oksolar.red }};
+ *   color: @accent-error;
  * } */
 
 /* Custom modules: */
 /* #custom-weather {
- *   color: #{{ .colors.oksolar.cyan }};
+ *   color: @accent-info;
  *   padding: 0 10px;
  * } */
 
@@ -423,18 +414,18 @@ window#waybar {
 
 /* Bottom bar specific styles: */
 /* window#waybar.bottom {
- *   border-top: 2px solid #{{ .colors.oksolar.base01 }};
+ *   border-top: 2px solid @fg-muted;
  *   border-bottom: none;
  * } */
 
 /* Left bar specific styles: */
 /* window#waybar.left {
- *   border-right: 2px solid #{{ .colors.oksolar.base01 }};
+ *   border-right: 2px solid @fg-muted;
  * } */
 
 /* Right bar specific styles: */
 /* window#waybar.right {
- *   border-left: 2px solid #{{ .colors.oksolar.base01 }};
+ *   border-left: 2px solid @fg-muted;
  * } */
 
 /* ========================================================================== */

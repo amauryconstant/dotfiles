@@ -41,8 +41,10 @@ swww img "$WALLPAPER_PATH" \
     --transition-type "$TRANSITION_TYPE" \
     --transition-duration "$TRANSITION_DURATION"
 
-{{ includeTemplate "log_step" "Generating color scheme with wallust" }}
-wallust run -s --dynamic-threshold "$WALLPAPER_PATH"
+# Note: wallust color generation is disabled in favor of static theme colors
+# If dynamic wallpaper colors are needed, uncomment the following lines:
+# {{ includeTemplate "log_step" "Generating color scheme with wallust" }}
+# wallust run -s --dynamic-threshold "$WALLPAPER_PATH"
 
 {{ includeTemplate "log_step" "Reloading desktop components" }}
 

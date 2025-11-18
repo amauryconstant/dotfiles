@@ -1,0 +1,23 @@
+/* Solarized Dark Wofi Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #002b36;      /* base03 - main background */
+@define-color bg-secondary #073642;    /* base02 - elevated surfaces */
+@define-color bg-tertiary #586e75;     /* base01 - popovers */
+@define-color bg-overlay #073642;      /* base02 - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #839496;      /* base0 - main text */
+@define-color fg-secondary #93a1a1;    /* base1 - subtitles */
+@define-color fg-muted #586e75;        /* base01 - disabled */
+@define-color fg-contrast #fdf6e3;     /* base3 - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #268bd2;  /* blue - primary actions */
+@define-color accent-info #2aa198;     /* cyan - connectivity */
+@define-color accent-success #859900;  /* green - success */
+@define-color accent-warning #b58900;  /* yellow - warnings */
+@define-color accent-error #dc322f;    /* red - errors */
+@define-color accent-highlight #6c71c4; /* violet - secondary actions */
+@define-color accent-secondary #2aa198; /* cyan - alternative */
+@define-color accent-tertiary #cb4b16; /* orange - tertiary actions */

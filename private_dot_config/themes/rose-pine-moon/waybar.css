@@ -1,0 +1,23 @@
+/* Rose Pine Moon Waybar Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #232136;      /* base - main background */
+@define-color bg-secondary #2a273f;    /* surface - elevated surfaces */
+@define-color bg-tertiary #393552;     /* overlay - popovers */
+@define-color bg-overlay #393552;      /* overlay - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #e0def4;      /* text - main text */
+@define-color fg-secondary #908caa;    /* subtle - subtitles */
+@define-color fg-muted #6e6a86;        /* muted - disabled */
+@define-color fg-contrast #232136;     /* base - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #3e8fb0;  /* pine - primary actions */
+@define-color accent-info #9ccfd8;     /* foam - connectivity */
+@define-color accent-success #9ccfd8;  /* foam - success */
+@define-color accent-warning #f6c177;  /* gold - warnings */
+@define-color accent-error #eb6f92;    /* love - errors */
+@define-color accent-highlight #c4a7e7; /* iris - secondary actions */
+@define-color accent-secondary #9ccfd8; /* foam - alternative */
+@define-color accent-tertiary #ea9a97; /* rose - tertiary actions */

@@ -1,0 +1,21 @@
+# Zsh function: theme
+# Wrapper for theme-switcher.sh with tab completion
+
+theme() {
+    ~/.local/lib/scripts/desktop/theme-switcher.sh "$@"
+}
+
+# Tab completion for theme command
+_theme() {
+    local -a commands themes
+    commands=('switch:Switch to a theme' 'list:List available themes' 'current:Show current theme')
+
+    if (( CURRENT == 2 )); then
+        _describe 'command' commands
+    elif (( CURRENT == 3 )) && [[ $words[2] == "switch" ]]; then
+        themes=(${(f)"$(find ~/.config/themes -maxdepth 1 -type d -not -name themes -not -name current -exec basename {} \;)"})
+        _describe 'theme' themes
+    fi
+}
+
+compdef _theme theme

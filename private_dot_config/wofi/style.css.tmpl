@@ -1,9 +1,13 @@
 /* ========================================================================== */
-/* Wofi Stylesheet - Oksolar Theme */
+/* Wofi Stylesheet - Theme System */
 /* ========================================================================== */
+
+/* Import current theme colors */
+@import "../themes/current/wofi.css";
+
 /*
- * Custom CSS for Wofi application launcher with oksolar color scheme.
- * Colors are injected via chezmoi templates from .chezmoidata/colors.yaml
+ * Custom CSS for Wofi application launcher with dynamic theme support.
+ * Colors are imported from the active theme.
  *
  * STRUCTURE:
  * - Universal styles (fonts)
@@ -12,15 +16,6 @@
  * - Result containers (layout boxes)
  * - Entry items (application results)
  * - Icons
- *
- * OKSOLAR COLOR REFERENCE (same as Waybar):
- * - base03  : Darkest background (#002d38)
- * - base02  : Dark background    (#093946)
- * - base01  : Muted text         (#5b7279)
- * - base0   : Default text       (#839496)
- * - base1   : Light text         (#93a1a1)
- * - base3   : Lightest text      (#fdf6e3)
- * - blue    : Primary accent     (#2b90d8)
  *
  * WOFI CSS SELECTORS:
  * - window         : Main launcher window
@@ -37,8 +32,6 @@
  * - Adjust padding for denser/looser spacing
  * - Modify font-size for different readability
  */
-
-/* -------------------------------------------------------------------------- */
 /* Universal Styles */
 /* -------------------------------------------------------------------------- */
 * {
@@ -57,10 +50,10 @@ window {
   margin: 0px;
 
   /* Border: Oksolar blue to match active workspace in waybar */
-  border: 2px solid #{{ .colors.oksolar.blue }};
+  border: 2px solid @accent-primary;
 
   /* Background: Oksolar darkest (base03) - matches waybar background */
-  background-color: #{{ .colors.oksolar.base03 }};
+  background-color: @bg-primary;
 
   /* Rounded corners (8px matches Hyprland window rounding) */
   border-radius: 8px;
@@ -86,10 +79,10 @@ window {
   border: none;
 
   /* Text color: Oksolar lightest (base3) - high contrast for search text */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Background: Oksolar dark (base02) - darker than window for distinction */
-  background-color: #{{ .colors.oksolar.base02 }};
+  background-color: @bg-secondary;
 
   /* Remove default focus outline (we'll add custom border) */
   outline: none;
@@ -101,10 +94,10 @@ window {
 /* Search input: Focus state (when typing) */
 #input:focus {
   /* Border: Oksolar blue to indicate active input */
-  border: 1px solid #{{ .colors.oksolar.blue }};
+  border: 1px solid @accent-primary;
 
   /* Optional: Add glow effect (uncomment to use) */
-  /* box-shadow: 0 0 5px #{{ .colors.oksolar.blue }}; */
+  /* box-shadow: 0 0 5px @accent-primary; */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -140,7 +133,7 @@ window {
 
   /* Optional: Style scrollbar (uncomment to use) */
   /* scrollbar-width: thin; */
-  /* scrollbar-color: #{{ .colors.oksolar.base01 }} #{{ .colors.oksolar.base02 }}; */
+  /* scrollbar-color: @fg-muted @bg-secondary; */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -171,10 +164,10 @@ window {
 /* Entry: Selected/highlighted state */
 #entry:selected {
   /* Background: Oksolar blue (matches active workspace) */
-  background-color: #{{ .colors.oksolar.blue }};
+  background-color: @accent-primary;
 
   /* Text color: Oksolar lightest (base3) - high contrast on blue */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Optional: Scale effect on selection (uncomment to use) */
   /* transform: scale(1.02); */
@@ -182,7 +175,7 @@ window {
 
 /* Optional: Hover state (different from selected) */
 /* #entry:hover {
- *   background-color: #{{ .colors.oksolar.base02 }};
+ *   background-color: @bg-secondary;
  * } */
 
 /* -------------------------------------------------------------------------- */
@@ -199,13 +192,13 @@ window {
   padding: 4px;
 
   /* Text color: Oksolar light text (base1) */
-  color: #{{ .colors.oksolar.base1 }};
+  color: @fg-secondary;
 }
 
 /* Text: Selected state */
 #text:selected {
   /* Text color: Oksolar lightest (base3) - high contrast */
-  color: #{{ .colors.oksolar.base3 }};
+  color: @fg-contrast;
 
   /* Font weight: Bold to emphasize selection */
   font-weight: bold;
@@ -242,7 +235,7 @@ window {
 
 /* Separator between entries: */
 /* #entry {
- *   border-bottom: 1px solid #{{ .colors.oksolar.base02 }};
+ *   border-bottom: 1px solid @bg-secondary;
  * }
  * #entry:last-child {
  *   border-bottom: none;
@@ -250,9 +243,9 @@ window {
 
 /* Category headers (if using dmenu mode with categories): */
 /* #entry.category {
- *   color: #{{ .colors.oksolar.cyan }};
+ *   color: @accent-info;
  *   font-weight: bold;
- *   background-color: #{{ .colors.oksolar.base02 }};
+ *   background-color: @bg-secondary;
  *   padding: 8px 6px;
  *   margin-top: 8px;
  * } */
@@ -266,7 +259,7 @@ window {
 
 /* Search match highlighting (if enabled in config): */
 /* #text match {
- *   color: #{{ .colors.oksolar.orange }};
+ *   color: @accent-tertiary;
  *   font-weight: bold;
  *   text-decoration: underline;
  * } */
@@ -277,16 +270,16 @@ window {
  * }
  *
  * scrollbar thumb {
- *   background: #{{ .colors.oksolar.base01 }};
+ *   background: @fg-muted;
  *   border-radius: 4px;
  * }
  *
  * scrollbar thumb:hover {
- *   background: #{{ .colors.oksolar.blue }};
+ *   background: @accent-primary;
  * }
  *
  * scrollbar track {
- *   background: #{{ .colors.oksolar.base02 }};
+ *   background: @bg-secondary;
  * } */
 
 /* ========================================================================== */

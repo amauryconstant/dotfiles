@@ -45,8 +45,24 @@ for cmd in swww wallust find shuf; do
     fi
 done
 
-# Wallpaper directory
-WALLPAPER_DIR="${HOME}/Wallpapers"
+# Wallpaper directory - use current theme's wallpaper collection
+THEMES_DIR="${HOME}/.config/themes"
+CURRENT_THEME_LINK="$THEMES_DIR/current"
+
+# Determine wallpaper directory based on current theme
+if [ -L "$CURRENT_THEME_LINK" ]; then
+    THEME_WALLPAPER_DIR="$(readlink -f "$CURRENT_THEME_LINK")/wallpapers"
+    # Check if theme has wallpapers, otherwise fall back to general directory
+    if [ -d "$THEME_WALLPAPER_DIR" ] && [ "$(ls -A "$THEME_WALLPAPER_DIR" 2>/dev/null)" ]; then
+        WALLPAPER_DIR="$THEME_WALLPAPER_DIR"
+    else
+        # Fallback to general wallpapers directory
+        WALLPAPER_DIR="${HOME}/Wallpapers"
+    fi
+else
+    # Fallback if no theme is set
+    WALLPAPER_DIR="${HOME}/Wallpapers"
+fi
 
 # Transition settings (can be overridden by arguments)
 TRANSITION_TYPE="${1:-fade}"      # Default: fade (smoother than simple)
@@ -79,11 +95,10 @@ fi
 
 # Call the main set-wallpaper script with the random wallpaper
 # Pass transition settings as arguments
-# Use fallback for XDG_CONFIG_HOME in case it's not set (e.g., systemd service)
-CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-if [ ! -f "$CONFIG_HOME/scripts/media/set-wallpaper.sh" ]; then
-    {{ includeTemplate "log_error" "set-wallpaper script not found at $CONFIG_HOME/scripts/media/set-wallpaper.sh" }}
+SET_WALLPAPER_SCRIPT="$HOME/.local/lib/scripts/media/set-wallpaper.sh"
+if [ ! -f "$SET_WALLPAPER_SCRIPT" ]; then
+    {{ includeTemplate "log_error" "set-wallpaper script not found at $SET_WALLPAPER_SCRIPT" }}
     exit 1
 fi
 
-exec "$CONFIG_HOME/scripts/media/set-wallpaper.sh" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"
+exec "$SET_WALLPAPER_SCRIPT" "$WALLPAPER" "$TRANSITION_TYPE" "$TRANSITION_DURATION"

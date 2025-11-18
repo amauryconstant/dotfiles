@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_013_setup_darkman.sh.tmpl
+# Purpose: Enable and start darkman service for solar theme switching
+# Requirements: Arch Linux, darkman package
+
+{{ includeTemplate "log_start" "Setting up darkman solar automation" }}
+
+set -euo pipefail
+
+# Check if darkman is installed
+if ! command -v darkman >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "darkman not found - please run 'chezmoi apply' to install packages first" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_step" "Reloading systemd user daemon" }}
+systemctl --user daemon-reload
+
+{{ includeTemplate "log_step" "Enabling darkman.service" }}
+systemctl --user enable darkman.service
+
+{{ includeTemplate "log_step" "Starting darkman.service" }}
+systemctl --user start darkman.service
+
+# Wait a moment for service to start
+sleep 2
+
+{{ includeTemplate "log_step" "Verifying darkman service status" }}
+if systemctl --user is-active --quiet darkman.service; then
+    {{ includeTemplate "log_success" "darkman service is running" }}
+else
+    {{ includeTemplate "log_error" "darkman service failed to start" }}
+    systemctl --user status darkman.service --no-pager
+    exit 1
+fi
+
+# Make transition scripts executable
+{{ includeTemplate "log_step" "Setting transition script permissions" }}
+chmod +x "$HOME/.local/share/dark-mode.d/01-switch-theme.sh"
+chmod +x "$HOME/.local/share/light-mode.d/01-switch-theme.sh"
+
+{{ includeTemplate "log_complete" "Darkman solar automation configured" }}
+
+# Display current mode and next transition
+echo ""
+echo "Current mode: $(darkman get 2>/dev/null || echo 'unknown')"
+echo ""
+echo "Commands:"
+echo "  darkman get          - Show current mode (light/dark)"
+echo "  darkman set light    - Manually switch to light mode"
+echo "  darkman set dark     - Manually switch to dark mode"
+echo "  darkman toggle       - Toggle between light/dark"
+echo ""
+echo "Keybindings:"
+echo "  Super+Shift+Y           - Toggle light/dark mode"
+echo "  Super+Shift+Ctrl+Space  - Open theme menu"

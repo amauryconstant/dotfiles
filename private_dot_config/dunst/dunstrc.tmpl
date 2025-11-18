@@ -198,32 +198,8 @@
 # Notifications have three urgency levels: low, normal, critical
 # Each level has different colors, timeouts, and behaviors
 
-[urgency_low]
-    # Low priority: System info, completed tasks
-    # Colors: Oksolar base02 (dark) background, base0 (gray) text
-    background = "#{{ .colors.oksolar.base02 }}"
-    foreground = "#{{ .colors.oksolar.base0 }}"
-    frame_color = "#{{ .colors.oksolar.cyan }}"
-    timeout = 5
-    # icon = /path/to/icon
-
-[urgency_normal]
-    # Normal priority: Most notifications (messages, updates, etc.)
-    # Colors: Oksolar base03 (darker) background, base3 (light) text
-    background = "#{{ .colors.oksolar.base03 }}"
-    foreground = "#{{ .colors.oksolar.base3 }}"
-    frame_color = "#{{ .colors.oksolar.blue }}"
-    timeout = 10
-    # icon = /path/to/icon
-
-[urgency_critical]
-    # Critical priority: Errors, alerts, important warnings
-    # Colors: Oksolar red for high visibility and urgency
-    background = "#{{ .colors.oksolar.red }}"
-    foreground = "#{{ .colors.oksolar.base3 }}"
-    frame_color = "#{{ .colors.oksolar.orange }}"
-    timeout = 0  # Never timeout (require manual dismissal)
-    # icon = /path/to/icon
+# Import theme colors from current theme
+!include ~/.config/themes/current/dunst.conf
 
 # ============================================================================
 # Application-Specific Rules

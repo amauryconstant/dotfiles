@@ -211,6 +211,7 @@ packages:
         - hyprlock         # Official Hyprland screen locker
         - hypridle         # Official Hyprland idle daemon
         - polkit-gnome     # Polkit authentication agent (hyprpolkitagent crashes)
+        - darkman          # Solar-based light/dark mode automation
         - hyprsunset       # Blue light filter (gamma adjustment)
         - swww             # Dynamic wallpaper daemon with transitions
         - wallust-git      # Color palette generator from wallpapers (chaotic-aur)

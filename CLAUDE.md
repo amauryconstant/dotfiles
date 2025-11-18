@@ -26,7 +26,11 @@ This repository uses **location-based CLAUDE.md files**. Claude Code automatical
 │   ├── shell/CLAUDE.md                                          # Shell + Zsh config (consolidated)
 │   ├── Nextcloud/CLAUDE.md                                      # Nextcloud sync (modify_manager example)
 │   ├── git/CLAUDE.md                                            # Git config
-│   └── themes/CLAUDE.md                                         # Theme files
+│   ├── themes/CLAUDE.md                                         # Theme system (semantic variables, switching)
+│   ├── waybar/CLAUDE.md                                         # Waybar status bar
+│   ├── dunst/CLAUDE.md                                          # Dunst notifications
+│   ├── wofi/CLAUDE.md                                           # Wofi launcher
+│   └── wlogout/CLAUDE.md                                        # Wlogout power menu
 └── private_dot_local/
     ├── CLAUDE.md                                                # CLI wrappers overview
     ├── bin/CLAUDE.md                                            # CLI wrappers
@@ -123,10 +127,10 @@ chezmoi add --encrypt path/to/file      # Encrypt
 | Category | Location | Scripts | CLI Wrappers | Purpose |
 |----------|----------|---------|--------------|---------|
 | Core | `lib/scripts/core/` | 2 | 0 | Foundation libraries (UI, colors) |
-| Desktop | `lib/scripts/desktop/` | 16 | 1 | Hyprland utilities |
+| Desktop | `lib/scripts/desktop/` | 17 | 1 | Hyprland utilities, theme switching |
 | System | `lib/scripts/system/` | 6 | 4 | Maintenance & monitoring |
 | Media | `lib/scripts/media/` | 3 | 3 | Wallpaper & screenshots |
-| UI | `lib/scripts/user-interface/` | 12 | 0 | Menu system |
+| UI | `lib/scripts/user-interface/` | 13 | 1 | Menu system, theme menu |
 
 **Details**: See `private_dot_local/lib/scripts/CLAUDE.md`
 **Standards**: See `#script-standards-mandatory` in this file
@@ -397,10 +401,10 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 1. `run_once_before_*` (000-005)
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
-4. `run_once_after_*` (001-006, 999)
+4. `run_once_after_*` (001-008, 999)
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (16 total)
+### Current Scripts (18 total)
 
 **run_once_before_* (6)**:
 - 000: Preflight checks
@@ -413,13 +417,15 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 **run_onchange_before_* (1)**:
 - sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
-**run_once_after_* (6)**:
+**run_once_after_* (8)**:
 - 001: CLI generation
 - 002: System services
 - 003: Network printer
 - 004: Git tools
 - 005: Wallpaper timer
 - 006: Boot system
+- 007: Default theme setup
+- 008: Darkman service
 - 999: SSH remote switch
 
 **run_onchange_after_* (3)**:

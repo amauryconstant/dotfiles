@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Theme Menu - Interactive Theme Selector
+# Purpose: Display interactive theme selection menu using Wofi
+# Requirements: Arch Linux, Wofi, theme-switcher
+
+# Use environment variables defined in shell/env
+SCRIPT_PATH="$SCRIPTS_DIR/user-interface/theme-menu.sh"
+
+# Execute theme menu script
+if [ -f "$SCRIPT_PATH" ]; then
+    "$SCRIPT_PATH" "$@"
+else
+    echo "Error: Theme menu script not found at $SCRIPT_PATH" >&2
+    exit 1
+fi

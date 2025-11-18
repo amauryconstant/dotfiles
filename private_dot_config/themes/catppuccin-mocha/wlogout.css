@@ -1,0 +1,23 @@
+/* Catppuccin Mocha Wlogout Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #1e1e2e;      /* base - main background */
+@define-color bg-secondary #313244;    /* surface0 - elevated surfaces */
+@define-color bg-tertiary #45475a;     /* surface1 - popovers */
+@define-color bg-overlay #181825;      /* mantle - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #cdd6f4;      /* text - main text */
+@define-color fg-secondary #bac2de;    /* subtext1 - subtitles */
+@define-color fg-muted #9399b2;        /* overlay2 - disabled */
+@define-color fg-contrast #11111b;     /* crust - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #89b4fa;  /* blue - primary actions */
+@define-color accent-info #94e2d5;     /* teal - connectivity */
+@define-color accent-success #a6e3a1;  /* green - success */
+@define-color accent-warning #f9e2af;  /* yellow - warnings */
+@define-color accent-error #f38ba8;    /* red - errors */
+@define-color accent-highlight #cba6f7; /* mauve - secondary actions */
+@define-color accent-secondary #74c7ec; /* sapphire - alternative */
+@define-color accent-tertiary #fab387; /* peach - tertiary actions */

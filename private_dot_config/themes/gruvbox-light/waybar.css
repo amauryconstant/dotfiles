@@ -1,0 +1,23 @@
+/* Gruvbox Light Waybar Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #fbf1c7;      /* light0 - main background */
+@define-color bg-secondary #ebdbb2;    /* light1 - elevated surfaces */
+@define-color bg-tertiary #d5c4a1;     /* light2 - popovers */
+@define-color bg-overlay #ebdbb2;      /* light1 */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #3c3836;      /* dark1 - main text */
+@define-color fg-secondary #504945;    /* dark2 - subtitles */
+@define-color fg-muted #7c6f64;        /* dark4 - disabled */
+@define-color fg-contrast #282828;     /* dark0 - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #458588;  /* neutral_blue - primary actions */
+@define-color accent-info #689d6a;     /* neutral_aqua - connectivity */
+@define-color accent-success #98971a;  /* neutral_green - success */
+@define-color accent-warning #d79921;  /* neutral_yellow - warnings */
+@define-color accent-error #cc241d;    /* neutral_red - errors */
+@define-color accent-highlight #b16286; /* neutral_purple - secondary actions */
+@define-color accent-secondary #689d6a; /* neutral_aqua - alternative */
+@define-color accent-tertiary #d65d0e; /* neutral_orange - tertiary actions */

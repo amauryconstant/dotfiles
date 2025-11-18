@@ -303,6 +303,12 @@ bind = $mod SHIFT, A, exec, pavucontrol
 bind = $mod, N, exec, ~/.local/lib/scripts/desktop/nightlight-toggle.sh
 bind = $mod SHIFT, N, exec, ~/.local/lib/scripts/desktop/nightlight-config.sh
 
+# Theme management
+# Toggle between light/dark theme variant (Shift+Y)
+# Open theme menu (Shift+Ctrl+Space)
+bind = $mod SHIFT, Y, exec, darkman toggle
+bind = $mod SHIFT CTRL, SPACE, exec, ~/.local/lib/scripts/user-interface/theme-menu.sh
+
 # Idle lock toggle: Super + I
 # Disable automatic screen locking (presentation mode)
 bind = $mod, I, exec, ~/.local/lib/scripts/desktop/idle-toggle.sh

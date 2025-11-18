@@ -1,66 +1,71 @@
-/* ============================================================================
- * wlogout Styling
- * ============================================================================
- * Power menu styling using oksolar color scheme
- * ============================================================================ */
+/* ========================================================================== */
+/* Wlogout Stylesheet - Theme System */
+/* ========================================================================== */
+
+/* Import current theme colors */
+@import "../themes/current/wlogout.css";
+
+/*
+ * Custom CSS for Wlogout power menu with dynamic theme support.
+ * Colors are imported from the active theme.
+ */
 
 * {
     background-image: none;
+    background-color: @bg-primary;
+    color: @fg-primary;
+    border: none;
+    border-radius: 0;
     box-shadow: none;
-}
-
-window {
-    background-color: rgba(0, 45, 56, 0.80);
+    font-family: "Noto Sans";
 }
 
 button {
-    color: #{{ .colors.oksolar.base2 }};
-    background-color: #{{ .colors.oksolar.base03 }};
-    border-style: solid;
-    border-width: 2px;
-    text-shadow: none;
+    background-color: @bg-secondary;
+    color: @fg-primary;
+    border: 2px solid @bg-tertiary;
+    margin: 10px;
+    transition: box-shadow 0.2s ease-in-out;
 }
 
-button:focus, button:active, button:hover {
-    background-color: #{{ .colors.oksolar.base02 }};
+button:hover {
+    background-color: @accent-primary;
+    color: @fg-contrast;
+    border-color: @accent-secondary;
+}
+
+button:focus {
+    background-color: @accent-highlight;
+    color: @fg-contrast;
+    border-color: @accent-primary;
 }
 
 #lock {
-    border-color: #{{ .colors.oksolar.yellow }};
-}
-
-#lock:focus, #lock:active, #lock:hover {
-    color: #{{ .colors.oksolar.yellow }};
+    background-color: @accent-primary;
+    color: @fg-contrast;
 }
 
 #logout {
-    border-color: #{{ .colors.oksolar.orange }};
-}
-
-#logout:focus, #logout:active, #logout:hover {
-    color: #{{ .colors.oksolar.orange }};
+    background-color: @accent-highlight;
+    color: @fg-contrast;
 }
 
 #suspend {
-    border-color: #{{ .colors.oksolar.violet }};
+    background-color: @accent-warning;
+    color: @fg-contrast;
 }
 
-#suspend:focus, #suspend:active, #suspend:hover {
-    color: #{{ .colors.oksolar.violet }};
+#hibernate {
+    background-color: @bg-tertiary;
+    color: @fg-primary;
 }
 
 #reboot {
-    border-color: #{{ .colors.oksolar.cyan }};
-}
-
-#reboot:focus, #reboot:active, #reboot:hover {
-    color: #{{ .colors.oksolar.cyan }};
+    background-color: @accent-success;
+    color: @fg-contrast;
 }
 
 #shutdown {
-    border-color: #{{ .colors.oksolar.red }};
-}
-
-#shutdown:focus, #shutdown:active, #shutdown:hover {
-    color: #{{ .colors.oksolar.red }};
+    background-color: @accent-error;
+    color: @fg-contrast;
 }

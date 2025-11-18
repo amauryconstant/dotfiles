@@ -1,0 +1,23 @@
+/* Rose Pine Dawn Waybar Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #faf4ed;      /* base - main background */
+@define-color bg-secondary #fffaf3;    /* surface - elevated surfaces */
+@define-color bg-tertiary #f2e9e1;     /* overlay - popovers */
+@define-color bg-overlay #fffaf3;      /* surface - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #575279;      /* text - main text */
+@define-color fg-secondary #797593;    /* subtle - subtitles */
+@define-color fg-muted #9893a5;        /* muted - disabled */
+@define-color fg-contrast #faf4ed;     /* base - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #56949f;  /* foam - primary actions */
+@define-color accent-info #286983;     /* pine - connectivity */
+@define-color accent-success #56949f;  /* foam - success */
+@define-color accent-warning #ea9d34;  /* gold - warnings */
+@define-color accent-error #b4637a;    /* love - errors */
+@define-color accent-highlight #907aa9; /* iris - secondary actions */
+@define-color accent-secondary #286983; /* pine - alternative */
+@define-color accent-tertiary #d7827e; /* rose - tertiary actions */

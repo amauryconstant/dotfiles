@@ -1,0 +1,13 @@
+[Unit]
+Description=darkman daemon for solar-based theme switching
+Documentation=man:darkman(1)
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/darkman run
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

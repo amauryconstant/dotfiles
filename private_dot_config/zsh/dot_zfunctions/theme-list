@@ -1,0 +1,46 @@
+# Zsh function: theme-list
+# Display available themes with current indicator
+
+theme-list() {
+    local themes_dir="$HOME/.config/themes"
+    local current_link="$themes_dir/current"
+    local current_theme
+
+    # Get current theme
+    if [ -L "$current_link" ]; then
+        current_theme=$(readlink "$current_link" | xargs basename)
+    else
+        current_theme="none"
+    fi
+
+    echo "Available themes:"
+    echo ""
+
+    # List all themes
+    for theme_dir in "$themes_dir"/*; do
+        [ -d "$theme_dir" ] || continue
+        local theme=$(basename "$theme_dir")
+        [ "$theme" = "current" ] && continue
+
+        # Extract variant
+        local variant=""
+        if echo "$theme" | grep -q "light"; then
+            variant="(light)"
+        elif echo "$theme" | grep -q "dark"; then
+            variant="(dark)"
+        fi
+
+        # Show current indicator
+        if [ "$theme" = "$current_theme" ]; then
+            echo "  * $theme $variant  <- current"
+        else
+            echo "    $theme $variant"
+        fi
+    done
+
+    echo ""
+    echo "Switch themes: theme switch <theme-name>"
+    echo "Interactive menu: theme-menu (or Super+Shift+Ctrl+Space)"
+}
+
+theme-list "$@"

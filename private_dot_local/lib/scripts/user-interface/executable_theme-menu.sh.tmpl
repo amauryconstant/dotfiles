@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+
+# Script: theme-menu.sh
+# Purpose: Interactive theme selector using Wofi
+# Requirements: Arch Linux, Wofi, theme-switcher.sh
+
+THEMES_DIR="$HOME/.config/themes"
+CURRENT_LINK="$THEMES_DIR/current"
+
+# Get current theme name
+if [ -L "$CURRENT_LINK" ]; then
+    CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+else
+    CURRENT_THEME="none"
+fi
+
+# Build theme list with current indicator and variant info
+THEME_LIST=""
+for theme_dir in "$THEMES_DIR"/*; do
+    [ -d "$theme_dir" ] || continue
+    theme=$(basename "$theme_dir")
+    [ "$theme" = "current" ] && continue
+
+    # Extract variant (light/dark)
+    if echo "$theme" | grep -q "light"; then
+        variant="☀️  light"
+    elif echo "$theme" | grep -q "dark"; then
+        variant="🌙 dark"
+    else
+        variant="theme"
+    fi
+
+    # Add current indicator
+    if [ "$theme" = "$CURRENT_THEME" ]; then
+        prefix="✓ "
+    else
+        prefix="  "
+    fi
+
+    # Extract family name (remove -light/-dark suffix)
+    family=$(echo "$theme" | sed 's/-\(light\|dark\)$//' | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
+
+    THEME_LIST="${THEME_LIST}${prefix}${family} (${variant})|${theme}\n"
+done
+
+# Show menu and get selection
+SELECTED=$(echo -e "$THEME_LIST" | wofi --dmenu --prompt "Select Theme" --width 400 --height 300 | cut -d'|' -f2)
+
+# Switch to selected theme
+if [ -n "$SELECTED" ]; then
+    ~/.local/lib/scripts/desktop/theme-switcher.sh switch "$SELECTED"
+fi

@@ -1,0 +1,15 @@
+# Darkman Configuration
+# Automatic light/dark mode switching based on solar time
+
+# Geographic location for sunrise/sunset calculation
+# Paris, France coordinates
+lat: 48.8566   # Paris latitude
+lng: 2.3522    # Paris longitude
+
+# Disable geoclue automatic location detection
+# We use manual location configuration for privacy
+usegeoclue: false
+
+# Enable D-Bus server for programmatic control
+# Allows querying and setting mode via: darkman get, darkman set
+dbusserver: true

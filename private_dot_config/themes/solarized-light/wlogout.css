@@ -1,0 +1,23 @@
+/* Solarized Light Wlogout Theme - Semantic Variables */
+
+/* Background Hierarchy */
+@define-color bg-primary #fdf6e3;      /* base3 - main background */
+@define-color bg-secondary #eee8d5;    /* base2 - elevated surfaces */
+@define-color bg-tertiary #93a1a1;     /* base1 - popovers */
+@define-color bg-overlay #eee8d5;      /* base2 - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #657b83;      /* base00 - main text */
+@define-color fg-secondary #586e75;    /* base01 - subtitles */
+@define-color fg-muted #93a1a1;        /* base1 - disabled */
+@define-color fg-contrast #002b36;     /* base03 - high contrast on colored backgrounds */
+
+/* Accent Colors - Semantic Roles */
+@define-color accent-primary #268bd2;  /* blue - primary actions */
+@define-color accent-info #2aa198;     /* cyan - connectivity */
+@define-color accent-success #859900;  /* green - success */
+@define-color accent-warning #b58900;  /* yellow - warnings */
+@define-color accent-error #dc322f;    /* red - errors */
+@define-color accent-highlight #6c71c4; /* violet - secondary actions */
+@define-color accent-secondary #2aa198; /* cyan - alternative */
+@define-color accent-tertiary #cb4b16; /* orange - tertiary actions */

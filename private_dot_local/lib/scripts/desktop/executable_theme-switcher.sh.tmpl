@@ -1,0 +1,154 @@
+#!/usr/bin/env sh
+
+# Script: theme-switcher.sh
+# Purpose: Switch between themes and reload applications
+# Requirements: Arch Linux, Hyprland, Waybar, Dunst, Ghostty
+
+THEMES_DIR="$HOME/.config/themes"
+CURRENT_LINK="$THEMES_DIR/current"
+
+# Display usage information
+show_usage() {
+    cat <<EOF
+Usage: theme-switcher.sh <command> [theme-name]
+
+Commands:
+    switch <theme-name>    Switch to the specified theme
+    list                   List all available themes
+    current                Show the currently active theme
+
+Available themes:
+$(list_themes | sed 's/^/    /')
+
+EOF
+}
+
+# List all available themes
+list_themes() {
+    for theme_dir in "$THEMES_DIR"/*; do
+        [ -d "$theme_dir" ] || continue
+        theme=$(basename "$theme_dir")
+        [ "$theme" = "current" ] && continue
+        echo "$theme"
+    done | sort
+}
+
+# Get current theme name
+get_current_theme() {
+    if [ -L "$CURRENT_LINK" ]; then
+        readlink "$CURRENT_LINK" | xargs basename
+    else
+        echo "none"
+    fi
+}
+
+# Validate theme exists
+validate_theme() {
+    theme_name="$1"
+    theme_path="$THEMES_DIR/$theme_name"
+
+    if [ ! -d "$theme_path" ]; then
+        echo "Error: Theme '$theme_name' does not exist" >&2
+        echo "" >&2
+        echo "Available themes:" >&2
+        list_themes | sed 's/^/  /' >&2
+        return 1
+    fi
+    return 0
+}
+
+# Reload applications to pick up new theme
+reload_applications() {
+    # Reload Hyprland configuration
+    if command -v hyprctl >/dev/null 2>&1; then
+        hyprctl reload >/dev/null 2>&1
+    fi
+
+    # Reload Waybar
+    if pgrep -x waybar >/dev/null; then
+        killall -SIGUSR2 waybar 2>/dev/null
+    fi
+
+    # Restart Dunst (it auto-restarts)
+    if pgrep -x dunst >/dev/null; then
+        killall dunst 2>/dev/null
+    fi
+
+    # Reload Ghostty
+    if pgrep -x ghostty >/dev/null; then
+        killall -SIGUSR2 ghostty 2>/dev/null
+    fi
+}
+
+# Switch to a new theme
+switch_theme() {
+    theme_name="$1"
+
+    if [ -z "$theme_name" ]; then
+        echo "Error: No theme specified" >&2
+        show_usage
+        return 1
+    fi
+
+    # Validate theme exists
+    validate_theme "$theme_name" || return 1
+
+    theme_path="$THEMES_DIR/$theme_name"
+    current_theme=$(get_current_theme)
+
+    # Check if already on this theme
+    if [ "$current_theme" = "$theme_name" ]; then
+        echo "Already using theme: $theme_name"
+        return 0
+    fi
+
+    # Update symlink
+    rm -f "$CURRENT_LINK"
+    ln -s "$theme_path" "$CURRENT_LINK"
+
+    echo "Switched to theme: $theme_name"
+
+    # Select random wallpaper from new theme if wallpapers exist
+    wallpaper_dir="$theme_path/wallpapers"
+    if [ -d "$wallpaper_dir" ] && [ "$(ls -A "$wallpaper_dir" 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$')" ]; then
+        wallpaper=$(find "$wallpaper_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
+        if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
+            # Call set-wallpaper script if it exists
+            if [ -x "$HOME/.local/lib/scripts/media/set-wallpaper.sh" ]; then
+                "$HOME/.local/lib/scripts/media/set-wallpaper.sh" "$wallpaper" fade 2 >/dev/null 2>&1 &
+            fi
+        fi
+    fi
+
+    # Reload applications
+    reload_applications
+
+    # Send desktop notification
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "Theme Changed" "Switched to $theme_name" -t 3000 2>/dev/null
+    fi
+}
+
+# Main command dispatcher
+main() {
+    command="$1"
+    shift
+
+    case "$command" in
+        switch)
+            switch_theme "$@"
+            ;;
+        list)
+            list_themes
+            ;;
+        current)
+            get_current_theme
+            ;;
+        *)
+            show_usage
+            return 1
+            ;;
+    esac
+}
+
+main "$@"
