@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
 # Script: random-wallpaper.sh
-# Purpose: Select and set a random wallpaper from ~/Wallpapers directory
-# Requirements: Arch Linux, swww, wallust, find, shuf
+# Purpose: Select and set a random wallpaper from current theme's collection
+# Requirements: Arch Linux, swww, find, shuf
 
 {{ includeTemplate "log_start" "Selecting random wallpaper" }}
 
@@ -38,42 +38,43 @@ fi
 echo "$(date +%s)" > "$LOCK_FILE"
 
 # Pre-flight checks for required dependencies
-for cmd in swww wallust find shuf; do
+for cmd in swww find shuf; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         {{ includeTemplate "log_error" "Required command not found: $cmd" }}
         exit 1
     fi
 done
 
-# Wallpaper directory - use current theme's wallpaper collection
-THEMES_DIR="${HOME}/.config/themes"
-CURRENT_THEME_LINK="$THEMES_DIR/current"
+# Wallpaper directory - organized by theme
+WALLPAPERS_ROOT="${HOME}/.config/wallpapers"
+CURRENT_THEME_LINK="${HOME}/.config/themes/current"
 
 # Determine wallpaper directory based on current theme
-if [ -L "$CURRENT_THEME_LINK" ]; then
-    THEME_WALLPAPER_DIR="$(readlink -f "$CURRENT_THEME_LINK")/wallpapers"
-    # Check if theme has wallpapers, otherwise fall back to general directory
-    if [ -d "$THEME_WALLPAPER_DIR" ] && [ "$(ls -A "$THEME_WALLPAPER_DIR" 2>/dev/null)" ]; then
-        WALLPAPER_DIR="$THEME_WALLPAPER_DIR"
-    else
-        # Fallback to general wallpapers directory
-        WALLPAPER_DIR="${HOME}/Wallpapers"
-    fi
-else
-    # Fallback if no theme is set
-    WALLPAPER_DIR="${HOME}/Wallpapers"
+if [ ! -L "$CURRENT_THEME_LINK" ]; then
+    {{ includeTemplate "log_error" "No theme is currently set (symlink $CURRENT_THEME_LINK not found)" }}
+    exit 1
+fi
+
+# Extract theme name from symlink target
+THEME_NAME="$(basename "$(readlink -f "$CURRENT_THEME_LINK")")"
+WALLPAPER_DIR="$WALLPAPERS_ROOT/$THEME_NAME"
+
+# Validate wallpaper directory exists and is not empty
+if [ ! -d "$WALLPAPER_DIR" ]; then
+    {{ includeTemplate "log_error" "Theme wallpaper directory not found: $WALLPAPER_DIR" }}
+    exit 1
+fi
+
+if [ -z "$(ls -A "$WALLPAPER_DIR" 2>/dev/null)" ]; then
+    {{ includeTemplate "log_error" "No wallpapers found in theme directory: $WALLPAPER_DIR" }}
+    {{ includeTemplate "log_info" "Run 'chezmoi apply --refresh-externals' to download wallpapers" }}
+    exit 1
 fi
 
 # Transition settings (can be overridden by arguments)
 TRANSITION_TYPE="${1:-fade}"      # Default: fade (smoother than simple)
 TRANSITION_DURATION="${2:-2}"     # Default: 2 seconds
 TRANSITION_FPS="${3:-30}"         # Default: 30 fps
-
-# Validate wallpaper directory exists
-if [ ! -d "$WALLPAPER_DIR" ]; then
-    {{ includeTemplate "log_error" "Wallpaper directory not found: $WALLPAPER_DIR" }}
-    exit 1
-fi
 
 {{ includeTemplate "log_step" "Finding available wallpapers" }}
 

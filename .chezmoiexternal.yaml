@@ -1,0 +1,14 @@
+# External dependencies for chezmoi-managed dotfiles
+
+# Wallpaper collection - organized by theme
+".config/wallpapers":
+  type: "git-repo"
+  url: "git@gitlab.com:amoconst/wallpapers.git"
+  refreshPeriod: "168h"  # Refresh weekly
+  clone:
+    args:
+      - "--depth"
+      - "1"  # Shallow clone (save bandwidth/space)
+  pull:
+    args:
+      - "--ff-only"  # Only fast-forward pulls (avoid merge conflicts)

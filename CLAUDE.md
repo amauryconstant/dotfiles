@@ -401,10 +401,10 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 1. `run_once_before_*` (000-005)
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
-4. `run_once_after_*` (001-008, 999)
+4. `run_once_after_*` (001-009, 999)
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (18 total)
+### Current Scripts (19 total)
 
 **run_once_before_* (6)**:
 - 000: Preflight checks
@@ -417,7 +417,7 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 **run_onchange_before_* (1)**:
 - sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
-**run_once_after_* (8)**:
+**run_once_after_* (9)**:
 - 001: CLI generation
 - 002: System services
 - 003: Network printer
@@ -426,6 +426,7 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 - 006: Boot system
 - 007: Default theme setup
 - 008: Darkman service
+- 009: Wallpaper setup
 - 999: SSH remote switch
 
 **run_onchange_after_* (3)**:

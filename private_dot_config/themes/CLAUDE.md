@@ -60,7 +60,6 @@ catppuccin-mocha/
 └── wofi.css             # Launcher styling
 ```
 
-**TODO**: Hyprlock integration - Theme files exist but not yet connected to main hyprlock config. Add `source = ~/.config/themes/current/hyprlock.conf` to enable.
 
 ### Application Integration
 
@@ -408,22 +407,37 @@ darkman toggle        # Toggle between light/dark
 
 ### Wallpaper System
 
-**Source**: `~/Pictures/wallpapers/` (symlinked or moved)
-**Categories**: landscapes/, abstract/, minimal/, dark/, light/
+**Architecture**: Theme-integrated wallpaper collections (color-matched per theme)
+**Storage**: `~/.config/wallpapers/{theme}/` → direct from chezmoi external (no symlinks)
+**Distribution**: Git repository via chezmoi external (`.chezmoiexternal.yaml`)
 **Formats**: JPG, PNG, WEBP
-**Resolution**: Varied (wallust scales)
 
-**Random selection**:
+**Wallpaper selection**:
 ```bash
-random-wallpaper    # Selects from ~/Pictures/wallpapers/**/*.{jpg,png,webp}
-```
-
-**Manual selection**:
-```bash
+random-wallpaper    # Selects from current theme's wallpaper directory
 set-wallpaper /path/to/wallpaper.jpg
 ```
 
-**Color extraction**: wallust analyzes selected wallpaper → 9 color templates
+**Rotation**: Systemd timer cycles through current theme's collection only (30-minute interval)
+
+**External repository approach**:
+- Repository: Personal git repo with theme subdirectories
+- Organization: One-time color-matching using `~/.local/lib/scripts/media/organize-wallpapers-by-color.sh`
+- Distribution: Chezmoi pulls entire repo directly to `~/.config/wallpapers/`
+- Update: `chezmoi update --refresh-externals` pulls latest wallpapers
+- Benefits: Lightweight dotfiles repo, version-controlled wallpapers, reproducible
+
+**Color matching** (one-time organization):
+- Wallust extracts dominant colors from each wallpaper (16-color palette)
+- Python script calculates Delta E (LAB color space) distance to theme palettes
+- Round-robin assignment ensures balanced distribution across themes
+- Wallpapers assigned to best-matching theme (threshold: 50/100, configurable via `--threshold`)
+- Unmatched wallpapers saved for manual review
+
+**Color generation**: Wallust is **intentionally disabled** in favor of static theme colors
+- Rationale: Consistent semantic variables across applications
+- Usage: Color matching for organization only (not runtime)
+- Alternative: Enable wallust for dynamic extraction if desired (see set-wallpaper.sh comments)
 
 ### Icon Themes
 

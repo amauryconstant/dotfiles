@@ -1,0 +1,677 @@
+#!/usr/bin/env bash
+# Script: organize-wallpapers-by-color.sh
+# Purpose: Organize wallpapers by color similarity to themes using wallust
+# Location: ~/.local/lib/scripts/media/organize-wallpapers-by-color.sh
+# Requirements: Arch Linux, wallust, imagemagick (identify), python3
+
+# Source UI library (before set -u to avoid unbound variable errors)
+UI_LIB="$HOME/.local/lib/scripts/core/gum-ui.sh"
+if [ ! -f "$UI_LIB" ]; then
+    echo "Error: UI library not found at $UI_LIB"
+    exit 1
+fi
+. "$UI_LIB"
+
+# Enable strict error handling (without -u due to gum-ui compatibility)
+# set -eo pipefail
+
+# Default configuration
+DEFAULT_SOURCE_DIR="$HOME/Wallpapers"
+DEFAULT_OUTPUT_DIR="$HOME/.config/wallpapers"
+DEFAULT_THRESHOLD=50
+THEME_DIR="$HOME/.config/themes"
+
+# Parse command-line arguments
+show_help() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Organize wallpapers by color similarity to themes using automated color matching.
+
+OPTIONS:
+    -s, --source DIR      Source wallpaper directory (default: ~/Wallpapers)
+    -o, --output DIR      Output directory (default: ~/.config/wallpapers)
+    -t, --threshold NUM   Match quality threshold 0-100 (default: 50)
+                         Higher values = more inclusive matching
+    -h, --help           Show this help message
+
+EXAMPLES:
+    # Use defaults
+    $(basename "$0")
+
+    # Custom source directory
+    $(basename "$0") --source ~/Pictures/Wallpapers
+
+    # More strict matching
+    $(basename "$0") --threshold 60
+
+    # Full customization
+    $(basename "$0") -s ~/Pictures -o ~/wallpaper-output -t 55
+
+WORKFLOW:
+    1. Analyzes each wallpaper's color palette using wallust
+    2. Compares against theme palettes using Delta E (LAB color space)
+    3. Assigns wallpapers via round-robin algorithm for balanced distribution
+    4. Creates git-ready repository structure with READMEs
+
+OUTPUT STRUCTURE:
+    {output_dir}/
+    ├── catppuccin-latte/
+    ├── catppuccin-mocha/
+    ├── rose-pine-dawn/
+    ├── rose-pine-moon/
+    ├── gruvbox-light/
+    ├── gruvbox-dark/
+    ├── solarized-light/
+    ├── solarized-dark/
+    └── unassigned/          # Wallpapers below threshold
+
+NEXT STEPS:
+    After running, initialize git repository and push to remote:
+
+    cd {output_dir}
+    git init
+    git add .
+    git commit -m "Initial color-matched wallpaper collection"
+    git remote add origin <your-repo-url>
+    git push -u origin main
+
+    Then update .chezmoiexternal.yaml with your repository URL.
+
+EOF
+}
+
+# Initialize with defaults
+SOURCE_DIR="$DEFAULT_SOURCE_DIR"
+OUTPUT_DIR="$DEFAULT_OUTPUT_DIR"
+MATCH_THRESHOLD="$DEFAULT_THRESHOLD"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--source)
+            SOURCE_DIR="$2"
+            shift 2
+            ;;
+        -o|--output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -t|--threshold)
+            MATCH_THRESHOLD="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            ui_error "Unknown option: $1"
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Derived configuration
+UNASSIGNED_DIR="$OUTPUT_DIR/unassigned"
+
+# Theme list
+THEMES=(
+    "catppuccin-latte"
+    "catppuccin-mocha"
+    "rose-pine-dawn"
+    "rose-pine-moon"
+    "gruvbox-light"
+    "gruvbox-dark"
+    "solarized-light"
+    "solarized-dark"
+)
+
+# Validate dependencies
+for cmd in wallust identify python3; do
+    if ! command -v "$cmd" &> /dev/null; then
+        ui_error "Required command not found: $cmd"
+        exit 1
+    fi
+done
+
+# Validate source directory
+if [ ! -d "$SOURCE_DIR" ]; then
+    ui_error "Source directory not found: $SOURCE_DIR"
+    exit 1
+fi
+
+# Check if wallpapers exist
+WALLPAPER_COUNT=$(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | wc -l)
+if [ "$WALLPAPER_COUNT" -eq 0 ]; then
+    ui_error "No wallpapers found in $SOURCE_DIR"
+    exit 1
+fi
+
+# Cleanup existing output directory
+if [ -d "$OUTPUT_DIR" ]; then
+    ui_warning "Output directory exists: $OUTPUT_DIR"
+    if ui_confirm "Remove and start fresh?"; then
+        rm -rf "$OUTPUT_DIR"
+    else
+        ui_info "Exiting. Remove $OUTPUT_DIR manually if needed."
+        exit 0
+    fi
+fi
+
+ui_title "Wallpaper Color Analyzer"
+ui_info "Source: $SOURCE_DIR ($WALLPAPER_COUNT wallpapers)"
+ui_info "Output: $OUTPUT_DIR"
+ui_info "Threshold: $MATCH_THRESHOLD/100"
+ui_spacer
+
+# Create output structure
+ui_step "Creating directory structure"
+mkdir -p "$OUTPUT_DIR" "$UNASSIGNED_DIR"
+for theme in "${THEMES[@]}"; do
+    mkdir -p "$OUTPUT_DIR/$theme"
+done
+ui_success "Directory structure created"
+ui_spacer
+
+# Extract theme color palettes
+ui_step "Extracting theme color palettes"
+declare -A THEME_ACCENT_COLORS
+
+for theme in "${THEMES[@]}"; do
+    theme_config="$THEME_DIR/$theme/hyprland.conf"
+    if [ ! -f "$theme_config" ]; then
+        ui_warning "Theme config not found: $theme_config"
+        continue
+    fi
+
+    # Extract hex colors from multiple formats:
+    # 1. rgb(RRGGBB) or rgba(RRGGBB) - Catppuccin style
+    # 2. 0xffRRGGBB or 0xRRGGBBaa - Rose Pine style (strip 0xff prefix and alpha)
+    # 3. Standalone 6-char hex - Gruvbox *Alpha variables
+    # Extract in ORDER to preserve light/dark differentiation (e.g., Solarized)
+    # First 4 colors are typically base colors (backgrounds) - critical for light/dark distinction
+    colors=$(grep -oP '(?<=rgb\()[a-fA-F0-9]{6}|(?<=rgba\()[a-fA-F0-9]{6}|(?<=0xff)[a-fA-F0-9]{6}|(?<= = )[a-fA-F0-9]{6}(?=\s*$)' "$theme_config")
+
+    # Weight: Repeat first 4 colors (base tones) to give them more importance in matching
+    # This helps differentiate light/dark variants (e.g., solarized-light vs solarized-dark)
+    first_four=$(echo "$colors" | head -4)
+    colors=$(echo -e "$first_four\n$first_four\n$colors")
+
+    THEME_ACCENT_COLORS[$theme]="$colors"
+
+    color_count=$(echo "$colors" | wc -w)
+    ui_text "$theme: $color_count colors extracted" "$UI_MUTED"
+done
+ui_spacer
+
+# Python color distance calculator
+PYTHON_SCRIPT=$(cat <<'PYTHON_EOF'
+import sys
+import math
+
+def hex_to_rgb(hex_color):
+    """Convert hex to RGB (0-1 range)"""
+    hex_color = hex_color.strip().lstrip('#')
+    if len(hex_color) != 6:
+        return None
+    try:
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        return (r, g, b)
+    except ValueError:
+        return None
+
+def rgb_to_lab(rgb):
+    """Convert RGB to LAB color space (simplified)"""
+    r, g, b = rgb
+
+    # Convert to linear RGB
+    def to_linear(c):
+        if c <= 0.04045:
+            return c / 12.92
+        return ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = map(to_linear, (r, g, b))
+
+    # Convert to XYZ (D65 illuminant)
+    x = r * 0.4124564 + g * 0.3575761 + b * 0.1804375
+    y = r * 0.2126729 + g * 0.7151522 + b * 0.0721750
+    z = r * 0.0193339 + g * 0.1191920 + b * 0.9503041
+
+    # Convert to LAB
+    def f(t):
+        if t > 0.008856:
+            return t ** (1.0/3.0)
+        return 7.787 * t + 16.0/116.0
+
+    xn, yn, zn = 0.95047, 1.00000, 1.08883
+
+    l = 116 * f(y / yn) - 16
+    a = 500 * (f(x / xn) - f(y / yn))
+    b_val = 200 * (f(y / yn) - f(z / zn))
+
+    return (l, a, b_val)
+
+def color_distance(hex1, hex2):
+    """Calculate Delta E distance between two colors"""
+    rgb1 = hex_to_rgb(hex1)
+    rgb2 = hex_to_rgb(hex2)
+
+    if rgb1 is None or rgb2 is None:
+        return 999.0
+
+    try:
+        lab1 = rgb_to_lab(rgb1)
+        lab2 = rgb_to_lab(rgb2)
+
+        # Euclidean distance in LAB space
+        delta_l = lab1[0] - lab2[0]
+        delta_a = lab1[1] - lab2[1]
+        delta_b = lab1[2] - lab2[2]
+
+        return math.sqrt(delta_l**2 + delta_a**2 + delta_b**2)
+    except:
+        return 999.0
+
+def palette_distance(wallpaper_colors_str, theme_colors_str):
+    """Calculate average minimum distance between palettes with lightness weighting"""
+    wp_colors = [c.strip() for c in wallpaper_colors_str.split() if c.strip()]
+    theme_colors = [c.strip() for c in theme_colors_str.split() if c.strip()]
+
+    if not wp_colors or not theme_colors:
+        return 999.0
+
+    # Calculate average lightness of both palettes
+    wp_labs = [rgb_to_lab(hex_to_rgb(c)) for c in wp_colors if hex_to_rgb(c)]
+    theme_labs = [rgb_to_lab(hex_to_rgb(c)) for c in theme_colors if hex_to_rgb(c)]
+
+    if not wp_labs or not theme_labs:
+        return 999.0
+
+    wp_avg_lightness = sum(lab[0] for lab in wp_labs) / len(wp_labs)
+    theme_avg_lightness = sum(lab[0] for lab in theme_labs) / len(theme_labs)
+
+    # Lightness penalty (helps distinguish light vs dark themes)
+    lightness_penalty = abs(wp_avg_lightness - theme_avg_lightness) * 0.5
+
+    total_distance = 0
+    count = 0
+
+    # For each wallpaper color, find closest theme color
+    for wp_color in wp_colors:
+        min_dist = min(color_distance(wp_color, tc) for tc in theme_colors)
+        total_distance += min_dist
+        count += 1
+
+    # Return average distance + lightness penalty
+    avg_distance = total_distance / count if count > 0 else 999.0
+    return avg_distance + lightness_penalty
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("999.0")
+        sys.exit(0)
+
+    wallpaper_palette = sys.argv[1]
+    theme_palette = sys.argv[2]
+
+    distance = palette_distance(wallpaper_palette, theme_palette)
+    print(f"{distance:.2f}")
+PYTHON_EOF
+)
+
+# Process each wallpaper
+ui_title "Analyzing Wallpapers"
+ui_info "This may take a while..."
+ui_spacer
+
+# Statistics and data structures
+declare -A THEME_COUNTS
+for theme in "${THEMES[@]}"; do
+    THEME_COUNTS[$theme]=0
+done
+UNASSIGNED_COUNT=0
+PROCESSED=0
+
+# Wallpaper rankings: stores "theme1:distance1 theme2:distance2 ..." for each wallpaper
+declare -A WALLPAPER_RANKINGS
+declare -A WALLPAPER_PATHS  # Maps filename to full path
+
+# Temporary directory for wallust output
+TEMP_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_DIR" EXIT
+
+# Get list of wallpapers
+mapfile -t WALLPAPERS < <(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | sort)
+
+for wallpaper in "${WALLPAPERS[@]}"; do
+    filename=$(basename "$wallpaper")
+    PROCESSED=$((PROCESSED + 1))
+
+    ui_step "[$PROCESSED/$WALLPAPER_COUNT] $filename"
+
+    # Extract colors with wallust (using resized backend - full has bugs)
+    # --skip-sequences prevents wallust from changing terminal colors
+    if ! wallust run --quiet --skip-sequences "$wallpaper" --backend resized 2>/dev/null; then
+        ui_warning "  Failed to analyze, skipping"
+        continue
+    fi
+
+    # Find the most recent wallust cache directory (wallust creates hash-named dirs)
+    WALLUST_CACHE="$HOME/.cache/wallust"
+    latest_cache=$(ls -t "$WALLUST_CACHE" | grep -v "^sequences$" | head -n 1)
+
+    if [ -z "$latest_cache" ]; then
+        ui_warning "  No cache directory found, skipping"
+        continue
+    fi
+
+    # Find the color file (backend name varies: Resized, Full, etc.)
+    colors_file=$(find "$WALLUST_CACHE/$latest_cache" -name "*SoftDark16" -o -name "*SoftLight16" | head -n 1)
+
+    # Fallback: try any JSON-like file
+    if [ -z "$colors_file" ] || [ ! -f "$colors_file" ]; then
+        colors_file=$(find "$WALLUST_CACHE/$latest_cache" -type f -size +100c | grep -v "Resized$\|Full$" | head -n 1)
+    fi
+
+    if [ ! -f "$colors_file" ]; then
+        ui_warning "  Colors file not found, skipping"
+        continue
+    fi
+
+    # Extract hex colors from JSON (remove # prefix)
+    wallpaper_colors=$(grep -oP '(?<=#)[a-fA-F0-9]{6}' "$colors_file" | sort -u | tr '\n' ' ')
+
+    if [ -z "$wallpaper_colors" ]; then
+        ui_warning "  No colors extracted, skipping"
+        continue
+    fi
+
+    # Calculate distance to ALL themes (store for later ranking-based assignment)
+    rankings=""
+
+    for theme in "${THEMES[@]}"; do
+        theme_colors="${THEME_ACCENT_COLORS[$theme]}"
+
+        if [ -z "$theme_colors" ]; then
+            continue
+        fi
+
+        # Calculate palette distance using Python (no balancing penalty yet)
+        distance=$(python3 -c "$PYTHON_SCRIPT" "$wallpaper_colors" "$theme_colors")
+
+        # Store as "theme:distance" pairs
+        if [ -z "$rankings" ]; then
+            rankings="$theme:$distance"
+        else
+            rankings="$rankings $theme:$distance"
+        fi
+    done
+
+    # Store rankings and path for this wallpaper
+    WALLPAPER_RANKINGS["$filename"]="$rankings"
+    WALLPAPER_PATHS["$filename"]="$wallpaper"
+
+    # Show progress (just the best match for now)
+    best_entry=$(echo "$rankings" | tr ' ' '\n' | sort -t: -k2 -n | head -1)
+    best_theme=$(echo "$best_entry" | cut -d: -f1)
+    best_distance=$(echo "$best_entry" | cut -d: -f2)
+    ui_text "  Best: $best_theme ($best_distance)" "$UI_MUTED"
+
+    ui_spacer
+done
+
+# Round-robin assignment phase
+ui_separator
+ui_title "Round-Robin Assignment"
+ui_info "Balancing wallpapers across themes..."
+ui_spacer
+
+# Calculate target quota per theme (with tolerance)
+TARGET_QUOTA=$(awk -v total="$PROCESSED" 'BEGIN { printf "%d", total / 8 }')
+QUOTA_TOLERANCE=$(awk -v quota="$TARGET_QUOTA" 'BEGIN { printf "%d", quota * 0.2 }')  # ±20%
+ui_info "Target per theme: $TARGET_QUOTA ±$QUOTA_TOLERANCE wallpapers"
+ui_spacer
+
+# Track assigned wallpapers
+declare -A ASSIGNED_WALLPAPERS
+
+# Round-robin assignment loop
+MAX_ROUNDS=50  # Safety limit
+for round in $(seq 1 $MAX_ROUNDS); do
+    assignments_this_round=0
+
+    for theme in "${THEMES[@]}"; do
+        current_count=${THEME_COUNTS[$theme]}
+
+        # Skip if theme reached quota
+        if [ "$current_count" -ge $((TARGET_QUOTA + QUOTA_TOLERANCE)) ]; then
+            continue
+        fi
+
+        # Find best available wallpaper for this theme
+        best_wallpaper=""
+        best_distance=999.0
+
+        for filename in "${!WALLPAPER_RANKINGS[@]}"; do
+            # Skip if already assigned
+            if [ -n "${ASSIGNED_WALLPAPERS[$filename]:-}" ]; then
+                continue
+            fi
+
+            # Get distance for this theme
+            rankings="${WALLPAPER_RANKINGS[$filename]}"
+            distance=$(echo "$rankings" | tr ' ' '\n' | grep "^$theme:" | cut -d: -f2)
+
+            if [ -z "$distance" ]; then
+                continue
+            fi
+
+            # Check if below threshold (convert distance to score)
+            score=$(awk -v d="$distance" 'BEGIN { printf "%.2f", 100 - d }')
+            if ! awk -v s="$score" -v t="$MATCH_THRESHOLD" 'BEGIN { exit !(s >= t) }'; then
+                continue  # Quality too low
+            fi
+
+            # Check if this is the best match for this theme
+            if awk -v d="$distance" -v bd="$best_distance" 'BEGIN { exit !(d < bd) }'; then
+                best_distance=$distance
+                best_wallpaper=$filename
+            fi
+        done
+
+        # Assign if found a good match
+        if [ -n "$best_wallpaper" ]; then
+            wallpaper_path="${WALLPAPER_PATHS[$best_wallpaper]}"
+            cp "$wallpaper_path" "$OUTPUT_DIR/$theme/"
+            ASSIGNED_WALLPAPERS[$best_wallpaper]=1
+            THEME_COUNTS[$theme]=$((THEME_COUNTS[$theme] + 1))
+            assignments_this_round=$((assignments_this_round + 1))
+        fi
+    done
+
+    # Break if no assignments this round
+    if [ "$assignments_this_round" -eq 0 ]; then
+        ui_info "Round $round: No more valid assignments"
+        break
+    fi
+
+    ui_text "Round $round: Assigned $assignments_this_round wallpapers" "$UI_MUTED"
+done
+ui_spacer
+
+# Assign remaining unassigned wallpapers to unassigned directory
+for filename in "${!WALLPAPER_RANKINGS[@]}"; do
+    if [ -z "${ASSIGNED_WALLPAPERS[$filename]:-}" ]; then
+        wallpaper_path="${WALLPAPER_PATHS[$filename]}"
+        cp "$wallpaper_path" "$UNASSIGNED_DIR/"
+        UNASSIGNED_COUNT=$((UNASSIGNED_COUNT + 1))
+    fi
+done
+
+# Create READMEs
+for theme in "${THEMES[@]}"; do
+    cat > "$OUTPUT_DIR/$theme/README.md" <<EOF
+# $theme Wallpapers
+
+Color-matched wallpapers for the $theme theme.
+
+**Assignment Method**: Automatic color palette matching using wallust
+**Match Count**: ${THEME_COUNTS[$theme]} wallpapers
+**Match Threshold**: $MATCH_THRESHOLD (0-100 scale)
+
+These wallpapers were automatically selected based on color similarity to the theme's palette.
+EOF
+done
+
+cat > "$UNASSIGNED_DIR/README.md" <<EOF
+# Unassigned Wallpapers
+
+Wallpapers that did not match any theme above the threshold.
+
+**Count**: $UNASSIGNED_COUNT wallpapers
+**Threshold**: $MATCH_THRESHOLD (0-100 scale)
+
+These wallpapers can be:
+1. Manually assigned to themes if desired
+2. Excluded from the collection
+3. Used to adjust threshold and re-run
+
+To adjust threshold: Re-run script with --threshold option
+EOF
+
+# Main README
+cat > "$OUTPUT_DIR/README.md" <<EOF
+# Wallpaper Collection
+
+Personal wallpaper collection organized by theme using automated color matching.
+
+## Organization Method
+
+Wallpapers were automatically assigned using **color palette analysis**:
+
+1. **Color Extraction**: wallust analyzes each wallpaper's dominant colors
+2. **Theme Comparison**: Colors compared against each theme's palette
+3. **Distance Calculation**: Delta E (LAB color space) perceptual difference
+4. **Round-Robin Assignment**: Balanced distribution with quality threshold
+
+## Statistics
+
+**Total Wallpapers**: $WALLPAPER_COUNT
+**Match Threshold**: $MATCH_THRESHOLD (0-100 scale)
+**Source Directory**: $SOURCE_DIR
+
+### Theme Distribution
+
+$(for theme in "${THEMES[@]}"; do
+    count=${THEME_COUNTS[$theme]}
+    echo "- **$theme**: $count wallpapers"
+done)
+
+### Unassigned
+
+- **unassigned**: $UNASSIGNED_COUNT wallpapers (below threshold)
+
+## Repository Structure
+
+\`\`\`
+wallpapers/
+├── catppuccin-latte/
+├── catppuccin-mocha/
+├── gruvbox-dark/
+├── gruvbox-light/
+├── rose-pine-dawn/
+├── rose-pine-moon/
+├── solarized-dark/
+├── solarized-light/
+└── unassigned/
+\`\`\`
+
+## Usage
+
+This repository is pulled automatically by chezmoi via \`.chezmoiexternal.yaml\`.
+
+Wallpapers are accessed from \`~/.config/wallpapers/{theme}/\`.
+
+## Maintenance
+
+To re-analyze wallpapers:
+
+\`\`\`bash
+# Re-run with same settings
+~/.local/lib/scripts/media/organize-wallpapers-by-color.sh
+
+# Adjust threshold for more/less inclusive matching
+~/.local/lib/scripts/media/organize-wallpapers-by-color.sh --threshold 60
+
+# Custom source directory
+~/.local/lib/scripts/media/organize-wallpapers-by-color.sh --source ~/Pictures/Wallpapers
+\`\`\`
+
+After re-running:
+1. Review unassigned directory
+2. Commit and push changes to this repository
+EOF
+
+# Summary
+ui_separator
+ui_title "Color Matching Complete!"
+ui_spacer
+
+ui_success "Processed: $PROCESSED wallpapers"
+ui_spacer
+
+ui_info "Theme Distribution:"
+for theme in "${THEMES[@]}"; do
+    count=${THEME_COUNTS[$theme]}
+    if [ "$count" -gt 0 ]; then
+        ui_success "  $theme: $count wallpapers"
+    else
+        ui_text "  $theme: 0 wallpapers" "$UI_MUTED"
+    fi
+done
+ui_spacer
+
+if [ "$UNASSIGNED_COUNT" -gt 0 ]; then
+    ui_warning "Unassigned: $UNASSIGNED_COUNT wallpapers"
+    ui_info "Review in: $UNASSIGNED_DIR"
+    ui_text "Re-run with lower --threshold if needed" "$UI_MUTED"
+fi
+ui_spacer
+
+ui_title "Next Steps"
+ui_step "1. Review assignment results"
+ui_output "   cd $OUTPUT_DIR"
+ui_output "   # Check each theme directory"
+ui_spacer
+
+ui_step "2. Initialize git repository"
+ui_output "   cd $OUTPUT_DIR"
+ui_output "   git init"
+ui_output "   git add ."
+ui_output "   git commit -m 'Initial color-matched wallpaper collection'"
+ui_spacer
+
+ui_step "3. Create remote repository"
+ui_info "Create a private repository on GitHub/GitLab"
+ui_output "   GitHub: https://github.com/new"
+ui_output "   GitLab: https://gitlab.com/projects/new"
+ui_spacer
+
+ui_step "4. Push to remote"
+ui_output "   git remote add origin <your-repo-url>"
+ui_output "   git branch -M main"
+ui_output "   git push -u origin main"
+ui_spacer
+
+ui_step "5. Update chezmoi configuration"
+ui_info "The repository URL is already in .chezmoiexternal.yaml"
+ui_info "Then run: chezmoi apply --refresh-externals"
+ui_spacer
+
+ui_success "Wallpaper organization complete!"
+ui_info "Output: $OUTPUT_DIR"

@@ -109,7 +109,7 @@ switch_theme() {
     echo "Switched to theme: $theme_name"
 
     # Select random wallpaper from new theme if wallpapers exist
-    wallpaper_dir="$theme_path/wallpapers"
+    wallpaper_dir="$HOME/.config/wallpapers/$theme_name"
     if [ -d "$wallpaper_dir" ] && [ "$(ls -A "$wallpaper_dir" 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$')" ]; then
         wallpaper=$(find "$wallpaper_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
         if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then

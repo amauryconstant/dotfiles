@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
 # Script: set-wallpaper.sh
-# Purpose: Change wallpaper and regenerate theme colors
-# Requirements: Arch Linux, swww, wallust
+# Purpose: Change wallpaper using swww
+# Requirements: Arch Linux, swww
 
-{{ includeTemplate "log_start" "Setting wallpaper and generating colors" }}
+{{ includeTemplate "log_start" "Setting wallpaper" }}
 
 set -euo pipefail
 
@@ -41,29 +41,4 @@ swww img "$WALLPAPER_PATH" \
     --transition-type "$TRANSITION_TYPE" \
     --transition-duration "$TRANSITION_DURATION"
 
-# Note: wallust color generation is disabled in favor of static theme colors
-# If dynamic wallpaper colors are needed, uncomment the following lines:
-# {{ includeTemplate "log_step" "Generating color scheme with wallust" }}
-# wallust run -s --dynamic-threshold "$WALLPAPER_PATH"
-
-{{ includeTemplate "log_step" "Reloading desktop components" }}
-
-# Reload Waybar
-if pgrep -x waybar > /dev/null; then
-    killall -SIGUSR2 waybar || true
-fi
-
-# Reload Dunst (it will automatically restart)
-if pgrep -x dunst > /dev/null; then
-    killall dunst || true
-fi
-
-# Reload Ghostty terminal
-if pgrep -x ghostty > /dev/null; then
-    killall -SIGUSR2 ghostty || true
-fi
-
-# Hyprland automatically reloads sourced configs on changes
-# No need to explicitly reload hyprland
-
-{{ includeTemplate "log_complete" "Wallpaper and colors updated successfully" }}
+{{ includeTemplate "log_complete" "Wallpaper updated successfully" }}

@@ -28,17 +28,24 @@ case "$CHOICE" in
         ~/.local/lib/scripts/media/random-wallpaper.sh
         ;;
     "󰋩 Wallpaper (Set)")
-        # List wallpapers and let user choose
-        WALLPAPER_DIR="${XDG_PICTURES_DIR:-$HOME/Pictures}/wallpapers"
-        if [ -d "$WALLPAPER_DIR" ]; then
-            WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" \) | \
+        # List wallpapers from current theme and let user choose
+        CURRENT_THEME_LINK="$HOME/.config/themes/current"
+        if [ -L "$CURRENT_THEME_LINK" ]; then
+            THEME_NAME="$(basename "$(readlink -f "$CURRENT_THEME_LINK")")"
+            WALLPAPER_DIR="$HOME/.config/wallpapers/$THEME_NAME"
+        else
+            WALLPAPER_DIR=""
+        fi
+
+        if [ -n "$WALLPAPER_DIR" ] && [ -d "$WALLPAPER_DIR" ]; then
+            WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.webp" \) | \
                 sed "s|$WALLPAPER_DIR/||" | \
                 wofi --dmenu --prompt "Select Wallpaper" --width 400 --height 600)
             if [ -n "$WALLPAPER" ]; then
                 ~/.local/lib/scripts/media/set-wallpaper.sh "$WALLPAPER_DIR/$WALLPAPER"
             fi
         else
-            notify "󰋩 Wallpaper" "Wallpaper directory not found: $WALLPAPER_DIR"
+            notify "󰋩 Wallpaper" "No theme selected or wallpaper directory not found"
         fi
         ;;
     "󰒓 Edit Hyprland Config")
