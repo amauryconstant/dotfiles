@@ -8,22 +8,25 @@
 
 set -euo pipefail
 
-# Install paru if not already present
-if ! command -v paru &> /dev/null; then
-    {{ includeTemplate "log_step" "Installing paru AUR helper..." }}
+# Verify internet connectivity before proceeding
+{{ includeTemplate "log_step" "Verifying internet connectivity..." }}
 
-    # Try pacman first (works if Chaotic-AUR already configured)
-    if ! sudo pacman -S --needed --noconfirm paru 2>/dev/null; then
-        # Build from AUR (source version for full features)
-        sudo pacman -S --needed --noconfirm git base-devel
-        BUILD_DIR=$(mktemp -d)
-        git clone https://aur.archlinux.org/paru.git "$BUILD_DIR/paru"
-        (cd "$BUILD_DIR/paru" && makepkg -si --noconfirm)
-        rm -rf "$BUILD_DIR"
-    fi
-    {{ includeTemplate "log_success" "paru AUR helper installed" }}
+if ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Internet connectivity confirmed" }}
+elif ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "Network accessible but DNS may have issues" }}
+    {{ includeTemplate "log_info" "Proceeding with caution - some operations may fail" }}
 else
-    {{ includeTemplate "log_info" "paru already installed" }}
+    {{ includeTemplate "log_error" "No internet connectivity detected" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "Internet connection is required for:" }}
+    {{ includeTemplate "log_info" "  - Downloading package manager keys from keyserver" }}
+    {{ includeTemplate "log_info" "  - Installing packages from repositories" }}
+    {{ includeTemplate "log_info" "  - Setting up Chaotic-AUR repository" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "Fix network connection and re-run: chezmoi apply" }}
+    {{ includeTemplate "log_info" "" }}
+    exit 1
 fi
 
 # Enable multilib repository for 32-bit support
@@ -36,13 +39,7 @@ else
     {{ includeTemplate "log_info" "multilib already enabled" }}
 fi
 
-# Optimize mirrors for faster downloads
-{{ includeTemplate "log_step" "Optimizing Arch mirrors..." }}
-paru -S --noconfirm --needed rate-mirrors
-rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
-{{ includeTemplate "log_success" "Mirrors optimized" }}
-
-# Setup Chaotic-AUR repository
+# Setup Chaotic-AUR repository first (provides paru)
 if ! grep -q "chaotic-aur" /etc/pacman.conf; then
     {{ includeTemplate "log_step" "Setting up Chaotic-AUR repository..." }}
 
@@ -65,11 +62,44 @@ else
     {{ includeTemplate "log_info" "Chaotic-AUR already configured" }}
 fi
 
+# Install paru from Chaotic-AUR (avoids compilation)
+if ! command -v paru &> /dev/null; then
+    {{ includeTemplate "log_step" "Installing paru AUR helper from Chaotic-AUR..." }}
+    sudo pacman -S --needed --noconfirm paru
+    {{ includeTemplate "log_success" "paru AUR helper installed" }}
+else
+    {{ includeTemplate "log_info" "paru already installed" }}
+fi
+
+# Install essential dependencies for package-manager.sh
+{{ includeTemplate "log_step" "Installing package-manager dependencies (yq, gum)..." }}
+paru -S --noconfirm --needed go-yq gum
+{{ includeTemplate "log_success" "package-manager dependencies installed" }}
+
+# Optimize mirrors for faster downloads
+{{ includeTemplate "log_step" "Optimizing Arch mirrors..." }}
+paru -S --noconfirm --needed rate-mirrors
+rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
+{{ includeTemplate "log_success" "Mirrors optimized" }}
+
 # Setup Flatpak
 {{ includeTemplate "log_step" "Setting up Flatpak..." }}
-command -v flatpak &> /dev/null || sudo pacman -S --needed --noconfirm flatpak
-flatpak remote-list | grep -q "flathub" || \
-    sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+if ! command -v flatpak &> /dev/null; then
+    sudo pacman -S --needed --noconfirm flatpak
+    {{ includeTemplate "log_success" "Flatpak installed" }}
+else
+    {{ includeTemplate "log_info" "Flatpak already installed" }}
+fi
+
+# Add Flathub remote in user scope (matches package-manager.sh --user installs)
+if ! flatpak remote-list --user | grep -q "flathub"; then
+    flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    {{ includeTemplate "log_info" "Flathub remote added (user scope)" }}
+fi
+
+# Update appstream metadata to populate package database
+{{ includeTemplate "log_step" "Updating Flatpak metadata..." }}
+flatpak update --user --appstream 2>&1 | grep -v "^$" || true
 {{ includeTemplate "log_success" "Flatpak configured" }}
 
 {{ includeTemplate "log_complete" "Package manager setup completed successfully" }}

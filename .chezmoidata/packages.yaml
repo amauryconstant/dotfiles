@@ -184,7 +184,7 @@ packages:
         - waybar           # Status bar for Wayland
         - hyprlock         # Official Hyprland screen locker
         - hypridle         # Official Hyprland idle daemon
-        - hyprpolkitagent  # Hyprland-native polkit agent
+        - polkit-gnome     # Polkit authentication agent (hyprpolkitagent crashes)
         - hyprsunset       # Blue light filter (gamma adjustment)
         - swww             # Dynamic wallpaper daemon with transitions
         - wallust          # Color palette generator from wallpapers

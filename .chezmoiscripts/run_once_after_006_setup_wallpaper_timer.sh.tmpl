@@ -8,6 +8,29 @@
 
 set -euo pipefail
 
+# Verify wallpaper-cycle timer unit file exists
+{{ includeTemplate "log_step" "Verifying wallpaper-cycle.timer exists..." }}
+
+# Check if timer file is available
+if ! systemctl --user list-unit-files wallpaper-cycle.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "wallpaper-cycle.timer unit file not found" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "The wallpaper timer service files may not be deployed yet." }}
+    {{ includeTemplate "log_info" "This can happen if:" }}
+    {{ includeTemplate "log_info" "  1. The systemd user service files haven't been applied" }}
+    {{ includeTemplate "log_info" "  2. The service is in a different directory" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "To fix:" }}
+    {{ includeTemplate "log_info" "  1. Verify files exist: ~/.config/systemd/user/wallpaper-cycle.*" }}
+    {{ includeTemplate "log_info" "  2. Re-run: chezmoi apply" }}
+    {{ includeTemplate "log_info" "  3. Reload daemon: systemctl --user daemon-reload" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_skip" "Skipping wallpaper timer setup" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_success" "wallpaper-cycle.timer found" }}
+
 {{ includeTemplate "log_step" "Reloading systemd user daemon" }}
 systemctl --user daemon-reload
 

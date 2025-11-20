@@ -21,17 +21,16 @@
 set -euo pipefail
 
 # Add error trap for cleanup guidance
-trap 'echo ""; {{ includeTemplate "log_error" "Script failed - check logs above for details" }}; echo ""; echo "To rollback changes:"; echo "  1. Restore cmdline backup: sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline 2>/dev/null || true"; echo "  2. Remove NVIDIA config: sudo rm /etc/mkinitcpio.conf.d/nvidia.conf 2>/dev/null || true"; echo "  3. Restore mkinitcpio.conf: sudo cp /etc/mkinitcpio.conf.backup /etc/mkinitcpio.conf 2>/dev/null || true"; echo "  4. Rebuild initramfs: sudo mkinitcpio -P"; exit 1' ERR
+trap '{{ includeTemplate "log_error" "Boot system configuration failed - check logs above" }}; {{ includeTemplate "log_info" "To rollback: sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline && sudo mkinitcpio -P" }}; exit 1' ERR
 
 # ============================================================================
 # SECTION 1: GPU DRIVER CONFIGURATION (NVIDIA)
 # ============================================================================
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 1: GPU Driver Configuration"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 1: GPU Driver Configuration" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 
 {{ includeTemplate "log_step" "Detect GPU vendor" }}
 
@@ -314,11 +313,10 @@ fi
 # SECTION 2: PLYMOUTH CONFIGURATION
 # ============================================================================
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 2: Plymouth Graphical Boot Splash"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 2: Plymouth Graphical Boot Splash" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 
 {{ includeTemplate "log_step" "Verify Plymouth installation" }}
 
@@ -329,37 +327,77 @@ else
     {{ includeTemplate "log_success" "Plymouth is installed" }}
     PLYMOUTH_INSTALLED=true
 
-    {{ includeTemplate "log_step" "Configure mkinitcpio hooks for Plymouth with encryption" }}
+    {{ includeTemplate "log_step" "Configure mkinitcpio hooks for Plymouth" }}
 
     MKINITCPIO_CONF="/etc/mkinitcpio.conf"
     MKINITCPIO_BACKUP="${MKINITCPIO_CONF}.backup"
 
-    # Check if plymouth hook is already configured
-    if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
-        {{ includeTemplate "log_success" "Plymouth hook already configured before encrypt hook" }}
-        PLYMOUTH_HOOK_CHANGED=false
+    # Detect if system uses encryption (encrypt or sd-encrypt hook)
+    USES_ENCRYPTION=false
+    if grep -Eq "^HOOKS=.*(encrypt|sd-encrypt)" "$MKINITCPIO_CONF"; then
+        USES_ENCRYPTION=true
+        {{ includeTemplate "log_info" "System uses disk encryption - plymouth will be added before encrypt hook" }}
     else
-        {{ includeTemplate "log_info" "Adding plymouth hook before encrypt in mkinitcpio.conf..." }}
+        {{ includeTemplate "log_info" "System does not use disk encryption - plymouth will be added before filesystems hook" }}
+    fi
 
-        # Create backup only if it doesn't already exist
-        if [ ! -f "$MKINITCPIO_BACKUP" ]; then
-            sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_BACKUP"
-            {{ includeTemplate "log_info" "Created backup: $MKINITCPIO_BACKUP" }}
-        fi
-
-        # Insert plymouth before encrypt in HOOKS array
-        # Current: HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)
-        # Target:  HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)
-        sudo sed -i 's/\(HOOKS=([^)]*block\) \(encrypt\)/\1 plymouth \2/' "$MKINITCPIO_CONF"
-
-        # Verify the change was successful
-        if grep -q "^HOOKS=.*plymouth.*encrypt" "$MKINITCPIO_CONF"; then
-            {{ includeTemplate "log_success" "Plymouth hook added successfully" }}
-            PLYMOUTH_HOOK_CHANGED=true
+    # Check if plymouth hook is already configured correctly
+    if [ "$USES_ENCRYPTION" = true ]; then
+        # For encrypted systems: plymouth must be before encrypt/sd-encrypt
+        if grep -Eq "^HOOKS=.*plymouth.*(encrypt|sd-encrypt)" "$MKINITCPIO_CONF"; then
+            {{ includeTemplate "log_success" "Plymouth hook already configured before encrypt hook" }}
+            PLYMOUTH_HOOK_CHANGED=false
         else
-            {{ includeTemplate "log_error" "Failed to add plymouth hook - manual intervention required" }}
-            {{ includeTemplate "log_info" "Please manually edit $MKINITCPIO_CONF to add 'plymouth' before 'encrypt' in HOOKS" }}
-            exit 1
+            {{ includeTemplate "log_info" "Adding plymouth hook before encrypt in mkinitcpio.conf..." }}
+
+            # Create backup only if it doesn't already exist
+            if [ ! -f "$MKINITCPIO_BACKUP" ]; then
+                sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_BACKUP"
+                {{ includeTemplate "log_info" "Created backup: $MKINITCPIO_BACKUP" }}
+            fi
+
+            # Insert plymouth before encrypt or sd-encrypt in HOOKS array
+            # Handles both: encrypt and sd-encrypt
+            sudo sed -i 's/\(HOOKS=([^)]*block\) \(encrypt\|sd-encrypt\)/\1 plymouth \2/' "$MKINITCPIO_CONF"
+
+            # Verify the change was successful
+            if grep -Eq "^HOOKS=.*plymouth.*(encrypt|sd-encrypt)" "$MKINITCPIO_CONF"; then
+                {{ includeTemplate "log_success" "Plymouth hook added successfully before encrypt hook" }}
+                PLYMOUTH_HOOK_CHANGED=true
+            else
+                {{ includeTemplate "log_error" "Failed to add plymouth hook - manual intervention required" }}
+                {{ includeTemplate "log_info" "Please manually edit $MKINITCPIO_CONF to add 'plymouth' before 'encrypt' or 'sd-encrypt' in HOOKS" }}
+                exit 1
+            fi
+        fi
+    else
+        # For non-encrypted systems: plymouth should be before filesystems
+        if grep -q "^HOOKS=.*plymouth.*filesystems" "$MKINITCPIO_CONF"; then
+            {{ includeTemplate "log_success" "Plymouth hook already configured before filesystems hook" }}
+            PLYMOUTH_HOOK_CHANGED=false
+        else
+            {{ includeTemplate "log_info" "Adding plymouth hook before filesystems in mkinitcpio.conf..." }}
+
+            # Create backup only if it doesn't already exist
+            if [ ! -f "$MKINITCPIO_BACKUP" ]; then
+                sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_BACKUP"
+                {{ includeTemplate "log_info" "Created backup: $MKINITCPIO_BACKUP" }}
+            fi
+
+            # Insert plymouth before filesystems in HOOKS array
+            # Current: HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)
+            # Target:  HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth filesystems fsck)
+            sudo sed -i 's/\(HOOKS=([^)]*block\) \(filesystems\)/\1 plymouth \2/' "$MKINITCPIO_CONF"
+
+            # Verify the change was successful
+            if grep -q "^HOOKS=.*plymouth.*filesystems" "$MKINITCPIO_CONF"; then
+                {{ includeTemplate "log_success" "Plymouth hook added successfully before filesystems hook" }}
+                PLYMOUTH_HOOK_CHANGED=true
+            else
+                {{ includeTemplate "log_error" "Failed to add plymouth hook - manual intervention required" }}
+                {{ includeTemplate "log_info" "Please manually edit $MKINITCPIO_CONF to add 'plymouth' before 'filesystems' in HOOKS" }}
+                exit 1
+            fi
         fi
     fi
 
@@ -429,11 +467,10 @@ fi
 # SECTION 3: SDDM CONFIGURATION
 # ============================================================================
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 3: SDDM Display Manager"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 3: SDDM Display Manager" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 
 {{ includeTemplate "log_step" "Verify SDDM installation" }}
 
@@ -571,11 +608,10 @@ fi
 # SECTION 4: SINGLE INITRAMFS REBUILD
 # ============================================================================
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 4: Initramfs Rebuild (Consolidate all changes)"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 4: Initramfs Rebuild (Consolidate all changes)" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 
 {{ includeTemplate "log_step" "Checking if initramfs rebuild is needed..." }}
 
@@ -614,52 +650,60 @@ fi
 # FINAL SUMMARY
 # ============================================================================
 
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  Boot System Configuration Complete"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  Boot System Configuration Complete" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "" }}
 
 # GPU Summary
 if [ "$NVIDIA_DETECTED" = true ]; then
-    echo "GPU Configuration:"
-    echo "  ✓ NVIDIA GPU detected and configured"
-    echo "  ✓ DKMS modules ready"
-    echo "  ✓ Kernel parameters: nvidia-drm.modeset=1 nvidia-drm.fbdev=1"
-    echo "  ✓ Power management services enabled (suspend/resume/hibernate)"
-    echo ""
+    {{ includeTemplate "log_info" "GPU Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ NVIDIA GPU detected and configured" }}
+    {{ includeTemplate "log_info" "  ✓ DKMS modules ready" }}
+    {{ includeTemplate "log_info" "  ✓ Kernel parameters: nvidia-drm.modeset=1 nvidia-drm.fbdev=1" }}
+    {{ includeTemplate "log_info" "  ✓ Power management services enabled (suspend/resume/hibernate)" }}
+    {{ includeTemplate "log_info" "" }}
 fi
 
 # Plymouth Summary
 if [ "$PLYMOUTH_INSTALLED" = true ]; then
-    echo "Plymouth Configuration:"
-    echo "  ✓ Theme: {{ .globals.plymouth.theme }}"
-    echo "  ✓ Kernel parameters: splash quiet"
-    echo "  ✓ Hooks: plymouth (before encrypt)"
-    echo ""
+    {{ includeTemplate "log_info" "Plymouth Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ Theme: {{ .globals.plymouth.theme }}" }}
+    {{ includeTemplate "log_info" "  ✓ Kernel parameters: splash quiet" }}
+    if [ "${USES_ENCRYPTION:-false}" = true ]; then
+        {{ includeTemplate "log_info" "  ✓ Hooks: plymouth (before encrypt hook)" }}
+    else
+        {{ includeTemplate "log_info" "  ✓ Hooks: plymouth (before filesystems hook)" }}
+    fi
+    {{ includeTemplate "log_info" "" }}
 fi
 
 # SDDM Summary
 if [ "$SDDM_INSTALLED" = true ]; then
-    echo "SDDM Configuration:"
-    echo "  ✓ Theme: {{ .globals.sddm.theme }}"
-    echo "  ✓ Display server: {{ .globals.sddm.display_server }}"
-    echo "  ✓ Hyprland session available"
-    echo ""
+    {{ includeTemplate "log_info" "SDDM Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ Theme: {{ .globals.sddm.theme }}" }}
+    {{ includeTemplate "log_info" "  ✓ Display server: {{ .globals.sddm.display_server }}" }}
+    {{ includeTemplate "log_info" "  ✓ Hyprland session available" }}
+    {{ includeTemplate "log_info" "" }}
 fi
 
-echo "  ⚠️  REBOOT REQUIRED for all changes to take effect"
-echo ""
-echo "  Boot sequence after reboot:"
+{{ includeTemplate "log_warning" "⚠️  REBOOT REQUIRED for all changes to take effect" }}
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "Boot sequence after reboot:" }}
 if [ "$PLYMOUTH_INSTALLED" = true ] && [ "$SDDM_INSTALLED" = true ]; then
-    echo "  Firmware → Plymouth (LUKS password) → [Brief TTY flash] → SDDM → Hyprland"
+    if [ "${USES_ENCRYPTION:-false}" = true ]; then
+        {{ includeTemplate "log_info" "  Firmware → Plymouth (LUKS password) → [Brief TTY flash] → SDDM → Hyprland" }}
+    else
+        {{ includeTemplate "log_info" "  Firmware → Plymouth (boot splash) → [Brief TTY flash] → SDDM → Hyprland" }}
+    fi
 elif [ "$SDDM_INSTALLED" = true ]; then
-    echo "  Firmware → SDDM → Hyprland"
+    {{ includeTemplate "log_info" "  Firmware → SDDM → Hyprland" }}
 else
-    echo "  Firmware → TTY/DM → Session"
+    {{ includeTemplate "log_info" "  Firmware → TTY/DM → Session" }}
 fi
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo ""
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "" }}
 
 {{ includeTemplate "log_complete" "Complete boot system configuration finished - REBOOT REQUIRED" }}

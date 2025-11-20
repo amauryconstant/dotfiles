@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_before_sync_packages.sh.tmpl
+# Purpose: Sync system packages (Arch + Flatpak) from packages.yaml
+# Requirements: Arch Linux, paru, yq, gum, package-manager.sh
+# Execution: Runs on first install AND when packages.yaml changes (hash-triggered)
+# Timing: Runs BEFORE file application (ensures packages exist for config scripts)
+
+# Hash: {{ .packages | toJson | sha256sum }}
+
+{{ includeTemplate "log_start" "Syncing system packages from packages.yaml..." }}
+
+set -euo pipefail
+
+# Direct path to package-manager script in chezmoi source directory
+# Note: Can't use PATH since run_once_after_001 (CLI generation) hasn't run yet
+PACKAGE_MANAGER_SCRIPT="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/system/executable_package-manager.sh"
+
+# Export required environment variables for package-manager
+export SCRIPTS_DIR="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts"
+export UI_LIB="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/core/executable_gum-ui.sh"
+
+# Trust execution order: run_once_before_001 installed paru, yq, gum
+# Single sync command handles both Arch and Flatpak packages
+# --prune flag removes orphaned packages (not in any enabled module)
+{{ includeTemplate "log_step" "Using package-manager v2.0..." }}
+
+if "$PACKAGE_MANAGER_SCRIPT" sync --prune; then
+    {{ includeTemplate "log_success" "All packages synced successfully" }}
+else
+    {{ includeTemplate "log_error" "Package sync failed" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "Package sync completed" }}

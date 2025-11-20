@@ -315,15 +315,21 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Lifecycle Scripts Execution
 
-1. **`run_once_before_*`** → Setup (package managers, dirs, tools)
-2. **`run_onchange_before_install_packages.sh.tmpl`** → All packages (Arch + Flatpak) via `package-manager sync` (hash-triggered)
+1. **`run_once_before_*`** → Setup (package managers, dirs, tools, dependencies)
+2. **`run_onchange_before_*`** → Package installation (first install AND updates)
 3. **File application** → chezmoi applies configs
 4. **`run_once_after_*`** → Configuration (services, setup)
-5. **`run_onchange_*`** → Content-driven (data file changes)
+5. **`run_onchange_after_*`** → Content-driven updates (extensions, themes, AI models)
 
-**Hash-based change detection**: Each `run_onchange` script has unique hash based on specific data section. Changes to packages.yaml trigger unified package installation.
+**Package installation strategy**:
+- **Single script**: `run_onchange_before_sync_packages.sh.tmpl` handles both initial install and updates
+- **First install**: Script runs because chezmoi has no prior hash record (installs all packages)
+- **Updates**: Script re-runs when `packages.yaml` changes (hash-triggered sync)
+- **Timing**: Runs BEFORE file application (ensures Docker, systemd services exist for config scripts)
 
-**Package manager integration**: Script calls `package-manager sync --prune` which handles both Arch and Flatpak packages, respects version constraints, handles conflicts, and validates packages.
+**Hash-based change detection**: `run_onchange` scripts track content hash. The `{{ .packages | toJson | sha256sum }}` comment triggers re-execution when packages.yaml changes.
+
+**Package manager integration**: Calls `package-manager sync --prune` which handles Arch and Flatpak packages, respects version constraints, handles conflicts, and validates packages.
 
 **Script Numbering**:
 - **run_onchange**: No numbering (hash-tracked, order independent)
@@ -343,19 +349,23 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ### Execution Order
 
 1. `run_once_before_*` (001-006)
-2. File application (configs, templates)
-3. `run_once_after_*` (001-007, 999)
-4. `run_onchange_*` (hash-based, any order)
+2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
+3. File application (configs, templates)
+4. `run_once_after_*` (001-007, 999)
+5. `run_onchange_after_*` (hash-based, any order)
 
 ### Current Scripts (19 total)
 
 **run_once_before_* (6)**:
-- 001: Package manager setup
+- 001: Package manager setup + dependencies (paru, yq, gum)
 - 002: Directory creation
 - 003: Encryption key setup
 - 004: Locale configuration
 - 005: chezmoi_modify_manager install
 - 006: Maintenance user creation
+
+**run_onchange_before_* (1)**:
+- sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
 **run_once_after_* (8)**:
 - 001: CLI generation
@@ -367,17 +377,16 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 - 007: Boot system
 - 999: SSH remote switch
 
-**run_onchange_* (5)**:
-- before_install_packages: Unified package management (Arch + Flatpak)
-- after_install_extensions: VSCode extensions
-- after_install_ai_models: Ollama models
-- after_update_plymouth_theme: Plymouth theme
-- after_update_topgrade_config: Topgrade config
+**run_onchange_after_* (4)**:
+- install_extensions: VSCode extensions
+- install_ai_models: Ollama models
+- update_plymouth_theme: Plymouth theme
+- update_topgrade_config: Topgrade config
 
 ### Hash Triggers
 
 Changes to `.chezmoidata/` files trigger specific scripts:
-- `packages` → `run_onchange_before_install_packages.sh.tmpl` (both Arch and Flatpak)
+- `packages` → `run_onchange_before_sync_packages.sh.tmpl` (Arch + Flatpak, runs BEFORE file application)
 - `extensions.code` → `run_onchange_after_install_extensions.sh.tmpl`
 - `ai.models` → `run_onchange_after_install_ai_models.sh.tmpl`
 

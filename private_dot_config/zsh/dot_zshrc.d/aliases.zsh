@@ -20,7 +20,7 @@ alias untar="tar -xf"
 alias p=pnpm
 
 # AI
-alias claude='clear && mise exec node@24 -- claude'
+alias claude='clear && claude'
 
 # Symlink
 alias lns='ln -sfn'

@@ -1509,7 +1509,12 @@ cmd_sync() {
                     local pkg_data=$(_parse_package_constraint "$package")
                     IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
-                    if [[ "$name" == "$pkg_name" ]]; then
+                    # Strip flatpak: prefix from packages.yaml for comparison
+                    # State file stores Flatpak packages without prefix (e.g., com.spotify.Client)
+                    # packages.yaml has prefix (e.g., flatpak:com.spotify.Client)
+                    local name_stripped="${name#flatpak:}"
+
+                    if [[ "$name_stripped" == "$pkg_name" ]]; then
                         found=true
                         break 2
                     fi

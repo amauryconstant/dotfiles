@@ -9,6 +9,25 @@
 # Set strict error handling
 set -euo pipefail
 
+# Check if rbw is installed
+{{ includeTemplate "log_step" "Verifying rbw (Bitwarden CLI) installation..." }}
+
+if ! command -v rbw >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "rbw (Bitwarden CLI) is not installed" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "rbw is required to retrieve the encryption key from Vaultwarden" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "Installation options:" }}
+    {{ includeTemplate "log_info" "  1. Add 'rbw' to .chezmoidata/packages.yaml" }}
+    {{ includeTemplate "log_info" "  2. Install manually: paru -S rbw" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "After installation, re-run: chezmoi apply" }}
+    {{ includeTemplate "log_info" "" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "rbw is installed" }}
+
 {{ includeTemplate "log_step" "Configuring rbw vault settings..." }}
 rbw config set email {{ .personalEmail }}
 rbw config set base_url {{ .privateServer | replace "www" "vaultwarden" }}

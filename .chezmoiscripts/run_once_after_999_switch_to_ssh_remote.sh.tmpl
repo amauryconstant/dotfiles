@@ -21,6 +21,31 @@ if echo "$current_url" | grep -q "^git@"; then
     exit 0
 fi
 
+# Verify SSH key is configured and working
+{{ includeTemplate "log_step" "Verifying SSH key access to GitLab..." }}
+
+if ssh -T git@gitlab.com 2>&1 | grep -qi "welcome"; then
+    {{ includeTemplate "log_success" "SSH key authenticated successfully with GitLab" }}
+elif ssh -T git@gitlab.com 2>&1 | grep -qi "successfully authenticated"; then
+    {{ includeTemplate "log_success" "SSH key authenticated successfully with GitLab" }}
+else
+    {{ includeTemplate "log_warning" "SSH key not configured or not added to GitLab" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "To use SSH remote, you need to:" }}
+    {{ includeTemplate "log_info" "  1. Generate SSH key (if not exists): ssh-keygen -t ed25519 -C 'your_email@example.com'" }}
+    {{ includeTemplate "log_info" "  2. Copy public key: cat ~/.ssh/id_ed25519.pub" }}
+    {{ includeTemplate "log_info" "  3. Add to GitLab: https://gitlab.com/-/profile/keys" }}
+    {{ includeTemplate "log_info" "  4. Test connection: ssh -T git@gitlab.com" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "After configuring SSH key, manually switch remote:" }}
+    {{ includeTemplate "log_info" "  cd ~/.local/share/chezmoi" }}
+    {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/dotfiles.git" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_skip" "Skipping SSH remote switch - will continue using HTTPS" }}
+    {{ includeTemplate "log_info" "Installation can continue normally with HTTPS remote" }}
+    exit 0
+fi
+
 # Switch to SSH remote
 ssh_url="git@gitlab.com:amoconst/dotfiles.git"
 {{ includeTemplate "log_step" "Switching to SSH URL: $ssh_url" }}

@@ -406,11 +406,12 @@ All lifecycle scripts run automatically via chezmoi. No manual intervention requ
 
 | Phase | Scripts | Purpose | Trigger |
 |-------|---------|---------|---------|
-| **1. Pre-Setup** | `run_once_before_*` (6 scripts) | Install paru AUR helper, configure repos, create directories, install essential packages, set up Age encryption, create maintenance user | First `chezmoi apply` |
-| **2. Package Install** | `run_onchange_before_*` (1 script) | Install all Arch packages with multi-strategy fallback | Hash change in `packages.yaml` |
-| **3. Configuration** | `run_once_after_*` (8 scripts) | Generate CLI configs, configure services (Docker, Bluetooth, Ollama, Tailscale), set up printer, configure git tools, wallpaper timer, boot system (GPU, locale, Plymouth, SDDM) | First `chezmoi apply` |
-| **4. Content Updates** | `run_onchange_after_*` (3 scripts) | Install VSCode extensions, pull AI models, install Flatpak apps | Hash change in respective YAML files |
-| **5. Finalization** | `run_once_after_999_*` (1 script) | Switch git remote to SSH (requires key) | First `chezmoi apply` |
+| **1. Pre-Setup** | `run_once_before_*` (6 scripts) | Configure repos (Chaotic-AUR, multilib), install paru + dependencies (yq, gum), create directories, set up Age encryption, create maintenance user | First `chezmoi apply` |
+| **2. Package Install** | `run_onchange_before_*` (1 script) | Sync all packages (Arch + Flatpak) from packages.yaml using package-manager v2.0 | First install AND when `packages.yaml` changes |
+| **3. File Application** | chezmoi | Apply dotfiles and configuration templates | Every `chezmoi apply` |
+| **4. Configuration** | `run_once_after_*` (8 scripts) | Generate CLI configs, configure services (Docker, Bluetooth, Ollama, Tailscale), set up printer, configure git tools, wallpaper timer, boot system (GPU, locale, Plymouth, SDDM) | First `chezmoi apply` |
+| **5. Content Updates** | `run_onchange_after_*` (3 scripts) | Install VSCode extensions, pull AI models, update Plymouth theme | Hash change in respective YAML files |
+| **6. Finalization** | `run_once_after_999_*` (1 script) | Switch git remote to SSH (requires key) | First `chezmoi apply` |
 
 **Estimated Time**: 15-45 minutes depending on internet speed and AUR build requirements.
 

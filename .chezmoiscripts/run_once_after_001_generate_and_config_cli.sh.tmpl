@@ -27,9 +27,17 @@ fi
 
 # Initialize mise
 if command -v mise >/dev/null 2>&1; then
-    {{ includeTemplate "log_step" "Installing mise tools..." }}
-    mise install
-    {{ includeTemplate "log_success" "mise tools installed" }}
+    {{ includeTemplate "log_step" "Checking mise tools status..." }}
+
+    # Check if there are any tools to install
+    if mise list 2>&1 | grep -qi "no runtimes\|not installed"; then
+        {{ includeTemplate "log_step" "Installing mise tools..." }}
+        mise install
+        {{ includeTemplate "log_success" "mise tools installed" }}
+    else
+        {{ includeTemplate "log_success" "All mise tools already installed" }}
+        {{ includeTemplate "log_info" "Run 'mise install' manually if you add new tools" }}
+    fi
 else
     {{ includeTemplate "log_skip" "mise not installed, skipping" }}
 fi
