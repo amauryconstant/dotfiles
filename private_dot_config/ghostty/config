@@ -1,3 +1,4 @@
 font-family = "FiraCode Nerd Font"
 theme = current
+window-theme = ghostty
 keybind = shift+enter=text:\x1b\r
