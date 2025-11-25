@@ -1,381 +1,8 @@
 # Modern Arch Linux + Hyprland Dotfiles
 
-A comprehensive chezmoi-based dotfiles repository for Arch Linux with Hyprland compositor, featuring dynamic theming, intelligent configuration management, and automated system maintenance.
+A comprehensive dotfiles repository for Arch Linux with Hyprland compositor, featuring dynamic theming, intelligent configuration management, and automated system maintenance.
 
-**Target System**: Vanilla Arch Linux (installed via archinstall with Hyprland profile)
-
-## Overview
-
-This repository implements a complete desktop environment configuration with focus on:
-- **Automation**: Minimal manual intervention, intelligent updates
-- **Security**: Age-encrypted secrets with manual operation workflows
-- **Modularity**: XDG-compliant architecture with clear separation of concerns
-- **Maintainability**: Template-driven configuration with single source of truth
-
-## Key Features
-
-### Dynamic Desktop Environment
-- **Hyprland Compositor**: Wayland-native tiling with modular configuration (9 conf files)
-- **Dynamic Theming**: Automatic color palette generation from wallpapers via `wallust`
-- **Wallpaper Rotation**: Systemd timer with 30-minute intervals, smooth `swww` transitions
-- **Adaptive UI**: 8 applications auto-theme (Hyprland, Waybar, Wofi, Dunst, Ghostty, Thunar, etc.)
-- **Status Bar**: Waybar with 15 modules (workspaces, system info, network, audio)
-- **Native Integration**: Hyprland polkit agent, GTK-based file manager (Thunar)
-
-### Intelligent System Management
-- **Hierarchical Menu System**: `Super+Space` launches 10-category system control interface
-- **Desktop Utilities**: Screenshot annotation (Satty), GPU recording, nightlight, idle/gaps toggles
-- **CLI Discovery**: `commands` function lists all available custom tools
-- **Package Management**: Dual-layer (Arch native + Flatpak) with automatic sync
-- **Automated Updates**: Topgrade integration with systemd timers
-
-### Modern Shell Environment
-- **Zephyr Plugin Framework**: 8-plugin suite providing XDG management, PATH deduplication, editor enhancements
-- **CLI Wrapper System**: Lazy-loading executables in `~/.local/bin/` reduce shell startup overhead
-- **XDG Compliance**: Proper Base Directory adherence throughout
-- **Universal Consistency**: POSIX functions for automation, rich Gum-based functions for interaction
-
-### Smart Configuration
-- **chezmoi_modify_manager**: Separates user settings from application state (filters runtime data)
-- **Template Protection**: Custom git merge driver preserves `{{ .variable }}` syntax during merges
-- **Age Encryption**: Secure handling of keys and credentials with manual operation workflows
-- **Data-Driven**: YAML configuration files trigger automatic hash-based updates
-
-## Repository Structure
-
-### Chezmoi Source Directory Layout
-
-```
-~/.local/share/chezmoi/           # Chezmoi source repository
-
-├── .chezmoidata/                 # Template data sources (YAML)
-│   ├── packages.yaml             # Package management (Arch + Flatpak)
-│   ├── ai.yaml                   # AI model configuration
-│   ├── extensions.yaml           # VSCode extensions list
-│   ├── colors.yaml               # Color scheme definitions
-│   └── globals.yaml              # Global variables (XDG, apps, printer)
-│
-├── .chezmoiscripts/              # Lifecycle automation scripts
-│   ├── run_once_before_*.sh.tmpl # Pre-setup (6 scripts: paru, dirs, packages)
-│   ├── run_once_after_*.sh.tmpl  # Post-setup (8 scripts: services, git, boot)
-│   └── run_onchange_*.sh.tmpl    # Hash-triggered (5 scripts: packages, extensions)
-│
-├── .chezmoitemplates/            # Reusable template includes
-│   ├── log_start, log_step       # Logging templates (10 files)
-│   ├── log_success, log_error    # Used via {{ includeTemplate "name" . }}
-│   └── log_complete
-│
-├── private_dot_config/           # ~/.config/ directory contents
-│   │
-│   ├── hypr/                     # Hyprland compositor
-│   │   ├── hyprland.conf         # Main config (sources conf/*)
-│   │   ├── conf/                 # Modular configuration (9 files)
-│   │   │   ├── monitor.conf.tmpl      # Display settings
-│   │   │   ├── bindings.conf.tmpl     # Keybindings (templated)
-│   │   │   ├── environment.conf       # Environment variables
-│   │   │   ├── general.conf           # Layout, gaps, borders
-│   │   │   ├── decoration.conf        # Visual effects
-│   │   │   ├── animations.conf        # Animation curves
-│   │   │   ├── input.conf             # Keyboard/mouse/touchpad
-│   │   │   ├── windowrules.conf       # Per-app window behavior
-│   │   │   └── autostart.conf         # Startup applications
-│   │   ├── hypridle.conf.tmpl    # Idle management
-│   │   └── hyprlock.conf         # Lock screen
-│   │
-│   ├── waybar/                   # Status bar
-│   │   ├── config.tmpl           # Module config (JSON5, templated)
-│   │   └── style.css.tmpl        # Styling with color templates
-│   │
-│   ├── wofi/                     # Application launcher
-│   │   ├── config                # Static settings
-│   │   └── style.css.tmpl        # Themed styling
-│   │
-│   ├── wallust/                  # Color palette generator
-│   │   └── wallust.toml.tmpl     # K-means clustering config
-│   │
-│   ├── shell/                    # Common POSIX shell base
-│   │   ├── env                   # Core environment setup
-│   │   ├── env_functions         # POSIX functions (automation)
-│   │   ├── login.tmpl            # Login environment vars
-│   │   ├── interactive           # Interactive shell config
-│   │   └── logout                # Logout cleanup
-│   │
-│   ├── zsh/                      # Zsh-specific configuration
-│   │   ├── .zshrc                # Main Zsh config
-│   │   ├── .zsh_plugins.txt      # Antidote plugin list
-│   │   ├── .zstyles              # Zephyr plugin configuration
-│   │   └── .zshrc.d/             # Additional config snippets
-│   │
-│   ├── systemd/user/             # User systemd units
-│   │   ├── wallpaper-cycle.timer    # 30-minute rotation schedule
-│   │   └── wallpaper-cycle.service  # Wallpaper rotation service
-│   │
-│   └── [40+ other apps]          # ghostty, dunst, wlogout, etc.
-│
-├── private_dot_local/            # ~/.local/ directory contents
-│   │
-│   ├── bin/                      # CLI wrapper executables (10 files)
-│   │   ├── executable_system-health         # Health dashboard
-│   │   ├── executable_package-manager       # Package management
-│   │   ├── executable_random-wallpaper      # Wallpaper rotation
-│   │   ├── executable_set-wallpaper         # Set specific wallpaper
-│   │   ├── executable_screenshot            # Screenshot utilities
-│   │   ├── executable_launch-or-focus       # Single-instance launcher
-│   │   └── [4 more wrappers]
-│   │
-│   └── lib/scripts/              # Script library (11 categories, 44 scripts)
-│       ├── core/                 # colors.sh, gum-ui.sh
-│       ├── desktop/              # Window mgmt, audio, toggles (18 scripts)
-│       ├── media/                # Screenshots, wallpapers, recording
-│       ├── system/               # Health, maintenance, packages
-│       ├── user-interface/       # Menu system (12 scripts)
-│       ├── terminal/             # Terminal utilities
-│       ├── network/              # Network management
-│       ├── git/                  # Git utilities
-│       ├── development/          # Dev workflows
-│       └── utils/                # General utilities
-│
-├── private_dot_keys/             # Encrypted secrets (.age files)
-├── private_dot_ssh/              # SSH configuration and keys
-│
-├── Root dotfiles/                # Shell startup files
-│   ├── .bash_profile, .bashrc    # Bash configuration
-│   ├── .zshenv                   # Zsh environment bootstrap
-│   ├── .profile                  # POSIX sh profile
-│   └── .bash_logout              # Logout cleanup
-│
-├── Documentation/
-│   ├── README.md                 # User guide (this file)
-│   └── CLAUDE.md                 # AI agent development reference
-│
-└── Configuration/
-    ├── .chezmoi.yaml.tmpl        # Chezmoi configuration
-    ├── .chezmoiignore            # Files to ignore
-    ├── .gitattributes            # Git merge driver config
-    └── .gitignore                # Git ignore patterns
-```
-
-### Chezmoi Naming Conventions
-
-| Prefix | Target Location | Example |
-|--------|----------------|---------|
-| `private_dot_` | `~/.{name}` | `private_dot_config/` → `~/.config/` |
-| `executable_` | Executable file | `executable_system-health` → `system-health` (755) |
-| `encrypted_` | Age-encrypted | `encrypted_key.txt.age` → `key.txt` (decrypted) |
-| `modify_` | chezmoi_modify_manager | `modify_app.conf.tmpl` → managed config |
-| `*.tmpl` | Template file | `config.tmpl` → `config` (processed) |
-| `run_once_*` | Run once on setup | Lifecycle scripts (installation) |
-| `run_onchange_*` | Run when hash changes | Content-driven updates |
-
-**Quick Navigation:**
-- **Hyprland config**: `private_dot_config/hypr/conf/`
-- **Shell config**: `private_dot_config/shell/` (common), `private_dot_config/zsh/` (Zsh-specific)
-- **Scripts**: `private_dot_local/lib/scripts/`
-- **CLI wrappers**: `private_dot_local/bin/`
-- **Package definitions**: `.chezmoidata/packages.yaml`
-- **Lifecycle scripts**: `.chezmoiscripts/`
-
-## Architecture
-
-### Design Philosophy
-
-**Separation of Concerns**:
-- **chezmoi** (`.chezmoiscripts/`): Initial setup and configuration deployment only
-- **systemd**: Scheduled maintenance tasks (timers, services)
-- **topgrade**: System updates with custom pre/post hooks
-- **CLI tools**: User-initiated maintenance and utilities
-
-This clear boundary prevents chezmoi from becoming a "do everything" tool. Setup happens once, maintenance happens through appropriate channels.
-
-**XDG Base Directory Compliance**:
-```
-~/.config/              # User configuration (managed by chezmoi)
-~/.local/
-  ├── bin/              # CLI wrappers (lazy-loading executables)
-  ├── lib/scripts/      # Script library (11 categories)
-  ├── share/            # Application data
-  └── state/            # State tracking (package lists, hashes)
-```
-
-### Key Technologies
-
-#### Template System (Go text/template + Sprig)
-
-**Built-in Variables**:
-- `.chezmoi.os`, `.chezmoi.hostname`, `.chezmoi.arch` - System information
-- `.chezmoi.username`, `.chezmoi.homeDir` - User information
-
-**User-Defined Variables** (`.chezmoi.yaml.tmpl`):
-- `.fullname`, `.firstname`, `.personalEmail`, `.workEmail`
-- `.chassisType` - Laptop vs desktop detection
-
-**Data Files** (`.chezmoidata/*.yaml`):
-- `.packages.install.arch`, `.packages.flatpak` - Package lists
-- `.colors.oksolar.*` - Color scheme values
-- `.globals.applications.terminal`, `.globals.xdg.*` - Global settings
-
-**Testing Templates**:
-```bash
-chezmoi data                                # View all available variables
-chezmoi execute-template < file.tmpl        # Test template syntax
-chezmoi cat ~/.config/app/config            # Preview rendered output
-```
-
-**Common Patterns**:
-```go
-{{ if eq .chezmoi.os "linux" }}             # OS detection
-{{ .globals.applications.terminal }}        # Access nested data
-{{ .firstname | lower }}                    # String transformations
-{{ includeTemplate "log_start" "message" }} # Reusable logging templates
-```
-
-#### chezmoi_modify_manager (Smart Config Handling)
-
-**Problem**: Many applications store user preferences (settings) and runtime data (state) in the same file. Traditional dotfiles cause constant conflicts.
-
-**Solution**: `chezmoi_modify_manager` separates concerns by:
-1. Maintaining clean `.src.ini` with only managed settings
-2. Filtering runtime state (window positions, cache, session IDs)
-3. Injecting template variables for user-specific values
-4. Merging with application's current state on apply
-
-**When to Use**:
-- ✅ App stores both settings and state in one file (Nextcloud, VSCode)
-- ✅ Need dynamic template values in config
-- ✅ Want to hide sensitive data in source
-- ❌ App separates settings/state cleanly (use standard templates)
-- ❌ Simple static configuration (no modify_manager needed)
-
-**Example** (Nextcloud Desktop):
-```bash
-#!/usr/bin/env chezmoi_modify_manager
-source auto  # Automatically finds corresponding .src.ini
-
-# Filter runtime state
-ignore section "DirSelect Dialog"    # Window positions
-ignore section "Cache"               # Temporary data
-
-# Set user-specific values
-set "User" "Name" "{{ .fullname }}"
-set "User" "Email" "{{ .personalEmail }}"
-
-# Hide sensitive data when re-adding
-add:hide "Accounts" "0\\password"
-```
-
-**Key Directives**:
-- `ignore section "Name"` - Filter entire section
-- `ignore "Section" "Key"` - Filter specific key
-- `set "Section" "Key" "Value"` - Force specific value
-- `add:hide "Section" "Key"` - Hide sensitive values in source
-- `add:remove "Section" "Key"` - Remove from source when re-adding
-
-See: `private_dot_config/Nextcloud/modify_nextcloud.conf.tmpl` for working example.
-Full directive reference: `CLAUDE.md` → "chezmoi_modify_manager Reference"
-
-#### Template Merge Protection
-
-**Problem**: Git merges can accidentally render template variables (turning `{{ .firstname }}` into actual values), breaking templates.
-
-**Solution**: Custom git merge driver that:
-1. Detects `.tmpl` files during merge operations
-2. Prioritizes versions containing template syntax
-3. Preserves `{{ .variable }}` syntax instead of rendering
-4. Falls back to standard merge when both versions lack templates
-
-**How It Works**:
-- `.gitattributes` configures `*.tmpl merge=chezmoi-template`
-- Merge driver script: `.scripts/template-merge-driver.sh`
-- Auto-configured by: `run_once_after_005_configure_git_tools.sh.tmpl`
-
-**Result**: You can safely use `chezmoi merge-all` without fear of breaking template syntax.
-
-#### CLI Wrapper Architecture
-
-**Problem**: Loading heavy script libraries at shell startup slows down terminal launch.
-
-**Solution**: Lightweight executables in `~/.local/bin/` that lazy-load scripts from `~/.local/lib/scripts/` on demand.
-
-**Pattern**:
-```bash
-# ~/.local/bin/system-health (lightweight wrapper)
-#!/usr/bin/env bash
-exec "$HOME/.local/lib/scripts/system/system-health.sh" "$@"
-```
-
-**Benefits**:
-- Fast shell startup (no library sourcing overhead)
-- Reduced memory footprint
-- Clean command interface (`system-health` vs `~/.local/lib/scripts/system/system-health.sh`)
-- Easy discovery via `commands` function
-
-**Discovery**:
-```bash
-commands                   # List all available custom commands
-commands | grep wallpaper  # Search for specific commands
-```
-
-### Package Management
-
-Strategy execution: Try official repos → Try AUR binary → Try AUR source (if strategy allows)
-
-**Dual Package System**:
-
-| Use Arch Native (pacman/paru) | Use Flatpak |
-|------------------------------|-------------|
-| ✅ CLI tools and utilities | ✅ Proprietary apps (Spotify, Slack) |
-| ✅ System services and daemons | ✅ Cross-platform GUI apps |
-| ✅ Development tools and languages | ✅ Apps needing sandboxing |
-| ✅ Linux-first applications | ✅ Frequent GUI updates (Firefox ESR vs stable) |
-| ✅ Deep system integration needed | ❌ CLI tools (use Arch instead) |
-
-**Automatic Sync**:
-- Edit `packages.yaml` → Run `chezmoi apply` → Packages install/remove automatically
-- Hash-based change detection: Only affected package systems update
-- State tracking: Prevents redundant operations (`~/.local/state/chezmoi/installed_packages.txt`)
-
-**archinstall_baseline Note**: This section in `packages.yaml` documents packages from initial archinstall setup. It's for **reference only** (overlap detection), not managed by chezmoi.
-
-### Shell Initialization
-
-**Layered Architecture**:
-
-1. **Common POSIX Base** (`~/.config/shell/`): Universal environment for all shells
-   - `shell/env`: Core environment, sets `ENV`/`BASH_ENV` for non-interactive shells
-   - `shell/env_functions`: POSIX functions for automation (systemd, scripts, topgrade)
-   - `shell/login`: Login environment variables (EDITOR, VISUAL, BROWSER, paths)
-   - `shell/interactive`: Common interactive configuration
-   - `shell/logout`: Cleanup on logout
-
-2. **Shell-Specific Adapters**: Each shell sources common base + adds enhancements
-   - **Bash**: `~/.bash_profile`, `~/.bashrc` → delegates to `~/.config/bash/`
-   - **Zsh**: `~/.zshenv`, `~/.config/zsh/.zshrc` → delegates + Zephyr plugins
-   - **POSIX sh**: `~/.profile` → delegates to `~/.config/sh/`
-
-**Zephyr Plugin Framework** (8 plugins):
-
-Zephyr provides modern Zsh environment management via zstyle configuration:
-
-- **environment**: XDG Base Directory management, PATH deduplication, custom variables
-- **editor**: Prepend-sudo (Ctrl+S), magic-enter for navigation, dot-expansion
-- **completion**: Modern completion system with caching
-- **compstyle**: Zephyr completion style
-- **history**: Intelligent history management
-- **utility**: General shell utilities
-- **directory**: Directory navigation enhancements
-- **confd**: Config directory support
-
-**Configuration** (`~/.config/zsh/.zstyles`):
-```zsh
-zstyle ':zephyr:plugin:environment' prepath "$HOME/.local/bin"
-zstyle ':zephyr:plugin:environment' enable 'yes'
-zstyle ':zephyr:plugin:editor' prepend-sudo 'yes'
-zstyle ':zephyr:plugin:completion' enable-cache 'yes'
-```
-
-**Function Architecture**:
-- **POSIX Functions** (`shell/env_functions`): Simple, fast, dependency-free for automation and scripts
-- **Interactive Functions** (`~/.local/bin/` wrappers): Rich UI with Gum framework for terminal use
+**Target System**: Vanilla Arch Linux (archinstall with Hyprland profile)
 
 ## Installation
 
@@ -402,16 +29,15 @@ reboot
 
 ### What Happens (Automated)
 
-All lifecycle scripts run automatically via chezmoi. No manual intervention required.
+All setup scripts run automatically via chezmoi. No manual intervention required.
 
-| Phase | Scripts | Purpose | Trigger |
-|-------|---------|---------|---------|
-| **1. Pre-Setup** | `run_once_before_*` (6 scripts) | Configure repos (Chaotic-AUR, multilib), install paru + dependencies (yq, gum), create directories, set up Age encryption, create maintenance user | First `chezmoi apply` |
-| **2. Package Install** | `run_onchange_before_*` (1 script) | Sync all packages (Arch + Flatpak) from packages.yaml using package-manager v2.0 | First install AND when `packages.yaml` changes |
-| **3. File Application** | chezmoi | Apply dotfiles and configuration templates | Every `chezmoi apply` |
-| **4. Configuration** | `run_once_after_*` (8 scripts) | Generate CLI configs, configure services (Docker, Bluetooth, Ollama, Tailscale), set up printer, configure git tools, wallpaper timer, boot system (GPU, locale, Plymouth, SDDM) | First `chezmoi apply` |
-| **5. Content Updates** | `run_onchange_after_*` (3 scripts) | Install VSCode extensions, pull AI models, update Plymouth theme | Hash change in respective YAML files |
-| **6. Finalization** | `run_once_after_999_*` (1 script) | Switch git remote to SSH (requires key) | First `chezmoi apply` |
+| Phase | Purpose | Trigger |
+|-------|---------|---------|
+| **1. Pre-Setup** | Configure repos (Chaotic-AUR, multilib), install paru + dependencies, create directories, set up Age encryption | First `chezmoi apply` |
+| **2. Package Install** | Sync all packages (Arch + Flatpak) from packages.yaml | First install AND when packages change |
+| **3. File Application** | Apply dotfiles and configuration templates | Every `chezmoi apply` |
+| **4. Configuration** | Set up services (Docker, Bluetooth, Ollama, Tailscale), printer, git tools, wallpaper timer, boot system | First `chezmoi apply` |
+| **5. Content Updates** | Install VSCode extensions, pull AI models, update themes | When data files change |
 
 **Estimated Time**: 15-45 minutes depending on internet speed and AUR build requirements.
 
@@ -422,7 +48,36 @@ During initialization, answer `y` when prompted for AI tools to enable:
 - **Continue**: AI-powered code assistance in VSCode
 - **Cline Rules**: AI assistant behavioral rules for coding agents
 
-## Usage
+## What You Get
+
+### Desktop Environment
+- **Hyprland**: Wayland-native tiling compositor with modular configuration
+- **Dynamic Theming**: Automatic color palette generation from wallpapers via `wallust`
+- **Wallpaper Rotation**: Systemd timer with 30-minute intervals, smooth transitions
+- **Adaptive UI**: 8 applications auto-theme (Hyprland, Waybar, Wofi, Dunst, Ghostty, etc.)
+- **Status Bar**: Waybar with system info, workspaces, network, audio
+- **Native Integration**: Polkit agent, GTK file manager (Thunar)
+
+### System Management
+- **Hierarchical Menu System**: `Super+Space` launches 10-category system control interface
+- **Desktop Utilities**: Screenshot annotation (Satty), GPU recording, nightlight, idle/gaps toggles
+- **Package Management**: Dual-layer (Arch native + Flatpak) with automatic sync
+- **Automated Updates**: Topgrade integration with systemd timers
+- **Health Monitoring**: System health dashboard with detailed metrics
+
+### Modern Shell
+- **Zsh**: With Starship prompt and intelligent completion
+- **Zephyr Framework**: 8-plugin suite for XDG management, PATH handling, editor enhancements
+- **CLI Tools**: Over 40 custom commands and utilities
+- **CLI Discovery**: `commands` function lists all available custom tools
+
+### Smart Configuration
+- **chezmoi**: Template-driven dotfiles with automatic deployment
+- **chezmoi_modify_manager**: Separates user settings from application state
+- **Age Encryption**: Secure handling of keys and credentials
+- **Template Protection**: Custom git merge driver preserves template syntax
+
+## Daily Usage
 
 ### Essential Commands
 
@@ -463,9 +118,29 @@ commands | grep <term>          # Search for specific commands
 <command> --help                # Get help for any custom command
 ```
 
-### Common Workflows
+### Desktop Toggles
 
-#### Adding Packages
+| Keybinding | Function | Description |
+|------------|----------|-------------|
+| `Super+N` | Nightlight | Toggle blue light filter (6000K ↔ 4000K) |
+| `Super+I` | Idle inhibit | Presentation mode (disable screen lock) |
+| `Super+B` | Waybar | Show/hide status bar (distraction-free mode) |
+| `Super+G` | Workspace gaps | Toggle gaps and borders (immersive mode) |
+| `Super+A` | Audio output | Cycle through available audio outputs |
+
+### Screenshot System
+
+| Mode | Keybinding | Description |
+|------|------------|-------------|
+| **Smart** | `Print` | Auto-snaps to window if tiny selection, opens Satty editor |
+| **Region** | `Shift+Print` | Direct to clipboard (no editor) |
+| **Windows** | `Ctrl+Print` | Window selection mode |
+| **Fullscreen** | `Alt+Print` | Entire screen capture |
+| **Color Picker** | `Super+Print` | Pick color from screen (hyprpicker) |
+
+## Common Workflows
+
+### Adding Packages
 
 ```bash
 # 1. Edit package configuration
@@ -490,9 +165,9 @@ chezmoi apply
 - Use `*_install_binary` for: Faster installation, precompiled packages
 - Use `*_install_from_source` for: AUR packages without binary versions, customization needs
 
-#### Configuration Customization
+### Configuration Customization
 
-**Monitor Settings** (`private_dot_config/hypr/conf/monitor.conf.tmpl`):
+**Monitor Settings**:
 ```bash
 # 1. Edit monitor configuration
 chezmoi edit ~/.local/share/chezmoi/private_dot_config/hypr/conf/monitor.conf.tmpl
@@ -505,7 +180,7 @@ chezmoi apply
 hyprctl reload  # or Super+Shift+R
 ```
 
-**Keybindings** (`private_dot_config/hypr/conf/bindings.conf.tmpl`):
+**Keybindings**:
 ```bash
 # 1. Edit keybinding configuration
 chezmoi edit ~/.local/share/chezmoi/private_dot_config/hypr/conf/bindings.conf.tmpl
@@ -520,7 +195,7 @@ hyprctl reload
 
 **View Current Keybindings**: Press `Super+?` or run `Super+Space` → Learn → Keybindings
 
-#### Encrypted Files
+### Encrypted Files
 
 ```bash
 # View encrypted content
@@ -535,7 +210,7 @@ chezmoi add --encrypt ~/sensitive-file.txt
 
 **Security Model**: Age encryption uses manual operations to prevent accidental exposure. Files ending in `.age`, files in `private_dot_keys/`, and SSH private keys are automatically encrypted.
 
-#### Handling Updates
+### Handling Updates
 
 ```bash
 # 1. Pull latest changes
@@ -552,7 +227,7 @@ chezmoi apply --dry-run
 chezmoi apply
 ```
 
-#### Merge Conflicts
+### Merge Conflicts
 
 ```bash
 # Check for conflicts
@@ -567,7 +242,7 @@ chezmoi merge <file>
 
 **Note**: Template merge protection automatically preserves `{{ .variable }}` syntax during merges.
 
-#### Recovery
+### Recovery
 
 **Rollback Specific File**:
 ```bash
@@ -590,9 +265,9 @@ git checkout <commit-hash>      # Rollback to specific commit
 chezmoi apply
 ```
 
-### Desktop Features
+## Desktop Features
 
-#### Hierarchical Menu System (`Super+Space`)
+### Hierarchical Menu System (`Super+Space`)
 
 10-category system control interface:
 
@@ -610,37 +285,7 @@ chezmoi apply
 - **About**: System information (fastfetch)
 - **System**: Power management (lock, logout, suspend, reboot, shutdown)
 
-#### Desktop Toggles
-
-| Keybinding | Function | Description |
-|------------|----------|-------------|
-| `Super+N` | Nightlight | Toggle blue light filter (6000K ↔ 4000K) |
-| `Super+I` | Idle inhibit | Presentation mode (disable screen lock) |
-| `Super+B` | Waybar | Show/hide status bar (distraction-free mode) |
-| `Super+G` | Workspace gaps | Toggle gaps and borders (immersive mode) |
-| `Super+A` | Audio output | Cycle through available audio outputs |
-
-#### Screenshot System
-
-Advanced screenshot workflow with annotation:
-
-| Mode | Keybinding | Description |
-|------|------------|-------------|
-| **Smart** | `Print` | Auto-snaps to window if tiny selection, opens Satty editor |
-| **Region** | `Shift+Print` | Direct to clipboard (no editor) |
-| **Windows** | `Ctrl+Print` | Window selection mode |
-| **Fullscreen** | `Alt+Print` | Entire screen capture |
-| **Color Picker** | `Super+Print` | Pick color from screen (hyprpicker) |
-
-**Workflow**:
-1. Press Print → Make selection (or tiny selection auto-snaps to window)
-2. Satty annotation editor opens
-3. Add text, arrows, highlights, or crops
-4. Save to `~/Pictures/Screenshots/` or copy to clipboard
-
-**Integration**: Uses wayfreeze for clean captures (freezes screen to hide selection UI).
-
-#### Wallpaper System
+### Wallpaper System
 
 **Automatic Rotation**:
 - Systemd timer triggers every 30 minutes
@@ -660,37 +305,6 @@ systemctl --user status wallpaper-cycle.timer   # Check timer status
 systemctl --user restart wallpaper-cycle.timer  # Restart if stuck
 journalctl --user -u wallpaper-cycle.service    # View logs
 ```
-
-## Development Environment
-
-### Languages & Version Management
-- **Go**: Latest stable compiler for system tools and utilities
-- **Python**: Python 3 with pip, virtualenv for scripting and data work
-- **Rust**: Rust toolchain with cargo for performance-critical tools
-- **mise**: Universal version manager for project-specific tool versions
-
-### Development Tools
-- **Containers**: Docker with docker-compose for development environments
-- **Editor**: VSCode with curated extension suite (automatically synced)
-- **Git Enhancements**:
-  - **delta**: Syntax-highlighting pager for beautiful diffs
-  - **difftastic**: Structural diff tool that understands syntax
-  - **mergiraf**: Intelligent merge tool
-  - **Custom merge driver**: Template protection for `.tmpl` files
-- **Terminal**: Ghostty (primary, GPU-accelerated), Kitty (archinstall baseline)
-
-### CLI Tools
-- **File Operations**: ripgrep (rg), fd, eza, zoxide, bat, hexyl
-- **System Monitoring**: btop, nvitop, fastfetch, dust, duf
-- **Shell**: Zsh with antidote plugin manager + Starship prompt
-- **Utilities**: fzf, jq, yq, httpie, hyperfine
-
-### Theming
-Consistent Solarized (oksolar) base with dynamic wallpaper-derived accents:
-- **Desktop**: Waybar, Wofi, Hyprland, Dunst
-- **Terminal**: Ghostty, Kitty
-- **Development**: bat, delta, Starship
-- **Shell**: Prompt and syntax highlighting
 
 ## Troubleshooting
 
@@ -893,8 +507,19 @@ ls -la ~/.config ~/.zshrc ~/.bashrc
 
 ## Documentation
 
-- **README.md** (this file): Comprehensive user guide for installation, usage, and architecture
-- **CLAUDE.md**: Technical reference for AI coding agents (development patterns, mandatory protocols, syntax standards)
+### User Documentation
+- **README.md** (this file): Installation, usage, and common workflows
+
+### Technical Documentation (for AI/Development)
+- **CLAUDE.md**: Complete technical reference for AI coding agents
+  - Architecture and design patterns
+  - Template system internals
+  - Script standards and development protocols
+  - chezmoi_modify_manager syntax reference
+  - Package management architecture
+  - Quality standards and validation
+
+Location-specific CLAUDE.md files exist throughout the repository for detailed implementation documentation.
 
 ## Project Information
 
