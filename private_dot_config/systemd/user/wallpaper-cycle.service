@@ -2,6 +2,8 @@
 Description=Automatic wallpaper rotation service
 Documentation=man:swww(1)
 After=graphical-session.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
 
 [Service]
 Type=oneshot
@@ -10,8 +12,6 @@ ExecStart=%h/.local/lib/scripts/media/random-wallpaper.sh fade 3
 # Restart on failure with backoff
 Restart=on-failure
 RestartSec=30s
-StartLimitBurst=3
-StartLimitIntervalSec=300
 # Service timeout to prevent hanging
 TimeoutSec=60s
 # Ensure proper environment variables

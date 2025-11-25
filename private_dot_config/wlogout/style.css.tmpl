@@ -12,60 +12,79 @@
 
 * {
     background-image: none;
-    background-color: @bg-primary;
-    color: @fg-primary;
-    border: none;
-    border-radius: 0;
     box-shadow: none;
-    font-family: "Noto Sans";
+}
+
+window {
+    background-color: alpha(@bg-primary, 0.60);
 }
 
 button {
     background-color: @bg-secondary;
     color: @fg-primary;
     border: 2px solid @bg-tertiary;
+    border-radius: 8px;
     margin: 10px;
-    transition: box-shadow 0.2s ease-in-out;
-}
-
-button:hover {
-    background-color: @accent-primary;
-    color: @fg-contrast;
-    border-color: @accent-secondary;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 button:focus {
     background-color: @accent-highlight;
     color: @fg-contrast;
     border-color: @accent-primary;
+    outline-style: none;
 }
 
 #lock {
+    border-color: @accent-primary;
+}
+
+#lock:hover, #lock:focus {
     background-color: @accent-primary;
     color: @fg-contrast;
 }
 
 #logout {
+    border-color: @accent-highlight;
+}
+
+#logout:hover, #logout:focus {
     background-color: @accent-highlight;
     color: @fg-contrast;
 }
 
 #suspend {
+    border-color: @accent-warning;
+}
+
+#suspend:hover, #suspend:focus {
     background-color: @accent-warning;
     color: @fg-contrast;
 }
 
 #hibernate {
+    border-color: @bg-tertiary;
+}
+
+#hibernate:hover, #hibernate:focus {
     background-color: @bg-tertiary;
     color: @fg-primary;
 }
 
 #reboot {
+    border-color: @accent-success;
+}
+
+#reboot:hover, #reboot:focus {
     background-color: @accent-success;
     color: @fg-contrast;
 }
 
 #shutdown {
+    border-color: @accent-error;
+}
+
+#shutdown:hover, #shutdown:focus {
     background-color: @accent-error;
     color: @fg-contrast;
 }
