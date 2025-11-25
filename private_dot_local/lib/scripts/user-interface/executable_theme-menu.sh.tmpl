@@ -21,14 +21,36 @@ for theme_dir in "$THEMES_DIR"/*; do
     theme=$(basename "$theme_dir")
     [ "$theme" = "current" ] && continue
 
-    # Extract variant (light/dark)
-    if echo "$theme" | grep -q "light"; then
-        variant="☀️  light"
-    elif echo "$theme" | grep -q "dark"; then
-        variant="🌙 dark"
-    else
-        variant="theme"
-    fi
+    # Map each theme variant to unique Material Design icon
+    case "$theme" in
+        catppuccin-latte)
+            icon="󰛊"  # md-coffee_outline
+            ;;
+        catppuccin-mocha)
+            icon="󰅶"  # md-coffee
+            ;;
+        rose-pine-dawn)
+            icon="" # md-weather-sunrise
+            ;;
+        rose-pine-moon)
+            icon="󰖚"  # md-weather-sunset
+            ;;
+        gruvbox-light)
+            icon=""  # nf-md-tree
+            ;;
+        gruvbox-dark)
+            icon="󰹩"  # nf-md-tree_outline
+            ;;
+        solarized-light)
+            icon=""  # fa-sun
+            ;;
+        solarized-dark)
+            icon=""  # fa-moon
+            ;;
+        *)
+            icon="󰏘"  # md-palette
+            ;;
+    esac
 
     # Add current indicator
     if [ "$theme" = "$CURRENT_THEME" ]; then
@@ -37,14 +59,14 @@ for theme_dir in "$THEMES_DIR"/*; do
         prefix="  "
     fi
 
-    # Extract family name (remove -light/-dark suffix)
-    family=$(echo "$theme" | sed 's/-\(light\|dark\)$//' | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
+    # Extract display name (titlecase with spaces)
+    display_name=$(echo "$theme" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
 
-    THEME_LIST="${THEME_LIST}${prefix}${family} (${variant})|${theme}\n"
+    THEME_LIST="${THEME_LIST}${prefix}${icon} ${display_name}|${theme}\n"
 done
 
 # Show menu and get selection
-SELECTED=$(echo -e "$THEME_LIST" | wofi --dmenu --prompt "Select Theme" --width 400 --height 300 | cut -d'|' -f2)
+SELECTED=$(printf "%b" "$THEME_LIST" | wofi --dmenu --prompt "Select Theme" --width 400 --height 300 | cut -d'|' -f2)
 
 # Switch to selected theme
 if [ -n "$SELECTED" ]; then
