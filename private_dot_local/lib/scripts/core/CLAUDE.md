@@ -10,14 +10,15 @@
 
 - **Purpose**: Foundation libraries for all scripts
 - **Files**: gum-ui.sh (572 lines), colors.sh.tmpl
-- **Usage**: Source `$UI_LIB` in all scripts
+- **Usage**: System scripts source `$UI_LIB` (see adoption note below)
 - **Dependencies**: gum (optional - fallbacks provided), colors.yaml
 
 ## Gum UI Library - Primary Reference
 
-**Purpose**: Standardized UI framework for all scripts
+**Purpose**: Standardized UI framework for system CLI tools
 **Location**: `gum-ui.sh` (572 lines)
-**Used in**: desktop/, system/, media/, user-interface/ scripts
+**Adopted by**: system/ scripts (7 files)
+**Not used by**: desktop/ (use notify-send), menu/ (use menu-helpers.sh)
 
 **Dependencies**:
 - `gum` (optional - provides fallbacks)
@@ -170,8 +171,8 @@ echo "${UI_SUCCESS}Success!${NC}"
 
 ## Integration Points
 
-- **All scripts**: Source `$UI_LIB` for consistent UI
-- **CLI wrappers**: `~/.local/bin/executable_*` source UI library
-- **Menu system**: `user-interface/` scripts use UI functions
-- **System tools**: `system/` scripts use UI functions
-- **Desktop utilities**: `desktop/` scripts use UI functions
+- **System scripts**: Source `$UI_LIB` for consistent terminal UI
+- **git-prune-branch**: Uses UI library for interactive CLI tool
+- **Menu system**: Uses `menu-helpers.sh` (not gum-ui)
+- **Desktop utilities**: Use `notify-send` (not gum-ui)
+- **Template scripts**: Use `{{ includeTemplate "log_*" }}` (not gum-ui)

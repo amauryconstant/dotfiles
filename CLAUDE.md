@@ -156,11 +156,19 @@ set -euo pipefail
 {{ includeTemplate "log_complete" "[message]" }}
 ```
 
-### Gum UI Library Usage
+### UI Library Sourcing Pattern
 
+**Standard pattern** (for system CLI scripts):
 ```bash
-# Source UI library
-. "$UI_LIB"
+# Source UI library with fallback
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
 
 # Use UI functions (24 functions: status, interactive, layout, data display)
 ui_step "Processing task"
@@ -174,13 +182,29 @@ fi
 - `SCRIPTS_DIR="$HOME/.local/lib/scripts"`
 - `UI_LIB="$HOME/.local/lib/scripts/core/gum-ui.sh"`
 
+**Note**: See `private_dot_local/lib/scripts/CLAUDE.md` for UI pattern by category (system vs desktop vs menu)
+
+### Error Handling Strategy
+
+**Use `set -euo pipefail`** (strict mode):
+- Multi-step scripts with dependencies between commands
+- Template scripts (`.tmpl` files)
+- Scripts where partial execution is dangerous
+- Examples: wallpaper scripts, system setup scripts
+
+**Use manual error checking**:
+- Simple single-purpose utilities
+- Scripts where graceful degradation needed
+- Background utilities (avoid unexpected exits from keybindings)
+- Examples: desktop utilities, simple launchers
+
 ### Anti-Patterns
 
-❌ Wrap scripts in main functions
-❌ Use manual echo for logging
+❌ Wrap scripts in main functions (chezmoi scripts execute directly)
+❌ Use manual echo for logging in templates (use `{{ includeTemplate "log_*" }}`)
 ❌ Add unnecessary OS detection (Arch Linux only)
-❌ Add cross-platform compatibility
-❌ Skip gum-ui library (use it for consistency)
+❌ Add cross-platform compatibility (target-specific)
+❌ Partial execution without `set -euo pipefail` in multi-step scripts
 
 ### Trust Execution Order
 
@@ -202,16 +226,36 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ❌ Regular monitoring (use scheduled scripts)
 ❌ User-initiated tasks (use CLI functions)
 
+### Shebang Selection
+
+**Use `#!/usr/bin/env bash`** when:
+- Need associative arrays
+- Use bash-specific features (`[[`, `=~`, process substitution)
+- Complex logic requiring bash extensions
+
+**Use `#!/usr/bin/env sh`** when:
+- Simple utilities using POSIX features only
+- Background utilities (minimal dependencies)
+- Scripts where portability matters
+
+**Examples**: System scripts use bash, desktop utilities use sh
+
 ### Pre-Commit Checklist
 
+**For .chezmoiscripts/ templates**:
 - [ ] `#!/usr/bin/env sh` shebang
 - [ ] `{{ includeTemplate "log_start" }}` and `log_complete`
 - [ ] `set -euo pipefail` after log_start
 - [ ] No `main()` function
 - [ ] Uses template logging (not echo)
-- [ ] Uses gum-ui library (source `$UI_LIB`)
 - [ ] Validated: `bash -n script.sh.tmpl`
 - [ ] Tested: `chezmoi execute-template < script.sh.tmpl`
+
+**For lib/scripts/ files**:
+- [ ] Correct shebang (bash or sh based on features needed)
+- [ ] UI pattern matches category (system/desktop/menu)
+- [ ] Error handling appropriate for script type
+- [ ] Header with Script, Purpose, Requirements
 
 ## Template System Reference
 
@@ -285,18 +329,20 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Package Manager
 
-**Tool**: `package-manager.sh` (2,311 lines, complete rewrite)
-**Features**: NixOS-style version pinning, module system, dcli integration
-**Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v2.0`
+**Tool**: `package-manager.sh` (2,539 lines, dcli v2 improvements)
+**Features**: NixOS-style version pinning, module system, dcli v2 integration
+**Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v2.1`
 
 **Key capabilities**:
 - Module-based package organization with conflict detection
 - Version constraints (exact, >=, <) for reproducible builds
+- Unmanaged package discovery with `merge` command
 - Lockfile generation (like NixOS flake.lock)
 - Interactive downgrade selection with numbered menus
 - Rolling package detection (-git packages)
 - Comprehensive validation and status checks
-- Optional Timeshift backup integration
+- Backup integration (Timeshift or Snapper)
+- Performance-optimized sync operations
 
 ### Decision Matrix
 

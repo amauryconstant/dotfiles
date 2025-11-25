@@ -69,5 +69,7 @@ arguments = "--rebase --autostash --prune"
 "Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"
 # Post-update system status
 "Post-update system status" = "/usr/bin/zsh -c '~/.local/lib/scripts/system/system-health.sh --brief'"
-# Post-update package strategy validation
-"Package strategy validation" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh health --brief"
+# Post-update package manager validation
+"Package manager validation" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh validate"
+# Check for unmanaged packages (installed outside dotfiles)
+"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh merge --dry-run"

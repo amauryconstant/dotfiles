@@ -38,10 +38,9 @@
 **Purpose**: Hyprland desktop utilities
 **Dependencies**: hyprctl, notify-send, jaq (JSON)
 
-**UI Pattern Exception**:
-- **Background utilities** (monitor-*.sh, waybar-*.sh, idle-toggle.sh, etc.): Use `notify-send` instead of gum-ui
-- **Rationale**: Triggered by keybindings, require minimal overhead, native desktop notifications appropriate
-- **CLI tools** (launch-or-focus.sh): Use standard gum-ui library
+**UI Pattern**:
+- **All desktop utilities** use `notify-send` for user feedback (keybinding-triggered, minimal overhead)
+- **No gum-ui library usage** in desktop scripts (background utilities pattern)
 
 **Window Management**:
 - `launch-or-focus.sh` - Single-instance apps (focus if exists, launch if not)
@@ -74,20 +73,24 @@
 **Tools**: grim, slurp, satty, swww, wallust
 **Integration**: Hyprland bindings, systemd timer
 
+**UI Pattern**: Templates use `{{ includeTemplate "log_*" }}`, `screenshot.sh` uses `notify-send`
+
 **Scripts**:
 - `screenshot.sh` - Smart screenshot with Satty annotation
   - Modes: smart (auto-snap window), region, window, fullscreen
   - Tools: grim (capture), slurp (selection), satty (annotation)
   - Smart mode: Auto-snap to window if <20px selection
 
-- `random-wallpaper.sh` - Random wallpaper from collection
-- `set-wallpaper.sh` - Set specific wallpaper + color extraction
+- `random-wallpaper.sh.tmpl` - Random wallpaper from collection (uses log templates)
+- `set-wallpaper.sh.tmpl` - Set specific wallpaper + color extraction (uses log templates)
 
 ### User Interface Menus (12 scripts)
 **Purpose**: Omarchy-inspired hierarchical menu system
 **Entry point**: `Super+Space` → `system-menu.sh`
-**Integration**: Wofi (dmenu mode), gum-ui library
+**Integration**: Wofi (dmenu mode), menu-helpers.sh library
 **Icons**: Material Design glyphs
+
+**UI Pattern**: All menu scripts use `menu-helpers.sh` (wofi + notify-send)
 
 **Main menu categories**:
 | Icon | Category | Script | Purpose |
@@ -112,6 +115,8 @@
 **Purpose**: System maintenance, health monitoring, SSH key management
 **Tools**: pacman, paru, systemctl, ssh-keygen
 **Integration**: CLI wrappers, scheduled tasks
+
+**UI Pattern**: All system scripts use gum-ui library (`ui_*` functions) for consistent terminal UI
 
 **Scripts**:
 - `package-manager.sh` - Module-based package installation (pacman/paru)
@@ -225,24 +230,24 @@ fi
 
 ### UI Pattern Standards
 
-**Default**: All scripts use gum-ui library (`ui_*` functions) for consistent terminal UI
+**UI library usage by category**:
 
-**Exceptions** (use only when necessary):
+| Category | UI Pattern | Rationale |
+|----------|------------|-----------|
+| **System scripts** | gum-ui library (`ui_*` functions) | CLI tools, interactive, need rich terminal UI |
+| **Desktop utilities** | notify-send | Keybinding-triggered, minimal overhead, native notifications |
+| **Menu scripts** | menu-helpers.sh (wofi + notify-send) | Wofi integration, consistent menu interface |
+| **Template scripts** | `{{ includeTemplate "log_*" }}` | Chezmoi lifecycle scripts, templated output |
+| **Other utilities** | Varies by context | git-prune-branch uses gum-ui, others as needed |
 
-| Exception Type | UI Pattern | Example | When to Use |
-|---------------|------------|---------|-------------|
-| **Background utilities** | notify-send | monitor-*.sh, waybar-*.sh | Keybinding-triggered, require minimal overhead |
-| **Menu system** | menu-helpers.sh | menu-*.sh scripts | Wofi integration, notification wrapper |
+### Pattern Examples
 
-### Standard Pattern (Default):
+**System script (gum-ui library)**:
 ```bash
 #!/usr/bin/env sh
-
 # Script: system-health.sh
 # Purpose: System health monitoring
-# Requirements: systemctl, gum-ui
 
-# Source UI library
 if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
     . "$UI_LIB"
 else
@@ -250,22 +255,16 @@ else
     exit 1
 fi
 
-# Implementation
 ui_title "System Status"
 ui_info "Load: $(uptime | awk -F'load average:' '{print $2}')"
 ui_success "All services running"
 ```
 
-### Exception Pattern: Background Utilities
-
-**Only for keybinding-triggered scripts requiring minimal overhead**:
-
+**Desktop utility (notify-send)**:
 ```bash
 #!/usr/bin/env sh
-
 # Script: monitor-switch.sh
 # Purpose: Switch display configuration
-# Requirements: wdisplays or nwg-displays
 
 if command -v wdisplays >/dev/null 2>&1; then
     wdisplays &
@@ -274,31 +273,25 @@ else
 fi
 ```
 
-### Exception Pattern: Menu System
-
-**Only for menu-*.sh scripts using wofi integration**:
+**Menu script (menu-helpers.sh)**:
 ```bash
 #!/usr/bin/env sh
-
 # Script: menu-update.sh
 # Purpose: System update menu
 
 . ~/.local/lib/scripts/user-interface/menu-helpers.sh
 
-CHOICE=$(show_menu "Update" "System\nFirmware\nMirrors")
+CHOICE=$(show_menu "Update" "System|Firmware|Mirrorlist")
 case "$CHOICE" in
     "System") topgrade ;;
-    "Firmware") fwupdmgr update ;;
 esac
 notify "Update" "Complete"
 ```
 
 **Anti-patterns**:
-❌ Use raw echo/printf instead of ui_* functions (except in exceptions above)
-❌ Use gum-ui in background utilities (unnecessary overhead)
-❌ Use undefined `notify` function (only defined in menu-helpers.sh)
-❌ Use notify-send in regular CLI tools (use ui_* functions)
-❌ Duplicate UI library code
+❌ Use gum-ui in desktop utilities (unnecessary overhead)
+❌ Use notify-send in system CLI tools (use ui_* functions)
+❌ Use undefined `notify()` function outside menu scripts
 ❌ Create templates in bin/
 
 ## Nerd Fonts Glyph Usage

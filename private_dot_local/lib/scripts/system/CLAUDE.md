@@ -20,7 +20,7 @@
 | `system-health-dashboard.sh` | Interactive dashboard | TUI with gum |
 | `system-maintenance.sh` | Maintenance tasks | `--update`, `--cleanup` modes |
 | `troubleshoot.sh` | Diagnostic tool | Interactive troubleshooting |
-| `package-manager.sh` v2.0 | Module-based pkg management | NixOS-style version pinning, dcli features (2,311 lines) |
+| `package-manager.sh` v2.1 | Module-based pkg management | NixOS-style version pinning, dcli v2 features (2,539 lines) |
 | `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
 
 ## system-health.sh
@@ -110,20 +110,22 @@ system-troubleshoot
 
 **Output**: Guided diagnostics with fixes
 
-## package-manager.sh v2.0
+## package-manager.sh v2.1
 
 **Purpose**: Module-based declarative package management with NixOS-style version pinning
 
-**Version**: 2.0.0 (2,311 lines, complete rewrite with dcli features)
+**Version**: 2.1.0 (2,539 lines, dcli v2 improvements: merge, snapper, performance)
 
 **Key features**:
 - Module system with conflict detection
 - NixOS-style version constraints (exact, >=, <)
+- Unmanaged package discovery with `merge` command
 - Lockfile generation for reproducibility
 - Interactive downgrade selection
 - Rolling package detection (-git packages)
 - Batch package validation with timeout
-- Optional Timeshift backup integration
+- Backup integration (Timeshift or Snapper)
+- Performance-optimized sync operations
 - Comprehensive validation and status checks
 
 ### Command Categories
@@ -153,6 +155,12 @@ package-manager install firefox                # Install single package
 package-manager remove firefox                 # Remove package
 package-manager sync                           # Sync to packages.yaml
 package-manager sync --prune                   # Sync + remove orphans
+```
+
+**Package Discovery**:
+```bash
+package-manager merge                          # Discover unmanaged packages
+package-manager merge --dry-run                # Preview without changes
 ```
 
 **Status & Validation**:
@@ -224,12 +232,14 @@ packages:
 
 1. **vercmp** - Accurate version comparison (handles epochs)
 2. **Interactive downgrade** - Numbered menu for version selection
-3. **Package validation** - Batch checking with 5-second timeout
+3. **Package validation** - Batch checking with 15-second timeout
 4. **Module conflicts** - Auto-detection with resolution prompts
 5. **Interactive modules** - Fallback menus when no args
 6. **Rolling packages** - Detection and warnings for -git packages
 7. **Comprehensive validate** - YAML, conflicts, naming, duplicates
-8. **Timeshift backup** - Optional integration before sync
+8. **Backup integration** - Optional Timeshift or Snapper snapshots before sync
+9. **Version caching** - Performance optimization during sync operations
+10. **Unmanaged package discovery** - Merge command for package onboarding
 
 ### Advanced Usage
 
@@ -261,6 +271,38 @@ package-manager lock                           # Generate lockfile
 package-manager status                         # Review system state
 package-manager sync                           # Apply changes
 ```
+
+**Package discovery workflow**:
+```bash
+# Find unmanaged packages (installed but not in modules)
+package-manager merge --dry-run
+
+# Interactively add to modules
+package-manager merge
+# → Shows unmanaged packages
+# → Select target module
+# → Packages added to packages.yaml
+# → Run 'package-manager sync' to reconcile
+```
+
+### Backup Tool Configuration
+
+**Optional configuration in packages.yaml**:
+```yaml
+packages:
+  # Backup tool configuration (auto-detects if omitted)
+  backup_tool: "snapper"        # or "timeshift" (prefers timeshift if both installed)
+  snapper_config: "root"        # snapper config name (default: "root")
+
+  modules:
+    # ... module definitions
+```
+
+**Auto-detection behavior**:
+- Prefers Timeshift if installed
+- Falls back to Snapper if Timeshift not found
+- Silently skips if neither tool available
+- Prompts before creating snapshot
 
 ### Integration Points
 

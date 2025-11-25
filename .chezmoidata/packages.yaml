@@ -1,6 +1,12 @@
 packages:
   # Module definitions (flat structure, pacman + flatpak at same level)
   # Note: All Flatpak packages are installed in user scope
+
+  # Optional: Backup tool configuration (package-manager v2.1+)
+  # Uncomment to explicitly configure backup tool (auto-detects if omitted)
+  # backup_tool: "snapper"        # or "timeshift" (prefers timeshift if both installed)
+  # snapper_config: "root"        # snapper config name (default: "root")
+
   modules:
     # ============================================================
     # BASE SYSTEM (Always enabled)
@@ -34,6 +40,7 @@ packages:
         - smartmontools    # SMART disk health monitoring
         - btrfs-progs      # Btrfs filesystem utilities
         - snapper          # Btrfs/LVM snapshot manager
+        - timeshift        # System backup and restore (Btrfs snapshots)
         - sof-firmware     # Intel audio DSP firmware
 
     network:

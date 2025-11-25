@@ -18,6 +18,11 @@
 
 **Solution**: Lightweight executables in `bin/` lazy-load scripts from `lib/scripts/` on demand
 
+**Standards**: See root `CLAUDE.md` for:
+- Error handling strategy (`set -euo pipefail` vs manual)
+- UI library sourcing pattern (system scripts only)
+- Shebang selection (bash vs sh guidelines)
+
 ### Directory Structure
 
 ```
@@ -121,12 +126,12 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 ## Subdirectories with CLAUDE.md
 
 **Detailed documentation**:
-1. `lib/scripts/` - Script library overview
-2. `lib/scripts/core/` - Gum UI library
-3. `lib/scripts/desktop/` - Desktop utilities
-4. `lib/scripts/system/` - System tools
-5. `lib/scripts/user-interface/` - Menu system
-6. `bin/` - CLI wrapper patterns
+1. `lib/scripts/` - Script library overview, **UI pattern standards by category**
+2. `lib/scripts/core/` - Gum UI library (system scripts only)
+3. `lib/scripts/system/` - System tools (UI library adopters)
+4. `bin/` - CLI wrapper patterns
+
+**Key insight**: UI library primarily used by system CLI tools, not desktop utilities
 
 **See individual CLAUDE.md files for detailed references**
 

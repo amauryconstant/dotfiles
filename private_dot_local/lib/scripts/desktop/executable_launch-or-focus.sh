@@ -5,16 +5,6 @@
 # Requirements: Arch Linux, hyprctl, jaq
 # Adapted from: Omarchy's omarchy-launch-or-focus
 
-# Source UI library
-if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
-    . "$UI_LIB"
-elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
-    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
-else
-    echo "Error: UI library not found" >&2
-    exit 1
-fi
-
 # Usage: launch-or-focus.sh [pattern] [launch-command]
 # Example: launch-or-focus.sh dolphin
 # Example: launch-or-focus.sh btop "ghostty -e btop"
@@ -23,7 +13,7 @@ WINDOW_PATTERN="$1"
 LAUNCH_COMMAND="${2:-$WINDOW_PATTERN}"
 
 if [ -z "$WINDOW_PATTERN" ]; then
-    ui_error "Usage: launch-or-focus.sh [pattern] [launch-command]"
+    echo "Error: Usage: launch-or-focus.sh [pattern] [launch-command]" >&2
     exit 1
 fi
 

@@ -23,7 +23,7 @@ export UI_LIB="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/core/execu
 # Trust execution order: run_once_before_001 installed paru, yq, gum
 # Single sync command handles both Arch and Flatpak packages
 # --prune flag removes orphaned packages (not in any enabled module)
-{{ includeTemplate "log_step" "Using package-manager v2.0..." }}
+{{ includeTemplate "log_step" "Using package-manager v2.1..." }}
 
 if "$PACKAGE_MANAGER_SCRIPT" sync --prune; then
     {{ includeTemplate "log_success" "All packages synced successfully" }}

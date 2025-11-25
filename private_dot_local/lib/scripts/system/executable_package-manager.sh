@@ -3,7 +3,7 @@
 # Package Manager - Module-based declarative package management with version pinning
 # Purpose: NixOS/dcli-inspired package management for Arch Linux
 # Requirements: Arch Linux, paru, yq, gum (UI library)
-# Version: 2.0.0 (complete rewrite with dcli features)
+# Version: 2.1.0 (dcli v2 improvements: merge, snapper, performance)
 
 # Source the UI library
 if [ -f "$UI_LIB" ]; then
@@ -1229,32 +1229,237 @@ cmd_remove() {
     _remove_package "$package"
 }
 
+# Command: Merge unmanaged packages into modules
+# Usage: package-manager merge [--dry-run]
+cmd_merge() {
+    local dry_run=false
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run|-n)
+                dry_run=true
+                shift
+                ;;
+            *)
+                ui_error "Unknown flag: $1"
+                ui_info "Usage: package-manager merge [--dry-run]"
+                return 1
+                ;;
+        esac
+    done
+
+    _check_yq_dependency || return 1
+
+    ui_title "📦 Merge Unmanaged Packages"
+    echo ""
+
+    ui_step "Scanning explicitly installed packages..."
+    local installed_packages=$(pacman -Qeq 2>/dev/null)
+    local installed_count=$(echo "$installed_packages" | wc -l)
+    ui_info "Found $installed_count explicitly installed packages"
+
+    ui_step "Loading declared packages from modules..."
+    local -a declared_packages=()
+
+    while IFS= read -r module; do
+        [[ -z "$module" ]] && continue
+
+        while IFS= read -r package; do
+            local pkg_data=$(_parse_package_constraint "$package")
+            IFS='|' read -r name version constraint_type <<< "$pkg_data"
+
+            # Strip flatpak: prefix for comparison
+            local name_stripped="${name#flatpak:}"
+            declared_packages+=("$name_stripped")
+        done < <(_get_module_packages "$module")
+    done < <(_get_modules)
+
+    ui_info "Found ${#declared_packages[@]} declared packages across all modules"
+
+    # Find unmanaged packages
+    ui_step "Identifying unmanaged packages..."
+    local -a unmanaged=()
+
+    while IFS= read -r pkg; do
+        [[ -z "$pkg" ]] && continue
+
+        local found=false
+        for declared in "${declared_packages[@]}"; do
+            if [[ "$declared" == "$pkg" ]]; then
+                found=true
+                break
+            fi
+        done
+
+        if [[ "$found" == "false" ]]; then
+            unmanaged+=("$pkg")
+        fi
+    done <<< "$installed_packages"
+
+    echo ""
+
+    if [[ ${#unmanaged[@]} -eq 0 ]]; then
+        ui_success "All explicitly installed packages are already managed!"
+        return 0
+    fi
+
+    ui_warning "Found ${#unmanaged[@]} unmanaged packages:"
+    echo ""
+
+    for pkg in "${unmanaged[@]}"; do
+        ui_info "  • $pkg"
+    done
+
+    echo ""
+
+    if [[ "$dry_run" == "true" ]]; then
+        ui_info "Dry run mode - no changes will be made"
+        return 0
+    fi
+
+    # Interactive module selection
+    if ! ui_confirm "Add these packages to a module?"; then
+        ui_info "Cancelled"
+        return 0
+    fi
+
+    # Get list of modules for selection
+    local -a module_list=()
+    while IFS= read -r module; do
+        [[ -z "$module" ]] && continue
+        module_list+=("$module")
+    done < <(_get_modules)
+
+    if [[ ${#module_list[@]} -eq 0 ]]; then
+        ui_error "No modules found in packages.yaml"
+        return 1
+    fi
+
+    # Display module options
+    ui_info "Available modules:"
+    echo ""
+    local i=1
+    for module in "${module_list[@]}"; do
+        local description=$(yq eval ".packages.modules.${module}.description" "$PACKAGES_FILE" 2>/dev/null)
+        [[ -z "$description" || "$description" == "null" ]] && description="No description"
+        ui_info "  [$i] $module"
+        ui_info "      $description"
+        ((i++))
+    done
+
+    echo ""
+
+    # Get user selection
+    local selection
+    while true; do
+        read -p "Select module (1-${#module_list[@]}, or 'q' to cancel): " selection
+
+        if [[ "$selection" == "q" ]] || [[ "$selection" == "Q" ]]; then
+            ui_info "Cancelled"
+            return 0
+        fi
+
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -le "${#module_list[@]}" ]]; then
+            break
+        else
+            ui_warning "Invalid selection, try again"
+        fi
+    done
+
+    local selected_module="${module_list[$((selection - 1))]}"
+    echo ""
+    ui_step "Adding packages to module: $selected_module"
+
+    # Add packages to selected module
+    local added=0
+    for pkg in "${unmanaged[@]}"; do
+        yq eval ".packages.modules.${selected_module}.packages += [\"$pkg\"]" -i "$PACKAGES_FILE"
+        ((added++))
+    done
+
+    echo ""
+    ui_success "Added $added packages to module '$selected_module'"
+    ui_info "Run 'package-manager sync' to reconcile system state"
+}
+
 # =============================================================================
 # SECTION 5: ENHANCED SYNC
 # =============================================================================
 
-# Create optional Timeshift backup before sync
-# Usage: _create_timeshift_backup
+# Detect available backup tool (timeshift or snapper)
+# Returns: Tool name or empty string if none available
+_get_backup_tool() {
+    # Check for explicit preference in packages.yaml
+    local configured=$(yq eval '.backup_tool // ""' "$PACKAGES_FILE" 2>/dev/null)
+
+    if [[ -n "$configured" ]] && [[ "$configured" != "null" ]]; then
+        if command -v "$configured" >/dev/null 2>&1; then
+            echo "$configured"
+            return
+        fi
+    fi
+
+    # Auto-detect: prefer timeshift, fallback to snapper
+    if command -v timeshift >/dev/null 2>&1; then
+        echo "timeshift"
+    elif command -v snapper >/dev/null 2>&1; then
+        echo "snapper"
+    else
+        echo ""
+    fi
+}
+
+# Get snapper config name from packages.yaml (default: root)
+_get_snapper_config() {
+    local snapper_config=$(yq eval '.snapper_config // "root"' "$PACKAGES_FILE" 2>/dev/null)
+    echo "$snapper_config"
+}
+
+# Create optional backup before sync (supports timeshift and snapper)
+# Usage: _create_backup
 # Returns: 0 on success or skip, 1 on failure (non-fatal)
-_create_timeshift_backup() {
-    # Check if timeshift is installed
-    if ! command -v timeshift >/dev/null 2>&1; then
+_create_backup() {
+    local backup_tool=$(_get_backup_tool)
+
+    # No backup tool available
+    if [[ -z "$backup_tool" ]]; then
         return 0  # Skip silently if not installed
     fi
 
-    ui_info "Timeshift backup available"
+    ui_info "$backup_tool backup available"
 
     if ui_confirm "Create system backup before sync?"; then
-        ui_step "Creating Timeshift backup..."
+        ui_step "Creating $backup_tool backup..."
 
         local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-        if sudo timeshift --create --comments "package-manager sync - $timestamp" --scripted; then
-            ui_success "Backup created successfully"
-            return 0
-        else
-            ui_warning "Backup failed (continuing anyway)"
-            return 1
-        fi
+        local comment="package-manager sync - $timestamp"
+
+        case "$backup_tool" in
+            timeshift)
+                if sudo timeshift --create --comments "$comment" --scripted; then
+                    ui_success "Timeshift backup created successfully"
+                    return 0
+                else
+                    ui_warning "Timeshift backup failed (continuing anyway)"
+                    return 1
+                fi
+                ;;
+            snapper)
+                local snapper_config=$(_get_snapper_config)
+                if sudo snapper -c "$snapper_config" create -d "$comment"; then
+                    ui_success "Snapper snapshot created successfully (config: $snapper_config)"
+                    return 0
+                else
+                    ui_warning "Snapper snapshot failed (continuing anyway)"
+                    return 1
+                fi
+                ;;
+            *)
+                ui_warning "Unknown backup tool: $backup_tool"
+                return 1
+                ;;
+        esac
     else
         ui_info "Skipping backup"
         return 0
@@ -1283,8 +1488,8 @@ cmd_sync() {
 
     ui_title "📦 Syncing System to packages.yaml"
 
-    # Optional Timeshift backup
-    _create_timeshift_backup
+    # Optional backup (timeshift or snapper)
+    _create_backup
 
     # Initialize counters
     local total=0
@@ -1346,6 +1551,14 @@ cmd_sync() {
         ui_success "All packages valid"
     fi
 
+    # Cache installed package versions (performance optimization)
+    ui_step "Caching installed package versions..."
+    declare -A installed_versions_map
+    while IFS=' ' read -r pkg ver; do
+        installed_versions_map["$pkg"]="$ver"
+    done < <(pacman -Q 2>/dev/null | awk '{print $1, $2}')
+    ui_info "Cached ${#installed_versions_map[@]} package versions"
+
     # Process pacman packages
     if [[ ${#pacman_packages[@]} -gt 0 ]]; then
         ui_step "Processing pacman packages..."
@@ -1357,8 +1570,8 @@ cmd_sync() {
             local pkg_data=$(_parse_package_constraint "$package")
             IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
-            # Check current installation
-            local installed_version=$(_get_package_version "$name")
+            # Check current installation (use cached version)
+            local installed_version="${installed_versions_map[$name]:-}"
 
             if [[ -z "$installed_version" ]]; then
                 # Not installed, install it
@@ -1986,7 +2199,7 @@ cmd_validate() {
 
 show_help() {
     cat << 'EOF'
-Package Manager v2.0.0
+Package Manager v2.1.0
 Module-based declarative package management with version pinning
 
 USAGE:
@@ -2012,6 +2225,7 @@ VERSION PINNING:
 PACKAGE OPERATIONS:
     install <package>                Install a single package
     remove <package>                 Remove a package
+    merge [--dry-run]                Add unmanaged packages to modules
     sync                             Sync system to packages.yaml state
     sync --prune                     Sync + remove orphaned packages
 
@@ -2033,6 +2247,10 @@ EXAMPLES:
     # Enable multiple modules
     package-manager module enable base shell_environment
 
+    # Discover and add unmanaged packages
+    package-manager merge --dry-run
+    package-manager merge
+
     # Pin package to specific version
     package-manager pin firefox 120.0
 
@@ -2048,11 +2266,13 @@ EXAMPLES:
 FEATURES:
     • Module system with conflict detection
     • NixOS-style version constraints (exact, >=, <)
+    • Unmanaged package discovery and onboarding
     • Lockfile generation for reproducibility
     • Interactive downgrade selection
     • Rolling package detection (-git packages)
     • Batch package validation with timeout
-    • Optional Timeshift backup integration
+    • Backup integration (Timeshift or Snapper)
+    • Performance-optimized sync operations
     • Comprehensive validation and status checks
 
 STATE FILES:
@@ -2060,12 +2280,16 @@ STATE FILES:
     State:     ~/.local/state/package-manager/package-state.yaml
     Lockfile:  ~/.local/state/package-manager/locked-versions.yaml
 
+BACKUP TOOL CONFIGURATION (optional in packages.yaml):
+    backup_tool: "timeshift"         # or "snapper" (auto-detects if not set)
+    snapper_config: "root"           # snapper config name (default: "root")
+
 For more information, see the CLAUDE.md documentation.
 EOF
 }
 
 show_version() {
-    ui_title "package-manager v2.0.0"
+    ui_title "package-manager v2.1.0"
     ui_info "Module-based package management for Arch Linux"
 }
 
@@ -2274,6 +2498,9 @@ package-manager() {
             ;;
         "remove")
             cmd_remove "$@"
+            ;;
+        "merge")
+            cmd_merge "$@"
             ;;
         "sync")
             cmd_sync "$@"
