@@ -69,9 +69,11 @@ reload_applications() {
         killall -SIGUSR2 waybar 2>/dev/null
     fi
 
-    # Restart Dunst (it auto-restarts)
+    # Restart Dunst to reload theme
     if pgrep -x dunst >/dev/null; then
         killall dunst 2>/dev/null
+        sleep 0.5
+        dunst >/dev/null 2>&1 &
     fi
 
     # Reload Ghostty
