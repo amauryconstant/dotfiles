@@ -21,3 +21,13 @@
 @define-color accent-highlight #cba6f7; /* mauve - secondary actions */
 @define-color accent-secondary #74c7ec; /* sapphire - alternative */
 @define-color accent-tertiary #fab387; /* peach - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - 100% Catppuccin palette utilization) */
+@define-color accent-modification #f5c2e7;  /* pink - git diffs, file changes, search highlights */
+@define-color accent-border #b4befe;        /* lavender - active borders, focus rings, hints */
+@define-color accent-performance #eba0ac;   /* maroon - CPU, memory, disk metrics */
+@define-color accent-media #cba6f7;         /* mauve - audio, video, media controls (reuse) */
+@define-color accent-subtle #f5e0dc;        /* rosewater - cursors, subtle hints, low-priority */
+@define-color accent-alternative #89dceb;   /* sky - alternative actions, tertiary navigation */
+@define-color accent-special #f2cdcd;       /* flamingo - special states, custom modules */
+@define-color accent-urgent-secondary #fab387; /* peach - moderate urgency (reuse) */

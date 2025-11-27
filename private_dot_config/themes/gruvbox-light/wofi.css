@@ -13,7 +13,7 @@
 @define-color fg-contrast #fbf1c7;     /* light0 - high contrast on colored backgrounds */
 
 /* Accent Colors - Semantic Roles */
-@define-color accent-primary #076678;  /* blue - primary actions */
+@define-color accent-primary #b57614;  /* yellow - primary actions */
 @define-color accent-info #427b58;     /* aqua - connectivity */
 @define-color accent-success #79740e;  /* green - success */
 @define-color accent-warning #b57614;  /* yellow - warnings */
@@ -21,3 +21,13 @@
 @define-color accent-highlight #8f3f71; /* purple - secondary actions */
 @define-color accent-secondary #427b58; /* aqua - alternative */
 @define-color accent-tertiary #af3a03; /* orange - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - Warm-first philosophy with strategic reuse) */
+@define-color accent-modification #af3a03;  /* faded_orange - git diffs, file changes, search highlights */
+@define-color accent-border #b57614;        /* faded_yellow - active borders, focus rings, hints (reuse) */
+@define-color accent-performance #8f3f71;   /* faded_purple - CPU, memory, disk metrics */
+@define-color accent-media #8f3f71;         /* faded_purple - audio, video, media controls (reuse) */
+@define-color accent-subtle #928374;        /* gray - cursors, subtle hints, low-priority */
+@define-color accent-alternative #427b58;   /* faded_aqua - alternative actions (reuse) */
+@define-color accent-special #af3a03;       /* faded_orange - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #af3a03; /* faded_orange - moderate urgency (reuse, overlaps) */

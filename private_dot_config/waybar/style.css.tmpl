@@ -229,21 +229,21 @@ window#waybar {
   color: @accent-warning;
 }
 
-/* Enhanced hover effects with module-specific colors */
+/* Enhanced hover effects with module-specific colors (Phase 3 - semantic variables) */
 #network:hover {
-  background-color: rgba(37, 157, 148, 0.1);  /* Cyan with transparency */
+  background-color: @accent-info-hover;        /* Semantic network hover */
 }
 
 #pulseaudio:hover {
-  background-color: rgba(108, 113, 195, 0.1);  /* Violet with transparency */
+  background-color: @accent-highlight-hover;   /* Semantic audio hover */
 }
 
 #backlight:hover {
-  background-color: rgba(182, 136, 0, 0.1);    /* Yellow with transparency */
+  background-color: @accent-warning-hover;     /* Semantic backlight hover */
 }
 
 #battery:hover {
-  background-color: rgba(129, 149, 0, 0.1);    /* Green with transparency */
+  background-color: @accent-success-hover;     /* Semantic battery hover */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -317,13 +317,18 @@ window#waybar {
 
 /* Enhanced Battery module with state-based styling */
 #battery {
-  /* Default color: Oksolar green (good battery level) */
+  /* Default color: Green (good battery level >30%) */
   color: @accent-success;
 }
 
-/* Battery module: Warning state (< 30%) */
-#battery.warning:not(.charging) {
-  color: @accent-warning;
+/* Battery module: Moderate warning state (20-30% - Phase 3) */
+#battery.warning:not(.charging):not(.critical) {
+  color: @accent-urgent-secondary;  /* Moderate urgency indicator */
+}
+
+/* Battery module: Low warning state (< 20%) */
+#battery.low:not(.charging) {
+  color: @accent-warning;           /* Standard warning color */
 }
 
 /* Battery module: Critical state (< 10%) with enhanced animation */
@@ -389,18 +394,18 @@ window#waybar {
  *   color: @accent-tertiary;
  * } */
 
-/* Disk module: */
-/* #disk {
- *   color: @accent-primary;
- * }
- *
- * #disk.warning {
- *   color: @accent-tertiary;
- * }
- *
- * #disk.critical {
- *   color: @accent-error;
- * } */
+/* Disk module (Phase 3 - performance semantic variable) */
+#disk {
+  color: @accent-performance;  /* Normal disk usage state */
+}
+
+#disk.warning {
+  color: @accent-warning;      /* Standard warning color */
+}
+
+#disk.critical {
+  color: @accent-error;        /* Critical disk space */
+}
 
 /* Custom modules: */
 /* #custom-weather {

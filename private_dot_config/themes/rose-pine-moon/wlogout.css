@@ -13,11 +13,21 @@
 @define-color fg-contrast #232136;     /* base - high contrast on colored backgrounds */
 
 /* Accent Colors - Semantic Roles */
-@define-color accent-primary #9ccfd8;  /* foam - primary actions */
-@define-color accent-info #3e8fb0;     /* pine - connectivity */
-@define-color accent-success #9ccfd8;  /* foam - success */
+@define-color accent-primary #c4a7e7;  /* iris - primary actions */
+@define-color accent-info #9ccfd8;     /* foam - connectivity */
+@define-color accent-success #3e8fb0;  /* pine - success */
 @define-color accent-warning #f6c177;  /* gold - warnings */
 @define-color accent-error #eb6f92;    /* love - errors */
 @define-color accent-highlight #c4a7e7; /* iris - secondary actions */
-@define-color accent-secondary #31748f; /* pine - alternative */
+@define-color accent-secondary #ea9a97; /* rose - alternative */
 @define-color accent-tertiary #ea9a97; /* rose - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - Strategic reuse for minimalist 6-color palette) */
+@define-color accent-modification #ea9a97;  /* rose - git diffs, file changes, search highlights */
+@define-color accent-border #c4a7e7;        /* iris - active borders, focus rings, hints (reuse) */
+@define-color accent-performance #eb6f92;   /* love - CPU, memory, disk metrics (reuse) */
+@define-color accent-media #c4a7e7;         /* iris - audio, video, media controls (reuse) */
+@define-color accent-subtle #6e6a86;        /* muted - cursors, subtle hints, low-priority */
+@define-color accent-alternative #9ccfd8;   /* foam - alternative actions (reuse) */
+@define-color accent-special #f6c177;       /* gold - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #f6c177; /* gold - moderate urgency (reuse, overlaps special) */

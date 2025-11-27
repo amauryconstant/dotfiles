@@ -12,12 +12,12 @@
 - **Config**: `config` (launcher behavior)
 - **Theme integration**: `@import "../themes/current/wofi.css"`
 - **Format**: GTK CSS with `@variable` references
-- **Variables used**: ~8 semantic variables
+- **Variables used**: 9 semantic variables (8 core + 1 extended Phase 3)
 - **Purpose**: Application launcher and menu system
 
 ## Semantic Variable Usage
 
-### 8 Variables Used
+### 9 Variables Used (Phase 3)
 
 | Semantic Variable | Wofi Element | Usage |
 |-------------------|--------------|-------|
@@ -28,7 +28,8 @@
 | `@accent-primary` | Selected item background | Active selection |
 | `@fg-contrast` | Text on selected item | High contrast on accent bg |
 | `@bg-tertiary` | (Optional) borders, separators | Visual separation |
-| `@accent-highlight` | (Optional) search match highlight | Special emphasis |
+| `@accent-highlight` | (Optional) alternative highlight | Special emphasis |
+| `@accent-modification` | **Search match highlight (Phase 3)** | **Matched search terms** |
 
 ## Element Mappings
 
@@ -135,15 +136,18 @@ Wofi focuses on simplicity. Key principles:
 - Consistent backgrounds (primary + secondary only)
 - High contrast selection for keyboard navigation
 
-### Search Highlight (Optional)
+### Search Highlight (Phase 3 - Active)
 
-If implementing search term highlighting:
+Search term highlighting enabled with modification semantic:
 ```css
-#text:match {
-    color: @accent-highlight;           /* Highlight matched chars */
+#text match {
+    color: @accent-modification;        /* Highlight matched chars - Phase 3 */
     font-weight: bold;
+    text-decoration: underline;
 }
 ```
+
+**Rationale**: `@accent-modification` semantically represents "changes/highlights" - perfect for search matching.
 
 ### Alternative Selection Style
 

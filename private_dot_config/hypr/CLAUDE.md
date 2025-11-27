@@ -88,6 +88,26 @@ col.inactive_border = {{color0}}
 
 **NOT managed by chezmoi**: Generated files in `wallust/` subdirectory (ephemeral state)
 
+## Theme System Integration (Phase 2+3)
+
+**Static theme files**: Unlike GTK apps (Waybar, Wofi, Wlogout), Hyprland uses static theme files per theme variant.
+
+**Border colors** (`~/.config/themes/{theme}/hyprland.conf`):
+```conf
+# Example: Rose Pine Moon
+$activeBorder = rgba(c4a7e7ee)    # iris (accent-border semantic)
+$inactiveBorder = rgba(6e6a86aa)  # muted (fg-muted semantic)
+```
+
+**Semantic mapping** (Phase 2):
+- Active borders use `accent-border` semantic (violet/iris/yellow per theme)
+- Inactive borders use `fg-muted` semantic
+- **Note**: Hyprland syntax doesn't support CSS `@variable` imports - uses shell-style `$variables` with hardcoded hex values
+
+**Color format**: `rgba(hexee)` where `hex` = 6-digit color, `ee` = alpha channel (no # prefix)
+
+**Border migration** (Phase 2): Borders migrated from `accent-primary` to dedicated `accent-border` for semantic clarity
+
 ## Testing & Reload
 
 **Preview config**:

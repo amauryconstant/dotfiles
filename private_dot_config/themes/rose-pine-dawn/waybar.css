@@ -13,11 +13,27 @@
 @define-color fg-contrast #faf4ed;     /* base - high contrast on colored backgrounds */
 
 /* Accent Colors - Semantic Roles */
-@define-color accent-primary #56949f;  /* foam - primary actions */
-@define-color accent-info #286983;     /* pine - connectivity */
-@define-color accent-success #56949f;  /* foam - success */
+@define-color accent-primary #907aa9;  /* iris - primary actions */
+@define-color accent-info #56949f;     /* foam - connectivity */
+@define-color accent-success #286983;  /* pine - success */
 @define-color accent-warning #ea9d34;  /* gold - warnings */
 @define-color accent-error #b4637a;    /* love - errors */
 @define-color accent-highlight #907aa9; /* iris - secondary actions */
-@define-color accent-secondary #286983; /* pine - alternative */
+@define-color accent-secondary #d7827e; /* rose - alternative */
 @define-color accent-tertiary #d7827e; /* rose - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - Strategic reuse for minimalist 6-color palette) */
+@define-color accent-modification #d7827e;  /* rose - git diffs, file changes, search highlights */
+@define-color accent-border #907aa9;        /* iris - active borders, focus rings, hints (reuse) */
+@define-color accent-performance #b4637a;   /* love - CPU, memory, disk metrics (reuse) */
+@define-color accent-media #907aa9;         /* iris - audio, video, media controls (reuse) */
+@define-color accent-subtle #9893a5;        /* muted - cursors, subtle hints, low-priority */
+@define-color accent-alternative #56949f;   /* foam - alternative actions (reuse) */
+@define-color accent-special #ea9d34;       /* gold - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #ea9d34; /* gold - moderate urgency (reuse, overlaps special) */
+
+/* Hover Variants (Phase 3 - Waybar module hover effects with 10% opacity) */
+@define-color accent-info-hover rgba(86, 148, 159, 0.1);       /* foam - network hover */
+@define-color accent-highlight-hover rgba(144, 122, 169, 0.1); /* iris - audio hover */
+@define-color accent-warning-hover rgba(234, 157, 52, 0.1);    /* gold - backlight hover */
+@define-color accent-success-hover rgba(40, 105, 131, 0.1);    /* pine - battery hover */

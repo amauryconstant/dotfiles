@@ -21,3 +21,19 @@
 @define-color accent-highlight #6c71c4; /* violet - secondary actions */
 @define-color accent-secondary #2aa198; /* cyan - alternative */
 @define-color accent-tertiary #cb4b16; /* orange - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - CIELAB precision with strategic reuse) */
+@define-color accent-modification #d33682;  /* magenta - git diffs, file changes, search highlights */
+@define-color accent-border #6c71c4;        /* violet - active borders, focus rings, hints */
+@define-color accent-performance #d33682;   /* magenta - CPU, memory, disk metrics (reuse) */
+@define-color accent-media #6c71c4;         /* violet - audio, video, media controls (reuse) */
+@define-color accent-subtle #93a1a1;        /* base1 - cursors, subtle hints, low-priority */
+@define-color accent-alternative #2aa198;   /* cyan - alternative actions (reuse) */
+@define-color accent-special #cb4b16;       /* orange - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #cb4b16; /* orange - moderate urgency (reuse, overlaps special) */
+
+/* Hover Variants (Phase 3 - Waybar module hover effects with 10% opacity) */
+@define-color accent-info-hover rgba(42, 161, 152, 0.1);       /* cyan - network hover */
+@define-color accent-highlight-hover rgba(108, 113, 196, 0.1); /* violet - audio hover */
+@define-color accent-warning-hover rgba(181, 137, 0, 0.1);     /* yellow - backlight hover */
+@define-color accent-success-hover rgba(133, 153, 0, 0.1);     /* green - battery hover */

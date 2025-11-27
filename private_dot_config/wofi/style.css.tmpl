@@ -257,12 +257,12 @@ window {
  *   white-space: nowrap;
  * } */
 
-/* Search match highlighting (if enabled in config): */
-/* #text match {
- *   color: @accent-tertiary;
- *   font-weight: bold;
- *   text-decoration: underline;
- * } */
+/* Search match highlighting (Phase 3 - modification semantic variable) */
+#text match {
+  color: @accent-modification;  /* Highlight matched search terms */
+  font-weight: bold;
+  text-decoration: underline;
+}
 
 /* Custom scrollbar styling: */
 /* scrollbar {

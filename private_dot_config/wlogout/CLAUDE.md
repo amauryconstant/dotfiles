@@ -12,12 +12,12 @@
 - **Layout**: `layout` (button positions)
 - **Theme integration**: `@import "../themes/current/wlogout.css"`
 - **Format**: GTK CSS with `@variable` references
-- **Variables used**: ~10 (backgrounds, foregrounds, all 8 accents)
-- **Purpose**: Power menu (lock, logout, suspend, hibernate, reboot, shutdown)
+- **Variables used**: 10 core + 1 optional Phase 3 (backgrounds, foregrounds, accents)
+- **Purpose**: Power menu (lock, logout, suspend, hibernate, reboot, shutdown + optional extras)
 
 ## Semantic Variable Usage
 
-### 10 Variables Used
+### 11 Variables Used (Phase 3 - optional extra button)
 
 | Semantic Variable | Wlogout Element | Usage |
 |-------------------|-----------------|-------|
@@ -32,6 +32,7 @@
 | `@accent-highlight` | Hibernate button | Violet/purple |
 | `@accent-info` | Reboot button | Cyan/teal |
 | `@accent-error` | Shutdown button | Red |
+| `@accent-alternative` | **Extra button (Phase 3 - optional)** | **Suspend-then-hibernate or custom** |
 
 ## Button-to-Accent Mappings
 
@@ -233,9 +234,32 @@ button image {
 - Reboot: `systemctl reboot`
 - Shutdown: `systemctl poweroff`
 
+## Phase 3 Additions
+
+**Optional extra button** (commented in style.css.tmpl):
+```css
+/* Uncomment if adding suspend-then-hibernate or other custom action */
+#suspend-then-hibernate {
+    border-color: @accent-alternative;
+}
+
+#suspend-then-hibernate:hover, #suspend-then-hibernate:focus {
+    background-color: @accent-alternative;
+    color: @fg-contrast;
+}
+```
+
+**Use cases**:
+- Suspend-then-hibernate (delayed deep sleep)
+- Hybrid sleep mode
+- Custom power action
+- Lock + suspend combination
+
+**Rationale**: `@accent-alternative` provides distinct visual identity from existing 6 buttons while maintaining theme consistency.
+
 ## Theme System Integration
 
-**Key principle**: Wlogout uses ALL 8 semantic accents (one per button + extras).
+**Key principle**: Wlogout uses 6 core semantic accents (one per button) + 1 optional (extra actions).
 
 **See**: `../themes/CLAUDE.md` for:
 - Complete semantic variable definitions

@@ -13,7 +13,7 @@
 @define-color fg-contrast #fbf1c7;     /* light0 - high contrast on colored backgrounds */
 
 /* Accent Colors - Semantic Roles */
-@define-color accent-primary #83a598;  /* bright_blue - primary actions */
+@define-color accent-primary #fabd2f;  /* bright_yellow - primary actions */
 @define-color accent-info #8ec07c;     /* bright_aqua - connectivity */
 @define-color accent-success #b8bb26;  /* bright_green - success */
 @define-color accent-warning #fabd2f;  /* bright_yellow - warnings */
@@ -21,3 +21,19 @@
 @define-color accent-highlight #d3869b; /* bright_purple - secondary actions */
 @define-color accent-secondary #8ec07c; /* bright_aqua - alternative */
 @define-color accent-tertiary #fe8019; /* bright_orange - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - Warm-first philosophy with strategic reuse) */
+@define-color accent-modification #fe8019;  /* bright_orange - git diffs, file changes, search highlights */
+@define-color accent-border #fabd2f;        /* bright_yellow - active borders, focus rings, hints (reuse) */
+@define-color accent-performance #d3869b;   /* bright_purple - CPU, memory, disk metrics */
+@define-color accent-media #d3869b;         /* bright_purple - audio, video, media controls (reuse) */
+@define-color accent-subtle #928374;        /* gray - cursors, subtle hints, low-priority */
+@define-color accent-alternative #8ec07c;   /* bright_aqua - alternative actions (reuse) */
+@define-color accent-special #fe8019;       /* bright_orange - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #fe8019; /* bright_orange - moderate urgency (reuse, overlaps) */
+
+/* Hover Variants (Phase 3 - Waybar module hover effects with 10% opacity) */
+@define-color accent-info-hover rgba(142, 192, 124, 0.1);      /* bright_aqua - network hover */
+@define-color accent-highlight-hover rgba(211, 134, 155, 0.1); /* bright_purple - audio hover */
+@define-color accent-warning-hover rgba(250, 189, 47, 0.1);    /* bright_yellow - backlight hover */
+@define-color accent-success-hover rgba(184, 187, 38, 0.1);    /* bright_green - battery hover */

@@ -13,7 +13,7 @@
 @define-color fg-contrast #282828;     /* dark0 - high contrast on colored backgrounds */
 
 /* Accent Colors - Semantic Roles */
-@define-color accent-primary #458588;  /* neutral_blue - primary actions */
+@define-color accent-primary #d79921;  /* neutral_yellow - primary actions */
 @define-color accent-info #689d6a;     /* neutral_aqua - connectivity */
 @define-color accent-success #98971a;  /* neutral_green - success */
 @define-color accent-warning #d79921;  /* neutral_yellow - warnings */
@@ -21,3 +21,19 @@
 @define-color accent-highlight #b16286; /* neutral_purple - secondary actions */
 @define-color accent-secondary #689d6a; /* neutral_aqua - alternative */
 @define-color accent-tertiary #d65d0e; /* neutral_orange - tertiary actions */
+
+/* Extended Semantic Variables (Phase 2 - Warm-first philosophy with strategic reuse) */
+@define-color accent-modification #d65d0e;  /* neutral_orange - git diffs, file changes, search highlights */
+@define-color accent-border #d79921;        /* neutral_yellow - active borders, focus rings, hints (reuse) */
+@define-color accent-performance #b16286;   /* neutral_purple - CPU, memory, disk metrics */
+@define-color accent-media #b16286;         /* neutral_purple - audio, video, media controls (reuse) */
+@define-color accent-subtle #928374;        /* gray - cursors, subtle hints, low-priority */
+@define-color accent-alternative #689d6a;   /* neutral_aqua - alternative actions (reuse) */
+@define-color accent-special #d65d0e;       /* neutral_orange - special states, custom modules (reuse) */
+@define-color accent-urgent-secondary #d65d0e; /* neutral_orange - moderate urgency (reuse, overlaps) */
+
+/* Hover Variants (Phase 3 - Waybar module hover effects with 10% opacity) */
+@define-color accent-info-hover rgba(104, 157, 106, 0.1);      /* neutral_aqua - network hover */
+@define-color accent-highlight-hover rgba(177, 98, 134, 0.1);  /* neutral_purple - audio hover */
+@define-color accent-warning-hover rgba(215, 153, 33, 0.1);    /* neutral_yellow - backlight hover */
+@define-color accent-success-hover rgba(152, 151, 26, 0.1);    /* neutral_green - battery hover */

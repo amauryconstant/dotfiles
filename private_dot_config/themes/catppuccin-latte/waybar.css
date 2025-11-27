@@ -25,3 +25,19 @@
 @define-color accent-highlight #8839ef; /* mauve - secondary actions, audio, special states */
 @define-color accent-secondary #209fb5; /* sapphire - tertiary actions, alternative */
 @define-color accent-tertiary #fe640b; /* peach - lock, logout, quaternary actions */
+
+/* Extended Semantic Variables (Phase 2 - 100% Catppuccin palette utilization) */
+@define-color accent-modification #ea76cb;  /* pink - git diffs, file changes, search highlights */
+@define-color accent-border #7287fd;        /* lavender - active borders, focus rings, hints */
+@define-color accent-performance #e64553;   /* maroon - CPU, memory, disk metrics */
+@define-color accent-media #8839ef;         /* mauve - audio, video, media controls (reuse) */
+@define-color accent-subtle #dc8a78;        /* rosewater - cursors, subtle hints, low-priority */
+@define-color accent-alternative #04a5e5;   /* sky - alternative actions, tertiary navigation */
+@define-color accent-special #dd7878;       /* flamingo - special states, custom modules */
+@define-color accent-urgent-secondary #fe640b; /* peach - moderate urgency (reuse) */
+
+/* Hover Variants (Phase 3 - Waybar module hover effects with 10% opacity) */
+@define-color accent-info-hover rgba(23, 146, 153, 0.1);       /* teal - network hover */
+@define-color accent-highlight-hover rgba(136, 57, 239, 0.1);  /* mauve - audio hover */
+@define-color accent-warning-hover rgba(223, 142, 29, 0.1);    /* yellow - backlight hover */
+@define-color accent-success-hover rgba(64, 160, 43, 0.1);     /* green - battery hover */

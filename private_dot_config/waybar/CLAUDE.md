@@ -11,14 +11,16 @@
 - **File**: `style.css.tmpl` (GTK CSS with semantic variables)
 - **Config**: `config.tmpl` (JSON with module definitions)
 - **Theme integration**: `@import "../themes/current/waybar.css"`
-- **Variables used**: All 16 semantic variables
+- **Variables used**: 20 semantic variables (13 core + 3 extended + 4 hover variants)
 - **Format**: GTK CSS with `@variable` references
 
 ## Semantic Variable Usage
 
-### All 16 Variables Used
+### 20 of 28 Variables Used (Phase 3)
 
-Waybar uses complete semantic schema. Variables imported from `themes/current/waybar.css`.
+Waybar uses expanded semantic schema including Phase 3 additions. Variables imported from `themes/current/waybar.css`.
+
+**Active variables**: 13 core accents, 3 extended (performance, urgent-secondary, modification via wofi), 4 hover variants
 
 **Quick lookup**:
 ```css
@@ -80,13 +82,17 @@ window#waybar {
 ### State-Based Colors
 
 ```css
-/* Example: Battery with multiple states */
+/* Example: Battery with multiple states (Phase 3 - refined warnings) */
 #battery {
-    color: @accent-success;       /* Normal (>20%) */
+    color: @accent-success;       /* Normal (>30%) */
 }
 
-#battery.warning:not(.charging) {
-    color: @accent-warning;       /* Warning (10-20%) */
+#battery.warning:not(.charging):not(.critical) {
+    color: @accent-urgent-secondary;  /* Moderate warning (20-30%) - Phase 3 */
+}
+
+#battery.low:not(.charging) {
+    color: @accent-warning;       /* Low warning (<20%) */
 }
 
 #battery.critical:not(.charging) {
@@ -102,6 +108,35 @@ window#waybar {
     color: @accent-primary;       /* Plugged/full */
 }
 ```
+
+### Phase 3 Additions
+
+**Hover variants** (explicit 10% opacity):
+```css
+#network:hover { background-color: @accent-info-hover; }
+#pulseaudio:hover { background-color: @accent-highlight-hover; }
+#backlight:hover { background-color: @accent-warning-hover; }
+#battery:hover { background-color: @accent-success-hover; }
+```
+
+**Disk module** (performance metric):
+```css
+#disk {
+    color: @accent-performance;   /* Normal disk usage */
+}
+
+#disk.warning {
+    color: @accent-warning;       /* Disk space low */
+}
+
+#disk.critical {
+    color: @accent-error;         /* Disk space critical */
+}
+```
+
+**Battery warning refinement** (moderate urgency):
+- Uses `@accent-urgent-secondary` for 20-30% battery range
+- Provides visual distinction between moderate and severe battery warnings
 
 ### Animation with Semantic Colors
 
