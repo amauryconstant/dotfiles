@@ -9,14 +9,6 @@
 # Usage: Run directly or bind to a key (e.g., Super + /)
 # ============================================================================
 
-# Oksolar colors for styling (from chezmoi templates)
-COLOR_BASE03="{{ .colors.oksolar.base03 }}"
-COLOR_BASE02="{{ .colors.oksolar.base02 }}"
-COLOR_BASE01="{{ .colors.oksolar.base01 }}"
-COLOR_BASE0="{{ .colors.oksolar.base0 }}"
-COLOR_BLUE="{{ .colors.oksolar.blue }}"
-COLOR_CYAN="{{ .colors.oksolar.cyan }}"
-
 # Wofi configuration
 WOFI_WIDTH=1200
 WOFI_HEIGHT=800

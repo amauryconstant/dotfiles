@@ -664,8 +664,9 @@ chezmoi status
 | `packages.yaml` | Package management (Arch + Flatpak) | `{{ .packages.* }}` |
 | `ai.yaml` | AI model configuration | `{{ .ai.* }}` |
 | `extensions.yaml` | VSCode extensions | `{{ .extensions.* }}` |
-| `colors.yaml` | Oksolar color scheme | `{{ .colors.* }}` |
 | `globals.yaml` | Global env vars (XDG, apps, boot) | `{{ .globals.* }}` |
+
+**Note**: All color theming now uses the theme system from `~/.config/themes/current/`
 
 ### Template Variable Access
 

@@ -132,9 +132,6 @@
 
 **Common patterns**:
 ```go
-# Color access
-{{ .colors.oksolar.base0 }}
-
 # Application defaults
 {{ .globals.applications.terminal }}
 

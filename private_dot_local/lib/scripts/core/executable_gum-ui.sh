@@ -3,20 +3,24 @@
 # Standardized Gum UI Library
 # Purpose: Consistent, reusable UI functions for all shell scripts
 # Requirements: gum (optional - provides fallbacks)
-# Color scheme: Oksolar (loaded from colors.sh)
+# Color scheme: Theme-aware (loaded from active theme)
 
-# Load color definitions
-if [ -f "$SCRIPTS_DIR/core/colors.sh" ]; then
-    . "$SCRIPTS_DIR/core/colors.sh"
+# Load theme colors with fallback
+if [ -f "$HOME/.config/themes/current/colors.sh" ]; then
+    . "$HOME/.config/themes/current/colors.sh"
 else
-    # Fallback color definitions if colors.sh is missing
-    readonly UI_PRIMARY="#2b90d8"
-    readonly UI_SUCCESS="#819500" 
-    readonly UI_ERROR="#f23749"
-    readonly UI_WARNING="#d56500"
-    readonly UI_CAUTION="#ac8300"
-    readonly UI_SECONDARY="#5b7279"
-    readonly UI_SUBTLE="#5b7279"
+    # Fallback to Rose Pine Dawn defaults
+    readonly BG_PRIMARY="#faf4ed"
+    readonly FG_PRIMARY="#575279"
+    readonly FG_SECONDARY="#797593"
+    readonly FG_MUTED="#9893a5"
+    readonly ACCENT_PRIMARY="#907aa9"
+    readonly ACCENT_SUCCESS="#286983"
+    readonly ACCENT_ERROR="#b4637a"
+    readonly ACCENT_WARNING="#ea9d34"
+    readonly ACCENT_URGENT_SECONDARY="#ea9d34"
+
+    echo "⚠️  Warning: Theme colors not found, using fallback" >&2
 fi
 
 # Check gum availability and warn once if missing
@@ -125,7 +129,7 @@ _ui_render() {
 _ui_render_subtitle() {
     local message="$1"
     if _check_gum; then
-        gum style --foreground "$UI_PRIMARY" --border rounded --padding "0 2" "$message"
+        gum style --foreground "$ACCENT_PRIMARY" --border rounded --padding "0 2" "$message"
     else
         echo
         echo "--- $message ---"
@@ -157,31 +161,31 @@ _ui_render_box() {
 # =============================================================================
 
 # Display success message with green checkmark
-ui_success() { _ui_render "$1" "✅ " "$UI_SUCCESS" "${@:2}"; }
+ui_success() { _ui_render "$1" "✅ " "$ACCENT_SUCCESS" "${@:2}"; }
 
 # Display error message with red X
-ui_error() { _ui_render "$1" "❌ " "$UI_ERROR" "${@:2}"; }
+ui_error() { _ui_render "$1" "❌ " "$ACCENT_ERROR" "${@:2}"; }
 
 # Display warning message with yellow triangle
-ui_warning() { _ui_render "$1" "⚠️  " "$UI_WARNING" "${@:2}"; }
+ui_warning() { _ui_render "$1" "⚠️  " "$ACCENT_WARNING" "${@:2}"; }
 
 # Display info message with blue info icon
-ui_info() { _ui_render "$1" "ℹ️  " "$UI_PRIMARY" "${@:2}"; }
+ui_info() { _ui_render "$1" "ℹ️  " "$ACCENT_PRIMARY" "${@:2}"; }
 
 # Display step/process message with clipboard icon
-ui_step() { _ui_render "$1" "📋 " "$UI_PRIMARY" "${@:2}"; }
+ui_step() { _ui_render "$1" "📋 " "$ACCENT_PRIMARY" "${@:2}"; }
 
 # Display status indicator with chart icon
-ui_status() { _ui_render "$1" "📊 " "$UI_PRIMARY" "${@:2}"; }
+ui_status() { _ui_render "$1" "📊 " "$ACCENT_PRIMARY" "${@:2}"; }
 
 # Display action message with rocket icon
-ui_action() { _ui_render "$1" "🚀 " "$UI_PRIMARY" "${@:2}"; }
+ui_action() { _ui_render "$1" "🚀 " "$ACCENT_PRIMARY" "${@:2}"; }
 
 # Display completion message with party icon
-ui_complete() { _ui_render "$1" "🎉 " "$UI_SUCCESS" "${@:2}"; }
+ui_complete() { _ui_render "$1" "🎉 " "$ACCENT_SUCCESS" "${@:2}"; }
 
 # Display plain text with secondary styling
-ui_text() { _ui_render "$1" "" "$UI_SECONDARY" "${@:2}"; }
+ui_text() { _ui_render "$1" "" "$FG_SECONDARY" "${@:2}"; }
 
 # =============================================================================
 # HEADERS & LAYOUT FUNCTIONS  
@@ -190,7 +194,7 @@ ui_text() { _ui_render "$1" "" "$UI_SECONDARY" "${@:2}"; }
 # Display section title with double border
 ui_title() {
     if _check_gum; then
-        gum style --foreground "$UI_PRIMARY" --bold --border double --padding "1 2" --margin "1 0" "$1"
+        gum style --foreground "$ACCENT_PRIMARY" --bold --border double --padding "1 2" --margin "1 0" "$1"
     else
         echo
         echo "=== $1 ==="
@@ -220,7 +224,7 @@ ui_subtitle() {
 ui_box() {
     local content="$1"
     shift
-    local border_color="$UI_SECONDARY"
+    local border_color="$FG_SECONDARY"
     
     # Parse border color parameter first
     if [[ $# -gt 0 && "$1" != --* ]]; then
@@ -244,7 +248,7 @@ ui_box() {
 # Display visual separator
 ui_separator() {
     if _check_gum; then
-        gum style --foreground "$UI_SUBTLE" "────────────────────────────────────────────────────────"
+        gum style --foreground "$FG_MUTED" "────────────────────────────────────────────────────────"
     else
         echo "────────────────────────────────────────────────────────"
     fi
@@ -452,7 +456,7 @@ ui_list() {
     
     for item in "$@"; do
         if _check_gum; then
-            gum style --foreground "$UI_SECONDARY" "  • $item"
+            gum style --foreground "$FG_SECONDARY" "  • $item"
         else
             echo "  • $item"
         fi
@@ -468,8 +472,8 @@ ui_key_value() {
     if _check_gum; then
         local key_styled
         local value_styled
-        key_styled=$(gum style --foreground "$UI_PRIMARY" "$key$separator")
-        value_styled=$(gum style --foreground "$UI_SECONDARY" "$value")
+        key_styled=$(gum style --foreground "$ACCENT_PRIMARY" "$key$separator")
+        value_styled=$(gum style --foreground "$FG_SECONDARY" "$value")
         echo "$key_styled $value_styled"
     else
         printf "%-20s %s %s\n" "$key$separator" "" "$value"

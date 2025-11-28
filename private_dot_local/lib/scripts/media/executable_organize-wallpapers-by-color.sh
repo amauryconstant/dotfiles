@@ -203,7 +203,7 @@ for theme in "${THEMES[@]}"; do
     THEME_ACCENT_COLORS[$theme]="$colors"
 
     color_count=$(echo "$colors" | wc -w)
-    ui_text "$theme: $color_count colors extracted" "$UI_MUTED"
+    ui_text "$theme: $color_count colors extracted" "$FG_MUTED"
 done
 ui_spacer
 
@@ -420,7 +420,7 @@ for wallpaper in "${WALLPAPERS[@]}"; do
     best_entry=$(echo "$rankings" | tr ' ' '\n' | sort -t: -k2 -n | head -1)
     best_theme=$(echo "$best_entry" | cut -d: -f1)
     best_distance=$(echo "$best_entry" | cut -d: -f2)
-    ui_text "  Best: $best_theme ($best_distance)" "$UI_MUTED"
+    ui_text "  Best: $best_theme ($best_distance)" "$FG_MUTED"
 
     ui_spacer
 done
@@ -500,7 +500,7 @@ for round in $(seq 1 $MAX_ROUNDS); do
         break
     fi
 
-    ui_text "Round $round: Assigned $assignments_this_round wallpapers" "$UI_MUTED"
+    ui_text "Round $round: Assigned $assignments_this_round wallpapers" "$FG_MUTED"
 done
 ui_spacer
 
@@ -631,7 +631,7 @@ for theme in "${THEMES[@]}"; do
     if [ "$count" -gt 0 ]; then
         ui_success "  $theme: $count wallpapers"
     else
-        ui_text "  $theme: 0 wallpapers" "$UI_MUTED"
+        ui_text "  $theme: 0 wallpapers" "$FG_MUTED"
     fi
 done
 ui_spacer
@@ -639,7 +639,7 @@ ui_spacer
 if [ "$UNASSIGNED_COUNT" -gt 0 ]; then
     ui_warning "Unassigned: $UNASSIGNED_COUNT wallpapers"
     ui_info "Review in: $UNASSIGNED_DIR"
-    ui_text "Re-run with lower --threshold if needed" "$UI_MUTED"
+    ui_text "Re-run with lower --threshold if needed" "$FG_MUTED"
 fi
 ui_spacer
 

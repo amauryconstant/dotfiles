@@ -1,24 +1,27 @@
 /* ========================================================================== */
-/* Wofi Keybindings Cheatsheet Style - Oksolar Theme */
+/* Wofi Keybindings Cheatsheet Style - Theme System */
 /* ========================================================================== */
 /*
  * Custom CSS for Hyprland keybindings cheatsheet displayed in wofi.
  * Optimized for wide layout with monospace font for alignment.
- * Colors injected via chezmoi templates from .chezmoidata/colors.yaml
+ * Colors imported from active theme.
  *
  * Usage: Used by ~/.local/lib/scripts/desktop/keybindings.sh
  * Launch: Super + / (or configured keybinding)
  */
 
+/* Import current theme colors */
+@import url("../themes/current/wofi.css");
+
 /* -------------------------------------------------------------------------- */
 /* Main Window */
 /* -------------------------------------------------------------------------- */
 window {
-  /* Background: Oksolar darkest (base03) */
-  background-color: #{{ .colors.oksolar.base03 }};
+  /* Background: Theme primary background */
+  background-color: @bg-primary;
 
-  /* Border: Oksolar blue accent */
-  border: 2px solid #{{ .colors.oksolar.blue }};
+  /* Border: Theme primary accent */
+  border: 2px solid @accent-primary;
   border-radius: 8px;
 
   /* Font: Monospace for aligned columns */
@@ -28,22 +31,22 @@ window {
   /* Padding: Space around content */
   padding: 10px;
 
-  /* Text color: Oksolar default text (base0) */
-  color: #{{ .colors.oksolar.base0 }};
+  /* Text color: Theme primary text */
+  color: @fg-primary;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Input Box (Search Field) */
 /* -------------------------------------------------------------------------- */
 #input {
-  /* Background: Oksolar dark (base02) - slightly lighter than window */
-  background-color: #{{ .colors.oksolar.base02 }};
+  /* Background: Theme secondary background */
+  background-color: @bg-secondary;
 
-  /* Text color: Oksolar light text (base1) */
-  color: #{{ .colors.oksolar.base1 }};
+  /* Text color: Theme primary text */
+  color: @fg-primary;
 
-  /* Border: Oksolar cyan accent for input field */
-  border: 1px solid #{{ .colors.oksolar.cyan }};
+  /* Border: Theme info accent */
+  border: 1px solid @accent-info;
   border-radius: 4px;
 
   /* Spacing */
@@ -56,8 +59,8 @@ window {
 
 /* Input box: Focus state */
 #input:focus {
-  /* Border: Brighter blue when focused */
-  border-color: #{{ .colors.oksolar.blue }};
+  /* Border: Primary accent when focused */
+  border-color: @accent-primary;
 
   /* Outline: Remove default outline */
   outline: none;
@@ -76,8 +79,8 @@ window {
 
 /* Scrollbar slider (thumb) */
 #scroll slider {
-  /* Background: Oksolar base01 (muted) */
-  background-color: #{{ .colors.oksolar.base01 }};
+  /* Background: Muted foreground */
+  background-color: @fg-muted;
 
   /* Rounded corners */
   border-radius: 4px;
@@ -89,8 +92,8 @@ window {
 
 /* Scrollbar slider: Hover state */
 #scroll slider:hover {
-  /* Background: Oksolar base0 (lighter on hover) */
-  background-color: #{{ .colors.oksolar.base0 }};
+  /* Background: Secondary foreground on hover */
+  background-color: @fg-secondary;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -110,8 +113,8 @@ window {
   /* Background: Transparent by default */
   background-color: transparent;
 
-  /* Text color: Oksolar base0 (default text) */
-  color: #{{ .colors.oksolar.base0 }};
+  /* Text color: Theme primary text */
+  color: @fg-primary;
 
   /* Spacing */
   padding: 6px 12px;
@@ -127,20 +130,20 @@ window {
 
 /* Entry: Hover state */
 #entry:hover {
-  /* Background: Oksolar base02 (dark highlight) */
-  background-color: #{{ .colors.oksolar.base02 }};
+  /* Background: Secondary background */
+  background-color: @bg-secondary;
 
   /* Text color: Brighter on hover */
-  color: #{{ .colors.oksolar.base1 }};
+  color: @fg-primary;
 }
 
 /* Entry: Selected state */
 #entry:selected {
-  /* Background: Oksolar blue (primary accent) */
-  background-color: #{{ .colors.oksolar.blue }};
+  /* Background: Primary accent */
+  background-color: @accent-primary;
 
-  /* Text color: Lightest for high contrast */
-  color: #{{ .colors.oksolar.base3 }};
+  /* Text color: High contrast */
+  color: @fg-contrast;
 
   /* Font weight: Bold to emphasize selection */
   font-weight: bold;
@@ -153,13 +156,13 @@ window {
 /* Category headers (lines containing ":") */
 #entry:nth-child(odd) {
   /* Optional: Alternate row coloring */
-  /* background-color: rgba(9, 57, 70, 0.3); */
+  /* background-color: @bg-secondary; */
 }
 
 /* Separator lines (━━━ characters) */
 #text {
   /* Default text color */
-  color: #{{ .colors.oksolar.base0 }};
+  color: @fg-primary;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -168,11 +171,11 @@ window {
 
 /* First entry (header row: "󰌌 Keybindings ... 󱧣 Description") */
 #outer-box > #scroll > #inner-box > #entry:first-child {
-  /* Background: Oksolar base02 (dark) */
-  background-color: #{{ .colors.oksolar.base02 }};
+  /* Background: Secondary background */
+  background-color: @bg-secondary;
 
-  /* Text color: Oksolar blue (accent) */
-  color: #{{ .colors.oksolar.blue }};
+  /* Text color: Primary accent */
+  color: @accent-primary;
 
   /* Font: Bold and larger */
   font-weight: bold;
@@ -181,8 +184,8 @@ window {
   /* Spacing: Extra padding */
   padding: 10px 12px;
 
-  /* Border: Bottom separator */
-  border-bottom: 2px solid #{{ .colors.oksolar.cyan }};
+  /* Border: Bottom separator with info accent */
+  border-bottom: 2px solid @accent-info;
 
   /* Fixed position */
   margin-bottom: 5px;
@@ -190,8 +193,8 @@ window {
 
 /* Second entry (separator line: ━━━━━━) */
 #outer-box > #scroll > #inner-box > #entry:nth-child(2) {
-  /* Color: Oksolar base01 (muted separator) */
-  color: #{{ .colors.oksolar.base01 }};
+  /* Color: Muted foreground for separator */
+  color: @fg-muted;
 
   /* Spacing */
   padding: 2px 12px;
@@ -199,20 +202,13 @@ window {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Category Headers (detected by ending with ":") */
-/* -------------------------------------------------------------------------- */
-
-/* Category titles styling - applied via inline detection in script */
-/* These entries contain ":", such as "Execute Commands:" */
-/* Styled with different background to stand out */
-
-/* -------------------------------------------------------------------------- */
 /* Maintenance Notes */
 /* -------------------------------------------------------------------------- */
 /*
- * CUSTOMIZATION:
- * - All colors defined in .chezmoidata/colors.yaml
- * - Change colors there, then run: chezmoi apply
+ * THEME SYSTEM:
+ * - Colors imported from ~/.config/themes/current/wofi.css
+ * - Automatically updates when theme switches
+ * - Uses semantic variables (accent-primary, bg-primary, etc.)
  *
  * FONT:
  * - Uses FiraCode Nerd Font (installed in system)

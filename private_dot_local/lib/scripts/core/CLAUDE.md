@@ -150,24 +150,33 @@ ui_key_value "Version" "1.2.3" "Author" "Name"
 
 ## Color Library
 
-**File**: `colors.sh.tmpl`
+**Source**: Theme system (`~/.config/themes/current/colors.sh`)
 
-**Source**: `.chezmoidata/colors.yaml`
+**Purpose**: Theme-aware color definitions for CLI tools
 
-**Purpose**: Oksolar color definitions for UI
+**Variables**: 24 semantic variables (ACCENT_*, BG_*, FG_*)
 
 **Usage**:
 ```bash
-. "$HOME/.local/lib/scripts/core/colors.sh"
-echo "${UI_SUCCESS}Success!${NC}"
+# Colors loaded automatically by gum-ui.sh
+. "$UI_LIB"
+ui_success "Success!"  # Uses ACCENT_SUCCESS
+ui_error "Error!"      # Uses ACCENT_ERROR
+
+# Direct access (if needed)
+. ~/.config/themes/current/colors.sh
+echo "${ACCENT_SUCCESS}Success!${NC}"
 ```
 
-**Template variables**:
-```go
-{{ .colors.oksolar.base0 }}
-{{ .colors.oksolar.green }}
-{{ .colors.oksolar.red }}
-```
+**Semantic mappings**:
+- Primary actions → `ACCENT_PRIMARY`
+- Success states → `ACCENT_SUCCESS`
+- Errors → `ACCENT_ERROR`
+- Warnings → `ACCENT_WARNING`
+- Secondary text → `FG_SECONDARY`
+- Muted/disabled → `FG_MUTED`
+
+**Theme switching**: New shells pick up active theme automatically
 
 ## Integration Points
 

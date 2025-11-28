@@ -12,7 +12,7 @@
 - **8 variants**: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - **Switching**: `theme switch <name>`, darkman (solar), Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 - **Location**: `~/.config/themes/current` → symlink to active theme
-- **Apps**: Desktop (Waybar, Dunst, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock), CLI (bat, broot, btop, lazygit, starship, yazi)
+- **Apps**: Desktop (7), CLI tools (6), Shell scripts (8 via gum-ui)
 - **Style guides**: Each theme has `STYLE-GUIDE.md` with color selection methodology
 
 ---
@@ -164,3 +164,85 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 - **yazi**: File type icons and selection colors
 
 **Switching**: Symlinks automatically update when `theme switch` runs
+
+---
+
+## Shell Script Integration (CLI Tools)
+
+**7th integration category** - System CLI tools via gum-ui library
+
+**Implementation**: Shell-sourceable `colors.sh` files in each theme
+
+### colors.sh Format
+
+```bash
+#!/usr/bin/env sh
+# Theme colors for shell scripts
+# Auto-generated from waybar.css
+
+# Background Hierarchy (4)
+readonly BG_PRIMARY="#hex"      # Main background
+readonly BG_SECONDARY="#hex"    # Elevated surfaces
+readonly BG_TERTIARY="#hex"     # Popovers
+readonly BG_OVERLAY="#hex"      # Modal overlays
+
+# Foreground Hierarchy (4)
+readonly FG_PRIMARY="#hex"      # Primary text
+readonly FG_SECONDARY="#hex"    # Secondary text
+readonly FG_MUTED="#hex"        # Disabled/inactive
+readonly FG_CONTRAST="#hex"     # High contrast
+
+# Core Accents (8)
+readonly ACCENT_PRIMARY="#hex"  # Primary actions
+# ... (full 24 variables)
+
+# Export all for subshells
+export BG_PRIMARY BG_SECONDARY ...
+```
+
+### Usage in Scripts
+
+**Automatic loading** (via gum-ui):
+```bash
+#!/usr/bin/env bash
+. "$UI_LIB"  # Sources theme colors automatically
+
+ui_success "Task complete"  # Uses ACCENT_SUCCESS
+ui_error "Failed"            # Uses ACCENT_ERROR
+```
+
+**Direct sourcing**:
+```bash
+. ~/.config/themes/current/colors.sh
+echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
+```
+
+### Consumer Scripts
+
+**8 system CLI tools** use theme colors via gum-ui:
+1. package-manager (2,539 lines)
+2. system-health
+3. system-maintenance
+4. system-health-dashboard
+5. troubleshoot
+6. regenerate-ssh-key
+7. tailscale (network helper)
+8. organize-wallpapers-by-color
+
+### Theme Reload Behavior
+
+**New shells only** - CLI tools pick up active theme on startup
+- Theme switch updates symlink → new shells source new colors
+- Running shells keep old colors (acceptable - CLI tools are quick-run)
+- No live reload needed (theme changes infrequent)
+
+### Generation
+
+**Automated** via `generate-theme-shell-colors.sh`:
+- Reads `waybar.css` for each theme
+- Extracts `@define-color` variables
+- Converts CSS to shell format
+- Validates shell syntax
+- Creates all 8 theme color files
+
+**One-time use** - color files committed to repo
