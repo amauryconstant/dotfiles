@@ -1,0 +1,49 @@
+# Catppuccin Latte btop theme
+# Based on semantic color mappings
+
+# Main colors
+theme[main_bg]="#eff1f5"
+theme[main_fg]="#4c4f69"
+theme[title]="#4c4f69"
+theme[hi_fg]="#1e66f5"
+theme[selected_bg]="#ccd0da"
+theme[selected_fg]="#1e66f5"
+theme[inactive_fg]="#7c7f93"
+theme[graph_text]="#5c5f77"
+
+# Proc box
+theme[proc_misc]="#df8e1d"
+theme[cpu_box]="#1e66f5"
+theme[mem_box]="#40a02b"
+theme[net_box]="#179299"
+theme[proc_box]="#8839ef"
+
+# CPU graph colors
+theme[cpu_start]="#40a02b"
+theme[cpu_mid]="#df8e1d"
+theme[cpu_end]="#d20f39"
+
+# Mem/Disk graph colors
+theme[free_start]="#179299"
+theme[free_mid]="#04a5e5"
+theme[free_end]="#209fb5"
+theme[cached_start]="#8839ef"
+theme[cached_mid]="#7287fd"
+theme[cached_end]="#1e66f5"
+theme[available_start]="#df8e1d"
+theme[available_mid]="#fe640b"
+theme[available_end]="#d20f39"
+theme[used_start]="#40a02b"
+theme[used_mid]="#df8e1d"
+theme[used_end]="#d20f39"
+theme[download_start]="#40a02b"
+theme[download_mid]="#179299"
+theme[download_end]="#1e66f5"
+theme[upload_start]="#fe640b"
+theme[upload_mid]="#d20f39"
+theme[upload_end]="#e64553"
+
+# Process colors (0-9 gradient from low to high usage)
+theme[process_start]="#40a02b"
+theme[process_mid]="#df8e1d"
+theme[process_end]="#d20f39"

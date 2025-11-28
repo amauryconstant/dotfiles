@@ -12,7 +12,7 @@
 - **8 variants**: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - **Switching**: `theme switch <name>`, darkman (solar), Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 - **Location**: `~/.config/themes/current` → symlink to active theme
-- **Apps**: Waybar, Dunst, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock
+- **Apps**: Desktop (Waybar, Dunst, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock), CLI (bat, broot, btop, lazygit, starship, yazi)
 - **Style guides**: Each theme has `STYLE-GUIDE.md` with color selection methodology
 
 ---
@@ -21,9 +21,14 @@
 
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
-**Per-theme files**: `waybar.css`, `dunst.conf`, `ghostty.conf`, `hyprland.conf`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `STYLE-GUIDE.md`
+**Per-theme files**:
+- **Desktop**: `waybar.css`, `dunst.conf`, `ghostty.conf`, `hyprland.conf`, `hyprlock.conf`, `wlogout.css`, `wofi.css`
+- **CLI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`
+- **Docs**: `STYLE-GUIDE.md`
 
-**Integration**: Apps import via `@import`, `!include`, or `source` directives
+**Integration**:
+- **Desktop apps**: Import via `@import`, `!include`, or `source` directives
+- **CLI tools**: Symlinks in `~/.config/{app}/` → `themes/current/{app-config}`
 
 ---
 
@@ -133,3 +138,29 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 
 **Organization**: One-time color matching using `organize-wallpapers-by-color.sh`
 **Note**: Wallust disabled (static theme colors, not dynamic extraction)
+
+---
+
+## CLI Tool Integration
+
+**6 CLI tools** themed via symlink switching:
+
+| Tool | Config File | Symlink Location | Purpose |
+|------|-------------|------------------|---------|
+| **bat** | `bat.conf` | `~/.config/bat/config` | Syntax highlighting theme selection |
+| **broot** | `broot.hjson` | `~/.config/broot/skin.hjson` | File tree skin colors |
+| **btop** | `btop.theme` | `~/.config/btop/color_theme` | System monitor color scheme |
+| **lazygit** | `lazygit.yml` | `~/.config/lazygit/config.yml` | Git TUI theme colors |
+| **starship** | `starship.toml` | `~/.config/starship.toml` | Shell prompt colors/symbols |
+| **yazi** | `yazi.toml` | `~/.config/yazi/theme.toml` | File manager theme |
+
+**Special handling**:
+- **bat**: Requires cache rebuild via `run_onchange_after_rebuild_bat_cache.sh.tmpl`
+- **bat themes**: Rose Pine variants use custom `.tmTheme` files (`~/.config/bat/themes/`)
+- **starship**: Theme-specific prompt symbols and color schemes
+- **broot**: Skin-based color system with syntax highlighting
+- **btop**: Direct color code mappings (no semantic variables)
+- **lazygit**: Theme colors integrated with git status highlighting
+- **yazi**: File type icons and selection colors
+
+**Switching**: Symlinks automatically update when `theme switch` runs

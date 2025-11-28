@@ -1,0 +1,23 @@
+gui:
+  theme:
+    activeBorderColor:
+      - "#c4a7e7"  # iris (accent-border)
+      - bold
+    inactiveBorderColor:
+      - "#393552"  # overlay (bg-tertiary)
+    selectedLineBgColor:
+      - "#2a273f"  # surface (bg-secondary)
+    selectedRangeBgColor:
+      - "#2a273f"  # surface
+    cherryPickedCommitBgColor:
+      - "#3e8fb0"  # pine (accent-success)
+    cherryPickedCommitFgColor:
+      - "#232136"  # base (fg-contrast)
+    unstagedChangesColor:
+      - "#eb6f92"  # love (accent-error)
+    defaultFgColor:
+      - "#e0def4"  # text (fg-primary)
+    searchingActiveBorderColor:
+      - "#f6c177"  # gold (accent-warning)
+    optionsTextColor:
+      - "#9ccfd8"  # foam (accent-info)

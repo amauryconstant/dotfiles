@@ -1,0 +1,61 @@
+// Catppuccin Mocha Broot Skin
+// https://github.com/catppuccin/catppuccin
+
+skin: {
+	default: "rgb(205, 214, 244) rgb(30, 30, 46) / rgb(186, 194, 222) rgb(49, 50, 68)"  // text base / subtext1 surface0
+	tree: "rgb(127, 132, 156) none"                                                      // overlay1 default
+	file: "none none"                                                                    // default default
+	directory: "rgb(137, 180, 250) none bold"                                            // blue (accent-primary) bold
+	exe: "rgb(243, 139, 168) none"                                                       // red (accent-error)
+	link: "rgb(245, 194, 231) none"                                                      // pink (accent-modification)
+	pruning: "rgb(127, 132, 156) none italic"                                            // overlay1 italic
+	perm__: "rgb(127, 132, 156) none"                                                    // overlay1
+	perm_r: "none none"                                                                  // default
+	perm_w: "none none"                                                                  // default
+	perm_x: "none none"                                                                  // default
+	owner: "rgb(127, 132, 156) none"                                                     // overlay1
+	group: "rgb(127, 132, 156) none"                                                     // overlay1
+	sparse: "none none"                                                                  // default
+	git_branch: "rgb(186, 194, 222) none"                                                // subtext1
+	git_insertions: "rgb(166, 227, 161) none"                                            // green (accent-success)
+	git_deletions: "rgb(243, 139, 168) none"                                             // red (accent-error)
+	git_status_current: "none none"                                                      // default
+	git_status_modified: "rgb(249, 226, 175) none"                                       // yellow (accent-warning)
+	git_status_new: "rgb(166, 227, 161) none"                                            // green (accent-success)
+	git_status_ignored: "rgb(127, 132, 156) none"                                        // overlay1
+	git_status_conflicted: "rgb(243, 139, 168) none"                                     // red (accent-error)
+	git_status_other: "rgb(243, 139, 168) none"                                          // red (accent-error)
+	selected_line: "none rgb(49, 50, 68)"                                                // bg-secondary (surface0)
+	char_match: "rgb(166, 227, 161) none underlined"                                     // green (accent-success) underlined
+	file_error: "rgb(235, 160, 172) none italic"                                         // maroon (accent-performance) italic
+	flag_label: "none none"                                                              // default
+	flag_value: "rgb(249, 226, 175) none bold"                                           // yellow (accent-warning) bold
+	input: "none none"                                                                   // default
+	status_error: "rgb(235, 160, 172) rgb(49, 50, 68)"                                   // maroon surface0
+	status_job: "rgb(203, 166, 247) rgb(49, 50, 68) bold"                                // mauve (accent-highlight) surface0 bold
+	status_normal: "none rgb(49, 50, 68)"                                                // surface0
+	status_italic: "rgb(249, 226, 175) rgb(49, 50, 68)"                                  // yellow surface0
+	status_bold: "rgb(186, 194, 222) rgb(49, 50, 68) bold"                               // subtext1 surface0 bold
+	status_code: "rgb(203, 166, 247) rgb(49, 50, 68)"                                    // mauve surface0
+	status_ellipsis: "none rgb(49, 50, 68)"                                              // surface0
+	scrollbar_track: "rgb(49, 50, 68) none"                                              // surface0
+	scrollbar_thumb: "none none"                                                         // default
+	help_paragraph: "none none"                                                          // default
+	help_bold: "rgb(186, 194, 222) none bold"                                            // subtext1 bold
+	help_italic: "rgb(186, 194, 222) none italic"                                        // subtext1 italic
+	help_code: "rgb(186, 194, 222) rgb(49, 50, 68)"                                      // subtext1 surface0
+	help_headers: "rgb(249, 226, 175) none"                                              // yellow
+	help_table_border: "none none"                                                       // default
+	preview_title: "gray(20) rgb(30, 30, 46)"
+	staging_area_title: "gray(22) rgb(30, 30, 46)"
+	good_to_bad_0: "rgb(166, 227, 161)"                                                  // green (low usage)
+	good_to_bad_1: "rgb(166, 227, 161)"
+	good_to_bad_2: "rgb(166, 227, 161)"
+	good_to_bad_3: "rgb(166, 227, 161)"
+	good_to_bad_4: "rgb(166, 227, 161)"
+	good_to_bad_5: "rgb(249, 226, 175)"                                                  // yellow (medium usage)
+	good_to_bad_6: "rgb(249, 226, 175)"
+	good_to_bad_7: "rgb(235, 160, 172)"                                                  // maroon
+	good_to_bad_8: "rgb(243, 139, 168)"                                                  // red
+	good_to_bad_9: "rgb(243, 139, 168)"                                                  // red (high usage)
+}

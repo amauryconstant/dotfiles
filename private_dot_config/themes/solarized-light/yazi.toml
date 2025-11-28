@@ -1,0 +1,55 @@
+[manager]
+cwd = { fg = "#268bd2" }  # blue (accent-primary)
+hovered = { fg = "#fdf6e3", bg = "#268bd2" }  # base3 + blue (inverted)
+preview_hovered = { underline = true }
+find_keyword = { fg = "#b58900", italic = true }  # yellow (accent-warning)
+find_position = { fg = "#6c71c4", bg = "reset", italic = true }  # violet
+marker_selected = { fg = "#859900", bg = "#859900" }  # green (accent-success)
+marker_copied = { fg = "#b58900", bg = "#b58900" }  # yellow
+marker_cut = { fg = "#dc322f", bg = "#dc322f" }  # red (accent-error)
+tab_active = { fg = "#fdf6e3", bg = "#268bd2" }  # base3 + blue
+tab_inactive = { fg = "#657b83", bg = "#eee8d5" }  # base00 + base2
+border_symbol = "│"
+border_style = { fg = "#268bd2" }  # blue (accent-primary)
+
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#93a1a1", bg = "#93a1a1" }  # base1 (bg-tertiary)
+mode_normal = { fg = "#fdf6e3", bg = "#268bd2", bold = true }  # blue
+mode_select = { fg = "#fdf6e3", bg = "#859900", bold = true }  # green
+mode_unset = { fg = "#fdf6e3", bg = "#dc322f", bold = true }  # red
+progress_label = { fg = "#657b83", bold = true }  # base00
+progress_normal = { fg = "#268bd2", bg = "#eee8d5" }  # blue + base2
+progress_error = { fg = "#dc322f", bg = "#eee8d5" }  # red + base2
+permissions_t = { fg = "#859900" }  # green
+permissions_r = { fg = "#b58900" }  # yellow
+permissions_w = { fg = "#dc322f" }  # red
+permissions_x = { fg = "#2aa198" }  # cyan
+permissions_s = { fg = "#93a1a1" }  # base1
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#859900" },
+  { mime = "video/*", fg = "#859900" },
+  { mime = "audio/*", fg = "#6c71c4" },
+  { mime = "application/*zip", fg = "#cb4b16" },
+  { mime = "application/*tar", fg = "#cb4b16" },
+  { mime = "application/*gzip", fg = "#cb4b16" },
+  { mime = "application/pdf", fg = "#268bd2" },
+  { name = "*.sh", fg = "#2aa198" },
+  { name = "*.bash", fg = "#2aa198" },
+  { name = "*.zsh", fg = "#2aa198" },
+  { name = "*.fish", fg = "#2aa198" },
+]
+
+# Fallback theme
+[manager]
+cwd = { fg = "cyan" }
+hovered = { reversed = true }
+preview_hovered = { underline = true }
+
+[status]
+separator_open = ""
+separator_close = ""
+mode_normal = { fg = "black", bg = "cyan", bold = true }

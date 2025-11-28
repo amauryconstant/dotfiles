@@ -1,0 +1,23 @@
+gui:
+  theme:
+    activeBorderColor:
+      - "#7287fd"  # lavender (accent-border)
+      - bold
+    inactiveBorderColor:
+      - "#bcc0cc"  # surface1 (bg-tertiary)
+    selectedLineBgColor:
+      - "#ccd0da"  # surface0 (bg-secondary)
+    selectedRangeBgColor:
+      - "#ccd0da"  # surface0
+    cherryPickedCommitBgColor:
+      - "#40a02b"  # green (accent-success)
+    cherryPickedCommitFgColor:
+      - "#dce0e8"  # crust (fg-contrast)
+    unstagedChangesColor:
+      - "#d20f39"  # red (accent-error)
+    defaultFgColor:
+      - "#4c4f69"  # text (fg-primary)
+    searchingActiveBorderColor:
+      - "#df8e1d"  # yellow (accent-warning)
+    optionsTextColor:
+      - "#179299"  # teal (accent-info)

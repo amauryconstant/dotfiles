@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_after_rebuild_bat_cache.sh
+# Purpose: Rebuild bat cache when theme files change
+# Requirements: Arch Linux, bat
+
+{{- /* Hash trigger: rebuild when theme files change */ -}}
+{{- /* {{ include "private_dot_config/bat/themes/rose-pine-dawn.tmTheme" }} */ -}}
+{{- /* {{ include "private_dot_config/bat/themes/rose-pine-moon.tmTheme" }} */ -}}
+
+{{ includeTemplate "log_start" "Rebuilding bat theme cache..." }}
+
+set -euo pipefail
+
+# Check if bat is installed
+if ! command -v bat >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "bat not installed, skipping cache rebuild" }}
+    exit 0
+fi
+
+# Rebuild bat cache
+{{ includeTemplate "log_step" "Running bat cache --build" }}
+bat cache --build >/dev/null 2>&1
+
+{{ includeTemplate "log_success" "bat theme cache rebuilt successfully" }}
+{{ includeTemplate "log_complete" "Rose Pine themes now available in bat" }}

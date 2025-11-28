@@ -1,0 +1,61 @@
+// Gruvbox Dark Broot Skin
+// https://github.com/morhetz/gruvbox
+
+skin: {
+	default: "rgb(235, 219, 178) rgb(40, 40, 40) / rgb(213, 196, 161) rgb(60, 56, 54)"  // fg1 bg0 / fg2 bg1
+	tree: "rgb(168, 153, 132) none"                                                      // fg4 default
+	file: "none none"                                                                    // default default
+	directory: "rgb(250, 189, 47) none bold"                                             // bright_yellow (accent-primary) bold
+	exe: "rgb(251, 73, 52) none"                                                         // bright_red (accent-error)
+	link: "rgb(254, 128, 25) none"                                                       // bright_orange (accent-modification)
+	pruning: "rgb(168, 153, 132) none italic"                                            // fg4 italic
+	perm__: "rgb(168, 153, 132) none"                                                    // fg4
+	perm_r: "none none"                                                                  // default
+	perm_w: "none none"                                                                  // default
+	perm_x: "none none"                                                                  // default
+	owner: "rgb(168, 153, 132) none"                                                     // fg4
+	group: "rgb(168, 153, 132) none"                                                     // fg4
+	sparse: "none none"                                                                  // default
+	git_branch: "rgb(213, 196, 161) none"                                                // fg2
+	git_insertions: "rgb(184, 187, 38) none"                                             // bright_green (accent-success)
+	git_deletions: "rgb(251, 73, 52) none"                                               // bright_red (accent-error)
+	git_status_current: "none none"                                                      // default
+	git_status_modified: "rgb(250, 189, 47) none"                                        // bright_yellow (accent-warning)
+	git_status_new: "rgb(184, 187, 38) none"                                             // bright_green (accent-success)
+	git_status_ignored: "rgb(168, 153, 132) none"                                        // fg4
+	git_status_conflicted: "rgb(251, 73, 52) none"                                       // bright_red (accent-error)
+	git_status_other: "rgb(251, 73, 52) none"                                            // bright_red (accent-error)
+	selected_line: "none rgb(60, 56, 54)"                                                // bg-secondary (bg1)
+	char_match: "rgb(184, 187, 38) none underlined"                                      // bright_green (accent-success) underlined
+	file_error: "rgb(211, 134, 155) none italic"                                         // bright_purple (accent-performance) italic
+	flag_label: "none none"                                                              // default
+	flag_value: "rgb(250, 189, 47) none bold"                                            // bright_yellow (accent-warning) bold
+	input: "none none"                                                                   // default
+	status_error: "rgb(211, 134, 155) rgb(60, 56, 54)"                                   // bright_purple bg1
+	status_job: "rgb(211, 134, 155) rgb(60, 56, 54) bold"                                // bright_purple (accent-highlight) bg1 bold
+	status_normal: "none rgb(60, 56, 54)"                                                // bg1
+	status_italic: "rgb(250, 189, 47) rgb(60, 56, 54)"                                   // bright_yellow bg1
+	status_bold: "rgb(213, 196, 161) rgb(60, 56, 54) bold"                               // fg2 bg1 bold
+	status_code: "rgb(211, 134, 155) rgb(60, 56, 54)"                                    // bright_purple bg1
+	status_ellipsis: "none rgb(60, 56, 54)"                                              // bg1
+	scrollbar_track: "rgb(60, 56, 54) none"                                              // bg1
+	scrollbar_thumb: "none none"                                                         // default
+	help_paragraph: "none none"                                                          // default
+	help_bold: "rgb(213, 196, 161) none bold"                                            // fg2 bold
+	help_italic: "rgb(213, 196, 161) none italic"                                        // fg2 italic
+	help_code: "rgb(213, 196, 161) rgb(60, 56, 54)"                                      // fg2 bg1
+	help_headers: "rgb(250, 189, 47) none"                                               // bright_yellow
+	help_table_border: "none none"                                                       // default
+	preview_title: "gray(20) rgb(40, 40, 40)"
+	staging_area_title: "gray(22) rgb(40, 40, 40)"
+	good_to_bad_0: "rgb(184, 187, 38)"                                                   // bright_green (low usage)
+	good_to_bad_1: "rgb(184, 187, 38)"
+	good_to_bad_2: "rgb(184, 187, 38)"
+	good_to_bad_3: "rgb(184, 187, 38)"
+	good_to_bad_4: "rgb(184, 187, 38)"
+	good_to_bad_5: "rgb(250, 189, 47)"                                                   // bright_yellow (medium usage)
+	good_to_bad_6: "rgb(250, 189, 47)"
+	good_to_bad_7: "rgb(254, 128, 25)"                                                   // bright_orange
+	good_to_bad_8: "rgb(251, 73, 52)"                                                    // bright_red
+	good_to_bad_9: "rgb(251, 73, 52)"                                                    // bright_red (high usage)
+}

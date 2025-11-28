@@ -1,0 +1,61 @@
+// Rose Pine Dawn Broot Skin
+// https://github.com/rose-pine
+
+skin: {
+	default: "rgb(87, 82, 121) rgb(250, 244, 237) / rgb(121, 117, 147) rgb(255, 250, 243)"  // text base / subtle surface
+	tree: "rgb(152, 147, 165) none"                                                          // muted default
+	file: "none none"                                                                        // default default
+	directory: "rgb(144, 122, 169) none bold"                                                // iris (accent-primary) bold
+	exe: "rgb(180, 99, 122) none"                                                            // love (accent-error)
+	link: "rgb(215, 130, 126) none"                                                          // rose (accent-modification)
+	pruning: "rgb(152, 147, 165) none italic"                                                // muted italic
+	perm__: "rgb(152, 147, 165) none"                                                        // muted
+	perm_r: "none none"                                                                      // default
+	perm_w: "none none"                                                                      // default
+	perm_x: "none none"                                                                      // default
+	owner: "rgb(152, 147, 165) none"                                                         // muted
+	group: "rgb(152, 147, 165) none"                                                         // muted
+	sparse: "none none"                                                                      // default
+	git_branch: "rgb(121, 117, 147) none"                                                    // subtle
+	git_insertions: "rgb(40, 105, 131) none"                                                 // pine (accent-success)
+	git_deletions: "rgb(180, 99, 122) none"                                                  // love (accent-error)
+	git_status_current: "none none"                                                          // default
+	git_status_modified: "rgb(234, 157, 52) none"                                            // gold (accent-warning)
+	git_status_new: "rgb(40, 105, 131) none"                                                 // pine (accent-success)
+	git_status_ignored: "rgb(152, 147, 165) none"                                            // muted
+	git_status_conflicted: "rgb(180, 99, 122) none"                                          // love (accent-error)
+	git_status_other: "rgb(180, 99, 122) none"                                               // love (accent-error)
+	selected_line: "none rgb(255, 250, 243)"                                                 // bg-secondary (surface)
+	char_match: "rgb(40, 105, 131) none underlined"                                          // pine (accent-success) underlined
+	file_error: "rgb(180, 99, 122) none italic"                                              // love (accent-performance) italic
+	flag_label: "none none"                                                                  // default
+	flag_value: "rgb(234, 157, 52) none bold"                                                // gold (accent-warning) bold
+	input: "none none"                                                                       // default
+	status_error: "rgb(180, 99, 122) rgb(255, 250, 243)"                                     // love surface
+	status_job: "rgb(144, 122, 169) rgb(255, 250, 243) bold"                                 // iris (accent-highlight) surface bold
+	status_normal: "none rgb(255, 250, 243)"                                                 // surface
+	status_italic: "rgb(234, 157, 52) rgb(255, 250, 243)"                                    // gold surface
+	status_bold: "rgb(121, 117, 147) rgb(255, 250, 243) bold"                                // subtle surface bold
+	status_code: "rgb(144, 122, 169) rgb(255, 250, 243)"                                     // iris surface
+	status_ellipsis: "none rgb(255, 250, 243)"                                               // surface
+	scrollbar_track: "rgb(255, 250, 243) none"                                               // surface
+	scrollbar_thumb: "none none"                                                             // default
+	help_paragraph: "none none"                                                              // default
+	help_bold: "rgb(121, 117, 147) none bold"                                                // subtle bold
+	help_italic: "rgb(121, 117, 147) none italic"                                            // subtle italic
+	help_code: "rgb(121, 117, 147) rgb(255, 250, 243)"                                       // subtle surface
+	help_headers: "rgb(234, 157, 52) none"                                                   // gold
+	help_table_border: "none none"                                                           // default
+	preview_title: "gray(20) rgb(250, 244, 237)"
+	staging_area_title: "gray(22) rgb(250, 244, 237)"
+	good_to_bad_0: "rgb(40, 105, 131)"                                                       // pine (low usage)
+	good_to_bad_1: "rgb(40, 105, 131)"
+	good_to_bad_2: "rgb(40, 105, 131)"
+	good_to_bad_3: "rgb(40, 105, 131)"
+	good_to_bad_4: "rgb(40, 105, 131)"
+	good_to_bad_5: "rgb(234, 157, 52)"                                                       // gold (medium usage)
+	good_to_bad_6: "rgb(234, 157, 52)"
+	good_to_bad_7: "rgb(180, 99, 122)"                                                       // love
+	good_to_bad_8: "rgb(180, 99, 122)"                                                       // love
+	good_to_bad_9: "rgb(180, 99, 122)"                                                       // love (high usage)
+}

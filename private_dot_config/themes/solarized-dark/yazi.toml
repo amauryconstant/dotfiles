@@ -1,0 +1,45 @@
+[manager]
+cwd = { fg = "#268bd2" }  # blue (accent-primary)
+hovered = { fg = "#002b36", bg = "#268bd2" }  # base03 + blue (inverted)
+preview_hovered = { underline = true }
+find_keyword = { fg = "#b58900", italic = true }  # yellow (accent-warning)
+find_position = { fg = "#6c71c4", bg = "reset", italic = true }  # violet
+marker_selected = { fg = "#859900", bg = "#859900" }  # green (accent-success)
+marker_copied = { fg = "#b58900", bg = "#b58900" }  # yellow
+marker_cut = { fg = "#dc322f", bg = "#dc322f" }  # red (accent-error)
+tab_active = { fg = "#002b36", bg = "#268bd2" }  # base03 + blue
+tab_inactive = { fg = "#839496", bg = "#073642" }  # base0 + base02
+border_symbol = "│"
+border_style = { fg = "#268bd2" }  # blue (accent-primary)
+
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#586e75", bg = "#586e75" }  # base01 (bg-tertiary)
+mode_normal = { fg = "#002b36", bg = "#268bd2", bold = true }  # blue
+mode_select = { fg = "#002b36", bg = "#859900", bold = true }  # green
+mode_unset = { fg = "#002b36", bg = "#dc322f", bold = true }  # red
+progress_label = { fg = "#839496", bold = true }  # base0
+progress_normal = { fg = "#268bd2", bg = "#073642" }  # blue + base02
+progress_error = { fg = "#dc322f", bg = "#073642" }  # red + base02
+permissions_t = { fg = "#859900" }  # green
+permissions_r = { fg = "#b58900" }  # yellow
+permissions_w = { fg = "#dc322f" }  # red
+permissions_x = { fg = "#2aa198" }  # cyan
+permissions_s = { fg = "#586e75" }  # base01
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#859900" },
+  { mime = "video/*", fg = "#859900" },
+  { mime = "audio/*", fg = "#6c71c4" },
+  { mime = "application/*zip", fg = "#cb4b16" },
+  { mime = "application/*tar", fg = "#cb4b16" },
+  { mime = "application/*gzip", fg = "#cb4b16" },
+  { mime = "application/pdf", fg = "#268bd2" },
+  { name = "*.sh", fg = "#2aa198" },
+  { name = "*.bash", fg = "#2aa198" },
+  { name = "*.zsh", fg = "#2aa198" },
+  { name = "*.fish", fg = "#2aa198" },
+]
+

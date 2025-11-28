@@ -1,0 +1,49 @@
+# Solarized Dark btop theme
+# Based on semantic color mappings
+
+# Main colors
+theme[main_bg]="#002b36"
+theme[main_fg]="#839496"
+theme[title]="#839496"
+theme[hi_fg]="#268bd2"
+theme[selected_bg]="#073642"
+theme[selected_fg]="#268bd2"
+theme[inactive_fg]="#586e75"
+theme[graph_text]="#93a1a1"
+
+# Proc box
+theme[proc_misc]="#b58900"
+theme[cpu_box]="#268bd2"
+theme[mem_box]="#859900"
+theme[net_box]="#2aa198"
+theme[proc_box]="#6c71c4"
+
+# CPU graph colors
+theme[cpu_start]="#859900"
+theme[cpu_mid]="#b58900"
+theme[cpu_end]="#dc322f"
+
+# Mem/Disk graph colors
+theme[free_start]="#2aa198"
+theme[free_mid]="#2aa198"
+theme[free_end]="#2aa198"
+theme[cached_start]="#6c71c4"
+theme[cached_mid]="#6c71c4"
+theme[cached_end]="#6c71c4"
+theme[available_start]="#b58900"
+theme[available_mid]="#cb4b16"
+theme[available_end]="#dc322f"
+theme[used_start]="#859900"
+theme[used_mid]="#b58900"
+theme[used_end]="#dc322f"
+theme[download_start]="#859900"
+theme[download_mid]="#2aa198"
+theme[download_end]="#268bd2"
+theme[upload_start]="#cb4b16"
+theme[upload_mid]="#dc322f"
+theme[upload_end]="#dc322f"
+
+# Process colors (0-9 gradient from low to high usage)
+theme[process_start]="#859900"
+theme[process_mid]="#b58900"
+theme[process_end]="#dc322f"

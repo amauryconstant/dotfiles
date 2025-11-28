@@ -1,0 +1,45 @@
+[manager]
+cwd = { fg = "#907aa9" }  # iris (accent-primary)
+hovered = { fg = "#faf4ed", bg = "#907aa9" }  # base + iris (inverted)
+preview_hovered = { underline = true }
+find_keyword = { fg = "#ea9d34", italic = true }  # gold (accent-warning)
+find_position = { fg = "#907aa9", bg = "reset", italic = true }  # iris
+marker_selected = { fg = "#286983", bg = "#286983" }  # pine (accent-success)
+marker_copied = { fg = "#ea9d34", bg = "#ea9d34" }  # gold
+marker_cut = { fg = "#b4637a", bg = "#b4637a" }  # love (accent-error)
+tab_active = { fg = "#faf4ed", bg = "#907aa9" }  # base + iris
+tab_inactive = { fg = "#575279", bg = "#fffaf3" }  # text + surface
+border_symbol = "│"
+border_style = { fg = "#907aa9" }  # iris (accent-primary)
+
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#f2e9e1", bg = "#f2e9e1" }  # overlay (bg-tertiary)
+mode_normal = { fg = "#faf4ed", bg = "#907aa9", bold = true }  # iris
+mode_select = { fg = "#faf4ed", bg = "#286983", bold = true }  # pine
+mode_unset = { fg = "#faf4ed", bg = "#b4637a", bold = true }  # love
+progress_label = { fg = "#575279", bold = true }  # text
+progress_normal = { fg = "#907aa9", bg = "#fffaf3" }  # iris + surface
+progress_error = { fg = "#b4637a", bg = "#fffaf3" }  # love + surface
+permissions_t = { fg = "#286983" }  # pine
+permissions_r = { fg = "#ea9d34" }  # gold
+permissions_w = { fg = "#b4637a" }  # love
+permissions_x = { fg = "#56949f" }  # foam
+permissions_s = { fg = "#9893a5" }  # muted
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#286983" },
+  { mime = "video/*", fg = "#286983" },
+  { mime = "audio/*", fg = "#907aa9" },
+  { mime = "application/*zip", fg = "#d7827e" },
+  { mime = "application/*tar", fg = "#d7827e" },
+  { mime = "application/*gzip", fg = "#d7827e" },
+  { mime = "application/pdf", fg = "#907aa9" },
+  { name = "*.sh", fg = "#56949f" },
+  { name = "*.bash", fg = "#56949f" },
+  { name = "*.zsh", fg = "#56949f" },
+  { name = "*.fish", fg = "#56949f" },
+]
+

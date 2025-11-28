@@ -1,0 +1,52 @@
+{{- if eq $theme "catppuccin-mocha" }}
+[manager]
+cwd = { fg = "#89b4fa" }  # blue (accent-primary)
+hovered = { fg = "#1e1e2e", bg = "#89b4fa" }  # base + blue (inverted)
+preview_hovered = { underline = true }
+find_keyword = { fg = "#f9e2af", italic = true }  # yellow (accent-warning)
+find_position = { fg = "#cba6f7", bg = "reset", italic = true }  # mauve
+marker_selected = { fg = "#a6e3a1", bg = "#a6e3a1" }  # green (accent-success)
+marker_copied = { fg = "#f9e2af", bg = "#f9e2af" }  # yellow
+marker_cut = { fg = "#f38ba8", bg = "#f38ba8" }  # red (accent-error)
+tab_active = { fg = "#1e1e2e", bg = "#89b4fa" }  # base + blue
+tab_inactive = { fg = "#cdd6f4", bg = "#313244" }  # text + surface0
+border_symbol = "│"
+border_style = { fg = "#89b4fa" }  # blue (accent-primary)
+
+[status]
+separator_open = ""
+separator_close = ""
+separator_style = { fg = "#45475a", bg = "#45475a" }  # surface1 (bg-tertiary)
+mode_normal = { fg = "#1e1e2e", bg = "#89b4fa", bold = true }  # blue
+mode_select = { fg = "#1e1e2e", bg = "#a6e3a1", bold = true }  # green
+mode_unset = { fg = "#1e1e2e", bg = "#f38ba8", bold = true }  # red
+progress_label = { fg = "#cdd6f4", bold = true }  # text
+progress_normal = { fg = "#89b4fa", bg = "#313244" }  # blue + surface0
+progress_error = { fg = "#f38ba8", bg = "#313244" }  # red + surface0
+permissions_t = { fg = "#a6e3a1" }  # green
+permissions_r = { fg = "#f9e2af" }  # yellow
+permissions_w = { fg = "#f38ba8" }  # red
+permissions_x = { fg = "#94e2d5" }  # teal
+permissions_s = { fg = "#9399b2" }  # overlay2
+
+[filetype]
+rules = [
+  # Images → green (success)
+  { mime = "image/*", fg = "#a6e3a1" },
+  # Video → green
+  { mime = "video/*", fg = "#a6e3a1" },
+  # Audio → mauve (media)
+  { mime = "audio/*", fg = "#cba6f7" },
+  # Archives → orange
+  { mime = "application/*zip", fg = "#fab387" },
+  { mime = "application/*tar", fg = "#fab387" },
+  { mime = "application/*gzip", fg = "#fab387" },
+  # Documents → blue
+  { mime = "application/pdf", fg = "#89b4fa" },
+  # Scripts → teal (info)
+  { name = "*.sh", fg = "#94e2d5" },
+  { name = "*.bash", fg = "#94e2d5" },
+  { name = "*.zsh", fg = "#94e2d5" },
+  { name = "*.fish", fg = "#94e2d5" },
+]
+
