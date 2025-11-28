@@ -21,12 +21,27 @@ if echo "$current_url" | grep -q "^git@"; then
     exit 0
 fi
 
-# Verify SSH key is configured and working
+# Check if SSH key exists (encrypted keys are decrypted by chezmoi)
+if [ ! -f "$HOME/.ssh/gitlab" ]; then
+    {{ includeTemplate "log_warning" "GitLab SSH key not found at ~/.ssh/gitlab" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "After SSH key is available, manually switch remote:" }}
+    {{ includeTemplate "log_info" "  cd ~/.local/share/chezmoi" }}
+    {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/dotfiles.git" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_skip" "Skipping SSH remote switch - will continue using HTTPS" }}
+    exit 0
+fi
+
+# Verify SSH key permissions
+chmod 600 "$HOME/.ssh/gitlab" 2>/dev/null || true
+
+# Verify SSH key is configured and working (explicitly specify key to avoid config dependency)
 {{ includeTemplate "log_step" "Verifying SSH key access to GitLab..." }}
 
-if ssh -T git@gitlab.com 2>&1 | grep -qi "welcome"; then
+if ssh -i "$HOME/.ssh/gitlab" -T git@gitlab.com 2>&1 | grep -qi "welcome"; then
     {{ includeTemplate "log_success" "SSH key authenticated successfully with GitLab" }}
-elif ssh -T git@gitlab.com 2>&1 | grep -qi "successfully authenticated"; then
+elif ssh -i "$HOME/.ssh/gitlab" -T git@gitlab.com 2>&1 | grep -qi "successfully authenticated"; then
     {{ includeTemplate "log_success" "SSH key authenticated successfully with GitLab" }}
 else
     {{ includeTemplate "log_warning" "SSH key not configured or not added to GitLab" }}
