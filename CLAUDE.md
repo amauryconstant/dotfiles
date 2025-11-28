@@ -401,10 +401,10 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 1. `run_once_before_*` (000-005)
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
-4. `run_once_after_*` (001-009, 999)
+4. `run_once_after_*` (001-008, 999)
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (19 total)
+### Current Scripts (20 total)
 
 **run_once_before_* (6)**:
 - 000: Preflight checks
@@ -426,12 +426,12 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 - 006: Boot system
 - 007: Default theme setup
 - 008: Darkman service
-- 009: Wallpaper setup
 - 999: SSH remote switch
 
-**run_onchange_after_* (3)**:
+**run_onchange_after_* (4)**:
 - install_extensions: VSCode extensions
 - install_ai_models: Ollama models
+- rebuild_bat_cache: Bat syntax highlighting cache
 - update_plymouth_theme: Plymouth theme
 
 ### Hash Triggers
