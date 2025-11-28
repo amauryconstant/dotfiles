@@ -221,9 +221,9 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 ✅ Dotfiles-driven changes
 
 **DO NOT use .chezmoiscripts/ for**:
-❌ System updates (use topgrade)
-❌ Ongoing maintenance (use systemd timers, CLI tools)
-❌ Regular monitoring (use scheduled scripts)
+❌ System updates (use manual tools like topgrade)
+❌ Ongoing maintenance (use CLI tools)
+❌ Regular monitoring (use CLI tools)
 ❌ User-initiated tasks (use CLI functions)
 
 ### Shebang Selection
@@ -394,40 +394,37 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Execution Order
 
-1. `run_once_before_*` (001-006)
+1. `run_once_before_*` (001-005)
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
 4. `run_once_after_*` (001-007, 999)
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (19 total)
+### Current Scripts (16 total)
 
-**run_once_before_* (6)**:
+**run_once_before_* (5)**:
 - 001: Package manager setup + dependencies (paru, yq, gum)
 - 002: Directory creation
 - 003: Encryption key setup
 - 004: Locale configuration
 - 005: chezmoi_modify_manager install
-- 006: Maintenance user creation
 
 **run_onchange_before_* (1)**:
 - sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
-**run_once_after_* (8)**:
+**run_once_after_* (7)**:
 - 001: CLI generation
 - 002: System services
 - 003: Network printer
-- 004: Topgrade system
 - 005: Git tools
 - 006: Wallpaper timer
 - 007: Boot system
 - 999: SSH remote switch
 
-**run_onchange_after_* (4)**:
+**run_onchange_after_* (3)**:
 - install_extensions: VSCode extensions
 - install_ai_models: Ollama models
 - update_plymouth_theme: Plymouth theme
-- update_topgrade_config: Topgrade config
 
 ### Hash Triggers
 
@@ -560,7 +557,7 @@ Decrypt manually and provide needed info.
 ### Implementation Planning
 
 **Setup/Installation**: `.chezmoiscripts/run_once_*` or `run_onchange_*`
-**Ongoing maintenance**: CLI functions, systemd timers, topgrade integration
+**Ongoing maintenance**: CLI functions, manual tools (topgrade, system-maintenance)
 **User tools**: CLI functions in `~/.local/bin/` or `~/.local/lib/scripts/`
 
 ### Pattern References

@@ -27,6 +27,21 @@ packages:
         - cryptsetup       # LUKS disk encryption tools
         - rage-encryption  # age encryption tool (Rust)
 
+    graphics_drivers:
+      enabled: true
+      description: "Graphics drivers and hardware support"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - intel-ucode          # Intel CPU microcode updates
+        - dkms                 # Dynamic kernel module support
+        - linux-headers        # Kernel headers for DKMS (main kernel)
+        - linux-lts-headers    # Kernel headers for DKMS (LTS kernel)
+        - nvidia-open-dkms     # NVIDIA open-source kernel modules
+        - nvidia-settings      # NVIDIA driver configuration GUI
+        - lib32-nvidia-utils   # 32-bit NVIDIA utilities (for gaming)
+        - libva-nvidia-driver  # VA-API support for NVIDIA (hardware video decode)
+
     system_utilities:
       enabled: true
       description: "Core system utilities"
@@ -68,6 +83,7 @@ packages:
         - rate-mirrors     # Mirror ranking utility
         - chaotic-keyring  # Chaotic-AUR repository keys
         - chaotic-mirrorlist # Chaotic-AUR mirror list
+        - chezmoi_modify_manager # Complementary package for chezmoi
 
     # ============================================================
     # SHELL & TERMINAL
@@ -188,25 +204,30 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
+        - hyprland         # Hyprland Wayland compositor
+        - uwsm             # Universal Wayland Session Manager
+        - xdg-desktop-portal-hyprland  # Portal integration for Hyprland
         - waybar           # Status bar for Wayland
         - hyprlock         # Official Hyprland screen locker
         - hypridle         # Official Hyprland idle daemon
         - polkit-gnome     # Polkit authentication agent (hyprpolkitagent crashes)
         - hyprsunset       # Blue light filter (gamma adjustment)
         - swww             # Dynamic wallpaper daemon with transitions
-        - wallust          # Color palette generator from wallpapers
+        - wallust-git      # Color palette generator from wallpapers (chaotic-aur)
         - cliphist         # Clipboard history manager
+        - wofi             # Application launcher
         - wlogout          # Logout/shutdown menu
         - wl-clipboard     # Wayland clipboard CLI utilities
         - pamixer          # PulseAudio/PipeWire mixer CLI
         - brightnessctl    # Screen brightness controller
         - playerctl        # MPRIS media player controller
         - blueman          # GTK Bluetooth manager GUI
+        - dunst            # Notification daemon
         - grim             # Wayland screenshot utility
         - slurp            # Select screen region for screenshots
         - satty            # Screenshot annotation tool
         - wayfreeze-git    # Freeze screen for clean recording
-        - gpu-screen-recorder # Hardware-accelerated screen recording
+        - gpu-screen-recorder-git # Hardware-accelerated screen recording (chaotic-aur)
         - swayosd          # OSD overlay for volume/brightness
         - localsend        # Local network file sharing (AirDrop alternative)
         - xkeyboard-config # Keyboard layout definitions
@@ -238,6 +259,15 @@ packages:
         - thunar           # Lightweight GTK file manager
         - thunar-archive-plugin # Archive right-click integration
         - file-roller      # Archive manager GUI
+        # Qt/KDE integration
+        - qt5-wayland      # Qt5 Wayland support
+        - qt6-wayland      # Qt6 Wayland support
+        - qt5ct            # Qt5 configuration tool
+        - breeze           # KDE Breeze widget theme
+        - kde-cli-tools    # KDE integration tools (kioclient)
+        - kdegraphics-thumbnailers  # Thumbnail generators for Thunar
+        # Utilities
+        - impression       # USB image writer tool
         # Various
         - flatpak:com.spotify.Client  # Music streaming (Flatpak)
         - flatpak:com.slack.Slack  # Team communication (Flatpak)
@@ -277,7 +307,7 @@ packages:
 
   # Packages to remove (explicit cleanup)
   delete:
-    - yay              # Replaced by paru-bin
+    - yay              # Replaced by paru
     - htop             # Redundant with btop/glances
     - vim              # Replaced by neovim
     - kitty            # Replaced by Ghostty

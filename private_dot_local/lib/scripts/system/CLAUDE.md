@@ -42,7 +42,7 @@ system-health
 system-health --json  # JSON output for scripts
 ```
 
-**Integration**: Called by topgrade, cron jobs, monitoring systems
+**Integration**: Called by manual maintenance, monitoring scripts
 
 ## system-health-dashboard.sh
 
@@ -89,7 +89,7 @@ system-maintenance  # Interactive
 - Journal (keep 2 weeks)
 - Orphaned packages
 
-**Integration**: topgrade custom commands
+**Integration**: Can be called from topgrade custom commands (manual execution only)
 
 ## troubleshoot.sh
 
@@ -313,10 +313,10 @@ packages:
 - Prefix Flatpak packages: `flatpak:com.spotify.Client`
 
 **Run scripts**:
-- `run_onchange_before_install_packages.sh.tmpl` → Calls package-manager sync for both Arch and Flatpak
+- `run_onchange_before_sync_packages.sh.tmpl` → Calls package-manager sync for both Arch and Flatpak
 - Hash-triggered on packages.yaml changes
 
-**Topgrade integration**:
+**Topgrade integration** (manual execution):
 ```toml
 [commands]
 "Package Validation" = "package-manager validate"
@@ -358,7 +358,7 @@ sudo pacman-lock-cleanup
 sudo pacman-lock-cleanup --force  # No confirmation
 ```
 
-**Sudoers config**: Path configured for passwordless sudo
+**Sudoers config**: Can be configured in sudoers for passwordless sudo (optional)
 
 ## CLI Wrappers
 
@@ -382,7 +382,7 @@ SCRIPT="$SCRIPTS_DIR/system/script-name.sh"
 
 ## Integration Points
 
-### topgrade.toml.tmpl
+### topgrade.toml.tmpl (Manual Execution)
 
 **Custom commands**:
 ```toml
@@ -391,16 +391,7 @@ SCRIPT="$SCRIPTS_DIR/system/script-name.sh"
 "Maintenance Cleanup" = "system-maintenance --cleanup"
 ```
 
-**Pre/post hooks**: Health checks before/after updates
-
-### Sudoers
-
-**Configuration**: Passwordless sudo for specific tools
-
-**Entry**:
-```
-%wheel ALL=(ALL) NOPASSWD: /home/user/.local/lib/scripts/system/pacman-lock-cleanup.sh
-```
+**Note**: Topgrade runs manually by user (`topgrade` command), not as automated service
 
 ### Menu System
 
