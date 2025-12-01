@@ -110,23 +110,25 @@ system-troubleshoot
 
 **Output**: Guided diagnostics with fixes
 
-## package-manager.sh v2.1
+## package-manager.sh v2.2
 
-**Purpose**: Module-based declarative package management with NixOS-style version pinning
+**Purpose**: Module-based declarative package management with NixOS-style version pinning and hybrid update mode
 
-**Version**: 2.1.0 (2,539 lines, dcli v2 improvements: merge, snapper, performance)
+**Version**: 2.2.0 (dcli v2 improvements: merge, snapper, performance, hybrid updates)
 
 **Key features**:
 - Module system with conflict detection
 - NixOS-style version constraints (exact, >=, <)
 - Unmanaged package discovery with `merge` command
 - Lockfile generation for reproducibility
+- **Hybrid update mode**: sync to packages.yaml + update all installed packages
 - Interactive downgrade selection
 - Rolling package detection (-git packages)
 - Batch package validation with timeout
 - Backup integration (Timeshift or Snapper)
-- Performance-optimized sync operations
+- Performance-optimized sync operations (batch installs, lockfile fast-path)
 - Comprehensive validation and status checks
+- **Topgrade integration**: Called as pre-command for unified update workflow
 
 ### Command Categories
 
@@ -155,6 +157,9 @@ package-manager install firefox                # Install single package
 package-manager remove firefox                 # Remove package
 package-manager sync                           # Sync to packages.yaml
 package-manager sync --prune                   # Sync + remove orphans
+package-manager update                         # Hybrid update (sync + update all)
+package-manager update --no-sync               # Update all packages without sync
+package-manager update --no-flatpak            # Update without Flatpak
 ```
 
 **Package Discovery**:
@@ -316,12 +321,30 @@ packages:
 - `run_onchange_before_sync_packages.sh.tmpl` → Calls package-manager sync for both Arch and Flatpak
 - Hash-triggered on packages.yaml changes
 
-**Topgrade integration** (manual execution):
+**Topgrade integration** (v2.2 unified update workflow):
 ```toml
+# Pre-command: Package updates run BEFORE firmware/git/cleanup
+[pre_commands]
+"Package Update (package-manager)" = "~/.local/bin/package-manager update"
+
+# Post-update commands
 [commands]
-"Package Validation" = "package-manager validate"
-"System Status" = "package-manager status"
+"Check for unmanaged packages" = "~/.local/bin/package-manager merge --dry-run"
+"Post-update system status" = "~/.local/bin/system-health --brief"
 ```
+
+**Update workflow** (single command: `topgrade`):
+1. Pre-command: `package-manager update` (sync + update all Arch/AUR + Flatpak)
+2. Firmware updates (fwupdmgr) - handled by topgrade
+3. Git repo pulls (chezmoi, ~/Projects/*) - handled by topgrade
+4. Cleanup hooks (orphan removal, cache cleanup) - handled by topgrade
+5. Post-update validation
+
+**Update command behavior**:
+- Default: Sync to packages.yaml, update all Arch/AUR and Flatpak packages
+- `--no-sync`: Skip sync phase (only update packages)
+- `--no-flatpak`: Skip Flatpak updates
+- Validates package system and updates lockfile (if AUTO_LOCK enabled)
 
 ### Migration from v1.0
 

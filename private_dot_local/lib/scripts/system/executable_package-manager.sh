@@ -965,7 +965,14 @@ cmd_lock() {
     [[ "$quiet" == "false" ]] && echo ""
 
     local timestamp=$(date -Iseconds)
-    local hostname=$(hostname)
+    local hostname
+    if command -v hostname >/dev/null 2>&1; then
+        hostname=$(hostname)
+    elif [[ -r /proc/sys/kernel/hostname ]]; then
+        hostname=$(cat /proc/sys/kernel/hostname)
+    else
+        hostname="localhost"
+    fi
 
     cat > "$LOCKFILE" << EOF
 # Generated: $timestamp
@@ -2615,6 +2622,91 @@ cmd_validate() {
     fi
 }
 
+# Command: Update all system packages (hybrid mode)
+# Usage: package-manager update [--no-sync] [--no-flatpak]
+cmd_update() {
+    local sync_first=true
+    local update_flatpak=true
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --no-sync)
+                sync_first=false
+                shift
+                ;;
+            --no-flatpak)
+                update_flatpak=false
+                shift
+                ;;
+            *)
+                ui_error "Unknown flag: $1"
+                ui_info "Usage: package-manager update [--no-sync] [--no-flatpak]"
+                return 1
+                ;;
+        esac
+    done
+
+    ui_title "📦 System Package Update"
+
+    # Phase 1: Sync to packages.yaml
+    if [[ "$sync_first" == "true" ]]; then
+        ui_step "Phase 1/5: Syncing to packages.yaml..."
+        if ! cmd_sync --prune; then
+            ui_error "Sync failed. Fix packages.yaml and retry."
+            return 1
+        fi
+        ui_success "Sync complete"
+        echo ""
+    fi
+
+    # Phase 2: Update all Arch/AUR packages
+    ui_step "Phase 2/5: Updating Arch/AUR packages..."
+    local aur_helper=$(_get_aur_helper)
+    if [[ -z "$aur_helper" ]]; then
+        ui_error "No AUR helper found. Install paru."
+        return 1
+    fi
+
+    if ! $aur_helper -Syu --noconfirm; then
+        ui_error "Arch/AUR update failed"
+        return 1
+    fi
+    ui_success "Arch/AUR packages updated"
+    echo ""
+
+    # Phase 3: Update Flatpak packages
+    if [[ "$update_flatpak" == "true" ]] && command -v flatpak >/dev/null 2>&1; then
+        ui_step "Phase 3/5: Updating Flatpak packages..."
+        if ! flatpak update --noninteractive --user; then
+            ui_warning "Flatpak update failed (non-critical)"
+        else
+            ui_success "Flatpak packages updated"
+        fi
+        echo ""
+    fi
+
+    # Phase 4: Validation
+    ui_step "Phase 4/5: Validating package system..."
+    if ! cmd_validate; then
+        ui_warning "Validation found issues (non-critical)"
+    else
+        ui_success "Package system healthy"
+    fi
+    echo ""
+
+    # Phase 5: Lockfile generation (if enabled)
+    if [[ "$AUTO_LOCK" == "true" ]]; then
+        ui_step "Phase 5/5: Updating lockfile..."
+        cmd_lock --quiet
+        ui_success "Lockfile updated"
+    fi
+
+    echo ""
+    ui_success "System update complete"
+    return 0
+}
+
 # =============================================================================
 # SECTION 7: HELP & VERSION
 # =============================================================================
@@ -2650,6 +2742,12 @@ PACKAGE OPERATIONS:
     merge [--dry-run]                Add unmanaged packages to modules
     sync [--prune] [--no-lock]       Sync system (auto-locks by default)
     sync --locked                    Enforce lockfile versions strictly
+    update [--no-sync] [--no-flatpak]
+                                     Update all system packages (hybrid mode)
+                                     1. Sync to packages.yaml (--no-sync to skip)
+                                     2. Update Arch/AUR packages (paru -Syu)
+                                     3. Update Flatpak packages (--no-flatpak to skip)
+                                     4. Validate and update lockfile
 
 STATUS & VALIDATION:
     status                           Show status (includes lockfile analysis)
@@ -2933,6 +3031,9 @@ package-manager() {
             ;;
         "sync")
             cmd_sync "$@"
+            ;;
+        "update")
+            cmd_update "$@"
             ;;
         "status")
             cmd_status

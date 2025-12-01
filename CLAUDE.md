@@ -333,8 +333,8 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### Package Manager
 
-**Tool**: `package-manager.sh` (2,539 lines, dcli v2 improvements)
-**Features**: NixOS-style version pinning, module system, dcli v2 integration
+**Tool**: `package-manager.sh` (v2.2.0, dcli v2 improvements)
+**Features**: NixOS-style version pinning, module system, hybrid update mode
 **Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v2.1`
 
 **Key capabilities**:
@@ -342,11 +342,18 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 - Version constraints (exact, >=, <) for reproducible builds
 - Unmanaged package discovery with `merge` command
 - Lockfile generation (like NixOS flake.lock)
+- **Hybrid update mode**: sync to packages.yaml + update all installed packages
 - Interactive downgrade selection with numbered menus
 - Rolling package detection (-git packages)
 - Comprehensive validation and status checks
 - Backup integration (Timeshift or Snapper)
-- Performance-optimized sync operations
+- Performance-optimized sync operations (batch installs, lockfile fast-path)
+
+**System Update Integration**:
+- **Topgrade**: Calls `package-manager update` as pre-command for unified update workflow
+- **Update command**: `package-manager update` syncs packages.yaml, then updates all Arch/AUR and Flatpak packages
+- **Flags**: `--no-sync` (skip sync), `--no-flatpak` (skip Flatpak updates)
+- **Workflow**: Packages → Firmware (topgrade) → Git repos (topgrade) → Cleanup (topgrade)
 
 ### Decision Matrix
 

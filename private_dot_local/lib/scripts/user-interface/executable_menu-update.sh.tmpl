@@ -8,7 +8,7 @@
 . ~/.local/lib/scripts/user-interface/menu-helpers.sh
 
 # Menu options
-OPTIONS="󰁍 Back|󰚰 System Update (topgrade)|󰑓 Config Refresh (chezmoi)|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
+OPTIONS="󰁍 Back|󰚰 Full System Update|󰑓 Config Refresh (chezmoi)|󰦖 Package Sync Only|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
 
 CHOICE=$(show_menu "Update" "$OPTIONS")
 
@@ -16,7 +16,8 @@ case "$CHOICE" in
     "󰁍 Back")
         ~/.local/lib/scripts/user-interface/system-menu.sh
         ;;
-    "󰚰 System Update (topgrade)")
+    "󰚰 Full System Update")
+        # Runs: package-manager update + firmware + git + cleanup
         if command -v topgrade >/dev/null 2>&1; then
             {{ .globals.applications.terminal }} -e topgrade
         else
@@ -30,6 +31,10 @@ case "$CHOICE" in
             {{ .globals.applications.terminal }} -e sh -c "chezmoi diff && chezmoi apply; read -p 'Press Enter to continue...'"
             notify "󰑓 Chezmoi" "Configuration refreshed"
         fi
+        ;;
+    "󰦖 Package Sync Only")
+        # Only sync to packages.yaml (no updates to other packages)
+        {{ .globals.applications.terminal }} -e sh -c "{{ .chezmoi.homeDir }}/.local/bin/package-manager sync --prune; read -p 'Press Enter to continue...'"
         ;;
     "󰣐 Firmware Update")
         if command -v fwupdmgr >/dev/null 2>&1; then

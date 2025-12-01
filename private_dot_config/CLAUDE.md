@@ -99,8 +99,10 @@
 - Theme integration via `source ~/.config/themes/current/ghostty.conf`
 
 **Topgrade** (`topgrade.toml.tmpl`):
-- System update automation
-- Custom commands (system-health, maintenance)
+- Unified update workflow (firmware, git, cleanup)
+- Calls `package-manager update` as pre-command (packages handled by package-manager)
+- Disabled: system (Arch/AUR), flatpak (handled by package-manager)
+- Custom commands: system-health, unmanaged package check, orphan removal
 
 ## Systemd User Services
 

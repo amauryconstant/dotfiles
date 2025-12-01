@@ -24,12 +24,14 @@ disable = [
     "deno",
     "bun",
     "uv",
+    "system",    # Disable pacman/paru (handled by package-manager)
+    "flatpak",   # Disable flatpak (handled by package-manager)
 ]
 
 # Package managers configuration
 [linux]
-# Use paru if available, fallback to pacman
-arch_package_manager = "paru"
+# DISABLED: Package management handled by package-manager.sh
+# arch_package_manager = "paru"
 # Show Arch news during updates
 show_arch_news = true
 
@@ -40,8 +42,8 @@ upgrade = true
 
 # Flatpak configuration
 [flatpak]
-# Use sudo for system-wide flatpak operations
-use_sudo = true
+# DISABLED: Flatpak management handled by package-manager.sh
+# use_sudo = true
 
 # Git repositories maintenance
 [git]
@@ -56,20 +58,14 @@ repos = [
 arguments = "--rebase --autostash --prune"
 
 # Pre-update commands (run before any updates)
-# Commented out - these functions may not be available in all contexts
-# [pre_commands]
-# "System health check" = "/usr/bin/zsh -c 'system_health_simple --brief'"
-# "Package health check" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh health --brief"
+[pre_commands]
+"Package Update (package-manager)" = "{{ .chezmoi.homeDir }}/.local/bin/package-manager update"
 
 # Custom commands for system-specific maintenance
 [commands]
-# Clean package cache after updates
-"Clean package cache" = "sudo pacman -Sc --noconfirm"
+# Post-update system status
+"Post-update system status" = "{{ .chezmoi.homeDir }}/.local/bin/system-health --brief"
+# Check for unmanaged packages (installed outside dotfiles)
+"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/bin/package-manager merge --dry-run"
 # Remove orphaned packages (safe version - checks for orphans before attempting removal)
 "Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"
-# Post-update system status
-"Post-update system status" = "/usr/bin/zsh -c '~/.local/lib/scripts/system/system-health.sh --brief'"
-# Post-update package manager validation
-"Package manager validation" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh validate"
-# Check for unmanaged packages (installed outside dotfiles)
-"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager.sh merge --dry-run"
