@@ -4,7 +4,7 @@
 # Purpose: Install AI models for Arch Linux work environment
 # Requirements: Arch Linux, ollama
 
-# Hash: {{ include ".chezmoidata/ai.yaml" | sha256sum }}
+# Hash: {{ .ai.models | toJson | sha256sum }}
 
 {{ includeTemplate "log_start" "Installing AI models..." }}
 
@@ -27,9 +27,16 @@ fi
 {{ includeTemplate "log_step" "Installing AI models..." }}
 
 # Install each model from the external AI configuration
+FAILED_MODELS=""
 {{- range .ai.models }}
-{{ includeTemplate "log_info" "Installing AI model..." }}
-ollama pull {{ . }}
+if ! ollama pull {{ . }} >/dev/null 2>&1; then
+    FAILED_MODELS="${FAILED_MODELS}{{ . }}, "
+fi
 {{- end }}
 
-{{ includeTemplate "log_complete" "AI models installed successfully" }}
+if [ -n "$FAILED_MODELS" ]; then
+    {{ includeTemplate "log_warning" "Some models failed: $FAILED_MODELS" }}
+    {{ includeTemplate "log_warning" "Continuing with partial installation..." }}
+fi
+
+{{ includeTemplate "log_complete" "AI model installation finished" }}

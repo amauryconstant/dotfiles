@@ -9,7 +9,7 @@
 ## Quick Reference
 
 - **Purpose**: Lazy-loaded script implementations for CLI wrappers
-- **Target**: `~/.local/lib/scripts/` (44 total scripts)
+- **Target**: `~/.local/lib/scripts/` (46 total scripts)
 - **Categories**: 11 logical groupings
 - **Integration**: Sourced by `~/.local/bin/executable_*` wrappers
 - **Template safety**: Only lib/ scripts can be templates (bin/ static)
@@ -17,17 +17,17 @@
 ## Directory Structure
 
 ```
-~/.local/lib/scripts/   # 44 total scripts
+~/.local/lib/scripts/   # 46 total scripts
 ├── core/               # 2 files - Foundation
 │   ├── gum-ui.sh       # 572-line UI library
 │   └── colors.sh.tmpl  # Oksolar color definitions
-├── desktop/            # 16 files - Hyprland utilities
+├── desktop/            # 17 files - Hyprland utilities
 ├── media/              # 3 files - Wallpaper, screenshots
 ├── system/             # 6 files - Maintenance, health
 ├── terminal/           # 1 file - CWD preservation
 ├── network/            # 1 file - Tailscale
 ├── git/                # 1 file - Branch cleanup
-├── user-interface/     # 12 files - Menu system
+├── user-interface/     # 13 files - Menu system
 ├── utils/              # 1 file - JSON reorder
 └── development/        # [empty - future expansion]
 ```

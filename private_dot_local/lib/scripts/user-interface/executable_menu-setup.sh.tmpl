@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options - Using Material Design icons from glyphnames.json
 OPTIONS="󰁍 Back|󰕾 Audio (PulseAudio)|󰓃 Audio Output Switch|󰖩 Network (WiFi)|󰂯 Bluetooth|󰁹 Power Profile|󰍹 Displays|󰌑 Edit Keybindings|󰖳 Input Devices"
@@ -14,13 +14,13 @@ CHOICE=$(show_menu "Setup" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰕾 Audio (PulseAudio)")
         pavucontrol &
         ;;
     "󰓃 Audio Output Switch")
-        ~/.local/lib/scripts/desktop/audio-switch.sh
+        "$SCRIPTS_DIR/desktop/audio-switch.sh"
         ;;
     "󰖩 Network (WiFi)")
         {{ .globals.applications.terminal }} -e nmtui
@@ -37,7 +37,7 @@ case "$CHOICE" in
 
             case "$PROFILE_CHOICE" in
                 "󰁍 Back")
-                    ~/.local/lib/scripts/user-interface/menu-setup.sh
+                    "$SCRIPTS_DIR/user-interface/menu-setup.sh"
                     ;;
                 "󰓅 Performance")
                     powerprofilesctl set performance

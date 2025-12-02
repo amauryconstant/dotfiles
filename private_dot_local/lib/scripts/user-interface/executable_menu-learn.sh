@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options - Using Material Design icons from glyphnames.json
 OPTIONS="󰁍 Back|󰌌 Keybindings|󰗚 Hyprland Wiki|󰣇 Arch Wiki|󰈙 Chezmoi Docs|󰊤 GitHub (Dotfiles)"
@@ -14,10 +14,10 @@ CHOICE=$(show_menu "Learn" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰌌 Keybindings")
-        ~/.local/lib/scripts/desktop/keybindings.sh
+        "$SCRIPTS_DIR/desktop/keybindings.sh"
         ;;
     "󰗚 Hyprland Wiki")
         firefox "https://wiki.hyprland.org" &

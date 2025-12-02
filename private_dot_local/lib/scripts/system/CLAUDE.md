@@ -20,8 +20,14 @@
 | `system-health-dashboard.sh` | Interactive dashboard | TUI with gum |
 | `system-maintenance.sh` | Maintenance tasks | `--update`, `--cleanup` modes |
 | `troubleshoot.sh` | Diagnostic tool | Interactive troubleshooting |
-| `package-manager.sh` v2.1 | Module-based pkg management | NixOS-style version pinning, dcli v2 features (2,539 lines) |
+| `package-manager.sh` v2.2 | Module-based pkg management | NixOS-style version pinning, dcli v2 features (3,069 lines) |
 | `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
+
+**Recent security fix (v2.2.1)**:
+- **yq injection vulnerability patched**: 16+ vulnerable lines converted to use `--arg` flag
+- **State file corruption risk eliminated**: Safe variable substitution in all yq operations
+- **Input validation improved**: Module and package names now properly escaped
+- **Strict mode added**: `set -euo pipefail` prevents partial state corruption
 
 ## system-health.sh
 

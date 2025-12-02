@@ -42,19 +42,3 @@ notify() {
 
     notify-send "$title" "$message" -t "$timeout"
 }
-
-# Run command with error handling
-# Usage: run_command "command" "Success message" "Error message"
-run_command() {
-    command="$1"
-    success_msg="$2"
-    error_msg="$3"
-
-    if eval "$command"; then
-        notify "✅ Success" "$success_msg"
-        return 0
-    else
-        notify "❌ Error" "$error_msg"
-        return 1
-    fi
-}

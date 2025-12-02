@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options
 OPTIONS="󰁍 Back|󰏗 Install Package|󰚩 AI Models (Ollama)|󰙵 Development Tools|󰘐 Code Editors"
@@ -14,12 +14,12 @@ CHOICE=$(show_menu "Install" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰏗 Install Package")
         # Interactive package installation
-        if [ -f ~/.local/lib/scripts/system/package-manager.sh ]; then
-            {{ .globals.applications.terminal }} -e ~/.local/lib/scripts/system/package-manager.sh install
+        if [ -f "$SCRIPTS_DIR/system/package-manager.sh" ]; then
+            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager.sh" install
         else
             # Fallback to simple search and install
             PACKAGE=$(echo "" | wofi --dmenu --prompt "Package name to install")
@@ -38,7 +38,7 @@ case "$CHOICE" in
 
             case "$MODEL_CHOICE" in
                 "󰁍 Back")
-                    ~/.local/lib/scripts/user-interface/menu-install.sh
+                    "$SCRIPTS_DIR/user-interface/menu-install.sh"
                     ;;
                 "󰇚 Pull Model")
                     MODEL_NAME=$(echo "" | wofi --dmenu --prompt "Model name (e.g., llama3, codellama)")
@@ -73,7 +73,7 @@ case "$CHOICE" in
 
         case "$DEV_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-install.sh
+                "$SCRIPTS_DIR/user-interface/menu-install.sh"
                 ;;
             "󰡨 Docker")
                 if confirm "Install Docker?"; then
@@ -107,7 +107,7 @@ case "$CHOICE" in
 
         case "$EDITOR_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-install.sh
+                "$SCRIPTS_DIR/user-interface/menu-install.sh"
                 ;;
             "󰨞 VSCode")
                 if confirm "Install Visual Studio Code?"; then

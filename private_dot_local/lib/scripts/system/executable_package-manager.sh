@@ -3,7 +3,9 @@
 # Package Manager - Module-based declarative package management with version pinning
 # Purpose: NixOS/dcli-inspired package management for Arch Linux
 # Requirements: Arch Linux, paru, yq, gum (UI library)
-# Version: 2.2.0 (batch operations, lockfile integration, query optimizations)
+# Version: 2.2.1 (security: yq injection fix, strict mode)
+
+set -euo pipefail
 
 # Source the UI library
 if [ -f "$UI_LIB" ]; then
@@ -63,7 +65,7 @@ _update_package_state() {
     local timestamp=$(date -Iseconds)
 
     # Remove existing entry
-    yq eval "del(.packages[] | select(.name == \"$name\"))" -i "$STATE_FILE"
+    yq eval --arg name "$name" 'del(.packages[] | select(.name == $name))' -i "$STATE_FILE"
 
     # Add new entry
     local pinned="false"
@@ -661,7 +663,7 @@ cmd_module_enable() {
     fi
 
     # Check if module exists
-    if ! yq eval ".packages.modules | has(\"$module\")" "$PACKAGES_FILE" 2>/dev/null | grep -q "true"; then
+    if ! yq eval --arg mod "$module" '.packages.modules | has($mod)' "$PACKAGES_FILE" 2>/dev/null | grep -q "true"; then
         ui_error "Module '$module' not found"
         return 1
     fi
@@ -683,7 +685,7 @@ cmd_module_enable() {
 
                 if ui_confirm "Disable '$conflict' and enable '$module'?"; then
                     # Disable conflicting module
-                    yq eval ".packages.modules.${conflict}.enabled = false" -i "$PACKAGES_FILE"
+                    yq eval --arg mod "$conflict" '.packages.modules[$mod].enabled = false' -i "$PACKAGES_FILE"
                     ui_success "Disabled '$conflict'"
                 else
                     ui_warning "Cancelled"
@@ -694,7 +696,7 @@ cmd_module_enable() {
     fi
 
     # Enable module
-    yq eval ".packages.modules.${module}.enabled = true" -i "$PACKAGES_FILE"
+    yq eval --arg mod "$module" '.packages.modules[$mod].enabled = true' -i "$PACKAGES_FILE"
     ui_success "Module '$module' enabled"
     ui_info "Run 'package-manager sync' to install packages"
 }
@@ -795,7 +797,7 @@ cmd_module_disable() {
     fi
 
     # Disable module
-    yq eval ".packages.modules.${module}.enabled = false" -i "$PACKAGES_FILE"
+    yq eval --arg mod "$module" '.packages.modules[$mod].enabled = false' -i "$PACKAGES_FILE"
     ui_success "Module '$module' disabled"
     ui_info "Run 'package-manager sync --prune' to remove packages"
 }
@@ -863,26 +865,26 @@ cmd_pin() {
         [[ -z "$module" ]] && continue
 
         # Check if package exists in this module (as simple string)
-        local has_simple=$(yq eval ".packages.modules.${module}.packages[] | select(. == \"$package\")" "$PACKAGES_FILE" 2>/dev/null)
+        local has_simple=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(. == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_simple" ]]; then
             # Found as simple string, convert to object with version
-            local pkg_index=$(yq eval ".packages.modules.${module}.packages | to_entries | .[] | select(.value == \"$package\") | .key" "$PACKAGES_FILE" | head -1)
+            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value == $pkg) | .key' "$PACKAGES_FILE" | head -1)
 
-            yq eval ".packages.modules.${module}.packages[${pkg_index}] = {\"name\": \"$package\", \"version\": \"$version\"}" -i "$PACKAGES_FILE"
+            yq eval --arg mod "$module" --arg idx "$pkg_index" --arg pkg "$package" --arg ver "$version" '.packages.modules[$mod].packages[$idx | tonumber] = {"name": $pkg, "version": $ver}' -i "$PACKAGES_FILE"
             found=true
             found_module="$module"
             break
         fi
 
         # Check if already exists as object
-        local has_object=$(yq eval ".packages.modules.${module}.packages[] | select(.name == \"$package\")" "$PACKAGES_FILE" 2>/dev/null)
+        local has_object=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_object" ]]; then
             # Update existing object
-            local pkg_index=$(yq eval ".packages.modules.${module}.packages | to_entries | .[] | select(.value.name == \"$package\") | .key" "$PACKAGES_FILE" | head -1)
+            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value.name == $pkg) | .key' "$PACKAGES_FILE" | head -1)
 
-            yq eval ".packages.modules.${module}.packages[${pkg_index}].version = \"$version\"" -i "$PACKAGES_FILE"
+            yq eval --arg mod "$module" --arg idx "$pkg_index" --arg ver "$version" '.packages.modules[$mod].packages[$idx | tonumber].version = $ver' -i "$PACKAGES_FILE"
             found=true
             found_module="$module"
             break
@@ -917,16 +919,16 @@ cmd_unpin() {
         [[ -z "$module" ]] && continue
 
         # Check if exists as object with version
-        local has_object=$(yq eval ".packages.modules.${module}.packages[] | select(.name == \"$package\")" "$PACKAGES_FILE" 2>/dev/null)
+        local has_object=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_object" ]]; then
             # Check if it has a version field
-            local pkg_index=$(yq eval ".packages.modules.${module}.packages | to_entries | .[] | select(.value.name == \"$package\") | .key" "$PACKAGES_FILE" | head -1)
-            local has_version=$(yq eval ".packages.modules.${module}.packages[${pkg_index}] | has(\"version\")" "$PACKAGES_FILE" 2>/dev/null)
+            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value.name == $pkg) | .key' "$PACKAGES_FILE" | head -1)
+            local has_version=$(yq eval --arg mod "$module" --arg idx "$pkg_index" '.packages.modules[$mod].packages[$idx | tonumber] | has("version")' "$PACKAGES_FILE" 2>/dev/null)
 
             if [[ "$has_version" == "true" ]]; then
                 # Replace object with simple string
-                yq eval ".packages.modules.${module}.packages[${pkg_index}] = \"$package\"" -i "$PACKAGES_FILE"
+                yq eval --arg mod "$module" --arg idx "$pkg_index" --arg pkg "$package" '.packages.modules[$mod].packages[$idx | tonumber] = $pkg' -i "$PACKAGES_FILE"
                 found=true
                 found_module="$module"
                 break
@@ -1150,7 +1152,7 @@ cmd_versions() {
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
 
-        local constraint=$(yq eval ".packages.modules.${module}.packages[] | select(.name == \"$package\") | .version" "$PACKAGES_FILE" 2>/dev/null)
+        local constraint=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg) | .version' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$constraint" && "$constraint" != "null" ]]; then
             ui_success "Pinned to: $constraint (in module '$module')"
@@ -1405,7 +1407,7 @@ _remove_package() {
     local package="$1"
 
     # Check if package is in state file
-    local pkg_type=$(yq eval ".packages[] | select(.name == \"$package\") | .type" "$STATE_FILE" 2>/dev/null)
+    local pkg_type=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .type' "$STATE_FILE" 2>/dev/null)
 
     if [[ -z "$pkg_type" ]]; then
         # Not in state file, try to detect (using cache)
@@ -1420,7 +1422,7 @@ _remove_package() {
     fi
 
     # Check if pinned
-    local is_pinned=$(yq eval ".packages[] | select(.name == \"$package\") | .pinned" "$STATE_FILE" 2>/dev/null)
+    local is_pinned=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .pinned' "$STATE_FILE" 2>/dev/null)
     if [[ "$is_pinned" == "true" ]]; then
         ui_warning "⚠️  Package '$package' is pinned"
         if ! ui_confirm "Remove anyway?"; then
@@ -1456,7 +1458,7 @@ _remove_package() {
     esac
 
     # Remove from state file
-    yq eval "del(.packages[] | select(.name == \"$package\"))" -i "$STATE_FILE"
+    yq eval --arg pkg "$package" 'del(.packages[] | select(.name == $pkg))' -i "$STATE_FILE"
 
     return 0
 }

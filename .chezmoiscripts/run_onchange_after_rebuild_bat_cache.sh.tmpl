@@ -4,9 +4,8 @@
 # Purpose: Rebuild bat cache when theme files change
 # Requirements: Arch Linux, bat
 
-{{- /* Hash trigger: rebuild when theme files change */ -}}
-{{- /* {{ include "private_dot_config/bat/themes/rose-pine-dawn.tmTheme" }} */ -}}
-{{- /* {{ include "private_dot_config/bat/themes/rose-pine-moon.tmTheme" }} */ -}}
+# Hash: {{ include "private_dot_config/bat/themes/rose-pine-dawn.tmTheme" | sha256sum }}
+# Hash: {{ include "private_dot_config/bat/themes/rose-pine-moon.tmTheme" | sha256sum }}
 
 {{ includeTemplate "log_start" "Rebuilding bat theme cache..." }}
 

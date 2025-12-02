@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Main trigger menu - Using Material Design icons from glyphnames.json
 MAIN_OPTIONS="󰁍 Back|󰄀 Capture|󰒖 Share|󰔡 Toggle"
@@ -13,7 +13,7 @@ CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰄀 Capture")
         # Capture submenu
@@ -22,28 +22,28 @@ case "$CHOICE" in
 
         case "$CAPTURE_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-trigger.sh
+                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
                 ;;
             "󰹑 Screenshot (Smart)")
-                ~/.local/lib/scripts/media/screenshot.sh smart
+                "$SCRIPTS_DIR/media/screenshot.sh smart"
                 ;;
             "󰩭 Screenshot (Region)")
-                ~/.local/lib/scripts/media/screenshot.sh region
+                "$SCRIPTS_DIR/media/screenshot.sh region"
                 ;;
             "󰖲 Screenshot (Window)")
-                ~/.local/lib/scripts/media/screenshot.sh windows
+                "$SCRIPTS_DIR/media/screenshot.sh windows"
                 ;;
             "󰍹 Screenshot (Fullscreen)")
-                ~/.local/lib/scripts/media/screenshot.sh fullscreen
+                "$SCRIPTS_DIR/media/screenshot.sh fullscreen"
                 ;;
             "󰨸 Screenshot → Clipboard")
-                ~/.local/lib/scripts/media/screenshot.sh smart clipboard
+                "$SCRIPTS_DIR/media/screenshot.sh smart clipboard"
                 ;;
             "󰻂 Screen Record")
-                ~/.local/lib/scripts/desktop/screenrecord.sh
+                "$SCRIPTS_DIR/desktop/screenrecord.sh"
                 ;;
             "󰕾 Screen Record + Audio")
-                ~/.local/lib/scripts/desktop/screenrecord.sh --with-audio
+                "$SCRIPTS_DIR/desktop/screenrecord.sh --with-audio"
                 ;;
             "󰴱 Color Picker")
                 pkill hyprpicker || hyprpicker -a
@@ -57,7 +57,7 @@ case "$CHOICE" in
 
         case "$SHARE_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-trigger.sh
+                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
                 ;;
             "󰈔 Share File")
                 notify "󰒖 Share" "File sharing not yet implemented"
@@ -74,19 +74,19 @@ case "$CHOICE" in
 
         case "$TOGGLE_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-trigger.sh
+                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
                 ;;
             "󰛨 Nightlight")
-                ~/.local/lib/scripts/desktop/nightlight-toggle.sh
+                "$SCRIPTS_DIR/desktop/nightlight-toggle.sh"
                 ;;
             "󰌾 Idle Lock")
-                ~/.local/lib/scripts/desktop/idle-toggle.sh
+                "$SCRIPTS_DIR/desktop/idle-toggle.sh"
                 ;;
             "󰘯 Waybar")
-                ~/.local/lib/scripts/desktop/waybar-toggle.sh
+                "$SCRIPTS_DIR/desktop/waybar-toggle.sh"
                 ;;
             "󰝘 Workspace Gaps")
-                ~/.local/lib/scripts/desktop/workspace-gaps-toggle.sh
+                "$SCRIPTS_DIR/desktop/workspace-gaps-toggle.sh"
                 ;;
         esac
         ;;

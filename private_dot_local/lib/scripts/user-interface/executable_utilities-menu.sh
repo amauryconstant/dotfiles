@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options
 OPTIONS="󰁍 Back|󰕾 Audio (PulseAudio)|󰖩 Network (WiFi)|󰂯 Bluetooth|󰍹 Displays|󰌑 Edit Keybindings|󰖳 Input Devices"
@@ -14,7 +14,7 @@ CHOICE=$(show_menu "Utilities" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰕾 Audio (PulseAudio)")
         pavucontrol &

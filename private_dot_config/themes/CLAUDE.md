@@ -220,7 +220,7 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 ### Consumer Scripts
 
 **8 system CLI tools** use theme colors via gum-ui:
-1. package-manager (2,539 lines)
+1. package-manager (3,069 lines)
 2. system-health
 3. system-maintenance
 4. system-health-dashboard

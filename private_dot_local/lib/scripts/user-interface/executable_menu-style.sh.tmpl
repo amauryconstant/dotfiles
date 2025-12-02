@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, wofi
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options - Using Material Design icons from glyphnames.json
 OPTIONS="󰁍 Back|󰔎 Switch Theme|󰸉 Wallpaper (Random)|󰋩 Wallpaper (Set)|󰒓 Edit Hyprland Config"
@@ -14,18 +14,18 @@ CHOICE=$(show_menu "Style" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰔎 Switch Theme")
         # Check if theme switcher exists
-        if [ -f ~/.local/lib/scripts/desktop/theme-switcher.sh ]; then
-            ~/.local/lib/scripts/desktop/theme-switcher.sh
+        if [ -f "$SCRIPTS_DIR/desktop/theme-switcher.sh" ]; then
+            "$SCRIPTS_DIR/desktop/theme-switcher.sh"
         else
             notify "󰏘 Theme" "Theme switcher not found"
         fi
         ;;
     "󰸉 Wallpaper (Random)")
-        ~/.local/lib/scripts/media/random-wallpaper.sh
+        "$SCRIPTS_DIR/media/random-wallpaper.sh"
         ;;
     "󰋩 Wallpaper (Set)")
         # List wallpapers from current theme and let user choose
@@ -42,7 +42,7 @@ case "$CHOICE" in
                 sed "s|$WALLPAPER_DIR/||" | \
                 wofi --dmenu --prompt "Select Wallpaper" --width 400 --height 600)
             if [ -n "$WALLPAPER" ]; then
-                ~/.local/lib/scripts/media/set-wallpaper.sh "$WALLPAPER_DIR/$WALLPAPER"
+                "$SCRIPTS_DIR/media/set-wallpaper.sh" "$WALLPAPER_DIR/$WALLPAPER"
             fi
         else
             notify "󰋩 Wallpaper" "No theme selected or wallpaper directory not found"
@@ -55,7 +55,7 @@ case "$CHOICE" in
 
         case "$CONFIG_CHOICE" in
             "󰁍 Back")
-                ~/.local/lib/scripts/user-interface/menu-style.sh
+                "$SCRIPTS_DIR/user-interface/menu-style.sh"
                 ;;
             "󰍹 Monitor")
                 {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/monitor.conf

@@ -61,7 +61,7 @@ fi
 
 ## Available Wrappers
 
-**10 CLI commands**:
+**12 CLI commands**:
 
 | Executable | Script | Category |
 |------------|--------|----------|

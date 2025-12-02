@@ -1,11 +1,13 @@
 #!/usr/bin/env sh
 
 # Script: menu-system.sh
-# Purpose: System menu (Power/session controls)
+# Purpose: Power/session controls submenu
+#          Lock/Suspend/Restart/Shutdown options
 # Requirements: Arch Linux, wofi
+# Note: Do not confuse with system-menu.sh (main entry point)
 
 # Source helpers
-. ~/.local/lib/scripts/user-interface/menu-helpers.sh
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options - Using Material Design icons from glyphnames.json
 OPTIONS="󰁍 Back|󰌾 Lock|󰤄 Suspend|󰜉 Restart|󰐥 Shutdown"
@@ -14,7 +16,7 @@ CHOICE=$(show_menu "System" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        ~/.local/lib/scripts/user-interface/system-menu.sh
+        "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰌾 Lock")
         hyprlock

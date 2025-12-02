@@ -27,9 +27,9 @@
 
 ```
 ~/.local/
-├── bin/                    # 11 CLI wrappers (in PATH)
+├── bin/                    # 12 CLI wrappers (in PATH)
 │   └── executable_*        # Lightweight shims
-└── lib/scripts/            # 45 implementation scripts
+└── lib/scripts/            # 46 implementation scripts (10 categories)
     ├── core/               # Foundation libraries
     ├── desktop/            # Hyprland utilities
     ├── media/              # Wallpaper, screenshots

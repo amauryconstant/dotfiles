@@ -4,7 +4,7 @@
 # Purpose: Install VSCode extensions for Arch Linux work environment
 # Requirements: Arch Linux, code (VSCode)
 
-# Hash: {{ include ".chezmoidata/extensions.yaml" | sha256sum }}
+# Hash: {{ .extensions.code | toJson | sha256sum }}
 
 {{ includeTemplate "log_start" "Installing extensions for Arch Linux..." }}
 
@@ -17,12 +17,19 @@ fi
 {{ includeTemplate "log_step" "Installing VSCode extensions..." }}
 
 # Install each extension (work destination behavior: always install extensions)
+FAILED_EXTENSIONS=""
 {{- range .extensions.code }}
-{{ includeTemplate "log_info" "Installing VSCode extension..." }}
-code --install-extension {{ . }}
+if ! code --install-extension {{ . }} >/dev/null 2>&1; then
+    FAILED_EXTENSIONS="${FAILED_EXTENSIONS}{{ . }}, "
+fi
 {{- end }}
 
-{{ includeTemplate "log_success" "VSCode extensions installed successfully" }}
+if [ -n "$FAILED_EXTENSIONS" ]; then
+    {{ includeTemplate "log_warning" "Some extensions failed: $FAILED_EXTENSIONS" }}
+    {{ includeTemplate "log_warning" "Continuing with partial installation..." }}
+fi
+
+{{ includeTemplate "log_success" "VSCode extension installation finished" }}
 
 # Install Firefox policies
 if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then

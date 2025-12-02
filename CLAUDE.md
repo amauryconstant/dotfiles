@@ -108,13 +108,13 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ~/.local/share/chezmoi/
 ├── .chezmoidata/               # Template data (packages, colors, globals)
 ├── .chezmoiscripts/            # Lifecycle scripts (run_once_*, run_onchange_*)
-├── .chezmoitemplates/          # Reusable includes (log_*, arch_linux_check)
+├── .chezmoitemplates/          # Reusable includes (log_*)
 ├── private_dot_config/         # XDG config (hypr, waybar, wofi, zsh, etc.)
 ├── private_dot_keys/           # 🔐 Encrypted secrets
 ├── private_dot_ssh/            # SSH + encrypted keys
 └── private_dot_local/
-    ├── bin/                    # CLI wrappers (10 executables)
-    └── lib/scripts/            # Script library (44 scripts in 8 categories)
+    ├── bin/                    # CLI wrappers (12 executables)
+    └── lib/scripts/            # Script library (46 scripts in 10 categories)
 ```
 
 **See**: Chezmoi Data Files Reference for data file structure
@@ -126,11 +126,16 @@ chezmoi add --encrypt path/to/file      # Encrypt
 
 | Category | Location | Scripts | CLI Wrappers | Purpose |
 |----------|----------|---------|--------------|---------|
-| Core | `lib/scripts/core/` | 2 | 0 | Foundation libraries (UI, colors) |
+| Core | `lib/scripts/core/` | 1 | 0 | Foundation library (gum-ui) |
 | Desktop | `lib/scripts/desktop/` | 17 | 1 | Hyprland utilities, theme switching |
-| System | `lib/scripts/system/` | 6 | 4 | Maintenance & monitoring |
-| Media | `lib/scripts/media/` | 3 | 3 | Wallpaper & screenshots |
-| UI | `lib/scripts/user-interface/` | 13 | 1 | Menu system, theme menu |
+| Development | `lib/scripts/development/` | 0 | 0 | Development tools (reserved) |
+| Git | `lib/scripts/git/` | 1 | 1 | Git utilities (prune-branch) |
+| Media | `lib/scripts/media/` | 4 | 3 | Wallpaper, screenshots, color sorting |
+| Network | `lib/scripts/network/` | 1 | 1 | Network tools (tailscale) |
+| System | `lib/scripts/system/` | 7 | 4 | Maintenance & monitoring |
+| Terminal | `lib/scripts/terminal/` | 1 | 0 | Terminal utilities (CWD) |
+| User-interface | `lib/scripts/user-interface/` | 13 | 1 | Menu system, theme menu |
+| Utils | `lib/scripts/utils/` | 1 | 0 | Utilities (JSON reordering) |
 
 **Details**: See `private_dot_local/lib/scripts/CLAUDE.md`
 **Standards**: See `#script-standards-mandatory` in this file
@@ -174,7 +179,7 @@ else
     exit 1
 fi
 
-# Use UI functions (24 functions: status, interactive, layout, data display)
+# Use UI functions (35 functions: status, interactive, layout, data display)
 ui_step "Processing task"
 ui_success "Task complete"
 if ui_confirm "Continue?"; then
@@ -300,7 +305,7 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 #### Standard Patterns
 ```go
 # OS Detection
-{{ includeTemplate "arch_linux_check" . }}
+
 
 # Logging (MUST use these, not echo)
 {{ includeTemplate "log_start" "message" }}
@@ -465,7 +470,7 @@ Changes to `.chezmoidata/` files trigger specific scripts:
 - `log_complete`: "🎉 message"
 
 **Utility Templates**:
-- `arch_linux_check`: OS validation
+
 
 ### Usage Patterns
 
