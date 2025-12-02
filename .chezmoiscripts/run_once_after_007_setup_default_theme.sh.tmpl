@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_012_setup_default_theme.sh.tmpl
 # Purpose: Initialize default theme symlink and Ghostty themes directory
@@ -27,7 +27,7 @@ if [ ! -L "$CURRENT_LINK" ]; then
     else
         {{ includeTemplate "log_error" "Default theme directory not found: $DEFAULT_THEME" }}
         {{ includeTemplate "log_step" "Available themes:" }}
-        ls -1 "$THEMES_DIR" | grep -v current || echo "No themes found"
+        find "$THEMES_DIR" -maxdepth 1 -type d ! -name current ! -path "$THEMES_DIR" -printf "%f\n" || echo "No themes found"
         exit 1
     fi
 else

@@ -1,0 +1,28 @@
+# Shellcheck configuration for chezmoi dotfiles
+# See: https://www.shellcheck.net/wiki/
+
+# Shell dialect auto-detection (from shebang)
+# Supports: sh (POSIX), bash, dash, ksh
+shell=auto
+
+# Disable error codes for Go template compatibility
+# SC1083: Literal { in template syntax conflicts with {{ .var }}
+# SC1009: Parsing errors from Go template delimiters
+# SC1073: Parsing errors from Go template control structures
+# SC1072: Parsing errors from Go template functions
+# SC2148: Shebang checking conflicts with template expansion
+disable=SC1083,SC1009,SC1073,SC1072,SC2148
+
+# Enable optional checks
+enable=add-default-case
+enable=avoid-nullary-conditions
+enable=check-extra-masked-returns
+enable=check-set-e-suppressed
+enable=deprecate-which
+enable=quote-safe-variables
+enable=require-double-brackets
+
+# Severity configuration
+# Only show errors and warnings (block commit on these)
+# Exclude info and style to avoid false positives
+severity=warning

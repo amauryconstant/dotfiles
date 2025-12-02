@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_006_configure_boot_system.sh.tmpl
 # Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM)
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # Add error trap for cleanup guidance
-trap '{{ includeTemplate "log_error" "Boot system configuration failed - check logs above" }}; {{ includeTemplate "log_info" "To rollback: sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline && sudo mkinitcpio -P" }}; exit 1' ERR
+trap 'echo "❌ [ERROR] Boot system configuration failed - check logs above" >&2; echo "ℹ️  [INFO] To rollback: sudo cp /etc/kernel/cmdline.backup /etc/kernel/cmdline && sudo mkinitcpio -P"; exit 1' ERR
 
 # ============================================================================
 # SECTION 1: GPU DRIVER CONFIGURATION (NVIDIA)
@@ -512,7 +512,7 @@ else
 
     SDDM_HYPRLAND_CONF="$SDDM_CONF_DIR/10-hyprland.conf"
     DESIRED_THEME="{{ .globals.sddm.theme }}"
-    DESIRED_DISPLAY_SERVER="{{ .globals.sddm.display_server }}"
+    _DESIRED_DISPLAY_SERVER="{{ .globals.sddm.display_server }}"  # Unused: hardcoded in heredoc
 
     {{ includeTemplate "log_info" "Creating $SDDM_HYPRLAND_CONF..." }}
 

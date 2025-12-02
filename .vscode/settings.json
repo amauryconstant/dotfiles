@@ -53,10 +53,13 @@
   },
   "shellcheck.exclude": [
     "SC1083",
-    "SC1009", 
+    "SC1009",
     "SC1073",
     "SC1072",
     "SC2148",
     "SC1071"
-  ]
+  ],
+  "shellcheck.useWorkspaceRootAsCwd": true,
+  "shellcheck.run": "onType",
+  "shellcheck.enableQuickFix": true
 }

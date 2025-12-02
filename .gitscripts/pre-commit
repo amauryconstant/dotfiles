@@ -1,17 +1,26 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-# Get list of deleted files staged for commit
+set -euo pipefail
+
+# ============================================================================
+# Pre-Commit Hook: Chezmoi Destroy + Shellcheck Validation
+# ============================================================================
+
+# ------------------------------
+# Part 1: Chezmoi Destroy (existing functionality)
+# ------------------------------
+
 deleted_files=$(git diff --cached --name-status | awk '$1 == "D" {print $2}')
 
-if [ -z "$deleted_files" ]; then
-  # No deleted files staged, exit successfully
-  exit 0
+if [ -n "$deleted_files" ]; then
+  for file in $deleted_files; do
+    echo "Running chezmoi destroy for deleted file: $file"
+    chezmoi destroy "$file" || true  # Don't block on chezmoi errors
+  done
 fi
 
-# Run chezmoi destroy for each deleted file
-for file in $deleted_files; do
-  echo "Running chezmoi destroy for deleted file: $file"
-  chezmoi destroy "$file"
-done
+# ------------------------------
+# Part 2: Shellcheck Validation (via mise task)
+# ------------------------------
 
-exit 0
+mise run lint:staged

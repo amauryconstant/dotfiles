@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_004_setup_network_printer.sh.tmpl
 # Purpose: Install and configure Samsung M2070 Series network printer and scanner
@@ -12,7 +12,7 @@ set -euo pipefail
 # Printer configuration from globals.yaml
 PRINTER_NAME="{{ .globals.printer.name }}"
 PRINTER_IP="{{ .globals.printer.ip }}"
-PRINTER_MODEL="{{ .globals.printer.model }}"
+_PRINTER_MODEL="{{ .globals.printer.model }}"  # Unused but kept for reference
 PRINTER_DESCRIPTION="{{ .globals.printer.description }}"
 
 # Check if package is installed
