@@ -1736,6 +1736,12 @@ _create_backup() {
         return 0  # Skip silently if not installed
     fi
 
+    # Skip backup prompt if not in interactive terminal
+    if [[ ! -t 0 ]]; then
+        # Non-interactive mode: skip backup silently (no UI calls to avoid hanging)
+        return 0
+    fi
+
     ui_info "$backup_tool backup available"
 
     if ui_confirm "Create system backup before sync?"; then

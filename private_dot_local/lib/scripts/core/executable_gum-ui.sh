@@ -25,6 +25,11 @@ fi
 
 # Check gum availability and warn once if missing
 _check_gum() {
+    # Disable gum in non-interactive mode (no stdin) to prevent hanging
+    if [[ ! -t 0 ]]; then
+        return 1
+    fi
+
     if ! command -v gum >/dev/null 2>&1; then
         if [ -z "$GUM_WARNING_SHOWN" ]; then
             echo "⚠️  Warning: gum not found - UI functions will use basic fallbacks" >&2
