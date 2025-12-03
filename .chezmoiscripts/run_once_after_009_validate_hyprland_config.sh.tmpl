@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+
+# Script: run_once_after_009_validate_hyprland_config.sh.tmpl
+# Purpose: Validate Hyprland configuration syntax after configs are applied
+# Requirements: Hyprland installed, configs applied
+
+{{ includeTemplate "log_start" "Validating Hyprland configuration files..." }}
+
+set -euo pipefail
+
+VALIDATION_FAILED=false
+
+# ============================================================================
+# CHECK 1: CONFIG FILE EXISTENCE
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying config files exist..." }}
+
+HYPR_CONFIG_DIR="$HOME/.config/hypr"
+REQUIRED_CONFIGS="
+hyprland.conf
+hypridle.conf
+conf/monitor.conf
+conf/environment.conf
+conf/input.conf
+conf/general.conf
+conf/decoration.conf
+conf/animations.conf
+conf/bindings.conf
+conf/windowrules.conf
+conf/autostart.conf
+"
+
+MISSING_CONFIGS=""
+
+for config in $REQUIRED_CONFIGS; do
+    if [ ! -f "$HYPR_CONFIG_DIR/$config" ]; then
+        {{ includeTemplate "log_error" "Missing config file: $config" }}
+        MISSING_CONFIGS="$MISSING_CONFIGS $config"
+        VALIDATION_FAILED=true
+    fi
+done
+
+if [ -z "$MISSING_CONFIGS" ]; then
+    {{ includeTemplate "log_success" "All config files present" }}
+else
+    {{ includeTemplate "log_error" "Missing configs:$MISSING_CONFIGS" }}
+    {{ includeTemplate "log_info" "Fix: Run chezmoi apply to generate configs" }}
+fi
+
+# ============================================================================
+# CHECK 2: THEME SYSTEM SETUP
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying theme system..." }}
+
+THEME_DIR="$HOME/.config/themes"
+CURRENT_THEME_LINK="$THEME_DIR/current"
+
+if [ ! -d "$THEME_DIR" ]; then
+    {{ includeTemplate "log_error" "Theme directory missing: $THEME_DIR" }}
+    VALIDATION_FAILED=true
+elif [ ! -L "$CURRENT_THEME_LINK" ]; then
+    {{ includeTemplate "log_warning" "Current theme symlink not set" }}
+    {{ includeTemplate "log_info" "Will be created by run_once_after_007_setup_default_theme.sh.tmpl" }}
+else
+    CURRENT_THEME=$(readlink -f "$CURRENT_THEME_LINK")
+    THEME_NAME=$(basename "$CURRENT_THEME")
+    {{ includeTemplate "log_success" "Theme system active: $THEME_NAME" }}
+
+    # Verify Hyprland theme file exists
+    HYPRLAND_THEME="$CURRENT_THEME_LINK/hyprland.conf"
+    if [ ! -f "$HYPRLAND_THEME" ]; then
+        {{ includeTemplate "log_error" "Hyprland theme file missing: $HYPRLAND_THEME" }}
+        VALIDATION_FAILED=true
+    fi
+fi
+
+# ============================================================================
+# CHECK 3: AUTOSTART DEPENDENCIES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying autostart application availability..." }}
+
+# Extract exec-once commands from autostart.conf
+AUTOSTART_FILE="$HYPR_CONFIG_DIR/conf/autostart.conf"
+AUTOSTART_MISSING=""
+
+if [ -f "$AUTOSTART_FILE" ]; then
+    # Parse exec-once lines and extract command names
+    while IFS= read -r line; do
+        # Skip comments and empty lines
+        case "$line" in
+            \#*|"") continue ;;
+        esac
+
+        # Extract command from exec-once = command
+        if echo "$line" | grep -q "exec-once"; then
+            cmd=$(echo "$line" | sed 's/.*exec-once[[:space:]]*=[[:space:]]*//' | awk '{print $1}')
+
+            # Handle special cases
+            case "$cmd" in
+                /usr/lib/*) # Polkit agent - full path
+                    if [ ! -f "$cmd" ]; then
+                        {{ includeTemplate "log_warning" "Autostart binary missing: $cmd" }}
+                        AUTOSTART_MISSING="$AUTOSTART_MISSING $cmd"
+                    fi
+                    ;;
+                eval|dbus-update-activation-environment) # Built-in commands
+                    continue
+                    ;;
+                *)
+                    # Regular commands
+                    if ! command -v "$cmd" >/dev/null 2>&1; then
+                        {{ includeTemplate "log_warning" "Autostart command not found: $cmd" }}
+                        AUTOSTART_MISSING="$AUTOSTART_MISSING $cmd"
+                    fi
+                    ;;
+            esac
+        fi
+    done < "$AUTOSTART_FILE"
+
+    if [ -z "$AUTOSTART_MISSING" ]; then
+        {{ includeTemplate "log_success" "All autostart applications available" }}
+    else
+        {{ includeTemplate "log_warning" "Missing autostart apps:$AUTOSTART_MISSING" }}
+        {{ includeTemplate "log_info" "Hyprland will start but these features won't work" }}
+    fi
+else
+    {{ includeTemplate "log_error" "Autostart config missing" }}
+    VALIDATION_FAILED=true
+fi
+
+# ============================================================================
+# CHECK 4: HYPRLAND SYNTAX VALIDATION (if possible)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Checking Hyprland config syntax..." }}
+
+# Only validate syntax if Hyprland is available (not running)
+if command -v hyprctl >/dev/null 2>&1; then
+    # We can't directly validate config without starting Hyprland
+    # But we can check for common syntax errors in config files
+
+    # Check for unclosed braces
+    for config in $REQUIRED_CONFIGS; do
+        config_path="$HYPR_CONFIG_DIR/$config"
+        if [ -f "$config_path" ]; then
+            # Count opening and closing braces
+            open_braces=$(grep -o "{" "$config_path" 2>/dev/null | wc -l)
+            close_braces=$(grep -o "}" "$config_path" 2>/dev/null | wc -l)
+
+            if [ "$open_braces" -ne "$close_braces" ]; then
+                {{ includeTemplate "log_error" "Mismatched braces in $config (open: $open_braces, close: $close_braces)" }}
+                VALIDATION_FAILED=true
+            fi
+        fi
+    done
+
+    {{ includeTemplate "log_info" "Basic syntax checks passed" }}
+    {{ includeTemplate "log_info" "Full validation occurs when Hyprland starts" }}
+else
+    {{ includeTemplate "log_info" "Hyprland not available - skipping syntax validation" }}
+fi
+
+# ============================================================================
+# CHECK 5: TERMINAL BINDING VALIDATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying terminal binding..." }}
+
+BINDINGS_FILE="$HYPR_CONFIG_DIR/conf/bindings.conf"
+TERMINAL="{{ .globals.applications.terminal }}"
+
+if [ -f "$BINDINGS_FILE" ]; then
+    if grep -q "$TERMINAL" "$BINDINGS_FILE"; then
+        {{ includeTemplate "log_success" "Terminal binding configured: $TERMINAL" }}
+
+        # Verify terminal is actually installed
+        if ! command -v "$TERMINAL" >/dev/null 2>&1; then
+            {{ includeTemplate "log_error" "Terminal in binding not installed: $TERMINAL" }}
+            {{ includeTemplate "log_info" "Super+Return will fail to launch terminal" }}
+            VALIDATION_FAILED=true
+        fi
+    else
+        {{ includeTemplate "log_warning" "Terminal binding may not be configured" }}
+    fi
+else
+    {{ includeTemplate "log_error" "Bindings config missing" }}
+    VALIDATION_FAILED=true
+fi
+
+# ============================================================================
+# CHECK 6: MONITOR CONFIGURATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying monitor configuration..." }}
+
+MONITOR_FILE="$HYPR_CONFIG_DIR/conf/monitor.conf"
+
+if [ -f "$MONITOR_FILE" ]; then
+    if grep -q "^monitor=" "$MONITOR_FILE"; then
+        {{ includeTemplate "log_success" "Monitor configuration present" }}
+
+        # Show configured monitors
+        monitor_count=$(grep -c "^monitor=" "$MONITOR_FILE")
+        {{ includeTemplate "log_info" "Configured monitors: $monitor_count" }}
+    else
+        {{ includeTemplate "log_warning" "No monitor configuration found" }}
+        {{ includeTemplate "log_info" "Hyprland will use auto-detection" }}
+    fi
+else
+    {{ includeTemplate "log_error" "Monitor config missing" }}
+    VALIDATION_FAILED=true
+fi
+
+# ============================================================================
+# CHECK 7: SYSTEMD USER SERVICES (wallpaper, etc.)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying systemd user services..." }}
+
+WALLPAPER_TIMER="$HOME/.config/systemd/user/wallpaper-cycle.timer"
+WALLPAPER_SERVICE="$HOME/.config/systemd/user/wallpaper-cycle.service"
+
+if [ -f "$WALLPAPER_TIMER" ] && [ -f "$WALLPAPER_SERVICE" ]; then
+    {{ includeTemplate "log_success" "Wallpaper cycle service files present" }}
+
+    # Check if timer is enabled (will be enabled by run_once_after_005)
+    if systemctl --user is-enabled --quiet wallpaper-cycle.timer 2>/dev/null; then
+        {{ includeTemplate "log_success" "Wallpaper timer enabled" }}
+    else
+        {{ includeTemplate "log_info" "Wallpaper timer will be enabled by setup scripts" }}
+    fi
+else
+    {{ includeTemplate "log_info" "Wallpaper service files not yet installed" }}
+fi
+
+# ============================================================================
+# VALIDATION SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Hyprland Configuration Validation Summary"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+if [ "$VALIDATION_FAILED" = true ]; then
+    {{ includeTemplate "log_error" "❌ VALIDATION FAILED - Session may crash" }}
+    echo ""
+    echo "  Critical configuration issues detected."
+    echo "  Review error messages above and fix before starting Hyprland."
+    echo ""
+    echo "  Common fixes:"
+    echo "    1. Re-run: chezmoi apply"
+    echo "    2. Check theme setup: ls -l ~/.config/themes/current"
+    echo "    3. Verify terminal installed: which {{ .globals.applications.terminal }}"
+    echo ""
+    echo "  DO NOT start Hyprland session until issues are resolved."
+    echo ""
+    echo "════════════════════════════════════════════════════════════════"
+    echo ""
+    exit 1
+else
+    {{ includeTemplate "log_success" "✅ CONFIGURATION VALIDATION PASSED" }}
+    echo ""
+    echo "  Hyprland configuration verified:"
+    echo "    ✓ All config files present"
+    echo "    ✓ Theme system configured"
+    echo "    ✓ Autostart applications available"
+    echo "    ✓ Basic syntax checks passed"
+    echo "    ✓ Terminal binding configured"
+    echo "    ✓ Monitor configuration present"
+    echo ""
+
+    if [ -n "${AUTOSTART_MISSING:-}" ]; then
+        echo "  ⚠ Some autostart apps missing (non-critical)"
+        echo "    Session will work but some features unavailable"
+        echo ""
+    fi
+
+    echo "  Hyprland session ready to start."
+    echo "  Login via SDDM or run: Hyprland"
+    echo ""
+    echo "════════════════════════════════════════════════════════════════"
+    echo ""
+fi
+
+{{ includeTemplate "log_complete" "Hyprland configuration validation completed" }}

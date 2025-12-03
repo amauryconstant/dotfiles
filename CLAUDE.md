@@ -516,26 +516,33 @@ find . -name "pattern" -type f
 
 ### Execution Order
 
-1. `run_once_before_*` (000-005)
+1. `run_once_before_*` (000-006)
+   - 000: System prerequisites
+   - 001: **Hyprland session validation** (prevents crashes)
+   - 002-006: Setup tasks
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
-4. `run_once_after_*` (001-008, 999)
+4. `run_once_after_*` (001-009, 999)
+   - 001-008: Configuration tasks
+   - 009: **Hyprland config validation** (post-install safety check)
+   - 999: SSH remote switch
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (20 total)
+### Current Scripts (22 total)
 
-**run_once_before_* (6)**:
-- 000: Preflight checks
-- 001: Package manager setup + dependencies (paru, yq, gum)
-- 002: Locale configuration
-- 003: Directory creation
-- 004: Encryption key setup
-- 005: chezmoi_modify_manager install
+**run_once_before_* (7)**:
+- 000: Preflight checks (sudo, git, network, pacman)
+- 001: Hyprland session validation (packages, drivers, Wayland, SDDM)
+- 002: Package manager setup + dependencies (paru, yq, gum)
+- 003: Locale configuration
+- 004: Directory creation
+- 005: Encryption key setup
+- 006: chezmoi_modify_manager install
 
 **run_onchange_before_* (1)**:
 - sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
-**run_once_after_* (9)**:
+**run_once_after_* (10)**:
 - 001: CLI generation
 - 002: System services
 - 003: Network printer
@@ -544,6 +551,7 @@ find . -name "pattern" -type f
 - 006: Boot system
 - 007: Default theme setup
 - 008: Darkman service
+- 009: Hyprland config validation (syntax, theme, autostart, terminal)
 - 999: SSH remote switch
 
 **run_onchange_after_* (4)**:

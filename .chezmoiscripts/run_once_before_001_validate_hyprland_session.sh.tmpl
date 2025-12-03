@@ -1,0 +1,288 @@
+#!/usr/bin/env bash
+
+# Script: run_once_before_001_validate_hyprland_session.sh.tmpl
+# Purpose: Validate Hyprland dependencies BEFORE installation to prevent session crashes
+# Requirements: Arch Linux, run after package manager setup
+
+{{ includeTemplate "log_start" "Validating Hyprland session requirements..." }}
+
+set -euo pipefail
+
+# Track if any checks fail
+VALIDATION_FAILED=false
+
+# ============================================================================
+# CHECK 1: HYPRLAND CORE DEPENDENCIES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying Hyprland core dependencies..." }}
+
+REQUIRED_PACKAGES="hyprland xdg-desktop-portal-hyprland waybar dunst wofi polkit-gnome swww"
+MISSING_PACKAGES=""
+
+for pkg in $REQUIRED_PACKAGES; do
+    if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+        {{ includeTemplate "log_error" "Missing critical package: $pkg" }}
+        MISSING_PACKAGES="$MISSING_PACKAGES $pkg"
+        VALIDATION_FAILED=true
+    fi
+done
+
+if [ -z "$MISSING_PACKAGES" ]; then
+    {{ includeTemplate "log_success" "All Hyprland core packages installed" }}
+else
+    {{ includeTemplate "log_error" "Missing packages:$MISSING_PACKAGES" }}
+    {{ includeTemplate "log_info" "Fix: Ensure packages.yaml includes desktop_hyprland module" }}
+    {{ includeTemplate "log_info" "  Then run: chezmoi apply" }}
+fi
+
+# ============================================================================
+# CHECK 2: GRAPHICS DRIVERS
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying graphics drivers..." }}
+
+# Check for NVIDIA drivers (common crash source)
+if lspci | grep -i nvidia >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "NVIDIA GPU detected, checking drivers..." }}
+
+    if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "NVIDIA drivers installed" }}
+
+        # Verify DKMS modules are built
+        if ! modinfo nvidia >/dev/null 2>&1; then
+            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
+            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+        fi
+    else
+        {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
+        {{ includeTemplate "log_info" "Fix: Enable graphics_drivers module in packages.yaml" }}
+        VALIDATION_FAILED=true
+    fi
+fi
+
+# Check for Intel GPU
+if lspci | grep -i "intel.*graphics" >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "Intel GPU detected (uses mesa - built-in)" }}
+fi
+
+# ============================================================================
+# CHECK 3: WAYLAND SESSION REQUIREMENTS
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying Wayland environment setup..." }}
+
+# Check for seat management (required for Wayland)
+if ! command -v seatd >/dev/null 2>&1 && ! systemctl is-active --quiet systemd-logind; then
+    {{ includeTemplate "log_warning" "Neither seatd nor systemd-logind active" }}
+    {{ includeTemplate "log_info" "Wayland needs seat management for input devices" }}
+    {{ includeTemplate "log_info" "Systemd-logind should be active by default" }}
+fi
+
+# Check XDG_RUNTIME_DIR (critical for Wayland)
+if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    {{ includeTemplate "log_error" "XDG_RUNTIME_DIR not set" }}
+    {{ includeTemplate "log_info" "Required for Wayland socket creation" }}
+    {{ includeTemplate "log_info" "Should be set by display manager (SDDM)" }}
+    VALIDATION_FAILED=true
+else
+    {{ includeTemplate "log_success" "XDG_RUNTIME_DIR configured: $XDG_RUNTIME_DIR" }}
+fi
+
+# ============================================================================
+# CHECK 4: DISPLAY MANAGER CONFIGURATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying SDDM configuration..." }}
+
+# Check if SDDM is installed
+if ! pacman -Q sddm >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "SDDM not installed" }}
+    {{ includeTemplate "log_info" "Display manager required for graphical login" }}
+    VALIDATION_FAILED=true
+else
+    {{ includeTemplate "log_success" "SDDM installed" }}
+
+    # Check if SDDM service is enabled
+    if ! systemctl is-enabled --quiet sddm.service; then
+        {{ includeTemplate "log_warning" "SDDM service not enabled" }}
+        {{ includeTemplate "log_info" "Fix: sudo systemctl enable sddm" }}
+    fi
+
+    # Verify Hyprland session file exists
+    HYPRLAND_SESSION="/usr/share/wayland-sessions/hyprland.desktop"
+    if [ ! -f "$HYPRLAND_SESSION" ]; then
+        {{ includeTemplate "log_error" "Hyprland session file missing: $HYPRLAND_SESSION" }}
+        {{ includeTemplate "log_info" "Should be provided by hyprland package" }}
+        {{ includeTemplate "log_info" "Fix: Reinstall hyprland package" }}
+        VALIDATION_FAILED=true
+    else
+        {{ includeTemplate "log_success" "Hyprland session file exists" }}
+    fi
+fi
+
+# ============================================================================
+# CHECK 5: TERMINAL EMULATOR
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying terminal emulator..." }}
+
+TERMINAL="{{ .globals.applications.terminal }}"
+
+if ! command -v "$TERMINAL" >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "Configured terminal not found: $TERMINAL" }}
+    {{ includeTemplate "log_info" "Hyprland bindings use this terminal (Super+Return)" }}
+    {{ includeTemplate "log_info" "Fix: Install $TERMINAL or update .globals.applications.terminal" }}
+    VALIDATION_FAILED=true
+else
+    {{ includeTemplate "log_success" "Terminal emulator available: $TERMINAL" }}
+fi
+
+# ============================================================================
+# CHECK 6: CRITICAL SYSTEM SERVICES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying critical system services..." }}
+
+# D-Bus (critical for desktop apps)
+if ! systemctl --user is-active --quiet dbus.service 2>/dev/null; then
+    {{ includeTemplate "log_warning" "User D-Bus session not active" }}
+    {{ includeTemplate "log_info" "Required for application communication" }}
+    {{ includeTemplate "log_info" "Should start automatically with graphical session" }}
+fi
+
+# PipeWire (audio - not critical but commonly needed)
+if command -v pipewire >/dev/null 2>&1; then
+    if ! systemctl --user is-active --quiet pipewire.service 2>/dev/null; then
+        {{ includeTemplate "log_info" "PipeWire installed but not running" }}
+        {{ includeTemplate "log_info" "Audio may not work until service starts" }}
+    fi
+fi
+
+# ============================================================================
+# CHECK 7: CONFIG FILE SYNTAX VALIDATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Pre-validating Hyprland config syntax..." }}
+
+# Check if hyprctl is available (for syntax validation)
+if command -v hyprctl >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "Hyprland installed - will validate config after chezmoi apply" }}
+else
+    {{ includeTemplate "log_info" "Hyprland not running - skipping syntax validation" }}
+fi
+
+# ============================================================================
+# CHECK 8: THEME SYSTEM DEPENDENCIES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying theme system requirements..." }}
+
+# Theme system needs these for proper operation
+THEME_DEPS="jq"
+THEME_MISSING=""
+
+for dep in $THEME_DEPS; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+        {{ includeTemplate "log_warning" "Missing theme dependency: $dep" }}
+        THEME_MISSING="$THEME_MISSING $dep"
+    fi
+done
+
+if [ -z "$THEME_MISSING" ]; then
+    {{ includeTemplate "log_success" "Theme system dependencies available" }}
+else
+    {{ includeTemplate "log_warning" "Missing theme dependencies:$THEME_MISSING" }}
+    {{ includeTemplate "log_info" "Theme switching may not work until installed" }}
+fi
+
+# ============================================================================
+# CHECK 9: FONT DEPENDENCIES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying font packages..." }}
+
+# Critical fonts for UI rendering
+FONT_PACKAGES="noto-fonts noto-fonts-emoji"
+FONT_MISSING=""
+
+for font in $FONT_PACKAGES; do
+    if ! pacman -Q "$font" >/dev/null 2>&1; then
+        {{ includeTemplate "log_warning" "Missing font package: $font" }}
+        FONT_MISSING="$FONT_MISSING $font"
+    fi
+done
+
+if [ -z "$FONT_MISSING" ]; then
+    {{ includeTemplate "log_success" "Critical fonts installed" }}
+else
+    {{ includeTemplate "log_warning" "Missing fonts:$FONT_MISSING" }}
+    {{ includeTemplate "log_info" "UI may have rendering issues" }}
+fi
+
+# ============================================================================
+# CHECK 10: GNOME KEYRING (WiFi credentials)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying credential storage..." }}
+
+if ! pacman -Q gnome-keyring >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "gnome-keyring not installed" }}
+    {{ includeTemplate "log_info" "Required for WiFi password storage via NetworkManager" }}
+    {{ includeTemplate "log_info" "Fix: Enable desktop_hyprland module in packages.yaml" }}
+else
+    {{ includeTemplate "log_success" "gnome-keyring installed" }}
+fi
+
+# ============================================================================
+# VALIDATION SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Hyprland Session Validation Summary"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+if [ "$VALIDATION_FAILED" = true ]; then
+    {{ includeTemplate "log_error" "❌ VALIDATION FAILED - Session crashes likely" }}
+    echo ""
+    echo "  Critical issues detected. Hyprland session will likely fail."
+    echo "  Review error messages above and fix problems before proceeding."
+    echo ""
+    echo "  Common fixes:"
+    echo "    1. Ensure desktop_hyprland module enabled in packages.yaml"
+    echo "    2. Run package sync: package-manager sync"
+    echo "    3. Reboot after driver installation"
+    echo "    4. Enable SDDM: sudo systemctl enable sddm"
+    echo ""
+    echo "  After fixing issues, run: chezmoi apply"
+    echo ""
+    echo "════════════════════════════════════════════════════════════════"
+    echo ""
+    exit 1
+else
+    {{ includeTemplate "log_success" "✅ ALL CRITICAL CHECKS PASSED" }}
+    echo ""
+    echo "  Hyprland session requirements verified:"
+    echo "    ✓ Core packages installed (hyprland, waybar, etc.)"
+    echo "    ✓ Graphics drivers available"
+    echo "    ✓ Wayland environment configured"
+    echo "    ✓ Display manager ready (SDDM)"
+    echo "    ✓ Terminal emulator available"
+    echo "    ✓ Critical services present"
+    echo ""
+
+    if [ -n "${THEME_MISSING:-}" ] || [ -n "${FONT_MISSING:-}" ]; then
+        echo "  ⚠ Non-critical warnings detected (see above)"
+        echo "    Session will work but some features may be limited"
+        echo ""
+    fi
+
+    echo "  Safe to proceed with Hyprland session."
+    echo ""
+    echo "════════════════════════════════════════════════════════════════"
+    echo ""
+fi
+
+{{ includeTemplate "log_complete" "Hyprland session validation completed" }}

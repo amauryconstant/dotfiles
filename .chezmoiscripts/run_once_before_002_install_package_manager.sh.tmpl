@@ -76,6 +76,14 @@ fi
 paru -S --noconfirm --needed go-yq gum
 {{ includeTemplate "log_success" "package-manager dependencies installed" }}
 
+# Initialize paru AUR cache for package validation
+{{ includeTemplate "log_step" "Initializing paru AUR package cache..." }}
+if paru --gendb >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "paru cache initialized" }}
+else
+    {{ includeTemplate "log_warning" "paru cache initialization failed (non-critical)" }}
+fi
+
 # Optimize mirrors for faster downloads
 {{ includeTemplate "log_step" "Optimizing Arch mirrors..." }}
 paru -S --noconfirm --needed rate-mirrors
