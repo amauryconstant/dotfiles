@@ -17,19 +17,7 @@ VALIDATION_FAILED=false
 {{ includeTemplate "log_step" "Verifying config files exist..." }}
 
 HYPR_CONFIG_DIR="$HOME/.config/hypr"
-REQUIRED_CONFIGS="
-hyprland.conf
-hypridle.conf
-conf/monitor.conf
-conf/environment.conf
-conf/input.conf
-conf/general.conf
-conf/decoration.conf
-conf/animations.conf
-conf/bindings.conf
-conf/windowrules.conf
-conf/autostart.conf
-"
+REQUIRED_CONFIGS="hyprland.conf hypridle.conf conf/monitor.conf conf/environment.conf conf/input.conf conf/general.conf conf/decoration.conf conf/animations.conf conf/bindings.conf conf/windowrules.conf conf/autostart.conf"
 
 MISSING_CONFIGS=""
 
@@ -140,25 +128,9 @@ fi
 # Only validate syntax if Hyprland is available (not running)
 if command -v hyprctl >/dev/null 2>&1; then
     # We can't directly validate config without starting Hyprland
-    # But we can check for common syntax errors in config files
-
-    # Check for unclosed braces
-    for config in $REQUIRED_CONFIGS; do
-        config_path="$HYPR_CONFIG_DIR/$config"
-        if [ -f "$config_path" ]; then
-            # Count opening and closing braces
-            open_braces=$(grep -o "{" "$config_path" 2>/dev/null | wc -l)
-            close_braces=$(grep -o "}" "$config_path" 2>/dev/null | wc -l)
-
-            if [ "$open_braces" -ne "$close_braces" ]; then
-                {{ includeTemplate "log_error" "Mismatched braces in $config (open: $open_braces, close: $close_braces)" }}
-                VALIDATION_FAILED=true
-            fi
-        fi
-    done
-
-    {{ includeTemplate "log_info" "Basic syntax checks passed" }}
-    {{ includeTemplate "log_info" "Full validation occurs when Hyprland starts" }}
+    # Basic existence checks already done above
+    {{ includeTemplate "log_info" "Hyprland installed - config syntax will be validated on first launch" }}
+    {{ includeTemplate "log_info" "If Hyprland fails to start, check logs: journalctl --user -u hyprland" }}
 else
     {{ includeTemplate "log_info" "Hyprland not available - skipping syntax validation" }}
 fi

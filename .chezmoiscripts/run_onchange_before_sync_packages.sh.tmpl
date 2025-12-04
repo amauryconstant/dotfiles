@@ -1,35 +1,128 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_onchange_before_sync_packages.sh.tmpl
-# Purpose: Sync system packages (Arch + Flatpak) from packages.yaml
-# Requirements: Arch Linux, paru, yq, gum, package-manager.sh
+# Purpose: Install all packages from packages.yaml (simplified, self-contained)
+# Requirements: Arch Linux, paru, yq, flatpak
 # Execution: Runs on first install AND when packages.yaml changes (hash-triggered)
-# Timing: Runs BEFORE file application (ensures packages exist for config scripts)
+# Timing: Runs BEFORE file application (lib/scripts not yet available)
+# Design: No dependencies on lib/scripts - completely self-contained
 
 # Hash: {{ .packages | toJson | sha256sum }}
 
-{{ includeTemplate "log_start" "Syncing system packages from packages.yaml..." }}
+{{ includeTemplate "log_start" "Installing packages from packages.yaml..." }}
 
 set -euo pipefail
 
-# Direct path to package-manager script in chezmoi source directory
-# Note: Can't use PATH since run_once_after_001 (CLI generation) hasn't run yet
-PACKAGE_MANAGER_SCRIPT="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/system/executable_package-manager.sh"
+# Package data location
+PACKAGES_FILE="$HOME/.local/share/chezmoi/.chezmoidata/packages.yaml"
 
-# Export required environment variables for package-manager
-export SCRIPTS_DIR="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts"
-export UI_LIB="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/core/executable_gum-ui.sh"
+{{ includeTemplate "log_step" "Extracting package lists from all modules..." }}
 
-# Trust execution order: run_once_before_001 installed paru, yq, gum
-# Single sync command handles both Arch and Flatpak packages
-# --prune flag removes orphaned packages (not in any enabled module)
-{{ includeTemplate "log_step" "Using package-manager v2.1..." }}
+# Extract all Arch/AUR packages (flatten all modules, ignore enabled status)
+ARCH_PACKAGES=$(yq eval '.packages.modules.[].packages[] | select(. | test("^flatpak:") | not)' "$PACKAGES_FILE" 2>/dev/null | sort -u)
 
-if "$PACKAGE_MANAGER_SCRIPT" sync --prune; then
-    {{ includeTemplate "log_success" "All packages synced successfully" }}
+# Extract all Flatpak packages (strip flatpak: prefix)
+FLATPAK_PACKAGES=$(yq eval '.packages.modules.[].packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$PACKAGES_FILE" 2>/dev/null | sort -u)
+
+# Extract packages to delete
+DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$PACKAGES_FILE" 2>/dev/null | sort -u)
+
+# Count packages
+ARCH_COUNT=$(echo "$ARCH_PACKAGES" | grep -c '^' || echo 0)
+FLATPAK_COUNT=$(echo "$FLATPAK_PACKAGES" | grep -c '^' || echo 0)
+DELETE_COUNT=$(echo "$DELETE_PACKAGES" | grep -c '^' || echo 0)
+
+{{ includeTemplate "log_success" "Found $ARCH_COUNT Arch/AUR packages, $FLATPAK_COUNT Flatpak packages, $DELETE_COUNT packages to remove" }}
+
+# ============================================================
+# Install Arch/AUR packages
+# ============================================================
+
+if [ "$ARCH_COUNT" -gt 0 ]; then
+    {{ includeTemplate "log_step" "Installing $ARCH_COUNT Arch/AUR packages with paru..." }}
+
+    # Install all packages in single paru call
+    # --needed: Skip already installed packages at target version
+    # --noconfirm: Non-interactive mode
+    if echo "$ARCH_PACKAGES" | xargs paru -S --needed --noconfirm; then
+        {{ includeTemplate "log_success" "Arch/AUR packages installed successfully" }}
+    else
+        {{ includeTemplate "log_error" "Some Arch/AUR packages failed to install" }}
+        exit 1
+    fi
 else
-    {{ includeTemplate "log_error" "Package sync failed" }}
-    exit 1
+    {{ includeTemplate "log_skip" "No Arch/AUR packages to install" }}
 fi
 
-{{ includeTemplate "log_complete" "Package sync completed" }}
+# ============================================================
+# Install Flatpak packages
+# ============================================================
+
+if [ "$FLATPAK_COUNT" -gt 0 ]; then
+    {{ includeTemplate "log_step" "Installing $FLATPAK_COUNT Flatpak packages..." }}
+
+    # Ensure Flathub remote is configured
+    if ! flatpak remote-list | grep -q "^flathub"; then
+        {{ includeTemplate "log_step" "Adding Flathub remote..." }}
+        flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+    fi
+
+    # Install each Flatpak package
+    # -y: Non-interactive
+    # --user: Install in user scope
+    # Continue even if individual packages fail (some may not be available)
+    echo "$FLATPAK_PACKAGES" | while IFS= read -r pkg; do
+        if [ -n "$pkg" ]; then
+            if flatpak install -y --user flathub "$pkg" 2>&1; then
+                {{ includeTemplate "log_success" "Installed: $pkg" }}
+            else
+                {{ includeTemplate "log_warning" "Failed to install: $pkg (may not be available)" }}
+            fi
+        fi
+    done
+
+    {{ includeTemplate "log_success" "Flatpak installation complete" }}
+else
+    {{ includeTemplate "log_skip" "No Flatpak packages to install" }}
+fi
+
+# ============================================================
+# Remove unwanted packages
+# ============================================================
+
+if [ "$DELETE_COUNT" -gt 0 ]; then
+    {{ includeTemplate "log_step" "Removing $DELETE_COUNT unwanted packages..." }}
+
+    # Remove packages
+    # -Rns: Remove package, dependencies, and config files
+    # --noconfirm: Non-interactive
+    # || true: Continue even if packages don't exist
+    echo "$DELETE_PACKAGES" | xargs paru -Rns --noconfirm 2>/dev/null || true
+
+    {{ includeTemplate "log_success" "Package cleanup complete" }}
+else
+    {{ includeTemplate "log_skip" "No packages to remove" }}
+fi
+
+# ============================================================
+# Clean orphaned packages
+# ============================================================
+
+{{ includeTemplate "log_step" "Checking for orphaned packages..." }}
+
+# Find and remove orphaned packages (dependencies no longer required)
+# -Qtdq: Query unrequired dependencies
+# -Rns: Remove with dependencies and config files
+# -r flag to xargs: Only run if input is non-empty
+ORPHANS=$(paru -Qtdq 2>/dev/null || true)
+
+if [ -n "$ORPHANS" ]; then
+    ORPHAN_COUNT=$(echo "$ORPHANS" | grep -c '^' || echo 0)
+    {{ includeTemplate "log_step" "Removing $ORPHAN_COUNT orphaned packages..." }}
+    echo "$ORPHANS" | xargs -r paru -Rns --noconfirm 2>/dev/null || true
+    {{ includeTemplate "log_success" "Orphaned packages removed" }}
+else
+    {{ includeTemplate "log_success" "No orphaned packages found" }}
+fi
+
+{{ includeTemplate "log_complete" "Package installation and cleanup complete" }}
