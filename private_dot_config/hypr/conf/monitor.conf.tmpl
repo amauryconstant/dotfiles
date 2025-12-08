@@ -24,17 +24,20 @@
 # ============================================================================
 # Desktop Multi-Monitor Configuration
 # ============================================================================
-# Primary Monitor: DP-4 (4K @ 144Hz with 2x scaling)
+# Primary Monitor: DP-2 (4K @ 144Hz with 1.25x scaling)
 # - Resolution: 3840x2160 @ 144Hz
-# - Position: 0x560 (vertically offset for alignment)
-# - Scale: 2.0 (for HiDPI clarity)
-monitor=DP-2,3840x2160@144,0x560,1.25
+# - Position: 0x0 (left monitor)
+# - Scale: 1.25
+# - Effective size: 3072x1728
+monitor=DP-2,3840x2160@144,0x0,1.25
 
-# Secondary Monitor: HDMI-A-1 (1440p @ 60Hz)
-# - Resolution: 2560x1440 @ 60Hz
-# - Position: 2560x0 (to the right of primary, accounting for scaling)
+# Secondary Monitor: HDMI-A-1 (1440p @ 60Hz, Portrait)
+# - Resolution: 2560x1440 @ 60Hz (rotated 90°)
+# - Position: 3072x144 (to the right of primary, vertically centered)
 # - Scale: 1.0 (native resolution)
-monitor=HDMI-A-1,2560x1440@60,2560x0,1,transform,1
+# - Transform: 1 (90° clockwise rotation)
+# - Physical size after rotation: 1440x2560
+monitor=HDMI-A-1,2560x1440@60,3072x144,1,transform,1
 {{ else }}
 # ============================================================================
 # Laptop Configuration with Docking Station Support
