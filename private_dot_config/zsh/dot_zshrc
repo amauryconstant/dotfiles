@@ -15,7 +15,7 @@ ZFUNCDIR=${ZDOTDIR:-$HOME}/.zfunctions
 fpath=($ZFUNCDIR $fpath)
 
 # Only autoload lightweight functions immediately
-autoload -Uz $ZFUNCDIR/br(.:t) $ZFUNCDIR/commands(.:t) $ZFUNCDIR/debug-zsh-startup(.:t) $ZFUNCDIR/init-zsh-cmd(.:t) $ZFUNCDIR/ts(.:t) $ZFUNCDIR/reorder-json(.:t) $ZFUNCDIR/rm-empty-dirs(.:t) $ZFUNCDIR/twiggit(.:t)
+autoload -Uz $ZFUNCDIR/br(.:t) $ZFUNCDIR/commands(.:t) $ZFUNCDIR/debug-zsh-startup(.:t) $ZFUNCDIR/init-zsh-cmd(.:t) $ZFUNCDIR/rm-empty-dirs(.:t)
 
 # Lazy loading system for heavy commands
 _lazy_load_commands() {
