@@ -9,16 +9,13 @@
 if [ -f "$HOME/.config/themes/current/colors.sh" ]; then
     . "$HOME/.config/themes/current/colors.sh"
 else
-    # Fallback to Rose Pine Dawn defaults
-    readonly BG_PRIMARY="#faf4ed"
-    readonly FG_PRIMARY="#575279"
+    # Fallback to Rose Pine Dawn defaults (used variables only)
     readonly FG_SECONDARY="#797593"
     readonly FG_MUTED="#9893a5"
     readonly ACCENT_PRIMARY="#907aa9"
     readonly ACCENT_SUCCESS="#286983"
     readonly ACCENT_ERROR="#b4637a"
     readonly ACCENT_WARNING="#ea9d34"
-    readonly ACCENT_URGENT_SECONDARY="#ea9d34"
 
     echo "⚠️  Warning: Theme colors not found, using fallback" >&2
 fi
@@ -92,12 +89,18 @@ _parse_ui_params() {
 # Apply spacing based on parsed parameters
 _apply_spacing() {
     local timing="$1" # "before" or "after"
-    
+
     if [[ "$timing" == "before" ]]; then
-        [ "$before" -gt 0 ] && printf '\n%.0s' $(seq 1 "$before")
+        if [ "$before" -gt 0 ]; then
+            printf '\n%.0s' $(seq 1 "$before")
+        fi
     elif [[ "$timing" == "after" ]]; then
-        [ "$newline" = true ] && echo
-        [ "$after" -gt 0 ] && printf '\n%.0s' $(seq 1 "$after")
+        if [ "$newline" = true ]; then
+            echo
+        fi
+        if [ "$after" -gt 0 ]; then
+            printf '\n%.0s' $(seq 1 "$after")
+        fi
     fi
 }
 
