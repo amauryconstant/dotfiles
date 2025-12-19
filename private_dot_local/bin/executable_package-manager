@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, pacman, paru, gum (UI library)
 
 # Use environment variables defined in shell/env
-PACKAGE_SCRIPT="$SCRIPTS_DIR/system/package-manager.sh"
+PACKAGE_SCRIPT="$SCRIPTS_DIR/system/package-manager/package-manager.sh"
 
 # Source UI library
 if [ -f "$UI_LIB" ]; then

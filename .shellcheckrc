@@ -11,7 +11,8 @@ shell=auto
 # SC1073: Parsing errors from Go template control structures
 # SC1072: Parsing errors from Go template functions
 # SC2148: Shebang checking conflicts with template expansion
-disable=SC1083,SC1009,SC1073,SC1072,SC2148
+# SC2155: Declare and assign separately (common pattern in this codebase)
+disable=SC1083,SC1009,SC1073,SC1072,SC2148,SC2155
 
 # Enable optional checks
 enable=add-default-case
