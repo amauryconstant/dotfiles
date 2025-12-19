@@ -9,7 +9,7 @@
 ## Quick Reference
 
 - **File**: `dunstrc.tmpl` (INI configuration)
-- **Theme integration**: `!include ~/.config/themes/current/dunst.conf`
+- **Theme integration**: Drop-in symlink `dunstrc.d/99-theme.conf`
 - **Format**: INI with direct hex values (no `@variable` support)
 - **Variables used**: 4 semantic mappings (bg-primary, fg-primary, accent-primary, accent-error)
 - **Urgency levels**: low, normal, critical
@@ -65,10 +65,11 @@ frame_color = "#f38ba8"      # @accent-error
 
 ### How It Works
 
-1. Main config (`dunstrc.tmpl`) includes: `!include ~/.config/themes/current/dunst.conf`
-2. Theme file provides urgency-specific colors
-3. Dunst reads included file at startup
-4. Theme switch → `killall dunst` → auto-restarts with new colors
+1. Main config (`dunstrc.tmpl`) loads theme colors via drop-in system
+2. Drop-in directory (`dunstrc.d/`) contains symlink `99-theme.conf` → `../../themes/current/dunst.conf`
+3. Theme file provides urgency-specific colors
+4. Dunst reads drop-in configs at startup (lexically ordered, 99- loads last)
+5. Theme switch → `killall dunst` → auto-restarts with new colors
 
 ### Theme File Locations
 
@@ -136,7 +137,7 @@ Always use `separator_color = frame` to match separator with frame color.
 
 **Limitation**: INI format requires direct hex values, not variables.
 
-**Solution**: Each theme provides pre-computed hex values in `dunst.conf`.
+**Solution**: Each theme provides pre-computed hex values in `dunst.conf`, loaded via drop-in symlink.
 
 **See**: `../themes/CLAUDE.md` for:
 - Semantic variable definitions

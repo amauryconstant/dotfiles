@@ -1,10 +1,10 @@
 # ============================================================================
 # Dunst Notification Daemon Configuration
 # ============================================================================
-# Lightweight notification daemon with oksolar color scheme integration.
+# Lightweight notification daemon with theme system integration.
 # Documentation: https://dunst-project.org/documentation/
 #
-# This configuration matches the oksolar theming used in waybar, wofi, and
+# This configuration integrates with the theme system used in waybar, wofi, and
 # other desktop components for visual consistency.
 #
 # To reload configuration: killall dunst (dunst will restart automatically)
@@ -91,7 +91,7 @@
     # Text Formatting
     # ========================================================================
 
-    # Font: Uses Fira Sans to match other oksolar components
+    # Font: Uses Fira Sans for consistency
     font = Fira Sans 11
 
     # Line height: Space between lines (0 = font height)
@@ -191,15 +191,6 @@
     mouse_left_click = do_action, close_current
     mouse_middle_click = context
     mouse_right_click = close_current
-
-# ============================================================================
-# Urgency-Based Styling (oksolar color scheme)
-# ============================================================================
-# Notifications have three urgency levels: low, normal, critical
-# Each level has different colors, timeouts, and behaviors
-
-# Import theme colors from current theme
-!include ~/.config/themes/current/dunst.conf
 
 # ============================================================================
 # Application-Specific Rules
