@@ -11,7 +11,8 @@ bun = true
 [tools]
 uv = "latest"
 bun = "latest"
-node = 'latest'
+node = "latest"
+pnpm = "latest"
 
 "npm:@anthropic-ai/claude-code" = "latest"
 "npm:opencode-ai" = "latest"
