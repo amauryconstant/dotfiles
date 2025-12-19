@@ -44,7 +44,7 @@ cmd_pin() {
 
     # Warn about rolling packages
     if _is_rolling_package "$pkg_name"; then
-        ui_warning "⚠️  '$pkg_name' is a -git package (rolling release)"
+        ui_warning "$ICON_WARNING  '$pkg_name' is a -git package (rolling release)"
         ui_warning "Version pinning not recommended for rolling packages"
         ui_warning "The version will change with every build"
         echo ""
@@ -63,26 +63,30 @@ cmd_pin() {
         [[ -z "$module" ]] && continue
 
         # Check if package exists in this module (as simple string)
-        local has_simple=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(. == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
+        local has_simple
+        has_simple=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages[] | select(. == env(PKG))' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_simple" ]]; then
             # Found as simple string, convert to object with version
-            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value == $pkg) | .key' "$PACKAGES_FILE" | head -1)
+            local pkg_index
+            pkg_index=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages | to_entries | .[] | select(.value == env(PKG)) | .key' "$PACKAGES_FILE" | head -1)
 
-            yq eval --arg mod "$module" --arg idx "$pkg_index" --arg pkg "$package" --arg ver "$version" '.packages.modules[$mod].packages[$idx | tonumber] = {"name": $pkg, "version": $ver}' -i "$PACKAGES_FILE"
+            MOD="$module" IDX="$pkg_index" PKG="$package" VER="$version" yq eval '.packages.modules[env(MOD)].packages[env(IDX) | tonumber] = {"name": env(PKG), "version": env(VER)}' -i "$PACKAGES_FILE"
             found=true
             found_module="$module"
             break
         fi
 
         # Check if already exists as object
-        local has_object=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
+        local has_object
+        has_object=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages[] | select(.name == env(PKG))' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_object" ]]; then
             # Update existing object
-            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value.name == $pkg) | .key' "$PACKAGES_FILE" | head -1)
+            local pkg_index
+            pkg_index=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages | to_entries | .[] | select(.value.name == env(PKG)) | .key' "$PACKAGES_FILE" | head -1)
 
-            yq eval --arg mod "$module" --arg idx "$pkg_index" --arg ver "$version" '.packages.modules[$mod].packages[$idx | tonumber].version = $ver' -i "$PACKAGES_FILE"
+            MOD="$module" IDX="$pkg_index" VER="$version" yq eval '.packages.modules[env(MOD)].packages[env(IDX) | tonumber].version = env(VER)' -i "$PACKAGES_FILE"
             found=true
             found_module="$module"
             break
@@ -117,16 +121,19 @@ cmd_unpin() {
         [[ -z "$module" ]] && continue
 
         # Check if exists as object with version
-        local has_object=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg)' "$PACKAGES_FILE" 2>/dev/null)
+        local has_object
+        has_object=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages[] | select(.name == env(PKG))' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$has_object" ]]; then
             # Check if it has a version field
-            local pkg_index=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages | to_entries | .[] | select(.value.name == $pkg) | .key' "$PACKAGES_FILE" | head -1)
-            local has_version=$(yq eval --arg mod "$module" --arg idx "$pkg_index" '.packages.modules[$mod].packages[$idx | tonumber] | has("version")' "$PACKAGES_FILE" 2>/dev/null)
+            local pkg_index
+            local has_version
+            pkg_index=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages | to_entries | .[] | select(.value.name == env(PKG)) | .key' "$PACKAGES_FILE" | head -1)
+            has_version=$(MOD="$module" IDX="$pkg_index" yq eval '.packages.modules[env(MOD)].packages[env(IDX) | tonumber] | has("version")' "$PACKAGES_FILE" 2>/dev/null)
 
             if [[ "$has_version" == "true" ]]; then
                 # Replace object with simple string
-                yq eval --arg mod "$module" --arg idx "$pkg_index" --arg pkg "$package" '.packages.modules[$mod].packages[$idx | tonumber] = $pkg' -i "$PACKAGES_FILE"
+                MOD="$module" IDX="$pkg_index" PKG="$package" yq eval '.packages.modules[env(MOD)].packages[env(IDX) | tonumber] = env(PKG)' -i "$PACKAGES_FILE"
                 found=true
                 found_module="$module"
                 break

@@ -62,7 +62,7 @@ _update_package_state() {
     fi
 
     # Remove existing entry from temp file
-    if ! yq eval --arg name "$name" 'del(.packages[] | select(.name == $name))' -i "$temp_state" 2>"$error_log"; then
+    if ! NAME="$name" yq eval 'del(.packages[] | select(.name == env(NAME)))' -i "$temp_state" 2>"$error_log"; then
         ui_error "CRITICAL: Failed to remove existing entry for '$name'"
         cat "$error_log" >&2
         rm -f "$temp_state" "$error_log"
@@ -142,7 +142,7 @@ _remove_package_state() {
     fi
 
     # Remove entry from temp file
-    if ! yq eval --arg name "$name" 'del(.packages[] | select(.name == $name))' -i "$temp_state" 2>"$error_log"; then
+    if ! NAME="$name" yq eval 'del(.packages[] | select(.name == env(NAME)))' -i "$temp_state" 2>"$error_log"; then
         ui_error "CRITICAL: Failed to remove entry for '$name'"
         cat "$error_log" >&2
         rm -f "$temp_state" "$error_log"
@@ -174,12 +174,12 @@ _remove_package_state() {
 _get_package_state() {
     local name="$1"
     _init_state_file
-    yq eval --arg name "$name" '.packages[] | select(.name == $name)' "$STATE_FILE"
+    NAME="$name" yq eval '.packages[] | select(.name == env(NAME))' "$STATE_FILE"
 }
 
 # Check if package is in state
 _is_package_in_state() {
     local name="$1"
     _init_state_file
-    yq eval --arg name "$name" '.packages[] | select(.name == $name) | .name' "$STATE_FILE" | grep -q "^${name}$"
+    NAME="$name" yq eval '.packages[] | select(.name == env(NAME)) | .name' "$STATE_FILE" | grep -q "^${name}$"
 }

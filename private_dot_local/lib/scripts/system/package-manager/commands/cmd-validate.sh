@@ -27,7 +27,7 @@ cmd_validate() {
         esac
     done
 
-    ui_title "🔍 Validating packages.yaml"
+    ui_title "$ICON_SEARCH Validating packages.yaml"
 
     local errors=0
     local warnings=0
@@ -46,15 +46,19 @@ cmd_validate() {
 
     while IFS= read -r module; do
         # Check required fields
-        local has_enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod] | has("enabled")' "$PACKAGES_FILE")
-        local has_description=$(yq eval --arg mod "$module" '.packages.modules[$mod] | has("description")' "$PACKAGES_FILE")
-        local has_packages=$(yq eval --arg mod "$module" '.packages.modules[$mod] | has("packages")' "$PACKAGES_FILE")
+        local has_enabled
+        local has_description
+        local has_packages
+        has_enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)] | has("enabled")' "$PACKAGES_FILE")
+        has_description=$(MOD="$module" yq eval '.packages.modules[env(MOD)] | has("description")' "$PACKAGES_FILE")
+        has_packages=$(MOD="$module" yq eval '.packages.modules[env(MOD)] | has("packages")' "$PACKAGES_FILE")
 
         if [[ "$has_enabled" != "true" ]]; then
             ui_error "Module '$module': Missing 'enabled' field"
             ((errors++))
         else
-            local enabled_value=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE")
+            local enabled_value
+            enabled_value=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE")
             if [[ "$enabled_value" != "true" ]] && [[ "$enabled_value" != "false" ]]; then
                 ui_error "Module '$module': 'enabled' must be boolean (true/false)"
                 ((errors++))
@@ -171,7 +175,7 @@ cmd_validate() {
                 ui_error "Duplicate package '$name' in modules: ${pkg_locations[$name]} and $module"
                 ((dup_errors++))
             else
-                pkg_locations["$name"]="$module"
+                [[ -n "$name" ]] && pkg_locations[$name]="$module"
             fi
         done < <(_get_module_packages "$module")
     done < <(_get_modules)

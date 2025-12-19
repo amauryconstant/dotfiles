@@ -39,7 +39,7 @@ cmd_sync() {
     # Override auto-lock if --no-lock specified
     [[ "$no_lock" == "true" ]] && AUTO_LOCK=false
 
-    ui_title "📦 Syncing System to packages.yaml"
+    ui_title "$ICON_PACKAGE Syncing System to packages.yaml"
 
     # Phase 0: Validation (fail fast)
     if ! _sync_validate; then
@@ -120,7 +120,7 @@ _sync_build_plan() {
 
     # Collect packages from enabled modules
     while IFS= read -r module; do
-        ui_info "  • $module"
+        ui_info "  $ICON_BULLET $module"
 
         while IFS= read -r package; do
             ((total++))
@@ -154,7 +154,7 @@ _sync_build_plan() {
         if [[ -n "$invalid" ]]; then
             ui_error "Invalid packages found:"
             echo "$invalid" | while IFS= read -r pkg; do
-                ui_error "  • $pkg"
+                ui_error "  $ICON_BULLET $pkg"
             done
             ui_warning "Fix packages.yaml before continuing"
             return 1
@@ -197,22 +197,17 @@ _sync_execute() {
     ui_step "Caching installed package versions..."
     declare -A installed_versions_map
     while IFS=' ' read -r pkg ver; do
-        installed_versions_map["$pkg"]="$ver"
+        [[ -n "$pkg" ]] && installed_versions_map[$pkg]="$ver"
     done < <(pacman -Q 2>/dev/null | awk '{print $1, $2}')
-    # Temporarily disable set -u for array size check
     local cached_count
-    set +u
     cached_count=${#installed_versions_map[@]}
-    set -u
     ui_info "Cached ${cached_count} package versions"
 
     # Load lockfile for fast-path optimization
     if [[ "$USE_LOCKFILE_FASTPATH" == "true" ]] && _read_lockfile; then
         local lockfile_count
-        set +u
         # shellcheck disable=SC2154  # lockfile_versions populated by _read_lockfile
         lockfile_count=${#lockfile_versions[@]}
-        set -u
         ui_info "Loaded lockfile with ${lockfile_count} versions"
     fi
 
@@ -258,7 +253,7 @@ _sync_execute_pacman() {
         # Fast-path: lockfile match
         if [[ "$USE_LOCKFILE_FASTPATH" == "true" ]] && [[ -n "$locked_version" ]] &&
            [[ "$installed_version" == "$locked_version" ]] && [[ "$constraint_type" == "none" ]]; then
-            ui_info "📦 $name: OK (lockfile match $locked_version)"
+            ui_info "$ICON_PACKAGE $name: OK (lockfile match $locked_version)"
             continue
         fi
 
@@ -280,7 +275,7 @@ _sync_execute_pacman() {
                     batch_upgrade+="$name|$version|$module "
                     ((results[upgraded]++))
                 else
-                    ui_info "📦 $name: OK (exact $version)"
+                    ui_info "$ICON_PACKAGE $name: OK (exact $version)"
                 fi
                 ;;
 
@@ -292,7 +287,7 @@ _sync_execute_pacman() {
                     batch_upgrade+="$name|null|$module "
                     ((results[upgraded]++))
                 else
-                    ui_info "📦 $name: OK (>=$version, have $installed_version)"
+                    ui_info "$ICON_PACKAGE $name: OK (>=$version, have $installed_version)"
                 fi
                 ;;
 
@@ -301,7 +296,7 @@ _sync_execute_pacman() {
                 local cmp=$?
 
                 if [[ $cmp -eq 2 ]]; then
-                    ui_info "📦 $name: OK (<$version, have $installed_version)"
+                    ui_info "$ICON_PACKAGE $name: OK (<$version, have $installed_version)"
                 else
                     # Interactive downgrade (not batched)
                     if _sync_handle_downgrade "$name" "$installed_version" "$version" "$module"; then
@@ -313,7 +308,7 @@ _sync_execute_pacman() {
                 ;;
 
             "none")
-                ui_info "📦 $name: OK ($installed_version)"
+                ui_info "$ICON_PACKAGE $name: OK ($installed_version)"
                 ;;
         esac
     done
@@ -355,9 +350,9 @@ _sync_execute_flatpak() {
         local flatpak_id="${name#flatpak:}"
 
         if _is_flatpak_installed "$flatpak_id"; then
-            ui_info "📦 $flatpak_id: OK"
+            ui_info "$ICON_PACKAGE $flatpak_id: OK"
         else
-            ui_step "📦 $flatpak_id: Installing"
+            ui_step "$ICON_PACKAGE $flatpak_id: Installing"
             if _install_flatpak "$name" "$module"; then
                 ((results[installed]++))
             else
@@ -373,7 +368,7 @@ _sync_handle_downgrade() {
     local max_version="$3"
     local module="$4"
 
-    ui_warning "📦 $name: Installed $installed violates <$max_version constraint"
+    ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$max_version constraint"
 
     if ! ui_confirm "Interactive downgrade for $name?"; then
         ui_info "Skipped downgrade"
@@ -395,7 +390,7 @@ _sync_handle_downgrade() {
         return 1
     fi
 
-    ui_step "📦 $name: Downgrading $installed → $selected_version"
+    ui_step "$ICON_PACKAGE $name: Downgrading $installed → $selected_version"
 
     if paru -S --noconfirm "${name}=${selected_version}"; then
         _update_package_state "$name" "$selected_version" "pacman" "$module" "\"<$max_version\""
@@ -425,7 +420,7 @@ _sync_prune_orphans() {
 
             # Strip flatpak: prefix for comparison
             local name_stripped="${name#flatpak:}"
-            declared_set["$name_stripped"]=1
+            [[ -n "$name_stripped" ]] && declared_set[$name_stripped]=1
         done < <(_get_module_packages "$module")
     done < <(_get_enabled_modules)
 
@@ -443,7 +438,7 @@ _sync_prune_orphans() {
 
     ui_warning "Found ${#orphans[@]} orphaned packages:"
     for orphan in "${orphans[@]}"; do
-        ui_info "  • $orphan"
+        ui_info "  $ICON_BULLET $orphan"
     done
 
     if ! ui_confirm "Remove orphaned packages?"; then
@@ -470,7 +465,7 @@ _sync_finalize() {
     local -n results_ref=$1
 
     # Display summary
-    ui_title "📊 Sync Summary"
+    ui_title "$ICON_CHART Sync Summary"
     ui_info "  Total packages: ${SYNC_PLAN_TOTAL:-0}"
 
     local installed=${results_ref[installed]}

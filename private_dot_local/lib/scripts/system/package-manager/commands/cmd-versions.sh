@@ -14,7 +14,7 @@ cmd_versions() {
         return 1
     fi
 
-    ui_title "📊 Version Information: $package"
+    ui_title "$ICON_CHART Version Information: $package"
     echo ""
 
     # Check if it's a flatpak
@@ -41,7 +41,7 @@ cmd_versions() {
         if _read_lockfile && [[ -n "${lockfile_versions[$package]}" ]]; then
             local lock_ver="${lockfile_versions[$package]}"
             if [[ "$lock_ver" == "$installed" ]]; then
-                ui_success "Lockfile:  $lock_ver  ✓ Matches"
+                ui_success "Lockfile:  $lock_ver  $ICON_CHECK Matches"
             else
                 ui_warning "Lockfile:  $lock_ver  (drift detected)"
             fi
@@ -58,7 +58,7 @@ cmd_versions() {
         # Rolling package check
         if _is_rolling_package "$package"; then
             echo ""
-            ui_warning "⚠️  This is a -git package (rolling release)"
+            ui_warning "$ICON_WARNING  This is a -git package (rolling release)"
             ui_info "Version pinning not recommended for rolling packages"
         fi
 
@@ -87,7 +87,8 @@ cmd_versions() {
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
 
-        local constraint=$(yq eval --arg mod "$module" --arg pkg "$package" '.packages.modules[$mod].packages[] | select(.name == $pkg) | .version' "$PACKAGES_FILE" 2>/dev/null)
+        local constraint
+        constraint=$(MOD="$module" PKG="$package" yq eval '.packages.modules[env(MOD)].packages[] | select(.name == env(PKG)) | .version' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ -n "$constraint" && "$constraint" != "null" ]]; then
             ui_success "Pinned to: $constraint (in module '$module')"

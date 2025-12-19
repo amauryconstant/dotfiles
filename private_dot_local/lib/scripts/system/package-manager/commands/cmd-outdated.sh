@@ -7,7 +7,7 @@
 cmd_outdated() {
     _check_yq_dependency || return 1
 
-    ui_title "⚠️  Packages Violating Version Constraints"
+    ui_title "$ICON_WARNING  Packages Violating Version Constraints"
     echo ""
 
     local violations=0

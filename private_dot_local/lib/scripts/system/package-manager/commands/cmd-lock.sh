@@ -22,7 +22,7 @@ cmd_lock() {
 
     _check_yq_dependency || return 1
 
-    [[ "$quiet" == "false" ]] && ui_title "🔒 Generating Package Lockfile"
+    [[ "$quiet" == "false" ]] && ui_title "$ICON_LOCK Generating Package Lockfile"
     [[ "$quiet" == "false" ]] && echo ""
 
     local timestamp=$(date -Iseconds)
@@ -49,25 +49,20 @@ EOF
     if [[ -f "$STATE_FILE" ]]; then
         [[ "$quiet" == "false" ]] && ui_step "Reading package versions from state file..."
         while IFS='|' read -r name ver; do
-            versions_from_state["$name"]="$ver"
+            [[ -n "$name" ]] && versions_from_state[$name]="$ver"
         done < <(yq eval '.packages[] | "\(.name)|\(.version)"' "$STATE_FILE" 2>/dev/null)
     fi
 
     # Fallback to batch pacman query if state file is empty
-    # Temporarily disable set -u for array size check to avoid unbound variable errors
     local state_count
-    set +u
     state_count=${#versions_from_state[@]}
-    set -u
 
     if [[ ${state_count} -eq 0 ]]; then
         [[ "$quiet" == "false" ]] && ui_step "Querying installed versions (batch)..."
         while IFS=' ' read -r pkg ver; do
-            versions_from_state["$pkg"]="$ver"
+            [[ -n "$pkg" ]] && versions_from_state[$pkg]="$ver"
         done < <(pacman -Q 2>/dev/null)
-        set +u
         state_count=${#versions_from_state[@]}
-        set -u
     fi
 
     [[ "$quiet" == "false" ]] && ui_info "Cached ${state_count} package versions"

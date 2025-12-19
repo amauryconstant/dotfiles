@@ -72,7 +72,7 @@ cmd_search() {
         [[ -z "$pkg" ]] && continue
 
         # Add to packages.yaml
-        yq eval --arg mod "$module" --arg pkg "$pkg" '.packages.modules[$mod].packages += [$pkg]' -i "$PACKAGES_FILE"
+        MOD="$module" PKG="$pkg" yq eval '.packages.modules[env(MOD)].packages += [env(PKG)]' -i "$PACKAGES_FILE"
         ui_info "  • Added: $pkg"
         ((added++))
     done <<< "$selected"
@@ -92,9 +92,9 @@ _select_module_interactive() {
         local desc
         local pkg_count
         local enabled
-        desc=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
-        pkg_count=$(yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null)
-        enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE" 2>/dev/null)
+        desc=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
+        pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
+        enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
 
         local status="[disabled]"
         [[ "$enabled" == "true" ]] && status="[enabled]"

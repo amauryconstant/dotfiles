@@ -7,20 +7,23 @@
 cmd_module_list() {
     _check_yq_dependency || return 1
 
-    ui_title "📦 Package Modules"
+    ui_title "$ICON_PACKAGE Package Modules"
     echo ""
 
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
 
-        local enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE" 2>/dev/null)
-        local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
-        local pkg_count=$(yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null)
+        local enabled
+        local description
+        local pkg_count
+        enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
+        description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
+        pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
 
         if [[ "$enabled" == "true" ]]; then
-            ui_success "  ✓ ${module} (${pkg_count} packages) - ${description}"
+            ui_success "  $ICON_CHECK ${module} (${pkg_count} packages) - ${description}"
         else
-            ui_info "  ✗ ${module} (${pkg_count} packages) - ${description}" | ui_color gray
+            ui_info "  $ICON_ERROR ${module} (${pkg_count} packages) - ${description}" | ui_color gray
         fi
     done < <(_get_modules)
 }
@@ -28,7 +31,7 @@ cmd_module_list() {
 cmd_module_enable_interactive() {
     _check_yq_dependency || return 1
 
-    ui_title "📦 Enable Modules"
+    ui_title "$ICON_PACKAGE Enable Modules"
     echo ""
 
     # Check if fzf is available
@@ -43,10 +46,12 @@ cmd_module_enable_interactive() {
         [[ -z "$module" ]] && continue
 
         if ! _is_module_enabled "$module"; then
-            local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+            local description
+            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
             [[ -z "$description" || "$description" == "null" ]] && description="No description"
 
-            local pkg_count=$(yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null)
+            local pkg_count
+            pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
 
             # Format: "module_name | description | (N packages) | [disabled]"
             printf -v line "%-20s | %-50s | (%2d packages) | [disabled]" "$module" "$description" "$pkg_count"
@@ -104,7 +109,8 @@ _module_enable_interactive_fallback() {
         if ! _is_module_enabled "$module"; then
             module_names+=("$module")
 
-            local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+            local description
+            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
             [[ -z "$description" || "$description" == "null" ]] && description="No description"
             module_descriptions+=("$description")
         fi
@@ -176,7 +182,7 @@ cmd_module_enable() {
 
     # Check if module exists
     if ! _with_context "Checking if module '$module' exists in packages.yaml" \
-         yq eval --arg mod "$module" '.packages.modules | has($mod)' "$PACKAGES_FILE" | grep -q "true"; then
+         MOD="$module" yq eval '.packages.modules | has(env(MOD))' "$PACKAGES_FILE" | grep -q "true"; then
         ui_error "Module '$module' not found"
         return 1
     fi
@@ -198,7 +204,7 @@ cmd_module_enable() {
 
                 if ui_confirm "Disable '$conflict' and enable '$module'?"; then
                     # Disable conflicting module
-                    yq eval --arg mod "$conflict" '.packages.modules[$mod].enabled = false' -i "$PACKAGES_FILE"
+                    MOD="$conflict" yq eval '.packages.modules[env(MOD)].enabled = false' -i "$PACKAGES_FILE"
                     ui_success "Disabled '$conflict'"
                 else
                     ui_warning "Cancelled"
@@ -209,7 +215,7 @@ cmd_module_enable() {
     fi
 
     # Enable module
-    yq eval --arg mod "$module" '.packages.modules[$mod].enabled = true' -i "$PACKAGES_FILE"
+    MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = true' -i "$PACKAGES_FILE"
     ui_success "Module '$module' enabled"
     ui_info "Run 'package-manager sync' to install packages"
 }
@@ -217,7 +223,7 @@ cmd_module_enable() {
 cmd_module_disable_interactive() {
     _check_yq_dependency || return 1
 
-    ui_title "📦 Disable Modules"
+    ui_title "$ICON_PACKAGE Disable Modules"
     echo ""
 
     # Check if fzf is available
@@ -231,10 +237,12 @@ cmd_module_disable_interactive() {
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
 
-        local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+        local description
+        local pkg_count
+        description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
         [[ -z "$description" || "$description" == "null" ]] && description="No description"
 
-        local pkg_count=$(yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null)
+        pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
 
         # Format: "module_name | description | (N packages) | [enabled]"
         printf -v line "%-20s | %-50s | (%2d packages) | [enabled]" "$module" "$description" "$pkg_count"
@@ -290,7 +298,8 @@ _module_disable_interactive_fallback() {
 
         module_names+=("$module")
 
-        local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+        local description
+        description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
         [[ -z "$description" || "$description" == "null" ]] && description="No description"
         module_descriptions+=("$description")
     done < <(_get_enabled_modules)
@@ -373,7 +382,7 @@ cmd_module_disable() {
     fi
 
     # Disable module
-    yq eval --arg mod "$module" '.packages.modules[$mod].enabled = false' -i "$PACKAGES_FILE"
+    MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = false' -i "$PACKAGES_FILE"
     ui_success "Module '$module' disabled"
     ui_info "Run 'package-manager sync --prune' to remove packages"
 }

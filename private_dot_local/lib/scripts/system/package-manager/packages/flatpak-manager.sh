@@ -22,11 +22,11 @@ _install_flatpak() {
     if _is_flatpak_installed "$flatpak_id"; then
         local installed_version
         installed_version=$(_get_flatpak_version "$flatpak_id")
-        ui_info "📦 $flatpak_id: Already installed${installed_version:+ ($installed_version)}"
+        ui_info "$ICON_PACKAGE $flatpak_id: Already installed${installed_version:+ ($installed_version)}"
         return 0
     fi
 
-    ui_step "📦 Installing Flatpak: $flatpak_id"
+    ui_step "$ICON_PACKAGE Installing Flatpak: $flatpak_id"
 
     # Install with --user scope (ALWAYS user scope, never system)
     if flatpak install -y --user flathub "$flatpak_id" 2>&1; then
@@ -78,7 +78,7 @@ _update_flatpaks() {
         return 0
     fi
 
-    ui_step "📦 Updating Flatpak packages..."
+    ui_step "$ICON_PACKAGE Updating Flatpak packages..."
 
     if flatpak update -y --user 2>&1; then
         ui_success "Flatpak packages updated"

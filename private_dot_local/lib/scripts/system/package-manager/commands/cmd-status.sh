@@ -5,7 +5,7 @@
 # Requirements: yq, pacman
 
 cmd_status() {
-    ui_title "📊 Package Manager Status"
+    ui_title "$ICON_CHART Package Manager Status"
 
     # Module Status
     ui_step "Modules"
@@ -16,15 +16,16 @@ cmd_status() {
     while IFS= read -r module; do
         ((enabled_count++))
         local pkg_count=$(_get_module_packages "$module" | wc -l)
-        local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE")
+        local description
+        description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE")
 
-        ui_success "  ✓ $module ($pkg_count packages)"
+        ui_success "  $ICON_CHECK $module ($pkg_count packages)"
         ui_info "    $description"
 
         # Check for conflicts
         local conflicts=$(_get_module_conflicts "$module")
         if [[ -n "$conflicts" ]]; then
-            ui_warning "    ⚠️  Conflicts: $conflicts"
+            ui_warning "    $ICON_WARNING  Conflicts: $conflicts"
         fi
     done < <(_get_enabled_modules)
 
@@ -34,7 +35,7 @@ cmd_status() {
         ui_info "Disabled modules:"
         while IFS= read -r module; do
             ((disabled_count++))
-            ui_info "  ✗ $module" | ui_color gray
+            ui_info "  $ICON_ERROR $module" | ui_color gray
         done <<< "$disabled_modules"
     fi
 
@@ -60,16 +61,16 @@ cmd_status() {
                 ((pinned_count++))
 
                 local installed=$(_get_cached_package_version "$name")
-                local status="❓"
+                local status="$ICON_UNKNOWN"
                 local violates=false
 
                 if [[ -n "$installed" ]]; then
                     case "$constraint_type" in
                         "exact")
                             if [[ "$installed" == "$version" ]]; then
-                                status="✓"
+                                status="$ICON_CHECK"
                             else
-                                status="❌"
+                                status="$ICON_ERROR"
                                 violates=true
                             fi
                             ;;
@@ -77,9 +78,9 @@ cmd_status() {
                             _compare_versions "$installed" "$version"
                             local cmp=$?
                             if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                                status="✓"
+                                status="$ICON_CHECK"
                             else
-                                status="❌"
+                                status="$ICON_ERROR"
                                 violates=true
                             fi
                             ;;
@@ -87,9 +88,9 @@ cmd_status() {
                             _compare_versions "$installed" "$version"
                             local cmp=$?
                             if [[ $cmp -eq 2 ]]; then
-                                status="✓"
+                                status="$ICON_CHECK"
                             else
-                                status="❌"
+                                status="$ICON_ERROR"
                                 violates=true
                             fi
                             ;;
@@ -102,7 +103,7 @@ cmd_status() {
                         ui_success "  $status $name: $constraint_type $version"
                     fi
                 else
-                    ui_warning "  ❓ $name: $constraint_type $version (not installed)"
+                    ui_warning "  $ICON_UNKNOWN $name: $constraint_type $version (not installed)"
                 fi
             fi
         done < <(_get_module_packages "$module")
@@ -127,9 +128,9 @@ cmd_status() {
     local flatpak_count=$(flatpak list --app 2>/dev/null | wc -l)
     local state_count=$(yq eval '.packages | length' "$STATE_FILE" 2>/dev/null || echo 0)
 
-    ui_info "  • Pacman: $pacman_count packages"
-    ui_info "  • Flatpak: $flatpak_count packages"
-    ui_info "  • State file: $state_count tracked"
+    ui_info "  $ICON_BULLET Pacman: $pacman_count packages"
+    ui_info "  $ICON_BULLET Flatpak: $flatpak_count packages"
+    ui_info "  $ICON_BULLET State file: $state_count tracked"
 
     # Orphaned packages (optimized with hash set - O(M*P + N) instead of O(N*M*P))
     local orphan_count=0
@@ -141,7 +142,8 @@ cmd_status() {
             local pkg_data=$(_parse_package_constraint "$package")
             IFS='|' read -r name _ _ <<< "$pkg_data"
             # Strip flatpak: prefix for comparison
-            declared_set["${name#flatpak:}"]=1
+            local name_stripped="${name#flatpak:}"
+            [[ -n "$name_stripped" ]] && declared_set[$name_stripped]=1
         done < <(_get_module_packages "$module")
     done < <(_get_enabled_modules)
 
@@ -153,39 +155,48 @@ cmd_status() {
     done < <(yq eval '.packages[].name' "$STATE_FILE" 2>/dev/null)
 
     if [[ $orphan_count -gt 0 ]]; then
-        ui_warning "  ⚠️  Orphans: $orphan_count packages (use 'sync --prune')"
+        ui_warning "  $ICON_WARNING  Orphans: $orphan_count packages (use 'sync --prune')"
     else
-        ui_success "  ✓ No orphaned packages"
+        ui_success "  $ICON_CHECK No orphaned packages"
     fi
 
     # Rolling packages (reuse declared_set from orphan detection for efficiency)
     local rolling_count=0
-    for pkg_name in "${!declared_set[@]:-}"; do
+    for pkg_name in "${!declared_set[@]}"; do
         if _is_rolling_package "$pkg_name"; then
             ((rolling_count++))
         fi
     done
 
-    ui_info "  • Rolling packages: $rolling_count (-git suffix)"
+    ui_info "  $ICON_BULLET Rolling packages: $rolling_count (-git suffix)"
 
     # State File Info
     echo ""
     ui_step "State Files"
 
+    # Auto-initialize if missing (prevents "not found" error)
+    _init_state_file
+
     if [[ -f "$STATE_FILE" ]]; then
+        local state_count=$(yq eval '.packages | length' "$STATE_FILE" 2>/dev/null || echo 0)
         local state_size=$(du -h "$STATE_FILE" | awk '{print $1}')
         local last_modified=$(stat -c %y "$STATE_FILE" | cut -d' ' -f1,2 | cut -d'.' -f1)
-        ui_success "  ✓ State file: $state_size (last modified: $last_modified)"
+
+        if [[ $state_count -eq 0 ]]; then
+            ui_warning "  $ICON_WARNING State file: Empty (run 'package-manager sync' to populate)"
+        else
+            ui_success "  $ICON_CHECK State file: $state_size ($state_count packages, last modified: $last_modified)"
+        fi
     else
-        ui_error "  ❌ State file: Not found"
+        ui_error "  $ICON_ERROR State file: Creation failed"
     fi
 
     if [[ -f "$LOCKFILE" ]]; then
         local lock_size=$(du -h "$LOCKFILE" | awk '{print $1}')
         local age_days=$(( ($(date +%s) - $(stat -c %Y "$LOCKFILE")) / 86400 ))
-        ui_success "  ✓ Lockfile: $lock_size (${age_days}d old)"
+        ui_success "  $ICON_CHECK Lockfile: $lock_size (${age_days}d old)"
     else
-        ui_warning "  ⚠️  Lockfile: Not found (run 'lock' to create)"
+        ui_warning "  $ICON_WARNING  Lockfile: Not found (run 'lock' to create)"
     fi
 
     # Lockfile Analysis
@@ -204,13 +215,14 @@ cmd_status() {
 
             # Cache current versions
             while IFS=' ' read -r pkg ver; do
-                current_versions["$pkg"]="$ver"
+                [[ -n "$pkg" ]] && current_versions[$pkg]="$ver"
             done < <(pacman -Q 2>/dev/null)
 
             # Count drifted packages
-            for pkg in "${!lockfile_versions[@]:-}"; do
+            # shellcheck disable=SC2154  # lockfile_versions populated by _read_lockfile
+            for pkg in "${!lockfile_versions[@]}"; do
                 local current_ver="${current_versions[$pkg]:-}"
-                local locked_ver="${lockfile_versions[$pkg]}"
+                local locked_ver="${lockfile_versions[$pkg]:-}"
 
                 if [[ -n "$current_ver" ]] && [[ "$current_ver" != "$locked_ver" ]]; then
                     ((drift_count++))
@@ -218,9 +230,9 @@ cmd_status() {
             done
 
             if [[ $drift_count -eq 0 ]]; then
-                ui_success "  ✓ No drift from lockfile"
+                ui_success "  $ICON_CHECK No drift from lockfile"
             else
-                ui_warning "  ⚠️  Drift: $drift_count packages differ from lockfile"
+                ui_warning "  $ICON_WARNING  Drift: $drift_count packages differ from lockfile"
                 ui_info "     Run 'package-manager lock' to update"
             fi
         fi

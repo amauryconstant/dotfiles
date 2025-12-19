@@ -5,6 +5,14 @@
 # Requirements: yq
 
 # =============================================================================
+# ICON CONSTANTS
+# =============================================================================
+
+# Source icon library (Material Design Nerd Fonts)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+. "$SCRIPT_DIR/core/icons.sh"
+
+# =============================================================================
 # GLOBAL CONFIGURATION
 # =============================================================================
 
@@ -32,33 +40,34 @@ _get_enabled_modules() {
 
 _get_module_packages() {
     local module="$1"
-    yq eval --arg mod "$module" '.packages.modules[$mod].packages | .[]' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].packages | .[]' "$PACKAGES_FILE" 2>/dev/null
 }
 
 _is_module_enabled() {
     local module="$1"
-    local enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE" 2>/dev/null)
+    local enabled
+    enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
     [[ "$enabled" == "true" ]]
 }
 
 _get_module_conflicts() {
     local module="$1"
-    yq eval --arg mod "$module" '.packages.modules[$mod].conflicts[]?' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].conflicts[]?' "$PACKAGES_FILE" 2>/dev/null
 }
 
 _get_module_description() {
     local module="$1"
-    yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null
 }
 
 _get_module_package_count() {
     local module="$1"
-    yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null
 }
 
 _module_exists() {
     local module="$1"
-    yq eval --arg mod "$module" '.packages.modules | has($mod)' "$PACKAGES_FILE" 2>/dev/null | grep -q "true"
+    MOD="$module" yq eval '.packages.modules | has(env(MOD))' "$PACKAGES_FILE" 2>/dev/null | grep -q "true"
 }
 
 # =============================================================================

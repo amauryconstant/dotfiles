@@ -27,7 +27,7 @@ cmd_update() {
         esac
     done
 
-    ui_title "📦 System Package Update"
+    ui_title "$ICON_PACKAGE System Package Update"
 
     # Phase 1: Sync to packages.yaml
     if [[ "$sync_first" == "true" ]]; then

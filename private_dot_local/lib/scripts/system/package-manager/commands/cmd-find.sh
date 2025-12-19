@@ -30,7 +30,7 @@ cmd_find() {
     _check_yq_dependency || return 1
 
     if [[ "$json_output" != "true" ]]; then
-        ui_title "🔍 Finding package: $package"
+        ui_title "$ICON_SEARCH Finding package: $package"
     fi
 
     local found=0
@@ -47,8 +47,8 @@ cmd_find() {
 
             local desc
             local enabled
-            desc=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE")
-            enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE")
+            desc=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE")
+            enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE")
 
             if [[ "$json_output" == "true" ]]; then
                 results+=("{\"module\": \"$module\", \"description\": \"$desc\", \"enabled\": $enabled}")

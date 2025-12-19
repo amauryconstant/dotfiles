@@ -101,7 +101,7 @@ _read_lockfile() {
         ver="${ver//\"/}"  # Strip quotes
         ver="${ver// #*/}"  # Strip comments
         # shellcheck disable=SC2034  # Global array used in sourced command files
-        [[ -n "$ver" ]] && lockfile_versions["$pkg"]="$ver"
+        [[ -n "$ver" ]] && lockfile_versions[$pkg]="$ver"
     done < <(yq eval '.packages | to_entries[] | .value | to_entries[] | "\(.key): \(.value)"' "$LOCKFILE" 2>/dev/null)
 
     return 0
@@ -130,20 +130,21 @@ _get_enabled_modules() {
 _get_module_packages() {
     local module="$1"
     _check_yq_dependency || return 1
-    yq eval --arg mod "$module" '.packages.modules[$mod].packages | .[]' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].packages | .[]' "$PACKAGES_FILE" 2>/dev/null
 }
 
 _is_module_enabled() {
     local module="$1"
     _check_yq_dependency || return 1
-    local enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE" 2>/dev/null)
+    local enabled
+    enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
     [[ "$enabled" == "true" ]]
 }
 
 _get_module_conflicts() {
     local module="$1"
     _check_yq_dependency || return 1
-    yq eval --arg mod "$module" '.packages.modules[$mod].conflicts[]?' "$PACKAGES_FILE" 2>/dev/null
+    MOD="$module" yq eval '.packages.modules[env(MOD)].conflicts[]?' "$PACKAGES_FILE" 2>/dev/null
 }
 
 # =============================================================================
@@ -188,7 +189,7 @@ _install_package() {
 
     # Warn about rolling packages
     if _is_rolling_package "$name"; then
-        ui_warning "⚠️  '$name' is a rolling package (-git suffix)"
+        ui_warning "$ICON_WARNING  '$name' is a rolling package (-git suffix)"
         if [[ -n "$version" ]]; then
             ui_warning "Version constraints may not work as expected"
         fi
@@ -207,41 +208,41 @@ _install_package() {
         case "$constraint_type" in
             "exact")
                 if [[ "$installed" == "$version" ]]; then
-                    ui_info "📦 $name: Already at exact version $version"
+                    ui_info "$ICON_PACKAGE $name: Already at exact version $version"
                     return 0
                 else
-                    ui_step "📦 $name: Switching from $installed to $version"
+                    ui_step "$ICON_PACKAGE $name: Switching from $installed to $version"
                 fi
                 ;;
             "minimum")
                 _compare_versions "$installed" "$version"
                 local cmp=$?
                 if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                    ui_info "📦 $name: Already meets constraint >=$version (installed: $installed)"
+                    ui_info "$ICON_PACKAGE $name: Already meets constraint >=$version (installed: $installed)"
                     return 0
                 else
-                    ui_step "📦 $name: Upgrading from $installed to meet >=$version"
+                    ui_step "$ICON_PACKAGE $name: Upgrading from $installed to meet >=$version"
                 fi
                 ;;
             "maximum")
                 _compare_versions "$installed" "$version"
                 local cmp=$?
                 if [[ $cmp -eq 2 ]]; then
-                    ui_info "📦 $name: Already meets constraint <$version (installed: $installed)"
+                    ui_info "$ICON_PACKAGE $name: Already meets constraint <$version (installed: $installed)"
                     return 0
                 else
-                    ui_warning "📦 $name: Installed $installed violates <$version constraint"
+                    ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$version constraint"
                     ui_warning "Interactive downgrade required (use 'sync' command)"
                     return 0
                 fi
                 ;;
             "none")
-                ui_info "📦 $name: Already installed ($installed)"
+                ui_info "$ICON_PACKAGE $name: Already installed ($installed)"
                 return 0
                 ;;
         esac
     else
-        ui_step "📦 Installing $name${version:+ ($constraint_type $version)}"
+        ui_step "$ICON_PACKAGE Installing $name${version:+ ($constraint_type $version)}"
     fi
 
     # Build paru command
@@ -303,11 +304,11 @@ _install_flatpak() {
     # Check if already installed (using cache - 1 call instead of 3)
     if _is_flatpak_installed "$flatpak_id"; then
         local installed_version=$(_get_flatpak_version "$flatpak_id")
-        ui_info "📦 $flatpak_id: Already installed${installed_version:+ ($installed_version)}"
+        ui_info "$ICON_PACKAGE $flatpak_id: Already installed${installed_version:+ ($installed_version)}"
         return 0
     fi
 
-    ui_step "📦 Installing Flatpak: $flatpak_id"
+    ui_step "$ICON_PACKAGE Installing Flatpak: $flatpak_id"
 
     # Install with --user scope (ALWAYS user scope, never system)
     if flatpak install -y --user flathub "$flatpak_id" 2>&1; then
@@ -341,7 +342,8 @@ _remove_package() {
     local package="$1"
 
     # Check if package is in state file
-    local pkg_type=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .type' "$STATE_FILE" 2>/dev/null)
+    local pkg_type
+    pkg_type=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .type' "$STATE_FILE" 2>/dev/null)
 
     if [[ -z "$pkg_type" ]]; then
         # Not in state file, try to detect (using cache)
@@ -356,16 +358,17 @@ _remove_package() {
     fi
 
     # Check if pinned
-    local is_pinned=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .pinned' "$STATE_FILE" 2>/dev/null)
+    local is_pinned
+    is_pinned=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .pinned' "$STATE_FILE" 2>/dev/null)
     if [[ "$is_pinned" == "true" ]]; then
-        ui_warning "⚠️  Package '$package' is pinned"
+        ui_warning "$ICON_WARNING  Package '$package' is pinned"
         if ! ui_confirm "Remove anyway?"; then
             ui_info "Cancelled"
             return 0
         fi
     fi
 
-    ui_step "🗑️  Removing $package ($pkg_type)"
+    ui_step "$ICON_TRASH  Removing $package ($pkg_type)"
 
     # Remove based on type
     case "$pkg_type" in
@@ -392,7 +395,7 @@ _remove_package() {
     esac
 
     # Remove from state file
-    yq eval --arg pkg "$package" 'del(.packages[] | select(.name == $pkg))' -i "$STATE_FILE"
+    PKG="$package" yq eval 'del(.packages[] | select(.name == env(PKG)))' -i "$STATE_FILE"
 
     return 0
 }
@@ -662,7 +665,7 @@ show_version() {
 
 check_health() {
     if [[ "$BRIEF" != "true" ]]; then
-        ui_title "🩺 Package System Health Check"
+        ui_title "$ICON_HEALTH Package System Health Check"
     fi
 
     local issues=0
@@ -727,7 +730,7 @@ check_health() {
 
 update_strategy() {
     if [[ "$BRIEF" != "true" ]]; then
-        ui_title "🔄 Package Update"
+        ui_title "$ICON_REFRESH Package Update"
         ui_info "This command updates system packages using paru"
         ui_spacer
     fi

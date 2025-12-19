@@ -24,7 +24,7 @@ cmd_merge() {
 
     _check_yq_dependency || return 1
 
-    ui_title "📦 Merge Unmanaged Packages"
+    ui_title "$ICON_PACKAGE Merge Unmanaged Packages"
     echo ""
 
     ui_step "Scanning explicitly installed packages..."
@@ -57,7 +57,7 @@ cmd_merge() {
     # Build declared set for O(1) lookups
     declare -A declared_set
     for pkg in "${declared_packages[@]}"; do
-        declared_set["$pkg"]=1
+        [[ -n "$pkg" ]] && declared_set[$pkg]=1
     done
 
     # Then O(N) lookup for unmanaged
@@ -104,11 +104,14 @@ cmd_merge() {
         while IFS= read -r module; do
             [[ -z "$module" ]] && continue
 
-            local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+            local description
+            local pkg_count
+            local enabled
+            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
             [[ -z "$description" || "$description" == "null" ]] && description="No description"
 
-            local pkg_count=$(yq eval --arg mod "$module" '.packages.modules[$mod].packages | length' "$PACKAGES_FILE" 2>/dev/null)
-            local enabled=$(yq eval --arg mod "$module" '.packages.modules[$mod].enabled' "$PACKAGES_FILE" 2>/dev/null)
+            pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
+            enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
             local status="[disabled]"
             [[ "$enabled" == "true" ]] && status="[enabled]"
 
@@ -155,7 +158,8 @@ cmd_merge() {
         echo ""
         local i=1
         for module in "${module_list[@]}"; do
-            local description=$(yq eval --arg mod "$module" '.packages.modules[$mod].description' "$PACKAGES_FILE" 2>/dev/null)
+            local description
+            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
             [[ -z "$description" || "$description" == "null" ]] && description="No description"
             ui_info "  [$i] $module"
             ui_info "      $description"
@@ -189,7 +193,7 @@ cmd_merge() {
     # Add packages to selected module
     local added=0
     for pkg in "${unmanaged[@]}"; do
-        yq eval --arg mod "$selected_module" --arg pkg "$pkg" '.packages.modules[$mod].packages += [$pkg]' -i "$PACKAGES_FILE"
+        MOD="$selected_module" PKG="$pkg" yq eval '.packages.modules[env(MOD)].packages += [env(PKG)]' -i "$PACKAGES_FILE"
         ((added++))
     done
 

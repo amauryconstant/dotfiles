@@ -37,7 +37,7 @@ _install_packages_batch() {
         fi
     done
 
-    ui_step "📦 Batch $batch_type: ${#pkg_specs[@]} packages"
+    ui_step "$ICON_PACKAGE Batch $batch_type: ${#pkg_specs[@]} packages"
 
     # Try batch install
     if [[ "$BATCH_INSTALLS" == "true" ]]; then
@@ -95,7 +95,7 @@ _update_batch_state() {
     # Query installed versions once for all packages
     declare -A new_versions
     while IFS=' ' read -r pkg ver; do
-        new_versions["$pkg"]="$ver"
+        [[ -n "$pkg" ]] && new_versions[$pkg]="$ver"
     done < <(pacman -Q "$(printf '%s\n' "${package_names[@]}")" 2>/dev/null)
 
     # Update state for each package

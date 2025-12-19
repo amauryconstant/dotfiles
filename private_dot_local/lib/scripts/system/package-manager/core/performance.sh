@@ -24,8 +24,8 @@ _load_flatpak_cache() {
     fi
 
     while IFS=$'\t' read -r app version; do
-        [[ -n "$app" ]] && _FLATPAK_CACHE_APPS["$app"]=1
-        [[ -n "$app" && -n "$version" ]] && _FLATPAK_CACHE_VERSIONS["$app"]="$version"
+        [[ -n "$app" ]] && _FLATPAK_CACHE_APPS[$app]=1
+        [[ -n "$app" && -n "$version" ]] && _FLATPAK_CACHE_VERSIONS[$app]="$version"
     done < <(flatpak list --app --columns=application,version 2>/dev/null)
 
     _FLATPAK_CACHE_LOADED=true
@@ -54,7 +54,7 @@ _load_pacman_version_cache() {
     fi
 
     while IFS=' ' read -r pkg ver; do
-        [[ -n "$pkg" && -n "$ver" ]] && _PACMAN_VERSION_CACHE["$pkg"]="$ver"
+        [[ -n "$pkg" && -n "$ver" ]] && _PACMAN_VERSION_CACHE[$pkg]="$ver"
     done < <(pacman -Q 2>/dev/null)
 
     _PACMAN_CACHE_LOADED=true

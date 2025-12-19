@@ -35,7 +35,7 @@ _install_package() {
 
     # Warn about rolling packages
     if _is_rolling_package "$name"; then
-        ui_warning "⚠️  '$name' is a rolling package (-git suffix)"
+        ui_warning "$ICON_WARNING  '$name' is a rolling package (-git suffix)"
         if [[ -n "$version" ]]; then
             ui_warning "Version constraints may not work as expected"
         fi
@@ -55,41 +55,41 @@ _install_package() {
         case "$constraint_type" in
             "exact")
                 if [[ "$installed" == "$version" ]]; then
-                    ui_info "📦 $name: Already at exact version $version"
+                    ui_info "$ICON_PACKAGE $name: Already at exact version $version"
                     return 0
                 else
-                    ui_step "📦 $name: Switching from $installed to $version"
+                    ui_step "$ICON_PACKAGE $name: Switching from $installed to $version"
                 fi
                 ;;
             "minimum")
                 _compare_versions "$installed" "$version"
                 local cmp=$?
                 if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                    ui_info "📦 $name: Already meets constraint >=$version (installed: $installed)"
+                    ui_info "$ICON_PACKAGE $name: Already meets constraint >=$version (installed: $installed)"
                     return 0
                 else
-                    ui_step "📦 $name: Upgrading from $installed to meet >=$version"
+                    ui_step "$ICON_PACKAGE $name: Upgrading from $installed to meet >=$version"
                 fi
                 ;;
             "maximum")
                 _compare_versions "$installed" "$version"
                 local cmp=$?
                 if [[ $cmp -eq 2 ]]; then
-                    ui_info "📦 $name: Already meets constraint <$version (installed: $installed)"
+                    ui_info "$ICON_PACKAGE $name: Already meets constraint <$version (installed: $installed)"
                     return 0
                 else
-                    ui_warning "📦 $name: Installed $installed violates <$version constraint"
+                    ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$version constraint"
                     ui_warning "Interactive downgrade required (use 'sync' command)"
                     return 0
                 fi
                 ;;
             "none")
-                ui_info "📦 $name: Already installed ($installed)"
+                ui_info "$ICON_PACKAGE $name: Already installed ($installed)"
                 return 0
                 ;;
         esac
     else
-        ui_step "📦 Installing $name${version:+ ($constraint_type $version)}"
+        ui_step "$ICON_PACKAGE Installing $name${version:+ ($constraint_type $version)}"
     fi
 
     # Build paru command
@@ -139,7 +139,7 @@ _remove_package() {
 
     # Check if package is in state file
     local pkg_type
-    pkg_type=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .type' "$STATE_FILE" 2>/dev/null)
+    pkg_type=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .type' "$STATE_FILE" 2>/dev/null)
 
     if [[ -z "$pkg_type" ]]; then
         # Not in state file, try to detect (using cache)
@@ -155,16 +155,16 @@ _remove_package() {
 
     # Check if pinned
     local is_pinned
-    is_pinned=$(yq eval --arg pkg "$package" '.packages[] | select(.name == $pkg) | .pinned' "$STATE_FILE" 2>/dev/null)
+    is_pinned=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .pinned' "$STATE_FILE" 2>/dev/null)
     if [[ "$is_pinned" == "true" ]]; then
-        ui_warning "⚠️  Package '$package' is pinned"
+        ui_warning "$ICON_WARNING  Package '$package' is pinned"
         if ! ui_confirm "Remove anyway?"; then
             ui_info "Cancelled"
             return 0
         fi
     fi
 
-    ui_step "🗑️  Removing $package ($pkg_type)"
+    ui_step "$ICON_TRASH  Removing $package ($pkg_type)"
 
     # Remove based on type
     case "$pkg_type" in
@@ -191,7 +191,7 @@ _remove_package() {
     esac
 
     # Remove from state file
-    yq eval --arg pkg "$package" 'del(.packages[] | select(.name == $pkg))' -i "$STATE_FILE"
+    PKG="$package" yq eval 'del(.packages[] | select(.name == env(PKG)))' -i "$STATE_FILE"
 
     return 0
 }
