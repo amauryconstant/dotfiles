@@ -17,11 +17,11 @@ case "$CHOICE" in
         "$SCRIPTS_DIR/user-interface/system-menu.sh"
         ;;
     "󰔎 Switch Theme")
-        # Check if theme switcher exists
-        if [ -f "$SCRIPTS_DIR/desktop/theme-switcher.sh" ]; then
-            "$SCRIPTS_DIR/desktop/theme-switcher.sh"
+        # Check if theme menu exists
+        if [ -f "$SCRIPTS_DIR/user-interface/theme-menu.sh" ]; then
+            "$SCRIPTS_DIR/user-interface/theme-menu.sh"
         else
-            notify "󰏘 Theme" "Theme switcher not found"
+            notify "󰏘 Theme" "Theme menu not found"
         fi
         ;;
     "󰸉 Wallpaper (Random)")

@@ -4,6 +4,14 @@
 # Purpose: Interactive theme selector using Wofi
 # Requirements: Arch Linux, Wofi, theme-switcher.sh
 
+# Source environment to get SCRIPTS_DIR
+if [ -f "$HOME/.config/shell/env" ]; then
+    . "$HOME/.config/shell/env"
+fi
+
+# Fallback if SCRIPTS_DIR not set
+SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}"
+
 THEMES_DIR="$HOME/.config/themes"
 CURRENT_LINK="$THEMES_DIR/current"
 
@@ -70,5 +78,5 @@ SELECTED=$(printf "%b" "$THEME_LIST" | wofi --dmenu --prompt "Select Theme" --wi
 
 # Switch to selected theme
 if [ -n "$SELECTED" ]; then
-    "$SCRIPTS_DIR/desktop/theme-switcher.sh switch "$SELECTED"
+    "$SCRIPTS_DIR/desktop/theme-switcher.sh" switch "$SELECTED"
 fi
