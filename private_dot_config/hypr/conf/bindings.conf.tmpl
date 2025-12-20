@@ -85,6 +85,10 @@ bind = $mod SHIFT, F, fullscreen, 1
 # Makes floating window behave like tiled (dwindle layout specific)
 bind = $mod, P, pseudo
 
+# Picture-in-picture mode: Super + Shift + P
+# Float, resize to 30%, center, pin, and raise to top
+bind = $mod SHIFT, P, exec, ~/.local/lib/scripts/desktop/window-pop.sh
+
 # Toggle split: Super + J
 # Switches split direction between horizontal/vertical (dwindle layout)
 bind = $mod, J, togglesplit

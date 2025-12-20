@@ -4,6 +4,14 @@
 # Purpose: Switch between themes and reload applications
 # Requirements: Arch Linux, Hyprland, Waybar, Dunst, Ghostty
 
+# Source UI library for monitor-focused notifications
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    # shellcheck source=/home/amaury/.local/lib/scripts/core/gum-ui.sh
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+fi
+
 THEMES_DIR="$HOME/.config/themes"
 CURRENT_LINK="$THEMES_DIR/current"
 
@@ -141,8 +149,10 @@ switch_theme() {
         "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name"
     fi
 
-    # Send desktop notification
-    if command -v notify-send >/dev/null 2>&1; then
+    # Send desktop notification (monitor-focused if available)
+    if command -v ui_notify_focused >/dev/null 2>&1; then
+        ui_notify_focused "Theme Changed" "Switched to $theme_name"
+    elif command -v notify-send >/dev/null 2>&1; then
         notify-send "Theme Changed" "Switched to $theme_name" -t 3000 2>/dev/null
     fi
 }

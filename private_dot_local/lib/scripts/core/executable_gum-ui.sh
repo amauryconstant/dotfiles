@@ -196,7 +196,33 @@ ui_complete() { _ui_render "$1" "🎉 " "$ACCENT_SUCCESS" "${@:2}"; }
 ui_text() { _ui_render "$1" "" "$FG_SECONDARY" "${@:2}"; }
 
 # =============================================================================
-# HEADERS & LAYOUT FUNCTIONS  
+# NOTIFICATION FUNCTIONS
+# =============================================================================
+
+# Send notification to focused monitor (multi-monitor aware)
+# Usage: ui_notify_focused "title" "message" [urgency]
+ui_notify_focused() {
+    local title="$1"
+    local message="$2"
+    local urgency="${3:-normal}"
+
+    # Detect focused monitor via hyprctl
+    local focused_monitor
+    focused_monitor="$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true).name' 2>/dev/null)"
+
+    # Send notification with monitor hint if available
+    if [ -n "$focused_monitor" ]; then
+        notify-send --urgency="$urgency" \
+                    --hint=string:x-canonical-monitor:"$focused_monitor" \
+                    "$title" "$message"
+    else
+        # Fallback to standard notify-send (single monitor or hyprctl unavailable)
+        notify-send --urgency="$urgency" "$title" "$message"
+    fi
+}
+
+# =============================================================================
+# HEADERS & LAYOUT FUNCTIONS
 # =============================================================================
 
 # Display section title with double border
