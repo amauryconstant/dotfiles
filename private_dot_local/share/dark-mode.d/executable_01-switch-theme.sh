@@ -32,6 +32,11 @@ if [ -L "$CURRENT_LINK" ]; then
     if [ "$CURRENT_THEME" != "$DARK_THEME" ]; then
         if [ -d "$THEMES_DIR/$DARK_THEME" ]; then
             ~/.local/lib/scripts/desktop/theme-switcher.sh switch "$DARK_THEME"
+
+            # Call user hook
+            if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                "$HOME/.local/lib/scripts/core/hook-runner.sh" dark-mode-change "dark" 2>/dev/null || true
+            fi
         fi
     fi
 fi

@@ -110,12 +110,15 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .chezmoidata/               # Template data (packages, colors, globals)
 ├── .chezmoiscripts/            # Lifecycle scripts (run_once_*, run_onchange_*)
 ├── .chezmoitemplates/          # Reusable includes (log_*)
+├── .scripts/                   # Repository utilities (omarchy-changes, merge-driver)
 ├── private_dot_config/         # XDG config (hypr, waybar, wofi, zsh, etc.)
+│   ├── dotfiles/hooks/         # User-extensible hooks (6 hook points)
+│   └── themes/                 # Theme system (8 variants with Firefox CSS)
 ├── private_dot_keys/           # 🔐 Encrypted secrets
 ├── private_dot_ssh/            # SSH + encrypted keys
 └── private_dot_local/
-    ├── bin/                    # CLI wrappers (12 executables)
-    └── lib/scripts/            # Script library (46 scripts in 10 categories)
+    ├── bin/                    # CLI wrappers (14 executables)
+    └── lib/scripts/            # Script library (49 scripts in 10 categories)
 ```
 
 **See**: Chezmoi Data Files Reference for data file structure
@@ -127,8 +130,8 @@ chezmoi add --encrypt path/to/file      # Encrypt
 
 | Category | Location | Scripts | CLI Wrappers | Purpose |
 |----------|----------|---------|--------------|---------|
-| Core | `lib/scripts/core/` | 1 | 0 | Foundation library (gum-ui) |
-| Desktop | `lib/scripts/desktop/` | 17 | 1 | Hyprland utilities, theme switching |
+| Core | `lib/scripts/core/` | 3 | 0 | Foundation library (gum-ui, hook system) |
+| Desktop | `lib/scripts/desktop/` | 20 | 1 | Hyprland utilities, theme switching |
 | Development | `lib/scripts/development/` | 0 | 0 | Development tools (reserved) |
 | Git | `lib/scripts/git/` | 1 | 1 | Git utilities (prune-branch) |
 | Media | `lib/scripts/media/` | 4 | 3 | Wallpaper, screenshots, color sorting |
@@ -701,6 +704,107 @@ Decrypt manually and provide needed info.
 **CLI tools**: `private_dot_local/CLAUDE.md#cli-architecture`
 **Desktop configs**: `private_dot_config/CLAUDE.md` (see subdirectories)
 **Shell environment**: `private_dot_config/zsh/CLAUDE.md`
+
+### Hook System (User Extensibility)
+
+**Purpose**: User-extensible event-driven architecture for custom integrations
+
+**Pattern**: Silent hook execution without modifying core scripts
+
+**Hook runner** (`~/.local/lib/scripts/core/hook-runner.sh`):
+```bash
+#!/usr/bin/env sh
+HOOK_NAME="$1"
+shift
+HOOKS_DIR="$HOME/.config/dotfiles/hooks"
+HOOK_PATH="$HOOKS_DIR/$HOOK_NAME"
+
+# Silent execution - hooks are optional
+if [ -x "$HOOK_PATH" ]; then
+    "$HOOK_PATH" "$@" 2>/dev/null || true
+fi
+```
+
+**Integration pattern** (in core scripts):
+```bash
+# Call hook after operation completes
+if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+    "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name" 2>/dev/null || true
+fi
+```
+
+**Available hook points** (6 total):
+| Hook | Trigger | Arguments | Use Case |
+|------|---------|-----------|----------|
+| `theme-change` | theme-switcher.sh | `$theme_name` | Custom app theming (Obsidian, web apps) |
+| `package-sync` | package-manager sync | `sync` | Post-install validation, custom setup |
+| `wallpaper-change` | set-wallpaper.sh | `$wallpaper_path` | External sync (lockscreen, conky) |
+| `dark-mode-change` | darkman scripts | `dark/light` | Web browser themes, external apps |
+| `pre-maintenance` | system-maintenance.sh | none | Backup preparation, service stops |
+| `post-maintenance` | system-maintenance.sh | `success/failure` | Validation, cleanup, notifications |
+
+**User workflow**:
+1. Discovery: `dotfiles-hook-list` (shows available + installed hooks)
+2. Creation: `dotfiles-hook-create` (interactive template generator)
+3. Testing: Trigger event (e.g., `theme switch <name>`)
+4. Version control: `~/.config/dotfiles/hooks/` tracked by chezmoi
+
+**Example hook** (`~/.config/dotfiles/hooks/theme-change`):
+```bash
+#!/usr/bin/env sh
+# Custom theme integration for Obsidian
+
+THEME_NAME="$1"
+
+# Map dotfiles theme to Obsidian theme
+case "$THEME_NAME" in
+    catppuccin-latte)
+        OBSIDIAN_THEME="Catppuccin Latte"
+        ;;
+    catppuccin-mocha)
+        OBSIDIAN_THEME="Catppuccin Mocha"
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+# Update Obsidian config (if installed)
+OBSIDIAN_CONFIG="$HOME/.config/obsidian/config.json"
+if [ -f "$OBSIDIAN_CONFIG" ]; then
+    jaq --arg theme "$OBSIDIAN_THEME" \
+        '.cssTheme = $theme' \
+        "$OBSIDIAN_CONFIG" > "$OBSIDIAN_CONFIG.tmp"
+    mv "$OBSIDIAN_CONFIG.tmp" "$OBSIDIAN_CONFIG"
+fi
+```
+
+**See**: `private_dot_local/lib/scripts/CLAUDE.md` for complete hook documentation
+
+### Enhanced Theme Switching
+
+**Extended app coverage** beyond core apps (terminal, waybar, dunst, wofi):
+
+**VSCode** (`theme-apply-vscode.sh`):
+- Maps dotfiles theme to VSCode theme extension
+- Updates settings.json via jaq
+- Silent failure if VSCode not installed
+
+**Firefox** (`theme-apply-firefox.sh`):
+- Symlinks userChrome.css from `~/.config/themes/{variant}/`
+- Creates chrome/ directory if needed
+- Requires `toolkit.legacyUserProfileCustomizations.stylesheets = true`
+
+**Spotify** (`theme-apply-spotify.sh`):
+- Maps to spicetify color schemes
+- Optional (skips if spicetify-cli not installed)
+
+**Integration**: All theme-apply scripts called by `theme-switcher.sh` after reload_applications()
+
+**Firefox themes**: 8 userChrome.css files in `~/.config/themes/{variant}/` (catppuccin-latte, catppuccin-mocha, rose-pine-dawn, rose-pine-moon, gruvbox-light, gruvbox-dark, solarized-light, solarized-dark)
+
+**See**: `private_dot_config/themes/CLAUDE.md` for theme system architecture
+**See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 
 ### Validation Checklist
 

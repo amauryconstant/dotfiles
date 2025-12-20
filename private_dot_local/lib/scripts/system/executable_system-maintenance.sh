@@ -6,6 +6,7 @@
 
 # Source UI library
 if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    # shellcheck source=/dev/null
     . "$UI_LIB"
 elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
     . "$HOME/.local/lib/scripts/core/gum-ui.sh"
@@ -31,14 +32,29 @@ system-maintenance() {
             return 0
             ;;
         --update)
+            # Call pre-maintenance hook
+            if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                "$HOME/.local/lib/scripts/core/hook-runner.sh" pre-maintenance 2>/dev/null || true
+            fi
+
             ui_title "SYSTEM UPDATE"
             if command -v pacman >/dev/null 2>&1; then
                 ui_step "Updating packages..."
                 if sudo pacman -Syu --noconfirm; then
                     ui_success "System update completed"
+
+                    # Call post-maintenance hook
+                    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                        "$HOME/.local/lib/scripts/core/hook-runner.sh" post-maintenance "success" 2>/dev/null || true
+                    fi
                     return 0
                 else
                     ui_error "System update failed"
+
+                    # Call post-maintenance hook with failure status
+                    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                        "$HOME/.local/lib/scripts/core/hook-runner.sh" post-maintenance "failure" 2>/dev/null || true
+                    fi
                     return 1
                 fi
             else
@@ -47,6 +63,11 @@ system-maintenance() {
             fi
             ;;
         --cleanup)
+            # Call pre-maintenance hook
+            if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                "$HOME/.local/lib/scripts/core/hook-runner.sh" pre-maintenance 2>/dev/null || true
+            fi
+
             ui_title "SYSTEM CLEANUP"
 
             # Clean package cache
@@ -75,6 +96,11 @@ system-maintenance() {
             fi
 
             ui_success "System cleanup completed"
+
+            # Call post-maintenance hook
+            if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+                "$HOME/.local/lib/scripts/core/hook-runner.sh" post-maintenance "success" 2>/dev/null || true
+            fi
             return 0
             ;;
         "")

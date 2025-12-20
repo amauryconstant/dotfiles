@@ -17,11 +17,12 @@
 ## Directory Structure
 
 ```
-~/.local/lib/scripts/   # 46 total scripts
-├── core/               # 2 files - Foundation
+~/.local/lib/scripts/   # 49 total scripts
+├── core/               # 3 files - Foundation
 │   ├── gum-ui.sh       # 572-line UI library
-│   └── colors.sh.tmpl  # Oksolar color definitions
-├── desktop/            # 17 files - Hyprland utilities
+│   ├── colors.sh.tmpl  # Oksolar color definitions
+│   └── hook-runner.sh  # User hook execution engine
+├── desktop/            # 20 files - Hyprland utilities
 ├── media/              # 3 files - Wallpaper, screenshots
 ├── system/             # 6 files - Maintenance, health
 ├── terminal/           # 1 file - CWD preservation
@@ -34,7 +35,42 @@
 
 ## Category Details
 
-### Desktop Utilities (16 scripts)
+### Core Foundation (3 scripts)
+**Purpose**: Foundation libraries and hook system
+**Dependencies**: None (self-contained)
+
+**Hook System**:
+- `hook-runner.sh` - User-extensible hook execution engine
+  - Pattern: Silent execution (`2>/dev/null || true`)
+  - Location: `~/.config/dotfiles/hooks/`
+  - Purpose: Execute user hooks without modifying core scripts
+  - Usage: `hook-runner.sh <hook-name> [args...]`
+
+**Hook execution pattern**:
+```bash
+# In core scripts
+if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+    "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name" 2>/dev/null || true
+fi
+```
+
+**Available hook points** (6 total):
+| Hook | Triggered By | Arguments | Use Case |
+|------|--------------|-----------|----------|
+| `theme-change` | theme-switcher.sh | `$theme_name` | Custom app theming |
+| `package-sync` | package-manager sync | `sync` | Post-install validation |
+| `wallpaper-change` | set-wallpaper.sh | `$wallpaper_path` | External sync (e.g., lockscreen) |
+| `dark-mode-change` | darkman scripts | `dark/light` | Web app themes |
+| `pre-maintenance` | system-maintenance.sh | none | Backup preparation |
+| `post-maintenance` | system-maintenance.sh | `success/failure` | Validation, cleanup |
+
+**Hook discovery**:
+- CLI: `dotfiles-hook-list` (shows available + installed hooks)
+- CLI: `dotfiles-hook-create` (interactive hook template generator)
+
+**UI Library**: See `core/CLAUDE.md` for gum-ui.sh reference
+
+### Desktop Utilities (20 scripts)
 **Purpose**: Hyprland desktop utilities
 **Dependencies**: hyprctl, notify-send, jaq (JSON)
 
@@ -61,12 +97,35 @@
 - `workspace-gaps-toggle.sh`, `workspace-gaps-reset.sh` - Gap controls (use `notify-send`)
 - `idle-toggle.sh` - Idle management (uses `notify-send`)
 
+**Theme System**:
+- `theme-switcher.sh` - Theme selection menu (uses `notify-send`)
+  - Calls reload_applications() for terminal, waybar, dunst, wofi
+  - Calls theme-apply scripts for extended app coverage
+  - Triggers theme-change hook for user customization
+
+- `theme-apply-vscode.sh` - VSCode theme synchronization
+  - Maps dotfiles theme to VSCode theme extension
+  - Updates settings.json via jaq (JSON processing)
+  - Silent failure if VSCode not installed
+  - Mappings: catppuccin-latte → "Catppuccin Latte", etc.
+
+- `theme-apply-firefox.sh` - Firefox userChrome.css theming
+  - Symlinks userChrome.css from `~/.config/themes/{variant}/`
+  - Finds Firefox profile dynamically
+  - Creates chrome/ directory if needed
+  - Requires: `toolkit.legacyUserProfileCustomizations.stylesheets = true` in about:config
+
+- `theme-apply-spotify.sh` - Spotify theme integration
+  - Maps theme to spicetify color scheme
+  - Applies via `spicetify config` + `spicetify apply`
+  - Optional: Skips if spicetify-cli not installed
+  - Mappings: catppuccin, rosepine, gruvbox, solarized
+
 **Other Utilities**:
 - `audio-switch.sh` - Audio device switching (uses `notify-send`)
 - `screenrecord.sh` - Screen recording (uses `notify-send`)
 - `system-settings.sh` - Launch system settings (uses `notify-send`)
 - `wlogout.sh` - Logout menu launcher
-- `theme-switcher.sh` - Theme selection menu (uses `notify-send`)
 
 ### Media Scripts (3 scripts)
 **Purpose**: Media capture and wallpaper management

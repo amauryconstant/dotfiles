@@ -1,0 +1,59 @@
+/* Firefox userChrome.css - Solarized Light Theme */
+/* Requires: toolkit.legacyUserProfileCustomizations.stylesheets = true in about:config */
+
+:root {
+  --bg-primary: #fdf6e3;
+  --bg-secondary: #eee8d5;
+  --bg-tertiary: #d3cbb7;
+  --fg-primary: #657b83;
+  --fg-secondary: #586e75;
+  --fg-muted: #93a1a1;
+  --accent-primary: #268bd2;
+  --accent-border: #2aa198;
+  --accent-info: #2aa198;
+}
+
+/* Tab bar */
+#TabsToolbar {
+  background-color: var(--bg-primary) !important;
+}
+
+.tabbrowser-tab[selected] .tab-background {
+  background-color: var(--bg-secondary) !important;
+}
+
+.tabbrowser-tab:not([selected]) .tab-background {
+  background-color: var(--bg-primary) !important;
+}
+
+.tab-text {
+  color: var(--fg-primary) !important;
+}
+
+.tabbrowser-tab:not([selected]) .tab-text {
+  color: var(--fg-secondary) !important;
+}
+
+/* URL bar */
+#urlbar,
+#searchbar {
+  background-color: var(--bg-secondary) !important;
+  color: var(--fg-primary) !important;
+  border-color: var(--bg-tertiary) !important;
+}
+
+#urlbar[focused],
+#searchbar[focused] {
+  border-color: var(--accent-border) !important;
+}
+
+/* Toolbar */
+#nav-bar {
+  background-color: var(--bg-primary) !important;
+}
+
+/* Sidebar */
+#sidebar-box {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--bg-tertiary) !important;
+}

@@ -112,7 +112,7 @@ switch_theme() {
 
     # Select random wallpaper from new theme if wallpapers exist
     wallpaper_dir="$HOME/.config/wallpapers/$theme_name"
-    if [ -d "$wallpaper_dir" ] && [ "$(ls -A "$wallpaper_dir" 2>/dev/null | grep -E '\.(jpg|jpeg|png|webp)$')" ]; then
+    if [ -d "$wallpaper_dir" ] && find "$wallpaper_dir" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) -print -quit 2>/dev/null | grep -q .; then
         wallpaper=$(find "$wallpaper_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
         if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
             # Call set-wallpaper script if it exists
@@ -124,6 +124,22 @@ switch_theme() {
 
     # Reload applications
     reload_applications
+
+    # Apply theme to additional applications
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-vscode.sh" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-vscode.sh" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-firefox.sh" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-firefox.sh" 2>/dev/null || true
+    fi
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-spotify.sh" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-spotify.sh" 2>/dev/null || true
+    fi
+
+    # Call user hook
+    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+        "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name"
+    fi
 
     # Send desktop notification
     if command -v notify-send >/dev/null 2>&1; then

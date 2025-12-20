@@ -18,18 +18,18 @@ if [ -z "$WINDOW_PATTERN" ]; then
 fi
 
 # Query all windows and find matching class or title
-# Uses case-insensitive regex matching on both fields
+# Uses case-insensitive regex matching with word boundaries
 WINDOW_ADDRESS=$(hyprctl clients -j | jaq -r \
     --arg pattern "$WINDOW_PATTERN" \
     '.[] | select(
-        (.class | test($pattern; "i")) or
-        (.title | test($pattern; "i"))
+        (.class | test("\\b" + $pattern + "\\b"; "i")) or
+        (.title | test("\\b" + $pattern + "\\b"; "i"))
     ) | .address' | head -n1)
 
 if [ -n "$WINDOW_ADDRESS" ]; then
     # Window exists - focus it
     hyprctl dispatch focuswindow "address:$WINDOW_ADDRESS"
 else
-    # Window doesn't exist - launch application
-    $LAUNCH_COMMAND &
+    # Window doesn't exist - launch application with proper detachment
+    setsid -f $LAUNCH_COMMAND >/dev/null 2>&1
 fi

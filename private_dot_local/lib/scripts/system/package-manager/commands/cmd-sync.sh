@@ -72,6 +72,11 @@ cmd_sync() {
     # Phase 5: Display summary and update lockfile
     _sync_finalize sync_results
 
+    # Call user hook
+    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+        "$HOME/.local/lib/scripts/core/hook-runner.sh" package-sync "sync" 2>/dev/null || true
+    fi
+
     ui_success "Sync complete!"
     return 0
 }

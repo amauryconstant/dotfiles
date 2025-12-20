@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: set-wallpaper.sh
 # Purpose: Change wallpaper using swww
@@ -40,5 +40,10 @@ fi
 swww img "$WALLPAPER_PATH" \
     --transition-type "$TRANSITION_TYPE" \
     --transition-duration "$TRANSITION_DURATION"
+
+# Call user hook
+if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
+    "$HOME/.local/lib/scripts/core/hook-runner.sh" wallpaper-change "$WALLPAPER_PATH" 2>/dev/null || true
+fi
 
 {{ includeTemplate "log_complete" "Wallpaper updated successfully" }}
