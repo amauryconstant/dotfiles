@@ -8,22 +8,41 @@
 # Get current workspace ID
 workspace_id=$(hyprctl activeworkspace -j | jaq -r '.id')
 
-# Get current gap settings for this workspace
-current_gaps_in=$(hyprctl getoption general:gaps_in -j | jaq -r '.int')
-current_gaps_out=$(hyprctl getoption general:gaps_out -j | jaq -r '.int')
-current_border=$(hyprctl getoption general:border_size -j | jaq -r '.int')
+# Read default values from general.conf (no hardcoding)
+DEFAULT_GAPS_IN=$(hyprctl getoption general:gaps_in -j | jaq -r '.int')
+DEFAULT_GAPS_OUT=$(hyprctl getoption general:gaps_out -j | jaq -r '.int')
+DEFAULT_BORDER=$(hyprctl getoption general:border_size -j | jaq -r '.int')
 
-# Toggle logic: if any gaps or borders exist, remove them; otherwise restore
-if [ "$current_gaps_in" -gt 0 ] || [ "$current_gaps_out" -gt 0 ] || [ "$current_border" -gt 0 ]; then
-    # Immersive mode: No gaps, no borders
-    hyprctl keyword workspace "$workspace_id,gapsout:0"
-    hyprctl keyword workspace "$workspace_id,gapsin:0"
-    hyprctl keyword workspace "$workspace_id,bordersize:0"
-    notify-send "Workspace $workspace_id" "Immersive mode enabled" -t 2000
+# Check if workspace has a custom rule
+current_rule=$(hyprctl workspacerules -j | jaq -r \
+  --arg id "$workspace_id" \
+  '.[] | select(.workspaceString == $id)')
+
+# Determine current state
+if [ -n "$current_rule" ]; then
+    # Workspace has a rule - check its gap settings
+    gaps_out=$(echo "$current_rule" | jaq -r '.gapsOut[0] // empty')
+
+    if [ "$gaps_out" = "0" ]; then
+        # Currently immersive, restore defaults
+        hyprctl keyword workspace "$workspace_id,gapsout:$DEFAULT_GAPS_OUT,gapsin:$DEFAULT_GAPS_IN,bordersize:$DEFAULT_BORDER"
+        notify-send "Workspace $workspace_id" "Normal mode restored" -t 2000
+    else
+        # Currently normal, enable immersive
+        hyprctl keyword workspace "$workspace_id,gapsout:0,gapsin:0,bordersize:0"
+        notify-send "Workspace $workspace_id" "Immersive mode enabled" -t 2000
+    fi
 else
-    # Normal mode: Restore default gaps and borders
-    hyprctl keyword workspace "$workspace_id,gapsout:5"
-    hyprctl keyword workspace "$workspace_id,gapsin:10"
-    hyprctl keyword workspace "$workspace_id,bordersize:2"
-    notify-send "Workspace $workspace_id" "Normal mode restored" -t 2000
+    # No workspace rule - check global config state
+    current_gaps=$(hyprctl getoption general:gaps_out -j | jaq -r '.int')
+
+    if [ "$current_gaps" -gt 0 ]; then
+        # Currently normal, enable immersive
+        hyprctl keyword workspace "$workspace_id,gapsout:0,gapsin:0,bordersize:0"
+        notify-send "Workspace $workspace_id" "Immersive mode enabled" -t 2000
+    else
+        # Currently immersive, restore defaults
+        hyprctl keyword workspace "$workspace_id,gapsout:$DEFAULT_GAPS_OUT,gapsin:$DEFAULT_GAPS_IN,bordersize:$DEFAULT_BORDER"
+        notify-send "Workspace $workspace_id" "Normal mode restored" -t 2000
+    fi
 fi

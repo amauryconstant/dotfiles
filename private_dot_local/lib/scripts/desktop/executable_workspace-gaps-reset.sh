@@ -1,10 +1,13 @@
 #!/usr/bin/env sh
 
 # Script: workspace-gaps-reset.sh
-# Purpose: Reset workspace gaps to default
-# Requirements: Arch Linux, Hyprland
+# Purpose: Reset workspace gaps to default (remove workspace-specific rule)
+# Requirements: Arch Linux, Hyprland, jaq
 
-# Reset gaps to default values
-hyprctl keyword general:gaps_in 5
-hyprctl keyword general:gaps_out 20
-notify-send "󰝘 Workspace Gaps" "Reset to default values"
+# Get current workspace ID
+workspace_id=$(hyprctl activeworkspace -j | jaq -r '.id')
+
+# Remove workspace-specific rule (reverts to general.conf defaults)
+hyprctl keyword workspace "$workspace_id,default"
+
+notify-send "󰝘 Workspace $workspace_id" "Reset to default gaps"

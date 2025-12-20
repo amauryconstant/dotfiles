@@ -42,23 +42,40 @@ case "$MODE" in
         # Smart mode: area selection with auto-snap
         GEOMETRY=$(slurp 2>/dev/null)
 
-        # If selection is tiny (<20px), assume accidental click
-        # Snap to containing window instead
+        # Configurable threshold (default 20px)
+        SMART_THRESHOLD="${SMART_THRESHOLD:-20}"
+
+        # If selection is tiny, assume accidental click
+        # Snap to containing window or monitor instead
         if [ -n "$GEOMETRY" ]; then
             WIDTH=$(echo "$GEOMETRY" | cut -d'x' -f1 | cut -d' ' -f2)
             HEIGHT=$(echo "$GEOMETRY" | cut -d'x' -f2 | cut -d'+' -f1)
 
-            if [ "$WIDTH" -lt 20 ] || [ "$HEIGHT" -lt 20 ]; then
+            if [ "$WIDTH" -lt "$SMART_THRESHOLD" ] || [ "$HEIGHT" -lt "$SMART_THRESHOLD" ]; then
                 # Get mouse position
                 MOUSE_POS=$(slurp -p 2>/dev/null)
-                # Find window at that position and get its geometry
+
+                # Find window at that position (focused window prioritized)
                 GEOMETRY=$(hyprctl -j clients | jaq -r \
                     --arg pos "$MOUSE_POS" \
-                    '.[] | select(.at[0] <= ($pos | split(",")[0] | tonumber) and
-                                  .at[1] <= ($pos | split(",")[1] | tonumber) and
-                                  (.at[0] + .size[0]) >= ($pos | split(",")[0] | tonumber) and
-                                  (.at[1] + .size[1]) >= ($pos | split(",")[1] | tonumber)) |
-                     "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | head -n1)
+                    '[.[] | select(.at[0] <= ($pos | split(",")[0] | tonumber) and
+                                   .at[1] <= ($pos | split(",")[1] | tonumber) and
+                                   (.at[0] + .size[0]) >= ($pos | split(",")[0] | tonumber) and
+                                   (.at[1] + .size[1]) >= ($pos | split(",")[1] | tonumber))] |
+                     sort_by(if .focus then 0 else 1 end) |
+                     .[0] |
+                     "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+
+                # If no window found, fall back to monitor bounds
+                if [ -z "$GEOMETRY" ]; then
+                    GEOMETRY=$(hyprctl monitors -j | jaq -r \
+                        --arg pos "$MOUSE_POS" \
+                        '.[] | select(.x <= ($pos | split(",")[0] | tonumber) and
+                                      .y <= ($pos | split(",")[1] | tonumber) and
+                                      (.x + .width) >= ($pos | split(",")[0] | tonumber) and
+                                      (.y + .height) >= ($pos | split(",")[1] | tonumber)) |
+                         "\(.x),\(.y) \(.width)x\(.height)"' | head -n1)
+                fi
             fi
         fi
         ;;

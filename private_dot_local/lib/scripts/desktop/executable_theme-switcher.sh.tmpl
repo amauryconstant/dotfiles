@@ -15,6 +15,12 @@ fi
 THEMES_DIR="$HOME/.config/themes"
 CURRENT_LINK="$THEMES_DIR/current"
 
+# Format theme name for display (kebab-case → Title Case)
+# Usage: format_theme_name "catppuccin-latte" → "Catppuccin Latte"
+format_theme_name() {
+    echo "$1" | sed -E 's/(^|-)([a-z])/\1\u\2/g; s/-/ /g'
+}
+
 # Display usage information
 show_usage() {
     cat <<EOF
@@ -37,14 +43,15 @@ list_themes() {
         [ -d "$theme_dir" ] || continue
         theme=$(basename "$theme_dir")
         [ "$theme" = "current" ] && continue
-        echo "$theme"
+        format_theme_name "$theme"
     done | sort
 }
 
 # Get current theme name
 get_current_theme() {
     if [ -L "$CURRENT_LINK" ]; then
-        readlink "$CURRENT_LINK" | xargs basename
+        theme=$(readlink "$CURRENT_LINK" | xargs basename)
+        format_theme_name "$theme"
     else
         echo "none"
     fi
@@ -150,10 +157,11 @@ switch_theme() {
     fi
 
     # Send desktop notification (monitor-focused if available)
+    formatted_name=$(format_theme_name "$theme_name")
     if command -v ui_notify_focused >/dev/null 2>&1; then
-        ui_notify_focused "Theme Changed" "Switched to $theme_name"
+        ui_notify_focused "Theme Changed" "Switched to $formatted_name"
     elif command -v notify-send >/dev/null 2>&1; then
-        notify-send "Theme Changed" "Switched to $theme_name" -t 3000 2>/dev/null
+        notify-send "Theme Changed" "Switched to $formatted_name" -t 3000 2>/dev/null
     fi
 }
 
