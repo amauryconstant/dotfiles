@@ -1,10 +1,11 @@
 #!/usr/bin/env sh
 
 # Script: run_onchange_after_install_extensions.sh.tmpl
-# Purpose: Install VSCode extensions for Arch Linux work environment
-# Requirements: Arch Linux, code (VSCode)
+# Purpose: Install VSCode extensions and Firefox policies for Arch Linux work environment
+# Requirements: Arch Linux, code (VSCode), firefox
 
 # Hash: {{ .extensions.code | toJson | sha256sum }}
+# Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
 
 {{ includeTemplate "log_start" "Installing extensions for Arch Linux..." }}
 

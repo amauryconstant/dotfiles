@@ -21,6 +21,11 @@
                 "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ffwebextension@merciappcom/latest.xpi",
                 "default_area": "navbar"
             },
+            "addon@karakeep.app": {
+                "installation_mode": "normal_installed",
+                "install_url": "https://addons.mozilla.org/firefox/downloads/latest/addon@karakeep.app/latest.xpi",
+                "default_area": "navbar"
+            },
             "leechblockng@proginosko.com": {
                 "installation_mode": "normal_installed",
                 "install_url": "https://addons.mozilla.org/firefox/downloads/latest/leechblockng@proginosko.com/latest.xpi",
