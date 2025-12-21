@@ -1,6 +1,12 @@
 extensions:
   code:
-    - ginfuru.ginfuru-better-solarized-dark-theme
+    # Theme extensions (8 variants: Catppuccin, Rose Pine, Gruvbox, Solarized)
+    - catppuccin.catppuccin-vsc                    # Catppuccin Latte + Mocha
+    - mvllow.rose-pine                             # Rose Pine Dawn + Moon
+    - jdinhlife.gruvbox                            # Gruvbox Light Hard + Dark Hard
+    - ginfuru.ginfuru-better-solarized-dark-theme  # Solarized Light + Dark
+
+    # Language and tool extensions
     - tamasfe.even-better-toml
     - ms-python.black-formatter
     - ms-python.debugpy
