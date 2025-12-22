@@ -180,6 +180,7 @@ packages:
         - mise             # Polyglot runtime manager (asdf alternative)
         - docker           # Container runtime platform
         - docker-buildx    # Docker extended build capabilities
+        - docker-compose   # Docker Compose plugin
         - go               # Go programming language
         - python           # Python runtime
         - rust             # Rust compiler and cargo
