@@ -500,6 +500,62 @@ find . -name "pattern" -type f
 
 **Hash-based change detection**: `run_onchange` scripts track content hash. The `{{ .packages | toJson | sha256sum }}` comment triggers re-execution when packages.yaml changes.
 
+### GPU Driver Selection
+
+**Auto-detection**: NVIDIA driver selection based on GPU generation
+
+**Architecture support**:
+- **Modern** (nvidia-open-dkms): Turing+ (GTX 16xx, RTX 20xx/30xx/40xx)
+- **Legacy** (nvidia-580xx-dkms): Pascal/Maxwell (GTX 9xx/10xx)
+
+**Detection logic** (`.chezmoi.yaml.tmpl`):
+1. Check `NVIDIA_DRIVER_OVERRIDE` env var
+2. Parse lspci for GPU model
+3. Pattern match: GTX 9xx/10xx → legacy, else → modern
+4. Default: modern (safe for new systems)
+
+**Package modules** (`packages.yaml`):
+- `graphics_drivers_modern`: nvidia-open-dkms, nvidia-utils (enabled by default)
+- `graphics_drivers_legacy`: nvidia-580xx-dkms, nvidia-580xx-utils (disabled by default)
+- **Dynamic selection**: Sync script enables correct module based on `.nvidiaDriverType`
+
+**Manual override**:
+```bash
+# Force legacy drivers (Pascal/Maxwell GPUs)
+export NVIDIA_DRIVER_OVERRIDE=legacy
+chezmoi apply
+
+# Force modern drivers (Turing+ GPUs)
+export NVIDIA_DRIVER_OVERRIDE=modern
+chezmoi apply
+
+# Clear override (restore auto-detection)
+unset NVIDIA_DRIVER_OVERRIDE
+chezmoi data | jaq -r '.nvidiaDriverType'  # Verify detection
+```
+
+**Migration safety**:
+- Interactive prompt before driver changes (integrated in validation script)
+- Automatic cleanup of conflicting drivers
+- Validation script checks correct driver installed
+- Requires reboot after driver change
+
+**Troubleshooting**:
+```bash
+# Check detection
+chezmoi data | jaq -r '.nvidiaDriverType'
+
+# View detected GPU
+chezmoi data | jaq -r '.nvidiaGpuDetected'
+
+# Preview which packages will be installed
+chezmoi execute-template < .chezmoiscripts/run_onchange_before_sync_packages.sh.tmpl | grep -A5 "NVIDIA"
+
+# Manual fallback
+export NVIDIA_DRIVER_OVERRIDE=legacy  # or modern
+chezmoi apply
+```
+
 **Package manager integration**: Calls `package-manager sync --prune` which handles Arch and Flatpak packages, respects version constraints, handles conflicts, and validates packages.
 
 **Script Numbering**:
@@ -531,11 +587,11 @@ find . -name "pattern" -type f
    - 999: SSH remote switch
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (22 total)
+### Current Scripts (21 total)
 
 **run_once_before_* (7)**:
 - 000: Preflight checks (sudo, git, network, pacman)
-- 001: Hyprland session validation (packages, drivers, Wayland, SDDM)
+- 001: Hyprland session validation + NVIDIA driver migration check
 - 002: Package manager setup + dependencies (paru, yq, gum)
 - 003: Locale configuration
 - 004: Directory creation

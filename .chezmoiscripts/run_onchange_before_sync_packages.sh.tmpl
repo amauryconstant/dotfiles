@@ -16,16 +16,45 @@ set -euo pipefail
 # Package data location
 PACKAGES_FILE="$HOME/.local/share/chezmoi/.chezmoidata/packages.yaml"
 
-{{ includeTemplate "log_step" "Extracting package lists from all modules..." }}
+# Auto-select NVIDIA driver module based on GPU detection
+NVIDIA_DRIVER_TYPE="{{ .nvidiaDriverType }}"
+TEMP_PACKAGES_FILE="/tmp/packages-$$.yaml"
+cp "$PACKAGES_FILE" "$TEMP_PACKAGES_FILE"
 
-# Extract all Arch/AUR packages (flatten all modules, ignore enabled status)
-ARCH_PACKAGES=$(yq eval '.packages.modules.[].packages[] | select(. | test("^flatpak:") | not)' "$PACKAGES_FILE" 2>/dev/null | sort -u)
+{{ includeTemplate "log_step" "Configuring NVIDIA driver selection (type: {{ .nvidiaDriverType }})..." }}
 
-# Extract all Flatpak packages (strip flatpak: prefix)
-FLATPAK_PACKAGES=$(yq eval '.packages.modules.[].packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$PACKAGES_FILE" 2>/dev/null | sort -u)
+if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
+    # Enable legacy, disable modern
+    yq eval '.packages.modules.graphics_drivers_legacy.enabled = true | .packages.modules.graphics_drivers_modern.enabled = false' -i "$TEMP_PACKAGES_FILE"
+    {{ includeTemplate "log_info" "Using legacy NVIDIA drivers (nvidia-580xx-dkms)" }}
+else
+    # Enable modern, disable legacy
+    yq eval '.packages.modules.graphics_drivers_modern.enabled = true | .packages.modules.graphics_drivers_legacy.enabled = false' -i "$TEMP_PACKAGES_FILE"
+    {{ includeTemplate "log_info" "Using modern NVIDIA drivers (nvidia-open-dkms)" }}
+fi
+
+{{ includeTemplate "log_step" "Extracting package lists from enabled modules..." }}
+
+# Extract all Arch/AUR packages (only from enabled modules)
+ARCH_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:") | not)' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
+
+# Extract all Flatpak packages (only from enabled modules, strip flatpak: prefix)
+FLATPAK_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
 
 # Extract packages to delete
-DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$PACKAGES_FILE" 2>/dev/null | sort -u)
+DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
+
+# Add conditional NVIDIA driver cleanup
+if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
+    # Clean up modern drivers when using legacy
+    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open-dkms" | sort -u)
+else
+    # Clean up legacy drivers when using modern
+    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-580xx-dkms\nnvidia-580xx-utils\nlib32-nvidia-580xx-utils" | sort -u)
+fi
+
+# Cleanup temp file
+rm -f "$TEMP_PACKAGES_FILE"
 
 # Count packages
 ARCH_COUNT=$(echo "$ARCH_PACKAGES" | grep -c '^' || echo 0)

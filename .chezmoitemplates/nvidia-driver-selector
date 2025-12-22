@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Template: nvidia-driver-selector
+# Purpose: Select correct NVIDIA driver module based on GPU detection
+# Usage: Sourced by sync_packages script to modify package configuration
+
+NVIDIA_DRIVER_TYPE="{{ .nvidiaDriverType }}"
+
+if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
+    # Enable legacy, disable modern
+    yq eval '.packages.modules.graphics_drivers_legacy.enabled = true | .packages.modules.graphics_drivers_modern.enabled = false' -i "$1"
+else
+    # Enable modern, disable legacy
+    yq eval '.packages.modules.graphics_drivers_modern.enabled = true | .packages.modules.graphics_drivers_legacy.enabled = false' -i "$1"
+fi

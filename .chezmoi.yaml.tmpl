@@ -7,7 +7,24 @@
 {{ $nameDict := splitn " " 2 $fullname }}
 
 
-{{- $chassisType := (output "hostnamectl" "--json=short" | mustFromJson).Chassis | default "desktop" }}
+{{- $chassisType := (output "hostnamectl" "--json=short" | mustFromJson).Chassis | default "desktop" -}}
+
+{{/* Detect NVIDIA GPU generation for driver selection */}}
+{{- $nvidiaDriverType := "modern" -}}
+{{- $nvidiaGpuName := "" -}}
+
+{{/* Check for environment variable override first */}}
+{{- if env "NVIDIA_DRIVER_OVERRIDE" -}}
+{{-   $nvidiaDriverType = env "NVIDIA_DRIVER_OVERRIDE" -}}
+{{- else -}}
+{{-   $lspciOutput := output "lspci" | lower -}}
+{{-   if regexMatch "nvidia.*\\[(gtx|rtx|titan|quadro|tesla|geforce)" $lspciOutput -}}
+{{-     if regexMatch "gtx (9[0-9]{2}|10[0-9]{2})|titan (x|xp|z)\\b|quadro (m|p)[0-9]" $lspciOutput -}}
+{{-       $nvidiaDriverType = "legacy" -}}
+{{-       $nvidiaGpuName = regexFind "nvidia.*\\[.*\\]" $lspciOutput -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
 
 
 encryption: "age"
@@ -30,6 +47,8 @@ data:
     currentDesktop: {{ env "XDG_CURRENT_DESKTOP" | quote }}
     ovhServerIP: {{ $ovhServerIP }}
     ovhServerPort: {{ $ovhServerPort }}
+    nvidiaDriverType: {{ $nvidiaDriverType | quote }}
+    nvidiaGpuDetected: {{ $nvidiaGpuName | quote }}
 
 diff:
   pager: "delta"

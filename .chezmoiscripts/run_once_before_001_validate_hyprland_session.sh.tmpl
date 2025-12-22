@@ -44,10 +44,14 @@ fi
 
 # Check for NVIDIA drivers (common crash source)
 if lspci | grep -i nvidia >/dev/null 2>&1; then
-    {{ includeTemplate "log_info" "NVIDIA GPU detected, checking drivers..." }}
+{{- $gpuName := .nvidiaGpuDetected | default "unknown" }}
+    {{ includeTemplate "log_info" (printf "NVIDIA GPU detected: %s" $gpuName) }}
+    {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
 
-    if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
-        {{ includeTemplate "log_success" "NVIDIA drivers installed" }}
+{{- if eq .nvidiaDriverType "legacy" }}
+    # Legacy driver validation (nvidia-580xx)
+    if pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "NVIDIA legacy drivers (580xx) installed" }}
 
         # Verify DKMS modules are built
         if ! modinfo nvidia >/dev/null 2>&1; then
@@ -56,8 +60,77 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         fi
     else
         {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
-        {{ includeTemplate "log_info" "Fix: Enable graphics_drivers module in packages.yaml" }}
+        {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
         VALIDATION_FAILED=true
+    fi
+{{- else }}
+    # Modern driver validation (nvidia-open-dkms or nvidia-dkms)
+    if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "NVIDIA modern drivers installed" }}
+
+        # Verify DKMS modules are built
+        if ! modinfo nvidia >/dev/null 2>&1; then
+            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
+            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+        fi
+    else
+        {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
+        {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
+        VALIDATION_FAILED=true
+    fi
+{{- end }}
+
+    # Check for driver migration (if NVIDIA GPU detected)
+    {{ includeTemplate "log_step" "Checking for driver migration..." }}
+    CURRENT_DRIVER=""
+    if pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
+        CURRENT_DRIVER="modern"
+    elif pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
+        CURRENT_DRIVER="legacy"
+    fi
+
+    TARGET_DRIVER="{{ .nvidiaDriverType }}"
+
+    if [ -n "$CURRENT_DRIVER" ] && [ "$CURRENT_DRIVER" != "$TARGET_DRIVER" ]; then
+        echo ""
+        echo "════════════════════════════════════════════════════════════════"
+        echo "  ⚠️  NVIDIA DRIVER MIGRATION DETECTED"
+        echo "════════════════════════════════════════════════════════════════"
+        echo ""
+        echo "  Current driver: $CURRENT_DRIVER"
+        echo "  Target driver:  $TARGET_DRIVER"
+        echo ""
+        echo "  Detected GPU: {{ .nvidiaGpuDetected | default "unknown" }}"
+        echo ""
+        echo "  This migration will:"
+        if [ "$CURRENT_DRIVER" = "modern" ]; then
+            echo "    1. Remove nvidia-open-dkms, nvidia-utils, lib32-nvidia-utils"
+            echo "    2. Install nvidia-580xx-dkms, nvidia-580xx-utils, lib32-nvidia-580xx-utils"
+        else
+            echo "    1. Remove nvidia-580xx-dkms, nvidia-580xx-utils, lib32-nvidia-580xx-utils"
+            echo "    2. Install nvidia-open-dkms, nvidia-utils, lib32-nvidia-utils"
+        fi
+        echo "    3. Rebuild kernel modules via DKMS"
+        echo "    4. Require reboot to activate new drivers"
+        echo ""
+        echo "  Safety recommendations:"
+        echo "    • Ensure you have alternate access (SSH/TTY)"
+        echo "    • Close all GPU-intensive applications"
+        echo "    • Save all work before proceeding"
+        echo ""
+        echo "════════════════════════════════════════════════════════════════"
+        echo ""
+
+        read -p "  Continue with driver migration? [y/N] " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            {{ includeTemplate "log_error" "Driver migration cancelled by user" }}
+            exit 1
+        fi
+
+        {{ includeTemplate "log_warning" "Proceeding with driver migration..." }}
+    else
+        {{ includeTemplate "log_success" "No driver migration needed" }}
     fi
 fi
 

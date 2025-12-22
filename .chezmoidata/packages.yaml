@@ -27,10 +27,10 @@ packages:
         - cryptsetup       # LUKS disk encryption tools
         - rage-encryption  # age encryption tool (Rust)
 
-    graphics_drivers:
+    graphics_drivers_modern:
       enabled: true
-      description: "Graphics drivers and hardware support"
-      conflicts: []
+      description: "Graphics drivers (NVIDIA modern - Turing+)"
+      conflicts: ["graphics_drivers_legacy"]
       post_install_hook: ""
       packages:
         - intel-ucode          # Intel CPU microcode updates
@@ -38,8 +38,25 @@ packages:
         - linux-headers        # Kernel headers for DKMS (main kernel)
         - linux-lts-headers    # Kernel headers for DKMS (LTS kernel)
         - nvidia-open-dkms     # NVIDIA open-source kernel modules
+        - nvidia-utils         # NVIDIA utilities
         - nvidia-settings      # NVIDIA driver configuration GUI
         - lib32-nvidia-utils   # 32-bit NVIDIA utilities (for gaming)
+        - libva-nvidia-driver  # VA-API support for NVIDIA (hardware video decode)
+
+    graphics_drivers_legacy:
+      enabled: false
+      description: "Graphics drivers (NVIDIA legacy - Pascal/Maxwell)"
+      conflicts: ["graphics_drivers_modern"]
+      post_install_hook: ""
+      packages:
+        - intel-ucode          # Intel CPU microcode updates
+        - dkms                 # Dynamic kernel module support
+        - linux-headers        # Kernel headers for DKMS (main kernel)
+        - linux-lts-headers    # Kernel headers for DKMS (LTS kernel)
+        - nvidia-580xx-dkms    # NVIDIA kernel modules (580xx legacy)
+        - nvidia-580xx-utils   # NVIDIA utilities (580xx legacy)
+        - nvidia-settings      # NVIDIA driver configuration GUI (shared)
+        - lib32-nvidia-580xx-utils  # 32-bit NVIDIA utilities (gaming)
         - libva-nvidia-driver  # VA-API support for NVIDIA (hardware video decode)
 
     system_utilities:
@@ -307,6 +324,7 @@ packages:
         - imagemagick      # Image manipulation toolkit
 
   # Packages to remove (explicit cleanup)
+  # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
   delete:
     - yay              # Replaced by paru
     - htop             # Redundant with btop/glances
