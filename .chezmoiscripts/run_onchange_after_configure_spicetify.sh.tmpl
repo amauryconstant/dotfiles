@@ -88,23 +88,29 @@ else
     {{ includeTemplate "log_skip" "Marketplace already installed" }}
 fi
 
-# Check if configured theme exists, clear if not
-CURRENT_THEME=$(spicetify config current_theme 2>/dev/null || echo "")
-if [ -n "$CURRENT_THEME" ]; then
-    THEME_DIR="$HOME/.config/spicetify/Themes/$CURRENT_THEME"
-    if [ ! -d "$THEME_DIR" ]; then
-        {{ includeTemplate "log_warning" "Theme '$CURRENT_THEME' not installed, clearing theme config" }}
-        spicetify config current_theme ""
-        spicetify config color_scheme ""
-    fi
+# Install dotfiles-themes from chezmoi source
+{{ includeTemplate "log_step" "Installing dotfiles spicetify themes" }}
+THEMES_DIR="$HOME/.config/spicetify/Themes"
+DOTFILES_THEME_DIR="$THEMES_DIR/dotfiles-themes"
+mkdir -p "$DOTFILES_THEME_DIR"
+
+# Copy theme files from chezmoi source
+THEME_SOURCE="$HOME/.local/share/chezmoi/private_dot_config/spicetify"
+if [ -d "$THEME_SOURCE" ]; then
+    {{ includeTemplate "log_info" "Copying dotfiles theme files" }}
+    cp "$THEME_SOURCE/color.ini" "$DOTFILES_THEME_DIR/" 2>/dev/null
+    cp "$THEME_SOURCE/user.css" "$DOTFILES_THEME_DIR/" 2>/dev/null
+    {{ includeTemplate "log_success" "Dotfiles themes installed (8 variants)" }}
+else
+    {{ includeTemplate "log_warning" "Theme source not found at $THEME_SOURCE" }}
 fi
 
-# Apply configuration (backup already exists, just apply)
+# Apply spicetify configuration
 {{ includeTemplate "log_step" "Applying spicetify configuration" }}
 spicetify apply
 
 {{ includeTemplate "log_success" "Spicetify configured successfully" }}
-{{ includeTemplate "log_info" "Browse themes: Open Spotify → Marketplace (in sidebar)" }}
+{{ includeTemplate "log_info" "Themes ready for use via theme switcher" }}
 {{ includeTemplate "log_complete" "Spicetify configuration complete" }}
 
 # Hash trigger (re-run if packages.yaml changes)

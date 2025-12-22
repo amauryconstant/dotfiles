@@ -18,36 +18,12 @@ fi
 
 THEME_NAME=$(basename "$(readlink "$THEME_DIR")")
 
-# Map dotfiles theme to spicetify theme
-# Note: Assumes spicetify themes are already installed
+# Map dotfiles theme to spicetify dotfiles-themes
+# Note: All themes use custom dotfiles-themes with matching color schemes
 case "$THEME_NAME" in
-    catppuccin-latte|catppuccin-mocha)
-        spicetify config current_theme catppuccin >/dev/null 2>&1
-        case "$THEME_NAME" in
-            catppuccin-latte) spicetify config color_scheme latte >/dev/null 2>&1 ;;
-            catppuccin-mocha) spicetify config color_scheme mocha >/dev/null 2>&1 ;;
-        esac
-        ;;
-    rose-pine-dawn|rose-pine-moon)
-        spicetify config current_theme Rosé-Pine >/dev/null 2>&1
-        case "$THEME_NAME" in
-            rose-pine-dawn) spicetify config color_scheme dawn >/dev/null 2>&1 ;;
-            rose-pine-moon) spicetify config color_scheme moon >/dev/null 2>&1 ;;
-        esac
-        ;;
-    gruvbox-light|gruvbox-dark)
-        spicetify config current_theme Gruvbox >/dev/null 2>&1
-        case "$THEME_NAME" in
-            gruvbox-light) spicetify config color_scheme light >/dev/null 2>&1 ;;
-            gruvbox-dark)  spicetify config color_scheme dark >/dev/null 2>&1 ;;
-        esac
-        ;;
-    solarized-light|solarized-dark)
-        spicetify config current_theme Solarized >/dev/null 2>&1
-        case "$THEME_NAME" in
-            solarized-light) spicetify config color_scheme light >/dev/null 2>&1 ;;
-            solarized-dark)  spicetify config color_scheme dark >/dev/null 2>&1 ;;
-        esac
+    catppuccin-latte|catppuccin-mocha|rose-pine-dawn|rose-pine-moon|gruvbox-light|gruvbox-dark|solarized-light|solarized-dark)
+        spicetify config current_theme dotfiles-themes >/dev/null 2>&1
+        spicetify config color_scheme "$THEME_NAME" >/dev/null 2>&1
         ;;
     *)
         exit 0  # Unknown theme, skip
