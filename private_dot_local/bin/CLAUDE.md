@@ -61,7 +61,7 @@ fi
 
 ## Available Wrappers
 
-**12 CLI commands**:
+**Script Wrappers** (12 CLI commands):
 
 | Executable | Script | Category |
 |------------|--------|----------|
@@ -75,6 +75,18 @@ fi
 | `executable_launch-or-focus` | `desktop/launch-or-focus.sh` | Desktop |
 | `executable_git-prune-branch` | `git/prune-branch.sh` | Git |
 | `executable_ts` | `network/tailscale.sh` | Network |
+
+**Compatibility Wrappers** (1 command):
+
+| Executable | Purpose | Wraps |
+|------------|---------|-------|
+| `executable_unzip` | unzip → unar compatibility wrapper | `unarchiver` (unar) |
+
+**Why unzip wrapper**:
+- System uses `unar` from `unarchiver` package (universal archive extractor)
+- Some scripts expect `unzip` command (e.g., spicetify marketplace installer)
+- Wrapper translates `unzip` arguments to `unar` equivalents
+- Mapping: `-q` → `-q`, `-d DIR` → `-o DIR`, `-o` → `-f`
 
 **User invokes**: `system-health` (not `executable_system-health`)
 

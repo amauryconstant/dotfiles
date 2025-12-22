@@ -70,33 +70,32 @@
 
 **Script**: `theme-apply-spotify.sh`
 **Method**: spicetify-cli configuration
-**Status**: ✅ Script working, requires manual theme pack setup
+**Status**: ✅ Fully automated (Flatpak support)
 
-**Manual Setup** (one-time, after spicetify-cli installed):
-```bash
-# 1. Initialize spicetify
-spicetify backup apply
+**Automated Setup**: Configured via `run_onchange_after_configure_spicetify.sh.tmpl`
+- Detects Flatpak install location (system `/var/lib/flatpak` or user `~/.local/share/flatpak`)
+- Sets `spotify_path` automatically
+- Detects and sets `prefs_path` (checks both `~/.var/app/com.spotify.Client/config/spotify/prefs` and `~/.config/spotify/prefs`)
+- Handles permissions (prompts for sudo if system Flatpak)
+- **Installs spicetify marketplace** automatically (CustomApp for browsing themes/extensions)
+- Enables marketplace in spicetify config
+- Runs `spicetify backup apply` automatically
+- Hash-triggered (re-runs if packages.yaml changes)
 
-# 2. Install theme packs (choose method)
-# Option A: spicetify marketplace (easiest - interactive)
-# Option B: Manual clone to ~/.config/spicetify/Themes/
+**Theme Installation** (via marketplace):
+1. Open Spotify (marketplace will be in sidebar)
+2. Click "Marketplace" tab
+3. Browse and install themes:
+   - Search for: catppuccin
+   - Search for: Rosé-Pine
+   - Search for: Gruvbox
+   - Search for: Solarized
+4. Themes auto-apply via `theme-switcher.sh`
 
-# Required theme repositories:
-# - catppuccin: https://github.com/catppuccin/spicetify
-# - Rosé-Pine: https://github.com/rose-pine/spicetify
-# - Gruvbox: https://github.com/spicetify/spicetify-themes
-# - Solarized: https://github.com/spicetify/spicetify-themes
-
-# 3. Test theme application
-spicetify config current_theme catppuccin
-spicetify config color_scheme latte
-spicetify apply
-```
-
-**Maintenance**:
-- After Spotify updates: Run `spicetify backup apply`
-- Themes may break temporarily after major Spotify updates
-- Check spicetify GitHub for compatibility updates
+**Troubleshooting**:
+- If prefs not found: Run Spotify once to generate preferences file, then re-run `chezmoi apply`
+- If permissions fail: Check sudo access for system Flatpak location (`/var/lib/flatpak`)
+- After Spotify updates: Re-run `chezmoi apply` to trigger reconfiguration
 
 **How it works**:
 - Script reads current theme from `~/.config/themes/current` symlink

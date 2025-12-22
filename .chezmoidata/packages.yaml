@@ -288,6 +288,7 @@ packages:
         - impression       # USB image writer tool
         # Various
         - flatpak:com.spotify.Client  # Music streaming (Flatpak)
+        - spicetify-cli    # Spotify theme CLI (AUR)
         - flatpak:com.slack.Slack  # Team communication (Flatpak)
         - flatpak:com.github.xournalpp.xournalpp  # PDF annotation (Flatpak)
         - flatpak:org.qbittorrent.qBittorrent  # BitTorrent client (Flatpak)

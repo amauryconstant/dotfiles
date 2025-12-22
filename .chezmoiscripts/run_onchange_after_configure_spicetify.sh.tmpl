@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_spicetify.sh.tmpl
+# Purpose: Configure spicetify-cli for Flatpak Spotify
+# Requirements: Arch Linux, spicetify-cli (AUR), Spotify Flatpak
+# Trigger: Hash of packages.yaml (spicetify-cli entry)
+
+{{ includeTemplate "log_start" "Configuring spicetify for Flatpak Spotify" }}
+
+set -euo pipefail
+
+# Check if spicetify-cli installed
+if ! command -v spicetify >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "spicetify-cli not installed" }}
+    exit 0
+fi
+
+# Check if Spotify Flatpak installed
+if ! flatpak list --app 2>/dev/null | grep -q "com.spotify.Client"; then
+    {{ includeTemplate "log_skip" "Spotify Flatpak not installed" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Detecting Flatpak Spotify location" }}
+
+# Detect Flatpak install location (system or user)
+SPOTIFY_PATH=""
+if [ -d "/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
+    SPOTIFY_PATH="/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify"
+    {{ includeTemplate "log_info" "Found system Flatpak install" }}
+elif [ -d "$HOME/.local/share/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
+    SPOTIFY_PATH="$HOME/.local/share/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify"
+    {{ includeTemplate "log_info" "Found user Flatpak install" }}
+else
+    {{ includeTemplate "log_error" "Could not locate Spotify Flatpak installation" }}
+    exit 1
+fi
+
+# Configure spotify_path
+{{ includeTemplate "log_step" "Setting spotify_path" }}
+spicetify config spotify_path "$SPOTIFY_PATH"
+
+# Detect and configure prefs_path
+{{ includeTemplate "log_step" "Detecting Spotify preferences location" }}
+PREFS_PATH=""
+if [ -f "$HOME/.var/app/com.spotify.Client/config/spotify/prefs" ]; then
+    PREFS_PATH="$HOME/.var/app/com.spotify.Client/config/spotify/prefs"
+elif [ -f "$HOME/.config/spotify/prefs" ]; then
+    PREFS_PATH="$HOME/.config/spotify/prefs"
+fi
+
+if [ -n "$PREFS_PATH" ]; then
+    {{ includeTemplate "log_info" "Found prefs at: $PREFS_PATH" }}
+    spicetify config prefs_path "$PREFS_PATH"
+else
+    {{ includeTemplate "log_warning" "Preferences file not found (run Spotify once to create)" }}
+fi
+
+# Set permissions (only for system install)
+if [ "$SPOTIFY_PATH" = "/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
+    {{ includeTemplate "log_step" "Setting permissions for system Flatpak" }}
+
+    # Check if already writable
+    if [ ! -w "$SPOTIFY_PATH" ]; then
+        {{ includeTemplate "log_info" "Requesting sudo for permissions" }}
+        sudo chmod a+wr "$SPOTIFY_PATH"
+        sudo chmod a+wr -R "$SPOTIFY_PATH/Apps"
+    else
+        {{ includeTemplate "log_skip" "Permissions already set" }}
+    fi
+fi
+
+# Install spicetify marketplace
+{{ includeTemplate "log_step" "Installing spicetify marketplace" }}
+MARKETPLACE_DIR="$HOME/.config/spicetify/CustomApps/marketplace"
+
+if [ ! -d "$MARKETPLACE_DIR" ] || [ ! -f "$MARKETPLACE_DIR/index.js" ]; then
+    {{ includeTemplate "log_info" "Running official marketplace installer" }}
+
+    # Run official installation script
+    if curl -fsSL https://raw.githubusercontent.com/spicetify/marketplace/main/resources/install.sh | sh >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "Marketplace installed" }}
+    else
+        {{ includeTemplate "log_error" "Failed to install marketplace" }}
+        {{ includeTemplate "log_warning" "Continuing without marketplace" }}
+    fi
+else
+    {{ includeTemplate "log_skip" "Marketplace already installed" }}
+fi
+
+# Check if configured theme exists, clear if not
+CURRENT_THEME=$(spicetify config current_theme 2>/dev/null || echo "")
+if [ -n "$CURRENT_THEME" ]; then
+    THEME_DIR="$HOME/.config/spicetify/Themes/$CURRENT_THEME"
+    if [ ! -d "$THEME_DIR" ]; then
+        {{ includeTemplate "log_warning" "Theme '$CURRENT_THEME' not installed, clearing theme config" }}
+        spicetify config current_theme ""
+        spicetify config color_scheme ""
+    fi
+fi
+
+# Apply configuration (backup already exists, just apply)
+{{ includeTemplate "log_step" "Applying spicetify configuration" }}
+spicetify apply
+
+{{ includeTemplate "log_success" "Spicetify configured successfully" }}
+{{ includeTemplate "log_info" "Browse themes: Open Spotify → Marketplace (in sidebar)" }}
+{{ includeTemplate "log_complete" "Spicetify configuration complete" }}
+
+# Hash trigger (re-run if packages.yaml changes)
+# {{ .packages | toJson | sha256sum }}
