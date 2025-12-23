@@ -23,14 +23,15 @@ fi
 
 {{ includeTemplate "log_step" "Detecting Flatpak Spotify location" }}
 
-# Detect Flatpak install location (system or user)
+# Detect Flatpak install location (user or system)
+# Prioritize user install (aligns with package-manager's --user design)
 SPOTIFY_PATH=""
-if [ -d "/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
-    SPOTIFY_PATH="/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify"
-    {{ includeTemplate "log_info" "Found system Flatpak install" }}
-elif [ -d "$HOME/.local/share/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
+if [ -d "$HOME/.local/share/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
     SPOTIFY_PATH="$HOME/.local/share/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify"
     {{ includeTemplate "log_info" "Found user Flatpak install" }}
+elif [ -d "/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify" ]; then
+    SPOTIFY_PATH="/var/lib/flatpak/app/com.spotify.Client/x86_64/stable/active/files/extra/share/spotify"
+    {{ includeTemplate "log_info" "Found system Flatpak install" }}
 else
     {{ includeTemplate "log_error" "Could not locate Spotify Flatpak installation" }}
     exit 1
@@ -104,6 +105,26 @@ if [ -d "$THEME_SOURCE" ]; then
 else
     {{ includeTemplate "log_warning" "Theme source not found at $THEME_SOURCE" }}
 fi
+
+# Set initial theme to match current dotfiles theme
+{{ includeTemplate "log_step" "Configuring initial theme" }}
+THEME_DIR="$HOME/.config/themes/current"
+
+if [ -L "$THEME_DIR" ]; then
+    THEME_NAME=$(basename "$(readlink "$THEME_DIR")")
+    {{ includeTemplate "log_info" "Setting theme to: $THEME_NAME" }}
+    spicetify config current_theme dotfiles-themes
+    spicetify config color_scheme "$THEME_NAME"
+else
+    {{ includeTemplate "log_warning" "No current theme symlink found, using default" }}
+    spicetify config current_theme dotfiles-themes
+    spicetify config color_scheme catppuccin-mocha
+fi
+
+# Enable asset overwriting and color replacement (required for Flatpak)
+{{ includeTemplate "log_step" "Enabling asset overwriting" }}
+spicetify config overwrite_assets 1
+spicetify config replace_colors 1
 
 # Apply spicetify configuration
 {{ includeTemplate "log_step" "Applying spicetify configuration" }}
