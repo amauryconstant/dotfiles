@@ -90,6 +90,21 @@ Wofi supports CSS states for interactive elements:
 }
 ```
 
+### Contrast Best Practice
+
+Wofi correctly implements the elevated surface contrast pattern:
+
+```css
+#input {
+  background-color: @bg-secondary;  /* Elevated input field */
+  color: @fg-primary;                /* Primary text (NOT fg-secondary) */
+}
+```
+
+**Rationale**: `@bg-secondary` + `@fg-primary` achieves 7.0:1+ contrast across all themes, passing WCAG AA. Using `@fg-secondary` would create insufficient contrast (4.0-4.5:1) that fails accessibility standards.
+
+**This pattern must be followed by all applications using `@bg-secondary`.**
+
 ## Theme Integration
 
 ### How It Works

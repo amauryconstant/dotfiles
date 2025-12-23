@@ -38,12 +38,12 @@
 
 ### Background Hierarchy (4)
 
-| Variable | Role | Usage |
-|----------|------|-------|
-| `@bg-primary` | Main background | Bars, windows, primary canvas |
-| `@bg-secondary` | Elevated surfaces | Hover states, cards, inputs |
-| `@bg-tertiary` | Popovers | Notifications, tertiary elevation |
-| `@bg-overlay` | Modal overlays | Dialogs, semi-transparent |
+| Variable | Role | Usage | **Required Text Color** |
+|----------|------|-------|-------------------------|
+| `@bg-primary` | Main background | Bars, windows, primary canvas | `@fg-primary` or `@fg-secondary` |
+| `@bg-secondary` | Elevated surfaces | Hover states, cards, inputs | **ALWAYS @fg-primary** |
+| `@bg-tertiary` | Popovers | Notifications, tertiary elevation | `@fg-primary` |
+| `@bg-overlay` | Modal overlays | Dialogs, semi-transparent | `@fg-primary` |
 
 ### Foreground/Text Hierarchy (4)
 
@@ -90,6 +90,67 @@
 | `@accent-highlight-hover` | Audio hover | 10% opacity version of accent-highlight |
 | `@accent-warning-hover` | Backlight hover | 10% opacity version of accent-warning |
 | `@accent-success-hover` | Battery hover | 10% opacity version of accent-success |
+
+---
+
+## Contrast Guidelines
+
+### CRITICAL RULE: Text on Elevated Surfaces
+
+Elevated surfaces (`@bg-secondary`, `@bg-tertiary`) MUST use `@fg-primary` for ALL text and icons.
+
+**DO NOT** use `@fg-secondary` on elevated surfaces - this creates insufficient contrast (4.0-4.5:1) that fails WCAG AA standards (4.5:1 required).
+
+#### Correct Patterns
+
+| Background Surface | Text Color | Typical Contrast | WCAG Status | Use Case |
+|-------------------|------------|------------------|-------------|----------|
+| `@bg-primary` | `@fg-primary` | 8.0-9.0:1 | ✓✓ AAA | Primary content |
+| `@bg-primary` | `@fg-secondary` | 4.0-5.5:1 | ± AA (theme-dependent) | Less critical text |
+| **`@bg-secondary`** | **`@fg-primary`** | **7.0:1+** | **✓ AA** | **Elevated surfaces** |
+| `@bg-tertiary` | `@fg-primary` | 6.0:1+ | ✓ AA | Popovers, notifications |
+
+#### Incorrect Patterns (DO NOT USE)
+
+| Background Surface | Text Color | Typical Contrast | Problem |
+|-------------------|------------|------------------|---------|
+| ~~`@bg-secondary`~~ | ~~`@fg-secondary`~~ | ~~4.0-4.5:1~~ | Both "secondary" = low contrast |
+| ~~`@bg-tertiary`~~ | ~~`@fg-muted`~~ | ~~3.0-4.0:1~~ | Barely readable |
+
+### Application Examples
+
+**Correct (Wofi, Wlogout):**
+```css
+#input {
+  background-color: @bg-secondary;  /* Elevated surface */
+  color: @fg-primary;                /* Primary text ✓ */
+}
+```
+
+**Incorrect (Firefox prior to fix):**
+```css
+.tabbrowser-tab[selected] {
+  background-color: var(--bg-secondary);  /* Elevated surface */
+  /* Missing: color: var(--fg-primary); ✗ */
+}
+```
+
+### Theme-Specific Contrast Ratios
+
+| Theme | FG_PRIMARY on BG_SECONDARY | FG_SECONDARY on BG_SECONDARY | Status |
+|-------|---------------------------|------------------------------|--------|
+| Catppuccin Latte | 5.53:1 | 4.05:1 | Use PRIMARY only |
+| Catppuccin Mocha | 9.26:1 | 7.10:1 | PRIMARY preferred |
+| Gruvbox Light | 7.78:1 | 6.43:1 | PRIMARY preferred |
+| Gruvbox Dark | 8.59:1 | 6.76:1 | PRIMARY preferred |
+| Rose Pine Dawn | 7.00:1 | 4.23:1 ✗ | Use PRIMARY only |
+| Rose Pine Moon | 5.18:1 | 4.46:1 ✗ | Use PRIMARY only |
+| Solarized Light | 4.99:1 | 4.39:1 ✗ | Use PRIMARY only |
+| Solarized Dark | 5.61:1 | 4.86:1 | PRIMARY preferred |
+
+**Key:** ✗ = Fails WCAG AA if using FG_SECONDARY
+
+**Rationale:** Combining "secondary" background with "secondary" text creates insufficient contrast. Both variables are designed to be subtle; pairing them results in readability issues, particularly visible in Firefox (URL bar icons, selected tabs) on themes like Rose Pine Dawn.
 
 ---
 

@@ -133,6 +133,19 @@ button#lock:hover {
 }
 ```
 
+### Contrast Best Practice
+
+Wlogout correctly implements the elevated surface contrast pattern:
+
+```css
+button {
+  background-color: @bg-secondary;  /* Elevated button surface */
+  color: @fg-primary;                /* Primary text (NOT fg-secondary) */
+}
+```
+
+**Rationale**: Buttons use elevated backgrounds (`@bg-secondary`) but must have primary text (`@fg-primary`) for accessibility. Using `@fg-secondary` would fail WCAG AA contrast requirements.
+
 ## Theme Integration
 
 ### How It Works

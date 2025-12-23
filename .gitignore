@@ -1,5 +1,6 @@
 .mcp.json
 *.md
+!STYLE-GUIDE.md
 
 !**/CLAUDE.md
 !.claude/agents/*

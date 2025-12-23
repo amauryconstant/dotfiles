@@ -57,3 +57,43 @@
   background-color: var(--bg-secondary) !important;
   border-color: var(--bg-tertiary) !important;
 }
+
+/* CONTRAST FIX: Ensure all elements on elevated surfaces use primary text */
+
+/* Toolbar icons and buttons on elevated surfaces */
+#nav-bar toolbarbutton,
+#nav-bar toolbaritem,
+#nav-bar .toolbarbutton-text,
+#nav-bar .toolbarbutton-icon {
+  color: var(--fg-primary) !important;
+  fill: var(--fg-primary) !important;
+}
+
+/* URL bar icons (refresh, bookmarks, etc.) */
+#urlbar toolbarbutton,
+#urlbar .urlbar-icon,
+#urlbar .urlbar-icon-wrapper {
+  color: var(--fg-primary) !important;
+  fill: var(--fg-primary) !important;
+}
+
+/* Searchbar icons */
+#searchbar toolbarbutton,
+#searchbar .searchbar-search-icon {
+  color: var(--fg-primary) !important;
+  fill: var(--fg-primary) !important;
+}
+
+/* Selected tab - ensure all child elements use primary text */
+.tabbrowser-tab[selected] .tab-text,
+.tabbrowser-tab[selected] .tab-icon-image,
+.tabbrowser-tab[selected] .tab-close-button {
+  color: var(--fg-primary) !important;
+  fill: var(--fg-primary) !important;
+}
+
+/* Sidebar content */
+#sidebar-box .sidebar-title,
+#sidebar-box treechildren {
+  color: var(--fg-primary) !important;
+}
