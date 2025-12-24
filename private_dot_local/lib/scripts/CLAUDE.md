@@ -9,7 +9,7 @@
 ## Quick Reference
 
 - **Purpose**: Lazy-loaded script implementations for CLI wrappers
-- **Target**: `~/.local/lib/scripts/` (46 total scripts)
+- **Target**: `~/.local/lib/scripts/` (48 total scripts)
 - **Categories**: 11 logical groupings
 - **Integration**: Sourced by `~/.local/bin/executable_*` wrappers
 - **Template safety**: Only lib/ scripts can be templates (bin/ static)
@@ -17,12 +17,12 @@
 ## Directory Structure
 
 ```
-~/.local/lib/scripts/   # 49 total scripts
+~/.local/lib/scripts/   # 51 total scripts
 ├── core/               # 3 files - Foundation
 │   ├── gum-ui.sh       # 572-line UI library
 │   ├── colors.sh.tmpl  # Oksolar color definitions
 │   └── hook-runner.sh  # User hook execution engine
-├── desktop/            # 20 files - Hyprland utilities
+├── desktop/            # 22 files - Hyprland utilities
 ├── media/              # 3 files - Wallpaper, screenshots
 ├── system/             # 6 files - Maintenance, health
 ├── terminal/           # 1 file - CWD preservation
@@ -120,6 +120,19 @@ fi
   - Applies via `spicetify config` + `spicetify apply`
   - Optional: Skips if spicetify-cli not installed
   - Mappings: catppuccin, rosepine, gruvbox, solarized
+
+- `theme-apply-opencode.sh` - opencode TUI theme integration
+  - Creates custom JSON theme files (8 variants)
+  - Symlinks current theme to `~/.config/opencode/themes/current.json`
+  - Updates opencode.jsonc via jaq: Sets `"theme": "current"`
+  - Silent failure if opencode not installed
+  - Mappings: 24 semantic variables → 62 opencode properties
+
+- `theme-apply-claude-code.sh` - claude-code CLI theme integration
+  - Maps light/dark themes to claude-code theme setting
+  - Updates ~/.claude.json via jaq: Sets `"theme": "light"` or `"theme": "dark"`
+  - Silent failure if claude-code not installed
+  - Mappings: Light themes (latte, dawn, gruvbox-light, solarized-light) → "light", Dark themes → "dark"
 
 **Other Utilities**:
 - `audio-switch.sh` - Audio device switching (uses `notify-send`)

@@ -113,6 +113,74 @@
 
 ---
 
+### opencode Theme Integration
+
+**Script**: `theme-apply-opencode.sh`
+**Method**: Custom JSON theme files with symlink management
+**Status**: ✅ Fully integrated
+
+**Requirements**:
+- opencode installed via mise (v1.0.193+)
+- Theme JSON files in each theme directory
+
+**How it works**:
+- Script reads current theme from `~/.config/themes/current` symlink
+- Verifies theme has `opencode.json` file
+- Creates symlink: `~/.config/opencode/themes/current.json` → theme's opencode.json
+- Updates `opencode.jsonc` via jaq: Sets `"theme": "current"`
+- Silent failure if opencode not installed
+
+**Theme files** (8 variants):
+- `~/.config/themes/catppuccin-latte/opencode.json`
+- `~/.config/themes/catppuccin-mocha/opencode.json`
+- `~/.config/themes/rose-pine-dawn/opencode.json`
+- `~/.config/themes/rose-pine-moon/opencode.json`
+- `~/.config/themes/gruvbox-light/opencode.json`
+- `~/.config/themes/gruvbox-dark/opencode.json`
+- `~/.config/themes/solarized-light/opencode.json`
+- `~/.config/themes/solarized-dark/opencode.json`
+
+**JSON structure**:
+- **defs**: 24 semantic color variables (bg-primary, fg-primary, accent-*, etc.)
+- **theme**: 62 opencode properties mapped to semantic variables
+- Supports both light and dark variants via "light"/"dark" keys
+
+**Reload behavior**:
+- Theme applies to new opencode sessions only
+- Running instances keep old theme (TUI limitation)
+- User restarts opencode to see new theme
+
+---
+
+### claude-code CLI Theme Integration
+
+**Script**: `theme-apply-claude-code.sh`
+**Method**: Direct JSON config modification
+**Status**: ✅ Fully integrated
+
+**Requirements**:
+- claude-code CLI installed (global npm package)
+- `~/.claude.json` configuration file
+
+**How it works**:
+- Script reads current theme from `~/.config/themes/current` symlink
+- Maps theme to light/dark mode
+- Updates `~/.claude.json` via jaq: Sets `"theme": "light"` or `"theme": "dark"`
+- Silent failure if claude-code not installed
+
+**Theme mappings**:
+- **Light themes** → `"theme": "light"`: catppuccin-latte, rose-pine-dawn, gruvbox-light, solarized-light
+- **Dark themes** → `"theme": "dark"`: catppuccin-mocha, rose-pine-moon, gruvbox-dark, solarized-dark
+
+**Reload behavior**:
+- Theme applies to new claude-code sessions only
+- Running instances keep old theme (CLI limitation)
+- User restarts claude-code to see new theme
+
+**Note**: claude-code VSCode extension uses VSCode integrated terminal colors (already themed via Ghostty)
+
+---
+
 ## Theme Switcher
 
 **Script**: `theme-switcher.sh.tmpl`
@@ -121,7 +189,7 @@
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
 2. Reloads core apps (Hyprland, Waybar, Dunst, Ghostty)
-3. Calls theme-apply scripts (VSCode, Firefox, Spotify)
+3. Calls theme-apply scripts (VSCode, Firefox, Spotify, opencode, claude-code)
 4. Triggers `theme-change` user hook
 5. Updates wallpaper randomly from theme collection
 6. Sends desktop notification

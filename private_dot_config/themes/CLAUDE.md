@@ -204,7 +204,7 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 
 ## CLI Tool Integration
 
-**6 CLI tools** themed via symlink switching:
+**7 CLI tools** themed via symlink switching:
 
 | Tool | Config File | Symlink Location | Purpose |
 |------|-------------|------------------|---------|
@@ -212,6 +212,7 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 | **broot** | `broot.hjson` | `~/.config/broot/skin.hjson` | File tree skin colors |
 | **btop** | `btop.theme` | `~/.config/btop/color_theme` | System monitor color scheme |
 | **lazygit** | `lazygit.yml` | `~/.config/lazygit/config.yml` | Git TUI theme colors |
+| **opencode** | `opencode.json` | `~/.config/opencode/themes/current.json` | TUI theme via custom JSON |
 | **starship** | `starship.toml` | `~/.config/starship.toml` | Shell prompt colors/symbols |
 | **yazi** | `yazi.toml` | `~/.config/yazi/theme.toml` | File manager theme |
 
