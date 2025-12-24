@@ -26,11 +26,18 @@ case "$THEME_NAME" in
     *)                exit 0 ;;  # Unknown theme, skip
 esac
 
-# Update VSCode settings.json
-VSCODE_SETTINGS="$HOME/.config/Code/User/settings.json"
+# Detect VSCode installation (Code-OSS, Code, or VSCodium)
+VSCODE_SETTINGS=""
+for vscode_dir in "Code - OSS" "Code" "VSCodium"; do
+    candidate="$HOME/.config/$vscode_dir/User/settings.json"
+    if [ -f "$candidate" ]; then
+        VSCODE_SETTINGS="$candidate"
+        break
+    fi
+done
 
-# Skip if VSCode not installed or settings don't exist
-if [ ! -f "$VSCODE_SETTINGS" ]; then
+# Skip if no VSCode installation found
+if [ -z "$VSCODE_SETTINGS" ]; then
     exit 0
 fi
 

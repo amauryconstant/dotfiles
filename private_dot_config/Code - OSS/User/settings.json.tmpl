@@ -36,7 +36,32 @@
   "terminal.integrated.defaultProfile.linux": "zsh",
   "terminal.integrated.defaultProfile.osx": "zsh",
   "terminal.integrated.enableMultiLinePasteWarning": "never",
-  "workbench.colorTheme": "Better Selenized Dark",
+{{- $themePath := joinPath .chezmoi.homeDir ".config/themes/current" }}
+{{- $themeName := "" }}
+{{- $vscodeTheme := "" }}
+{{- if stat $themePath }}
+{{-   $themeName = base (output "readlink" $themePath | trim) }}
+{{-   if eq $themeName "catppuccin-latte" }}
+{{-     $vscodeTheme = "Catppuccin Latte" }}
+{{-   else if eq $themeName "catppuccin-mocha" }}
+{{-     $vscodeTheme = "Catppuccin Mocha" }}
+{{-   else if eq $themeName "rose-pine-dawn" }}
+{{-     $vscodeTheme = "Rosé Pine Dawn" }}
+{{-   else if eq $themeName "rose-pine-moon" }}
+{{-     $vscodeTheme = "Rosé Pine Moon" }}
+{{-   else if eq $themeName "gruvbox-light" }}
+{{-     $vscodeTheme = "Gruvbox Light Hard" }}
+{{-   else if eq $themeName "gruvbox-dark" }}
+{{-     $vscodeTheme = "Gruvbox Dark Hard" }}
+{{-   else if eq $themeName "solarized-light" }}
+{{-     $vscodeTheme = "Solarized Light" }}
+{{-   else if eq $themeName "solarized-dark" }}
+{{-     $vscodeTheme = "Solarized Dark" }}
+{{-   end }}
+{{- end }}
+{{- if ne $vscodeTheme "" }}
+  "workbench.colorTheme": {{ $vscodeTheme | quote }},
+{{- end }}
   "workbench.editor.enablePreview": false,
   "workbench.sideBar.location": "right",
   "[dockercompose]": {
