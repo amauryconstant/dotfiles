@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# CLI wrapper for Hyprland session management
+
+SCRIPT_DIR="$HOME/.local/lib/scripts/desktop"
+SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
+
+show_usage() {
+    cat << EOF
+Usage: hypr-session <command>
+
+Commands:
+    save        Save current Hyprland session
+    restore     Restore saved session
+    status      Show session status
+    clear       Delete saved session
+    help        Show this help message
+
+Examples:
+    hypr-session save
+    hypr-session restore
+    hypr-session status
+EOF
+}
+
+case "$1" in
+    save)
+        "$SCRIPT_DIR/session-save.sh"
+        ;;
+    restore)
+        "$SCRIPT_DIR/session-restore.sh"
+        ;;
+    status)
+        if [ -f "$SESSION_FILE" ]; then
+            window_count=$(jaq -r '.windows | length' "$SESSION_FILE")
+            timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE")
+            formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+            echo "Saved session: $formatted_time"
+            echo "Windows: $window_count"
+            echo ""
+            jaq -r '.windows[] | "  - \(.class) on workspace \(.workspace.id // .workspace)"' "$SESSION_FILE"
+        else
+            echo "No saved session found"
+        fi
+        ;;
+    clear)
+        if [ -f "$SESSION_FILE" ]; then
+            rm "$SESSION_FILE"
+            echo "Session cleared"
+        else
+            echo "No saved session to clear"
+        fi
+        ;;
+    help|"")
+        show_usage
+        ;;
+    *)
+        echo "Error: Unknown command '$1'" >&2
+        show_usage
+        exit 1
+        ;;
+esac

@@ -313,6 +313,10 @@ bind = $mod SHIFT, N, exec, ~/.local/lib/scripts/desktop/nightlight-config.sh
 bind = $mod SHIFT, Y, exec, darkman toggle
 bind = $mod SHIFT CTRL, SPACE, exec, ~/.local/lib/scripts/user-interface/theme-menu.sh
 
+# Session management: Save/restore workspace layout
+# Save current session (Super+Ctrl+S)
+bind = $mod CTRL, S, exec, ~/.local/lib/scripts/desktop/session-save.sh
+
 # Idle lock toggle: Super + I
 # Disable automatic screen locking (presentation mode)
 bind = $mod, I, exec, ~/.local/lib/scripts/desktop/idle-toggle.sh
