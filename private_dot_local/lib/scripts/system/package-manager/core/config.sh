@@ -98,3 +98,68 @@ _get_snapper_config() {
     local config=$(yq eval '.packages.snapper_config // "root"' "$PACKAGES_FILE" 2>/dev/null)
     echo "${config:-root}"
 }
+
+# =============================================================================
+# MODULE CACHE (Performance optimization for sync command)
+# =============================================================================
+
+# Cache for module data (populated once per sync with single yq call)
+declare -gA _MODULE_CACHE=()
+declare -g _MODULE_CACHE_LOADED=false
+
+_load_module_cache() {
+    # Load all enabled modules and their packages in a single yq call
+    # Significantly faster than separate queries per module (16 calls → 1 call)
+
+    if [[ "$_MODULE_CACHE_LOADED" == "true" ]]; then
+        return 0
+    fi
+
+    # Ensure cache is properly declared as associative array
+    if ! declare -p _MODULE_CACHE &>/dev/null || [[ "$(declare -p _MODULE_CACHE 2>/dev/null)" != *"-A"* ]]; then
+        declare -gA _MODULE_CACHE=()
+    fi
+
+    # Single yq call to load all enabled modules and their packages
+    local cache_data
+    cache_data=$(yq eval '
+        .packages.modules
+        | to_entries
+        | .[]
+        | select(.value.enabled == true)
+        | .key + "|" + (.value.packages | join(","))
+    ' "$PACKAGES_FILE" 2>/dev/null)
+
+    # Parse and store in cache
+    if [[ -n "$cache_data" ]]; then
+        while IFS='|' read -r mod_name mod_packages; do
+            [[ -n "$mod_name" ]] && _MODULE_CACHE["$mod_name"]="$mod_packages"
+        done <<< "$cache_data"
+    fi
+
+    _MODULE_CACHE_LOADED=true
+}
+
+_get_enabled_modules_cached() {
+    # Get list of enabled modules (uses cache)
+    _load_module_cache
+    printf '%s\n' "${!_MODULE_CACHE[@]}"
+}
+
+_get_module_packages_cached() {
+    # Get packages for a specific module (uses cache)
+    local module="$1"
+    _load_module_cache
+
+    local packages="${_MODULE_CACHE[$module]:-}"
+    if [[ -n "$packages" ]]; then
+        echo "$packages" | tr ',' '\n'
+    fi
+}
+
+_invalidate_module_cache() {
+    # Invalidate cache (call after modifying packages.yaml)
+    _MODULE_CACHE_LOADED=false
+    unset _MODULE_CACHE
+    declare -gA _MODULE_CACHE=()
+}

@@ -205,6 +205,7 @@ cmd_module_enable() {
                 if ui_confirm "Disable '$conflict' and enable '$module'?"; then
                     # Disable conflicting module
                     MOD="$conflict" yq eval '.packages.modules[env(MOD)].enabled = false' -i "$PACKAGES_FILE"
+                    _invalidate_module_cache  # Invalidate cache after modification
                     ui_success "Disabled '$conflict'"
                 else
                     ui_warning "Cancelled"
@@ -216,6 +217,7 @@ cmd_module_enable() {
 
     # Enable module
     MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = true' -i "$PACKAGES_FILE"
+    _invalidate_module_cache  # Invalidate cache after modification
     ui_success "Module '$module' enabled"
     ui_info "Run 'package-manager sync' to install packages"
 }
@@ -383,6 +385,7 @@ cmd_module_disable() {
 
     # Disable module
     MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = false' -i "$PACKAGES_FILE"
+    _invalidate_module_cache  # Invalidate cache after modification
     ui_success "Module '$module' disabled"
     ui_info "Run 'package-manager sync --prune' to remove packages"
 }

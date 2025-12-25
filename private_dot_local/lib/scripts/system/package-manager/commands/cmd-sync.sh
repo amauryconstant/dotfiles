@@ -28,9 +28,13 @@ cmd_sync() {
                 _locked_mode=true
                 shift
                 ;;
+            --verbose)
+                VERBOSE=true
+                shift
+                ;;
             *)
                 ui_error "Unknown flag: $1"
-                ui_info "Usage: package-manager sync [--prune] [--no-lock] [--locked]"
+                ui_info "Usage: package-manager sync [--prune] [--no-lock] [--locked] [--verbose]"
                 return 1
                 ;;
         esac
@@ -122,8 +126,12 @@ _sync_build_plan() {
     local total=0
     local -a pacman_packages=()
     local -a flatpak_packages=()
+    local -a pkg_names=()  # Declare early for validation (optimize: single parse)
 
-    # Collect packages from enabled modules
+    # Global array for prune optimization (avoid re-iteration)
+    declare -ga SYNC_DECLARED_PACKAGES=()
+
+    # Collect packages from enabled modules (OPTIMIZED - single YAML read + parse once)
     while IFS= read -r module; do
         ui_info "  $ICON_BULLET $module"
 
@@ -133,27 +141,24 @@ _sync_build_plan() {
             local pkg_data=$(_parse_package_constraint "$package")
             IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
+            # Store declared name for prune phase (optimization)
+            SYNC_DECLARED_PACKAGES+=("$name")
+
             if [[ "$name" == flatpak:* ]]; then
                 flatpak_packages+=("$package|$module")
             else
-                pacman_packages+=("$package|$module")
+                # Store package string AND parsed name (avoid reparse in validation)
+                pacman_packages+=("$package|$module|$name")
+                pkg_names+=("$name")  # Build validation list during collection
             fi
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+        done < <(_get_module_packages_cached "$module")
+    done < <(_get_enabled_modules_cached)
 
     ui_success "Found $total packages (${#pacman_packages[@]} pacman, ${#flatpak_packages[@]} flatpak)"
 
-    # Validate pacman packages exist
-    if [[ ${#pacman_packages[@]} -gt 0 ]]; then
+    # Validate pacman packages exist (NO REPARSING)
+    if [[ ${#pkg_names[@]} -gt 0 ]]; then
         ui_step "Validating pacman packages..."
-
-        local -a pkg_names=()
-        for pkg_entry in "${pacman_packages[@]}"; do
-            local package="${pkg_entry%%|*}"
-            local pkg_data=$(_parse_package_constraint "$package")
-            IFS='|' read -r name version constraint_type <<< "$pkg_data"
-            pkg_names+=("$name")
-        done
 
         local invalid=$(_check_packages_batch "${pkg_names[@]}")
         if [[ -n "$invalid" ]]; then
@@ -198,15 +203,13 @@ _sync_execute() {
     results_ref[skipped]=0
     results_ref[failed]=0
 
-    # Cache installed versions (performance optimization)
-    ui_step "Caching installed package versions..."
-    declare -A installed_versions_map
-    while IFS=' ' read -r pkg ver; do
-        [[ -n "$pkg" ]] && installed_versions_map[$pkg]="$ver"
-    done < <(pacman -Q 2>/dev/null | awk '{print $1, $2}')
+    # Cache installed versions (performance optimization - reuse existing cache)
+    ui_step "Loading package version cache..."
+    _load_pacman_version_cache
+    declare -n installed_versions_map=_PACMAN_VERSION_CACHE  # nameref to existing cache
     local cached_count
     cached_count=${#installed_versions_map[@]}
-    ui_info "Cached ${cached_count} package versions"
+    ui_info "Loaded ${cached_count} package versions"
 
     # Load lockfile for fast-path optimization
     if [[ "$USE_LOCKFILE_FASTPATH" == "true" ]] && _read_lockfile; then
@@ -273,10 +276,13 @@ _sync_execute_pacman() {
 
     # Classify packages into batches
     for pkg_entry in "${SYNC_PACMAN_PACKAGES[@]}"; do
-        IFS='|' read -r package module <<< "$pkg_entry"
+        IFS='|' read -r package module cached_name <<< "$pkg_entry"
 
         local pkg_data=$(_parse_package_constraint_cached "$package")
         IFS='|' read -r name version constraint_type <<< "$pkg_data"
+
+        # Use cached name if available (optimization from build_plan)
+        [[ -n "$cached_name" ]] && name="$cached_name"
 
         local installed_version="${versions_map[$name]:-}"
         local locked_version="${lockfile_versions[$name]:-}"
@@ -284,7 +290,7 @@ _sync_execute_pacman() {
         # Fast-path: lockfile match
         if [[ "$USE_LOCKFILE_FASTPATH" == "true" ]] && [[ -n "$locked_version" ]] &&
            [[ "$installed_version" == "$locked_version" ]] && [[ "$constraint_type" == "none" ]]; then
-            ui_info "$ICON_PACKAGE $name: OK (lockfile match $locked_version)"
+            [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $name: OK (lockfile match $locked_version)"
             continue
         fi
 
@@ -306,7 +312,7 @@ _sync_execute_pacman() {
                     batch_upgrade+="$name|$version|$module "
                     ((results[upgraded]++))
                 else
-                    ui_info "$ICON_PACKAGE $name: OK (exact $version)"
+                    [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $name: OK (exact $version)"
                 fi
                 ;;
 
@@ -318,7 +324,7 @@ _sync_execute_pacman() {
                     batch_upgrade+="$name|null|$module "
                     ((results[upgraded]++))
                 else
-                    ui_info "$ICON_PACKAGE $name: OK (>=$version, have $installed_version)"
+                    [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $name: OK (>=$version, have $installed_version)"
                 fi
                 ;;
 
@@ -327,7 +333,7 @@ _sync_execute_pacman() {
                 local cmp=$?
 
                 if [[ $cmp -eq 2 ]]; then
-                    ui_info "$ICON_PACKAGE $name: OK (<$version, have $installed_version)"
+                    [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $name: OK (<$version, have $installed_version)"
                 else
                     # Interactive downgrade (not batched)
                     if _sync_handle_downgrade "$name" "$installed_version" "$version" "$module"; then
@@ -339,10 +345,19 @@ _sync_execute_pacman() {
                 ;;
 
             "none")
-                ui_info "$ICON_PACKAGE $name: OK ($installed_version)"
+                [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $name: OK ($installed_version)"
                 ;;
         esac
     done
+
+    # Summary statistics (non-verbose mode)
+    if [[ "$VERBOSE" != "true" ]]; then
+        local total_pacman=${#SYNC_PACMAN_PACKAGES[@]}
+        local satisfied_count=$((total_pacman - results[installed] - results[upgraded] - results[downgraded] - results[skipped]))
+        if [[ $satisfied_count -gt 0 ]]; then
+            ui_success "$satisfied_count packages already satisfied"
+        fi
+    fi
 
     # Execute batches
     if [[ -n "$batch_install" ]]; then
@@ -381,7 +396,7 @@ _sync_execute_flatpak() {
         local flatpak_id="${name#flatpak:}"
 
         if _is_flatpak_installed "$flatpak_id"; then
-            ui_info "$ICON_PACKAGE $flatpak_id: OK"
+            [[ "$VERBOSE" == "true" ]] && ui_info "$ICON_PACKAGE $flatpak_id: OK"
         else
             ui_step "$ICON_PACKAGE $flatpak_id: Installing"
             if _install_flatpak "$name" "$module"; then
@@ -442,18 +457,13 @@ _sync_prune_orphans() {
 
     local -a orphans=()
 
-    # Build declared package set for O(1) lookups
+    # Build declared package set for O(1) lookups (OPTIMIZED - reuse build_plan data)
     declare -A declared_set
-    while IFS= read -r module; do
-        while IFS= read -r package; do
-            local pkg_data=$(_parse_package_constraint "$package")
-            IFS='|' read -r name version constraint_type <<< "$pkg_data"
-
-            # Strip flatpak: prefix for comparison
-            local name_stripped="${name#flatpak:}"
-            [[ -n "$name_stripped" ]] && declared_set[$name_stripped]=1
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+    for name in "${SYNC_DECLARED_PACKAGES[@]}"; do
+        # Strip flatpak: prefix for comparison
+        local name_stripped="${name#flatpak:}"
+        [[ -n "$name_stripped" ]] && declared_set[$name_stripped]=1
+    done
 
     # Find orphans
     while IFS= read -r pkg_name; do

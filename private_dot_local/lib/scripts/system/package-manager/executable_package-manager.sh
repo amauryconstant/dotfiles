@@ -73,6 +73,10 @@ USE_LOCKFILE_FASTPATH=${PACKAGE_MANAGER_USE_LOCKFILE:-true}
 # shellcheck disable=SC2034  # Used in sourced packages/batch-operations.sh
 BATCH_INSTALLS=${PACKAGE_MANAGER_BATCH:-true}
 
+# Logging verbosity
+# shellcheck disable=SC2034  # Used in sourced cmd-sync.sh
+VERBOSE=false
+
 # Ensure state directory exists
 mkdir -p "$STATE_DIR"
 
