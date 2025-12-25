@@ -1,5 +1,5 @@
 {
-  "name": "Dotfiles Rose Pine Dawn",
+  "$schema": "https://opencode.ai/theme.json",
   "defs": {
     "bg-primary": "#faf4ed",
     "bg-secondary": "#fffaf3",
@@ -27,67 +27,205 @@
     "accent-urgent-secondary": "#ea9d34"
   },
   "theme": {
-    "background": {"light": "bg-primary"},
-    "text": {"light": "fg-primary"},
-    "primary": {"light": "accent-primary"},
-    "secondary": {"light": "accent-secondary"},
-    "error": {"light": "accent-error"},
-    "success": {"light": "accent-success"},
-    "warning": {"light": "accent-warning"},
-    "info": {"light": "accent-info"},
-    "contrast": {"light": "fg-contrast"},
-    "hover": {"light": "bg-secondary"},
-    "selection": {"light": "bg-tertiary"},
-    "border": {"light": "accent-border"},
-    "focus": {"light": "accent-primary"},
-    "active": {"light": "accent-primary"},
-    "inactive": {"light": "fg-muted"},
-    "disabled": {"light": "fg-muted"},
-    "placeholder": {"light": "fg-secondary"},
-    "link": {"light": "accent-info"},
-    "code": {"light": "accent-highlight"},
-    "string": {"light": "accent-success"},
-    "number": {"light": "accent-warning"},
-    "boolean": {"light": "accent-alternative"},
-    "null": {"light": "fg-muted"},
-    "keyword": {"light": "accent-primary"},
-    "function": {"light": "accent-info"},
-    "class": {"light": "accent-warning"},
-    "variable": {"light": "fg-primary"},
-    "property": {"light": "accent-secondary"},
-    "operator": {"light": "accent-tertiary"},
-    "comment": {"light": "fg-secondary"},
-    "punctuation": {"light": "fg-primary"},
-    "tag": {"light": "accent-error"},
-    "attribute": {"light": "accent-warning"},
-    "value": {"light": "accent-success"},
-    "heading": {"light": "accent-primary"},
-    "bold": {"light": "fg-primary"},
-    "italic": {"light": "accent-highlight"},
-    "strikethrough": {"light": "fg-secondary"},
-    "quote": {"light": "accent-info"},
-    "list": {"light": "fg-primary"},
-    "codeBlock": {"light": "bg-secondary"},
-    "inlineCode": {"light": "accent-highlight"},
-    "file": {"light": "fg-primary"},
-    "folder": {"light": "accent-info"},
-    "image": {"light": "accent-media"},
-    "added": {"light": "accent-success"},
-    "modified": {"light": "accent-modification"},
-    "removed": {"light": "accent-error"},
-    "renamed": {"light": "accent-warning"},
-    "conflicted": {"light": "accent-urgent-secondary"},
-    "untracked": {"light": "accent-subtle"},
-    "ignored": {"light": "fg-muted"},
-    "terminal": {"light": "fg-primary"},
-    "terminalBackground": {"light": "bg-primary"},
-    "terminalCursor": {"light": "accent-primary"},
-    "terminalSelection": {"light": "bg-tertiary"},
-    "notification": {"light": "accent-info"},
-    "notificationBackground": {"light": "bg-tertiary"},
-    "notificationBorder": {"light": "accent-border"},
-    "badge": {"light": "accent-warning"},
-    "badgeBackground": {"light": "bg-secondary"},
-    "progress": {"light": "accent-primary"}
+    "primary": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "secondary": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "accent": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "error": {
+      "dark": "accent-error",
+      "light": "accent-error"
+    },
+    "warning": {
+      "dark": "accent-warning",
+      "light": "accent-warning"
+    },
+    "success": {
+      "dark": "accent-success",
+      "light": "accent-success"
+    },
+    "info": {
+      "dark": "accent-info",
+      "light": "accent-info"
+    },
+    "text": {
+      "dark": "fg-primary",
+      "light": "fg-primary"
+    },
+    "textMuted": {
+      "dark": "fg-muted",
+      "light": "fg-muted"
+    },
+    "background": {
+      "dark": "bg-primary",
+      "light": "bg-primary"
+    },
+    "backgroundPanel": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "backgroundElement": {
+      "dark": "bg-tertiary",
+      "light": "bg-tertiary"
+    },
+    "border": {
+      "dark": "accent-border",
+      "light": "accent-border"
+    },
+    "borderActive": {
+      "dark": "accent-border",
+      "light": "accent-border"
+    },
+    "borderSubtle": {
+      "dark": "bg-tertiary",
+      "light": "bg-tertiary"
+    },
+    "diffAdded": {
+      "dark": "accent-success",
+      "light": "accent-success"
+    },
+    "diffRemoved": {
+      "dark": "accent-error",
+      "light": "accent-error"
+    },
+    "diffContext": {
+      "dark": "fg-muted",
+      "light": "fg-muted"
+    },
+    "diffHunkHeader": {
+      "dark": "fg-muted",
+      "light": "fg-muted"
+    },
+    "diffHighlightAdded": {
+      "dark": "accent-success",
+      "light": "accent-success"
+    },
+    "diffHighlightRemoved": {
+      "dark": "accent-error",
+      "light": "accent-error"
+    },
+    "diffAddedBg": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "diffRemovedBg": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "diffContextBg": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "diffLineNumber": {
+      "dark": "fg-muted",
+      "light": "fg-muted"
+    },
+    "diffAddedLineNumberBg": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "diffRemovedLineNumberBg": {
+      "dark": "bg-secondary",
+      "light": "bg-secondary"
+    },
+    "markdownText": {
+      "dark": "fg-primary",
+      "light": "fg-primary"
+    },
+    "markdownHeading": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "markdownLink": {
+      "dark": "accent-info",
+      "light": "accent-info"
+    },
+    "markdownLinkText": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "markdownCode": {
+      "dark": "accent-success",
+      "light": "accent-success"
+    },
+    "markdownBlockQuote": {
+      "dark": "fg-secondary",
+      "light": "fg-secondary"
+    },
+    "markdownEmph": {
+      "dark": "accent-warning",
+      "light": "accent-warning"
+    },
+    "markdownStrong": {
+      "dark": "accent-highlight",
+      "light": "accent-highlight"
+    },
+    "markdownHorizontalRule": {
+      "dark": "fg-secondary",
+      "light": "fg-secondary"
+    },
+    "markdownListItem": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "markdownListEnumeration": {
+      "dark": "accent-info",
+      "light": "accent-info"
+    },
+    "markdownImage": {
+      "dark": "accent-info",
+      "light": "accent-info"
+    },
+    "markdownImageText": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "markdownCodeBlock": {
+      "dark": "fg-primary",
+      "light": "fg-primary"
+    },
+    "syntaxComment": {
+      "dark": "fg-secondary",
+      "light": "fg-secondary"
+    },
+    "syntaxKeyword": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "syntaxFunction": {
+      "dark": "accent-info",
+      "light": "accent-info"
+    },
+    "syntaxVariable": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "syntaxString": {
+      "dark": "accent-success",
+      "light": "accent-success"
+    },
+    "syntaxNumber": {
+      "dark": "accent-warning",
+      "light": "accent-warning"
+    },
+    "syntaxType": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "syntaxOperator": {
+      "dark": "accent-primary",
+      "light": "accent-primary"
+    },
+    "syntaxPunctuation": {
+      "dark": "fg-primary",
+      "light": "fg-primary"
+    }
   }
 }
