@@ -8,7 +8,11 @@
   "mcp": {
     "context7": {
       "type": "local",
-      "command": ["bunx", "-y", "@upstash/context7-mcp"]
+      "command": [
+        "bunx",
+        "-y",
+        "@upstash/context7-mcp"
+      ]
     },
     "sequential-thinking": {
       "type": "local",
@@ -20,16 +24,27 @@
     },
     "fetch": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "mcp/fetch"]
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "mcp/fetch"
+      ]
     },
     "mermaid": {
       "type": "local",
-      "command": ["bunx", "-y", "mcp-mermaid"]
+      "command": [
+        "bunx",
+        "-y",
+        "mcp-mermaid"
+      ]
     }
   },
   "tools": {
     "context7": true,
     "sequential-thinking": true,
     "fetch": true
-  }
+  },
+  "theme": "current"
 }
