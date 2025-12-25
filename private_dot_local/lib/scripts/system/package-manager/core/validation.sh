@@ -78,6 +78,60 @@ _check_package_exists() {
     return 1
 }
 
+# =============================================================================
+# AUR VALIDATION BATCHING
+# =============================================================================
+
+# Batch validate AUR packages (single paru call for performance)
+# Prints invalid package names to stdout
+# Returns: 0 on success, 1 on timeout (triggers fallback)
+_validate_aur_packages_batch() {
+    local packages=("$@")
+
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Single batch query with timeout (Optimization 1)
+    # Replaces N × 5s with 1 × 10s worst case
+    local aur_output
+    if ! aur_output=$(timeout 10 paru -Si "${packages[@]}" 2>/dev/null); then
+        # Timeout or error - return 1 to trigger fallback
+        return 1
+    fi
+
+    # Parse valid package names from output
+    local valid_names
+    valid_names=$(echo "$aur_output" | grep -E '^Name\s+:' | awk '{print $3}')
+
+    # Build hash set of valid packages for O(1) lookup
+    declare -A valid_set
+    while IFS= read -r name; do
+        [[ -n "$name" ]] && valid_set[$name]=1
+    done <<< "$valid_names"
+
+    # Output invalid packages (those not in valid set)
+    for pkg in "${packages[@]}"; do
+        if [[ -z "${valid_set[$pkg]:-}" ]]; then
+            echo "$pkg"
+        fi
+    done
+
+    return 0
+}
+
+# Sequential AUR validation (fallback for timeout/error)
+# Prints invalid package names to stdout
+_validate_aur_packages_sequential() {
+    local packages=("$@")
+
+    for pkg in "${packages[@]}"; do
+        if ! timeout 5 paru -Si "$pkg" &>/dev/null 2>&1; then
+            echo "$pkg"
+        fi
+    done
+}
+
 _check_packages_batch() {
     # Batch check if packages exist (more efficient for validation)
     # Prints invalid package names to stdout
@@ -111,14 +165,13 @@ _check_packages_batch() {
         fi
     done
 
-    # AUR check: skip cache (may be binary), use direct queries
+    # AUR check: batch validation with fallback (Optimization 1)
     if [[ ${#remaining_packages[@]} -gt 0 ]] && command -v paru >/dev/null 2>&1; then
-        # Direct paru query for each remaining package
-        for pkg in "${remaining_packages[@]}"; do
-            if ! timeout 5 paru -Si "$pkg" &>/dev/null 2>&1; then
-                echo "$pkg"
-            fi
-        done
+        # Try batch validation first (10s timeout for all packages)
+        if ! _validate_aur_packages_batch "${remaining_packages[@]}"; then
+            # Batch timed out - fall back to sequential (5s per package)
+            _validate_aur_packages_sequential "${remaining_packages[@]}"
+        fi
     elif [[ ${#remaining_packages[@]} -gt 0 ]]; then
         # No paru available, assume all remaining are invalid
         printf '%s\n' "${remaining_packages[@]}"

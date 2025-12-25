@@ -81,10 +81,8 @@ _get_repo_version() {
     pacman -Si "$pkg" 2>/dev/null | grep "^Version" | awk '{print $3}' || true
 }
 
-_get_flatpak_version() {
-    local app_id="$1"
-    flatpak list --app --columns=application,version --user 2>/dev/null | grep "^${app_id}" | awk '{print $2}' || true
-}
+# NOTE: _get_flatpak_version() is defined in core/performance.sh with caching
+# Do not redefine here to avoid overriding the cached implementation
 
 # =============================================================================
 # PACKAGE TYPE DETECTION

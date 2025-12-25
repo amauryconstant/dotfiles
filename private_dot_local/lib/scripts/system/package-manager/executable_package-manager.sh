@@ -60,7 +60,9 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 PACKAGES_FILE="$HOME/.local/share/chezmoi/.chezmoidata/packages.yaml"
 STATE_DIR="$HOME/.local/state/package-manager"
+# shellcheck disable=SC2034  # Used in sourced modules: core/state.sh, commands/cmd-{sync,lock,status}.sh
 STATE_FILE="$STATE_DIR/package-state.yaml"
+# shellcheck disable=SC2034  # Used in sourced modules: core/validation.sh, commands/cmd-{sync,lock,status,validate}.sh
 LOCKFILE="$STATE_DIR/locked-versions.yaml"
 
 # Feature flags (can be overridden by environment)
@@ -163,133 +165,8 @@ _get_module_conflicts() {
 # SECTION 4: PACKAGE OPERATIONS
 # =============================================================================
 
-# Install a single package with constraint handling
-# Usage: _install_package <package_spec> <module_name>
-# package_spec: Either "package-name" or package object from YAML
-_install_package() {
-    local package_spec="$1"
-    local module="${2:-unknown}"
-    local cached_version="${3:-}"  # Optional cached version (from batch fallback or cmd_sync)
-
-    # Parse package constraint
-    local pkg_data=$(_parse_package_constraint "$package_spec")
-    IFS='|' read -r name version constraint_type <<< "$pkg_data"
-
-    # Check if Flatpak package
-    if [[ "$name" == flatpak:* ]]; then
-        _install_flatpak "$name" "$module"
-        return $?
-    fi
-
-    # Validate package exists
-    if ! _check_package_exists "$name"; then
-        ui_error "Package '$name' not found in repos or AUR"
-        return 1
-    fi
-
-    # Warn about rolling packages
-    if _is_rolling_package "$name"; then
-        ui_warning "$ICON_WARNING  '$name' is a rolling package (-git suffix)"
-        if [[ -n "$version" ]]; then
-            ui_warning "Version constraints may not work as expected"
-        fi
-    fi
-
-    # Check if already installed with correct version
-    # Use cached version if provided, otherwise query
-    local installed
-    if [[ -n "$cached_version" ]]; then
-        installed="$cached_version"
-    else
-        installed=$(_get_package_version "$name")
-    fi
-    if [[ -n "$installed" ]]; then
-        # Already installed, check if version matches constraint
-        case "$constraint_type" in
-            "exact")
-                if [[ "$installed" == "$version" ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already at exact version $version"
-                    return 0
-                else
-                    ui_step "$ICON_PACKAGE $name: Switching from $installed to $version"
-                fi
-                ;;
-            "minimum")
-                _compare_versions "$installed" "$version"
-                local cmp=$?
-                if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already meets constraint >=$version (installed: $installed)"
-                    return 0
-                else
-                    ui_step "$ICON_PACKAGE $name: Upgrading from $installed to meet >=$version"
-                fi
-                ;;
-            "maximum")
-                _compare_versions "$installed" "$version"
-                local cmp=$?
-                if [[ $cmp -eq 2 ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already meets constraint <$version (installed: $installed)"
-                    return 0
-                else
-                    ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$version constraint"
-                    ui_warning "Interactive downgrade required (use 'sync' command)"
-                    return 0
-                fi
-                ;;
-            "none")
-                ui_info "$ICON_PACKAGE $name: Already installed ($installed)"
-                return 0
-                ;;
-        esac
-    else
-        ui_step "$ICON_PACKAGE Installing $name${version:+ ($constraint_type $version)}"
-    fi
-
-    # Build paru command
-    local install_cmd="paru -S --noconfirm --needed"
-
-    # Add version specifier if needed
-    if [[ -n "$version" ]] && [[ "$constraint_type" == "exact" ]]; then
-        install_cmd="$install_cmd ${name}=${version}"
-    else
-        install_cmd="$install_cmd ${name}"
-    fi
-
-    # Execute installation
-    if eval "$install_cmd"; then
-        # Get actual installed version
-        local new_version=$(_get_package_version "$name")
-
-        # Validate variables before state update (NO strict mode - explicit checks)
-        if [[ -z "${name:-}" ]] || [[ -z "${new_version:-}" ]]; then
-            ui_error "CRITICAL: Missing required variables after installation"
-            ui_error "name='${name:-}' new_version='${new_version:-}'"
-            return 1
-        fi
-
-        # Update state file
-        local constraint_value="null"
-        if [[ -n "$version" ]]; then
-            case "$constraint_type" in
-                "exact") constraint_value="\"$version\"" ;;
-                "minimum") constraint_value="\">=$version\"" ;;
-                "maximum") constraint_value="\"<$version\"" ;;
-            esac
-        fi
-
-        # Call state update (it has its own validation now)
-        if ! _update_package_state "$name" "$new_version" "pacman" "$module" "$constraint_value"; then
-            ui_error "Failed to update state file for $name"
-            return 1
-        fi
-
-        ui_success "Installed $name ($new_version)"
-        return 0
-    else
-        ui_error "Failed to install $name"
-        return 1
-    fi
-}
+# Package install/remove operations now in packages/package-operations.sh
+# Functions: _install_package(), _remove_package(), _install_flatpak()
 
 # Install a Flatpak package
 # Usage: _install_flatpak <flatpak_spec> <module_name>
@@ -336,119 +213,12 @@ _install_flatpak() {
     fi
 }
 
-# Remove a package (pacman or flatpak)
-# Usage: _remove_package <package_name>
-_remove_package() {
-    local package="$1"
+# =============================================================================
+# VERSION SELECTION
+# =============================================================================
 
-    # Check if package is in state file
-    local pkg_type
-    pkg_type=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .type' "$STATE_FILE" 2>/dev/null)
-
-    if [[ -z "$pkg_type" ]]; then
-        # Not in state file, try to detect (using cache)
-        if pacman -Q "$package" &>/dev/null; then
-            pkg_type="pacman"
-        elif _is_flatpak_installed "$package"; then
-            pkg_type="flatpak"
-        else
-            ui_warning "Package '$package' not found (not installed or not in state)"
-            return 1
-        fi
-    fi
-
-    # Check if pinned
-    local is_pinned
-    is_pinned=$(PKG="$package" yq eval '.packages[] | select(.name == env(PKG)) | .pinned' "$STATE_FILE" 2>/dev/null)
-    if [[ "$is_pinned" == "true" ]]; then
-        ui_warning "$ICON_WARNING  Package '$package' is pinned"
-        if ! ui_confirm "Remove anyway?"; then
-            ui_info "Cancelled"
-            return 0
-        fi
-    fi
-
-    ui_step "$ICON_TRASH  Removing $package ($pkg_type)"
-
-    # Remove based on type
-    case "$pkg_type" in
-        "pacman")
-            if paru -R --noconfirm "$package"; then
-                ui_success "Removed $package"
-            else
-                ui_error "Failed to remove $package"
-                return 1
-            fi
-            ;;
-        "flatpak")
-            if flatpak uninstall -y --user "$package" 2>&1; then
-                ui_success "Removed Flatpak: $package"
-            else
-                ui_error "Failed to remove Flatpak: $package"
-                return 1
-            fi
-            ;;
-        *)
-            ui_error "Unknown package type: $pkg_type"
-            return 1
-            ;;
-    esac
-
-    # Remove from state file
-    PKG="$package" yq eval 'del(.packages[] | select(.name == env(PKG)))' -i "$STATE_FILE"
-
-    return 0
-}
-
-# Interactive downgrade version selection
-# Usage: version=$(_select_downgrade_version <package_name>)
-# Returns: Selected version string, or empty if cancelled
-_select_downgrade_version() {
-    local package="$1"
-
-    ui_step "Fetching available versions for $package..."
-
-    # Get available versions from paru (AUR and repos)
-    local versions=$(paru -Si "$package" 2>/dev/null | grep -E '^Version' | awk '{print $3}' | head -20)
-
-    if [[ -z "$versions" ]]; then
-        ui_error "No versions found for $package"
-        return 1
-    fi
-
-    # Build numbered menu
-    ui_info "Available versions for $package:"
-    echo ""
-
-    local -a version_array=()
-    local i=1
-    while IFS= read -r ver; do
-        ui_info "  [$i] $ver"
-        version_array+=("$ver")
-        ((i++))
-    done <<< "$versions"
-
-    ui_info "  [q] Cancel"
-    ui_spacer
-
-    # Get user selection
-    local selection
-    while true; do
-        read -p "Select version (1-${#version_array[@]}, or 'q' to cancel): " selection
-
-        if [[ "$selection" == "q" ]] || [[ "$selection" == "Q" ]]; then
-            return 1
-        fi
-
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -le "${#version_array[@]}" ]]; then
-            local selected_version="${version_array[$((selection - 1))]}"
-            echo "$selected_version"
-            return 0
-        else
-            ui_warning "Invalid selection, try again"
-        fi
-    done
-}
+# Version selection now in commands/cmd-sync.sh (with fzf support)
+# Function: _select_downgrade_version()
 
 
 # =============================================================================

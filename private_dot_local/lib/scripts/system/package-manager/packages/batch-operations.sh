@@ -92,17 +92,41 @@ _update_batch_state() {
         return 0
     fi
 
-    # Query installed versions once for all packages
+    # Query installed versions with error detection
     declare -A new_versions
+    local pacman_output pacman_status
+
+    pacman_output=$(pacman -Q "$(printf '%s\n' "${package_names[@]}")" 2>&1)
+    pacman_status=$?
+
+    if [[ $pacman_status -ne 0 ]]; then
+        ui_warning "Batch version query failed: $pacman_output"
+        return 1
+    fi
+
     while IFS=' ' read -r pkg ver; do
         [[ -n "$pkg" ]] && new_versions[$pkg]="$ver"
-    done < <(pacman -Q "$(printf '%s\n' "${package_names[@]}")" 2>/dev/null)
+    done <<< "$pacman_output"
 
-    # Update state for each package
+    # Update state with error tracking
+    local failed=0
     for name in "${package_names[@]}"; do
         local new_version="${new_versions[$name]:-}"
         if [[ -n "$new_version" ]]; then
-            _update_package_state "$name" "$new_version" "pacman" "batch" "null"
+            if ! _update_package_state "$name" "$new_version" "pacman" "batch" "null"; then
+                ui_error "Failed to update state for $name"
+                ((failed++))
+            fi
+        else
+            ui_warning "Package $name not found after batch install"
+            ((failed++))
         fi
     done
+
+    if [[ $failed -gt 0 ]]; then
+        ui_error "Batch state update: $failed packages failed"
+        return 1
+    fi
+
+    return 0
 }

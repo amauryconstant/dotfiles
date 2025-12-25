@@ -2,7 +2,96 @@
 
 # Script: cmd-merge.sh
 # Purpose: Merge unmanaged packages into modules
-# Requirements: yq, pacman
+# Requirements: yq, pacman, jaq
+
+# =============================================================================
+# MODULE METADATA BATCHING
+# =============================================================================
+
+# Load all module metadata in a single yq call for performance
+# Populates MODULE_DESCRIPTIONS, MODULE_PKG_COUNTS, MODULE_ENABLED arrays
+_load_module_metadata() {
+    local packages_file="$1"
+
+    # Single yq call extracting all module metadata as JSON (Optimization 2)
+    local metadata_json
+    metadata_json=$(yq eval '.packages.modules | to_entries | map({
+        "name": .key,
+        "description": .value.description // "",
+        "pkg_count": .value.packages | length,
+        "enabled": .value.enabled // true
+    })' "$packages_file" -o=json 2>/dev/null)
+
+    if [[ -z "$metadata_json" || "$metadata_json" == "null" ]]; then
+        return 1
+    fi
+
+    # Parse JSON into associative arrays using jaq
+    local module_count
+    module_count=$(echo "$metadata_json" | jaq 'length' 2>/dev/null)
+
+    if [[ -z "$module_count" || "$module_count" == "0" ]]; then
+        return 1
+    fi
+
+    for ((i=0; i<module_count; i++)); do
+        local name desc pkg_count enabled
+        name=$(echo "$metadata_json" | jaq -r ".[$i].name" 2>/dev/null)
+        desc=$(echo "$metadata_json" | jaq -r ".[$i].description" 2>/dev/null)
+        pkg_count=$(echo "$metadata_json" | jaq -r ".[$i].pkg_count" 2>/dev/null)
+        enabled=$(echo "$metadata_json" | jaq -r ".[$i].enabled" 2>/dev/null)
+
+        [[ -n "$name" ]] && MODULE_DESCRIPTIONS["$name"]="$desc"
+        [[ -n "$name" ]] && MODULE_PKG_COUNTS["$name"]="$pkg_count"
+        [[ -n "$name" ]] && MODULE_ENABLED["$name"]="$enabled"
+    done
+
+    return 0
+}
+
+# =============================================================================
+# PACKAGE ADDITION BATCHING
+# =============================================================================
+
+# Add multiple packages to a module in a single atomic operation
+# Usage: _add_packages_to_module_batch <target_module> <packages_file> <pkg1> <pkg2> ...
+_add_packages_to_module_batch() {
+    local target_module="$1"
+    local packages_file="$2"
+    shift 2
+    local packages_to_add=("$@")
+
+    if [[ ${#packages_to_add[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Build JSON array of packages (Optimization 3)
+    local packages_json
+    packages_json=$(printf '%s\n' "${packages_to_add[@]}" | jaq -R . | jaq -s . 2>/dev/null)
+
+    if [[ -z "$packages_json" || "$packages_json" == "null" ]]; then
+        ui_error "Failed to build package JSON array"
+        return 1
+    fi
+
+    # Single atomic update with temp file
+    local temp_file="${packages_file}.tmp.$$"
+    if ! yq eval ".packages.modules[\"$target_module\"].packages += $packages_json" \
+            "$packages_file" > "$temp_file" 2>/dev/null; then
+        rm -f "$temp_file"
+        ui_error "Failed to update packages file"
+        return 1
+    fi
+
+    # Atomic rename (POSIX guarantee)
+    if ! mv "$temp_file" "$packages_file" 2>/dev/null; then
+        rm -f "$temp_file"
+        ui_error "Failed to write packages file"
+        return 1
+    fi
+
+    return 0
+}
 
 cmd_merge() {
     local dry_run=false
@@ -96,22 +185,27 @@ cmd_merge() {
         return 0
     fi
 
+    # Load module metadata once for performance (Optimization 2)
+    declare -A MODULE_DESCRIPTIONS MODULE_PKG_COUNTS MODULE_ENABLED
+    if ! _load_module_metadata "$PACKAGES_FILE"; then
+        ui_error "Failed to load module metadata"
+        return 1
+    fi
+
     # Module selection with fzf if available
     local selected_module
     if command -v fzf >/dev/null 2>&1; then
-        # fzf-powered module selection with preview
+        # fzf-powered module selection with preview (using cached metadata)
         local -a fzf_input=()
         while IFS= read -r module; do
             [[ -z "$module" ]] && continue
 
-            local description
-            local pkg_count
-            local enabled
-            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
-            [[ -z "$description" || "$description" == "null" ]] && description="No description"
+            # Use cached metadata instead of individual yq calls
+            local description="${MODULE_DESCRIPTIONS[$module]}"
+            local pkg_count="${MODULE_PKG_COUNTS[$module]}"
+            local enabled="${MODULE_ENABLED[$module]}"
 
-            pkg_count=$(MOD="$module" yq eval '.packages.modules[env(MOD)].packages | length' "$PACKAGES_FILE" 2>/dev/null)
-            enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
+            [[ -z "$description" || "$description" == "null" ]] && description="No description"
             local status="[disabled]"
             [[ "$enabled" == "true" ]] && status="[enabled]"
 
@@ -153,13 +247,13 @@ cmd_merge() {
             return 1
         fi
 
-        # Display module options
+        # Display module options (using cached metadata)
         ui_info "Available modules:"
         echo ""
         local i=1
         for module in "${module_list[@]}"; do
-            local description
-            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE" 2>/dev/null)
+            # Use cached metadata instead of individual yq call
+            local description="${MODULE_DESCRIPTIONS[$module]}"
             [[ -z "$description" || "$description" == "null" ]] && description="No description"
             ui_info "  [$i] $module"
             ui_info "      $description"
@@ -190,14 +284,13 @@ cmd_merge() {
     echo ""
     ui_step "Adding packages to module: $selected_module"
 
-    # Add packages to selected module
-    local added=0
-    for pkg in "${unmanaged[@]}"; do
-        MOD="$selected_module" PKG="$pkg" yq eval '.packages.modules[env(MOD)].packages += [env(PKG)]' -i "$PACKAGES_FILE"
-        ((added++))
-    done
+    # Add all packages in a single batch operation (Optimization 3)
+    if ! _add_packages_to_module_batch "$selected_module" "$PACKAGES_FILE" "${unmanaged[@]}"; then
+        ui_error "Failed to add packages to module '$selected_module'"
+        return 1
+    fi
 
     echo ""
-    ui_success "Added $added packages to module '$selected_module'"
+    ui_success "Added ${#unmanaged[@]} packages to module '$selected_module'"
     ui_info "Run 'package-manager sync' to reconcile system state"
 }

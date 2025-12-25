@@ -236,11 +236,37 @@ _sync_execute() {
     return 0
 }
 
+# =============================================================================
+# CONSTRAINT PARSING CACHE
+# =============================================================================
+
+# Cached version of _parse_package_constraint for performance
+# Memoizes parsing results in CONSTRAINT_CACHE associative array
+_parse_package_constraint_cached() {
+    local package="$1"
+
+    # Check cache first
+    if [[ -n "${CONSTRAINT_CACHE[$package]:-}" ]]; then
+        echo "${CONSTRAINT_CACHE[$package]}"
+        return 0
+    fi
+
+    # Parse and cache
+    local parsed
+    parsed=$(_parse_package_constraint "$package")
+    CONSTRAINT_CACHE["$package"]="$parsed"
+
+    echo "$parsed"
+}
+
 _sync_execute_pacman() {
     local -n versions_map=$1
     local -n results=$2
 
     ui_step "Analyzing pacman packages..."
+
+    # Initialize constraint parsing cache (Optimization 5)
+    declare -gA CONSTRAINT_CACHE
 
     local batch_install=""
     local batch_upgrade=""
@@ -249,7 +275,7 @@ _sync_execute_pacman() {
     for pkg_entry in "${SYNC_PACMAN_PACKAGES[@]}"; do
         IFS='|' read -r package module <<< "$pkg_entry"
 
-        local pkg_data=$(_parse_package_constraint "$package")
+        local pkg_data=$(_parse_package_constraint_cached "$package")
         IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
         local installed_version="${versions_map[$name]:-}"

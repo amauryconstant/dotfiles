@@ -92,21 +92,27 @@ _install_package() {
         ui_step "$ICON_PACKAGE Installing $name${version:+ ($constraint_type $version)}"
     fi
 
-    # Build paru command
-    local install_cmd="paru -S --noconfirm --needed"
+    # Execute installation
+    local -a install_cmd=(paru -S --noconfirm --needed)
 
     # Add version specifier if needed
     if [[ -n "$version" ]] && [[ "$constraint_type" == "exact" ]]; then
-        install_cmd="$install_cmd ${name}=${version}"
+        install_cmd+=("${name}=${version}")
     else
-        install_cmd="$install_cmd ${name}"
+        install_cmd+=("$name")
     fi
 
-    # Execute installation
-    if eval "$install_cmd"; then
+    if "${install_cmd[@]}"; then
         # Get actual installed version
         local new_version
         new_version=$(_get_package_version "$name")
+
+        # Validate variables before state update (security check)
+        if [[ -z "${name:-}" ]] || [[ -z "${new_version:-}" ]]; then
+            ui_error "CRITICAL: Missing required variables after installation"
+            ui_error "name='${name:-}' new_version='${new_version:-}'"
+            return 1
+        fi
 
         # Update state file
         local constraint_value="null"
@@ -118,7 +124,10 @@ _install_package() {
             esac
         fi
 
-        _update_package_state "$name" "$new_version" "pacman" "$module" "$constraint_value"
+        if ! _update_package_state "$name" "$new_version" "pacman" "$module" "$constraint_value"; then
+            ui_error "Failed to update state file for $name"
+            return 1
+        fi
 
         ui_success "Installed $name ($new_version)"
         return 0
@@ -191,7 +200,10 @@ _remove_package() {
     esac
 
     # Remove from state file
-    PKG="$package" yq eval 'del(.packages[] | select(.name == env(PKG)))' -i "$STATE_FILE"
+    if ! _remove_package_state "$package"; then
+        ui_error "Failed to update state file after removing $package"
+        return 1
+    fi
 
     return 0
 }
