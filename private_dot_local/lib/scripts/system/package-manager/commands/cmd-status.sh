@@ -7,37 +7,40 @@
 cmd_status() {
     ui_title "$ICON_CHART Package Manager Status"
 
+    # Load caches once at start
+    _load_module_cache
+    _load_pacman_version_cache
+
     # Module Status
     ui_step "Modules"
     local total_modules=$(yq eval '.packages.modules | keys | length' "$PACKAGES_FILE")
     local enabled_count=0
     local disabled_count=0
 
-    while IFS= read -r module; do
-        ((enabled_count++))
-        local pkg_count=$(_get_module_packages "$module" | wc -l)
-        local description
-        description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE")
+    # Build module table
+    {
+        printf "Module\tPackages\tStatus\tDescription\n"
 
-        ui_success "  $ICON_CHECK $module ($pkg_count packages)"
-        ui_info "    $description"
-
-        # Check for conflicts
-        local conflicts=$(_get_module_conflicts "$module")
-        if [[ -n "$conflicts" ]]; then
-            ui_warning "    $ICON_WARNING  Conflicts: $conflicts"
-        fi
-    done < <(_get_enabled_modules)
-
-    local disabled_modules=$(yq eval '.packages.modules | to_entries | .[] | select(.value.enabled == false) | .key' "$PACKAGES_FILE" 2>/dev/null)
-    if [[ -n "$disabled_modules" ]]; then
-        echo ""
-        ui_info "Disabled modules:"
+        # Enabled modules
         while IFS= read -r module; do
-            ((disabled_count++))
-            ui_info "  $ICON_ERROR $module" | ui_color gray
-        done <<< "$disabled_modules"
-    fi
+            ((enabled_count++))
+            local pkg_count=$(_get_module_packages_cached "$module" | wc -l)
+            local description
+            description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE")
+            printf "%s\t%d\tEnabled\t%s\n" "$module" "$pkg_count" "$description"
+        done < <(_get_enabled_modules_cached)
+
+        # Disabled modules
+        local disabled_modules=$(yq eval '.packages.modules | to_entries | .[] | select(.value.enabled == false) | .key' "$PACKAGES_FILE" 2>/dev/null)
+        if [[ -n "$disabled_modules" ]]; then
+            while IFS= read -r module; do
+                ((disabled_count++))
+                local description
+                description=$(MOD="$module" yq eval '.packages.modules[env(MOD)].description' "$PACKAGES_FILE")
+                printf "%s\t-\tDisabled\t%s\n" "$module" "$description"
+            done <<< "$disabled_modules"
+        fi
+    } | ui_table
 
     echo ""
     ui_success "Total: $total_modules modules ($enabled_count enabled, $disabled_count disabled)"
@@ -49,12 +52,9 @@ cmd_status() {
     local pinned_count=0
     local violations=0
 
-    # Pre-load version cache for performance (batch query instead of N individual queries)
-    _load_pacman_version_cache
-
     while IFS= read -r module; do
         while IFS= read -r package; do
-            local pkg_data=$(_parse_package_constraint "$package")
+            local pkg_data=$(_parse_package_constraint_cached "$package")
             IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
             if [[ "$constraint_type" != "none" ]]; then
@@ -65,36 +65,13 @@ cmd_status() {
                 local violates=false
 
                 if [[ -n "$installed" ]]; then
-                    case "$constraint_type" in
-                        "exact")
-                            if [[ "$installed" == "$version" ]]; then
-                                status="$ICON_CHECK"
-                            else
-                                status="$ICON_ERROR"
-                                violates=true
-                            fi
-                            ;;
-                        "minimum")
-                            _compare_versions "$installed" "$version"
-                            local cmp=$?
-                            if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                                status="$ICON_CHECK"
-                            else
-                                status="$ICON_ERROR"
-                                violates=true
-                            fi
-                            ;;
-                        "maximum")
-                            _compare_versions "$installed" "$version"
-                            local cmp=$?
-                            if [[ $cmp -eq 2 ]]; then
-                                status="$ICON_CHECK"
-                            else
-                                status="$ICON_ERROR"
-                                violates=true
-                            fi
-                            ;;
-                    esac
+                    # Use centralized constraint checking
+                    if _check_constraint_satisfaction "$installed" "$version" "$constraint_type"; then
+                        status="$ICON_CHECK"
+                    else
+                        status="$ICON_ERROR"
+                        violates=true
+                    fi
 
                     if [[ "$violates" == "true" ]]; then
                         ((violations++))
@@ -106,8 +83,8 @@ cmd_status() {
                     ui_warning "  $ICON_UNKNOWN $name: $constraint_type $version (not installed)"
                 fi
             fi
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+        done < <(_get_module_packages_cached "$module")
+    done < <(_get_enabled_modules_cached)
 
     if [[ $pinned_count -eq 0 ]]; then
         ui_info "  No version constraints set"
@@ -139,13 +116,13 @@ cmd_status() {
     declare -A declared_set
     while IFS= read -r module; do
         while IFS= read -r package; do
-            local pkg_data=$(_parse_package_constraint "$package")
+            local pkg_data=$(_parse_package_constraint_cached "$package")
             IFS='|' read -r name _ _ <<< "$pkg_data"
             # Strip flatpak: prefix for comparison
             local name_stripped="${name#flatpak:}"
             [[ -n "$name_stripped" ]] && declared_set[$name_stripped]=1
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+        done < <(_get_module_packages_cached "$module")
+    done < <(_get_enabled_modules_cached)
 
     # Then O(N) lookup for orphans
     while IFS= read -r pkg_name; do

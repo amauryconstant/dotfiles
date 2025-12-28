@@ -41,22 +41,77 @@ _install_packages_batch() {
 
     # Try batch install
     if [[ "$BATCH_INSTALLS" == "true" ]]; then
-        if paru -S --noconfirm --needed "${pkg_specs[@]}" 2>&1; then
+        ui_info "Installing ${#pkg_specs[@]} packages..." >&2
+        if paru -S --noconfirm --needed "${pkg_specs[@]}"; then
             ui_success "Batch install complete (${#pkg_specs[@]} packages)"
 
             # Update state for all packages
             _update_batch_state "${pkg_names[@]}"
+
+            # Invalidate pacman cache after batch install
+            _invalidate_pacman_cache
+
             return 0
         else
-            ui_warning "Batch failed, falling back to individual installs"
+            # Batch failed - detect partial success to avoid redundant work
+            ui_warning "Batch install encountered errors"
+
+            local -a succeeded=()
+            local -a failed_packages=()
+
+            # Check which packages actually got installed
+            for pkg_name in "${pkg_names[@]}"; do
+                if pacman -Q "$pkg_name" &>/dev/null; then
+                    succeeded+=("$pkg_name")
+                else
+                    failed_packages+=("$pkg_name")
+                fi
+            done
+
+            # Update state for successful installs (performance optimization)
+            if [[ ${#succeeded[@]} -gt 0 ]]; then
+                ui_info "Partial success: ${#succeeded[@]}/${#pkg_names[@]} packages installed"
+                _update_batch_state "${succeeded[@]}"
+                _invalidate_pacman_cache
+            fi
+
+            # Fall back to individual installs for failed packages only
+            if [[ ${#failed_packages[@]} -eq 0 ]]; then
+                # All packages actually succeeded despite error exit code
+                ui_success "All packages installed (batch reported errors but succeeded)"
+                return 0
+            fi
+
+            ui_warning "Retrying ${#failed_packages[@]} failed packages individually..."
+
+            # Rebuild arrays to match failed packages only
+            local -a failed_modules=()
+            local -a failed_specs=()
+            for idx in "${!pkg_names[@]}"; do
+                local pkg_name="${pkg_names[$idx]}"
+                # Check if this package failed
+                for failed_pkg in "${failed_packages[@]}"; do
+                    if [[ "$pkg_name" == "$failed_pkg" ]]; then
+                        failed_modules+=("${pkg_modules[$idx]}")
+                        failed_specs+=("${pkg_specs[$idx]}")
+                        break
+                    fi
+                done
+            done
+
+            pkg_names=("${failed_packages[@]}")
+            pkg_modules=("${failed_modules[@]}")
+            pkg_specs=("${failed_specs[@]}")
         fi
     fi
 
-    # Fallback: install individually
+    # Fallback: install individually (only failed packages now)
     local success=0
     local failed=0
 
     for idx in "${!pkg_names[@]}"; do
+        local current=$((idx + 1))
+        local total=${#pkg_names[@]}
         local name="${pkg_names[$idx]}"
         local module="${pkg_modules[$idx]}"
         local spec="${pkg_specs[$idx]}"
@@ -67,10 +122,14 @@ _install_packages_batch() {
             cached_version="${spec#*=}"
         fi
 
+        ui_step "[$current/$total] Installing: $name"
+
         if _install_package "$name" "$module" "$cached_version"; then
             ((success++))
+            ui_success "  ✓ Installed: $name"
         else
             ((failed++))
+            ui_error "  ✗ Failed: $name"
         fi
     done
 
@@ -96,35 +155,38 @@ _update_batch_state() {
     declare -A new_versions
     local pacman_output pacman_status
 
-    pacman_output=$(pacman -Q "$(printf '%s\n' "${package_names[@]}")" 2>&1)
+    pacman_output=$(pacman -Q "${package_names[@]}" 2>&1)
     pacman_status=$?
 
     if [[ $pacman_status -ne 0 ]]; then
-        ui_warning "Batch version query failed: $pacman_output"
-        return 1
+        ui_warning "Batch version query failed, falling back to individual queries"
+        # Fallback: query each package individually
+        for name in "${package_names[@]}"; do
+            local ver
+            ver=$(_get_package_version "$name")
+            if [[ -n "$ver" ]]; then
+                if ! _update_package_state "$name" "$ver" "pacman" "batch" "null"; then
+                    ui_error "Failed to update state for $name"
+                fi
+            else
+                ui_warning "Package $name not found after batch install"
+            fi
+        done
+        return 0
     fi
 
     while IFS=' ' read -r pkg ver; do
         [[ -n "$pkg" ]] && new_versions[$pkg]="$ver"
     done <<< "$pacman_output"
 
-    # Update state with error tracking
-    local failed=0
-    for name in "${package_names[@]}"; do
-        local new_version="${new_versions[$name]:-}"
-        if [[ -n "$new_version" ]]; then
-            if ! _update_package_state "$name" "$new_version" "pacman" "batch" "null"; then
-                ui_error "Failed to update state for $name"
-                ((failed++))
-            fi
-        else
-            ui_warning "Package $name not found after batch install"
-            ((failed++))
+    # Update state using batch update (80-90% faster than loop)
+    if [[ ${#new_versions[@]} -gt 0 ]]; then
+        if ! _update_batch_package_state new_versions "pacman" "batch"; then
+            ui_error "Failed to update batch state"
+            return 1
         fi
-    done
-
-    if [[ $failed -gt 0 ]]; then
-        ui_error "Batch state update: $failed packages failed"
+    else
+        ui_warning "No packages found after batch install"
         return 1
     fi
 

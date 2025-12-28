@@ -51,40 +51,23 @@ _install_package() {
     fi
 
     if [[ -n "$installed" ]]; then
-        # Already installed, check if version matches constraint
+        # Already installed, check if version matches constraint (using centralized logic)
+        if _check_constraint_satisfaction "$installed" "$version" "$constraint_type"; then
+            ui_info "$ICON_PACKAGE $name: Already meets constraint (installed: $installed)"
+            return 0
+        fi
+
+        # Constraint violated - show appropriate message
         case "$constraint_type" in
             "exact")
-                if [[ "$installed" == "$version" ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already at exact version $version"
-                    return 0
-                else
-                    ui_step "$ICON_PACKAGE $name: Switching from $installed to $version"
-                fi
+                ui_step "$ICON_PACKAGE $name: Switching from $installed to $version"
                 ;;
             "minimum")
-                _compare_versions "$installed" "$version"
-                local cmp=$?
-                if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already meets constraint >=$version (installed: $installed)"
-                    return 0
-                else
-                    ui_step "$ICON_PACKAGE $name: Upgrading from $installed to meet >=$version"
-                fi
+                ui_step "$ICON_PACKAGE $name: Upgrading from $installed to meet >=$version"
                 ;;
             "maximum")
-                _compare_versions "$installed" "$version"
-                local cmp=$?
-                if [[ $cmp -eq 2 ]]; then
-                    ui_info "$ICON_PACKAGE $name: Already meets constraint <$version (installed: $installed)"
-                    return 0
-                else
-                    ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$version constraint"
-                    ui_warning "Interactive downgrade required (use 'sync' command)"
-                    return 0
-                fi
-                ;;
-            "none")
-                ui_info "$ICON_PACKAGE $name: Already installed ($installed)"
+                ui_warning "$ICON_PACKAGE $name: Installed $installed violates <$version constraint"
+                ui_warning "Interactive downgrade required (use 'sync' command)"
                 return 0
                 ;;
         esac
@@ -128,6 +111,9 @@ _install_package() {
             ui_error "Failed to update state file for $name"
             return 1
         fi
+
+        # Invalidate pacman cache after install
+        _invalidate_pacman_cache
 
         ui_success "Installed $name ($new_version)"
         return 0
@@ -203,6 +189,13 @@ _remove_package() {
     if ! _remove_package_state "$package"; then
         ui_error "Failed to update state file after removing $package"
         return 1
+    fi
+
+    # Invalidate cache after removal (depends on type)
+    if [[ "$pkg_type" == "pacman" ]]; then
+        _invalidate_pacman_cache
+    elif [[ "$pkg_type" == "flatpak" ]]; then
+        _invalidate_flatpak_cache
     fi
 
     return 0

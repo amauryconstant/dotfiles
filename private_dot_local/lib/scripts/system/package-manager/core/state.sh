@@ -25,6 +25,88 @@ _read_state() {
     yq eval '.packages' "$STATE_FILE"
 }
 
+# =============================================================================
+# ATOMIC STATE MUTATION HELPER (Eliminates duplication in update/remove)
+# =============================================================================
+
+_atomic_state_mutation() {
+    # Generic atomic state mutation pattern with trap-based cleanup
+    # Args: mutation_callback temp_state_path [callback_args...]
+    local mutation_callback="$1"
+    local context="$2"
+    shift 2
+
+    _backup_state_file
+
+    local temp_state="${STATE_FILE}.tmp.$$"
+    trap 'rm -f "$temp_state"' RETURN
+
+    # Copy to temp
+    if ! cp "$STATE_FILE" "$temp_state"; then
+        ui_error "CRITICAL: Failed to create temp state file for $context"
+        return 1
+    fi
+
+    # Execute mutation callback
+    if ! "$mutation_callback" "$temp_state" "$@"; then
+        ui_error "CRITICAL: Mutation failed for $context"
+        return 1
+    fi
+
+    # Validate
+    if ! yq eval '.' "$temp_state" >/dev/null 2>&1; then
+        ui_error "CRITICAL: State file corrupted during $context"
+        return 1
+    fi
+
+    # Atomic commit
+    if ! mv "$temp_state" "$STATE_FILE"; then
+        ui_error "CRITICAL: Failed to commit state file for $context"
+        return 1
+    fi
+}
+
+# Mutation callback for package update
+_do_package_update() {
+    local temp_state="$1"
+    local name="$2" version="$3" type="$4" module="$5" constraint="$6" timestamp="$7"
+
+    # Delete old entry
+    NAME="$name" yq eval -i 'del(.packages[] | select(.name == env(NAME)))' "$temp_state" || return 1
+
+    # Prepare pinned flag
+    local pinned="false"
+    [[ "$constraint" != "null" ]] && pinned="true"
+
+    # Add new entry using yq --arg for safe variable substitution
+    yq eval -i \
+        --arg name "$name" \
+        --arg version "$version" \
+        --arg type "$type" \
+        --arg module "$module" \
+        --argjson constraint "$constraint" \
+        --argjson pinned "$pinned" \
+        --arg timestamp "$timestamp" \
+        '.packages += [{
+          "name": $name,
+          "version": $version,
+          "type": $type,
+          "module": $module,
+          "constraint": $constraint,
+          "pinned": $pinned,
+          "installed_at": $timestamp,
+          "last_updated": $timestamp
+        }]' "$temp_state"
+}
+
+# Mutation callback for package removal
+_do_package_remove() {
+    local temp_state="$1"
+    local name="$2"
+
+    NAME="$name" yq eval -i 'del(.packages[] | select(.name == env(NAME)))' "$temp_state"
+}
+
 _update_package_state() {
     local name="$1"
     local version="$2"
@@ -32,89 +114,22 @@ _update_package_state() {
     local module="${4:-unknown}"
     local constraint="${5:-null}"
 
-    # Validate required inputs (NO strict mode - explicit checks)
+    # Validate required inputs
     if [[ -z "${name:-}" ]] || [[ -z "${version:-}" ]]; then
         ui_error "CRITICAL: Missing required variables for state update"
         ui_error "name='${name:-}' version='${version:-}'"
         return 1
     fi
 
-    # Validate type is pacman or flatpak
-    if [[ "$type" != "pacman" ]] && [[ "$type" != "flatpak" ]]; then
-        ui_error "CRITICAL: Invalid package type '$type' (must be 'pacman' or 'flatpak')"
-        return 1
-    fi
+    _validate_package_type "$type" || return 1
 
     _init_state_file
 
     local timestamp=$(date -Iseconds)
 
-    # Atomic write pattern: use temp file + validation + atomic commit
-    local temp_state="${STATE_FILE}.tmp.$$"
-    local error_log="${STATE_FILE}.error.$$"
-
-    # Copy current state to temp file
-    if ! cp "$STATE_FILE" "$temp_state" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to create temp state file"
-        cat "$error_log" >&2
-        rm -f "$error_log"
-        return 1
-    fi
-
-    # Remove existing entry from temp file
-    if ! NAME="$name" yq eval 'del(.packages[] | select(.name == env(NAME)))' -i "$temp_state" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to remove existing entry for '$name'"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
-
-    # Prepare new entry
-    local pinned="false"
-    [[ "$constraint" != "null" ]] && pinned="true"
-
-    local package_entry=$(cat <<EOF
-{
-  "name": "$name",
-  "version": "$version",
-  "type": "$type",
-  "module": "$module",
-  "constraint": $constraint,
-  "pinned": $pinned,
-  "installed_at": "$timestamp",
-  "last_updated": "$timestamp"
-}
-EOF
-)
-
-    # Add new entry to temp file
-    if ! yq eval ".packages += [$package_entry]" -i "$temp_state" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to add new entry for '$name'"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
-
-    # Validate temp file syntax before committing
-    if ! yq eval '.' "$temp_state" >/dev/null 2>"$error_log"; then
-        ui_error "CRITICAL: State file corrupted during update for '$name'"
-        ui_error "Temp file validation failed - state file NOT updated"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
-
-    # Atomic commit: move temp to actual (this is atomic on same filesystem)
-    if ! mv "$temp_state" "$STATE_FILE" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to commit state file update"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
-
-    # Cleanup error log
-    rm -f "$error_log"
-    return 0
+    # Use atomic mutation helper (replaces 80 lines of duplicated logic)
+    _atomic_state_mutation _do_package_update "package state update" \
+        "$name" "$version" "$type" "$module" "$constraint" "$timestamp"
 }
 
 # Remove package from state
@@ -129,45 +144,74 @@ _remove_package_state() {
 
     _init_state_file
 
-    # Atomic write pattern
-    local temp_state="${STATE_FILE}.tmp.$$"
-    local error_log="${STATE_FILE}.error.$$"
+    # Use atomic mutation helper (replaces 45 lines of duplicated logic)
+    _atomic_state_mutation _do_package_remove "package state removal" "$name"
+}
 
-    # Copy current state to temp file
-    if ! cp "$STATE_FILE" "$temp_state" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to create temp state file for removal"
-        cat "$error_log" >&2
-        rm -f "$error_log"
-        return 1
+# Mutation callback for batch package updates
+_do_batch_update() {
+    local temp_state="$1"
+    shift
+    local -n pkgs=$1
+    local pkg_type="$2"
+    local pkg_module="$3"
+
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Delete old entries and build JSON array
+    local entries_json="["
+    local first=true
+
+    for name in "${!pkgs[@]}"; do
+        local version="${pkgs[$name]}"
+
+        # Delete old entry
+        NAME="$name" yq eval -i 'del(.packages[] | select(.name == env(NAME)))' "$temp_state"
+
+        # Build entry
+        if [[ "$first" == "false" ]]; then
+            entries_json+=","
+        fi
+        first=false
+
+        entries_json+=$(cat <<EOF
+{
+  "name": "$name",
+  "version": "$version",
+  "type": "$pkg_type",
+  "module": "$pkg_module",
+  "constraint": null,
+  "pinned": false,
+  "installed_at": "$timestamp",
+  "last_updated": "$timestamp"
+}
+EOF
+)
+    done
+    entries_json+="]"
+
+    # Single yq append (much faster than N individual appends)
+    yq eval -i ".packages += $entries_json" "$temp_state"
+}
+
+# Batch update package states (performance optimization for batch installs)
+# Args: packages_ref (nameref to associative array [name]=version), type, module
+_update_batch_package_state() {
+    local -n packages_ref=$1
+    local type="$2"
+    local module="$3"
+
+    # Validation
+    if [[ ${#packages_ref[@]} -eq 0 ]]; then
+        return 0
     fi
 
-    # Remove entry from temp file
-    if ! NAME="$name" yq eval 'del(.packages[] | select(.name == env(NAME)))' -i "$temp_state" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to remove entry for '$name'"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
+    _validate_package_type "$type" || return 1
 
-    # Validate temp file
-    if ! yq eval '.' "$temp_state" >/dev/null 2>"$error_log"; then
-        ui_error "CRITICAL: State file corrupted during removal of '$name'"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
+    _init_state_file
 
-    # Atomic commit
-    if ! mv "$temp_state" "$STATE_FILE" 2>"$error_log"; then
-        ui_error "CRITICAL: Failed to commit state file after removal"
-        cat "$error_log" >&2
-        rm -f "$temp_state" "$error_log"
-        return 1
-    fi
-
-    # Cleanup
-    rm -f "$error_log"
-    return 0
+    # Use atomic mutation helper (eliminates 45 lines of duplication)
+    _atomic_state_mutation _do_batch_update "batch package state" packages_ref "$type" "$module"
 }
 
 # Get package info from state
@@ -182,4 +226,127 @@ _is_package_in_state() {
     local name="$1"
     _init_state_file
     NAME="$name" yq eval '.packages[] | select(.name == env(NAME)) | .name' "$STATE_FILE" | grep -q "^${name}$"
+}
+
+# =============================================================================
+# STATE FILE BACKUP & RECOVERY
+# =============================================================================
+
+_backup_state_file() {
+    # Create timestamped backup before state mutations
+    # Location: $STATE_DIR/backups/state-YYYYMMDD-HHMMSS.yaml
+    # Retention: Keep last 10 backups
+
+    # Skip if state file doesn't exist yet
+    [[ ! -f "$STATE_FILE" ]] && return 0
+
+    # Skip if already backed up during sync (performance optimization)
+    # SYNC_IN_PROGRESS flag is set by sync operations to prevent redundant backups
+    if [[ "$SYNC_IN_PROGRESS" == "true" ]]; then
+        local backup_dir="$STATE_DIR/backups"
+        local sync_backup="$backup_dir/.sync-backup.yaml"
+
+        # Return if backup already exists for this sync
+        if [[ -f "$sync_backup" ]]; then
+            return 0
+        fi
+
+        # First backup of sync - create .sync-backup.yaml (will be renamed when sync completes)
+        mkdir -p "$backup_dir"
+        cp "$STATE_FILE" "$sync_backup" 2>/dev/null || true
+        return 0
+    fi
+
+    # Create backup directory
+    local backup_dir="$STATE_DIR/backups"
+    mkdir -p "$backup_dir"
+
+    # Create timestamped backup
+    local timestamp=$(date +%Y%m%d-%H%M%S)
+    local backup_file="$backup_dir/state-$timestamp.yaml"
+
+    if cp "$STATE_FILE" "$backup_file" 2>/dev/null; then
+        # Cleanup: keep only last 10 backups
+        local backup_count=$(find "$backup_dir" -name "state-*.yaml" -type f | wc -l)
+        if [[ $backup_count -gt 10 ]]; then
+            find "$backup_dir" -name "state-*.yaml" -type f | sort | head -n -10 | xargs rm -f
+        fi
+    fi
+
+    return 0
+}
+
+_restore_state_from_backup() {
+    # Interactive restoration from backup
+    # Lists available backups with dates
+
+    local backup_dir="$STATE_DIR/backups"
+
+    if [[ ! -d "$backup_dir" ]]; then
+        ui_error "No backups directory found at $backup_dir"
+        return 1
+    fi
+
+    local backups=$(find "$backup_dir" -name "state-*.yaml" -type f | sort -r)
+
+    if [[ -z "$backups" ]]; then
+        ui_error "No state file backups found"
+        return 1
+    fi
+
+    ui_title "Available State File Backups"
+    ui_info "Current state file: $STATE_FILE"
+    echo ""
+
+    # Display backups with timestamps
+    local count=1
+    while IFS= read -r backup; do
+        local basename=$(basename "$backup")
+        local timestamp=${basename#state-}
+        timestamp=${timestamp%.yaml}
+        # Format: YYYYMMDD-HHMMSS -> YYYY-MM-DD HH:MM:SS
+        local formatted_date="${timestamp:0:4}-${timestamp:4:2}-${timestamp:6:2} ${timestamp:9:2}:${timestamp:11:2}:${timestamp:13:2}"
+        echo "$count) $formatted_date"
+        count=$((count + 1))
+    done <<< "$backups"
+
+    echo ""
+    read -r -p "Select backup to restore (1-$((count-1)), or 0 to cancel): " choice
+
+    if [[ "$choice" == "0" ]] || [[ -z "$choice" ]]; then
+        ui_info "Restoration cancelled"
+        return 0
+    fi
+
+    # Get selected backup
+    local selected_backup=$(echo "$backups" | sed -n "${choice}p")
+
+    if [[ -z "$selected_backup" ]]; then
+        ui_error "Invalid selection"
+        return 1
+    fi
+
+    # Confirm restoration
+    ui_warning "This will replace the current state file"
+    if ! ui_confirm "Restore from backup?"; then
+        ui_info "Restoration cancelled"
+        return 0
+    fi
+
+    # Backup current state before restoring
+    if [[ -f "$STATE_FILE" ]]; then
+        cp "$STATE_FILE" "${STATE_FILE}.before-restore.$$"
+    fi
+
+    # Restore backup
+    if cp "$selected_backup" "$STATE_FILE"; then
+        ui_success "State file restored from backup"
+        ui_info "Previous state backed up to: ${STATE_FILE}.before-restore.$$"
+        return 0
+    else
+        ui_error "Failed to restore backup"
+        # Restore previous state
+        [[ -f "${STATE_FILE}.before-restore.$$" ]] && mv "${STATE_FILE}.before-restore.$$" "$STATE_FILE"
+        return 1
+    fi
 }

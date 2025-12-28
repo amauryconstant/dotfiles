@@ -3,7 +3,7 @@
 # Package Manager - Module-based declarative package management with version pinning
 # Purpose: NixOS/dcli-inspired package management for Arch Linux
 # Requirements: Arch Linux, paru, yq, gum (UI library)
-# Version: 2.2.1 (security: yq injection fix, strict mode)
+# Version: 3.0.0 (comprehensive refactoring, new modules, performance optimizations)
 
 # Source UI library (check if already sourced to avoid readonly variable conflicts)
 if ! declare -F ui_title >/dev/null 2>&1; then
@@ -25,38 +25,20 @@ fi
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Source core modules (order matters: constants first, then config and dependencies)
-. "$SCRIPT_DIR/core/constants.sh"
-. "$SCRIPT_DIR/core/config.sh"
-. "$SCRIPT_DIR/core/state.sh"
-. "$SCRIPT_DIR/core/performance.sh"
-. "$SCRIPT_DIR/core/validation.sh"
-
-# Source package modules
-. "$SCRIPT_DIR/packages/version-manager.sh"
-. "$SCRIPT_DIR/packages/batch-operations.sh"
-. "$SCRIPT_DIR/packages/package-operations.sh"
-. "$SCRIPT_DIR/packages/flatpak-manager.sh"
-
-# Source command modules
-. "$SCRIPT_DIR/commands/cmd-install.sh"
-. "$SCRIPT_DIR/commands/cmd-remove.sh"
-. "$SCRIPT_DIR/commands/cmd-lock.sh"
-. "$SCRIPT_DIR/commands/cmd-pin.sh"
-. "$SCRIPT_DIR/commands/cmd-module.sh"
-. "$SCRIPT_DIR/commands/cmd-versions.sh"
-. "$SCRIPT_DIR/commands/cmd-outdated.sh"
-. "$SCRIPT_DIR/commands/cmd-merge.sh"
-. "$SCRIPT_DIR/commands/cmd-sync.sh"
-. "$SCRIPT_DIR/commands/cmd-update.sh"
-. "$SCRIPT_DIR/commands/cmd-status.sh"
-. "$SCRIPT_DIR/commands/cmd-validate.sh"
-. "$SCRIPT_DIR/commands/cmd-find.sh"
-. "$SCRIPT_DIR/commands/cmd-search.sh"
-
 # =============================================================================
-# GLOBAL CONFIGURATION
+# GLOBAL CONFIGURATION (must be defined before sourcing modules)
 # =============================================================================
+#
+# CRITICAL: This section must execute BEFORE sourcing core modules.
+#
+# Why: Core modules use STATE_DIR during initialization:
+#   - state-manager.sh:338 → CONSTRAINT_CACHE_FILE="${STATE_DIR:-.}/.constraint-cache"
+#   - validation.sh:12     → AUR_CACHE_DIR="${STATE_DIR:-.}/.aur-cache"
+#
+# If STATE_DIR is undefined, fallback "." creates cache files in current directory.
+# Historical bug: STATE_DIR defined at line 69 (after modules) caused cache files
+# to be created in ~/.local/share/chezmoi/ instead of ~/.local/state/package-manager/
+#
 
 PACKAGES_FILE="$HOME/.local/share/chezmoi/.chezmoidata/packages.yaml"
 STATE_DIR="$HOME/.local/state/package-manager"
@@ -80,39 +62,53 @@ VERBOSE=false
 # Ensure state directory exists
 mkdir -p "$STATE_DIR"
 
+# Source core modules (order matters: constants first, then state manager, then config and dependencies)
+. "$SCRIPT_DIR/core/constants.sh"
+. "$SCRIPT_DIR/core/state-manager.sh"
+. "$SCRIPT_DIR/core/config.sh"
+. "$SCRIPT_DIR/core/state.sh"
+. "$SCRIPT_DIR/core/performance.sh"
+. "$SCRIPT_DIR/core/validation.sh"
+
+# Source operations modules (NEW in v3.0)
+. "$SCRIPT_DIR/operations/backup-manager.sh"
+. "$SCRIPT_DIR/operations/lockfile-manager.sh"
+. "$SCRIPT_DIR/operations/sync-lock.sh"
+. "$SCRIPT_DIR/operations/sync-orchestrator.sh"
+
+# Source package modules
+. "$SCRIPT_DIR/packages/manager-interface.sh"
+. "$SCRIPT_DIR/packages/version-manager.sh"
+. "$SCRIPT_DIR/packages/batch-operations.sh"
+. "$SCRIPT_DIR/packages/package-operations.sh"
+. "$SCRIPT_DIR/packages/flatpak-manager.sh"
+
+# Source command modules
+. "$SCRIPT_DIR/commands/cmd-install.sh"
+. "$SCRIPT_DIR/commands/cmd-remove.sh"
+. "$SCRIPT_DIR/commands/cmd-lock.sh"
+. "$SCRIPT_DIR/commands/cmd-pin.sh"
+. "$SCRIPT_DIR/commands/cmd-module.sh"
+. "$SCRIPT_DIR/commands/cmd-versions.sh"
+. "$SCRIPT_DIR/commands/cmd-outdated.sh"
+. "$SCRIPT_DIR/commands/cmd-merge.sh"
+. "$SCRIPT_DIR/commands/cmd-update.sh"
+. "$SCRIPT_DIR/commands/cmd-status.sh"
+. "$SCRIPT_DIR/commands/cmd-validate.sh"
+. "$SCRIPT_DIR/commands/cmd-find.sh"
+. "$SCRIPT_DIR/commands/cmd-search.sh"
+
+# =============================================================================
+# MODULE LOADING COMPLETE
+# =============================================================================
+
 # State file I/O functions now in core/state.sh
 
 # Performance cache functions now in core/performance.sh
 
 # Package type detection and version utilities now in packages/version-manager.sh
 
-# =============================================================================
-# LOCKFILE UTILITIES
-# =============================================================================
-
-_read_lockfile() {
-    # Parse lockfile into associative array
-    # Sets global lockfile_versions array
-    # Returns: 0 on success, 1 if lockfile doesn't exist
-
-    declare -g -A lockfile_versions
-
-    if [[ ! -f "$LOCKFILE" ]]; then
-        return 1
-    fi
-
-    # Parse YAML: packages.<module>.<pkg>: "version"
-    while IFS=': ' read -r pkg ver; do
-        [[ -z "$pkg" ]] && continue
-        ver="${ver//\"/}"  # Strip quotes
-        ver="${ver// #*/}"  # Strip comments
-        # shellcheck disable=SC2034  # Global array used in sourced command files
-        [[ -n "$ver" ]] && lockfile_versions[$pkg]="$ver"
-    done < <(yq eval '.packages | to_entries[] | .value | to_entries[] | "\(.key): \(.value)"' "$LOCKFILE" 2>/dev/null)
-
-    return 0
-}
-
+# Lockfile utilities now in operations/lockfile-manager.sh
 # Validation and helper functions now in core/validation.sh
 
 # Batch installation functions now in packages/batch-operations.sh
@@ -122,36 +118,8 @@ _read_lockfile() {
 # =============================================================================
 
 # Module access functions now in core/config.sh
-# Wrapper functions that add yq dependency check
-_get_modules() {
-    _check_yq_dependency || return 1
-    yq eval '.packages.modules | keys | .[]' "$PACKAGES_FILE" 2>/dev/null
-}
-
-_get_enabled_modules() {
-    _check_yq_dependency || return 1
-    yq eval '.packages.modules | to_entries | .[] | select(.value.enabled == true) | .key' "$PACKAGES_FILE" 2>/dev/null
-}
-
-_get_module_packages() {
-    local module="$1"
-    _check_yq_dependency || return 1
-    MOD="$module" yq eval '.packages.modules[env(MOD)].packages | .[]' "$PACKAGES_FILE" 2>/dev/null
-}
-
-_is_module_enabled() {
-    local module="$1"
-    _check_yq_dependency || return 1
-    local enabled
-    enabled=$(MOD="$module" yq eval '.packages.modules[env(MOD)].enabled' "$PACKAGES_FILE" 2>/dev/null)
-    [[ "$enabled" == "true" ]]
-}
-
-_get_module_conflicts() {
-    local module="$1"
-    _check_yq_dependency || return 1
-    MOD="$module" yq eval '.packages.modules[env(MOD)].conflicts[]?' "$PACKAGES_FILE" 2>/dev/null
-}
+# Functions: _get_modules(), _get_enabled_modules(), _get_module_packages(),
+#            _is_module_enabled(), _get_module_conflicts(), _load_module_cache()
 
 # =============================================================================
 # SECTION 3: COMMAND MODULES
@@ -170,52 +138,8 @@ _get_module_conflicts() {
 # =============================================================================
 
 # Package install/remove operations now in packages/package-operations.sh
-# Functions: _install_package(), _remove_package(), _install_flatpak()
-
-# Install a Flatpak package
-# Usage: _install_flatpak <flatpak_spec> <module_name>
-# flatpak_spec: "flatpak:com.example.App"
-_install_flatpak() {
-    local package_spec="$1"
-    local module="${2:-unknown}"
-
-    # Strip "flatpak:" prefix
-    local flatpak_id="${package_spec#flatpak:}"
-
-    # Check if already installed (using cache - 1 call instead of 3)
-    if _is_flatpak_installed "$flatpak_id"; then
-        local installed_version=$(_get_flatpak_version "$flatpak_id")
-        ui_info "$ICON_PACKAGE $flatpak_id: Already installed${installed_version:+ ($installed_version)}"
-        return 0
-    fi
-
-    ui_step "$ICON_PACKAGE Installing Flatpak: $flatpak_id"
-
-    # Install with --user scope (ALWAYS user scope, never system)
-    if flatpak install -y --user flathub "$flatpak_id" 2>&1; then
-        # Invalidate cache after install
-        _FLATPAK_CACHE_LOADED=false
-        local version=$(_get_flatpak_version "$flatpak_id")
-
-        # Validate variables before state update
-        if [[ -z "${flatpak_id:-}" ]]; then
-            ui_error "CRITICAL: Missing flatpak_id after installation"
-            return 1
-        fi
-
-        # Update state file (use 'unknown' if version detection failed)
-        if ! _update_package_state "$flatpak_id" "${version:-unknown}" "flatpak" "$module" "null"; then
-            ui_error "Failed to update state file for $flatpak_id"
-            return 1
-        fi
-
-        ui_success "Installed Flatpak: $flatpak_id${version:+ ($version)}"
-        return 0
-    else
-        ui_error "Failed to install Flatpak: $flatpak_id"
-        return 1
-    fi
-}
+# Flatpak operations now in packages/flatpak-manager.sh
+# Functions: _install_package(), _remove_package(), _install_flatpak(), _remove_flatpak(), _update_flatpaks()
 
 # =============================================================================
 # VERSION SELECTION
@@ -229,93 +153,8 @@ _install_flatpak() {
 # SECTION 5: ENHANCED SYNC
 # =============================================================================
 
-# Detect available backup tool (timeshift or snapper)
-# Returns: Tool name or empty string if none available
-_get_backup_tool() {
-    # Check for explicit preference in packages.yaml
-    local configured=$(yq eval '.backup_tool // ""' "$PACKAGES_FILE" 2>/dev/null)
-
-    if [[ -n "$configured" ]] && [[ "$configured" != "null" ]]; then
-        if command -v "$configured" >/dev/null 2>&1; then
-            echo "$configured"
-            return
-        fi
-    fi
-
-    # Auto-detect: prefer timeshift, fallback to snapper
-    if command -v timeshift >/dev/null 2>&1; then
-        echo "timeshift"
-    elif command -v snapper >/dev/null 2>&1; then
-        echo "snapper"
-    else
-        echo ""
-    fi
-}
-
-# Get snapper config name from packages.yaml (default: root)
-_get_snapper_config() {
-    local snapper_config=$(yq eval '.snapper_config // "root"' "$PACKAGES_FILE" 2>/dev/null)
-    echo "$snapper_config"
-}
-
-# Create optional backup before sync (supports timeshift and snapper)
-# Usage: _create_backup
-# Returns: 0 on success or skip, 1 on failure (non-fatal)
-_create_backup() {
-    local backup_tool=$(_get_backup_tool)
-
-    # No backup tool available
-    if [[ -z "$backup_tool" ]]; then
-        return 0  # Skip silently if not installed
-    fi
-
-    # Skip backup prompt if not in interactive terminal
-    if [[ ! -t 0 ]]; then
-        # Non-interactive mode: skip backup silently (no UI calls to avoid hanging)
-        return 0
-    fi
-
-    ui_info "$backup_tool backup available"
-
-    if ui_confirm "Create system backup before sync?"; then
-        ui_step "Creating $backup_tool backup..."
-
-        local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-        local comment="package-manager sync - $timestamp"
-
-        case "$backup_tool" in
-            timeshift)
-                if sudo timeshift --create --comments "$comment" --scripted; then
-                    ui_success "Timeshift backup created successfully"
-                    return 0
-                else
-                    ui_warning "Timeshift backup failed (continuing anyway)"
-                    return 1
-                fi
-                ;;
-            snapper)
-                local snapper_config=$(_get_snapper_config)
-                if sudo snapper -c "$snapper_config" create -d "$comment"; then
-                    ui_success "Snapper snapshot created successfully (config: $snapper_config)"
-                    return 0
-                else
-                    ui_warning "Snapper snapshot failed (continuing anyway)"
-                    return 1
-                fi
-                ;;
-            *)
-                ui_warning "Unknown backup tool: $backup_tool"
-                return 1
-                ;;
-        esac
-    else
-        ui_info "Skipping backup"
-        return 0
-    fi
-}
-
-
-
+# Backup operations now in operations/backup-manager.sh
+# Functions: _get_backup_tool(), _get_snapper_config(), _create_backup(), _prompt_backup()
 
 
 # =============================================================================
@@ -324,112 +163,173 @@ _create_backup() {
 
 show_help() {
     cat << 'EOF'
-Package Manager v2.2.0
-Module-based declarative package management with batch operations and lockfile integration
+package-manager v3.0.0 - Declarative package management for Arch Linux
 
-USAGE:
+USAGE
+    package-manager <command> [options]
+
+COMMON COMMANDS
+    sync                             Sync system to packages.yaml
+    update                           Complete system update (sync + upgrade all)
+    status                           Show package status
+    module list                      List all modules
+    module enable [module...]        Enable module(s)
+
+MODULES
+    module list                      List modules with status
+    module enable <module>...        Enable modules (interactive if no args)
+    module disable <module>...       Disable modules (interactive if no args)
+
+PACKAGES
+    install <package>                Install package
+    remove <package>                 Remove package
+    find <package>                   Find which module contains package
+    search                           Interactive package search (fzf)
+    merge [--dry-run]                Import unmanaged packages
+
+SYNC & UPDATE
+    sync [--prune] [--no-lock]       Sync to packages.yaml state
+    sync --locked                    Enforce lockfile versions strictly
+    update [--no-sync] [--no-flatpak] Sync + update all packages
+
+VERSION PINNING
+    pin <package> <version>          Pin to version (e.g., "120.0", ">=0.9", "<3.12")
+    unpin <package>                  Remove constraint
+    lock                             Generate lockfile
+    versions [package]               Show version info
+    outdated                         List constraint violations
+
+VALIDATION
+    validate                         Validate packages.yaml
+    validate --check-packages        Check package availability
+    validate --check-lockfile        Validate lockfile
+
+EXAMPLES
+    package-manager module enable shell desktop
+    package-manager pin firefox 120.0
+    package-manager sync
+    package-manager merge --dry-run
+
+FILES
+    ~/.local/share/chezmoi/.chezmoidata/packages.yaml
+    ~/.local/state/package-manager/package-state.yaml
+    ~/.local/state/package-manager/locked-versions.yaml
+
+For detailed help: package-manager help --full
+For documentation: ~/.local/lib/scripts/system/CLAUDE.md
+EOF
+}
+
+show_help_full() {
+    cat << 'EOF'
+package-manager v3.0.0
+Module-based declarative package management with version pinning and lockfile integration
+
+USAGE
     package-manager <command> [options] [arguments]
 
-MODULE MANAGEMENT:
+MODULES
     module list                      List all modules with status
-    module enable <module>...        Enable one or more modules
-    module enable                    Interactive module selection
-    module disable <module>...       Disable one or more modules
-    module disable                   Interactive module selection
+    module enable <module>...        Enable modules (interactive if no args)
+    module disable <module>...       Disable modules (interactive if no args)
 
-VERSION PINNING:
-    pin <package> <version>          Pin package to specific version
-                                     Examples: pin firefox 120.0
-                                               pin neovim ">=0.9.0"
-                                               pin python "<3.12"
+PACKAGES
+    install <package>                Install single package
+    remove <package>                 Remove package
+    find <package> [--json]          Find which module(s) contain package
+    search                           Interactive package search (requires fzf)
+    merge [--dry-run]                Import unmanaged packages to modules
+
+SYNC & UPDATE
+    sync [--prune] [--no-lock]       Sync system to packages.yaml state
+                                     --prune: Remove orphaned packages
+                                     --no-lock: Skip lockfile update
+    sync --locked                    Enforce lockfile versions strictly
+
+    update [--no-sync] [--no-flatpak]
+                                     Complete system update (5 phases):
+                                       1. Sync to packages.yaml
+                                       2. Update all Arch/AUR packages
+                                       3. Update all Flatpak packages
+                                       4. System validation
+                                       5. Lockfile generation
+                                     --no-sync: Skip phase 1
+                                     --no-flatpak: Skip phase 3
+
+VERSION PINNING
+    pin <package> <version>          Pin to version (e.g., "120.0", ">=0.9", "<3.12")
     unpin <package>                  Remove version constraint
     lock [--quiet]                   Generate lockfile with current versions
     versions [package]               Show version info (includes lockfile)
     outdated                         List packages violating constraints
 
-PACKAGE OPERATIONS:
-    install <package>                Install a single package
-    remove <package>                 Remove a package
-    find <package> [--json]          Find which module(s) contain a package
-    search                           Interactive package search with fzf (requires fzf)
-    merge [--dry-run]                Add unmanaged packages to modules
-    sync [--prune] [--no-lock]       Sync system (auto-locks by default)
-    sync --locked                    Enforce lockfile versions strictly
-    update [--no-sync] [--no-flatpak]
-                                     Update all system packages (hybrid mode)
-                                     1. Sync to packages.yaml (--no-sync to skip)
-                                     2. Update Arch/AUR packages (paru -Syu)
-                                     3. Update Flatpak packages (--no-flatpak to skip)
-                                     4. Validate and update lockfile
-
-STATUS & VALIDATION:
-    status                           Show status (includes lockfile analysis)
+VALIDATION
+    status                           Show package status with lockfile analysis
     validate [--check-packages]      Validate packages.yaml structure
     validate --check-lockfile        Validate lockfile (staleness, syntax)
 
-LEGACY COMMANDS:
-    health                           Check package system health
-    update-strategy                  Update package installation strategies
-
-VERSION CONSTRAINT SYNTAX:
+VERSION CONSTRAINT SYNTAX
     Exact version:     { name: "firefox", version: "120.0" }
     Minimum version:   { name: "neovim", version: ">=0.9.0" }
     Maximum version:   { name: "python", version: "<3.12" }
 
-EXAMPLES:
-    # Enable multiple modules
-    package-manager module enable base shell_environment
+EXAMPLES
+    # Enable modules
+    package-manager module enable base shell desktop
 
-    # Discover and add unmanaged packages
+    # Discover unmanaged packages
     package-manager merge --dry-run
     package-manager merge
 
-    # Pin package to specific version
+    # Pin package version
     package-manager pin firefox 120.0
 
-    # Sync with constraint-aware installation
+    # Sync system
     package-manager sync
 
-    # Check system status
+    # Check status
     package-manager status
 
-    # Validate configuration
-    package-manager validate --check-packages
-
-FEATURES:
+FEATURES
     • Module system with conflict detection
     • NixOS-style version constraints (exact, >=, <)
-    • Batch package operations (5-10x faster bulk installs)
-    • Lockfile integration (auto-lock, fast-path optimization)
-    • Unmanaged package discovery and onboarding
+    • Batch operations (5-10x faster bulk installs)
+    • Lockfile integration (auto-lock, fast-path)
+    • Unmanaged package discovery
     • Interactive downgrade selection
-    • Rolling package detection (-git packages)
-    • Optimized validation (24x faster AUR checks)
-    • Backup integration (Timeshift or Snapper)
+    • Backup integration (Timeshift/Snapper)
     • Drift detection and staleness warnings
-    • Comprehensive validation and status checks
 
-PERFORMANCE:
+PERFORMANCE
     • Batch installs: 5-10x faster for bulk operations
-    • Lockfile fast-path: 30-50% faster sync on stable systems
-    • Optimized lockfile generation: 100x faster (uses state file)
-    • Improved AUR validation: 24x faster (batch queries)
+    • Lockfile fast-path: 30-50% faster sync
+    • State-based lockfile: 100x faster generation
+    • Batch AUR validation: 24x faster
 
-STATE FILES:
+FILES
     Config:    ~/.local/share/chezmoi/.chezmoidata/packages.yaml
     State:     ~/.local/state/package-manager/package-state.yaml
     Lockfile:  ~/.local/state/package-manager/locked-versions.yaml
 
-BACKUP TOOL CONFIGURATION (optional in packages.yaml):
-    backup_tool: "timeshift"         # or "snapper" (auto-detects if not set)
-    snapper_config: "root"           # snapper config name (default: "root")
+TROUBLESHOOTING
+    Sync failed - YAML syntax:
+        yq eval . ~/.chezmoidata/packages.yaml
 
-For more information, see the CLAUDE.md documentation.
+    Sync failed - Package not found:
+        package-manager validate --check-packages
+
+    Sync failed - Constraint violation:
+        package-manager outdated
+
+    Sync already running:
+        rm ~/.local/state/package-manager/.sync.lock
+
+For documentation: ~/.local/lib/scripts/system/CLAUDE.md
 EOF
 }
 
 show_version() {
-    ui_title "package-manager v2.1.0"
+    ui_title "package-manager v3.0.0"
     ui_info "Module-based package management for Arch Linux"
 }
 
@@ -438,6 +338,12 @@ show_version() {
 # =============================================================================
 
 check_health() {
+    # DEPRECATED in v3.0.0 - Use 'package-manager validate --check-packages' instead
+    ui_warning "DEPRECATED: 'health' command is deprecated in v3.0.0"
+    ui_info "Use: package-manager validate --check-packages"
+    ui_info "This command will be removed in v4.0.0"
+    echo ""
+
     if [[ "$BRIEF" != "true" ]]; then
         ui_title "$ICON_HEALTH Package System Health Check"
     fi
@@ -503,6 +409,12 @@ check_health() {
 }
 
 update_strategy() {
+    # DEPRECATED in v3.0.0 - Use 'package-manager update' instead
+    ui_warning "DEPRECATED: 'update-strategy' command is deprecated in v3.0.0"
+    ui_info "Use: package-manager update"
+    ui_info "This command will be removed in v4.0.0"
+    echo ""
+
     if [[ "$BRIEF" != "true" ]]; then
         ui_title "$ICON_REFRESH Package Update"
         ui_info "This command updates system packages using paru"
@@ -667,7 +579,11 @@ package-manager() {
             update_strategy
             ;;
         "help"|"-h"|"--help")
-            show_help
+            if [[ "$1" == "--full" ]]; then
+                show_help_full
+            else
+                show_help
+            fi
             return 0
             ;;
         "version"|"-V"|"--version")

@@ -42,6 +42,38 @@ _parse_package_constraint() {
 }
 
 # =============================================================================
+# CONSTRAINT CACHE (Performance Optimization)
+# =============================================================================
+# NOTE: Constraint cache now managed via core/state-manager.sh
+# Global state eliminated - use _cache_* functions
+
+_parse_package_constraint_cached() {
+    # Cached version of _parse_package_constraint for performance
+    # Returns: name|version|constraint_type (same as uncached version)
+    # NOTE: Auto-loads persisted cache on first access, saves after new entries
+    local package="$1"
+
+    # Auto-load cache from disk on first access (lazy loading)
+    _auto_load_constraint_cache 2>/dev/null || true
+
+    # Return cached result if available
+    if _cache_has constraints "$package"; then
+        _cache_get constraints "$package"
+        return 0
+    fi
+
+    # Parse and cache the result
+    local result
+    result=$(_parse_package_constraint "$package")
+    _cache_set constraints "$package" "$result"
+
+    # Persist cache to disk for next command (async to avoid blocking)
+    _save_constraint_cache_to_disk &
+
+    echo "$result"
+}
+
+# =============================================================================
 # VERSION COMPARISON
 # =============================================================================
 
@@ -65,6 +97,59 @@ _compare_versions() {
         0) return 0 ;;   # v1 == v2
         1) return 1 ;;   # v1 > v2
     esac
+}
+
+# =============================================================================
+# CONSTRAINT CHECKING (Centralized logic - replaces duplication in 6 files)
+# =============================================================================
+
+# Check if installed version satisfies constraint
+# Returns: 0 if satisfied, 1 if violated
+_check_constraint_satisfaction() {
+    local installed="$1"
+    local constraint_version="$2"
+    local constraint_type="$3"
+
+    case "$constraint_type" in
+        "exact")
+            _version_equals "$installed" "$constraint_version"
+            ;;
+        "minimum")
+            _version_satisfies_minimum "$installed" "$constraint_version"
+            ;;
+        "maximum")
+            _version_satisfies_maximum "$installed" "$constraint_version"
+            ;;
+        "none")
+            return 0  # Always satisfied
+            ;;
+        *)
+            return 1  # Invalid constraint
+            ;;
+    esac
+}
+
+# Semantic wrapper functions for clarity
+_version_satisfies_minimum() {
+    local installed="$1"
+    local required="$2"
+    _compare_versions "$installed" "$required"
+    local cmp=$?
+    [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]
+}
+
+_version_satisfies_maximum() {
+    local installed="$1"
+    local maximum="$2"
+    _compare_versions "$installed" "$maximum"
+    local cmp=$?
+    [[ $cmp -eq 2 ]]
+}
+
+_version_equals() {
+    local v1="$1"
+    local v2="$2"
+    [[ "$v1" == "$v2" ]]
 }
 
 # =============================================================================

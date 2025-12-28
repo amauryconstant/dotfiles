@@ -10,6 +10,8 @@ cmd_outdated() {
     ui_title "$ICON_WARNING  Packages Violating Version Constraints"
     echo ""
 
+    # Collect violations for table display
+    local -a violation_data=()
     local violations=0
 
     while IFS= read -r module; do
@@ -33,31 +35,8 @@ cmd_outdated() {
                 continue
             fi
 
-            # Check constraint violation using vercmp
-            local violates=false
-            case "$constraint_type" in
-                "exact")
-                    if [[ "$installed" != "$version" ]]; then
-                        violates=true
-                    fi
-                    ;;
-                "minimum")
-                    _compare_versions "$installed" "$version"
-                    local cmp=$?
-                    if [[ $cmp -eq 2 ]]; then  # installed < required
-                        violates=true
-                    fi
-                    ;;
-                "maximum")
-                    _compare_versions "$installed" "$version"
-                    local cmp=$?
-                    if [[ $cmp -eq 1 ]] || [[ $cmp -eq 0 ]]; then  # installed >= maximum
-                        violates=true
-                    fi
-                    ;;
-            esac
-
-            if [[ "$violates" == "true" ]]; then
+            # Check constraint violation using centralized logic
+            if ! _check_constraint_satisfaction "$installed" "$version" "$constraint_type"; then
                 local op=""
                 case "$constraint_type" in
                     "exact") op="==" ;;
@@ -65,7 +44,7 @@ cmd_outdated() {
                     "maximum") op="<" ;;
                 esac
 
-                ui_error "$name: installed=$installed, constraint=$op$version"
+                violation_data+=("$name|$installed|$op|$version|$module")
                 ((violations++))
             fi
         done < <(_get_module_packages "$module")
@@ -75,6 +54,15 @@ cmd_outdated() {
         ui_success "All packages meet version constraints"
         return 0
     else
+        # Display violations as table
+        {
+            printf "Package\tInstalled\tConstraint\tRequired\tModule\n"
+            for entry in "${violation_data[@]}"; do
+                IFS='|' read -r pkg inst op req mod <<< "$entry"
+                printf "%s\t%s\t%s\t%s\t%s\n" "$pkg" "$inst" "$op" "$req" "$mod"
+            done
+        } | ui_table
+
         echo ""
         ui_warning "Found $violations constraint violations"
         ui_info "Run 'package-manager sync' to resolve"

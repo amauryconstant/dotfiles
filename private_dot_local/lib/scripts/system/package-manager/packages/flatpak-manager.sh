@@ -29,14 +29,23 @@ _install_flatpak() {
     ui_step "$ICON_PACKAGE Installing Flatpak: $flatpak_id"
 
     # Install with --user scope (ALWAYS user scope, never system)
-    if flatpak install -y --user flathub "$flatpak_id" 2>&1; then
+    ui_info "Downloading and installing $flatpak_id..." >&2
+    if flatpak install -y --user flathub "$flatpak_id"; then
         # Invalidate cache after install
-        _FLATPAK_CACHE_LOADED=false
+        _invalidate_flatpak_cache
         local version
         version=$(_get_flatpak_version "$flatpak_id")
 
+        if [[ -z "$version" ]]; then
+            ui_error "Failed to determine version for $flatpak_id"
+            return 1
+        fi
+
         # Update state file
-        _update_package_state "$flatpak_id" "${version:-unknown}" "flatpak" "$module" "null"
+        if ! _update_package_state "$flatpak_id" "$version" "flatpak" "$module" "null"; then
+            ui_error "Failed to update state file for $flatpak_id"
+            return 1
+        fi
 
         ui_success "Installed Flatpak: $flatpak_id${version:+ ($version)}"
         return 0
@@ -57,7 +66,7 @@ _remove_flatpak() {
 
     if flatpak uninstall -y --user "$flatpak_id" 2>&1; then
         # Invalidate cache after removal
-        _FLATPAK_CACHE_LOADED=false
+        _invalidate_flatpak_cache
         ui_success "Removed Flatpak: $flatpak_id"
         return 0
     else
@@ -80,10 +89,11 @@ _update_flatpaks() {
 
     ui_step "$ICON_PACKAGE Updating Flatpak packages..."
 
-    if flatpak update -y --user 2>&1; then
+    ui_info "Updating flatpak applications..." >&2
+    if flatpak update -y --user; then
         ui_success "Flatpak packages updated"
         # Invalidate cache after updates
-        _FLATPAK_CACHE_LOADED=false
+        _invalidate_flatpak_cache
         return 0
     else
         ui_error "Failed to update Flatpak packages"

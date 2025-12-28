@@ -22,6 +22,9 @@ cmd_lock() {
 
     _check_yq_dependency || return 1
 
+    # Load module cache once at start
+    _load_module_cache
+
     [[ "$quiet" == "false" ]] && ui_title "$ICON_LOCK Generating Package Lockfile"
     [[ "$quiet" == "false" ]] && echo ""
 
@@ -67,62 +70,84 @@ EOF
 
     [[ "$quiet" == "false" ]] && ui_info "Cached ${state_count} package versions"
 
-    # Process pacman packages
+    # Single-pass collection: Iterate modules once and collect both pacman and flatpak packages
+    declare -A pacman_locks
+    declare -A flatpak_locks
     local pkg_count=0
+    local flatpak_count=0
+
     while IFS= read -r module; do
         [[ -z "$module" ]] && continue
 
-        echo "  ${module}:" >> "$LOCKFILE"
-
         while IFS= read -r package; do
-            # Skip flatpak packages
-            if _is_flatpak "$package"; then
-                continue
-            fi
+            local pkg_data=$(_parse_package_constraint_cached "$package")
+            IFS='|' read -r name _version _constraint_type <<< "$pkg_data"
 
-            local pkg_data=$(_parse_package_constraint "$package")
-            IFS='|' read -r name version _constraint_type <<< "$pkg_data"
+            if _is_flatpak "$name"; then
+                # Flatpak package
+                local app_id=$(_strip_flatpak_prefix "$name")
+                local flatpak_version=$(_get_flatpak_version "$app_id")
 
-            # Optimized: lookup instead of query
-            local installed_version="${versions_from_state[$name]:-}"
-
-            if [[ -n "$installed_version" ]]; then
-                if _is_rolling_package "$name"; then
-                    echo "    ${name}: \"${installed_version}\"  # rolling (-git package)" >> "$LOCKFILE"
-                else
-                    echo "    ${name}: \"${installed_version}\"" >> "$LOCKFILE"
+                if [[ -n "$flatpak_version" ]]; then
+                    # Append to module's flatpak list (newline-separated)
+                    flatpak_locks[$module]+="${app_id}|${flatpak_version}"$'\n'
+                    ((flatpak_count++))
                 fi
-                ((pkg_count++))
-            fi
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+            else
+                # Pacman package
+                local installed_version="${versions_from_state[$name]:-}"
 
-    # Process flatpak packages
+                if [[ -n "$installed_version" ]]; then
+                    local rolling_flag=""
+                    if _is_rolling_package "$name"; then
+                        rolling_flag="rolling"
+                    fi
+                    # Append to module's pacman list (newline-separated)
+                    pacman_locks[$module]+="${name}|${installed_version}|${rolling_flag}"$'\n'
+                    ((pkg_count++))
+                fi
+            fi
+        done < <(_get_module_packages_cached "$module")
+    done < <(_get_enabled_modules_cached)
+
+    # Write pacman packages section
+    if [[ ${#pacman_locks[@]} -gt 0 ]]; then
+        for module in $(printf '%s\n' "${!pacman_locks[@]}" | sort); do
+            local pkg_list="${pacman_locks[$module]}"
+            [[ -z "$pkg_list" ]] && continue
+
+            echo "  ${module}:" >> "$LOCKFILE"
+
+            # Process stored packages (newline-separated)
+            while IFS='|' read -r name ver rolling; do
+                [[ -z "$name" ]] && continue
+                if [[ "$rolling" == "rolling" ]]; then
+                    echo "    ${name}: \"${ver}\"  # rolling (-git package)" >> "$LOCKFILE"
+                else
+                    echo "    ${name}: \"${ver}\"" >> "$LOCKFILE"
+                fi
+            done <<< "$pkg_list"
+        done
+    fi
+
+    # Write flatpak packages section
     echo "" >> "$LOCKFILE"
     echo "flatpaks:" >> "$LOCKFILE"
 
-    local flatpak_count=0
-    while IFS= read -r module; do
-        [[ -z "$module" ]] && continue
+    if [[ ${#flatpak_locks[@]} -gt 0 ]]; then
+        for module in $(printf '%s\n' "${!flatpak_locks[@]}" | sort); do
+            local flatpak_list="${flatpak_locks[$module]}"
+            [[ -z "$flatpak_list" ]] && continue
 
-        local has_flatpak=false
-        while IFS= read -r package; do
-            if _is_flatpak "$package"; then
-                if [[ "$has_flatpak" == "false" ]]; then
-                    echo "  ${module}:" >> "$LOCKFILE"
-                    has_flatpak=true
-                fi
+            echo "  ${module}:" >> "$LOCKFILE"
 
-                local app_id=$(_strip_flatpak_prefix "$package")
-                local version=$(_get_flatpak_version "$app_id")
-
-                if [[ -n "$version" ]]; then
-                    echo "    ${app_id}: \"${version}\"" >> "$LOCKFILE"
-                    ((flatpak_count++))
-                fi
-            fi
-        done < <(_get_module_packages "$module")
-    done < <(_get_enabled_modules)
+            # Process stored flatpaks (newline-separated)
+            while IFS='|' read -r app_id ver; do
+                [[ -z "$app_id" ]] && continue
+                echo "    ${app_id}: \"${ver}\"" >> "$LOCKFILE"
+            done <<< "$flatpak_list"
+        done
+    fi
 
     if [[ "$quiet" == "false" ]]; then
         echo ""

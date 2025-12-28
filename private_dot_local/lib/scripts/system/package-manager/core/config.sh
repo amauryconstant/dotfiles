@@ -23,9 +23,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 : "${STATE_FILE:=$STATE_DIR/package-state.yaml}"
 : "${LOCKFILE:=$STATE_DIR/locked-versions.yaml}"
 
-# Ensure packages.yaml exists (alias for backward compatibility - used in main script)
-export PACKAGES_YAML="$PACKAGES_FILE"
-
 # =============================================================================
 # MODULE ACCESS HELPERS
 # =============================================================================
@@ -70,54 +67,42 @@ _module_exists() {
     MOD="$module" yq eval '.packages.modules | has(env(MOD))' "$PACKAGES_FILE" 2>/dev/null | grep -q "true"
 }
 
+_enable_module() {
+    # Enable a module in packages.yaml
+    # Args: module_name
+    # Returns: 0 on success, 1 on failure
+    local module="$1"
+    MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = true' -i "$PACKAGES_FILE"
+    _invalidate_module_cache
+}
+
+_disable_module() {
+    # Disable a module in packages.yaml
+    # Args: module_name
+    # Returns: 0 on success, 1 on failure
+    local module="$1"
+    MOD="$module" yq eval '.packages.modules[env(MOD)].enabled = false' -i "$PACKAGES_FILE"
+    _invalidate_module_cache
+}
+
 # =============================================================================
 # BACKUP TOOL CONFIGURATION
 # =============================================================================
-
-_get_backup_tool_config() {
-    # Returns: backup_tool (timeshift/snapper/none)
-    local tool=$(yq eval '.packages.backup_tool // ""' "$PACKAGES_FILE" 2>/dev/null)
-
-    if [[ -n "$tool" && "$tool" != "null" ]]; then
-        echo "$tool"
-        return 0
-    fi
-
-    # Auto-detect if not configured
-    if command -v timeshift >/dev/null 2>&1; then
-        echo "timeshift"
-    elif command -v snapper >/dev/null 2>&1; then
-        echo "snapper"
-    else
-        echo "none"
-    fi
-}
-
-_get_snapper_config() {
-    # Returns snapper config name (default: root)
-    local config=$(yq eval '.packages.snapper_config // "root"' "$PACKAGES_FILE" 2>/dev/null)
-    echo "${config:-root}"
-}
+# NOTE: Backup tool configuration moved to operations/backup-manager.sh
+# Use _get_backup_tool() and _get_snapper_config() from that module
 
 # =============================================================================
 # MODULE CACHE (Performance optimization for sync command)
 # =============================================================================
-
-# Cache for module data (populated once per sync with single yq call)
-declare -gA _MODULE_CACHE=()
-declare -g _MODULE_CACHE_LOADED=false
+# NOTE: Module cache now managed via core/state-manager.sh
+# Global state eliminated - use _state_* and _cache_* functions
 
 _load_module_cache() {
     # Load all enabled modules and their packages in a single yq call
     # Significantly faster than separate queries per module (16 calls → 1 call)
 
-    if [[ "$_MODULE_CACHE_LOADED" == "true" ]]; then
+    if [[ "$(_state_get module_cache_loaded)" == "true" ]]; then
         return 0
-    fi
-
-    # Ensure cache is properly declared as associative array
-    if ! declare -p _MODULE_CACHE &>/dev/null || [[ "$(declare -p _MODULE_CACHE 2>/dev/null)" != *"-A"* ]]; then
-        declare -gA _MODULE_CACHE=()
     fi
 
     # Single yq call to load all enabled modules and their packages
@@ -133,17 +118,17 @@ _load_module_cache() {
     # Parse and store in cache
     if [[ -n "$cache_data" ]]; then
         while IFS='|' read -r mod_name mod_packages; do
-            [[ -n "$mod_name" ]] && _MODULE_CACHE["$mod_name"]="$mod_packages"
+            [[ -n "$mod_name" ]] && _cache_set modules "$mod_name" "$mod_packages"
         done <<< "$cache_data"
     fi
 
-    _MODULE_CACHE_LOADED=true
+    _state_set module_cache_loaded "true"
 }
 
 _get_enabled_modules_cached() {
     # Get list of enabled modules (uses cache)
     _load_module_cache
-    printf '%s\n' "${!_MODULE_CACHE[@]}"
+    _cache_keys modules
 }
 
 _get_module_packages_cached() {
@@ -151,15 +136,11 @@ _get_module_packages_cached() {
     local module="$1"
     _load_module_cache
 
-    local packages="${_MODULE_CACHE[$module]:-}"
+    local packages
+    packages=$(_cache_get modules "$module")
     if [[ -n "$packages" ]]; then
         echo "$packages" | tr ',' '\n'
     fi
 }
 
-_invalidate_module_cache() {
-    # Invalidate cache (call after modifying packages.yaml)
-    _MODULE_CACHE_LOADED=false
-    unset _MODULE_CACHE
-    declare -gA _MODULE_CACHE=()
-}
+# _invalidate_module_cache() - already defined in state-manager.sh

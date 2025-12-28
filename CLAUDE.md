@@ -447,9 +447,9 @@ find . -name "pattern" -type f
 
 ### Package Manager
 
-**Tool**: `package-manager.sh` (v2.2.0, dcli v2 improvements)
-**Features**: NixOS-style version pinning, module system, hybrid update mode
-**Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v2.1`
+**Tool**: `package-manager.sh` (v3.0.0, modularized architecture)
+**Features**: NixOS-style version pinning, module system, hybrid update mode, performance optimizations
+**Details**: See `private_dot_local/lib/scripts/system/CLAUDE.md#package-manager.sh-v3.0`
 
 **Key capabilities**:
 - Module-based package organization with conflict detection
