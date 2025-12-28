@@ -160,10 +160,17 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
+        # Terminal fonts
         - ttf-firacode-nerd      # Monospace font with ligatures
         - otf-opendyslexic-nerd  # Dyslexia-friendly font
         - otf-geist-mono-nerd    # Vercel's monospace font
         - ttf-fira-sans          # Sans-serif system font
+        # Unicode & international coverage
+        - noto-fonts             # Google Noto (Latin/Greek/Cyrillic)
+        - noto-fonts-cjk         # Chinese, Japanese, Korean
+        - noto-fonts-emoji       # Color emoji
+        - noto-fonts-extra       # Extended Unicode scripts
+        - ttf-liberation         # Microsoft font replacements
 
     # ============================================================
     # DEVELOPMENT
