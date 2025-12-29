@@ -32,52 +32,17 @@ cmd_update() {
     # Phase 1: Sync to packages.yaml
     if [[ "$sync_first" == "true" ]]; then
         ui_step "Phase 1/5: Syncing to packages.yaml..."
+        ui_spacer
 
-        # Capture stderr for diagnostic parsing
-        SYNC_ERROR_LOG=$(mktemp)
-        trap 'rm -f "$SYNC_ERROR_LOG"' EXIT
-
-        # Direct call (no command substitution!)
-        # Stderr goes to both file AND terminal
-        if ! cmd_sync --prune 2> >(tee "$SYNC_ERROR_LOG" >&2); then
-            sync_status=$?
-            ui_error "Sync failed during update (exit code: $sync_status)"
-            echo ""
-
-            # Parse captured stderr for helpful diagnostics
-            local error_output=$(cat "$SYNC_ERROR_LOG")
-
-            # Parse error type and provide specific guidance
-            if echo "$error_output" | grep -qi "yaml.*syntax\|parse.*error"; then
-                ui_error "  Cause: YAML syntax error in packages.yaml"
-                ui_info "  Fix: Validate YAML structure:"
-                ui_info "    yq eval . ~/.chezmoidata/packages.yaml"
-
-            elif echo "$error_output" | grep -qi "package.*not found\|not available"; then
-                ui_error "  Cause: Package not found in repositories"
-                ui_info "  Fix: Check package availability:"
-                ui_info "    package-manager validate --check-packages"
-
-            elif echo "$error_output" | grep -qi "constraint\|version.*conflict"; then
-                ui_error "  Cause: Version constraint violation"
-                ui_info "  Fix: Review conflicting constraints:"
-                ui_info "    package-manager outdated"
-
-            elif echo "$error_output" | grep -qi "lock\|already running"; then
-                ui_error "  Cause: Sync operation already in progress"
-                ui_info "  Fix: Wait or remove stale lock:"
-                ui_info "    rm ~/.local/state/package-manager/.sync.lock"
-
-            else
-                ui_error "  Run full diagnostics:"
-                ui_info "    package-manager validate"
-            fi
-
+        if ! cmd_sync --prune; then
+            ui_error "Sync failed during update"
+            ui_info "Run 'package-manager validate' for diagnostics"
             return 1
         fi
 
+        ui_spacer
         ui_success "Sync complete"
-        echo ""
+        ui_spacer
     fi
 
     # Phase 2: Update all Arch/AUR packages
@@ -94,27 +59,27 @@ cmd_update() {
         return 1
     fi
     ui_success "Arch/AUR packages updated"
-    echo ""
+    ui_spacer
 
     # Phase 3: Update Flatpak packages
     if [[ "$update_flatpak" == "true" ]] && command -v flatpak >/dev/null 2>&1; then
+        ui_spacer
         ui_step "Phase 3/5: Updating Flatpak packages..."
+        ui_spacer
         if ! _update_flatpaks; then
-            ui_warning "Flatpak update failed (non-critical)"
-        else
-            ui_success "Flatpak packages updated"
+            ui_warning "Flatpak update failed (non-critical)" --before 1
         fi
-        echo ""
+        ui_spacer
     fi
 
     # Phase 4: Validation
-    ui_step "Phase 4/5: Validating package system..."
+    ui_spacer
+    ui_step "Phase 4/5: System Validation"
+    ui_spacer
     if ! cmd_validate; then
-        ui_warning "Validation found issues (non-critical)"
-    else
-        ui_success "Package system healthy"
+        ui_warning "Validation found issues (non-critical)" --before 1
     fi
-    echo ""
+    ui_spacer
 
     # Phase 5: Lockfile generation (if enabled)
     if [[ "$AUTO_LOCK" == "true" ]]; then
@@ -123,7 +88,7 @@ cmd_update() {
         ui_success "Lockfile updated"
     fi
 
-    echo ""
+    ui_spacer
     ui_success "System update complete"
     return 0
 }

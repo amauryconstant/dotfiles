@@ -172,8 +172,17 @@ cmd_validate() {
             IFS='|' read -r name version constraint_type <<< "$pkg_data"
 
             if [[ -v pkg_locations[$name] ]]; then
-                ui_error "Duplicate package '$name' in modules: ${pkg_locations[$name]} and $module"
-                ((dup_errors++))
+                local previous_module="${pkg_locations[$name]}"
+
+                # Check if modules conflict (duplicates in conflicting modules are expected)
+                local conflicts_prev=$(_get_module_conflicts "$module" | grep -x "$previous_module" || true)
+                local conflicts_curr=$(_get_module_conflicts "$previous_module" | grep -x "$module" || true)
+
+                if [[ -z "$conflicts_prev" ]] && [[ -z "$conflicts_curr" ]]; then
+                    # Modules don't conflict - this is a real duplicate error
+                    ui_error "Duplicate package '$name' in modules: $previous_module and $module"
+                    ((dup_errors++))
+                fi
             else
                 [[ -n "$name" ]] && pkg_locations[$name]="$module"
             fi
