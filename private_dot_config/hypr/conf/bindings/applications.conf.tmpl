@@ -1,0 +1,29 @@
+# ============================================================================
+# Application Launchers
+# ============================================================================
+# Quick access to frequently used applications.
+# All applications use launch-or-focus pattern for single-instance behavior.
+# ============================================================================
+
+# Terminal: Super + Return
+# Opens terminal in current working directory
+bindd = SUPER, Return, Launch terminal in CWD, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd.sh)
+
+# Application launcher: Super + D
+# Wofi shows desktop applications from .desktop files
+bindd = SUPER, D, Application launcher, exec, wofi --show drun
+
+# File manager: Super + E (GUI)
+# Uses launch-or-focus for single-instance behavior
+bindd = SUPER, E, File manager, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh thunar
+
+# Web browser: Super + W
+bindd = SUPER, W, Web browser, exec, firefox
+
+# Visual editor: Super + O
+# Uses launch-or-focus for single-instance behavior
+bindd = SUPER, O, Visual editor, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh code
+
+# Clipboard history: Super + C
+# Shows clipboard history via wofi, select to copy back to clipboard
+bindd = SUPER, C, Clipboard history, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy

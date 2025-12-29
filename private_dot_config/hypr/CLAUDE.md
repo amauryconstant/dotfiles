@@ -16,7 +16,7 @@
 
 ## Modular Structure
 
-**9 configuration files** (`conf/`):
+**8 base configuration files** (`conf/`):
 
 | File | Purpose | Template? |
 |------|---------|-----------|
@@ -26,22 +26,49 @@
 | `general.conf` | Layout, gaps, borders, colors | ❌ No |
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
 | `animations.conf` | Animation curves, timing | ❌ No |
-| `bindings.conf.tmpl` | Keybindings (terminal: ghostty) | ✅ Yes |
 | `windowrules.conf` | Per-app window behavior | ❌ No |
 | `autostart.conf` | Startup apps (waybar, dunst, nextcloud) | ❌ No |
+
+**11 modular keybinding files** (`conf/bindings/`):
+
+| File | Purpose | Bindings | Template? |
+|------|---------|----------|-----------|
+| `applications.conf.tmpl` | App launchers (terminal, browser, editor) | 6 | ✅ Yes |
+| `window-management.conf` | Window operations (close, float, fullscreen) | 6 | ❌ No |
+| `focus-navigation.conf` | Focus + move (arrows, vim keys) | 12 | ❌ No |
+| `workspace-navigation.conf` | Switch workspaces (1-10, Tab, mouse) | 15 | ❌ No |
+| `workspace-management.conf` | Move windows to workspaces | 10 | ❌ No |
+| `window-resizing.conf` | Resize + mouse bindings | 6 | ❌ No |
+| `media-keys.conf` | Volume, brightness, playback | 10 | ❌ No |
+| `screenshots.conf` | Screenshot tools (Satty) | 4 | ❌ No |
+| `desktop-utilities.conf` | Utilities (audio, gaps, waybar, nightlight) | 10 | ❌ No |
+| `theme-session.conf` | Theme switching, dark mode | 2 | ❌ No |
+| `system-control.conf` | Lock, power, help, menu | 4 | ❌ No |
+
+**Total keybindings**: 80 (reduced from 102, removed 22 rarely-used bindings)
+
+**Keybinding features**:
+- **Self-documenting**: All bindings use `bindd` syntax with descriptions
+- **Conflict-free**: Vim navigation (h/j/k/l) works without uppercase conflicts
+- **Hierarchical modifiers**: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system)
+- **Organized**: 11 logical categories vs 1 monolithic file
 
 **Main entry** (`hyprland.conf`):
 ```
 source = ~/.config/hypr/conf/monitor.conf
 source = ~/.config/hypr/conf/environment.conf
-# ... all 9 files ...
+# ... base configs ...
+source = ~/.config/hypr/conf/bindings/applications.conf
+source = ~/.config/hypr/conf/bindings/desktop-utilities.conf
+# ... all 11 binding files (alphabetical) ...
+source = ~/.config/hypr/conf/windowrules.conf
 ```
 
 ## Template Decisions
 
 **Only 2 templates**:
 1. **`monitor.conf.tmpl`**: Display-specific settings (laptop vs desktop)
-2. **`bindings.conf.tmpl`**: Terminal preference (ghostty vs kitty)
+2. **`bindings/applications.conf.tmpl`**: Terminal preference (ghostty vs kitty)
 
 **Why most are static**:
 - Hyprland config syntax rarely needs dynamic values
