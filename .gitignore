@@ -5,3 +5,5 @@
 !**/CLAUDE.md
 !.claude/agents/*
 !.claude/commands/*
+!.claude/skills/*
+!.claude/skills/**/SKILL.md
