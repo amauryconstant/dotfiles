@@ -197,6 +197,18 @@ fi
 
 **Note**: See `private_dot_local/lib/scripts/CLAUDE.md` for UI pattern by category (system vs desktop vs menu)
 
+### Gum Spinner Selection
+
+**Quick reference** (gum-ui.sh provides three spinner variants):
+
+**When to use each**:
+- **Interactive operations** (sudo, package managers) → **Direct call, NO spinner**
+- **Long-running with verbose output** (no interaction) → `ui_spin_verbose`
+- **Query operations** (status checks, validation) → `ui_spin_silent`
+- **Build operations** (compilation, error diagnostics) → `ui_spin_on_error`
+
+**See**: `private_dot_local/lib/scripts/core/CLAUDE.md` for complete spinner documentation
+
 ### Error Handling Strategy
 
 **Use `set -euo pipefail`** (strict mode):

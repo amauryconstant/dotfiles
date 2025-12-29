@@ -441,16 +441,41 @@ ui_filter() {
 # PROGRESS & OPERATION FUNCTIONS
 # =============================================================================
 
-# Display spinner with command execution
-ui_spin() {
+# Verbose spinner - shows all output (for long-running non-interactive tasks)
+ui_spin_verbose() {
     local title="$1"
     local command="$2"
-    
+
+    if _check_gum; then
+        gum spin --spinner dot --title "$title" --show-output -- sh -c "$command"
+    else
+        echo "🔄 $title"
+        eval "$command"
+    fi
+}
+
+# Error-safe spinner - shows output only on failure
+ui_spin_on_error() {
+    local title="$1"
+    local command="$2"
+
+    if _check_gum; then
+        gum spin --spinner dot --title "$title" --show-stderr -- sh -c "$command"
+    else
+        eval "$command"
+    fi
+}
+
+# Silent spinner - hides all output (background operations, queries)
+ui_spin_silent() {
+    local title="$1"
+    local command="$2"
+
     if _check_gum; then
         gum spin --spinner dot --title "$title" -- sh -c "$command"
     else
         echo "🔄 $title"
-        eval "$command"
+        eval "$command" >/dev/null 2>&1
     fi
 }
 

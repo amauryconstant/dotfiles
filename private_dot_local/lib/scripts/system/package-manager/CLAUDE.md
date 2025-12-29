@@ -1278,6 +1278,160 @@ _release_lock() {
 **Example from codebase**:
 - `sync-lock.sh:40-45`: Sync lock file descriptor cleanup
 
+### External CLI Interaction Patterns
+
+**Purpose**: Proper handling of external CLI operations to preserve TTY access and interactive prompts
+
+**Critical rule**: Interactive operations (sudo, package managers) must use direct calls, NOT spinners
+
+#### Interactive Operations Pattern (Direct Calls)
+
+**Use direct calls for**:
+- Package manager operations (paru, flatpak)
+- Sudo operations (timeshift, snapper)
+- Any operation requiring user input or TTY access
+
+**Pattern**:
+```bash
+# Good: Direct call preserves TTY
+ui_step "Installing packages..."
+if paru -S --needed firefox; then
+    ui_success "Packages installed"
+fi
+
+# Bad: Spinner breaks sudo prompts and TTY
+if ui_spin_interactive "Installing" "paru -S firefox"; then  # DON'T DO THIS
+```
+
+**Why**: Gum spinners (even with `--show-output`) capture stdin/stdout and break:
+- Sudo password prompts
+- TTY control sequences
+- Interactive package manager prompts
+- Progress bars requiring terminal control
+
+#### Spinner Variants
+
+**See**: `../core/CLAUDE.md` for complete spinner variant documentation (ui_spin_verbose, ui_spin_on_error, ui_spin_silent)
+
+#### Examples from Codebase
+
+**Package manager operations** (batch-operations.sh:44-45):
+```bash
+# Direct call (paru needs TTY for sudo prompts and progress display)
+if paru -S --noconfirm --needed "${pkg_specs[@]}"; then
+    ui_success "Batch install complete (${#pkg_specs[@]} packages)"
+fi
+```
+
+**Backup operations** (backup-manager.sh:71-83):
+```bash
+# Timeshift (direct call - sudo needs TTY)
+ui_step "Creating timeshift backup..."
+if sudo timeshift --create --comments "$comment" --scripted; then
+    ui_success "Timeshift backup created successfully"
+fi
+
+# Snapper (direct call - sudo needs TTY)
+if sudo snapper -c "$snapper_config" create -d "$comment"; then
+    ui_success "Snapper snapshot created successfully"
+fi
+```
+
+**Flatpak operations** (flatpak-manager.sh:32-33, 92-93):
+```bash
+# Install (direct call - may need interaction, shows progress)
+ui_step "Installing Flatpak: $flatpak_id"
+if flatpak install -y --user flathub "$flatpak_id"; then
+    ui_success "Installed Flatpak: $flatpak_id"
+fi
+
+# Update (direct call - shows progress)
+ui_step "Updating Flatpak packages..."
+if flatpak update -y --user; then
+    ui_success "Flatpak packages updated"
+fi
+```
+
+**Package downgrade** (sync-pacman.sh:164-165):
+```bash
+# Direct call (paru needs TTY for sudo prompts and progress display)
+if paru -S --noconfirm "${name}=${selected_version}"; then
+    ui_success "Downgraded $name to $selected_version"
+fi
+```
+
+**Use ui_spin_silent for**:
+✅ Package validation queries
+✅ Status checks (no output needed)
+✅ Background operations
+
+**Example from validation.sh** (hypothetical):
+```bash
+ui_spin_silent "Checking package availability" \
+    "timeout 5s paru -Si '$package'"
+```
+
+#### Anti-Patterns
+
+❌ **Do NOT use command substitution with interactive operations**:
+```bash
+# WRONG: Breaks stdin for sudo prompts
+sync_output=$(cmd_sync --prune 2>&1)
+
+# CORRECT: Use process substitution to preserve stdin
+if ! cmd_sync --prune 2> >(tee "$SYNC_ERROR_LOG" >&2); then
+```
+
+**Why**: Command substitution `$(...)` redirects stdin to /dev/null, breaking interactive prompts
+
+**Example from cmd-update.sh:36-48**: Uses process substitution `2> >(tee)` to capture stderr while preserving stdin
+
+#### String-Based Command Pattern
+
+**All ui_spin_* functions use string-based commands** (not arrays):
+
+```bash
+# Commands passed as strings
+ui_spin_interactive "Title" "command with args"
+
+# Executed via sh -c (with gum) or eval (fallback)
+gum spin --title "$title" --show-output -- sh -c "$command"
+eval "$command"
+```
+
+**Variable expansion in commands**:
+```bash
+# Correct: Variables expanded before passing to spinner
+ui_spin_interactive "Installing $pkg_count packages" \
+    "paru -S --noconfirm --needed ${pkg_specs[*]}"
+```
+
+**Quote handling**:
+```bash
+# Single quotes preserved in command string
+ui_spin_interactive "Creating backup" \
+    "sudo timeshift --create --comments '$comment'"
+```
+
+#### Usage Guidelines
+
+**Choosing the right spinner**:
+
+1. **Identify operation type**:
+   - Interactive (sudo, downloads) → `ui_spin_interactive`
+   - Query/validation → `ui_spin_silent`
+   - Builds/compilation → `ui_spin_on_error`
+
+2. **Test interactive operations**:
+   - Verify sudo prompts visible
+   - Verify download progress shown
+   - Verify user can interact with prompts
+
+3. **Test query operations**:
+   - Verify output hidden (no noise)
+   - Verify exit codes preserved
+   - Verify spinner shown during operation
+
 ### Version Validation
 
 **Pattern**: Fail operations if version cannot be determined.

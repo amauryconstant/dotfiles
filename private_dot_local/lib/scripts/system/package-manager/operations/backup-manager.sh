@@ -68,6 +68,7 @@ _create_backup() {
 
         case "$backup_tool" in
             timeshift)
+                # Direct call (sudo needs TTY access)
                 if sudo timeshift --create --comments "$comment" --scripted; then
                     ui_success "Timeshift backup created successfully"
                     return 0
@@ -78,6 +79,7 @@ _create_backup() {
                 ;;
             snapper)
                 local snapper_config=$(_get_snapper_config)
+                # Direct call (sudo needs TTY access)
                 if sudo snapper -c "$snapper_config" create -d "$comment"; then
                     ui_success "Snapper snapshot created successfully (config: $snapper_config)"
                     return 0

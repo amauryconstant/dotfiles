@@ -52,7 +52,7 @@ _release_sync_lock() {
 
 _check_stale_lock() {
     # Check for stale locks (>30 minutes old)
-    # Offers to remove them if found
+    # Auto-removes them with audit logging
     # Returns: 0 always (non-blocking check)
 
     if [[ ! -f "$SYNC_LOCK_FILE" ]]; then
@@ -66,12 +66,15 @@ _check_stale_lock() {
 
     # 30 minutes = 1800 seconds
     if [[ $lock_age -gt 1800 ]]; then
-        ui_warning "Stale lock file detected (${lock_age}s old, created $(date -d @${lock_mtime} '+%Y-%m-%d %H:%M:%S'))"
+        ui_warning "Stale lock detected (age: ${lock_age}s, created: $(date -d @"${lock_mtime}" '+%Y-%m-%d %H:%M:%S'))"
+        ui_info "Auto-removing stale lock"
+        rm -f "$SYNC_LOCK_FILE"
 
-        if ui_confirm "Remove stale lock?"; then
-            rm -f "$SYNC_LOCK_FILE"
-            ui_success "Stale lock removed"
-        fi
+        # Audit log
+        mkdir -p "$STATE_DIR"
+        echo "$(date -Iseconds) lock_removed age=${lock_age}s pid=$$" >> "$STATE_DIR/audit.log"
+
+        ui_success "Stale lock removed"
     fi
 
     return 0

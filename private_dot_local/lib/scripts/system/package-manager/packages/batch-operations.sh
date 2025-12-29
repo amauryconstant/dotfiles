@@ -41,7 +41,7 @@ _install_packages_batch() {
 
     # Try batch install
     if [[ "$BATCH_INSTALLS" == "true" ]]; then
-        ui_info "Installing ${#pkg_specs[@]} packages..." >&2
+        # Direct call (paru needs TTY for sudo prompts and progress display)
         if paru -S --noconfirm --needed "${pkg_specs[@]}"; then
             ui_success "Batch install complete (${#pkg_specs[@]} packages)"
 

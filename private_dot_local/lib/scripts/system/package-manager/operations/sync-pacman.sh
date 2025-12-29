@@ -161,6 +161,7 @@ _sync_handle_downgrade() {
 
     ui_step "$ICON_PACKAGE $name: Downgrading $installed → $selected_version"
 
+    # Direct call (paru needs TTY for sudo prompts and progress display)
     if paru -S --noconfirm "${name}=${selected_version}"; then
         _update_package_state "$name" "$selected_version" "pacman" "$module" "\"<$max_version\""
         ui_success "Downgraded $name to $selected_version"

@@ -29,7 +29,7 @@ _install_flatpak() {
     ui_step "$ICON_PACKAGE Installing Flatpak: $flatpak_id"
 
     # Install with --user scope (ALWAYS user scope, never system)
-    ui_info "Downloading and installing $flatpak_id..." >&2
+    # Direct call (flatpak may need user interaction and shows progress)
     if flatpak install -y --user flathub "$flatpak_id"; then
         # Invalidate cache after install
         _invalidate_flatpak_cache
@@ -89,7 +89,7 @@ _update_flatpaks() {
 
     ui_step "$ICON_PACKAGE Updating Flatpak packages..."
 
-    ui_info "Updating flatpak applications..." >&2
+    # Direct call (flatpak shows progress)
     if flatpak update -y --user; then
         ui_success "Flatpak packages updated"
         # Invalidate cache after updates

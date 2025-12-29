@@ -14,7 +14,7 @@ git-prune-branch() {
     fi
     
     # Fetch remote updates with progress indication
-    ui_spin "Fetching remote updates..." "git fetch -p"
+    ui_spin_silent "Fetching remote updates..." "git fetch -p"
     
     # Find branches with gone upstream
     local gone_branches=$(git for-each-ref --format '%(refname) %(upstream:track)' refs/heads | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}')

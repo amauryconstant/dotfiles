@@ -6,6 +6,7 @@
 
 # Source the UI library
 if [ -f "$UI_LIB" ]; then
+    # shellcheck source=/dev/null
     . "$UI_LIB"
 else
     echo "Error: UI library not found at $UI_LIB" >&2
@@ -70,7 +71,7 @@ ts_connect() {
 
     if [ -z "$exit_node" ]; then
         ui_title "🚀 Connecting to Tailscale..."
-        if ui_spin "Establishing connection..." "tailscale up"; then
+        if ui_spin_interactive "Establishing connection..." "tailscale up"; then
             ui_success "Successfully connected to Tailscale"
             sleep 1
             ts_status
@@ -81,7 +82,7 @@ ts_connect() {
         fi
     else
         ui_title "🌐 Connecting to Tailscale via exit node: $exit_node"
-        if ui_spin "Establishing connection..." "tailscale up --exit-node=\"$exit_node\""; then
+        if ui_spin_interactive "Establishing connection..." "tailscale up --exit-node=\"$exit_node\""; then
             ui_success "Successfully connected to Tailscale"
             sleep 1
             ts_status
@@ -104,7 +105,7 @@ ts_disconnect() {
 
     ui_title "🔌 Disconnecting from Tailscale..."
 
-    if ui_spin "Disconnecting..." "tailscale down"; then
+    if ui_spin_interactive "Disconnecting..." "tailscale down"; then
         ui_success "Successfully disconnected from Tailscale"
 
         # Verify disconnection

@@ -6,6 +6,7 @@
 
 # Source the UI library
 if [ -f "$UI_LIB" ]; then
+    # shellcheck source=/dev/null
     . "$UI_LIB"
 else
     echo "Error: UI library not found at $UI_LIB" >&2
@@ -104,27 +105,27 @@ execute_troubleshoot_action() {
 
             case "$repair_action" in
                 "🔄 Reload systemd daemon")
-                    ui_spin "Reloading systemd daemon..." "sudo systemctl daemon-reload"
+                    ui_spin_interactive "Reloading systemd daemon..." "sudo systemctl daemon-reload"
                     ui_success "Systemd daemon reloaded"
                     ;;
                 "🗂️ Rebuild font cache")
-                    ui_spin "Rebuilding font cache..." "fc-cache -fv"
+                    ui_spin_silent "Rebuilding font cache..." "fc-cache -fv"
                     ui_success "Font cache rebuilt"
                     ;;
                 "📦 Fix package database")
-                    ui_spin "Updating package database..." "sudo pacman -Sy"
+                    ui_spin_interactive "Updating package database..." "sudo pacman -Sy"
                     ui_success "Package database updated"
                     ;;
                 "🗝️ Update keyring")
-                    ui_spin "Updating keyring..." "sudo pacman -S archlinux-keyring --noconfirm"
+                    ui_spin_interactive "Updating keyring..." "sudo pacman -S archlinux-keyring --noconfirm"
                     ui_success "Keyring updated"
                     ;;
                 "🌊 Reset DNS cache")
-                    ui_spin "Flushing DNS cache..." "sudo systemctl restart systemd-resolved"
+                    ui_spin_interactive "Flushing DNS cache..." "sudo systemctl restart systemd-resolved"
                     ui_success "DNS cache reset"
                     ;;
                 "🖥️ Fix desktop database")
-                    ui_spin "Updating desktop database..." "update-desktop-database ~/.local/share/applications/"
+                    ui_spin_silent "Updating desktop database..." "update-desktop-database ~/.local/share/applications/"
                     ui_success "Desktop database updated"
                     ;;
             esac
@@ -239,7 +240,7 @@ execute_troubleshoot_action() {
 
             case "$cleanup_action" in
                 "🗑️ Clear package cache (pacman)")
-                    ui_spin "Clearing package cache..." "sudo pacman -Scc --noconfirm"
+                    ui_spin_interactive "Clearing package cache..." "sudo pacman -Scc --noconfirm"
                     ui_success "Package cache cleared"
                     ;;
                 "🧹 Remove orphaned packages")
@@ -252,11 +253,11 @@ execute_troubleshoot_action() {
                     fi
                     ;;
                 "📝 Clean log files (keep 1 week)")
-                    ui_spin "Cleaning old logs..." "sudo journalctl --vacuum-time=1week"
+                    ui_spin_interactive "Cleaning old logs..." "sudo journalctl --vacuum-time=1week"
                     ui_success "Log files cleaned"
                     ;;
                 "🌍 Clear browser caches")
-                    ui_spin "Clearing browser caches..." "rm -rf ~/.cache/mozilla/* ~/.cache/chromium/* 2>/dev/null || true"
+                    ui_spin_silent "Clearing browser caches..." "rm -rf ~/.cache/mozilla/* ~/.cache/chromium/* 2>/dev/null || true"
                     ui_success "Browser caches cleared"
                     ;;
                 "📂 Find large files (>100MB)")
@@ -264,7 +265,7 @@ execute_troubleshoot_action() {
                     find ~ -type f -size +100M -exec ls -lh {} \; 2>/dev/null | head -20
                     ;;
                 "📁 Clear user cache directories")
-                    ui_spin "Clearing user caches..." "rm -rf ~/.cache/* 2>/dev/null || true"
+                    ui_spin_silent "Clearing user caches..." "rm -rf ~/.cache/* 2>/dev/null || true"
                     ui_success "User caches cleared"
                     ;;
             esac

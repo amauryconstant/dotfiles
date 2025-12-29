@@ -273,7 +273,7 @@ if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
     # Check for updates
     if command_exists checkupdates; then
         ui_info "Checking for updates..."
-        updates=$(ui_spin "Checking package updates..." "checkupdates 2>/dev/null")
+        updates=$(ui_spin_silent "Checking package updates..." "checkupdates 2>/dev/null")
         update_count=$(echo "$updates" | wc -l)
         
         if [[ -n "$updates" && "$updates" != "" ]]; then
@@ -298,7 +298,7 @@ if [[ "$PACKAGES" == true ]] || [[ "$FULL" == true ]]; then
     
     # AUR updates (if paru is available)
     if command_exists paru; then
-        aur_updates=$(ui_spin "Checking AUR updates..." "paru -Qua 2>/dev/null | wc -l")
+        aur_updates=$(ui_spin_silent "Checking AUR updates..." "paru -Qua 2>/dev/null | wc -l")
         if [[ $aur_updates -gt 0 ]]; then
             ui_warning "$aur_updates AUR package update(s) available"
         else
@@ -359,14 +359,14 @@ if [[ "$NETWORK" == true ]] || [[ "$FULL" == true ]]; then
     
     # Internet connectivity
     ui_subtitle "Connectivity Test:"
-    if ui_spin "Testing internet connectivity..." "ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1"; then
+    if ui_spin_silent "Testing internet connectivity..." "ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1"; then
         ui_success "Internet connectivity: Available"
     else
         ui_warning "Internet connectivity: Limited or unavailable"
     fi
     
     # DNS resolution test
-    if ui_spin "Testing DNS resolution..." "nslookup google.com >/dev/null 2>&1"; then
+    if ui_spin_silent "Testing DNS resolution..." "nslookup google.com >/dev/null 2>&1"; then
         ui_success "DNS resolution: Working"
     else
         ui_warning "DNS resolution: Issues detected"

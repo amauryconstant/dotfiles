@@ -33,33 +33,37 @@ cmd_update() {
     if [[ "$sync_first" == "true" ]]; then
         ui_step "Phase 1/5: Syncing to packages.yaml..."
 
-        local sync_output
-        local sync_status=0
+        # Capture stderr for diagnostic parsing
+        SYNC_ERROR_LOG=$(mktemp)
+        trap 'rm -f "$SYNC_ERROR_LOG"' EXIT
 
-        sync_output=$(cmd_sync --prune 2>&1)
-        sync_status=$?
-
-        if [[ $sync_status -ne 0 ]]; then
+        # Direct call (no command substitution!)
+        # Stderr goes to both file AND terminal
+        if ! cmd_sync --prune 2> >(tee "$SYNC_ERROR_LOG" >&2); then
+            sync_status=$?
             ui_error "Sync failed during update (exit code: $sync_status)"
             echo ""
 
+            # Parse captured stderr for helpful diagnostics
+            local error_output=$(cat "$SYNC_ERROR_LOG")
+
             # Parse error type and provide specific guidance
-            if echo "$sync_output" | grep -qi "yaml.*syntax\|parse.*error"; then
+            if echo "$error_output" | grep -qi "yaml.*syntax\|parse.*error"; then
                 ui_error "  Cause: YAML syntax error in packages.yaml"
                 ui_info "  Fix: Validate YAML structure:"
                 ui_info "    yq eval . ~/.chezmoidata/packages.yaml"
 
-            elif echo "$sync_output" | grep -qi "package.*not found\|not available"; then
+            elif echo "$error_output" | grep -qi "package.*not found\|not available"; then
                 ui_error "  Cause: Package not found in repositories"
                 ui_info "  Fix: Check package availability:"
                 ui_info "    package-manager validate --check-packages"
 
-            elif echo "$sync_output" | grep -qi "constraint\|version.*conflict"; then
+            elif echo "$error_output" | grep -qi "constraint\|version.*conflict"; then
                 ui_error "  Cause: Version constraint violation"
                 ui_info "  Fix: Review conflicting constraints:"
                 ui_info "    package-manager outdated"
 
-            elif echo "$sync_output" | grep -qi "lock\|already running"; then
+            elif echo "$error_output" | grep -qi "lock\|already running"; then
                 ui_error "  Cause: Sync operation already in progress"
                 ui_info "  Fix: Wait or remove stale lock:"
                 ui_info "    rm ~/.local/state/package-manager/.sync.lock"
@@ -84,7 +88,7 @@ cmd_update() {
         return 1
     fi
 
-    ui_info "Downloading and installing updates..." >&2
+    # Direct call (paru needs TTY for sudo prompts and progress display)
     if ! $aur_helper -Syu --noconfirm; then
         ui_error "Arch/AUR update failed"
         return 1

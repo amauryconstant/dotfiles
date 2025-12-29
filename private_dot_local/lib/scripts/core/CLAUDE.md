@@ -36,14 +36,16 @@
 - `ui_action` - 🚀 Action indicator
 - `ui_complete` - 🎉 Completion indicator
 
-**Interactive Functions** (7):
+**Interactive Functions** (9):
 - `ui_confirm` - Yes/No prompts
 - `ui_choose` - Single selection menu
 - `ui_choose_multi` - Multi-selection menu
 - `ui_input` - Text input
 - `ui_password` - Password input (hidden)
 - `ui_filter` - Fuzzy search (requires gum)
-- `ui_spin` - Spinner with command execution
+- `ui_spin_verbose` - Verbose spinner (shows all output)
+- `ui_spin_on_error` - Error-only spinner (shows stderr only)
+- `ui_spin_silent` - Silent spinner (hides all output)
 
 **Layout Functions** (6):
 - `ui_title` - Double border title
@@ -84,9 +86,67 @@ if ui_confirm "Continue?"; then
     choice=$(ui_choose "Select" "Opt1" "Opt2" "Opt3")
 fi
 
-# Spinner
-ui_spin "Processing" long_running_command
+# Spinners (see dedicated section below)
+ui_spin_verbose "Processing data" "long-running-command"
+ui_spin_silent "Checking updates" "checkupdates"
 ```
+
+### Spinner Variants with Output Control
+
+**Three spinner types for different use cases**:
+
+**ui_spin_verbose** - Shows all output:
+- **Use for**: Long-running operations with verbose progress output (no user interaction)
+- **Gum flag**: `--show-output`
+- **Behavior**: Spinner + command output visible
+- **Example**: `ui_spin_verbose "Processing data" "long-running-command"`
+- **Note**: NOT for sudo/interactive prompts (use direct calls instead)
+
+**ui_spin_on_error** - Shows output only on failure:
+- **Use for**: Build commands, large operations, compilation
+- **Gum flag**: `--show-stderr`
+- **Behavior**: Silent on success, shows stderr on failure
+- **Example**: `ui_spin_on_error "Building project" "make all"`
+
+**ui_spin_silent** - Hides all output (background operations):
+- **Use for**: Status checks, validation queries, background tasks
+- **Gum flag**: *(none - default behavior)*
+- **Behavior**: Spinner only, all output hidden
+- **Example**: `ui_spin_silent "Checking updates" "checkupdates"`
+
+**Key benefits**:
+- ✅ Explicit function names indicate behavior (no guessing)
+- ✅ Can't accidentally hide interactive prompts
+- ✅ Gum handles I/O multiplexing (spinner + command output)
+- ✅ String-based command pattern (consistent with existing usage)
+
+**Usage pattern**:
+```bash
+# Interactive operations (sudo, package managers) - Direct call, NO spinner
+ui_step "Installing packages..."
+if paru -S --needed firefox; then
+    ui_success "Packages installed"
+fi
+
+# Long-running with verbose output (no user interaction)
+if ui_spin_verbose "Processing data" "long-running-command"; then
+    ui_success "Processing complete"
+fi
+
+# Error diagnostics (show failures)
+if ui_spin_on_error "Compiling project" "make -j4"; then
+    ui_success "Build complete"
+fi
+
+# Background queries (hide output)
+updates=$(ui_spin_silent "Checking updates" "checkupdates 2>/dev/null")
+```
+
+**Selection guidelines**:
+- **Interactive operations** (sudo, package managers) → Direct call, NO spinner
+- **Long-running with verbose output** (no interaction) → `ui_spin_verbose`
+- **Query operations** → `ui_spin_silent`
+- **Build operations** → `ui_spin_on_error`
 
 ### Color Integration
 
