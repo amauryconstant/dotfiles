@@ -1,0 +1,57 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $settings := .chezmoi.stdin | fromJson -}}
+
+{{- /* Language Formatters */ -}}
+{{- $_ := set $settings "[css]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[javascript]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[json]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[jsonc]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[typescript]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[typescriptreact]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[yaml]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}
+{{- $_ := set $settings "[dockercompose]" (dict
+  "editor.insertSpaces" true
+  "editor.tabSize" 2
+  "editor.autoIndent" "advanced"
+  "editor.defaultFormatter" "redhat.vscode-yaml"
+) -}}
+{{- $_ := set $settings "[github-actions-workflow]" (dict "editor.defaultFormatter" "redhat.vscode-yaml") -}}
+
+{{- /* Diff Editor */ -}}
+{{- $_ := set $settings "diffEditor.ignoreTrimWhitespace" false -}}
+{{- $_ := set $settings "diffEditor.maxComputationTime" 0 -}}
+
+{{- /* Editor */ -}}
+{{- $_ := set $settings "editor.fontFamily" "\"FiraCode Nerd Font\"" -}}
+
+{{- /* Explorer */ -}}
+{{- $_ := set $settings "explorer.confirmDragAndDrop" false -}}
+{{- $_ := set $settings "explorer.confirmPasteNative" false -}}
+
+{{- /* Git */ -}}
+{{- $_ := set $settings "git.autofetch" true -}}
+{{- $_ := set $settings "git.confirmSync" false -}}
+{{- $_ := set $settings "git.ignoreRebaseWarning" true -}}
+
+{{- /* NPM */ -}}
+{{- $_ := set $settings "npm.scriptRunner" "yarn" -}}
+
+{{- /* Telemetry */ -}}
+{{- $_ := set $settings "redhat.telemetry.enabled" false -}}
+
+{{- /* SVG */ -}}
+{{- $_ := set $settings "svg.preview.mode" "img" -}}
+
+{{- /* Terminal */ -}}
+{{- $_ := set $settings "terminal.explorerKind" "external" -}}
+{{- $_ := set $settings "terminal.external.linuxExec" "ghossty" -}}
+{{- $_ := set $settings "terminal.integrated.defaultProfile.linux" "zsh" -}}
+{{- $_ := set $settings "terminal.integrated.defaultProfile.osx" "zsh" -}}
+{{- $_ := set $settings "terminal.integrated.enableMultiLinePasteWarning" "never" -}}
+
+{{- /* Workbench (NOT workbench.colorTheme - managed by theme-apply-vscode.sh) */ -}}
+{{- $_ := set $settings "workbench.editor.enablePreview" false -}}
+{{- $_ := set $settings "workbench.sideBar.location" "right" -}}
+
+{{- /* Output modified settings */ -}}
+{{- $settings | toPrettyJson -}}

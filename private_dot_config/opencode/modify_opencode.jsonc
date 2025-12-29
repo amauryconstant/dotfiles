@@ -1,0 +1,43 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $config := .chezmoi.stdin | fromJson -}}
+
+{{- /* JSON Schema */ -}}
+{{- $_ := set $config "$schema" "https://opencode.ai/config.json" -}}
+
+{{- /* Provider Configuration */ -}}
+{{- $provider := dict -}}
+{{- $_ := set $provider "zhipuai" (dict "api" "https://api.z.ai/api/coding/paas/v4") -}}
+{{- $_ := set $config "provider" $provider -}}
+
+{{- /* MCP Servers */ -}}
+{{- $mcp := dict -}}
+{{- $_ := set $mcp "context7" (dict
+  "type" "local"
+  "command" (list "bunx" "-y" "@upstash/context7-mcp")
+) -}}
+{{- $_ := set $mcp "sequential-thinking" (dict
+  "type" "local"
+  "command" (list "bunx" "-y" "@modelcontextprotocol/server-sequential-thinking")
+) -}}
+{{- $_ := set $mcp "fetch" (dict
+  "type" "local"
+  "command" (list "docker" "run" "-i" "--rm" "mcp/fetch")
+) -}}
+{{- $_ := set $mcp "mermaid" (dict
+  "type" "local"
+  "command" (list "bunx" "-y" "mcp-mermaid")
+) -}}
+{{- $_ := set $config "mcp" $mcp -}}
+
+{{- /* Tool Toggles */ -}}
+{{- $tools := dict -}}
+{{- $_ := set $tools "context7" true -}}
+{{- $_ := set $tools "sequential-thinking" true -}}
+{{- $_ := set $tools "fetch" true -}}
+{{- $_ := set $config "tools" $tools -}}
+
+{{- /* Runtime-managed: "theme" - managed by theme-apply-opencode.sh */ -}}
+{{- /* Do NOT set "theme" key here - it's runtime state */ -}}
+
+{{- /* Output modified config */ -}}
+{{- $config | toPrettyJson -}}
