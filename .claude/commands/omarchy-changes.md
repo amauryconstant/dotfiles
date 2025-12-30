@@ -11,7 +11,7 @@ Check for new version releases in the omarchy repository since the last check. U
 
 1. Run the omarchy-changes script to fetch release data:
 
-!`bash ~/.local/share/chezmoi/.scripts/omarchy-changes.sh`
+!`OMARCHY_AUTO_UPDATE=true bash ~/.local/share/chezmoi/.claude/commands/omarchy-changes/script.sh`
 
 The script will:
 - Check for new version tags (e.g., v3.2.2 → v3.2.3)
