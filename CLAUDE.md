@@ -412,6 +412,7 @@ find . -name "pattern" -type f
 ```go
 .fullname, .firstname, .workEmail, .personalEmail
 .privateServer, .chassisType  # laptop/desktop
+.terminalFont                  # FiraCode Nerd Font (default), Iosevka Nerd Font, Geist Mono Nerd Font
 ```
 
 #### Data files (`.chezmoidata/`)
@@ -848,6 +849,45 @@ fi
 ```
 
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for complete hook documentation
+
+### Backup System
+
+**Tool**: Timeshift (preferred) for system backups
+**Integration**: Automatic pre-sync snapshots via package-manager
+**Snapper**: Removed (not configured, Timeshift preferred)
+
+#### Recommended Retention Policy
+
+Configure via Timeshift GUI (`sudo timeshift-launcher`):
+- **Daily**: 7 snapshots (1 week)
+- **Weekly**: 4 snapshots (1 month)
+- **Monthly**: 6 snapshots (6 months)
+- **Boot**: 3 snapshots
+
+#### Disk Space Management
+
+Timeshift automatically deletes oldest snapshots when retention limits reached.
+
+**No automatic low-disk emergency cleanup** (upstream limitation - [Issue #329](https://github.com/linuxmint/timeshift/issues/329))
+
+Monitor disk usage:
+- `system-health` - Health monitoring dashboard
+- `df -h /` - Manual filesystem check
+
+#### Integration
+
+**Automatic backups**: Package-manager auto-detects Timeshift for pre-sync snapshots.
+
+**Manual snapshots**:
+```bash
+sudo timeshift --create --comments "Description"
+sudo timeshift --list
+sudo timeshift --restore
+```
+
+**Workflow**: Before `package-manager sync`, interactive prompt offers snapshot creation. Backup tool auto-detected (prefers Timeshift).
+
+**Implementation**: `backup-manager.sh` (line 25-27) auto-detects Timeshift if installed.
 
 ### Enhanced Theme Switching
 

@@ -35,8 +35,8 @@
 /* Universal Styles */
 /* -------------------------------------------------------------------------- */
 * {
-  /* Font: FiraCode Nerd Font for consistent styling with Waybar */
-  font-family: "FiraCode Nerd Font", monospace;
+  /* Font: Terminal font for consistent styling with Waybar */
+  font-family: {{ .terminalFont | quote }}, monospace;
 
   /* Base font size - slightly larger than Waybar for readability */
   font-size: 14px;

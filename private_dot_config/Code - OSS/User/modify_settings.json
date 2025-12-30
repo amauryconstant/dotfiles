@@ -22,7 +22,7 @@
 {{- $_ := set $settings "diffEditor.maxComputationTime" 0 -}}
 
 {{- /* Editor */ -}}
-{{- $_ := set $settings "editor.fontFamily" "\"FiraCode Nerd Font\"" -}}
+{{- $_ := set $settings "editor.fontFamily" (printf "\"%s\"" .terminalFont) -}}
 
 {{- /* Explorer */ -}}
 {{- $_ := set $settings "explorer.confirmDragAndDrop" false -}}

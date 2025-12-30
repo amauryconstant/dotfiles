@@ -71,7 +71,6 @@ packages:
         - nano             # Simple terminal text editor
         - smartmontools    # SMART disk health monitoring
         - btrfs-progs      # Btrfs filesystem utilities
-        - snapper          # Btrfs/LVM snapshot manager
         - timeshift        # System backup and restore (Btrfs snapshots)
         - sof-firmware     # Intel audio DSP firmware
 
@@ -164,6 +163,7 @@ packages:
         - ttf-firacode-nerd      # Monospace font with ligatures
         - otf-opendyslexic-nerd  # Dyslexia-friendly font
         - otf-geist-mono-nerd    # Vercel's monospace font
+        - ttf-iosevka-nerd       # Programming font with ligatures
         - ttf-fira-sans          # Sans-serif system font
         # Unicode & international coverage
         - noto-fonts             # Google Noto (Latin/Greek/Cyrillic)
