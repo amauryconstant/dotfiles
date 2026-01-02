@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_before_001_install_package_manager.sh.tmpl
 # Purpose: Install and configure package managers (paru, Chaotic-AUR)
@@ -30,9 +30,21 @@ else
 fi
 
 # Enable multilib repository for 32-bit support
+# Handle three cases: already enabled, commented out, or missing entirely
 if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
     {{ includeTemplate "log_step" "Enabling multilib repository..." }}
-    sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
+    # Check if multilib section exists but is commented
+    if grep -q "^#\[multilib\]" /etc/pacman.conf; then
+        # Uncomment existing section
+        sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
+    else
+        # Add multilib section (missing entirely - can happen after pacman updates)
+        sudo tee -a /etc/pacman.conf > /dev/null << 'EOF'
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+EOF
+    fi
     sudo pacman -Syuu --noconfirm
     {{ includeTemplate "log_success" "multilib repository enabled" }}
 else
