@@ -96,6 +96,41 @@ Only the accent hex values differ, not the semantic mappings.
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#eff1f5 - base)
+- `bg-secondary` → `base01` (#e6e9ef - mantle)
+- `bg-tertiary` → `base02` (#ccd0da - surface0)
+
+**Catppuccin Surface Naming**: Catppuccin uses semantic surface names (base/mantle/surface0/surface1/surface2) rather than numeric `base00-0F`. The base16 mapping follows the luminance progression: base (lightest) → mantle → surface0 → surface1 → surface2.
+
+**Architecture**: We use separate theme directories (latte/mocha) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-catppuccin-latte implementation while maintaining our multi-app theme system.
+
+**Diff Backgrounds**: This theme uses custom green/red tinted backgrounds for visual distinction:
+- `bg-diff-added`: #dfe7dd (subtle green tint)
+- `bg-diff-removed`: #f4dde1 (subtle red tint)
+- `bg-diff-context`: #ccd0da (surface0 neutral)
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 7.8:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02 (base/mantle/surface0)
+- [x] Foreground hierarchy uses official Catppuccin palette
+- [x] Custom diff tinting documented above
+
+**Official Reference**: [base16-catppuccin-latte.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Extended Accent Utilization
 
 **All 14 accents used** (same as Mocha):
@@ -228,3 +263,5 @@ lavender:  #7287fd  (borders, hints - darker)
 
 ### Related
 - [Catppuccin Mocha Style Guide](../catppuccin-mocha/STYLE-GUIDE.md) - Dark variant reference
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details

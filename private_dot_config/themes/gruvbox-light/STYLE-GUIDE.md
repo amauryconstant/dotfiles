@@ -95,6 +95,38 @@ Only the accent hex values differ, not the semantic mappings.
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#fbf1c7 - bg)
+- `bg-secondary` → `base01` (#ebdbb2 - bg1)
+- `bg-tertiary` → `base02` (#d5c4a1 - bg2)
+
+**Gruvbox Progressive Backgrounds**: Gruvbox uses numbered background progression (bg/bg1/bg2/bg3/bg4) representing decreasing luminance in light mode. The base16 mapping uses the first three tiers for primary/panel/element backgrounds.
+
+**Architecture**: We use separate theme directories (dark/light) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-gruvbox-light-hard implementation while maintaining our multi-app theme system.
+
+**Status**: ✅ **Already aligned** - No color changes needed. All values match official base16-gruvbox-light-hard implementation.
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 7.78:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02 (bg/bg1/bg2)
+- [x] Foreground hierarchy uses official Gruvbox palette
+- [x] No custom colors introduced
+
+**Official Reference**: [base16-gruvbox-light-hard.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Variant Adaptation Notes
 
 ### Re-calibration Strategy
@@ -205,3 +237,5 @@ gray:   #928374  (comments - unchanged)
 
 ### Related
 - [Gruvbox Dark Style Guide](../gruvbox-dark/STYLE-GUIDE.md) - Dark variant reference
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details

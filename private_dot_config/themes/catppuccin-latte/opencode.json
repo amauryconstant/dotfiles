@@ -2,8 +2,8 @@
   "$schema": "https://opencode.ai/theme.json",
   "defs": {
     "bg-primary": "#eff1f5",
-    "bg-secondary": "#ccd0da",
-    "bg-tertiary": "#bcc0cc",
+    "bg-secondary": "#e6e9ef",
+    "bg-tertiary": "#ccd0da",
     "bg-overlay": "#e6e9ef",
     "bg-diff-added": "#dfe7dd",
     "bg-diff-removed": "#f4dde1",

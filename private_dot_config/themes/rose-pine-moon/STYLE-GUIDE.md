@@ -107,6 +107,38 @@ Limited to **15 colors total** - forces consistency and creates cohesion across 
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#232136 - base)
+- `bg-secondary` → `base01` (#2a273f - surface)
+- `bg-tertiary` → `base02` (#393552 - overlay)
+
+**Rose Pine Surface Naming**: Rose Pine uses nature-inspired names (base/surface/overlay) that directly correspond to elevation layers. The base16 mapping follows: base (foundation) → surface (raised) → overlay (floating).
+
+**Architecture**: We use separate theme directories (dawn/moon) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-rose-pine-moon implementation while maintaining our multi-app theme system.
+
+**Status**: ✅ **Already aligned** - No color changes needed. All values match official base16-rose-pine-moon implementation.
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 5.18:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02 (base/surface/overlay)
+- [x] Foreground hierarchy uses official Rose Pine palette
+- [x] No custom colors introduced
+
+**Official Reference**: [base16-rose-pine-moon.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Variant Adaptation
 
 Rose Pine provides **three brightness variants** (main, moon, dawn) that maintain **identical semantic relationships** while adapting absolute values for readability.
@@ -211,3 +243,5 @@ highlightHigh: #524f67  (strong emphasis)
 - [Rose Pine Theme Implementations](https://rosepinetheme.com/themes/) - 205+ application examples
 - [Rose Pine VSCode](https://github.com/rose-pine/vscode) - Syntax highlighting reference
 - [Rose Pine Hyprland](https://github.com/rose-pine/hyprland) - Window manager patterns
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details

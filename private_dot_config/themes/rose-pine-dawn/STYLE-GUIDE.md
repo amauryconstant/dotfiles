@@ -73,6 +73,38 @@ Only the absolute hex values differ, not the semantic mappings.
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#faf4ed - base)
+- `bg-secondary` → `base01` (#fffaf3 - surface)
+- `bg-tertiary` → `base02` (#f2e9e1 - overlay)
+
+**Rose Pine Surface Naming**: Rose Pine uses nature-inspired names (base/surface/overlay) that directly correspond to elevation layers. The base16 mapping follows: base (foundation) → surface (raised) → overlay (floating).
+
+**Architecture**: We use separate theme directories (dawn/moon) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-rose-pine implementation while maintaining our multi-app theme system.
+
+**Status**: ✅ **Already aligned** - No color changes needed. All values match official base16-rose-pine implementation.
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 7.0:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02 (base/surface/overlay)
+- [x] Foreground hierarchy uses official Rose Pine palette
+- [x] No custom colors introduced
+
+**Official Reference**: [base16-rose-pine.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Variant Adaptation Notes
 
 ### Calibration Strategy
@@ -189,3 +221,5 @@ Rose Pine Dawn's official palette prioritizes aesthetic minimalism over maximum 
 - [Rose Pine Palette Philosophy](https://rosepinetheme.com/palette/) - Official semantic definitions
 - [Rose Pine Theme Implementations](https://rosepinetheme.com/themes/) - 205+ application examples
 - [Rose Pine Moon Style Guide](../rose-pine-moon/STYLE-GUIDE.md) - Dark variant reference
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details

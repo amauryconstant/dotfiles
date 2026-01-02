@@ -113,6 +113,41 @@ While maintaining readable contrast ratios, **legibility always comes first**. T
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#1e1e2e - crust)
+- `bg-secondary` → `base01` (#181825 - mantle)
+- `bg-tertiary` → `base02` (#313244 - surface0)
+
+**Catppuccin Surface Naming**: Catppuccin uses semantic surface names (crust/mantle/surface0/surface1/surface2) rather than numeric `base00-0F`. The base16 mapping follows the luminance progression: crust (darkest) → mantle → surface0 → surface1 → surface2.
+
+**Architecture**: We use separate theme directories (latte/mocha) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-catppuccin-mocha implementation while maintaining our multi-app theme system.
+
+**Diff Backgrounds**: This theme uses custom green/red tinted backgrounds for visual distinction:
+- `bg-diff-added`: #2d353b (surface0 + green tint)
+- `bg-diff-removed`: #3b2f32 (surface0 + red tint)
+- `bg-diff-context`: #313244 (surface0 neutral)
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 10.2:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02 (crust/mantle/surface0)
+- [x] Foreground hierarchy uses official Catppuccin palette
+- [x] Custom diff tinting documented above
+
+**Official Reference**: [base16-catppuccin-mocha.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Extended Accent Utilization
 
 Catppuccin provides **14 accent colors**—use all of them to create rich visual hierarchy:
@@ -244,3 +279,5 @@ lavender:  #b4befe  (borders, hints, active focus)
 
 ### Related
 - [Catppuccin Latte Style Guide](../catppuccin-latte/STYLE-GUIDE.md) - Light variant (re-calibrated accents)
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details

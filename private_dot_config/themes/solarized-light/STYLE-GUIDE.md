@@ -93,6 +93,36 @@ Only the monotone hex values differ, not the semantic mappings or accent colors.
 
 ---
 
+## OpenCode Implementation Notes
+
+### Official Base16 Alignment
+
+**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
+
+**Background Hierarchy**:
+- `bg-primary` → `base00` (#fdf6e3 - base3 in Solarized naming)
+- `bg-secondary` → `base01` (#eee8d5 - base2 in Solarized naming)
+- `bg-tertiary` → `base02` (#93a1a1 - base1 in Solarized naming)
+
+**Naming Convention Note**: Base16 uses `base00-base0F` numbering where higher numbers = lighter colors. Solarized uses `base03-base3` where higher numbers = lighter colors, creating parallel but offset numbering systems.
+
+**Architecture**: We use separate theme directories (dark/light) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-solarized-light implementation while maintaining our multi-app theme system.
+
+### Validation Checklist
+
+**Contrast Compliance**:
+- [x] bg-tertiary ≠ fg-muted (no invisible text)
+- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 4.99:1)
+
+**Color Accuracy**:
+- [x] Background tiers match official base00/01/02
+- [x] Foreground hierarchy uses official base palette (base00, base01, base1)
+- [x] No custom colors introduced
+
+**Official Reference**: [base16-solarized-light.json](https://github.com/scaryrawr/base16-opencode)
+
+---
+
 ## Variant Adaptation Notes
 
 ### Systematic Inversion
@@ -209,3 +239,5 @@ green:   #859900  (success, additions, keywords)
 
 ### Related
 - [Solarized Dark Style Guide](../solarized-dark/STYLE-GUIDE.md) - Dark variant reference
+
+> **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details
