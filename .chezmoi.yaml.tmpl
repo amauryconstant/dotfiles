@@ -4,7 +4,7 @@
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
 {{ $ovhServerIP := promptStringOnce . "ovhServerIP" "What is the IP v4 of your OVH server? " -}}
 {{ $ovhServerPort := promptStringOnce . "ovhServerPort" "What is ssh port of your OVH server? " -}}
-{{ $terminalFont := promptStringOnce . "terminalFont" "Terminal font (FiraCode Nerd Font, Iosevka Nerd Font, Geist Mono Nerd Font)? " "FiraCode Nerd Font" -}}
+{{ $terminalFont := promptChoiceOnce . "terminalFont" "Terminal font? " (list "FiraCode Nerd Font" "Iosevka Nerd Font" "Geist Mono Nerd Font") "FiraCode Nerd Font" -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
 
