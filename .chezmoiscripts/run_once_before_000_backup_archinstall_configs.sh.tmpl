@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+# Script: run_once_before_000_backup_archinstall_configs.sh.tmpl
+# Purpose: Backup archinstall default configurations before applying dotfiles
+# Requirements: Arch Linux (archinstall Hyprland profile detection)
+
+{{ includeTemplate "log_start" "Backing up archinstall configurations..." }}
+
+set -euo pipefail
+
+BACKUP_DIR="$HOME/.config/archinstall-backup"
+CONFIGS_FOUND=false
+
+# Skip if backup already exists (idempotent)
+if [ -d "$BACKUP_DIR" ]; then
+    {{ includeTemplate "log_info" "Backup already exists, skipping" }}
+    {{ includeTemplate "log_complete" "Backup check complete" }}
+    exit 0
+fi
+
+# List of archinstall-created configs to backup
+ARCHINSTALL_CONFIGS=(
+    "$HOME/.config/hypr/hyprland.conf"
+    "$HOME/.config/hypr/hyprpaper.conf"
+    "$HOME/.config/waybar/config"
+    "$HOME/.config/waybar/style.css"
+    "$HOME/.config/dunst/dunstrc"
+    "$HOME/.config/wofi/config"
+    "$HOME/.config/wofi/style.css"
+)
+
+{{ includeTemplate "log_step" "Checking for archinstall configurations..." }}
+
+# Check if any archinstall configs exist
+for config in "${ARCHINSTALL_CONFIGS[@]}"; do
+    if [ -f "$config" ]; then
+        CONFIGS_FOUND=true
+        break
+    fi
+done
+
+if [ "$CONFIGS_FOUND" = false ]; then
+    {{ includeTemplate "log_info" "No archinstall configurations detected (clean install)" }}
+    {{ includeTemplate "log_complete" "Backup check complete" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_warning" "archinstall configurations detected" }}
+{{ includeTemplate "log_step" "Creating backup directory: $BACKUP_DIR" }}
+
+mkdir -p "$BACKUP_DIR"
+
+# Backup each existing config preserving directory structure
+for config in "${ARCHINSTALL_CONFIGS[@]}"; do
+    if [ -f "$config" ]; then
+        # Get relative path from ~/.config
+        REL_PATH="${config#$HOME/.config/}"
+        BACKUP_PATH="$BACKUP_DIR/$REL_PATH"
+
+        # Create parent directory
+        mkdir -p "$(dirname "$BACKUP_PATH")"
+
+        # Copy config
+        cp "$config" "$BACKUP_PATH"
+        {{ includeTemplate "log_success" "Backed up: $REL_PATH" }}
+    fi
+done
+
+{{ includeTemplate "log_success" "archinstall configs backed up to: $BACKUP_DIR" }}
+{{ includeTemplate "log_info" "You can restore these configs if needed" }}
+{{ includeTemplate "log_complete" "Backup complete" }}

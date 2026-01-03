@@ -154,4 +154,42 @@ else
     {{ includeTemplate "log_success" "No orphaned packages found" }}
 fi
 
+# ============================================================
+# Blacklist nouveau driver (NVIDIA proprietary only)
+# ============================================================
+
+{{ includeTemplate "log_step" "Configuring NVIDIA driver settings..." }}
+
+# Check if NVIDIA proprietary drivers were installed
+if echo "$ARCH_PACKAGES" | grep -qE "nvidia-open-dkms|nvidia-580xx-dkms"; then
+    BLACKLIST_CONF="/etc/modprobe.d/blacklist-nouveau.conf"
+
+    if [ ! -f "$BLACKLIST_CONF" ]; then
+        {{ includeTemplate "log_step" "Creating nouveau blacklist configuration" }}
+
+        # Create blacklist file
+        sudo tee "$BLACKLIST_CONF" > /dev/null <<'EOF'
+# Blacklist nouveau driver (conflicts with proprietary NVIDIA drivers)
+# Managed by chezmoi dotfiles
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+        {{ includeTemplate "log_success" "Nouveau driver blacklisted" }}
+
+        # Regenerate initramfs to apply blacklist
+        if command -v mkinitcpio >/dev/null 2>&1; then
+            {{ includeTemplate "log_step" "Regenerating initramfs..." }}
+            sudo mkinitcpio -P
+            {{ includeTemplate "log_success" "Initramfs regenerated" }}
+        fi
+
+        {{ includeTemplate "log_warning" "⚠️  REBOOT REQUIRED for driver changes to take effect" }}
+    else
+        {{ includeTemplate "log_info" "Nouveau already blacklisted" }}
+    fi
+else
+    {{ includeTemplate "log_info" "No NVIDIA proprietary drivers installed, skipping nouveau blacklist" }}
+fi
+
 {{ includeTemplate "log_complete" "Package installation and cleanup complete" }}

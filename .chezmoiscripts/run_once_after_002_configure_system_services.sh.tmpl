@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_002_configure_system_services.sh.tmpl
 # Purpose: Consolidated system services configuration (Docker, Bluetooth, Ollama, Tailscale, NetworkManager)
@@ -210,62 +210,102 @@ else
 fi
 
 # ============================================================================
-# SECTION 4: NETWORKMANAGER WITH IWD BACKEND
+# SECTION 4: NETWORKMANAGER WITH IWD BACKEND (SMART CONFIGURATION)
 # ============================================================================
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 4: NetworkManager with iwd Backend"
+echo "  SECTION 4: NetworkManager Configuration"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
-{{ includeTemplate "log_step" "Enable NetworkManager service" }}
+{{ includeTemplate "log_step" "Checking NetworkManager status..." }}
 
-# Enable NetworkManager to start at boot
-sudo systemctl enable NetworkManager
+# Check if NetworkManager is already configured and running
+NM_CONFIGURED=false
+NM_BACKEND="unknown"
+ACTIVE_WIFI=false
 
-{{ includeTemplate "log_step" "Configure iwd as NetworkManager WiFi backend" }}
+if systemctl is-active NetworkManager >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "NetworkManager already running (archinstall setup)" }}
+    NM_CONFIGURED=true
 
-# Create NetworkManager configuration directory if needed
-sudo mkdir -p /etc/NetworkManager/conf.d
+    # Detect current backend
+    if [ -f /etc/NetworkManager/conf.d/wifi_backend.conf ]; then
+        NM_BACKEND=$(sudo grep "wifi.backend" /etc/NetworkManager/conf.d/wifi_backend.conf 2>/dev/null | cut -d= -f2)
+    elif systemctl is-active wpa_supplicant >/dev/null 2>&1; then
+        NM_BACKEND="wpa_supplicant"
+    elif systemctl is-active iwd >/dev/null 2>&1; then
+        NM_BACKEND="iwd"
+    fi
 
-# Configure NetworkManager to use iwd instead of wpa_supplicant
-sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<EOF
+    # Check for active WiFi connection
+    if nmcli -t -f TYPE,STATE connection show --active 2>/dev/null | grep -q "^802-11-wireless:activated"; then
+        ACTIVE_WIFI=true
+        WIFI_SSID=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep "^yes" | cut -d: -f2)
+        {{ includeTemplate "log_info" "Active WiFi connection: $WIFI_SSID (backend: $NM_BACKEND)" }}
+    fi
+fi
+
+# Decision logic: Preserve working WiFi configuration
+if [ "$NM_CONFIGURED" = true ] && [ "$ACTIVE_WIFI" = true ]; then
+    {{ includeTemplate "log_warning" "NetworkManager already configured with active WiFi connection" }}
+    {{ includeTemplate "log_info" "Preserving current configuration (backend: $NM_BACKEND)" }}
+    {{ includeTemplate "log_info" "To switch to iwd backend manually:" }}
+    {{ includeTemplate "log_info" "  1. Connect via ethernet" }}
+    {{ includeTemplate "log_info" "  2. Edit /etc/NetworkManager/conf.d/wifi_backend.conf" }}
+    {{ includeTemplate "log_info" "  3. sudo systemctl restart NetworkManager" }}
+    {{ includeTemplate "log_skip" "Skipping NetworkManager backend switch (preserving working setup)" }}
+else
+    # Proceed with iwd backend configuration (original logic)
+    {{ includeTemplate "log_step" "Configuring NetworkManager with iwd backend" }}
+
+    # Enable NetworkManager to start at boot
+    sudo systemctl enable NetworkManager
+
+    {{ includeTemplate "log_step" "Configure iwd as NetworkManager WiFi backend" }}
+
+    # Create NetworkManager configuration directory if needed
+    sudo mkdir -p /etc/NetworkManager/conf.d
+
+    # Configure NetworkManager to use iwd instead of wpa_supplicant
+    sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<EOF
 [device]
 wifi.backend=iwd
 EOF
 
-{{ includeTemplate "log_step" "Enable and start iwd service" }}
+    {{ includeTemplate "log_step" "Enable and start iwd service" }}
 
-# Enable iwd to start at boot (required for NetworkManager backend)
-sudo systemctl enable iwd
+    # Enable iwd to start at boot
+    sudo systemctl enable iwd
 
-# Start iwd immediately
-sudo systemctl start iwd
+    # Start iwd immediately
+    sudo systemctl start iwd
 
-{{ includeTemplate "log_step" "Disable wpa_supplicant to prevent conflicts" }}
+    {{ includeTemplate "log_step" "Disable wpa_supplicant to prevent conflicts" }}
 
-# Stop and disable wpa_supplicant (conflicts with iwd)
-if systemctl is-active wpa_supplicant 2>/dev/null; then
-    sudo systemctl stop wpa_supplicant
-fi
-if systemctl is-enabled wpa_supplicant 2>/dev/null; then
-    sudo systemctl disable wpa_supplicant
-fi
+    # Stop and disable wpa_supplicant (conflicts with iwd)
+    if systemctl is-active wpa_supplicant 2>/dev/null; then
+        sudo systemctl stop wpa_supplicant
+    fi
+    if systemctl is-enabled wpa_supplicant 2>/dev/null; then
+        sudo systemctl disable wpa_supplicant
+    fi
 
-{{ includeTemplate "log_step" "Restart NetworkManager to apply backend change" }}
+    {{ includeTemplate "log_step" "Restart NetworkManager to apply backend change" }}
 
-# Restart NetworkManager to pick up iwd backend configuration
-sudo systemctl restart NetworkManager
+    # Restart NetworkManager to pick up iwd backend configuration
+    sudo systemctl restart NetworkManager
 
-{{ includeTemplate "log_step" "Verify NetworkManager status" }}
+    {{ includeTemplate "log_step" "Verify NetworkManager status" }}
 
-# Check if NetworkManager is running
-if systemctl is-active NetworkManager >/dev/null 2>&1; then
-    {{ includeTemplate "log_success" "NetworkManager service is running with iwd backend" }}
-else
-    {{ includeTemplate "log_error" "NetworkManager service failed to start" }}
-    exit 1
+    # Check if NetworkManager is running
+    if systemctl is-active NetworkManager >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "NetworkManager service is running with iwd backend" }}
+    else
+        {{ includeTemplate "log_error" "NetworkManager service failed to start" }}
+        exit 1
+    fi
 fi
 
 # ============================================================================

@@ -37,10 +37,25 @@ else
 fi
 
 # ============================================================================
-# CHECK 2: GRAPHICS DRIVERS
+# CHECK 2: GRAPHICS DRIVERS (NOUVEAU DETECTION)
 # ============================================================================
 
-{{ includeTemplate "log_step" "Verifying graphics drivers..." }}
+{{ includeTemplate "log_step" "Checking graphics drivers..." }}
+
+# Check for nouveau drivers (archinstall default for NVIDIA GPUs)
+NOUVEAU_DETECTED=false
+if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
+    {{ includeTemplate "log_warning" "Nouveau drivers detected (archinstall default)" }}
+    {{ includeTemplate "log_info" "Proprietary NVIDIA drivers will be installed during package sync" }}
+    {{ includeTemplate "log_info" "Skipping NVIDIA driver validation (will validate after reboot)" }}
+    NOUVEAU_DETECTED=true
+fi
+
+# ============================================================================
+# CHECK 3: NVIDIA CORE DEPENDENCIES
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying NVIDIA drivers..." }}
 
 # Check for NVIDIA drivers (common crash source)
 if lspci | grep -i nvidia >/dev/null 2>&1; then
@@ -48,37 +63,44 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
     {{ includeTemplate "log_info" (printf "NVIDIA GPU detected: %s" $gpuName) }}
     {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
 
+    # Skip driver validation if nouveau detected (first-run archinstall)
+    if [ "$NOUVEAU_DETECTED" = true ]; then
+        {{ includeTemplate "log_info" "First-run installation detected - deferring driver validation" }}
+        {{ includeTemplate "log_info" "Reboot after package installation to load proprietary drivers" }}
+    else
+        # Existing validation logic for proprietary drivers
 {{- if eq .nvidiaDriverType "legacy" }}
-    # Legacy driver validation (nvidia-580xx)
-    if pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
-        {{ includeTemplate "log_success" "NVIDIA legacy drivers (580xx) installed" }}
+        # Legacy driver validation (nvidia-580xx)
+        if pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
+            {{ includeTemplate "log_success" "NVIDIA legacy drivers (580xx) installed" }}
 
-        # Verify DKMS modules are built
-        if ! modinfo nvidia >/dev/null 2>&1; then
-            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
-            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+            # Verify DKMS modules are built
+            if ! modinfo nvidia >/dev/null 2>&1; then
+                {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
+                {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+            fi
+        else
+            {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
+            {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
+            VALIDATION_FAILED=true
         fi
-    else
-        {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
-        {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
-        VALIDATION_FAILED=true
-    fi
 {{- else }}
-    # Modern driver validation (nvidia-open-dkms or nvidia-dkms)
-    if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
-        {{ includeTemplate "log_success" "NVIDIA modern drivers installed" }}
+        # Modern driver validation (nvidia-open-dkms or nvidia-dkms)
+        if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
+            {{ includeTemplate "log_success" "NVIDIA modern drivers installed" }}
 
-        # Verify DKMS modules are built
-        if ! modinfo nvidia >/dev/null 2>&1; then
-            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
-            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+            # Verify DKMS modules are built
+            if ! modinfo nvidia >/dev/null 2>&1; then
+                {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
+                {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
+            fi
+        else
+            {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
+            {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
+            VALIDATION_FAILED=true
         fi
-    else
-        {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
-        {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
-        VALIDATION_FAILED=true
-    fi
 {{- end }}
+    fi
 
     # Check for driver migration (if NVIDIA GPU detected)
     {{ includeTemplate "log_step" "Checking for driver migration..." }}
