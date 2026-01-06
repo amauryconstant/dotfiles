@@ -156,6 +156,9 @@ switch_theme() {
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code.sh" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code.sh" 2>/dev/null || true
     fi
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-qt.sh" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-qt.sh" 2>/dev/null || true
+    fi
 
     # Call user hook
     if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then

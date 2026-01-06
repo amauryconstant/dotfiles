@@ -66,6 +66,8 @@ packages:
       post_install_hook: ""
       packages:
         - xdg-utils        # Desktop integration utilities
+        - xdg-desktop-portal  # Desktop portal framework (file picker, OAuth)
+        - xdg-desktop-portal-kde  # KDE portal backend (better Electron/Flatpak compatibility)
         - openssh          # SSH client and server
         - wget             # Non-interactive network downloader
         - nano             # Simple terminal text editor
