@@ -1,12 +1,12 @@
 ---
-name: write-classical-commit-message
-description: Help write classical commit messages following imperative mood, ≤50 char subject convention. Use when creating commits or user asks for commit message help.
+name: commit
+description: Write concise classical commit messages with imperative mood, ≤50 char subjects. Use when creating commits or user asks for commit help.
 allowed-tools: Bash, Read, Grep
 ---
 
-# Write Classical Commit Message
+# Commit Skill
 
-Generate commit messages following repository conventions with classical format.
+Generate concise commit messages following repository conventions.
 
 ## When to Use
 
@@ -14,7 +14,7 @@ Generate commit messages following repository conventions with classical format.
 - User asks "write a commit message"
 - User mentions committing changes
 - User asks for help with git commit
-- User runs `/write-classical-commit-message`
+- User runs `/commit`
 
 ## Execution Steps
 
@@ -33,7 +33,7 @@ git status
 git log --oneline -20
 ```
 
-### 2. Check for blockers
+### 2. Check for blockers and commit strategy
 
 Verify the repository is ready for commit:
 
@@ -41,6 +41,12 @@ Verify the repository is ready for commit:
 - **Merge conflict** → Warn "resolve conflicts first" (git status shows "both modified")
 - **Only untracked** → Suggest `git add <files>`
 - **Nothing staged** → Suggest staging changes first
+
+**Assess if changes should be split**:
+- **Unrelated changes** → Suggest splitting into multiple commits (`git add -p`)
+- **Multiple features/fixes** → Each should be its own commit
+- **Mixed refactor + feature** → Separate commits
+- **Single logical change** → One commit (even if multiple files)
 
 ### 3. Review changed files (if context needed)
 
@@ -80,19 +86,26 @@ Determine the primary verb from the diff:
 - Blank line after subject
 - Use bullet points with "- " prefix
 - Explain **why** the change was made (diff shows what)
-- Include impact, context, important details
+- Keep reasonably short but descriptive
+- Each bullet should be a single line (≤72 chars)
 - Wrap lines at 72 characters
 
 **When to add body**:
-- Multiple files changed
-- Non-obvious reasoning
-- Breaking changes
-- Important context needed
+- Complex changes requiring context
+- Non-obvious reasoning behind the change
+- Breaking changes (use BREAKING CHANGE footer)
+- Multiple related subsystems affected
+- Important impact or implications
 
 **When to skip body**:
-- Single obvious change
-- Self-explanatory from subject
+- Simple, self-explanatory changes
 - Trivial updates
+- Single obvious fix or addition
+
+**When description gets long**:
+- **Consider splitting into multiple commits** instead
+- Each commit should be a focused, logical unit
+- Unrelated changes belong in separate commits
 
 ### 6. Validate against repository patterns
 
@@ -191,6 +204,7 @@ Add user authentication system
 
 ## Anti-Patterns
 
+**Subject line**:
 ❌ **Past tense**: "Added feature", "Fixed bug"
 ❌ **Present continuous**: "Adding feature", "Fixing bug"
 ❌ **Lowercase**: "add feature"
@@ -199,6 +213,13 @@ Add user authentication system
 ❌ **AI mentions**: "Add AI-assisted feature"
 ❌ **Too long**: "Add really long feature description that exceeds the fifty character limit"
 ❌ **Implementation details**: "Add function foo() that calls bar()"
+
+**Body (when used)**:
+❌ **Overly verbose**: Long multi-line explanations per bullet
+❌ **Implementation details**: Explaining code mechanics (diff shows this)
+❌ **Redundant context**: Repeating what's obvious from subject
+❌ **Unnecessary body**: Adding body for simple, self-explanatory changes
+❌ **Mixing unrelated changes**: Long body listing unrelated changes → split into multiple commits instead
 
 ## Repository Examples
 
@@ -255,6 +276,26 @@ Focus on the overall goal, not individual files:
 ❌ Update auth.js, login.js, and routes.js
 ```
 
+### Splitting commits
+When changes include unrelated modifications, split into multiple commits:
+
+**Use interactive staging**:
+```bash
+git add -p              # Interactively stage hunks
+git add file1.js        # Stage specific files
+git commit -m "Fix authentication bug"
+git add file2.js file3.js
+git commit -m "Add user profile feature"
+```
+
+**Signs you should split**:
+- Fixing bug A + adding feature B
+- Refactoring + new functionality
+- Multiple unrelated fixes
+- Long commit body listing disparate changes
+
+**Keep commits atomic**: Each commit should represent one logical change that could be reverted independently
+
 ### Breaking changes
 Consider adding a footer:
 ```
@@ -275,11 +316,13 @@ Before presenting the message, verify:
 - [ ] Imperative mood (Add, Fix, not Added, Fixed)
 - [ ] Capitalized first word
 - [ ] No period at end
+- [ ] Body reasonably short but descriptive (if present)
 - [ ] Body wraps at 72 characters (if present)
 - [ ] No AI/automation mentions
 - [ ] Matches repository style (check `git log`)
 - [ ] Focuses on "what" and "why", not implementation details
 - [ ] Verb accurately describes the change type
+- [ ] Changes are related (if not, suggest splitting commits)
 
 ## Reference
 
