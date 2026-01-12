@@ -161,22 +161,17 @@ _remove_package() {
 
     ui_step "$ICON_TRASH  Removing $package ($pkg_type)"
 
-    # Remove based on type
+    # Verify package is actually installed before attempting removal
+    local actually_installed=false
     case "$pkg_type" in
         "pacman")
-            if paru -R --noconfirm "$package"; then
-                ui_success "Removed $package"
-            else
-                ui_error "Failed to remove $package"
-                return 1
+            if pacman -Q "$package" &>/dev/null; then
+                actually_installed=true
             fi
             ;;
         "flatpak")
-            if flatpak uninstall -y --user "$package" 2>&1; then
-                ui_success "Removed Flatpak: $package"
-            else
-                ui_error "Failed to remove Flatpak: $package"
-                return 1
+            if _is_flatpak_installed "$package"; then
+                actually_installed=true
             fi
             ;;
         *)
@@ -184,6 +179,36 @@ _remove_package() {
             return 1
             ;;
     esac
+
+    if [[ "$actually_installed" == "false" ]]; then
+        ui_warning "Package '$package' not installed (state file out of sync)"
+        ui_info "Cleaning up state entry..."
+        # Skip removal, just clean up state file
+    else
+        # Remove based on type
+        case "$pkg_type" in
+            "pacman")
+                if paru -R --noconfirm "$package"; then
+                    ui_success "Removed $package"
+                else
+                    ui_error "Failed to remove $package"
+                    return 1
+                fi
+                ;;
+            "flatpak")
+                if flatpak uninstall -y --user "$package" 2>&1; then
+                    ui_success "Removed Flatpak: $package"
+                else
+                    ui_error "Failed to remove Flatpak: $package"
+                    return 1
+                fi
+                ;;
+            *)
+                ui_error "Unknown package type: $pkg_type"
+                return 1
+                ;;
+        esac
+    fi
 
     # Remove from state file
     if ! _remove_package_state "$package"; then
