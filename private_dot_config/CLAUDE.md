@@ -86,6 +86,12 @@
 - Attributes: `.gitattributes` (template merge driver)
 - Hooks: Pre-commit, etc.
 
+**Jujutsu** (`jj/`):
+- Version control system config
+- Files: `config.toml.tmpl`
+- Delta integration via git config inheritance
+- See: `jj/CLAUDE.md`
+
 **CLI tools** (themed):
 - **bat**: Syntax highlighting via `~/.config/bat/config` symlink
 - **broot**: File tree skin via `~/.config/broot/skin.hjson` symlink

@@ -1,0 +1,32 @@
+# Jujutsu Configuration
+# Mirrors git config structure (see: ../git/config.tmpl)
+#
+# Delta configuration:
+#   - Pager: delta (configured below)
+#   - Navigate/side-by-side: Inherited from git config (~/.config/git/config)
+#   - Single source of truth: git config [delta] section
+#
+# Template variables:
+#   - .fullname: User's full name
+#   - .workEmail: Work email address
+#
+# See: https://docs.jj-vcs.dev/latest/config/
+
+[user]
+name = "{{ .fullname }}"
+email = "{{ .workEmail }}"
+
+[ui]
+# Use delta as pager (fixes 'less' warning)
+pager = "delta"
+
+# Git-style diffs for delta compatibility
+diff-formatter = ":git"
+
+[aliases]
+# Git-like shortcuts (muscle memory)
+st = ["status"]
+l = ["log", "-r", "ancestors(@)"]
+
+# Workflow helpers
+sync = ["git", "fetch", "--all-remotes"]
