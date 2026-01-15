@@ -60,6 +60,17 @@ fi
 sudo systemctl enable --now bluetooth
 {{ includeTemplate "log_success" "Bluetooth service enabled" }}
 
+{{ includeTemplate "log_step" "Configuring Blueman notification daemon..." }}
+
+# Configure blueman to use system notification daemon (dunst) instead of internal GTK dialogs
+# This ensures notifications appear in top-right corner with proper timeout
+if command -v blueman-applet >/dev/null 2>&1; then
+    dconf write /org/blueman/general/notification-daemon true
+    {{ includeTemplate "log_success" "Blueman configured to use system notification daemon" }}
+else
+    {{ includeTemplate "log_skip" "Blueman not installed, skipping configuration" }}
+fi
+
 {{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
 
 # Enable NVIDIA power management services (for laptops with NVIDIA GPU)
