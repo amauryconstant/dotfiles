@@ -17,21 +17,34 @@ VALIDATION_FAILED=false
 
 {{ includeTemplate "log_step" "Verifying Hyprland core dependencies..." }}
 
-REQUIRED_PACKAGES="hyprland xdg-desktop-portal-hyprland waybar dunst wofi polkit-gnome swww"
-MISSING_PACKAGES=""
+# Critical packages (archinstall provides these)
+CRITICAL_PACKAGES="hyprland xdg-desktop-portal-hyprland waybar dunst wofi"
 
-for pkg in $REQUIRED_PACKAGES; do
+# Optional packages (installed during sync_packages)
+OPTIONAL_PACKAGES="polkit-gnome swww"
+
+MISSING_CRITICAL=""
+
+# Check critical packages - fail if missing
+for pkg in $CRITICAL_PACKAGES; do
     if ! pacman -Q "$pkg" >/dev/null 2>&1; then
         {{ includeTemplate "log_error" "Missing critical package: $pkg" }}
-        MISSING_PACKAGES="$MISSING_PACKAGES $pkg"
+        MISSING_CRITICAL="$MISSING_CRITICAL $pkg"
         VALIDATION_FAILED=true
     fi
 done
 
-if [ -z "$MISSING_PACKAGES" ]; then
-    {{ includeTemplate "log_success" "All Hyprland core packages installed" }}
+# Check optional packages - warn only
+for pkg in $OPTIONAL_PACKAGES; do
+    if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+        {{ includeTemplate "log_info" "Optional package missing: $pkg (will be installed during package sync)" }}
+    fi
+done
+
+if [ -z "$MISSING_CRITICAL" ]; then
+    {{ includeTemplate "log_success" "All critical Hyprland packages installed" }}
 else
-    {{ includeTemplate "log_error" "Missing packages:$MISSING_PACKAGES" }}
+    {{ includeTemplate "log_error" "Missing critical packages:$MISSING_CRITICAL" }}
     {{ includeTemplate "log_info" "Fix: Ensure packages.yaml includes desktop_hyprland module" }}
     {{ includeTemplate "log_info" "  Then run: chezmoi apply" }}
 fi

@@ -83,9 +83,9 @@ else
     {{ includeTemplate "log_info" "paru already installed" }}
 fi
 
-# Install essential dependencies for package-manager.sh
-{{ includeTemplate "log_step" "Installing package-manager dependencies (yq, gum)..." }}
-paru -S --noconfirm --needed go-yq gum
+# Install essential dependencies for package-manager.sh AND encryption key setup
+{{ includeTemplate "log_step" "Installing package-manager dependencies (yq, gum, rbw)..." }}
+paru -S --noconfirm --needed go-yq gum rbw
 {{ includeTemplate "log_success" "package-manager dependencies installed" }}
 
 # Initialize paru AUR cache for package validation

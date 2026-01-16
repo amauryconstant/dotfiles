@@ -14,6 +14,24 @@ if ! command -v darkman >/dev/null 2>&1; then
     exit 1
 fi
 
+# Verify theme-switcher.sh is deployed (required by darkman transition scripts)
+{{ includeTemplate "log_step" "Verifying theme-switcher.sh is deployed..." }}
+if [ ! -f "$HOME/.local/lib/scripts/desktop/theme-switcher.sh" ]; then
+    {{ includeTemplate "log_warning" "theme-switcher.sh not yet deployed" }}
+    {{ includeTemplate "log_info" "This can happen during fresh installation" }}
+    {{ includeTemplate "log_info" "Darkman service will be configured but not started" }}
+    {{ includeTemplate "log_info" "Run 'systemctl --user start darkman.service' after chezmoi apply completes" }}
+
+    # Configure but don't start
+    systemctl --user daemon-reload
+    systemctl --user enable darkman.service
+
+    {{ includeTemplate "log_complete" "Darkman configured (manual start required)" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_success" "theme-switcher.sh is available" }}
+
 {{ includeTemplate "log_step" "Reloading systemd user daemon" }}
 systemctl --user daemon-reload
 

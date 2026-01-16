@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: random-wallpaper.sh
 # Purpose: Select and set a random wallpaper from current theme's collection
@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Lock file to prevent concurrent executions
 LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/random-wallpaper.lock"
-LOCK_TIMEOUT=120  # 2 minutes
+LOCK_TIMEOUT_MINUTES=2
 
 # Function to cleanup lock file on exit
 cleanup_lock() {
@@ -25,7 +25,7 @@ trap cleanup_lock EXIT INT TERM
 # Check for existing lock file
 if [ -f "$LOCK_FILE" ]; then
     # Check if lock file is older than timeout
-    if [ "$(find "$LOCK_FILE" -mmin +2 2>/dev/null)" ]; then
+    if [ "$(find "$LOCK_FILE" -mmin +"$LOCK_TIMEOUT_MINUTES" 2>/dev/null)" ]; then
         {{ includeTemplate "log_warning" "Removing stale lock file" }}
         rm -f "$LOCK_FILE"
     else
@@ -61,20 +61,21 @@ WALLPAPER_DIR="$WALLPAPERS_ROOT/$THEME_NAME"
 
 # Validate wallpaper directory exists and is not empty
 if [ ! -d "$WALLPAPER_DIR" ]; then
-    {{ includeTemplate "log_error" "Theme wallpaper directory not found: $WALLPAPER_DIR" }}
-    exit 1
+    {{ includeTemplate "log_warning" "Theme wallpaper directory not found: $WALLPAPER_DIR" }}
+    {{ includeTemplate "log_info" "This is normal during initial setup. Timer will retry later." }}
+    exit 0
 fi
 
 if [ -z "$(ls -A "$WALLPAPER_DIR" 2>/dev/null)" ]; then
-    {{ includeTemplate "log_error" "No wallpapers found in theme directory: $WALLPAPER_DIR" }}
+    {{ includeTemplate "log_warning" "No wallpapers found in theme directory: $WALLPAPER_DIR" }}
     {{ includeTemplate "log_info" "Run 'chezmoi apply --refresh-externals' to download wallpapers" }}
-    exit 1
+    {{ includeTemplate "log_info" "Timer will retry automatically." }}
+    exit 0
 fi
 
 # Transition settings (can be overridden by arguments)
 TRANSITION_TYPE="${1:-fade}"      # Default: fade (smoother than simple)
 TRANSITION_DURATION="${2:-2}"     # Default: 2 seconds
-TRANSITION_FPS="${3:-30}"         # Default: 30 fps
 
 {{ includeTemplate "log_step" "Finding available wallpapers" }}
 

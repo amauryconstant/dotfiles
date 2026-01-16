@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# Script: run_once_before_008_setup_default_theme.sh.tmpl
+# Purpose: Create theme directory structure and symlinks BEFORE file application
+# Requirements: Arch Linux
+# Note: Runs before file application so configs can reference ~/.config/themes/current/
+
+{{ includeTemplate "log_start" "Preparing theme system structure" }}
+
+set -euo pipefail
+
+THEMES_DIR="$HOME/.config/themes"
+CURRENT_LINK="$THEMES_DIR/current"
+DEFAULT_THEME="solarized-dark"
+GHOSTTY_THEMES_DIR="$HOME/.config/ghostty/themes"
+
+# Create theme directory structure for all known variants
+# File application will populate these with actual theme files
+{{ includeTemplate "log_step" "Creating theme directory structure" }}
+mkdir -p "$THEMES_DIR"/{catppuccin-latte,catppuccin-mocha,rose-pine-dawn,rose-pine-moon,gruvbox-light,gruvbox-dark,solarized-light,solarized-dark}
+
+{{ includeTemplate "log_success" "Theme directories created" }}
+
+# Create default theme symlink (directory exists now, content comes during file application)
+if [ ! -L "$CURRENT_LINK" ]; then
+    {{ includeTemplate "log_step" "Creating default theme symlink: $DEFAULT_THEME" }}
+    ln -s "$DEFAULT_THEME" "$CURRENT_LINK"
+    {{ includeTemplate "log_success" "Theme symlink created" }}
+else
+    CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+    {{ includeTemplate "log_info" "Theme symlink already exists: $CURRENT_THEME" }}
+fi
+
+# Set up Ghostty themes directory
+{{ includeTemplate "log_step" "Setting up Ghostty themes directory" }}
+mkdir -p "$GHOSTTY_THEMES_DIR"
+
+# Create Ghostty theme symlink (points to main theme system)
+if [ ! -L "$GHOSTTY_THEMES_DIR/current" ]; then
+    ln -sf "$THEMES_DIR/current/ghostty.conf" "$GHOSTTY_THEMES_DIR/current"
+    {{ includeTemplate "log_success" "Ghostty theme symlink created" }}
+else
+    {{ includeTemplate "log_info" "Ghostty theme symlink already exists" }}
+fi
+
+{{ includeTemplate "log_complete" "Theme system setup complete" }}
+
+# Display current theme
+CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+echo ""
+echo "Current theme: $CURRENT_THEME"
+echo "Switch themes: theme switch <theme-name>"
+echo "List themes: theme list"

@@ -10,6 +10,10 @@ StartLimitBurst=3
 Type=oneshot
 # Wait for WAYLAND_DISPLAY to be set in systemd environment before starting
 ExecCondition=/bin/sh -c 'systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY="'
+# Wait for swww-daemon to be ready
+ExecCondition=/bin/sh -c 'pgrep swww-daemon > /dev/null'
+# Wait for theme symlink to exist
+ExecCondition=/bin/sh -c 'test -L %h/.config/themes/current'
 ExecStart=%h/.local/lib/scripts/media/random-wallpaper.sh fade 3
 # Use fade transition with 3 second duration for smooth cycling
 # Don't restart on failure - let the timer handle retries
