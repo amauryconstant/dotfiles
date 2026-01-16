@@ -37,3 +37,4 @@
 @define-color accent-highlight-hover rgba(144, 122, 169, 0.1); /* iris - audio hover */
 @define-color accent-warning-hover rgba(234, 157, 52, 0.1);    /* gold - backlight hover */
 @define-color accent-success-hover rgba(40, 105, 131, 0.1);    /* pine - battery hover */
+@define-color accent-media-hover rgba(144, 122, 169, 0.1);     /* iris - media hover */

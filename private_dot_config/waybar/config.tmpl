@@ -65,7 +65,8 @@
     "backlight",    // Screen brightness (laptop only)
     "battery",      // Battery status (laptop only)
 {{ end }}
-    "pulseaudio"    // Volume control
+    "pulseaudio",   // Volume control
+    "mpris"         // Media control (Spotify, VLC, etc.)
   ],
 
   // Additional useful modules (uncomment and add to layout above):
@@ -248,6 +249,63 @@
     // Additional options (uncomment to use):
     // "max-volume": 150,                // Allow volume above 100%
     // "ignored-sinks": ["Easy Effects Sink"]  // Don't show these sinks
+  },
+
+  // --------------------------------------------------------------------------
+  // MPRIS Module (Media Control)
+  // --------------------------------------------------------------------------
+  "mpris": {
+    // Player selection: Use playerctld for automatic focus management
+    // playerctld automatically focuses the most recently active player
+    "player": "playerctld",
+
+    // Ignore browser-based players to reduce noise
+    // This prevents YouTube, Soundcloud, etc. from interfering with Spotify
+    "ignored-players": ["firefox", "chromium"],
+
+    // Format: Playing state (bold for emphasis)
+    // Example output: 󰐊 Never Gonna Give You Up - Rick Astley
+    "format-playing": "<b>{status_icon} {dynamic}</b>",
+
+    // Format: Paused state (italic, less emphasis)
+    // Example output: 󰏤 Never Gonna Give You Up - Rick Astley
+    "format-paused": "{status_icon} <i>{dynamic}</i>",
+
+    // Format: Stopped state (icon only, minimal presence)
+    // Example output: 󰓛
+    "format-stopped": "{status_icon}",
+
+    // Dynamic content configuration
+    // {dynamic} auto-populates from available metadata
+    "dynamic-order": ["title", "artist"],  // Show title first, then artist
+    "dynamic-separator": " - ",            // Separator between title and artist
+    "dynamic-len": 35,                     // Maximum total length (prevents overflow)
+    "ellipsis": "…",                       // Unicode ellipsis for truncation
+
+    // Status icons (Material Design Nerd Font icons)
+    "status-icons": {
+      "playing": "󰐊",    // Play icon (filled circle with triangle)
+      "paused": "󰏤",     // Pause icon (two vertical bars)
+      "stopped": "󰓛"     // Stop icon (filled square)
+    },
+
+    // Enhanced tooltips with full track metadata
+    "tooltip-format-playing": "{player} (Playing)\n{title}\n{artist} - {album}\n{position}/{length}",
+    "tooltip-format-paused": "{player} (Paused)\n{title}\n{artist} - {album}",
+    "tooltip-format-stopped": "{player} (Stopped)",
+
+    // Conditional execution: Only load if playerctl is available
+    "exec-if": "which playerctl",
+
+    // Multi-click actions (standard media controls)
+    "on-click": "playerctl play-pause",           // Left-click: Toggle play/pause
+    "on-click-right": "playerctl next",           // Right-click: Next track
+    "on-click-middle": "playerctl previous",      // Middle-click: Previous track
+
+    // Scroll actions: Volume control (5% increments)
+    // Complements pulseaudio volume control
+    "on-scroll-up": "playerctl volume 0.05+",     // Scroll up: +5% volume
+    "on-scroll-down": "playerctl volume 0.05-"    // Scroll down: -5% volume
   },
 
   // --------------------------------------------------------------------------

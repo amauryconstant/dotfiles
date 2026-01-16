@@ -41,3 +41,4 @@
 @define-color accent-highlight-hover rgba(136, 57, 239, 0.1);  /* mauve - audio hover */
 @define-color accent-warning-hover rgba(223, 142, 29, 0.1);    /* yellow - backlight hover */
 @define-color accent-success-hover rgba(64, 160, 43, 0.1);     /* green - battery hover */
+@define-color accent-media-hover rgba(136, 57, 239, 0.1);      /* mauve - media hover */

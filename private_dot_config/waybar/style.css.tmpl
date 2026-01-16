@@ -179,7 +179,6 @@ window#waybar {
 
 /* System monitoring group - visual cohesion */
 #network,
-#pulseaudio,
 #backlight,
 #battery {
   /* Spacing: Left and right padding */
@@ -195,7 +194,7 @@ window#waybar {
   border-radius: 0px;
 }
 
-/* First module in group - left rounded corners */
+/* First module in system monitoring group - left rounded corners */
 #network {
   color: @accent-info;
   border-top-left-radius: 8px;
@@ -207,17 +206,7 @@ window#waybar {
   color: @fg-muted;
 }
 
-/* Middle modules - no rounded corners */
-#pulseaudio {
-  color: @accent-highlight;
-}
-
-/* PulseAudio Module: Muted state */
-#pulseaudio.muted {
-  color: @fg-muted;
-}
-
-/* Last module in group - right rounded corners */
+/* Last module in system monitoring group - right rounded corners */
 #battery {
   color: @accent-success;
   border-top-right-radius: 8px;
@@ -234,16 +223,77 @@ window#waybar {
   background-color: @accent-info-hover;        /* Semantic network hover */
 }
 
-#pulseaudio:hover {
-  background-color: @accent-highlight-hover;   /* Semantic audio hover */
-}
-
 #backlight:hover {
   background-color: @accent-warning-hover;     /* Semantic backlight hover */
 }
 
 #battery:hover {
   background-color: @accent-success-hover;     /* Semantic battery hover */
+}
+
+/* -------------------------------------------------------------------------- */
+/* Media Cluster (PulseAudio + MPRIS) */
+/* -------------------------------------------------------------------------- */
+
+/* Media cluster group - visual cohesion */
+#pulseaudio,
+#mpris {
+  /* Spacing: Left and right padding */
+  padding: 0 12px;
+
+  /* Zero margins for visual grouping */
+  margin-right: 0px;
+
+  /* Smooth transitions for hover effects */
+  transition: all 0.2s ease;
+
+  /* Connected borders for visual continuity */
+  border-radius: 0px;
+}
+
+/* PulseAudio - first module in media cluster */
+#pulseaudio {
+  color: @accent-highlight;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+/* PulseAudio Module: Muted state */
+#pulseaudio.muted {
+  color: @fg-muted;
+}
+
+/* PulseAudio: Hover effect */
+#pulseaudio:hover {
+  background-color: @accent-highlight-hover;   /* Semantic audio hover */
+}
+
+/* MPRIS - last module in media cluster */
+#mpris {
+  color: @accent-media;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* MPRIS: Playing state */
+#mpris.playing {
+  color: @accent-media;
+}
+
+/* MPRIS: Paused state (dimmed) */
+#mpris.paused {
+  color: @fg-muted;
+}
+
+/* MPRIS: Stopped state (very subtle) */
+#mpris.stopped {
+  color: @fg-muted;
+  opacity: 0.7;
+}
+
+/* MPRIS: Hover effect */
+#mpris:hover {
+  background-color: @accent-media-hover;       /* Semantic media hover */
 }
 
 /* -------------------------------------------------------------------------- */
