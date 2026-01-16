@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Script: run_once_after_009_validate_hyprland_config.sh.tmpl
+# Script: run_once_after_008_validate_hyprland_config.sh.tmpl
 # Purpose: Validate Hyprland configuration syntax after configs are applied
 # Requirements: Hyprland installed, configs applied
 
@@ -17,7 +17,7 @@ VALIDATION_FAILED=false
 {{ includeTemplate "log_step" "Verifying config files exist..." }}
 
 HYPR_CONFIG_DIR="$HOME/.config/hypr"
-REQUIRED_CONFIGS="hyprland.conf hypridle.conf conf/monitor.conf conf/environment.conf conf/input.conf conf/general.conf conf/decoration.conf conf/animations.conf conf/bindings.conf conf/windowrules.conf conf/autostart.conf"
+REQUIRED_CONFIGS="hyprland.conf hypridle.conf conf/monitor.conf conf/environment.conf conf/input.conf conf/general.conf conf/decoration.conf conf/animations.conf conf/windowrules.conf conf/autostart.conf"
 
 MISSING_CONFIGS=""
 
@@ -37,7 +37,37 @@ else
 fi
 
 # ============================================================================
-# CHECK 2: THEME SYSTEM SETUP
+# CHECK 2: BINDINGS MODULAR STRUCTURE
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying bindings modular structure..." }}
+
+BINDINGS_DIR="$HYPR_CONFIG_DIR/conf/bindings"
+REQUIRED_BINDING_FILES="applications.conf desktop-utilities.conf focus-navigation.conf media-keys.conf screenshots.conf system-control.conf theme-session.conf window-management.conf window-resizing.conf workspace-management.conf workspace-navigation.conf"
+
+MISSING_BINDINGS=""
+
+if [ ! -d "$BINDINGS_DIR" ]; then
+    {{ includeTemplate "log_error" "Bindings directory missing: $BINDINGS_DIR" }}
+    VALIDATION_FAILED=true
+else
+    for binding_file in $REQUIRED_BINDING_FILES; do
+        if [ ! -f "$BINDINGS_DIR/$binding_file" ]; then
+            {{ includeTemplate "log_error" "Missing binding file: $binding_file" }}
+            MISSING_BINDINGS="$MISSING_BINDINGS $binding_file"
+            VALIDATION_FAILED=true
+        fi
+    done
+
+    if [ -z "$MISSING_BINDINGS" ]; then
+        {{ includeTemplate "log_success" "All binding files present (11 total)" }}
+    else
+        {{ includeTemplate "log_error" "Missing bindings:$MISSING_BINDINGS" }}
+    fi
+fi
+
+# ============================================================================
+# CHECK 3: THEME SYSTEM SETUP
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying theme system..." }}
@@ -65,7 +95,7 @@ else
 fi
 
 # ============================================================================
-# CHECK 3: AUTOSTART DEPENDENCIES
+# CHECK 4: AUTOSTART DEPENDENCIES
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying autostart application availability..." }}
@@ -120,7 +150,7 @@ else
 fi
 
 # ============================================================================
-# CHECK 4: HYPRLAND SYNTAX VALIDATION (if possible)
+# CHECK 5: HYPRLAND SYNTAX VALIDATION (if possible)
 # ============================================================================
 
 {{ includeTemplate "log_step" "Checking Hyprland config syntax..." }}
@@ -136,12 +166,12 @@ else
 fi
 
 # ============================================================================
-# CHECK 5: TERMINAL BINDING VALIDATION
+# CHECK 6: TERMINAL BINDING VALIDATION
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying terminal binding..." }}
 
-BINDINGS_FILE="$HYPR_CONFIG_DIR/conf/bindings.conf"
+BINDINGS_FILE="$HYPR_CONFIG_DIR/conf/bindings/applications.conf"
 TERMINAL="{{ .globals.applications.terminal }}"
 
 if [ -f "$BINDINGS_FILE" ]; then
@@ -158,12 +188,12 @@ if [ -f "$BINDINGS_FILE" ]; then
         {{ includeTemplate "log_warning" "Terminal binding may not be configured" }}
     fi
 else
-    {{ includeTemplate "log_error" "Bindings config missing" }}
+    {{ includeTemplate "log_error" "Applications binding file missing" }}
     VALIDATION_FAILED=true
 fi
 
 # ============================================================================
-# CHECK 6: MONITOR CONFIGURATION
+# CHECK 7: MONITOR CONFIGURATION
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying monitor configuration..." }}
@@ -187,7 +217,7 @@ else
 fi
 
 # ============================================================================
-# CHECK 7: SYSTEMD USER SERVICES (wallpaper, etc.)
+# CHECK 8: SYSTEMD USER SERVICES (wallpaper, etc.)
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying systemd user services..." }}
