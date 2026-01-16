@@ -3,7 +3,7 @@
 # Wallpaper collection - organized by theme
 ".config/wallpapers":
   type: "git-repo"
-  url: "git@gitlab.com:amoconst/wallpapers.git"
+  url: "https://gitlab.com/amoconst/wallpapers.git"
   refreshPeriod: "168h"  # Refresh weekly
   clone:
     args:
