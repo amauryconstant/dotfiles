@@ -1,5 +1,5 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- $settings := .chezmoi.stdin | fromJson -}}
+{{- $settings := .chezmoi.stdin | default "{}" | fromJson -}}
 
 {{- /* Language Formatters */ -}}
 {{- $_ := set $settings "[css]" (dict "editor.defaultFormatter" "esbenp.prettier-vscode") -}}

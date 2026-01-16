@@ -1,5 +1,5 @@
 {{- /* chezmoi:modify-template */ -}}
-{{- $config := .chezmoi.stdin | fromJson -}}
+{{- $config := .chezmoi.stdin | default "{}" | fromJson -}}
 
 {{- /* JSON Schema */ -}}
 {{- $_ := set $config "$schema" "https://opencode.ai/config.json" -}}
