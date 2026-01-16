@@ -8,7 +8,7 @@
 
 ## Quick Reference
 
-- **Purpose**: Lightweight executable wrappers (10 files)
+- **Purpose**: Lightweight executable wrappers (18 files)
 - **Pattern**: Lazy-load scripts from `lib/scripts/`
 - **Naming**: `executable_*` (chezmoi convention)
 - **Templates**: NO templates in bin/ (static only)
@@ -61,7 +61,7 @@ fi
 
 ## Available Wrappers
 
-**Script Wrappers** (12 CLI commands):
+**Script Wrappers** (18 CLI commands):
 
 | Executable | Script | Category |
 |------------|--------|----------|
@@ -69,6 +69,11 @@ fi
 | `executable_system-health` | `system/system-health.sh` | System |
 | `executable_system-maintenance` | `system/system-maintenance.sh` | System |
 | `executable_system-troubleshoot` | `system/troubleshoot.sh` | System |
+| `executable_dotfiles-debug` | `utils/dotfiles-debug.sh` | Utils |
+| `executable_dotfiles-hook-create` | `user-interface/hook-create.sh` | User Interface |
+| `executable_dotfiles-hook-list` | `user-interface/hook-list.sh` | User Interface |
+| `executable_regen-zsh-plugins` | `terminal/regen-zsh-plugins.sh` | Terminal |
+| `executable_regen-ssh-key` | `system/regenerate-ssh-key.sh` | System |
 | `executable_screenshot` | `media/screenshot.sh` | Media |
 | `executable_random-wallpaper` | `media/random-wallpaper.sh` | Media |
 | `executable_set-wallpaper` | `media/set-wallpaper.sh` | Media |
@@ -80,7 +85,7 @@ fi
 
 | Executable | Purpose | Wraps |
 |------------|---------|-------|
-| `executable_unzip` | unzip → unar compatibility wrapper | `unarchiver` (unar) |
+| `executable_unzip` | unzip → unar compatibility wrapper | `utils/unzip.sh` |
 
 **Why unzip wrapper**:
 - System uses `unar` from `unarchiver` package (universal archive extractor)
@@ -136,7 +141,7 @@ SCRIPT_PATH="$SCRIPTS_DIR/category/foo.sh"
 
 ## Integration Points
 
-- **lib/scripts/**: Implementation scripts (44 files)
+- **lib/scripts/**: Implementation scripts (51+ files)
 - **Zephyr**: Environment variables (SCRIPTS_DIR, UI_LIB)
 - **PATH**: `~/.local/bin` in PATH via Zephyr
 - **Hyprland**: Bindings call wrapper commands

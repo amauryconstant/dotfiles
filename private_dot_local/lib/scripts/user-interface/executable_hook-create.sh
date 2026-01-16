@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+# Script: dotfiles-hook-create
+# Purpose: Create hook template with documentation
+# Requirements: Arch Linux, gum
+
+# Source UI library
+# shellcheck disable=SC1090
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+ui_title "Create Dotfiles Hook"
+
+# Available hook types
+HOOK_OPTIONS="theme-change
+package-sync
+wallpaper-change
+dark-mode-change
+pre-maintenance
+post-maintenance"
+
+# Prompt for hook name
+ui_info "Select hook type:"
+HOOK_NAME=$(echo "$HOOK_OPTIONS" | ui_choose)
+
+if [ -z "$HOOK_NAME" ]; then
+    ui_error "No hook selected"
+    exit 1
+fi
+
+HOOKS_DIR="$HOME/.config/dotfiles/hooks"
+HOOK_PATH="$HOOKS_DIR/$HOOK_NAME"
+
+# Check if hook already exists
+if [ -f "$HOOK_PATH" ]; then
+    ui_warning "Hook already exists: $HOOK_NAME"
+
+    if ! ui_confirm "Overwrite existing hook?"; then
+        ui_info "Cancelled"
+        exit 0
+    fi
+fi
+
+# Create hooks directory if needed
+mkdir -p "$HOOKS_DIR"
+
+# Generate hook template based on type
+case "$HOOK_NAME" in
+    theme-change)
+        HOOK_DESC="After theme switch"
+        HOOK_ARGS="\$1=theme_name"
+        HOOK_EXAMPLE='notify-send "Theme" "Switched to: $1"'
+        ;;
+    package-sync)
+        HOOK_DESC="After package sync completes"
+        HOOK_ARGS="\$1=operation (sync/install/remove)"
+        HOOK_EXAMPLE='echo "Package sync: $1" >> ~/.local/state/dotfiles/package-sync.log'
+        ;;
+    wallpaper-change)
+        HOOK_DESC="After wallpaper set"
+        HOOK_ARGS="\$1=wallpaper_path"
+        HOOK_EXAMPLE='# Upload to cloud or sync to devices
+# rsync "$1" server:/wallpapers/'
+        ;;
+    dark-mode-change)
+        HOOK_DESC="After dark/light mode switch"
+        HOOK_ARGS="\$1=mode (dark/light)"
+        HOOK_EXAMPLE='# Update external services
+# curl -X POST https://myservice.com/theme -d "mode=$1"'
+        ;;
+    pre-maintenance)
+        HOOK_DESC="Before system maintenance runs"
+        HOOK_ARGS="none"
+        HOOK_EXAMPLE='# Stop services, prepare backups
+# systemctl --user stop myservice'
+        ;;
+    post-maintenance)
+        HOOK_DESC="After system maintenance completes"
+        HOOK_ARGS="\$1=status (success/failure)"
+        HOOK_EXAMPLE='# Restart services, validate
+# [ "$1" = "success" ] && systemctl --user start myservice'
+        ;;
+esac
+
+# Create hook file with template
+cat > "$HOOK_PATH" <<EOF
+#!/usr/bin/env sh
+
+# Hook: $HOOK_NAME
+# Triggered: $HOOK_DESC
+# Arguments: $HOOK_ARGS
+
+# Your custom logic here
+# Example:
+$HOOK_EXAMPLE
+EOF
+
+# Make executable
+chmod +x "$HOOK_PATH"
+
+ui_success "Hook created: $HOOK_NAME"
+ui_info "Location: $HOOK_PATH"
+echo ""
+ui_info "Edit with: \$EDITOR $HOOK_PATH"
+ui_info "Test with: $HOOK_PATH [args]"

@@ -27,15 +27,17 @@
 
 ```
 ~/.local/
-├── bin/                    # 12 CLI wrappers (in PATH)
+├── bin/                    # 18 CLI wrappers (in PATH)
 │   └── executable_*        # Lightweight shims
-└── lib/scripts/            # 46 implementation scripts (10 categories)
+└── lib/scripts/            # 46+ implementation scripts (10 categories)
     ├── core/               # Foundation libraries
     ├── desktop/            # Hyprland utilities
     ├── media/              # Wallpaper, screenshots
     ├── system/             # Maintenance, health, SSH
-    ├── user-interface/     # Menu system
-    └── [7 more categories]
+    ├── terminal/           # Terminal utilities
+    ├── user-interface/     # Menu system, hooks
+    ├── utils/              # Utilities
+    └── [6 more categories]
 ```
 
 ## bin/ vs lib/ Separation
@@ -115,6 +117,10 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `system-health` | `system/system-health.sh` | Health monitoring |
 | `system-maintenance` | `system/system-maintenance.sh` | System maintenance |
 | `system-troubleshoot` | `system/troubleshoot.sh` | Diagnostic tool |
+| `dotfiles-debug` | `utils/dotfiles-debug.sh` | System debug report |
+| `dotfiles-hook-create` | `user-interface/hook-create.sh` | Create hook template |
+| `dotfiles-hook-list` | `user-interface/hook-list.sh` | List hooks |
+| `regen-zsh-plugins` | `terminal/regen-zsh-plugins.sh` | Zsh plugin bundle |
 | `regen-ssh-key` | `system/regenerate-ssh-key.sh` | SSH key regeneration |
 | `screenshot` | `media/screenshot.sh` | Screenshot with Satty |
 | `random-wallpaper` | `media/random-wallpaper.sh` | Random wallpaper |
@@ -122,6 +128,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `launch-or-focus` | `desktop/launch-or-focus.sh` | Single-instance apps |
 | `git-prune-branch` | `git/prune-branch.sh` | Branch cleanup |
 | `ts` | `network/tailscale.sh` | Tailscale helper |
+| `unzip` | `utils/unzip.sh` | unzip → unar wrapper |
 
 ## Subdirectories with CLAUDE.md
 

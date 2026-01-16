@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+# Script: dotfiles-hook-list
+# Purpose: List available hook points and installed user hooks
+# Requirements: Arch Linux, gum
+
+# Source UI library
+# shellcheck disable=SC1090
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+# Show title
+ui_title "Dotfiles Hook System"
+
+# Available hook points with documentation
+ui_section "Available Hook Points"
+
+cat <<EOF
+  theme-change         After theme switch
+                       Args: \$1=theme_name
+                       Use case: Custom app theming, external service sync
+
+  package-sync         After package sync completes
+                       Args: \$1=operation (sync/install/remove)
+                       Use case: Post-install validation, custom packages
+
+  wallpaper-change     After wallpaper set
+                       Args: \$1=wallpaper_path
+                       Use case: Upload to cloud, sync to devices
+
+  dark-mode-change     After dark/light mode switch
+                       Args: \$1=mode (dark/light)
+                       Use case: External service themes, web apps
+
+  pre-maintenance      Before system maintenance runs
+                       Args: none
+                       Use case: Backup prep, service shutdown
+
+  post-maintenance     After system maintenance completes
+                       Args: \$1=status (success/failure)
+                       Use case: Service restart, validation
+EOF
+
+echo ""
+ui_section "Installed User Hooks"
+
+HOOKS_DIR="$HOME/.config/dotfiles/hooks"
+
+if [ -d "$HOOKS_DIR" ] && [ "$(find "$HOOKS_DIR" -type f -executable 2>/dev/null)" ]; then
+    find "$HOOKS_DIR" -type f -executable | sort | while read -r hook; do
+        hook_name=$(basename "$hook")
+        ui_info "$hook_name"
+    done
+else
+    ui_warning "No hooks installed"
+    echo ""
+    ui_info "Create hooks with: dotfiles-hook-create"
+    ui_info "Hook directory: $HOOKS_DIR"
+fi
