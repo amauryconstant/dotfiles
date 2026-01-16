@@ -44,7 +44,7 @@
 
 {{- /* Terminal */ -}}
 {{- $_ := set $settings "terminal.explorerKind" "external" -}}
-{{- $_ := set $settings "terminal.external.linuxExec" "ghossty" -}}
+{{- $_ := set $settings "terminal.external.linuxExec" "ghostty" -}}
 {{- $_ := set $settings "terminal.integrated.defaultProfile.linux" "zsh" -}}
 {{- $_ := set $settings "terminal.integrated.defaultProfile.osx" "zsh" -}}
 {{- $_ := set $settings "terminal.integrated.enableMultiLinePasteWarning" "never" -}}
