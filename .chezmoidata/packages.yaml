@@ -75,6 +75,7 @@ packages:
         - btrfs-progs      # Btrfs filesystem utilities
         - timeshift        # System backup and restore (Btrfs snapshots)
         - sof-firmware     # Intel audio DSP firmware
+        - ventoy
 
     network:
       enabled: true
