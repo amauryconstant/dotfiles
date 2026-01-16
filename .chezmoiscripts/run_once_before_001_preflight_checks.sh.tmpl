@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_before_000_preflight_checks.sh.tmpl
 # Purpose: Verify critical prerequisites before installation begins
@@ -38,18 +38,40 @@ MISSING_COMMANDS=""
 
 for cmd in $REQUIRED_COMMANDS; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
-        {{ includeTemplate "log_error" "Required command not found: $cmd" }}
+        {{ includeTemplate "log_warning" "Required command not found: $cmd" }}
         MISSING_COMMANDS="$MISSING_COMMANDS $cmd"
-        PREFLIGHT_FAILED=true
     fi
 done
 
 if [ -z "$MISSING_COMMANDS" ]; then
     {{ includeTemplate "log_success" "All critical commands available: $REQUIRED_COMMANDS" }}
 else
-    {{ includeTemplate "log_error" "Missing commands:$MISSING_COMMANDS" }}
-    {{ includeTemplate "log_info" "Fix: Install base system packages" }}
-    {{ includeTemplate "log_info" "  sudo pacman -S base base-devel git" }}
+    {{ includeTemplate "log_step" "Attempting to install missing packages..." }}
+
+    # Use pacman to install base packages (sudo already verified in CHECK 1)
+    if sudo pacman -S --needed --noconfirm base base-devel git 2>&1 | grep -v "warning: "; then
+        {{ includeTemplate "log_success" "Package installation completed" }}
+
+        # Re-verify commands are now available
+        STILL_MISSING=""
+        for cmd in $REQUIRED_COMMANDS; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                STILL_MISSING="$STILL_MISSING $cmd"
+            fi
+        done
+
+        if [ -n "$STILL_MISSING" ]; then
+            {{ includeTemplate "log_error" "Commands still missing after installation:$STILL_MISSING" }}
+            {{ includeTemplate "log_info" "Fix: Install manually with: sudo pacman -S base base-devel git" }}
+            PREFLIGHT_FAILED=true
+        else
+            {{ includeTemplate "log_success" "All critical commands now available: $REQUIRED_COMMANDS" }}
+        fi
+    else
+        {{ includeTemplate "log_error" "Failed to install missing packages" }}
+        {{ includeTemplate "log_info" "Fix: Install manually with: sudo pacman -S base base-devel git" }}
+        PREFLIGHT_FAILED=true
+    fi
 fi
 
 # ============================================================================

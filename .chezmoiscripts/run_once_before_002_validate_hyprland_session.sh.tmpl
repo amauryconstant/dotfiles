@@ -12,63 +12,20 @@ set -euo pipefail
 VALIDATION_FAILED=false
 
 # ============================================================================
-# CHECK 1: HYPRLAND CORE DEPENDENCIES
+# NOTE: Package validation moved to run_once_after_008
 # ============================================================================
-
-{{ includeTemplate "log_step" "Verifying Hyprland core dependencies..." }}
-
-# Critical packages (archinstall provides these)
-CRITICAL_PACKAGES="hyprland xdg-desktop-portal-hyprland waybar dunst wofi"
-
-# Optional packages (installed during sync_packages)
-OPTIONAL_PACKAGES="polkit-gnome swww"
-
-MISSING_CRITICAL=""
-
-# Check critical packages - fail if missing
-for pkg in $CRITICAL_PACKAGES; do
-    if ! pacman -Q "$pkg" >/dev/null 2>&1; then
-        {{ includeTemplate "log_error" "Missing critical package: $pkg" }}
-        MISSING_CRITICAL="$MISSING_CRITICAL $pkg"
-        VALIDATION_FAILED=true
-    fi
-done
-
-# Check optional packages - warn only
-for pkg in $OPTIONAL_PACKAGES; do
-    if ! pacman -Q "$pkg" >/dev/null 2>&1; then
-        {{ includeTemplate "log_info" "Optional package missing: $pkg (will be installed during package sync)" }}
-    fi
-done
-
-if [ -z "$MISSING_CRITICAL" ]; then
-    {{ includeTemplate "log_success" "All critical Hyprland packages installed" }}
-else
-    {{ includeTemplate "log_error" "Missing critical packages:$MISSING_CRITICAL" }}
-    {{ includeTemplate "log_info" "Fix: Ensure packages.yaml includes desktop_hyprland module" }}
-    {{ includeTemplate "log_info" "  Then run: chezmoi apply" }}
-fi
+#
+# This script focuses on pre-installation validation:
+# - NVIDIA driver migration detection (must happen BEFORE package sync)
+# - Graphics driver compatibility checks
+#
+# Package existence validation happens in run_once_after_008 (after packages installed)
 
 # ============================================================================
-# CHECK 2: GRAPHICS DRIVERS (NOUVEAU DETECTION)
+# CHECK 1: NVIDIA GPU DETECTION
 # ============================================================================
 
-{{ includeTemplate "log_step" "Checking graphics drivers..." }}
-
-# Check for nouveau drivers (archinstall default for NVIDIA GPUs)
-NOUVEAU_DETECTED=false
-if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
-    {{ includeTemplate "log_warning" "Nouveau drivers detected (archinstall default)" }}
-    {{ includeTemplate "log_info" "Proprietary NVIDIA drivers will be installed during package sync" }}
-    {{ includeTemplate "log_info" "Skipping NVIDIA driver validation (will validate after reboot)" }}
-    NOUVEAU_DETECTED=true
-fi
-
-# ============================================================================
-# CHECK 3: NVIDIA CORE DEPENDENCIES
-# ============================================================================
-
-{{ includeTemplate "log_step" "Verifying NVIDIA drivers..." }}
+{{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
 
 # Check for NVIDIA drivers (common crash source)
 if lspci | grep -i nvidia >/dev/null 2>&1; then
@@ -76,43 +33,19 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
     {{ includeTemplate "log_info" (printf "NVIDIA GPU detected: %s" $gpuName) }}
     {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
 
-    # Skip driver validation if nouveau detected (first-run archinstall)
-    if [ "$NOUVEAU_DETECTED" = true ]; then
-        {{ includeTemplate "log_info" "First-run installation detected - deferring driver validation" }}
+    # Check for nouveau (archinstall default on fresh installations)
+    if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
+        {{ includeTemplate "log_warning" "Nouveau drivers currently active (archinstall default)" }}
+        {{ includeTemplate "log_info" "Proprietary NVIDIA drivers will be installed during package sync" }}
         {{ includeTemplate "log_info" "Reboot after package installation to load proprietary drivers" }}
     else
-        # Existing validation logic for proprietary drivers
-{{- if eq .nvidiaDriverType "legacy" }}
-        # Legacy driver validation (nvidia-580xx)
-        if pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
-            {{ includeTemplate "log_success" "NVIDIA legacy drivers (580xx) installed" }}
+        {{ includeTemplate "log_info" "Proprietary NVIDIA drivers active" }}
 
-            # Verify DKMS modules are built
-            if ! modinfo nvidia >/dev/null 2>&1; then
-                {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
-                {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
-            fi
-        else
-            {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
-            {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
-            VALIDATION_FAILED=true
+        # Verify DKMS modules are loaded (non-critical check)
+        if ! modinfo nvidia >/dev/null 2>&1; then
+            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
+            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
         fi
-{{- else }}
-        # Modern driver validation (nvidia-open-dkms or nvidia-dkms)
-        if pacman -Q nvidia-open-dkms >/dev/null 2>&1 || pacman -Q nvidia-dkms >/dev/null 2>&1; then
-            {{ includeTemplate "log_success" "NVIDIA modern drivers installed" }}
-
-            # Verify DKMS modules are built
-            if ! modinfo nvidia >/dev/null 2>&1; then
-                {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
-                {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
-            fi
-        else
-            {{ includeTemplate "log_error" "NVIDIA GPU detected but drivers missing" }}
-            {{ includeTemplate "log_info" "Fix: Ensure graphics_drivers module enabled in packages.yaml" }}
-            VALIDATION_FAILED=true
-        fi
-{{- end }}
     fi
 
     # Check for driver migration (if NVIDIA GPU detected)
@@ -153,13 +86,24 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         echo "    • Close all GPU-intensive applications"
         echo "    • Save all work before proceeding"
         echo ""
+        echo "  NOTE: Will auto-proceed with migration after 60 seconds if no response"
+        echo ""
         echo "════════════════════════════════════════════════════════════════"
         echo ""
 
-        read -p "  Continue with driver migration? [y/N] " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            {{ includeTemplate "log_error" "Driver migration cancelled by user" }}
+        # Timeout after 60 seconds (prevents unattended installation hang)
+        # Default to 'N' (safe option) on timeout
+        if read -t 60 -p "  Continue with driver migration? [y/N] " -n 1 -r; then
+            echo ""
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                {{ includeTemplate "log_error" "Driver migration cancelled by user" }}
+                exit 1
+            fi
+        else
+            echo ""
+            {{ includeTemplate "log_warning" "⏱️  Timeout reached - defaulting to 'No' (safe option)" }}
+            {{ includeTemplate "log_error" "Driver migration cancelled (timeout)" }}
+            {{ includeTemplate "log_info" "To force migration: export NVIDIA_DRIVER_OVERRIDE=$TARGET_DRIVER && chezmoi apply" }}
             exit 1
         fi
 
@@ -198,53 +142,14 @@ else
 fi
 
 # ============================================================================
-# CHECK 4: DISPLAY MANAGER CONFIGURATION
+# NOTE: Package validation deferred to run_once_after_008
 # ============================================================================
-
-{{ includeTemplate "log_step" "Verifying SDDM configuration..." }}
-
-# Check if SDDM is installed
-if ! pacman -Q sddm >/dev/null 2>&1; then
-    {{ includeTemplate "log_error" "SDDM not installed" }}
-    {{ includeTemplate "log_info" "Display manager required for graphical login" }}
-    VALIDATION_FAILED=true
-else
-    {{ includeTemplate "log_success" "SDDM installed" }}
-
-    # Check if SDDM service is enabled
-    if ! systemctl is-enabled --quiet sddm.service; then
-        {{ includeTemplate "log_warning" "SDDM service not enabled" }}
-        {{ includeTemplate "log_info" "Fix: sudo systemctl enable sddm" }}
-    fi
-
-    # Verify Hyprland session file exists
-    HYPRLAND_SESSION="/usr/share/wayland-sessions/hyprland.desktop"
-    if [ ! -f "$HYPRLAND_SESSION" ]; then
-        {{ includeTemplate "log_error" "Hyprland session file missing: $HYPRLAND_SESSION" }}
-        {{ includeTemplate "log_info" "Should be provided by hyprland package" }}
-        {{ includeTemplate "log_info" "Fix: Reinstall hyprland package" }}
-        VALIDATION_FAILED=true
-    else
-        {{ includeTemplate "log_success" "Hyprland session file exists" }}
-    fi
-fi
-
-# ============================================================================
-# CHECK 5: TERMINAL EMULATOR
-# ============================================================================
-
-{{ includeTemplate "log_step" "Verifying terminal emulator..." }}
-
-TERMINAL="{{ .globals.applications.terminal }}"
-
-if ! command -v "$TERMINAL" >/dev/null 2>&1; then
-    {{ includeTemplate "log_error" "Configured terminal not found: $TERMINAL" }}
-    {{ includeTemplate "log_info" "Hyprland bindings use this terminal (Super+Return)" }}
-    {{ includeTemplate "log_info" "Fix: Install $TERMINAL or update .globals.applications.terminal" }}
-    VALIDATION_FAILED=true
-else
-    {{ includeTemplate "log_success" "Terminal emulator available: $TERMINAL" }}
-fi
+# The following checks moved to post-install validation:
+# - SDDM installation and configuration
+# - Hyprland package and session file
+# - Terminal emulator availability
+#
+# These checks require packages to be installed first
 
 # ============================================================================
 # CHECK 6: CRITICAL SYSTEM SERVICES
@@ -300,8 +205,13 @@ done
 if [ -z "$THEME_MISSING" ]; then
     {{ includeTemplate "log_success" "Theme system dependencies available" }}
 else
-    {{ includeTemplate "log_warning" "Missing theme dependencies:$THEME_MISSING" }}
-    {{ includeTemplate "log_info" "Theme switching may not work until installed" }}
+    {{ includeTemplate "log_step" "Attempting to install theme dependencies..." }}
+    if sudo pacman -S --needed --noconfirm $THEME_DEPS 2>&1 | grep -v "warning: "; then
+        {{ includeTemplate "log_success" "Theme dependencies installed successfully" }}
+    else
+        {{ includeTemplate "log_warning" "Failed to install theme dependencies" }}
+        {{ includeTemplate "log_info" "Theme switching may not work until manually installed: sudo pacman -S $THEME_DEPS" }}
+    fi
 fi
 
 # ============================================================================
@@ -324,8 +234,13 @@ done
 if [ -z "$FONT_MISSING" ]; then
     {{ includeTemplate "log_success" "Critical fonts installed" }}
 else
-    {{ includeTemplate "log_warning" "Missing fonts:$FONT_MISSING" }}
-    {{ includeTemplate "log_info" "UI may have rendering issues" }}
+    {{ includeTemplate "log_step" "Attempting to install missing fonts..." }}
+    if sudo pacman -S --needed --noconfirm $FONT_MISSING 2>&1 | grep -v "warning: "; then
+        {{ includeTemplate "log_success" "Fonts installed successfully" }}
+    else
+        {{ includeTemplate "log_warning" "Failed to install fonts" }}
+        {{ includeTemplate "log_info" "UI may have rendering issues until manually installed: sudo pacman -S $FONT_MISSING" }}
+    fi
 fi
 
 # ============================================================================
@@ -336,8 +251,14 @@ fi
 
 if ! pacman -Q gnome-keyring >/dev/null 2>&1; then
     {{ includeTemplate "log_warning" "gnome-keyring not installed" }}
-    {{ includeTemplate "log_info" "Required for WiFi password storage via NetworkManager" }}
-    {{ includeTemplate "log_info" "Fix: Enable desktop_hyprland module in packages.yaml" }}
+    {{ includeTemplate "log_step" "Attempting to install gnome-keyring..." }}
+    if sudo pacman -S --needed --noconfirm gnome-keyring 2>&1 | grep -v "warning: "; then
+        {{ includeTemplate "log_success" "gnome-keyring installed successfully" }}
+        {{ includeTemplate "log_info" "WiFi password storage now available" }}
+    else
+        {{ includeTemplate "log_warning" "Failed to install gnome-keyring" }}
+        {{ includeTemplate "log_info" "WiFi password storage unavailable until manually installed: sudo pacman -S gnome-keyring" }}
+    fi
 else
     {{ includeTemplate "log_success" "gnome-keyring installed" }}
 fi
