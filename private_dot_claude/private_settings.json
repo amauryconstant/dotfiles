@@ -1,0 +1,10 @@
+{
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true
+  },
+  "model": "sonnet",
+  "includeCoAuthoredBy": false,
+  "attribution": {
+    "commit": ""
+  }
+}
