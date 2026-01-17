@@ -19,10 +19,13 @@ if [ ! -f "$USERCHROME_SOURCE" ]; then
     exit 0  # Theme doesn't have Firefox support, skip
 fi
 
-# Find Firefox profile directory
-FIREFOX_DIR="$HOME/.mozilla/firefox"
-
-if [ ! -d "$FIREFOX_DIR" ]; then
+# Find Firefox profile directory (check both standard and XDG locations)
+FIREFOX_DIR=""
+if [ -d "$HOME/.config/mozilla/firefox" ]; then
+    FIREFOX_DIR="$HOME/.config/mozilla/firefox"
+elif [ -d "$HOME/.mozilla/firefox" ]; then
+    FIREFOX_DIR="$HOME/.mozilla/firefox"
+else
     exit 0  # Firefox not installed, skip
 fi
 
