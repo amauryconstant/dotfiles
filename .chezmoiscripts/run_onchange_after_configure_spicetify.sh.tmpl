@@ -183,7 +183,10 @@ spicetify config overwrite_assets 1
 spicetify config replace_colors 1
 
 # Apply spicetify configuration
-{{ includeTemplate "log_step" "Applying spicetify configuration" }}
+{{ includeTemplate "log_step" "Creating backup and applying configuration" }}
+spicetify restore
+spicetify clear
+spicetify backup
 spicetify apply
 
 {{ includeTemplate "log_success" "Spicetify configured successfully" }}
