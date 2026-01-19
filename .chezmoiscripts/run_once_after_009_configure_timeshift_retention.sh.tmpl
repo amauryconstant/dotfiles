@@ -27,12 +27,82 @@ fi
 TIMESHIFT_CONFIG="/etc/timeshift/timeshift.json"
 
 if [ ! -f "$TIMESHIFT_CONFIG" ]; then
-    {{ includeTemplate "log_error" "Timeshift configuration not found: $TIMESHIFT_CONFIG" }}
-    {{ includeTemplate "log_info" "Run 'sudo timeshift-launcher' to create initial configuration" }}
-    exit 1
+    {{ includeTemplate "log_info" "Timeshift configuration not found - first run setup required" }}
+    
+    # Check if we're in a graphical session
+    if [ -z "${DISPLAY:-}" ] || [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+        {{ includeTemplate "log_error" "Graphical session not detected" }}
+        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to create initial configuration" }}
+        {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
+        exit 1
+    fi
+    
+    # Check if GUI tools are available
+    if ! command -v timeshift-launcher >/dev/null 2>&1; then
+        {{ includeTemplate "log_error" "timeshift-launcher not found" }}
+        {{ includeTemplate "log_info" "Please install timeshift package and run 'chezmoi apply'" }}
+        exit 1
+    fi
+    
+    {{ includeTemplate "log_step" "Launching Timeshift GUI for initial setup..." }}
+    {{ includeTemplate "log_info" "Please complete the setup in the GUI window" }}
+    {{ includeTemplate "log_info" "Select backup location and click 'Save' to create configuration" }}
+    
+    # Launch Timeshift GUI in background
+    timeshift-launcher &
+    LAUNCHER_PID=$!
+    
+    {{ includeTemplate "log_info" "Waiting for configuration file creation..." }}
+    
+    # Wait for config file creation with timeout (5 minutes)
+    TIMEOUT=300
+    ELAPSED=0
+    
+    while [ $ELAPSED -lt $TIMEOUT ]; do
+        if [ -f "$TIMESHIFT_CONFIG" ]; then
+            {{ includeTemplate "log_success" "Configuration file created successfully" }}
+            break
+        fi
+        
+        # Check if launcher process is still running
+        if ! kill -0 $LAUNCHER_PID 2>/dev/null; then
+            {{ includeTemplate "log_error" "Timeshift GUI was closed without creating configuration" }}
+            {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
+            exit 1
+        fi
+        
+        # Progress indicator every 10 seconds
+        if [ $((ELAPSED % 10)) -eq 0 ] && [ $ELAPSED -gt 0 ]; then
+            {{ includeTemplate "log_info" "Still waiting for setup... (${ELAPSED}/${TIMEOUT} seconds)" }}
+        fi
+        
+        sleep 1
+        ELAPSED=$((ELAPSED + 1))
+    done
+    
+    # Clean up launcher process if still running
+    if kill -0 $LAUNCHER_PID 2>/dev/null; then
+        kill $LAUNCHER_PID 2>/dev/null || true
+        wait $LAUNCHER_PID 2>/dev/null || true
+    fi
+    
+    # Check if we timed out
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        {{ includeTemplate "log_error" "Setup timed out after ${TIMEOUT} seconds" }}
+        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to complete setup" }}
+        {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
+        exit 1
+    fi
+    
+    # Final validation
+    if [ ! -f "$TIMESHIFT_CONFIG" ]; then
+        {{ includeTemplate "log_error" "Configuration file still not found after setup" }}
+        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
+        exit 1
+    fi
+else
+    {{ includeTemplate "log_success" "Timeshift configuration exists" }}
 fi
-
-{{ includeTemplate "log_success" "Timeshift configuration exists" }}
 
 # ============================================================================
 # SECTION 2: READ CURRENT CONFIGURATION
@@ -41,10 +111,11 @@ fi
 {{ includeTemplate "log_step" "Read current retention policy..." }}
 
 # Read current values
-CURRENT_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG")
-CURRENT_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG")
-CURRENT_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG")
-CURRENT_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG")
+# Note: yq returns quoted strings, so we remove quotes for numeric comparison
+CURRENT_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG" | tr -d '"')
+CURRENT_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG" | tr -d '"')
+CURRENT_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG" | tr -d '"')
+CURRENT_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG" | tr -d '"')
 
 {{ includeTemplate "log_info" "Current retention: daily=$CURRENT_DAILY weekly=$CURRENT_WEEKLY monthly=$CURRENT_MONTHLY boot=$CURRENT_BOOT" }}
 
@@ -94,18 +165,18 @@ fi
 
 {{ includeTemplate "log_step" "Update retention policy..." }}
 
-# Update retention counts (using yq v4 env() function)
+# Update retention counts (using yq v4 with environment variables)
 # Note: Timeshift expects string values, not numbers
-DAILY="$DESIRED_DAILY" sudo -E yq eval '.count_daily = strenv(DAILY)' \
+sudo DAILY="$DESIRED_DAILY" yq eval '.count_daily = strenv(DAILY)' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-WEEKLY="$DESIRED_WEEKLY" sudo -E yq eval '.count_weekly = strenv(WEEKLY)' \
+sudo WEEKLY="$DESIRED_WEEKLY" yq eval '.count_weekly = strenv(WEEKLY)' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-MONTHLY="$DESIRED_MONTHLY" sudo -E yq eval '.count_monthly = strenv(MONTHLY)' \
+sudo MONTHLY="$DESIRED_MONTHLY" yq eval '.count_monthly = strenv(MONTHLY)' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-BOOT="$DESIRED_BOOT" sudo -E yq eval '.count_boot = strenv(BOOT)' \
+sudo BOOT="$DESIRED_BOOT" yq eval '.count_boot = strenv(BOOT)' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
 {{ includeTemplate "log_success" "Retention policy updated" }}
@@ -122,23 +193,23 @@ BOOT="$DESIRED_BOOT" sudo -E yq eval '.count_boot = strenv(BOOT)' \
 {{- $schedule_boot := .globals.timeshift.schedule.boot | ternary "true" "false" }}
 {{- $schedule_hourly := .globals.timeshift.schedule.hourly | ternary "true" "false" }}
 
-ENABLED="{{ $schedule_daily }}" sudo -E yq eval \
+sudo ENABLED="{{ $schedule_daily }}" yq eval \
     '.schedule_daily = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-ENABLED="{{ $schedule_weekly }}" sudo -E yq eval \
+sudo ENABLED="{{ $schedule_weekly }}" yq eval \
     '.schedule_weekly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-ENABLED="{{ $schedule_monthly }}" sudo -E yq eval \
+sudo ENABLED="{{ $schedule_monthly }}" yq eval \
     '.schedule_monthly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-ENABLED="{{ $schedule_boot }}" sudo -E yq eval \
+sudo ENABLED="{{ $schedule_boot }}" yq eval \
     '.schedule_boot = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-ENABLED="{{ $schedule_hourly }}" sudo -E yq eval \
+sudo ENABLED="{{ $schedule_hourly }}" yq eval \
     '.schedule_hourly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
@@ -151,10 +222,13 @@ ENABLED="{{ $schedule_hourly }}" sudo -E yq eval \
 {{ includeTemplate "log_step" "Validate configuration changes..." }}
 
 # Read back values to verify
-VERIFY_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG")
-VERIFY_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG")
-VERIFY_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG")
-VERIFY_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG")
+# Note: yq returns quoted strings, so we remove quotes for comparison
+VERIFY_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG" | tr -d '"')
+VERIFY_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG" | tr -d '"')
+VERIFY_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG" | tr -d '"')
+VERIFY_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG" | tr -d '"')
+
+{{ includeTemplate "log_info" "Verification: daily=$VERIFY_DAILY weekly=$VERIFY_WEEKLY monthly=$VERIFY_MONTHLY boot=$VERIFY_BOOT" }}
 
 # Validate retention counts
 VALIDATION_FAILED=false
