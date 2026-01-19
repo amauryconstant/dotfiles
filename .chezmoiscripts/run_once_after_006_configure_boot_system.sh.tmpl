@@ -64,7 +64,8 @@ else
     if [ -f "$NVIDIA_CONF" ]; then
         # Check if existing file has correct content (flexible whitespace handling)
         # Must include i915 for hybrid graphics
-        if grep -Eq "^MODULES=\(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
+        # Use sudo to read file (owned by root)
+        if sudo grep -Eq "^MODULES=\(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
             {{ includeTemplate "log_success" "Initramfs NVIDIA configuration already correct" }}
         else
             {{ includeTemplate "log_info" "Updating initramfs NVIDIA configuration..." }}
@@ -87,6 +88,7 @@ else
 # IMPORTANT: i915 loaded first to prevent Electron/Chromium stalling on hybrid graphics
 MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 EOF
+        sudo chmod 644 "$NVIDIA_CONF"
         {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
         {{ includeTemplate "log_info" "DKMS will use this configuration during package installation" }}
     fi
@@ -136,98 +138,6 @@ EOF
             {{ includeTemplate "log_warning" "$service not found" }}
         fi
     done
-
-    {{ includeTemplate "log_step" "Configure NVIDIA kernel parameters" }}
-
-    # Check if system uses UKI (Unified Kernel Images) or traditional boot entries
-    CMDLINE_FILE="/etc/kernel/cmdline"
-
-    if [ -f "$CMDLINE_FILE" ]; then
-        {{ includeTemplate "log_info" "System uses Unified Kernel Images (UKI)" }}
-
-        # Check if NVIDIA kernel parameters are already present
-        NEEDS_MODESET=false
-        NEEDS_FBDEV=false
-        NEEDS_PRESERVE_VIDEO_MEM=false
-
-        if ! grep -q "nvidia-drm.modeset=1" "$CMDLINE_FILE"; then
-            NEEDS_MODESET=true
-        fi
-        if ! grep -q "nvidia-drm.fbdev=1" "$CMDLINE_FILE"; then
-            NEEDS_FBDEV=true
-        fi
-        if ! grep -q "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "$CMDLINE_FILE"; then
-            NEEDS_PRESERVE_VIDEO_MEM=true
-        fi
-
-        if [ "$NEEDS_MODESET" = false ] && [ "$NEEDS_FBDEV" = false ] && [ "$NEEDS_PRESERVE_VIDEO_MEM" = false ]; then
-            {{ includeTemplate "log_success" "NVIDIA kernel parameters already configured" }}
-        else
-            {{ includeTemplate "log_info" "Adding NVIDIA kernel parameters to kernel command line..." }}
-
-            # Create backup only if it doesn't already exist
-            if [ ! -f "${CMDLINE_FILE}.backup" ]; then
-                sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
-                {{ includeTemplate "log_info" "Created backup: ${CMDLINE_FILE}.backup" }}
-            fi
-
-            # Read current cmdline
-            CURRENT_CMDLINE=$(cat "$CMDLINE_FILE")
-
-            # Add parameters only if missing
-            if [ "$NEEDS_MODESET" = true ]; then
-                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia-drm.modeset=1"
-            fi
-            if [ "$NEEDS_FBDEV" = true ]; then
-                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia-drm.fbdev=1"
-            fi
-            if [ "$NEEDS_PRESERVE_VIDEO_MEM" = true ]; then
-                CURRENT_CMDLINE="$CURRENT_CMDLINE nvidia.NVreg_PreserveVideoMemoryAllocations=1"
-            fi
-
-            # Write updated cmdline
-            echo "$CURRENT_CMDLINE" | sudo tee "$CMDLINE_FILE" > /dev/null
-
-            {{ includeTemplate "log_success" "NVIDIA kernel parameters added to $CMDLINE_FILE" }}
-            NVIDIA_CMDLINE_CHANGED=true
-        fi
-    else
-        # Fallback: Check for traditional systemd-boot entries
-        {{ includeTemplate "log_info" "Checking for traditional systemd-boot entries..." }}
-        BOOT_ENTRIES=$(find /boot/loader/entries -name "*.conf" 2>/dev/null | head -1)
-
-        if [ -z "$BOOT_ENTRIES" ]; then
-            {{ includeTemplate "log_error" "No boot configuration found (neither UKI nor traditional entries)" }}
-            {{ includeTemplate "log_info" "Manual configuration required: Add 'nvidia-drm.modeset=1 nvidia-drm.fbdev=1' to kernel parameters" }}
-            exit 1
-        fi
-
-        {{ includeTemplate "log_info" "Found traditional boot entry: $BOOT_ENTRIES" }}
-
-        # Check if kernel parameters are already present
-        if grep -q "nvidia-drm.modeset=1" "$BOOT_ENTRIES" && grep -q "nvidia-drm.fbdev=1" "$BOOT_ENTRIES"; then
-            {{ includeTemplate "log_success" "NVIDIA kernel parameters already configured" }}
-        else
-            {{ includeTemplate "log_info" "Adding NVIDIA kernel parameters to boot entry..." }}
-
-            # Create backup only if it doesn't already exist
-            if [ ! -f "${BOOT_ENTRIES}.backup" ]; then
-                sudo cp "$BOOT_ENTRIES" "${BOOT_ENTRIES}.backup"
-                {{ includeTemplate "log_info" "Created backup: ${BOOT_ENTRIES}.backup" }}
-            fi
-
-            # Add NVIDIA parameters to options line
-            if ! grep -q "nvidia-drm.modeset=1" "$BOOT_ENTRIES"; then
-                sudo sed -i '/^options/ s/$/ nvidia-drm.modeset=1/' "$BOOT_ENTRIES"
-            fi
-            if ! grep -q "nvidia-drm.fbdev=1" "$BOOT_ENTRIES"; then
-                sudo sed -i '/^options/ s/$/ nvidia-drm.fbdev=1/' "$BOOT_ENTRIES"
-            fi
-
-            {{ includeTemplate "log_success" "NVIDIA kernel parameters added" }}
-            NVIDIA_CMDLINE_CHANGED=true
-        fi
-    fi
 
     {{ includeTemplate "log_success" "GPU driver configuration complete" }}
 fi
@@ -541,14 +451,6 @@ fi
 # Check if any changes were made that require rebuild
 REBUILD_NEEDED=false
 
-if [ "$NVIDIA_DETECTED" = true ]; then
-    # Only need to rebuild if kernel cmdline changed
-    if [ "${NVIDIA_CMDLINE_CHANGED:-false}" = true ]; then
-        {{ includeTemplate "log_info" "NVIDIA kernel parameters changed - rebuild required" }}
-        REBUILD_NEEDED=true
-    fi
-fi
-
 if [ "$PLYMOUTH_INSTALLED" = true ]; then
     if [ "${PLYMOUTH_HOOK_CHANGED:-false}" = true ] || [ "${PLYMOUTH_CMDLINE_CHANGED:-false}" = true ] || [ "${PLYMOUTH_THEME_CHANGED:-false}" = true ]; then
         {{ includeTemplate "log_info" "Plymouth configuration changed - rebuild required" }}
@@ -585,7 +487,7 @@ if [ "$NVIDIA_DETECTED" = true ]; then
     {{ includeTemplate "log_info" "GPU Configuration:" }}
     {{ includeTemplate "log_info" "  ✓ NVIDIA GPU detected and configured" }}
     {{ includeTemplate "log_info" "  ✓ DKMS modules verified for $KERNELS_BUILT_COUNT kernel(s): $ALL_BUILT" }}
-    {{ includeTemplate "log_info" "  ✓ Kernel parameters: nvidia-drm.modeset=1 nvidia-drm.fbdev=1" }}
+    {{ includeTemplate "log_info" "  ✓ Kernel parameters set via modprobe.d (nvidia-utils)" }}
     {{ includeTemplate "log_info" "  ✓ Power management services enabled (suspend/resume/hibernate)" }}
     {{ includeTemplate "log_info" "" }}
 fi
