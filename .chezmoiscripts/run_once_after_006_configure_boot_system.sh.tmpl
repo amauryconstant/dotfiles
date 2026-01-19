@@ -95,26 +95,21 @@ EOF
 
     {{ includeTemplate "log_step" "Verify NVIDIA DKMS modules built successfully" }}
 
-    # DKMS modules are built automatically by pacman hooks when nvidia-open-dkms is installed
-    # This step only verifies that the automatic build succeeded
+    # Check DKMS status
+    DKMS_STATUS=$(/usr/bin/dkms status nvidia 2>/dev/null || true)
 
-    CURRENT_KERNEL=$(uname -r)
-
-    # Check that modules are built for current kernel
-    if ! sudo dkms status nvidia | grep -q "$CURRENT_KERNEL.*installed"; then
-        {{ includeTemplate "log_error" "NVIDIA modules not built for current kernel $CURRENT_KERNEL" }}
-        {{ includeTemplate "log_info" "Pacman hooks should have built modules automatically during package installation" }}
-        {{ includeTemplate "log_info" "Check 'dkms status' for details" }}
-        {{ includeTemplate "log_info" "Reboot after package installation may be required" }}
+    if echo "$DKMS_STATUS" | grep -q "installed"; then
+        {{ includeTemplate "log_success" "NVIDIA DKMS modules installed" }}
+        {{ includeTemplate "log_info" "$DKMS_STATUS" }}
+    else
+        {{ includeTemplate "log_error" "NVIDIA DKMS modules not built" }}
+        {{ includeTemplate "log_info" "Status: $DKMS_STATUS" }}
+        {{ includeTemplate "log_info" "" }}
+        {{ includeTemplate "log_info" "Manual build: sudo dkms autoinstall" }}
+        {{ includeTemplate "log_info" "If GCC errors occur, try: sudo dkms autoinstall -j1" }}
+        {{ includeTemplate "log_info" "See CLAUDE.md 'DKMS Troubleshooting' for details" }}
         exit 1
     fi
-
-    {{ includeTemplate "log_success" "NVIDIA modules verified for $CURRENT_KERNEL" }}
-
-    # Show all kernels with built modules
-    ALL_BUILT=$(sudo dkms status nvidia | grep installed | awk '{print $2}' | tr '\n' ' ' | xargs)
-    KERNELS_BUILT_COUNT=$(echo "$ALL_BUILT" | wc -w)
-    {{ includeTemplate "log_info" "NVIDIA modules built for $KERNELS_BUILT_COUNT kernel(s): $ALL_BUILT" }}
 
     {{ includeTemplate "log_step" "Enable NVIDIA power management services" }}
 

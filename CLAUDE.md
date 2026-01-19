@@ -1169,3 +1169,38 @@ ls -la .shellcheckrc
 # Reload VSCode
 # Ctrl+Shift+P → "Developer: Reload Window"
 ```
+
+## DKMS Troubleshooting
+
+### NVIDIA DKMS Build Failures
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| GCC internal compiler error | Memory instability (XMP/DOCP) | Disable XMP or use `-j1` flag |
+| Stack smashing detected | RAM overclocking | Disable XMP in BIOS |
+| Module "added" not "installed" | Build failed | Check build log |
+
+### Manual DKMS Build
+
+```bash
+# Check current status
+dkms status nvidia
+
+# Build with reduced parallelism (helps with memory issues)
+sudo dkms install nvidia/VERSION -k $(uname -r) -j1
+
+# View build log for errors
+cat /var/lib/dkms/nvidia/*/build/make.log | tail -50
+```
+
+### Common Causes
+
+**GCC Internal Compiler Errors**: These are almost always caused by memory instability, not GCC bugs. The compiler performs intensive memory operations and will crash with unstable RAM.
+
+**Solutions**:
+1. Disable XMP/DOCP in BIOS (most reliable)
+2. Use looser memory timings
+3. Build with `-j1` to reduce memory pressure
+4. Run memtest86+ to verify RAM stability
+
+**Reference**: [Arch forums - nvidia-open-dkms build failure](https://bbs.archlinux.org/viewtopic.php?id=309961)
