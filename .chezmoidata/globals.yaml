@@ -42,9 +42,9 @@ globals:
   sddm:
     # SDDM display manager configuration
     # Available themes: solarized-sddm-theme, elarun, maldives, maya
-    # DisplayServer options: wayland (recommended for Hyprland), x11
+    # DisplayServer: x11 (required for stable Hyprland startup - fixes Wayland→Wayland handoff crash)
     theme: "solarized-sddm-theme"
-    display_server: "wayland"
+    display_server: "x11"
 
   printer:
     # Network printer configuration (Samsung M2070 Series)

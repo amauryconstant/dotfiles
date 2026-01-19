@@ -351,7 +351,7 @@ else
 # To modify: Edit .chezmoidata/globals.yaml and run 'chezmoi apply'
 
 [General]
-# Use Wayland display server for native Hyprland integration
+# Use X11 display server (fixes Wayland→Wayland handoff crash on first login)
 DisplayServer={{ .globals.sddm.display_server }}
 
 # Enable NumLock by default
