@@ -39,7 +39,10 @@ fi
 ARCH_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:") | not)' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
 
 # Extract all Flatpak packages (only from enabled modules, strip flatpak: prefix)
-FLATPAK_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
+FLATPAK_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$TEMP_PACKAGES_FILE" | sort -u) || {
+    {{ includeTemplate "log_error" "Failed to extract Flatpak packages from packages.yaml" }}
+    exit 1
+}
 
 # Extract packages to delete
 DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
@@ -55,6 +58,22 @@ fi
 
 # Cleanup temp file
 rm -f "$TEMP_PACKAGES_FILE"
+
+# ============================================================
+# Initialize Flatpak for user scope
+# ============================================================
+
+{{ includeTemplate "log_step" "Initializing Flatpak user environment..." }}
+
+# Ensure user directories exist
+mkdir -p "$HOME/.local/share/flatpak"
+mkdir -p "$HOME/.var/app"
+
+# Update appstream metadata for user scope (fresh install only)
+if ! flatpak remotes --user 2>/dev/null | grep -q "flathub"; then
+    {{ includeTemplate "log_step" "Flatpak will be initialized after remote is added..." }}
+    # Metadata update will happen after remote is added
+fi
 
 # Count packages
 ARCH_COUNT=$(echo "$ARCH_PACKAGES" | grep -c '^' || echo 0)
@@ -90,27 +109,27 @@ fi
 if [ "$FLATPAK_COUNT" -gt 0 ]; then
     {{ includeTemplate "log_step" "Installing $FLATPAK_COUNT Flatpak packages..." }}
 
-    # Ensure Flathub remote is configured
-    if ! flatpak remote-list | grep -q "^flathub"; then
+    # Ensure Flathub remote configured (user scope)
+    if ! flatpak remote-list --user 2>/dev/null | grep -q "^flathub"; then
         {{ includeTemplate "log_step" "Adding Flathub remote..." }}
         flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+
+        # Update appstream metadata after adding remote
+        {{ includeTemplate "log_step" "Updating Flatpak metadata..." }}
+        flatpak update --appstream --user 2>&1 | grep -v "^$" || true
     fi
 
-    # Install each Flatpak package
+    # Install all packages in single flatpak call (like Arch section)
     # -y: Non-interactive
     # --user: Install in user scope
-    # Continue even if individual packages fail (some may not be available)
-    echo "$FLATPAK_PACKAGES" | while IFS= read -r pkg; do
-        if [ -n "$pkg" ]; then
-            if flatpak install -y --user flathub "$pkg" 2>&1; then
-                {{ includeTemplate "log_success" "Installed: $pkg" }}
-            else
-                {{ includeTemplate "log_warning" "Failed to install: $pkg (may not be available)" }}
-            fi
-        fi
-    done
-
-    {{ includeTemplate "log_success" "Flatpak installation complete" }}
+    # --noninteractive: Skip prompts
+    if echo "$FLATPAK_PACKAGES" | xargs -r flatpak install -y --user --noninteractive flathub 2>&1; then
+        {{ includeTemplate "log_success" "Flatpak packages installed successfully" }}
+    else
+        {{ includeTemplate "log_error" "Some Flatpak packages failed to install" }}
+        {{ includeTemplate "log_warning" "Check above output for specific failures" }}
+        # Continue anyway (some packages may not be available)
+    fi
 else
     {{ includeTemplate "log_skip" "No Flatpak packages to install" }}
 fi

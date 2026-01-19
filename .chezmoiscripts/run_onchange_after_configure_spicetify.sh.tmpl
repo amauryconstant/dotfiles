@@ -54,7 +54,63 @@ if [ -n "$PREFS_PATH" ]; then
     {{ includeTemplate "log_info" "Found prefs at: $PREFS_PATH" }}
     spicetify config prefs_path "$PREFS_PATH"
 else
-    {{ includeTemplate "log_warning" "Preferences file not found (run Spotify once to create)" }}
+    {{ includeTemplate "log_warning" "Spotify preferences file not found (first run required)" }}
+
+    # Offer to launch Spotify automatically
+    {{ includeTemplate "log_info" "Spotify must be launched once to generate configuration" }}
+
+    # Check if we're in interactive mode
+    if [ -t 0 ] && [ -t 1 ]; then
+        echo ""
+        read -r -p "Launch Spotify now and wait for setup? [y/N] " response
+
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            {{ includeTemplate "log_step" "Launching Spotify..." }}
+
+            # Launch Spotify in background
+            flatpak run com.spotify.Client >/dev/null 2>&1 &
+
+            {{ includeTemplate "log_info" "Please complete Spotify first-run setup:" }}
+            {{ includeTemplate "log_info" "  - Login with your account" }}
+            {{ includeTemplate "log_info" "  - Complete any initial prompts" }}
+            {{ includeTemplate "log_info" "  - You can close Spotify when done" }}
+            echo ""
+            {{ includeTemplate "log_step" "Waiting for preferences file (timeout: 120s)..." }}
+
+            # Wait for prefs file to appear (check every 3 seconds, max 120 seconds)
+            WAIT_COUNT=0
+            MAX_WAIT=40  # 40 * 3 = 120 seconds
+
+            while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+                if [ -f "$HOME/.var/app/com.spotify.Client/config/spotify/prefs" ]; then
+                    PREFS_PATH="$HOME/.var/app/com.spotify.Client/config/spotify/prefs"
+                    {{ includeTemplate "log_success" "Preferences file detected!" }}
+                    spicetify config prefs_path "$PREFS_PATH"
+                    break
+                fi
+
+                sleep 3
+                WAIT_COUNT=$((WAIT_COUNT + 1))
+            done
+
+            # Check if we timed out
+            if [ -z "$PREFS_PATH" ]; then
+                {{ includeTemplate "log_warning" "Timeout waiting for preferences file" }}
+                {{ includeTemplate "log_info" "Complete Spotify setup, then run: chezmoi apply" }}
+            fi
+        else
+            {{ includeTemplate "log_info" "MANUAL STEPS:" }}
+            {{ includeTemplate "log_info" "  1. Launch Spotify: flatpak run com.spotify.Client" }}
+            {{ includeTemplate "log_info" "  2. Complete initial setup (login, etc.)" }}
+            {{ includeTemplate "log_info" "  3. Run: chezmoi apply" }}
+        fi
+    else
+        # Non-interactive mode - show manual instructions
+        {{ includeTemplate "log_info" "MANUAL ACTION REQUIRED:" }}
+        {{ includeTemplate "log_info" "  1. Launch Spotify: flatpak run com.spotify.Client" }}
+        {{ includeTemplate "log_info" "  2. Complete initial setup (login, etc.)" }}
+        {{ includeTemplate "log_info" "  3. Run: chezmoi apply" }}
+    fi
 fi
 
 # Set permissions (only for system install)
