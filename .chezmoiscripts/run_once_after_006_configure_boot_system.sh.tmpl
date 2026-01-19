@@ -31,6 +31,11 @@ trap 'echo "❌ [ERROR] Boot system configuration failed - check logs above" >&2
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "  SECTION 1: GPU Driver Configuration" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "" }}
+
+# Initialize variables for NVIDIA DKMS information (available in summary)
+KERNELS_BUILT_COUNT=0
+ALL_BUILT=""
 
 {{ includeTemplate "log_step" "Detect GPU vendor" }}
 
@@ -86,110 +91,28 @@ EOF
         {{ includeTemplate "log_info" "DKMS will use this configuration during package installation" }}
     fi
 
-    {{ includeTemplate "log_step" "Clean up conflicting NVIDIA packages" }}
+    {{ includeTemplate "log_step" "Verify NVIDIA DKMS modules built successfully" }}
 
-    # Remove conflicting/old NVIDIA packages that may interfere
-    CONFLICTING_PACKAGES=(
-        "nvidia"
-        "nvidia-lts"
-        "nvidia-dkms"
-    )
+    # DKMS modules are built automatically by pacman hooks when nvidia-open-dkms is installed
+    # This step only verifies that the automatic build succeeded
 
-    PACKAGES_TO_REMOVE=()
-    for pkg in "${CONFLICTING_PACKAGES[@]}"; do
-        if pacman -Q "$pkg" >/dev/null 2>&1; then
-            PACKAGES_TO_REMOVE+=("$pkg")
-        fi
-    done
+    CURRENT_KERNEL=$(uname -r)
 
-    if [ ${#PACKAGES_TO_REMOVE[@]} -gt 0 ]; then
-        {{ includeTemplate "log_info" "Removing ${#PACKAGES_TO_REMOVE[@]} conflicting package(s): ${PACKAGES_TO_REMOVE[*]}" }}
-
-        # Remove using strongest available method
-        if command -v paru >/dev/null 2>&1; then
-            paru -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
-        else
-            sudo pacman -Rdd --noconfirm "${PACKAGES_TO_REMOVE[@]}" || true
-        fi
-
-        {{ includeTemplate "log_success" "Conflict removal completed" }}
-    else
-        {{ includeTemplate "log_success" "No conflicting packages found" }}
+    # Check that modules are built for current kernel
+    if ! sudo dkms status nvidia | grep -q "$CURRENT_KERNEL.*installed"; then
+        {{ includeTemplate "log_error" "NVIDIA modules not built for current kernel $CURRENT_KERNEL" }}
+        {{ includeTemplate "log_info" "Pacman hooks should have built modules automatically during package installation" }}
+        {{ includeTemplate "log_info" "Check 'dkms status' for details" }}
+        {{ includeTemplate "log_info" "Reboot after package installation may be required" }}
+        exit 1
     fi
 
-    {{ includeTemplate "log_step" "Install NVIDIA DKMS packages and dependencies" }}
+    {{ includeTemplate "log_success" "NVIDIA modules verified for $CURRENT_KERNEL" }}
 
-    {{ includeTemplate "log_info" "Installing with pre-configured mkinitcpio settings..." }}
-
-    # Define required packages (order matters: dependencies first)
-    NVIDIA_PACKAGES=(
-        "dkms"                    # DKMS framework (must be installed first)
-        "linux-headers"           # Headers for current kernel
-        "linux-lts-headers"       # Headers for LTS kernel
-        "nvidia-open-dkms"        # NVIDIA kernel modules (depends on dkms + headers)
-        "nvidia-utils"            # NVIDIA userspace utilities
-        "nvidia-settings"         # NVIDIA configuration GUI
-        "lib32-nvidia-utils"      # 32-bit support (depends on nvidia-utils)
-        "libva-nvidia-driver"     # VA-API hardware video acceleration
-    )
-
-    # Check which packages need to be installed
-    PACKAGES_TO_INSTALL=()
-    for pkg in "${NVIDIA_PACKAGES[@]}"; do
-        if ! pacman -Q "$pkg" >/dev/null 2>&1; then
-            PACKAGES_TO_INSTALL+=("$pkg")
-        fi
-    done
-
-    # Install missing packages
-    if [ ${#PACKAGES_TO_INSTALL[@]} -gt 0 ]; then
-        {{ includeTemplate "log_info" "Installing ${#PACKAGES_TO_INSTALL[@]} package(s): ${PACKAGES_TO_INSTALL[*]}" }}
-
-        # Use paru if available (for AUR packages), otherwise use pacman
-        # --overwrite '*' handles file conflicts from removed packages
-        if command -v paru >/dev/null 2>&1; then
-            paru -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
-        else
-            sudo pacman -S --needed --noconfirm --overwrite '*' "${PACKAGES_TO_INSTALL[@]}"
-        fi
-
-        {{ includeTemplate "log_success" "NVIDIA packages installed successfully" }}
-    else
-        {{ includeTemplate "log_success" "All NVIDIA packages already installed" }}
-    fi
-
-    {{ includeTemplate "log_step" "Check DKMS module status" }}
-
-    # Check if DKMS modules are built for current kernel
-    KERNEL_VERSION=$(uname -r)
-    {{ includeTemplate "log_info" "Running kernel: $KERNEL_VERSION" }}
-
-    if sudo dkms status nvidia-open | grep -q "$KERNEL_VERSION"; then
-        {{ includeTemplate "log_success" "NVIDIA DKMS modules already built for current kernel" }}
-    else
-        {{ includeTemplate "log_info" "Building NVIDIA DKMS modules for current kernel..." }}
-
-        if sudo dkms autoinstall; then
-            {{ includeTemplate "log_success" "NVIDIA DKMS modules built successfully" }}
-        else
-            {{ includeTemplate "log_error" "DKMS module build failed - manual intervention required" }}
-            exit 1
-        fi
-    fi
-
-    {{ includeTemplate "log_step" "Verify DKMS module build" }}
-
-    # The mkinitcpio configuration was already set before package installation
-    # DKMS should have built modules correctly during nvidia-open-dkms installation
-
-    # Verify that DKMS built the modules
-    if sudo dkms status nvidia-open | grep -q "installed"; then
-        {{ includeTemplate "log_success" "NVIDIA DKMS modules built and installed correctly" }}
-    else
-        {{ includeTemplate "log_warning" "DKMS modules may need manual rebuild" }}
-        {{ includeTemplate "log_info" "Running DKMS autoinstall to ensure modules are built..." }}
-        sudo dkms autoinstall
-    fi
+    # Show all kernels with built modules
+    ALL_BUILT=$(sudo dkms status nvidia | grep installed | awk '{print $2}' | tr '\n' ' ' | xargs)
+    KERNELS_BUILT_COUNT=$(echo "$ALL_BUILT" | wc -w)
+    {{ includeTemplate "log_info" "NVIDIA modules built for $KERNELS_BUILT_COUNT kernel(s): $ALL_BUILT" }}
 
     {{ includeTemplate "log_step" "Enable NVIDIA power management services" }}
 
@@ -619,8 +542,7 @@ fi
 REBUILD_NEEDED=false
 
 if [ "$NVIDIA_DETECTED" = true ]; then
-    # Note: initramfs config was set BEFORE package installation, so DKMS already built correctly
-    # Only need to rebuild if kernel cmdline changed or if we updated config after packages installed
+    # Only need to rebuild if kernel cmdline changed
     if [ "${NVIDIA_CMDLINE_CHANGED:-false}" = true ]; then
         {{ includeTemplate "log_info" "NVIDIA kernel parameters changed - rebuild required" }}
         REBUILD_NEEDED=true
@@ -635,10 +557,12 @@ if [ "$PLYMOUTH_INSTALLED" = true ]; then
 fi
 
 if [ "$REBUILD_NEEDED" = true ]; then
-    {{ includeTemplate "log_step" "Rebuilding initramfs and UKI images (single consolidated rebuild)..." }}
-    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes at once (GPU + Plymouth)" }}
+    {{ includeTemplate "log_step" "Rebuilding initramfs and UKI images (consolidated rebuild)..." }}
 
-    # This is the ONLY mkinitcpio -P call - replaces 3 separate rebuilds
+    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes (GPU + Plymouth)" }}
+
+    # Rebuild all kernels (mkinitcpio includes NVIDIA modules if they're installed)
+    # DKMS modules were built automatically by pacman hooks during package installation
     sudo mkinitcpio -P
 
     {{ includeTemplate "log_success" "Initramfs and UKI images rebuilt successfully" }}
@@ -660,7 +584,7 @@ fi
 if [ "$NVIDIA_DETECTED" = true ]; then
     {{ includeTemplate "log_info" "GPU Configuration:" }}
     {{ includeTemplate "log_info" "  ✓ NVIDIA GPU detected and configured" }}
-    {{ includeTemplate "log_info" "  ✓ DKMS modules ready" }}
+    {{ includeTemplate "log_info" "  ✓ DKMS modules verified for $KERNELS_BUILT_COUNT kernel(s): $ALL_BUILT" }}
     {{ includeTemplate "log_info" "  ✓ Kernel parameters: nvidia-drm.modeset=1 nvidia-drm.fbdev=1" }}
     {{ includeTemplate "log_info" "  ✓ Power management services enabled (suspend/resume/hibernate)" }}
     {{ includeTemplate "log_info" "" }}
