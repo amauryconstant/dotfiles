@@ -53,3 +53,21 @@ globals:
     ip: "192.168.1.40"
     model: "Samsung M2070 Series"
     description: "Samsung M2070 Series Network Printer"
+
+  timeshift:
+    # Timeshift automatic snapshot retention policy
+    # Configure via: sudo timeshift-launcher (GUI) or automated setup
+    retention:
+      daily: 7      # Keep last 7 daily snapshots (1 week)
+      weekly: 4     # Keep last 4 weekly snapshots (1 month)
+      monthly: 6    # Keep last 6 monthly snapshots (6 months)
+      boot: 3       # Keep last 3 boot snapshots
+
+    # Automatic snapshot schedule (systemd timers)
+    # Note: Manual snapshots (via package-manager) are NOT affected by schedule
+    schedule:
+      daily: false          # Enable daily automated snapshots
+      weekly: false         # Enable weekly automated snapshots
+      monthly: false        # Enable monthly automated snapshots
+      boot: false           # Enable boot-time snapshots
+      hourly: false         # Enable hourly automated snapshots

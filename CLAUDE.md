@@ -594,13 +594,13 @@ chezmoi apply
    - 002-006: Setup tasks
 2. `run_onchange_before_*` (sync_packages) - runs on first install AND package changes
 3. File application (configs, templates)
-4. `run_once_after_*` (001-009, 999)
-   - 001-008: Configuration tasks
-   - 009: **Hyprland config validation** (post-install safety check)
+4. `run_once_after_*` (001-010, 999)
+   - 001-009: Configuration tasks
+   - 010: **Hyprland config validation** (post-install safety check)
    - 999: SSH remote switch
 5. `run_onchange_after_*` (hash-based, any order)
 
-### Current Scripts (21 total)
+### Current Scripts (22 total)
 
 **run_once_before_* (7)**:
 - 000: Preflight checks (sudo, git, network, pacman)
@@ -614,7 +614,7 @@ chezmoi apply
 **run_onchange_before_* (1)**:
 - sync_packages: Package sync (Arch + Flatpak) - runs on first install AND when packages.yaml changes
 
-**run_once_after_* (10)**:
+**run_once_after_* (11)**:
 - 001: CLI generation
 - 002: System services
 - 003: Network printer
@@ -623,7 +623,8 @@ chezmoi apply
 - 006: Boot system
 - 007: Default theme setup
 - 008: Darkman service
-- 009: Hyprland config validation (syntax, theme, autostart, terminal)
+- 009: Timeshift retention policy configuration
+- 010: Hyprland config validation (syntax, theme, autostart, terminal)
 - 999: SSH remote switch
 
 **run_onchange_after_* (4)**:
@@ -856,13 +857,17 @@ fi
 **Integration**: Automatic pre-sync snapshots via package-manager
 **Snapper**: Removed (not configured, Timeshift preferred)
 
-#### Recommended Retention Policy
+#### Automatic Retention Policy Configuration
 
-Configure via Timeshift GUI (`sudo timeshift-launcher`):
+**Default retention policy** (automatically configured via `run_once_after_009`):
 - **Daily**: 7 snapshots (1 week)
 - **Weekly**: 4 snapshots (1 month)
 - **Monthly**: 6 snapshots (6 months)
 - **Boot**: 3 snapshots
+
+**Configuration location**: `.chezmoidata/globals.yaml` (`timeshift:` section)
+
+**Manual override**: Edit globals.yaml and run `chezmoi apply`, or use Timeshift GUI (`sudo timeshift-launcher`)
 
 #### Disk Space Management
 
@@ -1002,7 +1007,7 @@ chezmoi status
 | `packages.yaml` | Package management (Arch + Flatpak) | `{{ .packages.* }}` |
 | `ai.yaml` | AI model configuration | `{{ .ai.* }}` |
 | `extensions.yaml` | VSCode extensions | `{{ .extensions.* }}` |
-| `globals.yaml` | Global env vars (XDG, apps, boot) | `{{ .globals.* }}` |
+| `globals.yaml` | Global env vars (XDG, apps, boot, timeshift) | `{{ .globals.* }}` |
 
 **Note**: All color theming now uses the theme system from `~/.config/themes/current/`
 

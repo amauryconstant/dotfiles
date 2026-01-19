@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+
+# Script: run_once_after_009_configure_timeshift_retention.sh.tmpl
+# Purpose: Configure Timeshift automatic snapshot retention policy
+# Requirements: Arch Linux, Timeshift (optional), yq
+
+{{ includeTemplate "log_start" "Configure Timeshift retention policy" }}
+
+set -euo pipefail
+
+# ============================================================================
+# SECTION 1: PREFLIGHT CHECKS
+# ============================================================================
+
+{{ includeTemplate "log_step" "Check if Timeshift is installed..." }}
+
+if ! command -v timeshift >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Timeshift not installed - skipping configuration" }}
+    {{ includeTemplate "log_info" "To enable backups: Install timeshift package and run 'chezmoi apply'" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_success" "Timeshift is installed" }}
+
+{{ includeTemplate "log_step" "Check Timeshift configuration file..." }}
+
+TIMESHIFT_CONFIG="/etc/timeshift/timeshift.json"
+
+if [ ! -f "$TIMESHIFT_CONFIG" ]; then
+    {{ includeTemplate "log_error" "Timeshift configuration not found: $TIMESHIFT_CONFIG" }}
+    {{ includeTemplate "log_info" "Run 'sudo timeshift-launcher' to create initial configuration" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "Timeshift configuration exists" }}
+
+# ============================================================================
+# SECTION 2: READ CURRENT CONFIGURATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Read current retention policy..." }}
+
+# Read current values
+CURRENT_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG")
+CURRENT_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG")
+CURRENT_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG")
+CURRENT_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG")
+
+{{ includeTemplate "log_info" "Current retention: daily=$CURRENT_DAILY weekly=$CURRENT_WEEKLY monthly=$CURRENT_MONTHLY boot=$CURRENT_BOOT" }}
+
+# Read desired values from globals.yaml
+DESIRED_DAILY="{{ .globals.timeshift.retention.daily }}"
+DESIRED_WEEKLY="{{ .globals.timeshift.retention.weekly }}"
+DESIRED_MONTHLY="{{ .globals.timeshift.retention.monthly }}"
+DESIRED_BOOT="{{ .globals.timeshift.retention.boot }}"
+
+{{ includeTemplate "log_info" "Desired retention: daily=$DESIRED_DAILY weekly=$DESIRED_WEEKLY monthly=$DESIRED_MONTHLY boot=$DESIRED_BOOT" }}
+
+# ============================================================================
+# SECTION 3: CHECK IF UPDATE NEEDED
+# ============================================================================
+
+{{ includeTemplate "log_step" "Check if configuration update needed..." }}
+
+if [ "$CURRENT_DAILY" = "$DESIRED_DAILY" ] && \
+   [ "$CURRENT_WEEKLY" = "$DESIRED_WEEKLY" ] && \
+   [ "$CURRENT_MONTHLY" = "$DESIRED_MONTHLY" ] && \
+   [ "$CURRENT_BOOT" = "$DESIRED_BOOT" ]; then
+    {{ includeTemplate "log_success" "Retention policy already configured correctly" }}
+    {{ includeTemplate "log_complete" "Timeshift retention configuration complete" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_info" "Configuration update required" }}
+
+# ============================================================================
+# SECTION 4: BACKUP CURRENT CONFIGURATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Create backup of current configuration..." }}
+
+BACKUP_FILE="${TIMESHIFT_CONFIG}.backup"
+
+if [ ! -f "$BACKUP_FILE" ]; then
+    sudo cp "$TIMESHIFT_CONFIG" "$BACKUP_FILE"
+    {{ includeTemplate "log_success" "Backup created: $BACKUP_FILE" }}
+else
+    {{ includeTemplate "log_info" "Backup already exists: $BACKUP_FILE" }}
+fi
+
+# ============================================================================
+# SECTION 5: UPDATE RETENTION POLICY
+# ============================================================================
+
+{{ includeTemplate "log_step" "Update retention policy..." }}
+
+# Update retention counts (using yq v4 env() function)
+# Note: Timeshift expects string values, not numbers
+DAILY="$DESIRED_DAILY" sudo -E yq eval '.count_daily = strenv(DAILY)' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+WEEKLY="$DESIRED_WEEKLY" sudo -E yq eval '.count_weekly = strenv(WEEKLY)' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+MONTHLY="$DESIRED_MONTHLY" sudo -E yq eval '.count_monthly = strenv(MONTHLY)' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+BOOT="$DESIRED_BOOT" sudo -E yq eval '.count_boot = strenv(BOOT)' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+{{ includeTemplate "log_success" "Retention policy updated" }}
+
+# ============================================================================
+# SECTION 6: UPDATE SCHEDULE FLAGS
+# ============================================================================
+
+{{ includeTemplate "log_step" "Update snapshot schedule flags..." }}
+
+{{- $schedule_daily := .globals.timeshift.schedule.daily | ternary "true" "false" }}
+{{- $schedule_weekly := .globals.timeshift.schedule.weekly | ternary "true" "false" }}
+{{- $schedule_monthly := .globals.timeshift.schedule.monthly | ternary "true" "false" }}
+{{- $schedule_boot := .globals.timeshift.schedule.boot | ternary "true" "false" }}
+{{- $schedule_hourly := .globals.timeshift.schedule.hourly | ternary "true" "false" }}
+
+ENABLED="{{ $schedule_daily }}" sudo -E yq eval \
+    '.schedule_daily = (env(ENABLED) == "true")' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+ENABLED="{{ $schedule_weekly }}" sudo -E yq eval \
+    '.schedule_weekly = (env(ENABLED) == "true")' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+ENABLED="{{ $schedule_monthly }}" sudo -E yq eval \
+    '.schedule_monthly = (env(ENABLED) == "true")' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+ENABLED="{{ $schedule_boot }}" sudo -E yq eval \
+    '.schedule_boot = (env(ENABLED) == "true")' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+ENABLED="{{ $schedule_hourly }}" sudo -E yq eval \
+    '.schedule_hourly = (env(ENABLED) == "true")' \
+    -i -o=json "$TIMESHIFT_CONFIG"
+
+{{ includeTemplate "log_success" "Schedule flags updated" }}
+
+# ============================================================================
+# SECTION 7: VALIDATE CONFIGURATION
+# ============================================================================
+
+{{ includeTemplate "log_step" "Validate configuration changes..." }}
+
+# Read back values to verify
+VERIFY_DAILY=$(sudo yq eval '.count_daily' "$TIMESHIFT_CONFIG")
+VERIFY_WEEKLY=$(sudo yq eval '.count_weekly' "$TIMESHIFT_CONFIG")
+VERIFY_MONTHLY=$(sudo yq eval '.count_monthly' "$TIMESHIFT_CONFIG")
+VERIFY_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG")
+
+# Validate retention counts
+VALIDATION_FAILED=false
+
+if [ "$VERIFY_DAILY" != "$DESIRED_DAILY" ]; then
+    {{ includeTemplate "log_error" "Daily retention validation failed: expected $DESIRED_DAILY, got $VERIFY_DAILY" }}
+    VALIDATION_FAILED=true
+fi
+
+if [ "$VERIFY_WEEKLY" != "$DESIRED_WEEKLY" ]; then
+    {{ includeTemplate "log_error" "Weekly retention validation failed: expected $DESIRED_WEEKLY, got $VERIFY_WEEKLY" }}
+    VALIDATION_FAILED=true
+fi
+
+if [ "$VERIFY_MONTHLY" != "$DESIRED_MONTHLY" ]; then
+    {{ includeTemplate "log_error" "Monthly retention validation failed: expected $DESIRED_MONTHLY, got $VERIFY_MONTHLY" }}
+    VALIDATION_FAILED=true
+fi
+
+if [ "$VERIFY_BOOT" != "$DESIRED_BOOT" ]; then
+    {{ includeTemplate "log_error" "Boot retention validation failed: expected $DESIRED_BOOT, got $VERIFY_BOOT" }}
+    VALIDATION_FAILED=true
+fi
+
+# If validation failed, restore backup
+if [ "$VALIDATION_FAILED" = true ]; then
+    {{ includeTemplate "log_error" "Configuration validation failed - restoring backup" }}
+    sudo cp "$BACKUP_FILE" "$TIMESHIFT_CONFIG"
+    {{ includeTemplate "log_info" "Backup restored from $BACKUP_FILE" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "Configuration validated successfully" }}
+
+# ============================================================================
+# SECTION 8: CHECK SNAPSHOT COUNT
+# ============================================================================
+
+{{ includeTemplate "log_step" "Check current snapshot count..." }}
+
+# Count current snapshots
+SNAPSHOT_COUNT=$(sudo timeshift --list --scripted 2>/dev/null | grep -c "^>" || true)
+# grep -c returns 0 if no matches, so ensure we have a valid number
+SNAPSHOT_COUNT=${SNAPSHOT_COUNT:-0}
+
+{{ includeTemplate "log_info" "Current snapshot count: $SNAPSHOT_COUNT" }}
+
+# Calculate total retention limit
+TOTAL_RETENTION=$((DESIRED_DAILY + DESIRED_WEEKLY + DESIRED_MONTHLY + DESIRED_BOOT))
+
+if [ "$SNAPSHOT_COUNT" -gt "$TOTAL_RETENTION" ]; then
+    EXCESS_COUNT=$((SNAPSHOT_COUNT - TOTAL_RETENTION))
+    {{ includeTemplate "log_warning" "Snapshots exceed retention limit by $EXCESS_COUNT" }}
+    {{ includeTemplate "log_info" "Timeshift will auto-delete oldest snapshots on next snapshot creation" }}
+    {{ includeTemplate "log_info" "To manually trigger cleanup: sudo timeshift --delete-all" }}
+else
+    {{ includeTemplate "log_success" "Snapshot count within retention limits" }}
+fi
+
+# ============================================================================
+# FINAL SUMMARY
+# ============================================================================
+
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  Timeshift Retention Policy Configuration" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "Retention Policy (automatic cleanup on next snapshot):" }}
+{{ includeTemplate "log_info" "  Daily:   $DESIRED_DAILY snapshots ($DESIRED_DAILY days)" }}
+{{ includeTemplate "log_info" "  Weekly:  $DESIRED_WEEKLY snapshots ($DESIRED_WEEKLY weeks)" }}
+{{ includeTemplate "log_info" "  Monthly: $DESIRED_MONTHLY snapshots ($DESIRED_MONTHLY months)" }}
+{{ includeTemplate "log_info" "  Boot:    $DESIRED_BOOT snapshots" }}
+{{ includeTemplate "log_info" "" }}
+
+{{- if or .globals.timeshift.schedule.daily .globals.timeshift.schedule.weekly .globals.timeshift.schedule.monthly .globals.timeshift.schedule.boot .globals.timeshift.schedule.hourly }}
+{{ includeTemplate "log_info" "Automated Snapshots (systemd timers):" }}
+{{- if .globals.timeshift.schedule.daily }}
+{{ includeTemplate "log_info" "  ✓ Daily snapshots enabled" }}
+{{- end }}
+{{- if .globals.timeshift.schedule.weekly }}
+{{ includeTemplate "log_info" "  ✓ Weekly snapshots enabled" }}
+{{- end }}
+{{- if .globals.timeshift.schedule.monthly }}
+{{ includeTemplate "log_info" "  ✓ Monthly snapshots enabled" }}
+{{- end }}
+{{- if .globals.timeshift.schedule.boot }}
+{{ includeTemplate "log_info" "  ✓ Boot snapshots enabled" }}
+{{- end }}
+{{- if .globals.timeshift.schedule.hourly }}
+{{ includeTemplate "log_info" "  ✓ Hourly snapshots enabled" }}
+{{- end }}
+{{ includeTemplate "log_info" "" }}
+{{- else }}
+{{ includeTemplate "log_info" "Automated Snapshots: Disabled (manual snapshots only)" }}
+{{ includeTemplate "log_info" "  Manual snapshots via: package-manager sync (interactive)" }}
+{{ includeTemplate "log_info" "" }}
+{{- end }}
+
+{{ includeTemplate "log_info" "Current Status:" }}
+{{ includeTemplate "log_info" "  Snapshots: $SNAPSHOT_COUNT total" }}
+{{ includeTemplate "log_info" "  Limit:     $TOTAL_RETENTION total" }}
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "Next Steps:" }}
+{{ includeTemplate "log_info" "  • Retention policy active (oldest snapshots auto-deleted)" }}
+{{ includeTemplate "log_info" "  • Create snapshot: sudo timeshift --create --comments 'description'" }}
+{{ includeTemplate "log_info" "  • List snapshots: sudo timeshift --list" }}
+{{ includeTemplate "log_info" "  • Restore backup: sudo timeshift --restore" }}
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "Configuration Location:" }}
+{{ includeTemplate "log_info" "  Config:  $TIMESHIFT_CONFIG" }}
+{{ includeTemplate "log_info" "  Backup:  $BACKUP_FILE" }}
+{{ includeTemplate "log_info" "  Dotfiles: ~/.local/share/chezmoi/.chezmoidata/globals.yaml" }}
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "" }}
+
+{{ includeTemplate "log_complete" "Timeshift retention policy configured successfully" }}
