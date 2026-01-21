@@ -8,6 +8,7 @@
 {{- $provider := dict -}}
 {{- $_ := set $provider "zhipuai" (dict "api" "https://api.z.ai/api/coding/paas/v4") -}}
 {{- $_ := set $config "provider" $provider -}}
+{{- $zai_key := joinPath .chezmoi.sourceDir "private_dot_keys" "encrypted_private_zai-opencode-key.txt.age" | include | decrypt | trim -}}
 
 {{- /* MCP Servers */ -}}
 {{- $mcp := dict -}}
@@ -26,6 +27,35 @@
 {{- $_ := set $mcp "mermaid" (dict
   "type" "local"
   "command" (list "bunx" "-y" "mcp-mermaid")
+) -}}
+{{- $_ := set $mcp "zai-mcp-server" (dict
+  "type" "local"
+  "command" (list "npx" "-y" "@z_ai/mcp-server")
+  "environment" (dict
+    "Z_AI_API_KEY" $zai_key
+    "Z_AI_MODE" "ZAI"
+  )
+) -}}
+{{- $_ := set $mcp "zai-web-reader" (dict
+  "type" "remote"
+  "url" "https://api.z.ai/api/mcp/web_reader/mcp"
+  "headers" (dict
+    "Authorization" (printf "Bearer %s" $zai_key)
+  )
+) -}}
+{{- $_ := set $mcp "zai-web-search" (dict
+  "type" "remote"
+  "url" "https://api.z.ai/api/mcp/web_search_prime/mcp"
+  "headers" (dict
+    "Authorization" (printf "Bearer %s" $zai_key)
+  )
+) -}}
+{{- $_ := set $mcp "zai-zread" (dict
+  "type" "remote"
+  "url" "https://api.z.ai/api/mcp/zread/mcp"
+  "headers" (dict
+    "Authorization" (printf "Bearer %s" $zai_key)
+  )
 ) -}}
 {{- $_ := set $config "mcp" $mcp -}}
 
