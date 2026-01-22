@@ -90,24 +90,26 @@ MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 EOF
         sudo chmod 644 "$NVIDIA_CONF"
         {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
-        {{ includeTemplate "log_info" "DKMS will use this configuration during package installation" }}
+        {{ includeTemplate "log_info" "NVIDIA kernel modules loaded via extramodules" }}
     fi
 
-    {{ includeTemplate "log_step" "Verify NVIDIA DKMS modules built successfully" }}
+    {{ includeTemplate "log_step" "Verify NVIDIA drivers installed" }}
 
-    # Check DKMS status
-    DKMS_STATUS=$(/usr/bin/dkms status nvidia 2>/dev/null || true)
+    # Check if NVIDIA packages are installed
+    NVIDIA_PACKAGES=("nvidia-utils" "nvidia-open" "nvidia-open-lts")
+    ALL_INSTALLED=true
 
-    if echo "$DKMS_STATUS" | grep -q "installed"; then
-        {{ includeTemplate "log_success" "NVIDIA DKMS modules installed" }}
-        {{ includeTemplate "log_info" "$DKMS_STATUS" }}
+    for pkg in "${NVIDIA_PACKAGES[@]}"; do
+        if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+            {{ includeTemplate "log_error" "Package not installed: $pkg" }}
+            ALL_INSTALLED=false
+        fi
+    done
+
+    if [ "$ALL_INSTALLED" = true ]; then
+        {{ includeTemplate "log_success" "All NVIDIA packages installed" }}
     else
-        {{ includeTemplate "log_error" "NVIDIA DKMS modules not built" }}
-        {{ includeTemplate "log_info" "Status: $DKMS_STATUS" }}
-        {{ includeTemplate "log_info" "" }}
-        {{ includeTemplate "log_info" "Manual build: sudo dkms autoinstall" }}
-        {{ includeTemplate "log_info" "If GCC errors occur, try: sudo dkms autoinstall -j1" }}
-        {{ includeTemplate "log_info" "See CLAUDE.md 'DKMS Troubleshooting' for details" }}
+        {{ includeTemplate "log_error" "Some NVIDIA packages missing" }}
         exit 1
     fi
 

@@ -518,7 +518,7 @@ find . -name "pattern" -type f
 **Auto-detection**: NVIDIA driver selection based on GPU generation
 
 **Architecture support**:
-- **Modern** (nvidia-open-dkms): Turing+ (GTX 16xx, RTX 20xx/30xx/40xx)
+- **Modern** (nvidia-open): Turing+ (GTX 16xx, RTX 20xx/30xx/40xx)
 - **Legacy** (nvidia-580xx-dkms): Pascal/Maxwell (GTX 9xx/10xx)
 
 **Detection logic** (`.chezmoi.yaml.tmpl`):
@@ -528,7 +528,7 @@ find . -name "pattern" -type f
 4. Default: modern (safe for new systems)
 
 **Package modules** (`packages.yaml`):
-- `graphics_drivers_modern`: nvidia-open-dkms, nvidia-utils (enabled by default)
+- `graphics_drivers_modern`: nvidia-open, nvidia-open-lts, nvidia-utils (enabled by default)
 - `graphics_drivers_legacy`: nvidia-580xx-dkms, nvidia-580xx-utils (disabled by default)
 - **Dynamic selection**: Sync script enables correct module based on `.nvidiaDriverType`
 
@@ -563,6 +563,9 @@ chezmoi data | jaq -r '.nvidiaGpuDetected'
 
 # Preview which packages will be installed
 chezmoi execute-template < .chezmoiscripts/run_onchange_before_sync_packages.sh.tmpl | grep -A5 "NVIDIA"
+
+# Check installed NVIDIA packages
+pacman -Q nvidia-open nvidia-open-lts nvidia-utils
 
 # Manual fallback
 export NVIDIA_DRIVER_OVERRIDE=legacy  # or modern

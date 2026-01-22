@@ -34,10 +34,9 @@ packages:
       post_install_hook: ""
       packages:
         - intel-ucode          # Intel CPU microcode updates
-        - dkms                 # Dynamic kernel module support
-        - linux-headers        # Kernel headers for DKMS (main kernel)
-        - linux-lts-headers    # Kernel headers for DKMS (LTS kernel)
-        - nvidia-open-dkms     # NVIDIA open-source kernel modules
+        - dkms                 # Dynamic kernel module support (for other DKMS packages)
+        - nvidia-open          # NVIDIA open-source kernel modules (pre-built)
+        - nvidia-open-lts      # NVIDIA open-source kernel modules (LTS kernel)
         - nvidia-utils         # NVIDIA utilities
         - nvidia-settings      # NVIDIA driver configuration GUI
         - lib32-nvidia-utils   # 32-bit NVIDIA utilities (for gaming)

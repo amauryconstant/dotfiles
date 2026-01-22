@@ -3,7 +3,7 @@
 {{ $personalEmail := promptStringOnce . "personalEmail" "What is your personal email address? " -}}
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
 {{ $ovhServerIP := promptStringOnce . "ovhServerIP" "What is the IP v4 of your OVH server? " -}}
-{{ $ovhServerPort := promptStringOnce . "ovhServerPort" "What is ssh port of your OVH server? " -}}
+{{ $ovhServerPort := promptIntOnce . "ovhServerPort" "What is ssh port of your OVH server? " -}}
 {{ $terminalFont := promptChoiceOnce . "terminalFont" "Terminal font? " (list "FiraCode Nerd Font" "Iosevka Nerd Font" "Geist Mono Nerd Font") "FiraCode Nerd Font" -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
@@ -19,11 +19,11 @@
 {{-   $nvidiaDriverType = env "NVIDIA_DRIVER_OVERRIDE" -}}
 {{- else -}}
 {{-   $lspciOutput := output "lspci" | lower -}}
-{{-   if regexMatch "nvidia.*\\[(gtx|rtx|titan|quadro|tesla|geforce)" $lspciOutput -}}
+{{-   if regexMatch "nvidia.*\\[\\s*(gtx|rtx|titan|quadro|tesla|geforce)" $lspciOutput -}}
 {{-     if regexMatch "gtx (9[0-9]{2}|10[0-9]{2})|titan (x|xp|z)\\b|quadro (m|p)[0-9]" $lspciOutput -}}
 {{-       $nvidiaDriverType = "legacy" -}}
-{{-       $nvidiaGpuName = regexFind "nvidia.*\\[.*\\]" $lspciOutput -}}
 {{-     end -}}
+{{-     $nvidiaGpuName = regexFind "nvidia.*\\[.*\\]" $lspciOutput -}}
 {{-   end -}}
 {{- end -}}
 

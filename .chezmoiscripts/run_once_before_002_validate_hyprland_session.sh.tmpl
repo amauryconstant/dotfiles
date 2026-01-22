@@ -51,7 +51,7 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
     # Check for driver migration (if NVIDIA GPU detected)
     {{ includeTemplate "log_step" "Checking for driver migration..." }}
     CURRENT_DRIVER=""
-    if pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
+    if pacman -Q nvidia-open >/dev/null 2>&1; then
         CURRENT_DRIVER="modern"
     elif pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
         CURRENT_DRIVER="legacy"
@@ -72,14 +72,13 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         echo ""
         echo "  This migration will:"
         if [ "$CURRENT_DRIVER" = "modern" ]; then
-            echo "    1. Remove nvidia-open-dkms, nvidia-utils, lib32-nvidia-utils"
+            echo "    1. Remove nvidia-open, nvidia-open-lts, nvidia-utils, lib32-nvidia-utils"
             echo "    2. Install nvidia-580xx-dkms, nvidia-580xx-utils, lib32-nvidia-580xx-utils"
         else
             echo "    1. Remove nvidia-580xx-dkms, nvidia-580xx-utils, lib32-nvidia-580xx-utils"
-            echo "    2. Install nvidia-open-dkms, nvidia-utils, lib32-nvidia-utils"
+            echo "    2. Install nvidia-open, nvidia-open-lts, nvidia-utils, lib32-nvidia-utils"
         fi
-        echo "    3. Rebuild kernel modules via DKMS"
-        echo "    4. Require reboot to activate new drivers"
+        echo "    3. Require reboot to activate new drivers"
         echo ""
         echo "  Safety recommendations:"
         echo "    • Ensure you have alternate access (SSH/TTY)"
