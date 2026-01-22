@@ -368,7 +368,7 @@ notify "Update" "Complete"
 
 ## Nerd Fonts Glyph Usage
 
-**Resource**: `.resources/glyphnames.json` (10,799 glyphs from Nerd Fonts v3.4.0)
+**Resource**: `resources/glyphnames.json` (10,799 glyphs from Nerd Fonts v3.4.0)
 **Tool**: `jaq` (Rust-based jq alternative, aliased to jq)
 
 ### Finding Glyphs with jaq
@@ -377,7 +377,7 @@ notify "Update" "Complete"
 ```bash
 # Find monitor-related glyphs
 jaq -r 'to_entries[] | select(.key | test("monitor"; "i")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/.resources/glyphnames.json
+  ~/.local/share/chezmoi/resources/glyphnames.json
 
 # Output: md-monitor: 󰍹
 ```
@@ -386,24 +386,24 @@ jaq -r 'to_entries[] | select(.key | test("monitor"; "i")) | "\(.key): \(.value.
 ```bash
 # Material Design icons only
 jaq -r 'to_entries[] | select(.key | startswith("md-")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/.resources/glyphnames.json | head -20
+  ~/.local/share/chezmoi/resources/glyphnames.json | head -20
 
 # Codicons only
 jaq -r 'to_entries[] | select(.key | startswith("cod-")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/.resources/glyphnames.json | head -20
+  ~/.local/share/chezmoi/resources/glyphnames.json | head -20
 ```
 
 **Search by keyword** (finds related concepts):
 ```bash
 # Find all "power" related glyphs
 jaq -r 'to_entries[] | select(.key | test("power|battery|energy"; "i")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/.resources/glyphnames.json
+  ~/.local/share/chezmoi/resources/glyphnames.json
 ```
 
 **Get specific glyph**:
 ```bash
 # Get the actual character for a known name
-jaq -r '."md-monitor".char' ~/.local/share/chezmoi/.resources/glyphnames.json
+jaq -r '."md-monitor".char' ~/.local/share/chezmoi/resources/glyphnames.json
 # Output: 󰍹
 ```
 
@@ -447,14 +447,14 @@ md-check, md-close, md-arrow-*, md-chevron-*
 
 ```bash
 # List all available icon prefixes
-jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/.resources/glyphnames.json | sort -u
+jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/resources/glyphnames.json | sort -u
 
 # Count icons by prefix
-jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/.resources/glyphnames.json | sort | uniq -c | sort -rn
+jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/resources/glyphnames.json | sort | uniq -c | sort -rn
 
 # Interactive search (requires fzf)
 jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
-  ~/.local/share/chezmoi/.resources/glyphnames.json | \
+  ~/.local/share/chezmoi/resources/glyphnames.json | \
   fzf --preview 'echo {2}' --preview-window=up:1
 ```
 
@@ -473,7 +473,7 @@ jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
 - Static script? → `script.sh` in lib/
 
 **Icon selection**:
-- Search `.resources/glyphnames.json` with jaq (aliased to jq)
+- Search `resources/glyphnames.json` with jaq (aliased to jq)
 - Prefer Material Design (md-) icons
 - Reference `.resources/MENU_ICONS.md` for consistency
 - Use jaq queries from "Nerd Fonts Glyph Usage" section above

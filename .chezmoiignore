@@ -9,6 +9,6 @@
 archives/
 
 # Resources and Documentation
-.resources/
+resources/
 **/**.md
 LICENSE

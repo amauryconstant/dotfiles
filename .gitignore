@@ -7,3 +7,5 @@
 !.claude/commands/*
 !.claude/skills/*
 !.claude/skills/**/SKILL.md
+
+!resources/*.md
