@@ -73,8 +73,9 @@ packages:
         - smartmontools    # SMART disk health monitoring
         - btrfs-progs      # Btrfs filesystem utilities
         - timeshift        # System backup and restore (Btrfs snapshots)
+        - timeshift-systemd-timer  # Systemd timer for Timeshift scheduling (AUR)
         - sof-firmware     # Intel audio DSP firmware
-        - ventoy
+        - ventoy-bin
 
     network:
       enabled: true

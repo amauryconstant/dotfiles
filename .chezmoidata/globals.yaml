@@ -67,7 +67,7 @@ globals:
     # Note: Manual snapshots (via package-manager) are NOT affected by schedule
     schedule:
       daily: false          # Enable daily automated snapshots
-      weekly: false         # Enable weekly automated snapshots
+      weekly: true          # Enable weekly automated snapshots
       monthly: false        # Enable monthly automated snapshots
       boot: false           # Enable boot-time snapshots
       hourly: false         # Enable hourly automated snapshots

@@ -897,6 +897,47 @@ sudo timeshift --restore
 
 **Implementation**: `backup-manager.sh` (line 25-27) auto-detects Timeshift if installed.
 
+#### Scheduled Snapshots (Systemd Timers)
+
+**Package**: `timeshift-systemd-timer` (AUR)
+
+**Timers**:
+- `timeshift-hourly.timer`: Checks for due snapshots every hour
+- `timeshift-boot.timer`: Creates snapshot on system boot (optional)
+
+**How it works**:
+1. Timer triggers `/usr/bin/timeshift --check --scripted`
+2. Timeshift reads `schedule_*` flags from `/etc/timeshift/timeshift.json`
+3. Snapshots created only when due (daily/weekly/monthly logic handled by Timeshift)
+
+**Configuration**: Edit `globals.yaml` schedule flags (requires `chezmoi apply` + manual timer restart for `run_once` scripts)
+
+**Management**:
+```bash
+# View active timers
+systemctl list-timers timeshift-*
+
+# Check timer status
+systemctl status timeshift-hourly.timer
+
+# View snapshot logs
+journalctl -u timeshift-hourly.service -n 50
+
+# Manual trigger
+sudo systemctl start timeshift-hourly.service
+
+# Disable scheduling
+sudo systemctl disable --now timeshift-hourly.timer
+```
+
+**Note**: Changing `globals.yaml` schedule flags requires manual timer management (run_once scripts don't re-trigger):
+```bash
+# After changing globals.yaml schedule flags:
+sudo systemctl restart timeshift-hourly.timer  # If enabling new schedules
+# OR
+sudo systemctl disable --now timeshift-hourly.timer  # If disabling all schedules
+```
+
 ### Enhanced Theme Switching
 
 **Extended app coverage** beyond core apps (terminal, waybar, dunst, wofi):

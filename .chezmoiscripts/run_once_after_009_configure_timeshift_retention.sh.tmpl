@@ -133,11 +133,48 @@ DESIRED_BOOT="{{ .globals.timeshift.retention.boot }}"
 
 {{ includeTemplate "log_step" "Check if configuration update needed..." }}
 
-if [ "$CURRENT_DAILY" = "$DESIRED_DAILY" ] && \
-   [ "$CURRENT_WEEKLY" = "$DESIRED_WEEKLY" ] && \
-   [ "$CURRENT_MONTHLY" = "$DESIRED_MONTHLY" ] && \
-   [ "$CURRENT_BOOT" = "$DESIRED_BOOT" ]; then
-    {{ includeTemplate "log_success" "Retention policy already configured correctly" }}
+# Read current schedule flags
+CURRENT_SCHEDULE_DAILY=$(sudo yq eval '.schedule_daily' "$TIMESHIFT_CONFIG")
+CURRENT_SCHEDULE_WEEKLY=$(sudo yq eval '.schedule_weekly' "$TIMESHIFT_CONFIG")
+CURRENT_SCHEDULE_MONTHLY=$(sudo yq eval '.schedule_monthly' "$TIMESHIFT_CONFIG")
+CURRENT_SCHEDULE_BOOT=$(sudo yq eval '.schedule_boot' "$TIMESHIFT_CONFIG")
+CURRENT_SCHEDULE_HOURLY=$(sudo yq eval '.schedule_hourly' "$TIMESHIFT_CONFIG")
+
+# Define desired schedule flags
+{{- $schedule_daily := .globals.timeshift.schedule.daily | ternary "true" "false" }}
+{{- $schedule_weekly := .globals.timeshift.schedule.weekly | ternary "true" "false" }}
+{{- $schedule_monthly := .globals.timeshift.schedule.monthly | ternary "true" "false" }}
+{{- $schedule_boot := .globals.timeshift.schedule.boot | ternary "true" "false" }}
+{{- $schedule_hourly := .globals.timeshift.schedule.hourly | ternary "true" "false" }}
+
+DESIRED_SCHEDULE_DAILY="{{ $schedule_daily }}"
+DESIRED_SCHEDULE_WEEKLY="{{ $schedule_weekly }}"
+DESIRED_SCHEDULE_MONTHLY="{{ $schedule_monthly }}"
+DESIRED_SCHEDULE_BOOT="{{ $schedule_boot }}"
+DESIRED_SCHEDULE_HOURLY="{{ $schedule_hourly }}"
+
+# Check if retention counts match
+RETENTION_MATCHES=true
+if [ "$CURRENT_DAILY" != "$DESIRED_DAILY" ] || \
+   [ "$CURRENT_WEEKLY" != "$DESIRED_WEEKLY" ] || \
+   [ "$CURRENT_MONTHLY" != "$DESIRED_MONTHLY" ] || \
+   [ "$CURRENT_BOOT" != "$DESIRED_BOOT" ]; then
+    RETENTION_MATCHES=false
+fi
+
+# Check if schedule flags match
+SCHEDULE_MATCHES=true
+if [ "$CURRENT_SCHEDULE_DAILY" != "$DESIRED_SCHEDULE_DAILY" ] || \
+   [ "$CURRENT_SCHEDULE_WEEKLY" != "$DESIRED_SCHEDULE_WEEKLY" ] || \
+   [ "$CURRENT_SCHEDULE_MONTHLY" != "$DESIRED_SCHEDULE_MONTHLY" ] || \
+   [ "$CURRENT_SCHEDULE_BOOT" != "$DESIRED_SCHEDULE_BOOT" ] || \
+   [ "$CURRENT_SCHEDULE_HOURLY" != "$DESIRED_SCHEDULE_HOURLY" ]; then
+    SCHEDULE_MATCHES=false
+fi
+
+# Exit early only if both retention and schedule are correct
+if [ "$RETENTION_MATCHES" = true ] && [ "$SCHEDULE_MATCHES" = true ]; then
+    {{ includeTemplate "log_success" "Retention policy and schedule already configured correctly" }}
     {{ includeTemplate "log_complete" "Timeshift retention configuration complete" }}
     exit 0
 fi
@@ -187,29 +224,23 @@ sudo BOOT="$DESIRED_BOOT" yq eval '.count_boot = strenv(BOOT)' \
 
 {{ includeTemplate "log_step" "Update snapshot schedule flags..." }}
 
-{{- $schedule_daily := .globals.timeshift.schedule.daily | ternary "true" "false" }}
-{{- $schedule_weekly := .globals.timeshift.schedule.weekly | ternary "true" "false" }}
-{{- $schedule_monthly := .globals.timeshift.schedule.monthly | ternary "true" "false" }}
-{{- $schedule_boot := .globals.timeshift.schedule.boot | ternary "true" "false" }}
-{{- $schedule_hourly := .globals.timeshift.schedule.hourly | ternary "true" "false" }}
-
-sudo ENABLED="{{ $schedule_daily }}" yq eval \
+sudo ENABLED="$DESIRED_SCHEDULE_DAILY" yq eval \
     '.schedule_daily = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-sudo ENABLED="{{ $schedule_weekly }}" yq eval \
+sudo ENABLED="$DESIRED_SCHEDULE_WEEKLY" yq eval \
     '.schedule_weekly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-sudo ENABLED="{{ $schedule_monthly }}" yq eval \
+sudo ENABLED="$DESIRED_SCHEDULE_MONTHLY" yq eval \
     '.schedule_monthly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-sudo ENABLED="{{ $schedule_boot }}" yq eval \
+sudo ENABLED="$DESIRED_SCHEDULE_BOOT" yq eval \
     '.schedule_boot = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
-sudo ENABLED="{{ $schedule_hourly }}" yq eval \
+sudo ENABLED="$DESIRED_SCHEDULE_HOURLY" yq eval \
     '.schedule_hourly = (env(ENABLED) == "true")' \
     -i -o=json "$TIMESHIFT_CONFIG"
 
@@ -346,4 +377,102 @@ fi
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "" }}
 
-{{ includeTemplate "log_complete" "Timeshift retention policy configured successfully" }}
+# ============================================================================
+# SECTION 9: CONFIGURE SYSTEMD TIMERS (OPTIONAL)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Checking for timeshift-systemd-timer package..." }}
+
+if ! systemctl list-unit-files timeshift-hourly.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "timeshift-systemd-timer not installed - automated scheduling unavailable" }}
+    {{ includeTemplate "log_info" "To enable scheduled snapshots:" }}
+    {{ includeTemplate "log_info" "  1. Add 'timeshift-systemd-timer' to packages.yaml" }}
+    {{ includeTemplate "log_info" "  2. Run: package-manager sync" }}
+    {{ includeTemplate "log_info" "  3. Re-run: chezmoi apply" }}
+    {{ includeTemplate "log_complete" "Timeshift retention policy configured successfully" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_success" "timeshift-systemd-timer package detected" }}
+
+{{- $scheduleDaily := .globals.timeshift.schedule.daily }}
+{{- $scheduleWeekly := .globals.timeshift.schedule.weekly }}
+{{- $scheduleMonthly := .globals.timeshift.schedule.monthly }}
+{{- $scheduleHourly := .globals.timeshift.schedule.hourly }}
+{{- $scheduleBoot := .globals.timeshift.schedule.boot }}
+{{- $anyScheduleEnabled := or $scheduleDaily $scheduleWeekly $scheduleMonthly $scheduleHourly }}
+
+{{ includeTemplate "log_step" "Reading schedule configuration from globals.yaml..." }}
+{{ includeTemplate "log_info" (printf "Hourly: %v, Daily: %v, Weekly: %v, Monthly: %v, Boot: %v" $scheduleHourly $scheduleDaily $scheduleWeekly $scheduleMonthly $scheduleBoot) }}
+
+# Configure hourly timer (if any schedule enabled)
+{{- if $anyScheduleEnabled }}
+{{ includeTemplate "log_step" "Configuring timeshift-hourly.timer..." }}
+sudo systemctl daemon-reload
+
+if ! sudo systemctl is-enabled timeshift-hourly.timer >/dev/null 2>&1; then
+    sudo systemctl enable timeshift-hourly.timer
+    {{ includeTemplate "log_success" "Timer enabled" }}
+else
+    {{ includeTemplate "log_info" "Timer already enabled" }}
+fi
+
+if ! sudo systemctl is-active --quiet timeshift-hourly.timer; then
+    sudo systemctl start timeshift-hourly.timer
+    {{ includeTemplate "log_success" "Timer started" }}
+else
+    {{ includeTemplate "log_info" "Timer already running" }}
+fi
+
+{{ includeTemplate "log_step" "Verifying timer status..." }}
+if sudo systemctl is-active --quiet timeshift-hourly.timer; then
+    {{ includeTemplate "log_success" "timeshift-hourly.timer is active" }}
+    NEXT_RUN=$(systemctl status timeshift-hourly.timer | grep "Trigger:" | cut -d: -f2- || echo "Unknown")
+    {{ includeTemplate "log_info" "Next run:$NEXT_RUN" }}
+else
+    {{ includeTemplate "log_error" "Timer failed to start" }}
+    sudo systemctl status timeshift-hourly.timer --no-pager
+    exit 1
+fi
+{{- else }}
+{{ includeTemplate "log_skip" "No schedules enabled in globals.yaml - skipping hourly timer" }}
+{{- end }}
+
+# Configure boot timer (if enabled)
+{{- if $scheduleBoot }}
+{{ includeTemplate "log_step" "Configuring timeshift-boot.timer..." }}
+
+if ! sudo systemctl is-enabled timeshift-boot.timer >/dev/null 2>&1; then
+    sudo systemctl enable timeshift-boot.timer
+    {{ includeTemplate "log_success" "Boot timer enabled" }}
+else
+    {{ includeTemplate "log_info" "Boot timer already enabled" }}
+fi
+
+if ! sudo systemctl is-active --quiet timeshift-boot.timer; then
+    sudo systemctl start timeshift-boot.timer
+    {{ includeTemplate "log_success" "Boot timer started" }}
+else
+    {{ includeTemplate "log_info" "Boot timer already running" }}
+fi
+
+{{ includeTemplate "log_step" "Verifying boot timer status..." }}
+if sudo systemctl is-active --quiet timeshift-boot.timer; then
+    {{ includeTemplate "log_success" "timeshift-boot.timer is active" }}
+else
+    {{ includeTemplate "log_error" "Boot timer failed to start" }}
+    sudo systemctl status timeshift-boot.timer --no-pager
+    exit 1
+fi
+{{- else }}
+{{ includeTemplate "log_skip" "Boot snapshots disabled in globals.yaml" }}
+{{- end }}
+
+{{ includeTemplate "log_info" "" }}
+{{ includeTemplate "log_info" "Timer Management Commands:" }}
+{{ includeTemplate "log_info" "  List timers:   systemctl list-timers timeshift-*" }}
+{{ includeTemplate "log_info" "  Check status:  systemctl status timeshift-hourly.timer" }}
+{{ includeTemplate "log_info" "  View logs:     journalctl -u timeshift-hourly.service" }}
+{{ includeTemplate "log_info" "  Manual run:    sudo systemctl start timeshift-hourly.service" }}
+
+{{ includeTemplate "log_complete" "Timeshift retention policy and timer configuration complete" }}
