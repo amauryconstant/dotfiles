@@ -1,12 +1,14 @@
 ---
 name: commit
-description: Write concise classical commit messages with imperative mood, ≤50 char subjects. Use when creating commits or user asks for commit help.
-allowed-tools: Bash, Read, Grep
+description: Write concise classical commit messages with imperative mood, ≤80 char subjects. Be specific about dotfiles components (Hyprland, Waybar, Zsh, package-manager). Use when user asks to commit, create a commit, write a commit message, or for help with git commits.
+disable-model-invocation: true
+argument-hint: [message]
+allowed-tools: Read, Grep, Bash("git diff *"), Bash("git status *"), Bash("git log *"), Bash("git add *"), Bash("git show *"), Bash("git commit *"),
 ---
 
 # Commit Skill
 
-Generate concise commit messages following repository conventions.
+Generate concise, descriptive commit messages following dotfiles repository conventions. Focus on specific components and precise change descriptions.
 
 ## When to Use
 
@@ -15,6 +17,17 @@ Generate concise commit messages following repository conventions.
 - User mentions committing changes
 - User asks for help with git commit
 - User runs `/commit`
+
+## Commit Message Principles
+
+**Be precise and descriptive**: Focus on what specific aspect of the dotfiles changes. Avoid generic terms like "fix" or "update" - describe the actual modification.
+
+**Examples of improved messages**:
+- Instead of "Fix config" → "Fix Hyprland keybinding conflict with terminal"
+- Instead of "Update script" → "Update wallpaper timer to support multiple directories"
+- Instead of "Add feature" → "Add theme integration for Firefox userChrome.css"
+
+**Describe the dotfiles impact**: Commit messages should clearly indicate which part of the dotfiles ecosystem changes (e.g., "Hyprland", "Waybar", "shell", "theme system", "package management").
 
 ## Execution Steps
 
@@ -75,12 +88,14 @@ Determine the primary verb from the diff:
 
 ### 5. Draft commit message
 
-**Subject line** (≤50 characters):
+**Subject line** (≤80 characters):
 - Start with verb: Add, Fix, Update, Refactor, Remove, Document
 - Use imperative mood (NOT Added, Fixed, Updated)
 - Capitalize first word
 - No period at end
-- Focus on **what** changed at high level
+- Focus on **what specific part of dotfiles** changed at high level
+- **Be precise**: Describe the actual change, not just "fix" or "update"
+- Include the component name: "Hyprland", "Waybar", "Zsh", "package-manager", etc.
 
 **Body** (for complex changes):
 - Blank line after subject
@@ -118,7 +133,7 @@ git log --oneline -20
 **This repository's conventions**:
 - ✓ Imperative mood (Add, Fix, Update, Refactor)
 - ✓ Capitalized first word
-- ✓ Concise subjects (usually <50 chars)
+- ✓ Concise subjects (≤80 characters, brevity preferred)
 - ✓ No periods at end
 - ✓ No AI/automation mentions
 - ✓ Focus on changes, not implementation details
@@ -143,7 +158,7 @@ Proposed commit message:
 [Body if complex - with bullets]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Subject: XX/50 characters
+Subject: XX/80 characters
 
 Would you like me to:
 1. Commit with this message
@@ -191,17 +206,6 @@ Add user authentication system
 - Update protected routes to require authentication
 ```
 
-## Classification Guide
-
-| Verb | Use When | Example |
-|------|----------|---------|
-| Add | New feature, file, functionality | Add theme switching system |
-| Fix | Bug fix, correction | Fix wallpaper path resolution |
-| Update | Enhance existing feature | Update package manager output |
-| Refactor | Code restructure, no behavior change | Refactor keybindings to modules |
-| Remove | Delete feature, file, code | Remove deprecated config |
-| Document | Documentation only | Document skill architecture |
-
 ## Anti-Patterns
 
 **Subject line**:
@@ -209,7 +213,8 @@ Add user authentication system
 ❌ **Present continuous**: "Adding feature", "Fixing bug"
 ❌ **Lowercase**: "add feature"
 ❌ **Period at end**: "Add feature."
-❌ **Vague**: "Update stuff", "Fix things"
+❌ **Vague**: "Update stuff", "Fix things", "Update config", "Fix script"
+❌ **Non-specific verbs**: "Update", "Fix" without context (be more precise)
 ❌ **AI mentions**: "Add AI-assisted feature"
 ❌ **Too long**: "Add really long feature description that exceeds the fifty character limit"
 ❌ **Implementation details**: "Add function foo() that calls bar()"
@@ -233,15 +238,7 @@ Add user authentication system
 ✓ Document package-manager v3.0 modular architecture
 ```
 
-**Bad**:
-```
-❌ fixed bug
-❌ updated stuff
-❌ Added new feature using AI assistance
-❌ adding user authentication
-❌ updates to the configuration files
-❌ Fix the bug in the authentication system that was causing users to not be able to log in
-```
+These examples demonstrate specific, descriptive commit messages that clearly state what changes and which component is affected.
 
 ## Special Cases
 
@@ -308,14 +305,50 @@ Add new configuration format
 BREAKING CHANGE: Old JSON configs no longer supported
 ```
 
+### Dotfiles Commit Patterns
+
+**Describe the impact on dotfiles ecosystem**: Dotfiles changes affect multiple interconnected systems. Be specific about which component changes.
+
+**Component names to use**:
+- Hyprland, Waybar, Wofi, Dunst (desktop environment)
+- Zsh, shell scripts, terminal (shell environment)
+- Theme system, color schemes (theming)
+- Package management, package-manager (software)
+- chezmoi templates, modify scripts (configuration framework)
+
+**Examples of descriptive commit messages**:
+```
+✓ Fix Hyprland keybinding conflict with terminal
+✓ Update wallpaper timer to support multiple directories
+✓ Add theme integration for Firefox userChrome.css
+✓ Refactor package-manager to modular architecture
+✓ Fix Zsh alias syntax for Git workflow commands
+✓ Update Waybar module to display battery percentage
+✓ Add darkman integration for automatic theme switching
+✓ Fix chezmoi template variable resolution in script
+```
+
+**Vague examples to avoid**:
+```
+❌ Fix config
+❌ Update script
+❌ Fix stuff
+❌ Update dotfiles
+❌ Add feature
+❌ Fix bug
+```
+
 ## Validation Checklist
 
 Before presenting the message, verify:
 
-- [ ] Subject ≤50 characters
+- [ ] Subject ≤80 characters (hard limit)
 - [ ] Imperative mood (Add, Fix, not Added, Fixed)
 - [ ] Capitalized first word
 - [ ] No period at end
+- [ ] **Specific and descriptive**: Not just "fix" or "update"
+- [ ] **Includes component name**: Hyprland, Waybar, Zsh, package-manager, etc.
+- [ ] **Describes dotfiles impact**: Clear what part of dotfiles changes
 - [ ] Body reasonably short but descriptive (if present)
 - [ ] Body wraps at 72 characters (if present)
 - [ ] No AI/automation mentions
