@@ -485,3 +485,280 @@ jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
 - **Hyprland bindings**: `private_dot_config/hypr/conf/bindings.conf.tmpl`
 - **Menu system**: `user-interface/` scripts
 - **Core UI**: `core/gum-ui.sh` (572-line library)
+
+---
+
+## Script Standards (MANDATORY)
+
+**See**: Root `CLAUDE.md` for architecture overview
+**See**: `.claude/rules/chezmoi-templates.md` for template syntax
+
+### Error Handling Strategy
+
+**Use `set -euo pipefail`** (strict mode):
+- Multi-step scripts with dependencies between commands
+- Template scripts (`.tmpl` files)
+- Scripts where partial execution is dangerous
+- Examples: wallpaper scripts, system setup scripts
+
+**Use manual error checking**:
+- Simple single-purpose utilities
+- Scripts where graceful degradation needed
+- Background utilities (avoid unexpected exits from keybindings)
+- Examples: desktop utilities, simple launchers
+
+### Shebang Selection
+
+**Use `#!/usr/bin/env bash`** when:
+- Need associative arrays
+- Use bash-specific features (`[[`, `=~`, process substitution)
+- Complex logic requiring bash extensions
+
+**Use `#!/usr/bin/env sh`** when:
+- Simple utilities using POSIX features only
+- Background utilities (minimal dependencies)
+- Scripts where portability matters
+
+**Examples**: System scripts use bash, desktop utilities use sh
+
+### Anti-Patterns
+
+❌ Wrap scripts in main functions (chezmoi scripts execute directly)
+❌ Use manual echo for logging in templates (use `{{ includeTemplate "log_*" }}`)
+❌ Add unnecessary OS detection (Arch Linux only)
+❌ Add cross-platform compatibility (target-specific)
+❌ Partial execution without `set -euo pipefail` in multi-step scripts
+
+### Trust Execution Order
+
+Scripts execute: `run_once_before_*` → file application → `run_once_after_*` → `run_onchange_*`
+
+Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redundant checks.
+
+---
+
+## Pre-Commit Checklist
+
+### For .chezmoiscripts/ templates
+
+- [ ] `#!/usr/bin/env sh` shebang
+- [ ] `{{ includeTemplate "log_start" }}` and `log_complete`
+- [ ] `set -euo pipefail` after log_start
+- [ ] No `main()` function
+- [ ] Uses template logging (not echo)
+- [ ] Validated: `bash -n script.sh.tmpl`
+- [ ] Validated: `chezmoi execute-template < script.sh.tmpl | shellcheck -`
+- [ ] Tested: `chezmoi execute-template < script.sh.tmpl`
+
+### For lib/scripts/ files
+
+- [ ] Correct shebang (bash or sh based on features needed)
+- [ ] UI pattern matches category (system/desktop/menu)
+- [ ] Error handling appropriate for script type
+- [ ] Header with Script, Purpose, Requirements
+- [ ] Validated: `shellcheck script.sh`
+
+### Automated validation
+
+- Pre-commit hook validates all staged scripts automatically
+- Templates pre-rendered before shellcheck validation
+- Use `git commit --no-verify` to skip (emergency only)
+
+---
+
+## Shellcheck Integration
+
+**Automated validation** at commit time ensures script quality.
+
+### How It Works
+
+1. **Editor validation** (VSCode):
+   - Real-time shellcheck on `.sh` files
+   - Template files (`.tmpl`) excluded (validated at commit)
+   - Quick-fix suggestions enabled
+
+2. **Pre-commit validation** (git hook):
+   - Validates all staged shell scripts via `mise run lint:staged`
+   - Templates pre-rendered before validation
+   - Blocking on errors/warnings only
+
+3. **Centralized config** (`.shellcheckrc`):
+   - 5 error codes disabled for template compatibility
+   - Shell dialect auto-detection
+   - Warning-level severity (excludes info/style)
+
+### Manual Validation
+
+```bash
+# Check single file
+shellcheck path/to/script.sh
+
+# Check template (pre-render)
+chezmoi execute-template < script.sh.tmpl | shellcheck -
+
+# Check all scripts (via mise)
+mise run lint
+
+# Check staged scripts only (what pre-commit runs)
+mise run lint:staged
+
+# Skip pre-commit validation (emergency only)
+git commit --no-verify
+```
+
+### Disabled Error Codes
+
+| Code | Reason | Example |
+|------|--------|---------|
+| SC1083 | Go template literal braces | `{{ .variable }}` |
+| SC1009 | Template delimiter parsing | `{{- if .condition }}` |
+| SC1073 | Template control structures | `{{ range .list }}` |
+| SC1072 | Template functions | `{{ .var \| default "x" }}` |
+| SC2148 | Shebang in rendered output | Templates expand shebang |
+
+### Common Issues & Fixes
+
+**Unquoted variables** (SC2086):
+```bash
+# Bad
+echo $var
+
+# Good
+echo "$var"
+```
+
+**Unused variables** (SC2034):
+```bash
+# Option 1: Use the variable
+echo "Value: $unused_var"
+
+# Option 2: Prefix with underscore
+_unused_var="value"
+```
+
+**Exit code checking** (SC2181):
+```bash
+# Bad
+command
+if [ $? -eq 0 ]; then
+
+# Good
+if command; then
+```
+
+**Word splitting** (SC2046):
+```bash
+# Bad
+for file in $(ls *.txt); do
+
+# Good
+for file in *.txt; do
+```
+
+**ls with grep** (SC2010):
+```bash
+# Bad
+ls -1 | grep pattern
+
+# Good
+find . -name "pattern" -type f
+```
+
+---
+
+## Shellcheck Troubleshooting
+
+### Issue: Pre-commit hook fails on template
+
+**Symptom**: `Template rendering failed: script.sh.tmpl`
+
+**Cause**: Go template syntax errors or missing template variables
+
+**Fix**:
+```bash
+# Test template rendering
+chezmoi execute-template < script.sh.tmpl
+
+# View rendered output
+chezmoi cat path/to/target
+
+# Check template data available
+chezmoi data
+```
+
+### Issue: Shellcheck errors on valid code
+
+**Symptom**: False positives from shellcheck
+
+**Options**:
+1. Fix the code (preferred)
+2. Add inline directive: `# shellcheck disable=SC####`
+3. Add to `.shellcheckrc` (if globally applicable)
+
+### Issue: Pre-commit hook takes too long
+
+**Symptom**: Commit waits >10 seconds
+
+**Cause**: Too many scripts staged at once
+
+**Fix**:
+```bash
+# Commit in smaller batches
+git add file1.sh file2.sh
+git commit
+
+# Or skip validation (emergency)
+git commit --no-verify
+```
+
+### Issue: VSCode not showing shellcheck errors
+
+**Symptom**: No linting in editor
+
+**Fix**:
+1. Reload window: Ctrl+Shift+P → "Developer: Reload Window"
+2. Check shellcheck installed: `mise install shellcheck`
+3. Verify `.shellcheckrc` exists in workspace root
+4. Check VSCode extension installed: "shellcheck"
+
+### Issue: Template validated in pre-commit but not editor
+
+**Symptom**: Pre-commit catches issues VSCode doesn't
+
+**Expected**: Templates (`.tmpl`) excluded from editor validation
+
+**Reason**: Go template syntax causes false positives
+
+**Workflow**: Templates validated only at commit time (after rendering)
+
+### Issue: Need to commit with known shellcheck issues
+
+**Symptom**: Urgent fix needed, shellcheck blocking
+
+**Solution**:
+```bash
+# Skip pre-commit validation (use sparingly)
+git commit --no-verify -m "emergency fix"
+
+# Create follow-up issue to fix shellcheck warnings
+# Fix in next commit
+```
+
+### Issue: Different errors in VSCode vs pre-commit
+
+**Symptom**: VSCode shows errors pre-commit doesn't (or vice versa)
+
+**Cause**: Version mismatch or config desync
+
+**Fix**:
+```bash
+# Check versions match
+mise current shellcheck
+code --version
+
+# Ensure .shellcheckrc exists
+ls -la .shellcheckrc
+
+# Reload VSCode
+# Ctrl+Shift+P → "Developer: Reload Window"
+```

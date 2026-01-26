@@ -308,3 +308,61 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 - Creates all 8 theme color files
 
 **One-time use** - color files committed to repo
+
+---
+
+## Enhanced Theme Switching
+
+**Extended app coverage** beyond core apps (terminal, waybar, dunst, wofi):
+
+### VSCode Integration
+
+**Script**: `theme-apply-vscode.sh`
+
+**Features**:
+- Maps dotfiles theme to VSCode theme extension
+- Updates settings.json via jaq
+- Silent failure if VSCode not installed
+
+**Integration**: Called by `theme-switcher.sh` after reload_applications()
+
+### Firefox Integration
+
+**Script**: `theme-apply-firefox.sh`
+
+**Features**:
+- Symlinks userChrome.css from `~/.config/themes/{variant}/`
+- Creates chrome/ directory if needed
+- Requires `toolkit.legacyUserProfileCustomizations.stylesheets = true`
+
+**Firefox themes**: 8 userChrome.css files in `~/.config/themes/{variant}/`
+- catppuccin-latte, catppuccin-mocha
+- rose-pine-dawn, rose-pine-moon
+- gruvbox-light, gruvbox-dark
+- solarized-light, solarized-dark
+
+**Integration**: Called by `theme-switcher.sh` after reload_applications()
+
+### Spotify Integration
+
+**Script**: `theme-apply-spotify.sh`
+
+**Features**:
+- Maps to spicetify color schemes
+- Optional (skips if spicetify-cli not installed)
+
+**Integration**: Called by `theme-switcher.sh` after reload_applications()
+
+### Application Integration Sequence
+
+**Theme switcher workflow**:
+1. Update `~/.config/themes/current` symlink
+2. Reload core apps (Hyprland, Waybar, Dunst, etc.)
+3. Call extended app scripts:
+   - `theme-apply-vscode.sh`
+   - `theme-apply-firefox.sh`
+   - `theme-apply-spotify.sh`
+4. Trigger hook: `hook-runner.sh theme-change $theme_name`
+
+**See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
+**See**: `dotfiles/CLAUDE.md` for hook system documentation

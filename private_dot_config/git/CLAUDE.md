@@ -48,6 +48,24 @@
 4. Template variables preserved as `{{ .variable }}`
 5. Falls back to standard merge if both have templates
 
+---
+
+## Safe Merge Workflow
+
+1. **Run checks**: `chezmoi diff` and `chezmoi status`
+2. **Merge operations**: `chezmoi merge <file>` or `chezmoi merge-all`
+3. **Validation**: Template syntax automatically preserved
+4. **Emergency restore**: `git checkout HEAD -- <file>`
+
+## Manual Resolution
+
+1. **Detect conflicts**: `chezmoi status` (look for "M" status)
+2. **Resolve conflicts**: `chezmoi merge <file>` or `chezmoi merge-all`
+3. **Validate results**: Protection ensures `{{ .variable }}` preserved
+4. **Special cases**: Encrypted files (`.age`) require manual workflow
+
+**See**: `.scripts/CLAUDE.md` for merge driver implementation details
+
 ## Git Configuration
 
 **File**: `config.tmpl`

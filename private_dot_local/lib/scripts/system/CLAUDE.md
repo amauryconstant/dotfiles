@@ -274,3 +274,209 @@ system-troubleshoot  # Interactive guided diagnostics
 ```bash
 system-maintenance --cleanup
 ```
+
+---
+
+## Package Management for Development
+
+### Dual System Architecture
+
+**Native Arch** (paru): CLI tools, system services, dev tools, deep integration
+**Flatpak**: Proprietary apps, cross-platform GUI apps, sandboxing
+
+### Decision Matrix
+
+**Use Flatpak for**:
+- ✅ Proprietary apps (Spotify, Slack, VS Code)
+- ✅ Cross-platform GUI apps (Xournalpp, qBittorrent)
+- ✅ Sandboxing/isolation needed
+
+**Use Native Arch for**:
+- ✅ CLI tools and utilities
+- ✅ System services and daemons
+- ✅ Development tools and languages
+- ✅ Linux-first applications
+- ✅ Deep system integration (browsers with extensions, sync clients)
+- ✅ Desktop environment components (Thunar, Hyprland polkit agent)
+
+### GPU Driver Selection
+
+**Auto-detection**: NVIDIA driver selection based on GPU generation
+
+**Architecture support**:
+- **Modern** (nvidia-open): Turing+ (GTX 16xx, RTX 20xx/30xx/40xx)
+- **Legacy** (nvidia-580xx-dkms): Pascal/Maxwell (GTX 9xx/10xx)
+
+**Detection logic** (`.chezmoi.yaml.tmpl`):
+1. Check `NVIDIA_DRIVER_OVERRIDE` env var
+2. Parse lspci for GPU model
+3. Pattern match: GTX 9xx/10xx → legacy, else → modern
+4. Default: modern (safe for new systems)
+
+**Package modules** (`packages.yaml`):
+- `graphics_drivers_modern`: nvidia-open, nvidia-open-lts, nvidia-utils (enabled by default)
+- `graphics_drivers_legacy`: nvidia-580xx-dkms, nvidia-580xx-utils (disabled by default)
+- **Dynamic selection**: Sync script enables correct module based on `.nvidiaDriverType`
+
+**Manual override**:
+```bash
+# Force legacy drivers (Pascal/Maxwell GPUs)
+export NVIDIA_DRIVER_OVERRIDE=legacy
+chezmoi apply
+
+# Force modern drivers (Turing+ GPUs)
+export NVIDIA_DRIVER_OVERRIDE=modern
+chezmoi apply
+
+# Clear override (restore auto-detection)
+unset NVIDIA_DRIVER_OVERRIDE
+chezmoi data | jaq -r '.nvidiaDriverType'  # Verify detection
+```
+
+**Migration safety**:
+- Interactive prompt before driver changes (integrated in validation script)
+- Automatic cleanup of conflicting drivers
+- Validation script checks correct driver installed
+- Requires reboot after driver change
+
+**Troubleshooting**:
+```bash
+# Check detection
+chezmoi data | jaq -r '.nvidiaDriverType'
+
+# View detected GPU
+chezmoi data | jaq -r '.nvidiaGpuDetected'
+
+# Preview which packages will be installed
+chezmoi execute-template < .chezmoiscripts/run_onchange_before_sync_packages.sh.tmpl | grep -A5 "NVIDIA"
+
+# Check installed NVIDIA packages
+pacman -Q nvidia-open nvidia-open-lts nvidia-utils
+
+# Manual fallback
+export NVIDIA_DRIVER_OVERRIDE=legacy  # or modern
+chezmoi apply
+```
+
+---
+
+## Backup System
+
+**Tool**: Timeshift (preferred) for system snapshots
+**Integration**: Automatic pre-sync snapshots via package-manager
+**Snapper**: Removed (not configured, Timeshift preferred)
+
+### Automatic Retention Policy Configuration
+
+**Default retention policy** (automatically configured via `run_once_after_009`):
+- **Daily**: 7 snapshots (1 week)
+- **Weekly**: 4 snapshots (1 month)
+- **Monthly**: 6 snapshots (6 months)
+- **Boot**: 3 snapshots
+
+**Configuration location**: `.chezmoidata/globals.yaml` (`timeshift:` section)
+
+**Manual override**: Edit globals.yaml and run `chezmoi apply`, or use Timeshift GUI (`sudo timeshift-launcher`)
+
+### Disk Space Management
+
+Timeshift automatically deletes oldest snapshots when retention limits reached.
+
+**No automatic low-disk emergency cleanup** (upstream limitation - [Issue #329](https://github.com/linuxmint/timeshift/issues/329))
+
+Monitor disk usage:
+- `system-health` - Health monitoring dashboard
+- `df -h /` - Manual filesystem check
+
+### Integration with Package Manager
+
+**Automatic backups**: Package-manager auto-detects Timeshift for pre-sync snapshots.
+
+**Manual snapshots**:
+```bash
+sudo timeshift --create --comments "Description"
+sudo timeshift --list
+sudo timeshift --restore
+```
+
+**Workflow**: Before `package-manager sync`, interactive prompt offers snapshot creation. Backup tool auto-detected (prefers Timeshift).
+
+**Implementation**: `backup-manager.sh` (line 25-27) auto-detects Timeshift if installed.
+
+### Scheduled Snapshots (Systemd Timers)
+
+**Package**: `timeshift-systemd-timer` (AUR)
+
+**Timers**:
+- `timeshift-hourly.timer`: Checks for due snapshots every hour
+- `timeshift-boot.timer`: Creates snapshot on system boot (optional)
+
+**How it works**:
+1. Timer triggers `/usr/bin/timeshift --check --scripted`
+2. Timeshift reads `schedule_*` flags from `/etc/timeshift/timeshift.json`
+3. Snapshots created only when due (daily/weekly/monthly logic handled by Timeshift)
+
+**Configuration**: Edit `globals.yaml` schedule flags (requires `chezmoi apply` + manual timer restart for `run_once` scripts)
+
+**Management**:
+```bash
+# View active timers
+systemctl list-timers timeshift-*
+
+# Check timer status
+systemctl status timeshift-hourly.timer
+
+# View snapshot logs
+journalctl -u timeshift-hourly.service -n 50
+
+# Manual trigger
+sudo systemctl start timeshift-hourly.service
+
+# Disable scheduling
+sudo systemctl disable --now timeshift-hourly.timer
+```
+
+**Note**: Changing `globals.yaml` schedule flags requires manual timer management (run_once scripts don't re-trigger):
+```bash
+# After changing globals.yaml schedule flags:
+sudo systemctl restart timeshift-hourly.timer  # If enabling new schedules
+# OR
+sudo systemctl disable --now timeshift-hourly.timer  # If disabling all schedules
+```
+
+---
+
+## DKMS Troubleshooting
+
+### NVIDIA DKMS Build Failures
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| GCC internal compiler error | Memory instability (XMP/DOCP) | Disable XMP or use `-j1` flag |
+| Stack smashing detected | RAM overclocking | Disable XMP in BIOS |
+| Module "added" not "installed" | Build failed | Check build log |
+
+### Manual DKMS Build
+
+```bash
+# Check current status
+dkms status nvidia
+
+# Build with reduced parallelism (helps with memory issues)
+sudo dkms install nvidia/VERSION -k $(uname -r) -j1
+
+# View build log for errors
+cat /var/lib/dkms/nvidia/*/build/make.log | tail -50
+```
+
+### Common Causes
+
+**GCC Internal Compiler Errors**: These are almost always caused by memory instability, not GCC bugs. The compiler performs intensive memory operations and will crash with unstable RAM.
+
+**Solutions**:
+1. Disable XMP/DOCP in BIOS (most reliable)
+2. Use looser memory timings
+3. Build with `-j1` to reduce memory pressure
+4. Run memtest86+ to verify RAM stability
+
+**Reference**: [Arch forums - nvidia-open-dkms build failure](https://bbs.archlinux.org/viewtopic.php?id=309961)
