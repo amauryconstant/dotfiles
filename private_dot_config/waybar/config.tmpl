@@ -85,26 +85,31 @@
     //   {icon}  = Use format-icons below
     //   {name}  = Workspace name
     //   {id}    = Workspace number
-    "format": "{icon} {id}",
+    "format": "{icon}",
 
-    // Icons for each workspace (can use Nerd Font icons)
+    // Icons for different workspace states (Omarchy-style)
+    //   active:   Workspace focused on THIS monitor
+    //   visible:  Workspace focused on OTHER monitor (visible elsewhere)
+    //   default:  Has windows but not focused
+    //   empty:    Empty persistent workspace
+    //   urgent:   Workspace needs attention
     "format-icons": {
-      "active": "󱎴",
-      "visible": "󱄄",
-      "default": "󰍹"
+      "urgent":  "",              // Warning triangle
+      "active":  "󰺕",              // Double circle (active on this monitor)
+      "visible": "",              // Ring (active on other monitor)
+      "default": "",              // Hollow circle (has windows)
+      "empty":   "·"                // Dot (empty persistent)
     },
 
-    // Persistent workspaces: Always show these even if empty
-    // Format: "workspace_id": []  (empty array = all monitors)
-    // "persistent-workspaces": {},
+    // No persistent workspaces
 
-    // Additional options (uncomment to use):
-    // "all-outputs": true,              // Show all workspaces from all monitors
-    "active-only": false,             // Only show workspaces with windows
-    // "on-scroll-up": "hyprctl dispatch workspace e-1",
-    // "on-scroll-down": "hyprctl dispatch workspace e+1",
-    // "on-click": "activate",           // Click to switch workspace
-    "sort-by-number": true            // Numerical sort order
+    // Per-monitor configuration (only show workspaces for current monitor)
+    "all-outputs": false,
+    "sort-by-coordinates": true,
+    "disable-scroll": true,
+
+    // Click behavior (activate workspace on current monitor)
+    "on-click": "activate"
   },
 
   // --------------------------------------------------------------------------

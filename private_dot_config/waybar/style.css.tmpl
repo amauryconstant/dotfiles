@@ -76,7 +76,7 @@ window#waybar {
   padding: 0 8px;
 
   /* Transparent background for inactive workspaces */
-  background-color: transparent;
+  background-color: @bg-primary;
 
   /* Text color: Oksolar muted (base01) */
   color: @fg-muted;
@@ -88,10 +88,8 @@ window#waybar {
 /* Workspace buttons: Hover state */
 #workspaces button:hover {
   /* Background: Oksolar blue (primary accent) */
-  background-color: @accent-primary;
+  background-color: @bg-overlay;
 
-  /* Text color: Oksolar lightest (base3) - high contrast on blue */
-  color: @fg-contrast;
 
   /* Enhanced hover effect */
   transition: all 0.2s ease;
@@ -107,6 +105,13 @@ window#waybar {
 
   /* Optional: Make active workspace bold */
   /* font-weight: bold; */
+}
+
+/* Workspace buttons: Active Hovered workspace */
+#workspaces button.active.hover {
+  color: @fg-contrast;
+
+  font-weight: bold;
 }
 
 /* Workspace buttons: Urgent state (windows demanding attention) */

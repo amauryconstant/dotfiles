@@ -10,7 +10,9 @@ archives/
 
 # Resources and Documentation
 resources/
+research/
 **/CLAUDE.md
 **/STYLE-GUIDE.md
+
 LICENSE
 README.md
