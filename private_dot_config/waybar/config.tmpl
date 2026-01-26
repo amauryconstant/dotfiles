@@ -85,35 +85,26 @@
     //   {icon}  = Use format-icons below
     //   {name}  = Workspace name
     //   {id}    = Workspace number
-    "format": "{icon}",
+    "format": "{icon} {id}",
 
     // Icons for each workspace (can use Nerd Font icons)
     "format-icons": {
-      "1": "1",          // Workspace 1
-      "2": "2",          // Workspace 2
-      "3": "3",          // Workspace 3
-      "4": "4",          // Workspace 4
-      "5": "5",          // Workspace 5
-      "default": "•"     // Any other workspace
+      "active": "󱎴",
+      "visible": "󱄄",
+      "default": "󰍹"
     },
 
     // Persistent workspaces: Always show these even if empty
     // Format: "workspace_id": []  (empty array = all monitors)
-    "persistent-workspaces": {
-      "1": [],  // Always show workspace 1
-      "2": [],  // Always show workspace 2
-      "3": [],  // Always show workspace 3
-      "4": [],  // Always show workspace 4
-      "5": []   // Always show workspace 5
-    }
+    // "persistent-workspaces": {},
 
     // Additional options (uncomment to use):
     // "all-outputs": true,              // Show all workspaces from all monitors
-    // "active-only": false,             // Only show workspaces with windows
+    "active-only": false,             // Only show workspaces with windows
     // "on-scroll-up": "hyprctl dispatch workspace e-1",
     // "on-scroll-down": "hyprctl dispatch workspace e+1",
     // "on-click": "activate",           // Click to switch workspace
-    // "sort-by-number": true            // Numerical sort order
+    "sort-by-number": true            // Numerical sort order
   },
 
   // --------------------------------------------------------------------------
