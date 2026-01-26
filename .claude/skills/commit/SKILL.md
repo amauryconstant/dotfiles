@@ -1,8 +1,6 @@
 ---
 name: commit
 description: Write concise classical commit messages with imperative mood, ≤80 char subjects. Be specific about dotfiles components (Hyprland, Waybar, Zsh, package-manager). Use when user asks to commit, create a commit, write a commit message, or for help with git commits.
-disable-model-invocation: true
-argument-hint: [message]
 allowed-tools: Read, Grep, Bash("git diff *"), Bash("git status *"), Bash("git log *"), Bash("git add *"), Bash("git show *"), Bash("git commit *"),
 ---
 
