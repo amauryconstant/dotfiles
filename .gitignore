@@ -9,3 +9,5 @@
 !.claude/skills/**/SKILL.md
 
 !resources/*.md
+
+!private_dot_config/**/skills/*.md``

@@ -66,6 +66,12 @@
 {{- $_ := set $tools "fetch" true -}}
 {{- $_ := set $config "tools" $tools -}}
 
+{{- /* Skill Permissions */ -}}
+{{- $skills := dict -}}
+{{- $_ := set $skills "commit" "allow" -}}
+{{- $_ := set $skills "skill-creator" "allow" -}}
+{{- $_ := set $config "permission" (dict "skill" $skills) -}}
+
 {{- /* Runtime-managed: "theme" - managed by theme-apply-opencode.sh */ -}}
 {{- /* Do NOT set "theme" key here - it's runtime state */ -}}
 
