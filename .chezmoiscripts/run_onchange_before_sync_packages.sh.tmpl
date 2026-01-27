@@ -50,14 +50,48 @@ DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$TEMP_PACKAGES_FILE" 2>/dev/null
 # Add conditional NVIDIA driver cleanup
 if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
     # Clean up modern drivers when using legacy
-    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open\nnvidia-open-lts" | sort -u)
+    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open\nnvidia-open-lts\nnvidia-open-dkms" | sort -u)
 else
     # Clean up legacy drivers when using modern
     DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-580xx-dkms\nnvidia-580xx-utils\nlib32-nvidia-580xx-utils" | sort -u)
+    # Remove DKMS variant if switching to pre-built modern drivers
+    if pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
+        DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open-dkms" | sort -u)
+        {{ includeTemplate "log_info" "Detected nvidia-open-dkms → switching to nvidia-open (pre-built)" }}
+    fi
 fi
 
 # Cleanup temp file
 rm -f "$TEMP_PACKAGES_FILE"
+
+# ============================================================
+# Refresh mirrors before package installation
+# ============================================================
+
+{{ includeTemplate "log_step" "Refreshing package mirrors..." }}
+
+if command -v rate-mirrors >/dev/null 2>&1; then
+    MIRRORLIST="/etc/pacman.d/mirrorlist"
+    if [ -f "$MIRRORLIST" ]; then
+        LAST_REFRESH=$(stat -c %Y "$MIRRORLIST" 2>/dev/null || echo 0)
+        CURRENT_TIME=$(date +%s)
+        HOURS_SINCE_REFRESH=$(( (CURRENT_TIME - LAST_REFRESH) / 3600 ))
+
+        if [ "$HOURS_SINCE_REFRESH" -gt 24 ]; then
+            {{ includeTemplate "log_info" "Mirrors stale (${HOURS_SINCE_REFRESH}h), refreshing..." }}
+            DETECTED_COUNTRY=$(curl -s ipinfo.io/country 2>/dev/null || echo "US")
+            rate-mirrors --protocol https --entry-country "$DETECTED_COUNTRY" arch | sudo tee /etc/pacman.d/mirrorlist >/dev/null 2>&1
+            sudo pacman -Sy >/dev/null 2>&1
+            {{ includeTemplate "log_success" "Mirrors refreshed for $DETECTED_COUNTRY" }}
+        else
+            {{ includeTemplate "log_info" "Mirrors up to date (${HOURS_SINCE_REFRESH}h old)" }}
+        fi
+    else
+        {{ includeTemplate "log_warning" "Mirrorlist not found, skipping refresh" }}
+    fi
+else
+    {{ includeTemplate "log_skip" "rate-mirrors not available, using existing mirrors" }}
+fi
 
 # ============================================================
 # Initialize Flatpak for user scope

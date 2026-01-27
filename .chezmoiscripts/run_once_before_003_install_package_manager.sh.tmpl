@@ -99,8 +99,13 @@ fi
 # Optimize mirrors for faster downloads
 {{ includeTemplate "log_step" "Optimizing Arch mirrors..." }}
 paru -S --noconfirm --needed rate-mirrors
-rate-mirrors --protocol https arch | sudo tee /etc/pacman.d/mirrorlist
-{{ includeTemplate "log_success" "Mirrors optimized" }}
+
+# Auto-detect country from IP for better mirror selection
+DETECTED_COUNTRY=$(curl -s ipinfo.io/country 2>/dev/null || echo "US")
+{{ includeTemplate "log_info" "Detected location: $DETECTED_COUNTRY" }}
+
+rate-mirrors --protocol https --entry-country "$DETECTED_COUNTRY" arch | sudo tee /etc/pacman.d/mirrorlist
+{{ includeTemplate "log_success" "Mirrors optimized for $DETECTED_COUNTRY" }}
 
 # Setup Flatpak
 {{ includeTemplate "log_step" "Setting up Flatpak..." }}

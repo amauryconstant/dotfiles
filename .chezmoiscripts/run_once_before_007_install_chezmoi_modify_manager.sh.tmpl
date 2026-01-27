@@ -18,7 +18,7 @@ fi
 {{ includeTemplate "log_step" "Installing chezmoi_modify_manager from AUR..." }}
 
 # Install chezmoi_modify_manager using paru
-if paru -S --noconfirm chezmoi_modify_manager; then
+if paru -S --noconfirm --needed chezmoi_modify_manager; then
     {{ includeTemplate "log_success" "chezmoi_modify_manager installed successfully" }}
 else
     {{ includeTemplate "log_error" "Failed to install chezmoi_modify_manager" }}
