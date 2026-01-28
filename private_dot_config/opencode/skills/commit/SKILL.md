@@ -20,11 +20,32 @@ Generate concise, descriptive commit messages following best practices. Focus on
 **Be precise and descriptive**: Focus on what specific aspect changes. Avoid generic terms like "fix" or "update" - describe the actual modification.
 
 **Examples of improved messages**:
-- Instead of "Fix config" → "Fix authentication token expiration"
-- Instead of "Update script" → "Update payment scheduler to support multiple cron patterns"
-- Instead of "Add feature" → "Add OAuth2 integration for third-party authentication"
 
-**Describe the impact**: Commit messages should clearly indicate which part of the codebase changes (e.g., "authentication", "API", "database", "frontend", "validation logic").
+- Instead of "Fix config" → "Fix authentication token expiration"
+- Instead of "Update script" → "Update background task scheduler to support multiple patterns"
+- Instead of "Add feature" → "Add interactive confirmation prompts for destructive operations"
+
+**Describe the impact**: Commit messages should clearly indicate which part of the codebase changes (e.g., "authentication", "argument parser", "shell configuration", "API", "database").
+
+## Focus on Substance, Not Action
+
+Good commit messages describe **what changed** (the content), not **what you did** (the action).
+
+**Action-focused (avoid)**:
+
+- "Fix config" - What was fixed?
+- "Update docs" - What was updated?
+- "Amend specs" - What was amended?
+
+**Content-focused (prefer)**:
+
+- "Fix authentication token expiration" - Describes the actual problem
+- "Add interactive confirmation prompts" - Describes the actual feature
+- "Update shell functions for POSIX compliance" - Describes the actual change
+
+**Rule**: Your message should be understandable to someone who doesn't know what actions you took.
+
+**Test**: Would someone unfamiliar with the change understand what was modified by reading just the subject line?
 
 ## Execution Steps
 
@@ -53,6 +74,7 @@ Verify the repository is ready for commit:
 - **Nothing staged** → Suggest staging changes first
 
 **Assess if changes should be split**:
+
 - **Unrelated changes** → Suggest splitting into multiple commits (`git add -p`)
 - **Multiple features/fixes** → Each should be its own commit
 - **Mixed refactor + feature** → Separate commits
@@ -61,31 +83,56 @@ Verify the repository is ready for commit:
 ### 3. Review changed files (if context needed)
 
 If changes are unclear from the diff:
+
 - Read modified files to understand context
 - Ask user about reasoning behind changes
 - Understand the "why" not just the "what"
 
 Example questions:
+
 - "What prompted this refactoring?"
 - "What bug does this fix?"
 - "What's the purpose of this new feature?"
+
+### 3.5. Understand Substance of Changes
+
+Before drafting the message, understand WHAT changed (not just HOW many):
+
+**For large changes** (5+ files):
+
+- Read key changed files to understand the actual modifications
+- Identify the core substance of the change
+- Ask: "If I described this to another developer, what would I say changed?"
+
+**For spec/docs changes**:
+
+- List what was added vs what was removed
+- Identify the direction of the change
+
+**Example transformation**:
+
+- Instead of: "Amend specs" (action)
+- Use: "Update configuration schema to domain-specific format" (substance)
+
+**Goal**: Before categorizing (fix/add/update), be able to articulate the actual change in one sentence to a colleague.
 
 ### 4. Classify change type
 
 Determine the primary verb from the diff:
 
-| Category | Verbs | When to Use |
-|----------|-------|-------------|
-| Bug fixes | Fix, Resolve, Correct | Broken functionality, error corrections |
-| New features | Add, Implement, Introduce | New capabilities, functionality |
-| Improvements | Improve, Enhance, Optimize | Better performance, UX |
-| Changes | Update, Change, Modify | Existing feature modifications |
-| Cleanup | Remove, Delete, Clean | Deleting code, removing features |
-| Restructure | Refactor, Consolidate, Reorganize | Internal changes (no behavior change) |
-| Documentation | Document, Add docs | README, comments, docs changes |
-| Enable/Disable | Enable, Disable, Make | Configuration toggles |
+| Category       | Verbs                             | When to Use                             |
+| -------------- | --------------------------------- | --------------------------------------- |
+| Bug fixes      | Fix, Resolve, Correct             | Broken functionality, error corrections |
+| New features   | Add, Implement, Introduce         | New capabilities, functionality         |
+| Improvements   | Improve, Enhance, Optimize        | Better performance, UX                  |
+| Changes        | Update, Change, Modify            | Existing feature modifications          |
+| Cleanup        | Remove, Delete, Clean             | Deleting code, removing features        |
+| Restructure    | Refactor, Consolidate, Reorganize | Internal changes (no behavior change)   |
+| Documentation  | Document, Add docs                | README, comments, docs changes          |
+| Enable/Disable | Enable, Disable, Make             | Configuration toggles                   |
 
 **Guideline**: Start with common verbs but be precise:
+
 - "Fix" for bugs
 - "Add" for new features
 - "Update" for existing feature changes
@@ -96,15 +143,16 @@ Determine the primary verb from the diff:
 ### 5. Draft commit message
 
 **Subject line** (≤72 characters):
+
 - Start with verb: Add, Fix, Update, Refactor, Remove, Document
 - Use imperative mood (NOT Added, Fixed, Updated)
 - Capitalize first word
 - No period at end
 - Focus on **what specific part** changed at high level
 - **Be precise**: Describe the actual change, not just "fix" or "update"
-- Include component name when helpful: `auth: Fix token refresh`, `api: Add rate limiting`
 
 **Body** (for complex changes):
+
 - Blank line after subject
 - Use bullet points with "- " prefix
 - Explain **why** the change was made (diff shows what)
@@ -113,6 +161,7 @@ Determine the primary verb from the diff:
 - Wrap lines at 72 characters
 
 **When to add body**:
+
 - Multiple files changed
 - Behavior changes with side effects
 - Bug fixes requiring context
@@ -121,11 +170,13 @@ Determine the primary verb from the diff:
 - Non-obvious reasoning behind the change
 
 **When to skip body**:
+
 - Simple, self-explanatory changes
 - Trivial updates
 - Single obvious fix or addition
 
 **When description gets long**:
+
 - **Consider splitting into multiple commits** instead
 - Each commit should be a focused, logical unit
 - Unrelated changes belong in separate commits
@@ -139,6 +190,7 @@ git log --oneline -20
 ```
 
 **Conventions**:
+
 - ✓ Imperative mood (Add, Fix, Update, Refactor)
 - ✓ Capitalized first word
 - ✓ Concise subjects (≤72 characters, brevity preferred)
@@ -180,12 +232,15 @@ EOF
 ```
 
 **Why HEREDOC?**
+
 - Preserves multi-line formatting
 - Handles special characters correctly
 - Prevents quote escaping issues
 
 After committing, verify:
+
 ```bash
+sleep 1
 git log -1 --oneline
 git show --stat
 ```
@@ -193,37 +248,56 @@ git show --stat
 ## Commit Message Format
 
 ### Simple commits
+
 ```
 Fix authentication token expiration
 ```
 
 ### Complex commits
+
 ```
-Fix authentication token expiration
+Fix argument parsing for subcommands
 
-Tokens were expiring 1 hour before the configured expiry time
-due to incorrect timezone handling.
+Subcommands were failing when passed with the --separator flag due to incorrect argument order handling.
 
-Root cause: Using local time instead of UTC for expiry checks
-Fix: Convert all timestamps to UTC before comparison
+Root cause: Parsing separator flag before establishing subcommand context
+
+Fix: Process subcommand argument before global flags
 
 Closes: #123
+```
+
+OR
+
+```
+Amend existing specs to match actual implementation
+
+- domain-models: Claude Code format (name, tools, model) instead of planned fields
+- project-layout: internal/ packages instead of pkg/, removed schemas/adapters
+- ci-workflow: 4-stage pipeline (no tag stage/job)
+- mise-task-runner: .mise/config.toml, check task, updated tasks
+- validation-scripts: Release validation scripts, check task for comprehensive validation
+- cli-framework: Version defaults (dev, ""), hardcoded description
+- yaml-parsing: Memory paths array instead of title/applies_to
 ```
 
 ## Anti-Patterns
 
 **Subject line**:
+
 - ❌ Past tense: "Added feature", "Fixed bug"
 - ❌ Present continuous: "Adding feature", "Fixing bug"
 - ❌ Lowercase: "add feature"
 - ❌ Period at end: "Add feature."
 - ❌ Vague: "Update stuff", "Fix things", "Update config", "Fix script"
 - ❌ Non-specific verbs: "Update", "Fix" without context (be more precise)
+- ❌ Action-only: "Update files", "Change config", "Fix stuff" (WHAT changed?)
 - ❌ AI mentions: "Add AI-assisted feature"
 - ❌ Too long: "Add really long feature description that exceeds the limit"
 - ❌ Implementation details: "Add function foo() that calls bar()"
 
 **Body (when used)**:
+
 - ❌ Overly verbose: Long multi-line explanations per bullet
 - ❌ Implementation details: Explaining code mechanics (diff shows this)
 - ❌ Redundant context: Repeating what's obvious from subject
@@ -232,19 +306,40 @@ Closes: #123
 
 ## Repository Examples
 
-**Good**:
+**Action-focused vs Content-focused**:
+❌ Action-focused:
+
+- Update config
+- Fix script
+- Amend specs
+- Change files
+
+✓ Content-focused:
+
+- Add OAuth2 support for user authentication
+- Fix argument parsing for subcommands
+- Migrate shell config to POSIX compliance
+- Refactor database query builder to use fluent interface
+
+**Good** (diverse examples):
+
 ```
 ✓ Fix authentication token expiration
-✓ Add OAuth2 support for user authentication
-✓ Refactor database query builder to use fluent interface
+✓ Add interactive confirmation prompts for destructive operations
+✓ Migrate shell config to POSIX-compliant syntax
+✓ Add rate limiting middleware
+✓ Refactor argument parser to support subcommands
+✓ Add Git hooks to enforce commit message standards
 ✓ Update user profile validation logic
-✓ Reduce image upload latency by 40%
+✓ Fix JSON output formatting for downstream tool integration
 ✓ Consolidate validation logic into shared module
+✓ Improve error handling across all modules
 ```
 
-These examples demonstrate specific, descriptive commit messages that clearly state what changes and which component is affected.
+These examples demonstrate specific, descriptive commit messages that clearly state what changes and which component is affected across web, CLI, and dotfiles development.
 
 **Vague examples to avoid**:
+
 ```
 ❌ Fix config
 ❌ Update script
@@ -257,6 +352,7 @@ These examples demonstrate specific, descriptive commit messages that clearly st
 ## Special Cases
 
 ### No changes staged
+
 ```
 No changes staged for commit.
 
@@ -267,10 +363,13 @@ Use:
 ```
 
 ### Merge commits
+
 Use Git's auto-generated merge message. Don't override unless necessary.
 
 ### Revert commits
+
 Use `git revert` auto-generated message format:
+
 ```
 Revert "Original commit message"
 
@@ -278,28 +377,34 @@ This reverts commit <hash>.
 ```
 
 ### Initial commit
+
 "Initial commit" is acceptable for brand new repositories.
 
 ### Multi-file changes with unified purpose
+
 Focus on the overall goal, not individual files:
+
 ```
-✓ Add authentication system
-❌ Update auth.js, login.js, and routes.js
+✓ Add argument subcommands
+❌ Update parser.go, handler.go, and flags.go
 ```
 
 ### Splitting commits
+
 When changes include unrelated modifications, split into multiple commits:
 
 **Use interactive staging**:
+
 ```bash
 git add -p              # Interactively stage hunks
-git add file1.js        # Stage specific files
-git commit -m "Fix authentication bug"
-git add file2.js file3.js
-git commit -m "Add user profile feature"
+git add file1.py        # Stage specific files
+git commit -m "Fix argument parsing bug"
+git add file2.go file3.sh
+git commit -m "Add validation hooks"
 ```
 
 **Signs you should split**:
+
 - Fixing bug A + adding feature B
 - Refactoring + new functionality
 - Multiple unrelated fixes
@@ -308,38 +413,18 @@ git commit -m "Add user profile feature"
 **Keep commits atomic**: Each commit should represent one logical change that could be reverted independently
 
 ### Breaking changes
-Consider adding a footer:
-```
-Add new configuration format
 
-- Migrate from JSON to YAML
-- Add schema validation
+Consider adding a footer:
+
+```
+Refactor command-line argument interface
+
+- Migrate from flags to subcommands
+- Add argument validation
 - Update documentation
 
-BREAKING CHANGE: Old JSON configs no longer supported
+BREAKING CHANGE: Old flag-based interface no longer supported
 ```
-
-## Component Naming Patterns
-
-When to include component names:
-- Large/monolithic projects
-- Changes span multiple areas
-- Clear separation of concerns
-
-Format options:
-- `component: description`
-- `[component] description`
-
-Examples:
-- `auth: Fix token refresh logic`
-- `database: Refactor connection pooling`
-- `api: Add rate limiting middleware`
-- `frontend: Fix responsive layout for mobile`
-
-When to omit component names:
-- Small projects
-- Single-purpose repositories
-- Obvious component context
 
 ## Validation Checklist
 
@@ -357,6 +442,7 @@ Before presenting the message, verify:
 - [ ] Matches repository style (check `git log`)
 - [ ] Focuses on "what" and "why", not implementation details
 - [ ] Verb accurately describes the change type
+- [ ] Message describes **what changed** (substance), not just action taken
 - [ ] Changes are related (if not, suggest splitting commits)
 
 ## Reference
