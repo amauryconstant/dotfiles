@@ -1,0 +1,11 @@
+[Unit]
+Description=HyprDynamicMonitors - Prepare monitor config before Hyprland
+Before=hyprland.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hyprdynamicmonitors prepare
+RemainAfterExit=yes
+
+[Install]
+WantedBy=hyprland.service

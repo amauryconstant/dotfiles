@@ -1,0 +1,14 @@
+[Unit]
+Description=hyprwhenthen - Event-driven window automation
+After=graphical-session.target
+Wants=graphical-session.target
+PartOf=hyprland-session.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/hyprwhenthen run
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=hyprland-session.target

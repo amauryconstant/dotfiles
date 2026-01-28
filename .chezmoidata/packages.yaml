@@ -18,14 +18,14 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - base             # Minimal Arch package set
-        - base-devel       # Development tools metapackage
-        - linux-firmware   # Firmware files for hardware
-        - linux            # Latest kernel
-        - linux-lts        # Long-term support kernel (fallback)
-        - efibootmgr       # UEFI boot manager utility
-        - cryptsetup       # LUKS disk encryption tools
-        - rage-encryption  # age encryption tool (Rust)
+        - base # Minimal Arch package set
+        - base-devel # Development tools metapackage
+        - linux-firmware # Firmware files for hardware
+        - linux # Latest kernel
+        - linux-lts # Long-term support kernel (fallback)
+        - efibootmgr # UEFI boot manager utility
+        - cryptsetup # LUKS disk encryption tools
+        - rage-encryption # age encryption tool (Rust)
 
     graphics_drivers_modern:
       enabled: true
@@ -33,14 +33,13 @@ packages:
       conflicts: ["graphics_drivers_legacy"]
       post_install_hook: ""
       packages:
-        - intel-ucode          # Intel CPU microcode updates
-        - dkms                 # Dynamic kernel module support (for other DKMS packages)
-        - nvidia-open          # NVIDIA open-source kernel modules (pre-built)
-        - nvidia-open-lts      # NVIDIA open-source kernel modules (LTS kernel)
-        - nvidia-utils         # NVIDIA utilities
-        - nvidia-settings      # NVIDIA driver configuration GUI
-        - lib32-nvidia-utils   # 32-bit NVIDIA utilities (for gaming)
-        - libva-nvidia-driver  # VA-API support for NVIDIA (hardware video decode)
+        - intel-ucode # Intel CPU microcode updates
+        - nvidia-open # NVIDIA open-source kernel modules (pre-built)
+        - nvidia-open-lts # NVIDIA open-source kernel modules (LTS kernel)
+        - nvidia-utils # NVIDIA utilities
+        - nvidia-settings # NVIDIA driver configuration GUI
+        - lib32-nvidia-utils # 32-bit NVIDIA utilities (for gaming)
+        - libva-nvidia-driver # VA-API support for NVIDIA (hardware video decode)
 
     graphics_drivers_legacy:
       enabled: false
@@ -48,15 +47,15 @@ packages:
       conflicts: ["graphics_drivers_modern"]
       post_install_hook: ""
       packages:
-        - intel-ucode          # Intel CPU microcode updates
-        - dkms                 # Dynamic kernel module support
-        - linux-headers        # Kernel headers for DKMS (main kernel)
-        - linux-lts-headers    # Kernel headers for DKMS (LTS kernel)
-        - nvidia-580xx-dkms    # NVIDIA kernel modules (580xx legacy)
-        - nvidia-580xx-utils   # NVIDIA utilities (580xx legacy)
-        - nvidia-settings      # NVIDIA driver configuration GUI (shared)
-        - lib32-nvidia-580xx-utils  # 32-bit NVIDIA utilities (gaming)
-        - libva-nvidia-driver  # VA-API support for NVIDIA (hardware video decode)
+        - intel-ucode # Intel CPU microcode updates
+        - dkms # Dynamic kernel module support
+        - linux-headers # Kernel headers for DKMS (main kernel)
+        - linux-lts-headers # Kernel headers for DKMS (LTS kernel)
+        - nvidia-580xx-dkms # NVIDIA kernel modules (580xx legacy)
+        - nvidia-580xx-utils # NVIDIA utilities (580xx legacy)
+        - nvidia-settings # NVIDIA driver configuration GUI (shared)
+        - lib32-nvidia-580xx-utils # 32-bit NVIDIA utilities (gaming)
+        - libva-nvidia-driver # VA-API support for NVIDIA (hardware video decode)
 
     system_utilities:
       enabled: true
@@ -64,17 +63,17 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - xdg-utils        # Desktop integration utilities
-        - xdg-desktop-portal  # Desktop portal framework (file picker, OAuth)
-        - xdg-desktop-portal-kde  # KDE portal backend (better Electron/Flatpak compatibility)
-        - openssh          # SSH client and server
-        - wget             # Non-interactive network downloader
-        - nano             # Simple terminal text editor
-        - smartmontools    # SMART disk health monitoring
-        - btrfs-progs      # Btrfs filesystem utilities
-        - timeshift        # System backup and restore (Btrfs snapshots)
-        - timeshift-systemd-timer  # Systemd timer for Timeshift scheduling (AUR)
-        - sof-firmware     # Intel audio DSP firmware
+        - xdg-utils # Desktop integration utilities
+        - xdg-desktop-portal # Desktop portal framework (file picker, OAuth)
+        - xdg-desktop-portal-kde # KDE portal backend (better Electron/Flatpak compatibility)
+        - openssh # SSH client and server
+        - wget # Non-interactive network downloader
+        - nano # Simple terminal text editor
+        - smartmontools # SMART disk health monitoring
+        - btrfs-progs # Btrfs filesystem utilities
+        - timeshift # System backup and restore (Btrfs snapshots)
+        - timeshift-systemd-timer # Systemd timer for Timeshift scheduling (AUR)
+        - sof-firmware # Intel audio DSP firmware
         - ventoy-bin
 
     network:
@@ -83,12 +82,12 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - iwd              # Modern WiFi daemon
-        - wpa_supplicant   # WiFi authentication daemon
-        - tailscale        # Mesh VPN service
-        - networkmanager   # Network configuration daemon
-        - bluez            # Bluetooth protocol stack
-        - bluez-utils      # Bluetooth command-line utilities
+        - iwd # Modern WiFi daemon
+        - wpa_supplicant # WiFi authentication daemon
+        - tailscale # Mesh VPN service
+        - networkmanager # Network configuration daemon
+        - bluez # Bluetooth protocol stack
+        - bluez-utils # Bluetooth command-line utilities
 
     package_management:
       enabled: true
@@ -96,11 +95,11 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - flatpak          # Universal package manager
-        - paru         # AUR helper (Rust, faster than yay)
-        - pacman-contrib   # Contributed pacman scripts
-        - rate-mirrors     # Mirror ranking utility
-        - chaotic-keyring  # Chaotic-AUR repository keys
+        - flatpak # Universal package manager
+        - paru # AUR helper (Rust, faster than yay)
+        - pacman-contrib # Contributed pacman scripts
+        - rate-mirrors # Mirror ranking utility
+        - chaotic-keyring # Chaotic-AUR repository keys
         - chaotic-mirrorlist # Chaotic-AUR mirror list
         - chezmoi_modify_manager # Complementary package for chezmoi
 
@@ -114,11 +113,11 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - ghostty          # Modern GPU terminal
-        - starship         # Fast customizable shell prompt
-        - zsh              # POSIX shell with advanced features
-        - zsh-antidote     # Fast zsh plugin manager
-        - zoxide           # Smarter cd with frecency algorithm
+        - ghostty # Modern GPU terminal
+        - starship # Fast customizable shell prompt
+        - zsh # POSIX shell with advanced features
+        - zsh-antidote # Fast zsh plugin manager
+        - zoxide # Smarter cd with frecency algorithm
 
     terminal_tools:
       enabled: true
@@ -127,34 +126,34 @@ packages:
       post_install_hook: ""
       packages:
         # Core CLI utilities
-        - fd               # Fast find with sane defaults
-        - ripgrep          # Fastest regex search tool
-        - bat              # Cat with syntax highlighting
-        - eza              # Modern ls with git integration
-        - xh               # User-friendly curl alternative
-        - jaq              # Fast jq alternative in Rust
-        - go-yq            # YAML processor (jq for YAML)
-        - rsync            # Incremental file transfer
-        - tlrc             # Community-driven simplified manpages
-        - fzf              # Fuzzy finder for CLI
+        - fd # Fast find with sane defaults
+        - ripgrep # Fastest regex search tool
+        - bat # Cat with syntax highlighting
+        - eza # Modern ls with git integration
+        - xh # User-friendly curl alternative
+        - jaq # Fast jq alternative in Rust
+        - go-yq # YAML processor (jq for YAML)
+        - rsync # Incremental file transfer
+        - tlrc # Community-driven simplified manpages
+        - fzf # Fuzzy finder for CLI
         # System monitoring & diagnostics
-        - fastfetch        # Fast neofetch alternative
-        - nvitop           # htop-like GPU monitor (NVIDIA)
-        - btop             # Modern resource monitor
-        - topgrade         # Universal system upgrade tool
-        - dust             # Disk usage with tree visualization
-        - inxi             # Comprehensive system info tool
-        - lm_sensors       # Hardware sensor monitoring
+        - fastfetch # Fast neofetch alternative
+        - nvitop # htop-like GPU monitor (NVIDIA)
+        - btop # Modern resource monitor
+        - topgrade # Universal system upgrade tool
+        - dust # Disk usage with tree visualization
+        - inxi # Comprehensive system info tool
+        - lm_sensors # Hardware sensor monitoring
         # Shell utilities
-        - usage            # Cheat sheet for CLI commands
-        - vhs              # Record terminal sessions as GIFs
-        - gum              # Glamorous shell UI toolkit
-        - rbw              # Unofficial Bitwarden CLI
+        - usage # Cheat sheet for CLI commands
+        - vhs # Record terminal sessions as GIFs
+        - gum # Glamorous shell UI toolkit
+        - rbw # Unofficial Bitwarden CLI
         # File management & navigation
-        - broot            # Tree navigator for large directories
-        - yazi             # Blazing fast TUI file manager
-        - unarchiver       # Universal archive extractor (unar, lsar)
-        - poppler          # PDF rendering utilities
+        - broot # Tree navigator for large directories
+        - yazi # Blazing fast TUI file manager
+        - unarchiver # Universal archive extractor (unar, lsar)
+        - poppler # PDF rendering utilities
 
     fonts:
       enabled: true
@@ -163,17 +162,17 @@ packages:
       post_install_hook: ""
       packages:
         # Terminal fonts
-        - ttf-firacode-nerd      # Monospace font with ligatures
-        - otf-opendyslexic-nerd  # Dyslexia-friendly font
-        - otf-geist-mono-nerd    # Vercel's monospace font
-        - ttf-iosevka-nerd       # Programming font with ligatures
-        - ttf-fira-sans          # Sans-serif system font
+        - ttf-firacode-nerd # Monospace font with ligatures
+        - otf-opendyslexic-nerd # Dyslexia-friendly font
+        - otf-geist-mono-nerd # Vercel's monospace font
+        - ttf-iosevka-nerd # Programming font with ligatures
+        - ttf-fira-sans # Sans-serif system font
         # Unicode & international coverage
-        - noto-fonts             # Google Noto (Latin/Greek/Cyrillic)
-        - noto-fonts-cjk         # Chinese, Japanese, Korean
-        - noto-fonts-emoji       # Color emoji
-        - noto-fonts-extra       # Extended Unicode scripts
-        - ttf-liberation         # Microsoft font replacements
+        - noto-fonts # Google Noto (Latin/Greek/Cyrillic)
+        - noto-fonts-cjk # Chinese, Japanese, Korean
+        - noto-fonts-emoji # Color emoji
+        - noto-fonts-extra # Extended Unicode scripts
+        - ttf-liberation # Microsoft font replacements
 
     # ============================================================
     # DEVELOPMENT
@@ -185,15 +184,15 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - neovim           # Modal text editor with LSP support
-        - git              # Distributed version control
-        - mise             # Polyglot runtime manager (asdf alternative)
-        - docker           # Container runtime platform
-        - docker-buildx    # Docker extended build capabilities
-        - docker-compose   # Docker Compose plugin
-        - go               # Go programming language
-        - python           # Python runtime
-        - rust             # Rust compiler and cargo
+        - neovim # Modal text editor with LSP support
+        - git # Distributed version control
+        - mise # Polyglot runtime manager (asdf alternative)
+        - docker # Container runtime platform
+        - docker-buildx # Docker extended build capabilities
+        - docker-compose # Docker Compose plugin
+        - go # Go programming language
+        - python # Python runtime
+        - rust # Rust compiler and cargo
 
     development_clis:
       enabled: true
@@ -202,17 +201,17 @@ packages:
       post_install_hook: ""
       packages:
         # Build tooling
-        - cmake            # hyprpm dependency
-        - meson            # hyprpm dependency
-        - cpio             # hyprpm dependency
+        - cmake # hyprpm dependency
+        - meson # hyprpm dependency
+        - cpio # hyprpm dependency
         # Development CLIs
-        - aws-cli-v2       # AWS command line interface
-        - git-delta        # Syntax-highlighting git diff pager
-        - mergiraf         # 3-way merge tool with better conflicts
-        - jujutsu          # Git-compatible VCS (experimental)
-        - lazygit          # Terminal UI for git commands
-        - lazydocker       # Terminal UI for docker management
-        - posting          # Modern API client (Postman alternative)
+        - aws-cli-v2 # AWS command line interface
+        - git-delta # Syntax-highlighting git diff pager
+        - mergiraf # 3-way merge tool with better conflicts
+        - jujutsu # Git-compatible VCS (experimental)
+        - lazygit # Terminal UI for git commands
+        - lazydocker # Terminal UI for docker management
+        - posting # Modern API client (Postman alternative)
 
     ai_tools:
       enabled: true
@@ -220,7 +219,7 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - ollama           # Local LLM runtime
+        - ollama # Local LLM runtime
 
     # ============================================================
     # DESKTOP ENVIRONMENT
@@ -232,40 +231,42 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - hyprland         # Hyprland Wayland compositor
-        - uwsm             # Universal Wayland Session Manager
-        - xdg-desktop-portal-hyprland  # Portal integration for Hyprland
-        - waybar           # Status bar for Wayland
-        - hyprlock         # Official Hyprland screen locker
-        - hypridle         # Official Hyprland idle daemon
-        - polkit-gnome     # Polkit authentication agent (hyprpolkitagent crashes)
-        - darkman          # Solar-based light/dark mode automation
-        - hyprsunset       # Blue light filter (gamma adjustment)
-        - swww             # Dynamic wallpaper daemon with transitions
-        - wallust-git      # Color palette generator from wallpapers (chaotic-aur)
-        - cliphist         # Clipboard history manager
-        - wofi             # Application launcher
-        - wlogout          # Logout/shutdown menu
-        - wl-clipboard     # Wayland clipboard CLI utilities
-        - pamixer          # PulseAudio/PipeWire mixer CLI
-        - brightnessctl    # Screen brightness controller
-        - playerctl        # MPRIS media player controller
-        - blueman          # GTK Bluetooth manager GUI
-        - dunst            # Notification daemon
-        - grim             # Wayland screenshot utility
-        - slurp            # Select screen region for screenshots
-        - satty            # Screenshot annotation tool
-        - wayfreeze-git    # Freeze screen for clean recording
+        - hyprland # Hyprland Wayland compositor
+        - uwsm # Universal Wayland Session Manager
+        - xdg-desktop-portal-hyprland # Portal integration for Hyprland
+        - waybar # Status bar for Wayland
+        - hyprlock # Official Hyprland screen locker
+        - hypridle # Official Hyprland idle daemon
+        - polkit-gnome # Polkit authentication agent (hyprpolkitagent crashes)
+        - darkman # Solar-based light/dark mode automation
+        - hyprsunset # Blue light filter (gamma adjustment)
+        - swww # Dynamic wallpaper daemon with transitions
+        - wallust-git # Color palette generator from wallpapers (chaotic-aur)
+        - cliphist # Clipboard history manager
+        - wofi # Application launcher
+        - wlogout # Logout/shutdown menu
+        - wl-clipboard # Wayland clipboard CLI utilities
+        - pamixer # PulseAudio/PipeWire mixer CLI
+        - brightnessctl # Screen brightness controller
+        - playerctl # MPRIS media player controller
+        - blueman # GTK Bluetooth manager GUI
+        - dunst # Notification daemon
+        - grim # Wayland screenshot utility
+        - slurp # Select screen region for screenshots
+        - satty # Screenshot annotation tool
+        - wayfreeze-git # Freeze screen for clean recording
         - gpu-screen-recorder-git # Hardware-accelerated screen recording (chaotic-aur)
-        - swayosd          # OSD overlay for volume/brightness
-        - localsend        # Local network file sharing (AirDrop alternative)
+        - swayosd # OSD overlay for volume/brightness
+        - localsend # Local network file sharing (AirDrop alternative)
         - xkeyboard-config # Keyboard layout definitions
-        - hyprpicker       # Wayland color picker
-        - imv              # Lightweight image viewer for Wayland
-        - plymouth         # Graphical boot splash screen
-        - sddm             # Simple Desktop Display Manager
+        - hyprpicker # Wayland color picker
+        - imv # Lightweight image viewer for Wayland
+        - plymouth # Graphical boot splash screen
+        - sddm # Simple Desktop Display Manager
         - solarized-sddm-theme # Solarized theme for SDDM
-        - xorg-server      # X server for XWayland compatibility
+        - xorg-server # X server for XWayland compatibility
+        - hyprdynamicmonitors-bin # Power-aware monitor manager with TUI
+        - hyprwhenthen-bin # Event-driven window automation
 
     desktop_gui_apps:
       enabled: true
@@ -274,35 +275,35 @@ packages:
       post_install_hook: ""
       packages:
         # Web browsers
-        - firefox          # Privacy-focused web browser
-        - chromium         # Open-source Chrome base
+        - firefox # Privacy-focused web browser
+        - chromium # Open-source Chrome base
         # Development
-        - code             # Visual Studio Code editor
+        - code # Visual Studio Code editor
         # Backup
         - nextcloud-client # Nextcloud desktop sync client
         # System services
-        - gnome-keyring    # Credential storage (WiFi passwords)
+        - gnome-keyring # Credential storage (WiFi passwords)
         # File management (GUI)
-        - gvfs             # Virtual filesystem (SMB/FTP support)
-        - tumbler          # Thumbnail generator for Thunar
-        - thunar           # Lightweight GTK file manager
+        - gvfs # Virtual filesystem (SMB/FTP support)
+        - tumbler # Thumbnail generator for Thunar
+        - thunar # Lightweight GTK file manager
         - thunar-archive-plugin # Archive right-click integration
-        - file-roller      # Archive manager GUI
+        - file-roller # Archive manager GUI
         # Qt/KDE integration
-        - qt5-wayland      # Qt5 Wayland support
-        - qt6-wayland      # Qt6 Wayland support
-        - qt5ct            # Qt5 configuration tool
-        - breeze           # KDE Breeze widget theme
-        - kde-cli-tools    # KDE integration tools (kioclient)
-        - kdegraphics-thumbnailers  # Thumbnail generators for Thunar
+        - qt5-wayland # Qt5 Wayland support
+        - qt6-wayland # Qt6 Wayland support
+        - qt5ct # Qt5 configuration tool
+        - breeze # KDE Breeze widget theme
+        - kde-cli-tools # KDE integration tools (kioclient)
+        - kdegraphics-thumbnailers # Thumbnail generators for Thunar
         # Utilities
-        - impression       # USB image writer tool
+        - impression # USB image writer tool
         # Various
-        - flatpak:com.spotify.Client  # Music streaming (Flatpak)
-        - spicetify-cli    # Spotify theme CLI (AUR)
-        - flatpak:com.slack.Slack  # Team communication (Flatpak)
-        - flatpak:com.github.xournalpp.xournalpp  # PDF annotation (Flatpak)
-        - flatpak:org.qbittorrent.qBittorrent  # BitTorrent client (Flatpak)
+        - flatpak:com.spotify.Client # Music streaming (Flatpak)
+        - spicetify-cli # Spotify theme CLI (AUR)
+        - flatpak:com.slack.Slack # Team communication (Flatpak)
+        - flatpak:com.github.xournalpp.xournalpp # PDF annotation (Flatpak)
+        - flatpak:org.qbittorrent.qBittorrent # BitTorrent client (Flatpak)
 
     audio_system:
       enabled: true
@@ -310,13 +311,13 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - pipewire         # Modern audio/video server
-        - pipewire-alsa    # ALSA compatibility layer
-        - pipewire-jack    # JACK pro-audio compatibility
-        - pipewire-pulse   # PulseAudio replacement
+        - pipewire # Modern audio/video server
+        - pipewire-alsa # ALSA compatibility layer
+        - pipewire-jack # JACK pro-audio compatibility
+        - pipewire-pulse # PulseAudio replacement
         - gst-plugin-pipewire # GStreamer integration
-        - libpulse         # PulseAudio client libraries
-        - wireplumber      # PipeWire session manager
+        - libpulse # PulseAudio client libraries
+        - wireplumber # PipeWire session manager
 
     printing_scanning:
       enabled: true
@@ -324,25 +325,25 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - cups             # UNIX printing system
-        - cups-pdf         # PDF virtual printer
+        - cups # UNIX printing system
+        - cups-pdf # PDF virtual printer
         - system-config-printer # Printer setup GUI
-        - sane             # Scanner access library
-        - sane-airscan     # eSCL/AirScan scanner driver
-        - samsung-unified-driver-common  # Samsung driver base
+        - sane # Scanner access library
+        - sane-airscan # eSCL/AirScan scanner driver
+        - samsung-unified-driver-common # Samsung driver base
         - samsung-unified-driver-printer # Samsung printer driver
         - samsung-unified-driver-scanner # Samsung scanner driver
-        - skanpage         # Simple scanning application
-        - imagemagick      # Image manipulation toolkit
+        - skanpage # Simple scanning application
+        - imagemagick # Image manipulation toolkit
 
   # Packages to remove (explicit cleanup)
   # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
   delete:
-    - yay              # Replaced by paru
-    - htop             # Redundant with btop/glances
-    - vim              # Replaced by neovim
-    - kitty            # Replaced by Ghostty
+    - yay # Replaced by paru
+    - htop # Redundant with btop/glances
+    - vim # Replaced by neovim
+    - kitty # Replaced by Ghostty
     - kitty-shell-integration
     - kitty-terminfo
-    - dolphin          # Replaced by Thunar
+    - dolphin # Replaced by Thunar
     - polkit-kde-agent # Replaced by hyprpolkitagent

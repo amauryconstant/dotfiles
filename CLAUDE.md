@@ -14,6 +14,7 @@ Technical guidance for Claude Code when developing in this repository.
 - **Terminal**: Ghostty (primary), Kitty (baseline)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
 - **Constraint**: Security-first, manual encryption only
+- **Monitor automation**: HyprDynamicMonitors (profiles), hyprwhenthen (events)
 - **Docs**: README.md for user-facing, CLAUDE.md for dev patterns
 
 ---
@@ -180,6 +181,8 @@ chezmoi status
 - `wlogout/` - Power menu
 - `themes/` - Theme system (8 variants, semantic variables, VSCode/Firefox/Spotify integration)
 - `dotfiles/` - **Hook system** (6 hook points, user extensibility)
+- `hyprdynamicmonitors/` - Monitor profile manager (port-agnostic matching)
+- `hyprwhenthen/` - Event-driven window automation (OAuth popups, etc.)
 
 **Shell & terminal**:
 - `shell/` - Common shell config (POSIX)
@@ -229,6 +232,10 @@ chezmoi status
 
 **Working on backups?**
 → `private_dot_local/lib/scripts/system/CLAUDE.md` (Timeshift integration)
+
+**Working on monitor automation?**
+→ `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)
+→ `private_dot_config/hyprwhenthen/CLAUDE.md` (event handlers, regex patterns)
 
 ---
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=HyprDynamicMonitors - Monitor configuration manager
+After=graphical-session.target
+Wants=graphical-session.target
+PartOf=hyprland-session.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/hyprdynamicmonitors run
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=hyprland-session.target

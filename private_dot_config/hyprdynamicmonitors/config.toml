@@ -1,0 +1,22 @@
+[general]
+enable_power_events = false
+enable_lid_events = false
+enable_notifications = false
+hot_reload_debounce = "1s"
+destination = "$HOME/.config/hypr/monitors.conf"
+
+[scoring]
+name_match = 10
+description_match = 5
+
+[profiles.desktop_dual]
+config_file = "hyprconfigs/desktop-dual.conf"
+config_file_type = "static"
+
+[[profiles.desktop_dual.conditions.required_monitors]]
+description = "GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 21411B000071"
+monitor_tag = "primary"
+
+[[profiles.desktop_dual.conditions.required_monitors]]
+description = "BNQ BenQ GW2765 W9F03010019"
+monitor_tag = "secondary"
