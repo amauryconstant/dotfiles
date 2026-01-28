@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-# Script: run_onchange_after_configure_spicetify.sh.tmpl
-# Purpose: Configure spicetify-cli for Flatpak Spotify
+# Script: run_once_after_010_configure_spicetify.sh.tmpl
+# Purpose: Configure spicetify-cli for Flatpak Spotify (one-time setup)
 # Requirements: Arch Linux, spicetify-cli (AUR), Spotify Flatpak
-# Trigger: Hash of packages.yaml (spicetify-cli entry)
 
 {{ includeTemplate "log_start" "Configuring spicetify for Flatpak Spotify" }}
 
@@ -190,8 +189,5 @@ spicetify backup
 spicetify apply
 
 {{ includeTemplate "log_success" "Spicetify configured successfully" }}
-{{ includeTemplate "log_info" "Themes ready for use via theme switcher" }}
+{{ includeTemplate "log_info" "Theme changes will be handled by theme-apply-spotify.sh" }}
 {{ includeTemplate "log_complete" "Spicetify configuration complete" }}
-
-# Hash trigger (re-run if packages.yaml changes)
-# {{ .packages | toJson | sha256sum }}
