@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+
+# Script: run_once_before_009_setup_hyprland_plugins.sh.tmpl
+# Purpose: Install hyprsplit plugin via hyprpm and enable HyprDynamicMonitors services
+# Requirements: Hyprland, hyprpm, HyprDynamicMonitors-bin, hyprwhenthen-bin
+# Note: Runs after package-manager to ensure all dependencies are installed
+
+{{ includeTemplate "log_start" "Setting up Hyprland plugins and monitor automation..." }}
+
+set -euo pipefail
+
+# ============================================================================
+# HYPRSPLIT PLUGIN SETUP (via hyprpm)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Checking hyprpm availability..." }}
+
+if ! command -v hyprpm &> /dev/null; then
+    {{ includeTemplate "log_error" "hyprpm not found - Hyprland may not be installed" }}
+    {{ includeTemplate "log_info" "Fix: Install Hyprland and ensure hyprpm is available" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "hyprpm available" }}
+
+# Update hyprpm headers to ensure compatibility
+{{ includeTemplate "log_step" "Updating hyprpm headers..." }}
+if hyprpm update >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "hyprpm headers updated" }}
+else
+    {{ includeTemplate "log_warning" "hyprpm update failed (continuing)" }}
+fi
+
+# Check if hyprsplit plugin is already installed
+{{ includeTemplate "log_step" "Checking for hyprsplit plugin..." }}
+
+if hyprpm list | grep -q "hyprsplit"; then
+    {{ includeTemplate "log_info" "hyprsplit plugin already installed" }}
+else
+    {{ includeTemplate "log_info" "hyprsplit not found, installing..." }}
+
+    {{ includeTemplate "log_step" "Adding hyprsplit plugin from GitHub..." }}
+    if echo "Y" | hyprpm add https://github.com/shezdy/hyprsplit >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "hyprsplit plugin added successfully" }}
+    else
+        {{ includeTemplate "log_error" "Failed to add hyprsplit plugin" }}
+        {{ includeTemplate "log_info" "Fix: Check internet connectivity and run: hyprpm add https://github.com/shezdy/hyprsplit" }}
+        exit 1
+    fi
+fi
+
+# Enable hyprsplit plugin
+{{ includeTemplate "log_step" "Enabling hyprsplit plugin..." }}
+if hyprpm enable shezdy/hyprsplit >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "hyprsplit plugin enabled" }}
+else
+    {{ includeTemplate "log_warning" "Failed to enable hyprsplit (may already be enabled)" }}
+fi
+
+# Reload hyprpm to load plugins
+{{ includeTemplate "log_step" "Reloading hyprpm to load plugins..." }}
+if hyprpm reload >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "hyprpm reloaded successfully" }}
+else
+    {{ includeTemplate "log_warning" "hyprpm reload failed (Hyprland may not be running - will reload on startup)" }}
+fi
+
+# ============================================================================
+# HYPRDYNAMICMONITORS SERVICE SETUP
+# ============================================================================
+
+# Reload systemd user daemon to recognize new/changed service files
+{{ includeTemplate "log_step" "Reloading systemd user daemon..." }}
+systemctl --user daemon-reload
+
+{{ includeTemplate "log_success" "systemd user daemon reloaded" }}
+
+{{ includeTemplate "log_step" "Checking HyprDynamicMonitors installation..." }}
+
+if ! command -v hyprdynamicmonitors &> /dev/null; then
+    {{ includeTemplate "log_error" "HyprDynamicMonitors not found" }}
+    {{ includeTemplate "log_info" "Fix: Run package-manager sync to install hyprdynamicmonitors-bin" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_success" "HyprDynamicMonitors installed" }}
+
+# Enable and start prepare service (runs before Hyprland)
+{{ includeTemplate "log_step" "Enabling and starting hyprdynamicmonitors-prepare.service..." }}
+
+if systemctl --user is-enabled hyprdynamicmonitors-prepare.service >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "hyprdynamicmonitors-prepare.service already enabled" }}
+    # Start it if not already running
+    if systemctl --user is-active hyprdynamicmonitors-prepare.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_info" "hyprdynamicmonitors-prepare.service already running" }}
+    else
+        if systemctl --user start hyprdynamicmonitors-prepare.service >/dev/null 2>&1; then
+            {{ includeTemplate "log_success" "hyprdynamicmonitors-prepare.service started" }}
+        else
+            {{ includeTemplate "log_warning" "Failed to start hyprdynamicmonitors-prepare.service" }}
+        fi
+    fi
+else
+    if systemctl --user enable --now hyprdynamicmonitors-prepare.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "hyprdynamicmonitors-prepare.service enabled and started" }}
+    else
+        {{ includeTemplate "log_warning" "Failed to enable/start hyprdynamicmonitors-prepare.service" }}
+        {{ includeTemplate "log_info" "Fix: Run manually: systemctl --user enable --now hyprdynamicmonitors-prepare.service" }}
+    fi
+fi
+
+# Enable and start main service (runs after graphical session)
+{{ includeTemplate "log_step" "Enabling and starting hyprdynamicmonitors.service..." }}
+
+if systemctl --user is-enabled hyprdynamicmonitors.service >/dev/null 2>&1; then
+    {{ includeTemplate "log_info" "hyprdynamicmonitors.service already enabled" }}
+    # Start it if not already running
+    if systemctl --user is-active hyprdynamicmonitors.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_info" "hyprdynamicmonitors.service already running" }}
+    else
+        if systemctl --user start hyprdynamicmonitors.service >/dev/null 2>&1; then
+            {{ includeTemplate "log_success" "hyprdynamicmonitors.service started" }}
+        else
+            {{ includeTemplate "log_warning" "Failed to start hyprdynamicmonitors.service" }}
+        fi
+    fi
+else
+    if systemctl --user enable --now hyprdynamicmonitors.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "hyprdynamicmonitors.service enabled and started" }}
+    else
+        {{ includeTemplate "log_warning" "Failed to enable/start hyprdynamicmonitors.service" }}
+        {{ includeTemplate "log_info" "Fix: Run manually: systemctl --user enable --now hyprdynamicmonitors.service" }}
+    fi
+fi
+
+# ============================================================================
+# HYPRWHENTHEN SERVICE SETUP (Optional)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Checking hyprwhenthen installation..." }}
+
+if command -v hyprwhenthen &> /dev/null; then
+    {{ includeTemplate "log_info" "hyprwhenthen installed, enabling and starting service..." }}
+
+    if systemctl --user is-enabled hyprwhenthen.service >/dev/null 2>&1; then
+        {{ includeTemplate "log_info" "hyprwhenthen.service already enabled" }}
+        # Start it if not already running
+        if systemctl --user is-active hyprwhenthen.service >/dev/null 2>&1; then
+            {{ includeTemplate "log_info" "hyprwhenthen.service already running" }}
+        else
+            if systemctl --user start hyprwhenthen.service >/dev/null 2>&1; then
+                {{ includeTemplate "log_success" "hyprwhenthen.service started" }}
+            else
+                {{ includeTemplate "log_warning" "Failed to start hyprwhenthen.service" }}
+            fi
+        fi
+    else
+        if systemctl --user enable --now hyprwhenthen.service >/dev/null 2>&1; then
+            {{ includeTemplate "log_success" "hyprwhenthen.service enabled and started" }}
+        else
+            {{ includeTemplate "log_warning" "Failed to enable/start hyprwhenthen.service" }}
+        fi
+    fi
+else
+    {{ includeTemplate "log_info" "hyprwhenthen not installed (optional - skip)" }}
+fi
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+{{ includeTemplate "log_complete" "Hyprland plugins and services setup completed" }}
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Setup Summary"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Plugins:"
+echo "    ✓ hyprsplit - Per-monitor workspaces (shezdy/hyprsplit)"
+echo ""
+echo "  Services:"
+echo "    ✓ hyprdynamicmonitors-prepare.service (runs before Hyprland)"
+echo "    ✓ hyprdynamicmonitors.service (monitor automation)"
+if command -v hyprwhenthen &> /dev/null; then
+    echo "    ✓ hyprwhenthen.service (event-driven window automation)"
+fi
+echo ""
+echo "  Next steps:"
+echo "    1. Restart Hyprland session or run: hyprctl reload"
+echo "    2. Verify plugins: hyprpm list"
+echo "    3. Verify config: hyprctl configerrors"
+echo "    4. Check services: systemctl --user status hyprdynamicmonitors"
+echo ""
+echo "  Monitor automation:"
+echo "    - Desktop: Auto-switches to 'desktop_dual' profile"
+echo "    - Laptop: Falls back to monitor.conf.tmpl (auto-detect)"
+echo "    - Edit: ~/.config/hyprdynamicmonitors/config.toml"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""

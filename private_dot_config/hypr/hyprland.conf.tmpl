@@ -27,9 +27,12 @@ source = ~/.config/themes/current/hyprland.conf
 
 # Source modular configurations
 # The order matters: earlier files can be referenced by later ones
-# Monitor configuration (managed by HyprDynamicMonitors on desktop)
-# First source is HyprDynamicMonitors output (desktop), second is fallback (laptop)
+# Monitor configuration
+# Desktop: Managed by HyprDynamicMonitors (auto-switches profiles)
+# Laptop: Falls back to monitor.conf with auto-detection
+{{ if eq .chassisType "desktop" }}
 source = ~/.config/hypr/monitors.conf
+{{ end }}
 source = ~/.config/hypr/conf/monitor.conf
 source = ~/.config/hypr/conf/autostart.conf
 
