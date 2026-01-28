@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_005_setup_wallpaper_timer.sh.tmpl
 # Purpose: Enable and start wallpaper rotation timer
@@ -39,6 +39,9 @@ systemctl --user enable wallpaper-cycle.timer
 
 {{ includeTemplate "log_step" "Starting wallpaper-cycle.timer" }}
 systemctl --user start wallpaper-cycle.timer
+
+{{ includeTemplate "log_step" "Triggering initial wallpaper change" }}
+systemctl --user start wallpaper-cycle.service
 
 {{ includeTemplate "log_step" "Verifying timer status" }}
 if systemctl --user is-active --quiet wallpaper-cycle.timer; then
