@@ -255,30 +255,62 @@ To establish the skill's contents, analyze each concrete example to create a lis
 
 ### Step 3: Initializing the Skill
 
-At this point, it is time to actually create the skill.
+At this point, it is time to actually create skill.
 
 Skip this step only if the skill being developed already exists, and iteration or packaging is needed. In this case, continue to the next step.
 
-When creating a new skill from scratch, always run the `init_skill.py` script. The script conveniently generates a new template skill directory that automatically includes everything a skill requires, making the skill creation process much more efficient and reliable.
+When creating a new skill from scratch, always run the `init_skill.py` script. The script conveniently generates a new template skill directory that automatically includes everything a skill requires, making skill creation process much more efficient and reliable.
 
-Usage:
+#### Usage
+
+**Basic usage** (creates skill in current directory):
+
+```bash
+~/.config/opencode/skills/skill-creator/scripts/init_skill.py <skill-name>
+```
+
+**Advanced usage** (specify output directory):
 
 ```bash
 ~/.config/opencode/skills/skill-creator/scripts/init_skill.py <skill-name> --path <output-directory>
 ```
 
-Script reference (read for implementation details):
+#### Examples
+
+Create in current directory (simplest for development):
+
+```bash
+~/.config/opencode/skills/skill-creator/scripts/init_skill.py my-new-skill
+```
+
+Create in specific location:
+
+```bash
+~/.config/opencode/skills/skill-creator/scripts/init_skill.py my-new-skill --path skills/public
+~/.config/opencode/skills/skill-creator/scripts/init_skill.py my-new-skill --path /tmp
+```
+
+#### When to Use Each Approach
+
+- **Omit `--path`**: When developing in place, working in current directory, or when the location doesn't matter
+- **Use `--path`**: When organizing skills in a specific structure, creating in a temporary location, or integrating with existing project layouts
+
+#### Script Reference
+
+Read the implementation details:
 
 @~/.config/opencode/skills/skill-creator/scripts/init_skill.py
 
-The script:
+#### What the Script Does
 
-- Creates the skill directory at the specified path
+- Creates the skill directory at the specified path (or current working directory if `--path` is omitted)
 - Generates a SKILL.md template with proper frontmatter and TODO placeholders
 - Creates example resource directories: `scripts/`, `references/`, and `assets/`
-- Adds example files in each directory that can be customized or deleted
+- Adds example files in each directory that demonstrate proper structure
 
-After initialization, customize or remove the generated SKILL.md and example files as needed.
+#### After Initialization
+
+Customize or remove the generated SKILL.md and example files as needed. The example files show proper structure but are placeholders that can be deleted if not required for your skill.
 
 ### Step 4: Edit the Skill
 
@@ -288,10 +320,10 @@ When editing the (newly-generated or existing) skill, remember that the skill is
 
 Consult these helpful guides based on your skill's needs:
 
-- **Multi-step processes**: See references/workflows.md for sequential workflows and conditional logic
-- **Specific output formats or quality standards**: See references/output-patterns.md for template and example patterns
+- **Multi-step processes**: See references/workflows.md for 7 workflow patterns (sequential, conditional, decision tree, validation-driven, retry/fallback, parallel, stateful)
+- **Specific output formats or quality standards**: See references/output-patterns.md for 6 output patterns (template, examples, checklist, data validation, schema-based, progressive disclosure)
 
-These files contain established best practices for effective skill design.
+These files contain established best practices for effective skill design, including pattern selection guidance, anti-patterns to avoid, and concrete examples.
 
 #### Start with Reusable Skill Contents
 

@@ -11,5 +11,5 @@
 !resources/*.md
 
 !private_dot_config/**/commands/*.md
-!private_dot_config/**/skills/*.md
+!private_dot_config/**/skills/**/*.md
 !research/**.md
