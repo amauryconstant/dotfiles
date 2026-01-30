@@ -267,6 +267,7 @@ packages:
         - xorg-server # X server for XWayland compatibility
         - hyprdynamicmonitors-bin # Power-aware monitor manager with TUI
         - hyprwhenthen-bin # Event-driven window automation
+        - hyprdrover # Rust-based session management for Hyprland
 
     desktop_gui_apps:
       enabled: true

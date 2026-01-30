@@ -1,12 +1,12 @@
 #!/usr/bin/env sh
 
 # Script: session-prompt.sh
-# Purpose: Prompt user to restore saved Hyprland session
+# Purpose: Prompt user to restore saved Hyprland session (default slot)
 # Requirements: Arch Linux, wofi, notify-send, jaq
 
 SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
 
-# Check if session file exists
+# Check if session file exists (symlink to current slot)
 if [ ! -f "$SESSION_FILE" ]; then
     # No saved session - exit silently
     exit 0
@@ -24,20 +24,25 @@ if [ "$session_age" -gt "$max_age" ]; then
 fi
 
 # Get session metadata
-window_count=$(jaq -r '.windows | length' "$SESSION_FILE")
-timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE")
+window_count=$(jaq -r '.clients | length' "$SESSION_FILE" 2>/dev/null || echo "?")
+timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE" 2>/dev/null || echo "")
+slot=$(jaq -r '.metadata.slot' "$SESSION_FILE" 2>/dev/null || echo "default")
 
 # Format timestamp for display
-formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "recent")
+if [ -n "$timestamp" ] && [ "$timestamp" != "null" ]; then
+    formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "recent")
+else
+    formatted_time="recent"
+fi
 
 # Show wofi dialog for selection
 choice=$(printf "Restore session ($window_count windows)\nSkip" | wofi \
     --dmenu \
-    --prompt "Session from $formatted_time" \
+    --prompt "Session '$slot' from $formatted_time" \
     --width 400 \
     --height 150)
 
 if [ "$choice" = "Restore session ($window_count windows)" ]; then
-    # User chose to restore - launch in background
-    "$HOME/.local/lib/scripts/desktop/session-restore.sh" &
+    # User chose to restore - launch in background with the correct slot
+    "$HOME/.local/lib/scripts/desktop/session-restore.sh" "$slot" &
 fi

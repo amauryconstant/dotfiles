@@ -1,55 +1,141 @@
 #!/usr/bin/env bash
 
-# CLI wrapper for Hyprland session management
+# CLI wrapper for Hyprland session management (hybrid hyprdrover + custom enrichment)
 
 SCRIPT_DIR="$HOME/.local/lib/scripts/desktop"
-SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
+SESSION_DIR="$HOME/.local/state/dotfiles"
+HYPRDROVER_DIR="$HOME/.config/hyprdrover/sessions"
 
 show_usage() {
     cat << EOF
-Usage: hypr-session <command>
+Usage: hypr-session <command> [slot]
 
 Commands:
-    save        Save current Hyprland session
-    restore     Restore saved session
-    status      Show session status
-    clear       Delete saved session
-    help        Show this help message
+    save [slot]     Save current Hyprland session (default slot: "default")
+    restore [slot]  Restore saved session (default slot: "default")
+    list            List all saved sessions
+    status [slot]   Show session status (default slot: "default")
+    clear [slot]    Delete saved session (default slot: "default")
+    help            Show this help message
+
+Slot names: Alphanumeric characters, dashes, and underscores only
 
 Examples:
     hypr-session save
-    hypr-session restore
-    hypr-session status
+    hypr-session save work
+    hypr-session restore work
+    hypr-session list
+    hypr-session status work
+    hypr-session clear work
 EOF
+}
+
+list_sessions() {
+    echo "Saved sessions:"
+    echo ""
+
+    # Check for any enrichment files
+    if ! ls "$SESSION_DIR"/hyprland-session-*.json >/dev/null 2>&1; then
+        echo "  No saved sessions found"
+        return
+    fi
+
+    # List all sessions with metadata
+    for file in "$SESSION_DIR"/hyprland-session-*.json; do
+        # Skip the symlink
+        if [ -L "$file" ]; then
+            continue
+        fi
+
+        slot=$(basename "$file" | sed 's/hyprland-session-//' | sed 's/.json$//')
+
+        if [ -f "$file" ]; then
+            window_count=$(jaq -r '.clients | length' "$file" 2>/dev/null || echo "?")
+            timestamp=$(jaq -r '.metadata.timestamp' "$file" 2>/dev/null || echo "unknown")
+            formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "$timestamp")
+
+            # Check if this is the current session
+            current_link=$(readlink "$SESSION_DIR/hyprland-session.json" 2>/dev/null)
+            if [ "$current_link" = "$file" ] || [ "$current_link" = "$(basename "$file")" ]; then
+                marker="*"
+            else
+                marker=" "
+            fi
+
+            echo "  $marker $slot - $window_count windows (saved: $formatted_time)"
+        fi
+    done
+}
+
+show_status() {
+    slot="${1:-default}"
+
+    enrichment_file="$SESSION_DIR/hyprland-session-$slot.json"
+
+    if [ ! -f "$enrichment_file" ]; then
+        echo "No saved session found for slot: $slot"
+        return 1
+    fi
+
+    window_count=$(jaq -r '.clients | length' "$enrichment_file")
+    timestamp=$(jaq -r '.metadata.timestamp' "$enrichment_file")
+    formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+
+    echo "Session slot: $slot"
+    echo "Saved: $formatted_time"
+    echo "Windows: $window_count"
+    echo ""
+    echo "Window list:"
+    jaq -r '.clients[] | "  - \(.class) on workspace \(.workspace.id)"' "$enrichment_file"
+}
+
+clear_session() {
+    slot="${1:-default}"
+
+    enrichment_file="$SESSION_DIR/hyprland-session-$slot.json"
+    hyprdrover_file="$HYPRDROVER_DIR/$slot.json"
+
+    if [ ! -f "$enrichment_file" ]; then
+        echo "No saved session found for slot: $slot"
+        return 1
+    fi
+
+    # Remove enrichment file
+    rm -f "$enrichment_file"
+
+    # Remove hyprdrover file if it exists
+    if [ -f "$hyprdrover_file" ]; then
+        rm -f "$hyprdrover_file"
+    fi
+
+    # Remove symlink if it points to this slot
+    current_link=$(readlink "$SESSION_DIR/hyprland-session.json" 2>/dev/null)
+    if [ "$current_link" = "$enrichment_file" ] || [ "$current_link" = "$(basename "$enrichment_file")" ]; then
+        rm -f "$SESSION_DIR/hyprland-session.json"
+    fi
+
+    echo "Session cleared: $slot"
 }
 
 case "$1" in
     save)
-        "$SCRIPT_DIR/session-save.sh"
+        slot="${2:-default}"
+        "$SCRIPT_DIR/session-save.sh" "$slot"
         ;;
     restore)
-        "$SCRIPT_DIR/session-restore.sh"
+        slot="${2:-default}"
+        "$SCRIPT_DIR/session-restore.sh" "$slot"
+        ;;
+    list)
+        list_sessions
         ;;
     status)
-        if [ -f "$SESSION_FILE" ]; then
-            window_count=$(jaq -r '.windows | length' "$SESSION_FILE")
-            timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE")
-            formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
-            echo "Saved session: $formatted_time"
-            echo "Windows: $window_count"
-            echo ""
-            jaq -r '.windows[] | "  - \(.class) on workspace \(.workspace.id // .workspace)"' "$SESSION_FILE"
-        else
-            echo "No saved session found"
-        fi
+        slot="${2:-default}"
+        show_status "$slot"
         ;;
     clear)
-        if [ -f "$SESSION_FILE" ]; then
-            rm "$SESSION_FILE"
-            echo "Session cleared"
-        else
-            echo "No saved session to clear"
-        fi
+        slot="${2:-default}"
+        clear_session "$slot"
         ;;
     help|"")
         show_usage

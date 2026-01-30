@@ -1,15 +1,24 @@
 #!/usr/bin/env sh
 
 # Script: session-save.sh
-# Purpose: Save current Hyprland session state to JSON
-# Requirements: Arch Linux, hyprctl, jaq
+# Purpose: Save Hyprland session using hyprdrover with CWD enrichment
+# Requirements: Arch Linux, hyprdrover, hyprctl, jaq
 
-SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
-SESSION_DIR="$(dirname "$SESSION_FILE")"
+SESSION_DIR="$HOME/.local/state/dotfiles"
 DENYLIST_FILE="$HOME/.config/dotfiles/session-denylist.conf"
+HYPRDROVER_DIR="$HOME/.config/hyprdrover/sessions"
 
-# Ensure state directory exists
-mkdir -p "$SESSION_DIR"
+# Default slot name
+SLOT="${1:-default}"
+
+# Validate slot name (alphanumeric, dash, underscore only)
+if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+    notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000
+    exit 1
+fi
+
+# Ensure directories exist
+mkdir -p "$SESSION_DIR" "$HYPRDROVER_DIR"
 
 # Load denylist (one class per line)
 load_denylist() {
@@ -21,152 +30,118 @@ load_denylist() {
     fi
 }
 
-# Map window class to launch command
-map_class_to_command() {
-    class="$1"
-    pid="$2"
-
-    # Try reading /proc/PID/cmdline for actual launch command
-    if [ -f "/proc/$pid/cmdline" ]; then
-        cmdline=$(tr '\0' ' ' < "/proc/$pid/cmdline" | sed 's/[[:space:]]*$//')
-        if [ -n "$cmdline" ]; then
-            printf "%s" "$cmdline"
-            return
-        fi
-    fi
-
-    # Fallback: Heuristic mapping (class → command)
-    case "$class" in
-        firefox|Firefox) printf "firefox" ;;
-        code|Code) printf "code" ;;
-        ghostty|Ghostty) printf "ghostty" ;;
-        kitty|Kitty) printf "kitty" ;;
-        alacritty|Alacritty) printf "alacritify" ;;
-        foot|Foot) printf "foot" ;;
-        wezterm|WezTerm) printf "wezterm" ;;
-        thunar|Thunar) printf "thunar" ;;
-        dolphin|Dolphin) printf "dolphin" ;;
-        discord|Discord) printf "discord" ;;
-        spotify|Spotify) printf "spotify" ;;
-        obsidian|Obsidian) printf "obsidian" ;;
-        slack|Slack) printf "slack" ;;
-        *)
-            # Fallback: use class as command (lowercase)
-            printf "%s" "$class" | tr '[:upper:]' '[:lower:]'
-            ;;
-    esac
-}
-
-# Extract terminal CWD from PID
-get_terminal_cwd() {
-    pid="$1"
-    class="$2"
-
-    # Only for terminal apps
-    case "$class" in
-        ghostty|kitty|alacritty|foot|wezterm|Ghostty|Kitty|Alacritty|Foot|WezTerm)
-            # Find shell child process
-            shell_pid=$(pgrep -P "$pid" 2>/dev/null | head -n 1)
-            [ -z "$shell_pid" ] && shell_pid="$pid"
-
-            # Read CWD from /proc
-            if [ -d "/proc/$shell_pid" ]; then
-                cwd=$(readlink "/proc/$shell_pid/cwd" 2>/dev/null)
-                if [ -d "$cwd" ]; then
-                    printf "%s" "$cwd"
-                    return
-                fi
-            fi
-            ;;
-    esac
-
-    printf "null"
-}
-
 # Main save logic
 save_session() {
-    notify-send "Session Manager" "Saving Hyprland session..." -t 2000
+    notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000
 
-    # Query monitors
-    monitors_json=$(hyprctl monitors -j)
+    # Phase 1: Use hyprdrover to save core session
+    if ! hyprdrover --save "$SLOT" >/dev/null 2>&1; then
+        notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000
+        exit 1
+    fi
 
-    # Query all windows
+    # Phase 2: Extract terminal CWDs for enrichment
     windows_json=$(hyprctl clients -j)
 
     # Get denylist as JSON array
     denylist_json=$(load_denylist | jaq -R -s 'split("\n") | map(select(length > 0))')
 
-    # Create temp file for enriched windows
-    temp_windows=$(mktemp)
+    # Build CWD map for terminal windows
+    temp_pids=$(mktemp)
+    temp_cwds=$(mktemp)
 
-    # Process each window and enrich with command/cwd
-    echo "$windows_json" | jaq -c '.[]' | while IFS= read -r window; do
-        class=$(echo "$window" | jaq -r '.class')
-        pid=$(echo "$window" | jaq -r '.pid')
+    # Extract terminal window PIDs
+    echo "$windows_json" | jaq -r '
+        .[] |
+        select(.class | test("ghostty|kitty|alacritty|foot|wezterm|Ghostty|Kitty|Alacritty|Foot|WezTerm|com.mitchellh.ghostty"; "i")) |
+        "\(.pid)|\(.class)|\(.address)"
+    ' > "$temp_pids"
 
-        # Check if denylisted
-        is_denied=$(echo "$denylist_json" | jaq -e --arg class "$class" 'index($class)' >/dev/null 2>&1 && echo "yes" || echo "no")
+    # Collect CWD for each terminal
+    while IFS='|' read -r pid _class address; do
+        cwd=""
 
-        if [ "$is_denied" = "yes" ]; then
-            continue
+        # Try direct CWD first
+        if [ -d "/proc/$pid" ]; then
+            direct_cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || echo "")
+            if [ -n "$direct_cwd" ] && [ -d "$direct_cwd" ]; then
+                cwd="$direct_cwd"
+            else
+                # Try shell child process
+                shell_pid=$(pgrep -P "$pid" 2>/dev/null | head -n 1)
+                if [ -n "$shell_pid" ] && [ -d "/proc/$shell_pid" ]; then
+                    shell_cwd=$(readlink "/proc/$shell_pid/cwd" 2>/dev/null || echo "")
+                    if [ -n "$shell_cwd" ] && [ -d "$shell_cwd" ]; then
+                        cwd="$shell_cwd"
+                    fi
+                fi
+            fi
         fi
 
-        # Get launch command and CWD
-        launch_command=$(map_class_to_command "$class" "$pid")
-        cwd=$(get_terminal_cwd "$pid" "$class")
+        # Store as JSON if CWD found
+        if [ -n "$cwd" ]; then
+            jaq -n --arg addr "$address" --arg cwd "$cwd" \
+                '{($addr): $cwd}' >> "$temp_cwds"
+        fi
+    done < "$temp_pids"
 
-        # Add launch command and CWD to window object
-        enriched_window=$(echo "$window" | jaq \
-            --arg cmd "$launch_command" \
-            --arg cwd "$cwd" \
-            '. + {launchCommand: $cmd, cwd: $cwd}')
-
-        echo "$enriched_window" >> "$temp_windows"
-    done
-
-    # Read enriched windows and add instance numbers
-    if [ -s "$temp_windows" ]; then
-        filtered_windows=$(jaq -s '
-            group_by(.class) |
-            map(to_entries | map(.value + {instanceNumber: (.key + 1)})) |
-            flatten
-        ' "$temp_windows")
+    # Aggregate CWD map
+    if [ -s "$temp_cwds" ]; then
+        cwd_map=$(jaq -s 'reduce .[] as $item ({}; . + $item)' < "$temp_cwds")
     else
-        filtered_windows="[]"
+        cwd_map="{}"
     fi
 
-    rm -f "$temp_windows"
+    rm -f "$temp_pids" "$temp_cwds"
 
-    # Build metadata
+    # Phase 3: Load hyprdrover's JSON and apply custom filters
+    hyprdrover_file="$HYPRDROVER_DIR/$SLOT.json"
+
+    if [ ! -f "$hyprdrover_file" ]; then
+        notify-send "Session Manager" "❌ hyprdrover session file not found" -u critical -t 5000
+        exit 1
+    fi
+
+    # Read hyprdrover session
+    hyprdrover_session=$(cat "$hyprdrover_file")
+
+    # Apply custom denylist (extend beyond hyprdrover's hardcoded list)
+    filtered_session=$(echo "$hyprdrover_session" | jaq \
+        --argjson denylist "$denylist_json" \
+        --argjson cwdMap "$cwd_map" '
+        # Filter clients by denylist
+        .clients |= map(select([.class] | inside($denylist) | not)) |
+        # Enrich with CWD data
+        .clients |= map(
+            .address as $addr |
+            if $cwdMap[$addr] then
+                . + {cwd: $cwdMap[$addr]}
+            else
+                .
+            end
+        )
+    ')
+
+    # Phase 4: Write enrichment file with metadata
+    enrichment_file="$SESSION_DIR/hyprland-session-$SLOT.json"
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    hypr_version=$(hyprctl version | head -1 | awk '{print $2}' 2>/dev/null || echo "unknown")
-    monitor_count=$(echo "$monitors_json" | jaq 'length')
-    workspace_count=$(hyprctl workspaces -j | jaq 'length')
 
-    # Build final JSON
-    session_json=$(jaq -n \
+    echo "$filtered_session" | jaq \
         --arg timestamp "$timestamp" \
-        --arg version "$hypr_version" \
-        --argjson monitors "$monitors_json" \
-        --argjson windows "$filtered_windows" \
-        --argjson monitor_count "$monitor_count" \
-        --argjson workspace_count "$workspace_count" \
-        '{
+        --arg slot "$SLOT" \
+        '. + {
             metadata: {
                 timestamp: $timestamp,
-                hyprland_version: $version,
-                monitor_count: $monitor_count,
-                workspace_count: $workspace_count
-            },
-            monitors: $monitors,
-            windows: $windows
-        }')
+                slot: $slot,
+                source: "hyprdrover-hybrid"
+            }
+        }' > "$enrichment_file"
 
-    # Write session file
-    echo "$session_json" > "$SESSION_FILE"
+    # Create symlink for current slot
+    ln -sf "$enrichment_file" "$SESSION_DIR/hyprland-session.json"
 
-    window_count=$(echo "$session_json" | jaq '.windows | length')
-    notify-send "Session Manager" "✅ Saved $window_count windows to session" -t 3000
+    window_count=$(echo "$filtered_session" | jaq '.clients | length')
+    notify-send "Session Manager" "✅ Saved $window_count windows to slot: $SLOT" -t 3000
 }
 
 save_session
