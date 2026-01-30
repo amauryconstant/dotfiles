@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # Script: session-save.sh
-# Purpose: Save Hyprland session using hyprdrover with CWD enrichment
+# Purpose: Save Hyprland session using hyprdrover with CWD enrichment + launch command mapping
 # Requirements: Arch Linux, hyprdrover, hyprctl, jaq
 
 SESSION_DIR="$HOME/.local/state/dotfiles"
@@ -28,6 +28,88 @@ load_denylist() {
         # Default denylist (ephemeral/UI elements)
         printf "wofi\nwlogout\ndunst\nwaybar\nhyprpicker\n"
     fi
+}
+
+# Map window class to proper launch command
+get_launch_command() {
+    class="$1"
+
+    # Case-insensitive class matching
+    class_lower=$(echo "$class" | tr '[:upper:]' '[:lower:]')
+
+    case "$class_lower" in
+        # Code editors (Electron apps)
+        "code-oss"|"code")
+            echo "code"
+            ;;
+        "vscodium")
+            echo "vscodium"
+            ;;
+
+        # Browsers
+        "firefox")
+            echo "firefox"
+            ;;
+        "chromium"|"chromium-browser")
+            echo "chromium"
+            ;;
+        "brave"|"brave-browser")
+            echo "brave"
+            ;;
+
+        # Terminals
+        "com.mitchellh.ghostty"|"ghostty")
+            echo "ghostty"
+            ;;
+        "kitty")
+            echo "kitty"
+            ;;
+        "alacritty")
+            echo "alacritty"
+            ;;
+        "foot")
+            echo "foot"
+            ;;
+
+        # Flatpak apps (detect by class pattern or explicit mapping)
+        "slack")
+            if flatpak list --app 2>/dev/null | grep -q "com.slack.Slack"; then
+                echo "flatpak run com.slack.Slack"
+            else
+                echo "slack"
+            fi
+            ;;
+        "spotify")
+            if flatpak list --app 2>/dev/null | grep -q "com.spotify.Client"; then
+                echo "flatpak run com.spotify.Client"
+            else
+                echo "spotify"
+            fi
+            ;;
+        "discord")
+            if flatpak list --app 2>/dev/null | grep -q "com.discordapp.Discord"; then
+                echo "flatpak run com.discordapp.Discord"
+            else
+                echo "discord"
+            fi
+            ;;
+
+        # File managers
+        "dolphin")
+            echo "dolphin"
+            ;;
+        "thunar")
+            echo "thunar"
+            ;;
+        "nautilus")
+            echo "nautilus"
+            ;;
+
+        # Default: Use class name as command (lowercase)
+        *)
+            echo "$class_lower"
+            ;;
+    esac
 }
 
 # Main save logic
@@ -94,7 +176,24 @@ save_session() {
 
     rm -f "$temp_pids" "$temp_cwds"
 
-    # Phase 3: Load hyprdrover's JSON and apply custom filters
+    # Phase 3: Build launch command map
+    temp_launch=$(mktemp)
+
+    echo "$windows_json" | jaq -r '.[] | "\(.address)|\(.class)"' | while IFS='|' read -r address class; do
+        launch_cmd=$(get_launch_command "$class")
+        jaq -n --arg addr "$address" --arg cmd "$launch_cmd" \
+            '{($addr): $cmd}' >> "$temp_launch"
+    done
+
+    if [ -s "$temp_launch" ]; then
+        launch_map=$(jaq -s 'reduce .[] as $item ({}; . + $item)' < "$temp_launch")
+    else
+        launch_map="{}"
+    fi
+
+    rm -f "$temp_launch"
+
+    # Phase 4: Load hyprdrover's JSON and apply custom filters
     hyprdrover_file="$HYPRDROVER_DIR/$SLOT.json"
 
     if [ ! -f "$hyprdrover_file" ]; then
@@ -105,24 +204,29 @@ save_session() {
     # Read hyprdrover session
     hyprdrover_session=$(cat "$hyprdrover_file")
 
-    # Apply custom denylist (extend beyond hyprdrover's hardcoded list)
+    # Apply custom denylist + enrich with CWD and launch commands
     filtered_session=$(echo "$hyprdrover_session" | jaq \
         --argjson denylist "$denylist_json" \
-        --argjson cwdMap "$cwd_map" '
+        --argjson cwdMap "$cwd_map" \
+        --argjson launchMap "$launch_map" '
         # Filter clients by denylist
         .clients |= map(select([.class] | inside($denylist) | not)) |
-        # Enrich with CWD data
+        # Enrich with CWD data and launch commands
         .clients |= map(
             .address as $addr |
-            if $cwdMap[$addr] then
-                . + {cwd: $cwdMap[$addr]}
-            else
-                .
-            end
+            . + {
+                launchCommand: $launchMap[$addr]
+            } + (
+                if $cwdMap[$addr] then
+                    {cwd: $cwdMap[$addr]}
+                else
+                    {}
+                end
+            )
         )
     ')
 
-    # Phase 4: Write enrichment file with metadata
+    # Phase 5: Write enrichment file with metadata
     enrichment_file="$SESSION_DIR/hyprland-session-$SLOT.json"
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
