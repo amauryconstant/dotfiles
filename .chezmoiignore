@@ -16,3 +16,5 @@ research/
 
 LICENSE
 README.md
+
+__pycache__
