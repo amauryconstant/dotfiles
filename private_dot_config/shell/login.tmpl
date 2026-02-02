@@ -33,6 +33,11 @@ export BROWSER="${BROWSER:-{{ .globals.applications.browser }}}"
 # Package Version Managers Envs
 export CARGO_HOME="{{ .globals.paths.cargo_home }}"
 export GOPATH="{{ .globals.paths.gopath }}"
+export NPM_CONFIG_PREFIX="{{ .globals.paths.npm_prefix }}"
+export NPM_CONFIG_CACHE="{{ .globals.paths.npm_prefix }}/cache"
+
+# GPU/Graphics Caches
+export __GL_SHADER_DISK_CACHE_PATH="{{ .globals.paths.nvidia_cache }}"
 
 # Projects
 export PROJECTS="{{ .globals.paths.projects }}"

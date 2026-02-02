@@ -29,6 +29,10 @@ globals:
     # Package version managers
     cargo_home: "$HOME/.local/pvm/cargo"
     gopath: "$HOME/.local/pvm/go"
+    npm_prefix: "$HOME/.local/pvm/npm"
+
+    # GPU/Graphics caches
+    nvidia_cache: "$HOME/.cache/nv"
 
     # Project directories
     projects: "$HOME/Projects"

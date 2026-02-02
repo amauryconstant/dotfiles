@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# Script: run_once_after_011_migrate_xdg_directories.sh.tmpl
+# Purpose: Migrate legacy dot-directories to XDG-compliant locations
+# Requirements: Arch Linux
+
+{{ includeTemplate "log_start" "Migrating directories to XDG-compliant locations..." }}
+
+set -euo pipefail
+
+# Track if any migrations happened
+migrated=false
+
+{{ includeTemplate "log_step" "Migrating npm directory..." }}
+if [ -d "$HOME/.npm" ]; then
+    mkdir -p "$HOME/.local/pvm"
+    if [ -d "$HOME/.local/pvm/npm" ]; then
+        {{ includeTemplate "log_progress" "Merging ~/.npm into ~/.local/pvm/npm..." }}
+        cp -rf "$HOME/.npm/." "$HOME/.local/pvm/npm/"
+        rm -rf "$HOME/.npm"
+    else
+        {{ includeTemplate "log_progress" "Moving ~/.npm to ~/.local/pvm/npm..." }}
+        mv "$HOME/.npm" "$HOME/.local/pvm/npm"
+    fi
+    {{ includeTemplate "log_success" "npm directory migrated" }}
+    migrated=true
+else
+    {{ includeTemplate "log_skip" "No npm directory to migrate" }}
+fi
+
+{{ includeTemplate "log_step" "Migrating NVIDIA cache directory..." }}
+if [ -d "$HOME/.nv" ]; then
+    mkdir -p "$HOME/.cache"
+    if [ -d "$HOME/.cache/nv" ]; then
+        {{ includeTemplate "log_progress" "Merging ~/.nv into ~/.cache/nv..." }}
+        cp -rf "$HOME/.nv/." "$HOME/.cache/nv/"
+        rm -rf "$HOME/.nv"
+    else
+        {{ includeTemplate "log_progress" "Moving ~/.nv to ~/.cache/nv..." }}
+        mv "$HOME/.nv" "$HOME/.cache/nv"
+    fi
+    {{ includeTemplate "log_success" "NVIDIA cache migrated" }}
+    migrated=true
+else
+    {{ includeTemplate "log_skip" "No NVIDIA cache to migrate" }}
+fi
+
+{{ includeTemplate "log_step" "Migrating legacy cargo directory..." }}
+if [ -d "$HOME/.cargo" ]; then
+    mkdir -p "$HOME/.local/pvm"
+    if [ -d "$HOME/.local/pvm/cargo" ]; then
+        {{ includeTemplate "log_progress" "Merging ~/.cargo into ~/.local/pvm/cargo..." }}
+        cp -rf "$HOME/.cargo/." "$HOME/.local/pvm/cargo/"
+        rm -rf "$HOME/.cargo"
+    else
+        {{ includeTemplate "log_progress" "Moving ~/.cargo to ~/.local/pvm/cargo..." }}
+        mv "$HOME/.cargo" "$HOME/.local/pvm/cargo"
+    fi
+    {{ includeTemplate "log_success" "cargo directory migrated" }}
+    migrated=true
+else
+    {{ includeTemplate "log_skip" "No legacy cargo directory to migrate" }}
+fi
+
+{{ includeTemplate "log_step" "Removing oh-my-zsh directory..." }}
+if [ -d "$HOME/.oh-my-zsh" ]; then
+    {{ includeTemplate "log_progress" "Removing ~/.oh-my-zsh (managed by antidote)..." }}
+    rm -rf "$HOME/.oh-my-zsh"
+    {{ includeTemplate "log_success" "oh-my-zsh directory removed" }}
+    migrated=true
+else
+    {{ includeTemplate "log_skip" "No oh-my-zsh directory to remove" }}
+fi
+
+{{ includeTemplate "log_step" "Removing GitLab directory..." }}
+if [ -d "$HOME/.gitlab" ]; then
+    {{ includeTemplate "log_progress" "Removing ~/.gitlab (empty, not used)..." }}
+    rm -rf "$HOME/.gitlab"
+    {{ includeTemplate "log_success" "GitLab directory removed" }}
+    migrated=true
+else
+    {{ includeTemplate "log_skip" "No GitLab directory to remove" }}
+fi
+
+if [ "$migrated" = true ]; then
+    {{ includeTemplate "log_complete" "Directory migration complete - restart your shell to apply changes" }}
+else
+    {{ includeTemplate "log_complete" "No migrations needed - all directories already in correct locations" }}
+fi
