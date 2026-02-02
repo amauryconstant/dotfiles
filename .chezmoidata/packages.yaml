@@ -66,15 +66,22 @@ packages:
         - xdg-utils # Desktop integration utilities
         - xdg-desktop-portal # Desktop portal framework (file picker, OAuth)
         - xdg-desktop-portal-kde # KDE portal backend (better Electron/Flatpak compatibility)
-        - openssh # SSH client and server
-        - wget # Non-interactive network downloader
         - nano # Simple terminal text editor
         - smartmontools # SMART disk health monitoring
         - btrfs-progs # Btrfs filesystem utilities
         - timeshift # System backup and restore (Btrfs snapshots)
         - timeshift-systemd-timer # Systemd timer for Timeshift scheduling (AUR)
-        - sof-firmware # Intel audio DSP firmware
+        - poppler # PDF rendering utilities (used by GUI apps)
         - ventoy-bin
+        # Desktop integration libraries
+        - gnome-keyring # Credential storage service (WiFi passwords)
+        - gvfs # Virtual filesystem (SMB/FTP support)
+        - tumbler # Thumbnail generation service
+        - kdegraphics-thumbnailers # KDE thumbnail generators
+        # Qt/KDE libraries
+        - qt5-wayland # Qt5 Wayland support
+        - qt6-wayland # Qt6 Wayland support
+        - breeze # KDE Breeze widget theme
 
     network:
       enabled: true
@@ -88,6 +95,8 @@ packages:
         - networkmanager # Network configuration daemon
         - bluez # Bluetooth protocol stack
         - bluez-utils # Bluetooth command-line utilities
+        - openssh # SSH client and server
+        - wget # Non-interactive network downloader
 
     package_management:
       enabled: true
@@ -102,6 +111,7 @@ packages:
         - chaotic-keyring # Chaotic-AUR repository keys
         - chaotic-mirrorlist # Chaotic-AUR mirror list
         - chezmoi_modify_manager # Complementary package for chezmoi
+        - topgrade # Universal system upgrade tool
 
     # ============================================================
     # SHELL & TERMINAL
@@ -140,7 +150,6 @@ packages:
         - fastfetch # Fast neofetch alternative
         - nvitop # htop-like GPU monitor (NVIDIA)
         - btop # Modern resource monitor
-        - topgrade # Universal system upgrade tool
         - dust # Disk usage with tree visualization
         - inxi # Comprehensive system info tool
         - lm_sensors # Hardware sensor monitoring
@@ -149,11 +158,15 @@ packages:
         - vhs # Record terminal sessions as GIFs
         - gum # Glamorous shell UI toolkit
         - rbw # Unofficial Bitwarden CLI
+        - spicetify-cli # Spotify theme CLI
         # File management & navigation
         - broot # Tree navigator for large directories
         - yazi # Blazing fast TUI file manager
         - unarchiver # Universal archive extractor (unar, lsar)
-        - poppler # PDF rendering utilities
+        # Image & document processing
+        - imagemagick # Image manipulation toolkit
+        # Desktop integration CLIs
+        - kde-cli-tools # KDE integration tools (kioclient)
 
     fonts:
       enabled: true
@@ -257,10 +270,8 @@ packages:
         - wayfreeze-git # Freeze screen for clean recording
         - gpu-screen-recorder-git # Hardware-accelerated screen recording (chaotic-aur)
         - swayosd # OSD overlay for volume/brightness
-        - localsend # Local network file sharing (AirDrop alternative)
         - xkeyboard-config # Keyboard layout definitions
         - hyprpicker # Wayland color picker
-        - imv # Lightweight image viewer for Wayland
         - plymouth # Graphical boot splash screen
         - sddm # Simple Desktop Display Manager
         - solarized-sddm-theme # Solarized theme for SDDM
@@ -282,26 +293,18 @@ packages:
         - code # Visual Studio Code editor
         # Backup
         - nextcloud-client # Nextcloud desktop sync client
-        # System services
-        - gnome-keyring # Credential storage (WiFi passwords)
         # File management (GUI)
-        - gvfs # Virtual filesystem (SMB/FTP support)
-        - tumbler # Thumbnail generator for Thunar
         - thunar # Lightweight GTK file manager
         - thunar-archive-plugin # Archive right-click integration
         - file-roller # Archive manager GUI
-        # Qt/KDE integration
-        - qt5-wayland # Qt5 Wayland support
-        - qt6-wayland # Qt6 Wayland support
+        # Qt configuration
         - qt5ct # Qt5 configuration tool
-        - breeze # KDE Breeze widget theme
-        - kde-cli-tools # KDE integration tools (kioclient)
-        - kdegraphics-thumbnailers # Thumbnail generators for Thunar
         # Utilities
         - impression # USB image writer tool
+        - localsend # Local network file sharing (AirDrop alternative)
+        - imv # Lightweight image viewer for Wayland
         # Various
         - flatpak:com.spotify.Client # Music streaming (Flatpak)
-        - spicetify-cli # Spotify theme CLI (AUR)
         - flatpak:com.slack.Slack # Team communication (Flatpak)
         - flatpak:com.github.xournalpp.xournalpp # PDF annotation (Flatpak)
         - flatpak:org.qbittorrent.qBittorrent # BitTorrent client (Flatpak)
@@ -319,6 +322,7 @@ packages:
         - gst-plugin-pipewire # GStreamer integration
         - libpulse # PulseAudio client libraries
         - wireplumber # PipeWire session manager
+        - sof-firmware # Intel audio DSP firmware
 
     printing_scanning:
       enabled: true
@@ -335,7 +339,6 @@ packages:
         - samsung-unified-driver-printer # Samsung printer driver
         - samsung-unified-driver-scanner # Samsung scanner driver
         - skanpage # Simple scanning application
-        - imagemagick # Image manipulation toolkit
 
   # Packages to remove (explicit cleanup)
   # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
