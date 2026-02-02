@@ -1,33 +1,68 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_after_999_switch_to_ssh_remote.sh.tmpl
-# Purpose: Switch git remote origin from HTTPS to SSH for the dotfiles repository
+# Purpose: Switch git remote origin from HTTPS to SSH for repositories
 # Requirements: SSH keys must be already set up
 # OS Support: linux-arch
 
 set -euo pipefail
 
-{{ includeTemplate "log_start" "Switching repository remote from HTTPS to SSH" }}
+{{ includeTemplate "log_start" "Switching repository remotes from HTTPS to SSH" }}
 
-cd ~/.local/share/chezmoi
+# Function to switch a repository's remote
+switch_repo_remote() {
+    local repo_dir="$1"
+    local ssh_url="$2"
+    local repo_name="$3"
 
-# Get current remote URL
-current_url=$(git remote get-url origin)
-{{ includeTemplate "log_info" "Current remote URL: $current_url" }}
+    {{ includeTemplate "log_step" "Processing $repo_name repository..." }}
 
-# Check if already using SSH
-if echo "$current_url" | grep -q "^git@"; then
-    {{ includeTemplate "log_info" "Repository is already using SSH remote" }}
-    exit 0
-fi
+    # Check if directory exists
+    if [ ! -d "$repo_dir" ]; then
+        {{ includeTemplate "log_skip" "$repo_name directory not found: $repo_dir" }}
+        return 0
+    fi
+
+    # Check if it's a git repository
+    if [ ! -d "$repo_dir/.git" ]; then
+        {{ includeTemplate "log_skip" "$repo_name is not a git repository" }}
+        return 0
+    fi
+
+    cd "$repo_dir" || return 1
+
+    # Get current remote URL
+    if ! current_url=$(git remote get-url origin 2>/dev/null); then
+        {{ includeTemplate "log_skip" "$repo_name has no origin remote configured" }}
+        return 0
+    fi
+
+    {{ includeTemplate "log_info" "Current URL: $current_url" }}
+
+    # Check if already using SSH
+    if echo "$current_url" | grep -q "^git@"; then
+        {{ includeTemplate "log_success" "$repo_name is already using SSH remote" }}
+        return 0
+    fi
+
+    # Switch to SSH remote
+    {{ includeTemplate "log_step" "Switching to SSH URL: $ssh_url" }}
+    git remote set-url origin "$ssh_url"
+
+    # Verify the change
+    new_url=$(git remote get-url origin)
+    {{ includeTemplate "log_success" "Remote URL updated to: $new_url" }}
+}
 
 # Check if SSH key exists (encrypted keys are decrypted by chezmoi)
 if [ ! -f "$HOME/.ssh/gitlab" ]; then
     {{ includeTemplate "log_warning" "GitLab SSH key not found at ~/.ssh/gitlab" }}
     {{ includeTemplate "log_info" "" }}
-    {{ includeTemplate "log_info" "After SSH key is available, manually switch remote:" }}
+    {{ includeTemplate "log_info" "After SSH key is available, manually switch remotes:" }}
     {{ includeTemplate "log_info" "  cd ~/.local/share/chezmoi" }}
     {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/dotfiles.git" }}
+    {{ includeTemplate "log_info" "  cd ~/.config/wallpapers" }}
+    {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/wallpapers.git" }}
     {{ includeTemplate "log_info" "" }}
     {{ includeTemplate "log_skip" "Skipping SSH remote switch - will continue using HTTPS" }}
     exit 0
@@ -52,21 +87,17 @@ else
     {{ includeTemplate "log_info" "  3. Add to GitLab: https://gitlab.com/-/profile/keys" }}
     {{ includeTemplate "log_info" "  4. Test connection: ssh -T git@gitlab.com" }}
     {{ includeTemplate "log_info" "" }}
-    {{ includeTemplate "log_info" "After configuring SSH key, manually switch remote:" }}
+    {{ includeTemplate "log_info" "After configuring SSH key, manually switch remotes:" }}
     {{ includeTemplate "log_info" "  cd ~/.local/share/chezmoi" }}
     {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/dotfiles.git" }}
+    {{ includeTemplate "log_info" "  cd ~/.config/wallpapers" }}
+    {{ includeTemplate "log_info" "  git remote set-url origin git@gitlab.com:amoconst/wallpapers.git" }}
     {{ includeTemplate "log_info" "" }}
     {{ includeTemplate "log_skip" "Skipping SSH remote switch - will continue using HTTPS" }}
     {{ includeTemplate "log_info" "Installation can continue normally with HTTPS remote" }}
     exit 0
 fi
 
-# Switch to SSH remote
-ssh_url="git@gitlab.com:amoconst/dotfiles.git"
-{{ includeTemplate "log_step" "Switching to SSH URL: $ssh_url" }}
-
-git remote set-url origin "$ssh_url"
-
-# Verify the change
-new_url=$(git remote get-url origin)
-{{ includeTemplate "log_success" "Remote URL updated to: $new_url" }}
+# Switch repositories to SSH remotes
+switch_repo_remote "$HOME/.local/share/chezmoi" "git@gitlab.com:amoconst/dotfiles.git" "Dotfiles"
+switch_repo_remote "$HOME/.config/wallpapers" "git@gitlab.com:amoconst/wallpapers.git" "Wallpapers"

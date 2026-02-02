@@ -10,13 +10,14 @@ if [ ! -f "$UI_LIB" ]; then
     echo "Error: UI library not found at $UI_LIB"
     exit 1
 fi
+# shellcheck source=/dev/null
 . "$UI_LIB"
 
 # Enable strict error handling (without -u due to gum-ui compatibility)
 # set -eo pipefail
 
 # Default configuration
-DEFAULT_SOURCE_DIR="$HOME/Wallpapers"
+DEFAULT_SOURCE_DIR="$HOME/.config/wallpapers"
 DEFAULT_OUTPUT_DIR="$HOME/.config/wallpapers"
 DEFAULT_THRESHOLD=50
 THEME_DIR="$HOME/.config/themes"
@@ -29,24 +30,27 @@ Usage: $(basename "$0") [OPTIONS]
 Organize wallpapers by color similarity to themes using automated color matching.
 
 OPTIONS:
-    -s, --source DIR      Source wallpaper directory (default: ~/Wallpapers)
+    -s, --source DIR      Source wallpaper directory (default: ~/.config/wallpapers)
     -o, --output DIR      Output directory (default: ~/.config/wallpapers)
     -t, --threshold NUM   Match quality threshold 0-100 (default: 50)
                          Higher values = more inclusive matching
     -h, --help           Show this help message
 
 EXAMPLES:
-    # Use defaults
+    # In-place reorganization (reorganize existing wallpapers in ~/.config/wallpapers)
     $(basename "$0")
 
     # Custom source directory
-    $(basename "$0") --source ~/Pictures/Wallpapers
+    $(basename "$0") --source ~/Pictures
+
+    # Explicit in-place reorganization
+    $(basename "$0") --source ~/.config/wallpapers --output ~/.config/wallpapers
 
     # More strict matching
     $(basename "$0") --threshold 60
 
     # Full customization
-    $(basename "$0") -s ~/Pictures -o ~/wallpaper-output -t 55
+    $(basename "$0") -s ~/Pictures -o ~/custom-output -t 55
 
 WORKFLOW:
     1. Analyzes each wallpaper's color palette using wallust
@@ -66,17 +70,30 @@ OUTPUT STRUCTURE:
     ├── solarized-dark/
     └── unassigned/          # Wallpapers below threshold
 
-NEXT STEPS:
-    After running, initialize git repository and push to remote:
+NEXT STEPS (First-time setup):
+    1. Initialize git repository:
+       cd {output_dir}
+       git init
+       git add .
+       git commit -m "Initial color-matched wallpaper collection"
 
-    cd {output_dir}
-    git init
-    git add .
-    git commit -m "Initial color-matched wallpaper collection"
-    git remote add origin <your-repo-url>
-    git push -u origin main
+    2. Create remote repository (GitHub/GitLab)
+       git remote add origin <your-repo-url>
+       git push -u origin main
 
-    Then update .chezmoiexternal.yaml with your repository URL.
+    3. Update .chezmoiexternal.yaml with repository URL
+       chezmoi apply --refresh-externals
+
+REORGANIZATION (Existing repositories):
+    Script automatically detects git repositories and preserves:
+    - Git history and commit log
+    - Remote configuration
+    - Branch tracking
+
+    After reorganization:
+    - Review changes with: cd {output_dir} && git status
+    - Commit interactively (script prompts)
+    - Or commit manually: git commit -am "Update wallpaper collection"
 
 EOF
 }
@@ -129,6 +146,27 @@ THEMES=(
     "solarized-dark"
 )
 
+# Git repository detection and status
+check_git_status() {
+    local dir="$1"
+
+    if [ ! -d "$dir/.git" ]; then
+        return 1  # Not a git repo
+    fi
+
+    # Check for uncommitted changes
+    if ! git -C "$dir" diff-index --quiet HEAD -- 2>/dev/null; then
+        return 2  # Uncommitted changes
+    fi
+
+    # Check for untracked files
+    if [ -n "$(git -C "$dir" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+        return 3  # Untracked files
+    fi
+
+    return 0  # Clean git repo
+}
+
 # Validate dependencies
 for cmd in wallust identify python3; do
     if ! command -v "$cmd" &> /dev/null; then
@@ -137,9 +175,18 @@ for cmd in wallust identify python3; do
     fi
 done
 
+# Handle in-place reorganization (source == output)
+IN_PLACE_REORGANIZATION=false
+if [ "$SOURCE_DIR" = "$OUTPUT_DIR" ]; then
+    IN_PLACE_REORGANIZATION=true
+    ui_info "In-place reorganization mode"
+fi
+
 # Validate source directory
 if [ ! -d "$SOURCE_DIR" ]; then
     ui_error "Source directory not found: $SOURCE_DIR"
+    ui_info "Either create it, or use --source to specify an existing directory"
+    ui_info "For in-place reorganization: --source $OUTPUT_DIR"
     exit 1
 fi
 
@@ -150,14 +197,84 @@ if [ "$WALLPAPER_COUNT" -eq 0 ]; then
     exit 1
 fi
 
+# Temporary directory for wallust output
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+# Handle in-place reorganization
+if [ "$IN_PLACE_REORGANIZATION" = true ]; then
+    ui_step "Preparing in-place reorganization"
+
+    # Copy wallpapers to temporary location
+    TEMP_WALLPAPERS="$TEMP_DIR/wallpapers"
+    mkdir -p "$TEMP_WALLPAPERS"
+
+    ui_info "Copying wallpapers to temporary location..."
+    find "$OUTPUT_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) \
+        -exec cp {} "$TEMP_WALLPAPERS/" \; 2>/dev/null
+
+    # Update SOURCE_DIR to point to temp location
+    SOURCE_DIR="$TEMP_WALLPAPERS"
+
+    # Recount wallpapers from temp location
+    WALLPAPER_COUNT=$(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | wc -l)
+
+    ui_success "Copied $WALLPAPER_COUNT wallpapers to temporary location"
+fi
+
 # Cleanup existing output directory
 if [ -d "$OUTPUT_DIR" ]; then
     ui_warning "Output directory exists: $OUTPUT_DIR"
-    if ui_confirm "Remove and start fresh?"; then
-        rm -rf "$OUTPUT_DIR"
+
+    # Check if it's a git repository
+    if [ -d "$OUTPUT_DIR/.git" ]; then
+        ui_info "Detected git repository in output directory"
+
+        # Check git status
+        check_git_status "$OUTPUT_DIR"
+        git_status=$?
+
+        case $git_status in
+            0)
+                ui_success "Repository is clean"
+                ;;
+            2)
+                ui_warning "Repository has uncommitted changes"
+                ui_info "Changes will be preserved"
+                ;;
+            3)
+                ui_warning "Repository has untracked files"
+                ui_info "Untracked files will be preserved"
+                ;;
+        esac
+
+        if ui_confirm "Reorganize wallpapers while preserving git repository?"; then
+            ui_step "Preserving .git directory"
+
+            # Remove only wallpaper files, keep .git and READMEs
+            find "$OUTPUT_DIR" -maxdepth 2 -type f \
+                \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) \
+                -delete 2>/dev/null || true
+
+            # Remove empty theme directories (but not .git)
+            for theme in "${THEMES[@]}"; do
+                [ -d "$OUTPUT_DIR/$theme" ] && rmdir "$OUTPUT_DIR/$theme" 2>/dev/null || true
+            done
+            [ -d "$UNASSIGNED_DIR" ] && rmdir "$UNASSIGNED_DIR" 2>/dev/null || true
+
+            ui_success "Cleaned wallpaper files (git repository preserved)"
+        else
+            ui_info "Exiting. No changes made."
+            exit 0
+        fi
     else
-        ui_info "Exiting. Remove $OUTPUT_DIR manually if needed."
-        exit 0
+        # Original behavior for non-git directories
+        if ui_confirm "Remove and start fresh?"; then
+            rm -rf "$OUTPUT_DIR"
+        else
+            ui_info "Exiting. Remove $OUTPUT_DIR manually if needed."
+            exit 0
+        fi
     fi
 fi
 
@@ -174,6 +291,13 @@ for theme in "${THEMES[@]}"; do
     mkdir -p "$OUTPUT_DIR/$theme"
 done
 ui_success "Directory structure created"
+
+# Git preservation notification
+if [ -d "$OUTPUT_DIR/.git" ]; then
+    ui_info "Git repository detected and preserved"
+    ui_text "Remote: $(git -C "$OUTPUT_DIR" remote get-url origin 2>/dev/null || echo 'none')" "$FG_MUTED"
+fi
+
 ui_spacer
 
 # Extract theme color palettes
@@ -341,10 +465,6 @@ PROCESSED=0
 declare -A WALLPAPER_RANKINGS
 declare -A WALLPAPER_PATHS  # Maps filename to full path
 
-# Temporary directory for wallust output
-TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
-
 # Get list of wallpapers
 mapfile -t WALLPAPERS < <(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | sort)
 
@@ -363,7 +483,7 @@ for wallpaper in "${WALLPAPERS[@]}"; do
 
     # Find the most recent wallust cache directory (wallust creates hash-named dirs)
     WALLUST_CACHE="$HOME/.cache/wallust"
-    latest_cache=$(ls -t "$WALLUST_CACHE" | grep -v "^sequences$" | head -n 1)
+    latest_cache=$(find "$WALLUST_CACHE" -maxdepth 1 -type d ! -name "sequences" ! -name "wallust" -printf "%T@ %f\n" 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
 
     if [ -z "$latest_cache" ]; then
         ui_warning "  No cache directory found, skipping"
@@ -616,6 +736,76 @@ After re-running:
 1. Review unassigned directory
 2. Commit and push changes to this repository
 EOF
+
+# Git integration (if repository exists)
+if [ -d "$OUTPUT_DIR/.git" ]; then
+    ui_separator
+    ui_title "Git Integration"
+    ui_spacer
+
+    # Show git status before staging
+    ui_step "Checking repository status"
+    git -C "$OUTPUT_DIR" status --short
+    ui_spacer
+
+    if ui_confirm "Stage reorganized wallpapers?"; then
+        ui_step "Staging changes"
+        git -C "$OUTPUT_DIR" add .
+        ui_success "Changes staged"
+        ui_spacer
+
+        # Generate commit message
+        commit_msg="Reorganize wallpapers by color matching
+
+Statistics:
+- Total wallpapers: $WALLPAPER_COUNT
+- Match threshold: $MATCH_THRESHOLD
+- Theme distribution:
+$(for theme in "${THEMES[@]}"; do
+    count=${THEME_COUNTS[$theme]}
+    [ "$count" -gt 0 ] && echo "  - $theme: $count"
+done)
+- Unassigned: $UNASSIGNED_COUNT
+
+Generated by organize-wallpapers-by-color.sh"
+
+        if ui_confirm "Create commit with auto-generated message?"; then
+            git -C "$OUTPUT_DIR" commit -m "$commit_msg"
+            ui_success "Commit created"
+            ui_spacer
+
+            # Show commit details
+            git -C "$OUTPUT_DIR" show --stat --oneline HEAD
+            ui_spacer
+
+            if ui_confirm "Push to remote?"; then
+                ui_step "Pushing to remote..."
+
+                # Use timeout to prevent hanging on authentication
+                if timeout 30 git -C "$OUTPUT_DIR" push 2>&1; then
+                    ui_success "Changes pushed to remote"
+                else
+                    exit_code=$?
+                    if [ $exit_code -eq 124 ]; then
+                        ui_warning "Push timed out (likely waiting for authentication)"
+                        ui_info "This usually means SSH key needs passphrase or credentials are required"
+                    else
+                        ui_warning "Push failed (exit code: $exit_code)"
+                    fi
+                    ui_info "Push manually with: cd $OUTPUT_DIR && git push"
+                fi
+            else
+                ui_info "Commit created but not pushed"
+                ui_info "Push manually with: cd $OUTPUT_DIR && git push"
+            fi
+        else
+            ui_info "Changes staged but not committed"
+            ui_info "Commit manually with: cd $OUTPUT_DIR && git commit"
+        fi
+    else
+        ui_info "No changes staged"
+    fi
+fi
 
 # Summary
 ui_separator
