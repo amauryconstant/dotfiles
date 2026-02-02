@@ -10,7 +10,7 @@
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
-# Main menu options (9 categories) - Using Material Design icons from glyphnames.json
+# Main menu options (9 categories) - Using Material Design icons
 MAIN_OPTIONS="󰀻 Apps|󰗚 Learn|󰈿 Trigger|󰏘 Style|󰒓 Setup|󰏓 Install|󰚰 Update|󰋼 About|󰐥 System"
 
 CHOICE=$(show_menu "Main Menu" "$MAIN_OPTIONS")

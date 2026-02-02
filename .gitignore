@@ -8,10 +8,10 @@
 !.claude/skills/*
 !.claude/skills/**/SKILL.md
 
-!resources/*.md
+!_guides/*.md
 
 !private_dot_config/**/commands/*.md
 !private_dot_config/**/skills/**/*.md
-!research/**.md
+!_research/**.md
 
 __pycache__

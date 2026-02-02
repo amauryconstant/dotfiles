@@ -9,8 +9,8 @@
 archives/
 
 # Resources and Documentation
-resources/
-research/
+_guides/
+_research/
 **/CLAUDE.md
 **/STYLE-GUIDE.md
 

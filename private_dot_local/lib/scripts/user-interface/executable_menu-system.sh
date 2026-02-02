@@ -9,7 +9,7 @@
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
-# Menu options - Using Material Design icons from glyphnames.json
+# Menu options - Using Material Design icons
 OPTIONS="󰁍 Back|󰌾 Lock|󰤄 Suspend|󰜉 Restart|󰐥 Shutdown"
 
 CHOICE=$(show_menu "System" "$OPTIONS")

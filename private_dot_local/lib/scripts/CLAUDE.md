@@ -368,44 +368,24 @@ notify "Update" "Complete"
 
 ## Nerd Fonts Glyph Usage
 
-**Resource**: `resources/glyphnames.json` (10,799 glyphs from Nerd Fonts v3.4.0)
-**Tool**: `jaq` (Rust-based jq alternative, aliased to jq)
+**Tool**: Use `/nerdfonts-search` skill for finding glyphs
+**Resource**: 10,764 glyphs from Nerd Fonts v3.4.0 (auto-updatable)
 
-### Finding Glyphs with jaq
+### Finding Glyphs
 
-**Search by name** (case-insensitive):
+Use the nerdfonts-search skill to find appropriate glyphs by keyword or concept:
+
 ```bash
-# Find monitor-related glyphs
-jaq -r 'to_entries[] | select(.key | test("monitor"; "i")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/resources/glyphnames.json
-
-# Output: md-monitor: 󰍹
+# Skill provides fuzzy search with relevance scoring
+# Example: "find an icon for battery level indicator"
+# Skill will search and present relevant options
 ```
 
-**Search by category** (prefix):
-```bash
-# Material Design icons only
-jaq -r 'to_entries[] | select(.key | startswith("md-")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/resources/glyphnames.json | head -20
-
-# Codicons only
-jaq -r 'to_entries[] | select(.key | startswith("cod-")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/resources/glyphnames.json | head -20
-```
-
-**Search by keyword** (finds related concepts):
-```bash
-# Find all "power" related glyphs
-jaq -r 'to_entries[] | select(.key | test("power|battery|energy"; "i")) | "\(.key): \(.value.char)"' \
-  ~/.local/share/chezmoi/resources/glyphnames.json
-```
-
-**Get specific glyph**:
-```bash
-# Get the actual character for a known name
-jaq -r '."md-monitor".char' ~/.local/share/chezmoi/resources/glyphnames.json
-# Output: 󰍹
-```
+**Skill features**:
+- Fuzzy keyword matching
+- Multiple icon set support (Material Design, Font Awesome, Codicons, etc.)
+- Auto-updates from Nerd Fonts GitHub
+- See `.claude/skills/nerdfonts-search/SKILL.md` for details
 
 ### Icon Selection Guidelines
 
@@ -436,8 +416,6 @@ md-check, md-close, md-arrow-*, md-chevron-*
 
 ### Reference Documentation
 
-**Menu icons**: See `.resources/MENU_ICONS.md` for complete menu system icon mapping
-
 **Examples in codebase**:
 - Desktop scripts: monitor-*.sh, waybar-*.sh (notification icons)
 - Menu system: menu-*.sh (wofi menus)
@@ -445,18 +423,10 @@ md-check, md-close, md-arrow-*, md-chevron-*
 
 ### Quick Reference Commands
 
-```bash
-# List all available icon prefixes
-jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/resources/glyphnames.json | sort -u
-
-# Count icons by prefix
-jaq -r 'keys[] | split("-")[0]' ~/.local/share/chezmoi/resources/glyphnames.json | sort | uniq -c | sort -rn
-
-# Interactive search (requires fzf)
-jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
-  ~/.local/share/chezmoi/resources/glyphnames.json | \
-  fzf --preview 'echo {2}' --preview-window=up:1
-```
+Use the `/nerdfonts-search` skill for all glyph searches. The skill provides:
+- Fuzzy keyword search
+- Relevance-scored results
+- Auto-update capability from Nerd Fonts GitHub
 
 ## Adding New Scripts
 
@@ -473,10 +443,8 @@ jaq -r 'to_entries[] | "\(.key)\t\(.value.char)"' \
 - Static script? → `script.sh` in lib/
 
 **Icon selection**:
-- Search `resources/glyphnames.json` with jaq (aliased to jq)
+- Use `/nerdfonts-search` skill to find appropriate glyphs
 - Prefer Material Design (md-) icons
-- Reference `.resources/MENU_ICONS.md` for consistency
-- Use jaq queries from "Nerd Fonts Glyph Usage" section above
 
 ## Integration Points
 

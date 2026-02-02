@@ -7,7 +7,7 @@
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
-# Main trigger menu - Using Material Design icons from glyphnames.json
+# Main trigger menu - Using Material Design icons
 MAIN_OPTIONS="󰁍 Back|󰄀 Capture|󰒖 Share|󰔡 Toggle"
 CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS")
 
