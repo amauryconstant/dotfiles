@@ -120,11 +120,11 @@ clear_session() {
 case "$1" in
     save)
         slot="${2:-default}"
-        "$SCRIPT_DIR/session-save.sh" "$slot"
+        "$SCRIPT_DIR/session-save" "$slot"
         ;;
     restore)
         slot="${2:-default}"
-        "$SCRIPT_DIR/session-restore.sh" "$slot"
+        "$SCRIPT_DIR/session-restore" "$slot"
         ;;
     list)
         list_sessions

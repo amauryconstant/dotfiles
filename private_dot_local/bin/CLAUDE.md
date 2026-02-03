@@ -6,10 +6,25 @@
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
+## ⚠️ DEPRECATION NOTICE
+
+**Most wrappers removed** (16 of 18 deprecated)
+
+**New architecture**: Scripts directly in PATH (no wrappers needed)
+- Scripts renamed without .sh extension
+- All script directories added to PATH
+- Direct execution: `prune-branch`, `screenshot`, `system-health`, `hypr-session`
+
+**Remaining wrappers** (2 total):
+- `executable_package-manager` - Complex setup wrapper (module sourcing, state initialization)
+- `executable_unzip` - Compatibility wrapper (unzip → unar)
+
+**For new scripts**: Don't create wrappers - add directly to `lib/scripts/` without .sh extension
+
 ## Quick Reference
 
-- **Purpose**: Lightweight executable wrappers (18 files)
-- **Pattern**: Lazy-load scripts from `lib/scripts/`
+- **Purpose**: Special-case executable wrappers (2 files)
+- **Pattern**: Complex setup or compatibility needs only
 - **Naming**: `executable_*` (chezmoi convention)
 - **Templates**: NO templates in bin/ (static only)
 

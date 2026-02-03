@@ -9,9 +9,9 @@
 ## Quick Reference
 
 - **Purpose**: Foundation libraries for all scripts
-- **Files**: gum-ui.sh (572 lines), colors.sh.tmpl
+- **Files**: gum-ui.sh (572 lines), hook-runner, state-manager.sh
 - **Usage**: System scripts source `$UI_LIB` (see adoption note below)
-- **Dependencies**: gum (optional - fallbacks provided), colors.yaml
+- **Dependencies**: gum (optional - fallbacks provided)
 
 ## Gum UI Library - Primary Reference
 
@@ -150,16 +150,16 @@ updates=$(ui_spin_silent "Checking updates" "checkupdates 2>/dev/null")
 
 ### Color Integration
 
-**Source**: `colors.sh.tmpl`
+**Source**: Built-in colors in gum-ui.sh
 
-**Loads from**: `.chezmoidata/colors.yaml` (oksolar)
-
-**Color variables**:
+**Color variables** (for terminal output):
 - `UI_PRIMARY` - Primary accent
 - `UI_SUCCESS` - Success green
 - `UI_ERROR` - Error red
 - `UI_WARNING` - Warning yellow
 - `UI_CAUTION` - Caution orange
+
+**Note**: Theme colors are managed by `~/.config/themes/` system
 - `UI_SECONDARY` - Secondary blue
 - `UI_SUBTLE` - Subtle gray
 

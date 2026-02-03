@@ -4,6 +4,16 @@
 # Purpose: Interactive deletion of branches whose upstream has been deleted
 # Requirements: git, gum
 
+# Source UI library (supports direct execution)
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
 git-prune-branch() {
     # Note: Using standardized UI library which handles gum availability
     
@@ -49,3 +59,6 @@ git-prune-branch() {
         ui_warning "Operation cancelled - no branches were deleted"
     fi
 }
+
+# Invoke function (allows direct script execution)
+git-prune-branch "$@"

@@ -183,7 +183,7 @@
 
 ## Theme Switcher
 
-**Script**: `theme-switcher.sh.tmpl`
+**Script**: `theme-switcher.tmpl`
 **Integration**: Central orchestrator
 
 **Execution flow**:

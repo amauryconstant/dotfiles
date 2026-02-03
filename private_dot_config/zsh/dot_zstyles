@@ -24,7 +24,20 @@ zstyle ':zephyr:plugin:environment' VISUAL 'code'
 zstyle ':zephyr:plugin:environment' BROWSER 'firefox'
 
 # Custom PATH additions (Zephyr handles deduplication)
-zstyle ':zephyr:plugin:environment' prepath ~/.local/bin ~/.local/sbin
+# Scripts now directly executable - no wrappers needed
+zstyle ':zephyr:plugin:environment' prepath \
+    ~/.local/bin \
+    ~/.local/sbin \
+    ~/.local/lib/scripts/core \
+    ~/.local/lib/scripts/desktop \
+    ~/.local/lib/scripts/git \
+    ~/.local/lib/scripts/media \
+    ~/.local/lib/scripts/network \
+    ~/.local/lib/scripts/system \
+    ~/.local/lib/scripts/system/package-manager \
+    ~/.local/lib/scripts/terminal \
+    ~/.local/lib/scripts/user-interface \
+    ~/.local/lib/scripts/utils
 
 # Environment customizations (migrated from shell/env)
 zstyle ':zephyr:plugin:environment' 'SCRIPTS_DIR' "$HOME/.local/lib/scripts"

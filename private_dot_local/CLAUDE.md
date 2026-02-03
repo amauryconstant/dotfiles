@@ -14,9 +14,9 @@
 
 ## CLI Architecture
 
-**Problem**: Heavy script libraries at shell startup slow terminal launch
+**Design**: Scripts directly in PATH (no wrappers needed)
 
-**Solution**: Lightweight executables in `bin/` lazy-load scripts from `lib/scripts/` on demand
+**Solution**: All script directories added to PATH → scripts callable without .sh extension
 
 **Standards**: See root `CLAUDE.md` for:
 - Error handling strategy (`set -euo pipefail` vs manual)
@@ -27,70 +27,79 @@
 
 ```
 ~/.local/
-├── bin/                    # 18 CLI wrappers (in PATH)
-│   └── executable_*        # Lightweight shims
-└── lib/scripts/            # 46+ implementation scripts (10 categories)
-    ├── core/               # Foundation libraries
-    ├── desktop/            # Hyprland utilities
-    ├── media/              # Wallpaper, screenshots
-    ├── system/             # Maintenance, health, SSH
-    ├── terminal/           # Terminal utilities
-    ├── user-interface/     # Menu system, hooks
-    ├── utils/              # Utilities
-    └── [6 more categories]
+├── bin/                    # 2 special wrappers (in PATH)
+│   ├── executable_package-manager    # Complex setup wrapper
+│   └── executable_unzip              # Compatibility wrapper (unzip → unar)
+└── lib/scripts/            # 46+ scripts directly in PATH (10 categories)
+    ├── core/               # Foundation libraries (gum-ui.sh, menu-helpers.sh)
+    ├── desktop/            # Hyprland utilities (no .sh extension)
+    ├── media/              # Wallpaper, screenshots (no .sh extension)
+    ├── system/             # Maintenance, health, SSH (no .sh extension)
+    ├── terminal/           # Terminal utilities (no .sh extension)
+    ├── user-interface/     # Menu system, hooks (no .sh extension)
+    ├── utils/              # Utilities (no .sh extension)
+    └── [3 more categories]
 ```
 
-## bin/ vs lib/ Separation
+## Direct Execution Architecture
 
-**bin/** - CLI wrappers:
-- Lightweight executable shims
-- No templates (static bash)
-- In PATH (`~/.local/bin`)
-- Fast invocation (no processing)
+**All script directories in PATH** (configured in `.zstyles`):
+- `~/.local/bin` (special wrappers)
+- `~/.local/lib/scripts/core` (libraries + utilities)
+- `~/.local/lib/scripts/desktop` (desktop utilities)
+- `~/.local/lib/scripts/git` (git utilities)
+- `~/.local/lib/scripts/media` (media utilities)
+- `~/.local/lib/scripts/network` (network utilities)
+- `~/.local/lib/scripts/system` (system utilities)
+- `~/.local/lib/scripts/system/package-manager` (package-manager executable)
+- `~/.local/lib/scripts/terminal` (terminal utilities)
+- `~/.local/lib/scripts/user-interface` (menu scripts)
+- `~/.local/lib/scripts/utils` (utility scripts)
 
-**lib/scripts/** - Implementations:
-- Full script logic
-- Can be templates (`.sh.tmpl`)
-- Sourced on demand
-- Category organization
+**Scripts named without .sh extension**:
+- Call directly: `prune-branch`, `screenshot`, `system-health`
+- No wrappers needed (scripts directly executable)
+- Can be templates (`.tmpl` suffix for rendered scripts)
+
+**Exceptions** (keep .sh extension):
+- `gum-ui.sh` - UI library (sourced, not executed)
+- `menu-helpers.sh` - Menu library (sourced, not executed)
+- `state-manager.sh` - State library (sourced, not executed)
 
 ### Benefits
 
 - **Fast shell startup**: No library sourcing at login
-- **Reduced memory**: Scripts loaded only when needed
-- **Clean CLI**: Commands in PATH without long paths
-- **Template safety**: Only lib/ templates (bin/ static)
-- **Easy discovery**: `commands` function lists all
+- **No wrapper maintenance**: Scripts directly callable
+- **Clean naming**: No .sh extension (e.g., `prune-branch` not `prune-branch.sh`)
+- **Category organization**: Scripts in logical subdirectories
+- **Easy discovery**: All scripts in PATH directories
 
-## Lazy-Loading Concept
+## Script Execution Pattern
 
-**Wrapper pattern** (`bin/executable_*`):
+**Scripts source UI library at top** (self-sufficient):
 ```bash
 #!/usr/bin/env bash
-SCRIPT_PATH="$SCRIPTS_DIR/category/script.sh"
 
-# Source UI library on demand
-if [ -f "$UI_LIB" ]; then
+# Source UI library (supports direct execution)
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
     . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
 else
-    echo "Error: UI library not found at $UI_LIB" >&2
+    echo "Error: UI library not found" >&2
     exit 1
 fi
 
-# Execute actual script
-if [ -f "$SCRIPT_PATH" ]; then
-    "$SCRIPT_PATH" "$@"
-else
-    echo "Error: Script not found" >&2
-    exit 1
-fi
+# Script implementation
+ui_title "System Health"
+ui_info "Checking system status..."
 ```
 
 **On invocation**:
 1. User runs command (e.g., `system-health`)
-2. Wrapper sources UI library (gum-ui.sh)
-3. Wrapper executes implementation script
-4. Script runs with full context
+2. Script sources UI library (lazy-loaded on demand)
+3. Script executes with UI functions available
+4. No wrapper overhead
 
 **Why not source at startup**:
 - Shell startup: ~50ms faster
@@ -106,29 +115,41 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 ```
 
 **Used by**:
-- All CLI wrappers in `bin/`
-- Implementation scripts in `lib/scripts/`
+- Scripts for UI library location
+- Scripts for SCRIPTS_DIR references
 
-## Available CLI Wrappers
+## Special Wrappers (2 total)
 
-| Command | Script | Purpose |
-|---------|--------|---------|
-| `package-manager` | `system/package-manager.sh` | Strategy-based pkg install |
-| `system-health` | `system/system-health.sh` | Health monitoring |
-| `system-maintenance` | `system/system-maintenance.sh` | System maintenance |
-| `system-troubleshoot` | `system/troubleshoot.sh` | Diagnostic tool |
-| `dotfiles-debug` | `utils/dotfiles-debug.sh` | System debug report |
-| `dotfiles-hook-create` | `user-interface/hook-create.sh` | Create hook template |
-| `dotfiles-hook-list` | `user-interface/hook-list.sh` | List hooks |
-| `regen-zsh-plugins` | `terminal/regen-zsh-plugins.sh` | Zsh plugin bundle |
-| `regen-ssh-key` | `system/regenerate-ssh-key.sh` | SSH key regeneration |
-| `screenshot` | `media/screenshot.sh` | Screenshot with Satty |
-| `random-wallpaper` | `media/random-wallpaper.sh` | Random wallpaper |
-| `set-wallpaper` | `media/set-wallpaper.sh` | Set specific wallpaper |
-| `launch-or-focus` | `desktop/launch-or-focus.sh` | Single-instance apps |
-| `git-prune-branch` | `git/prune-branch.sh` | Branch cleanup |
-| `ts` | `network/tailscale.sh` | Tailscale helper |
-| `unzip` | `utils/unzip.sh` | unzip → unar wrapper |
+**Kept for specific reasons**:
+
+| Command | Wrapper | Reason |
+|---------|---------|--------|
+| `package-manager` | `bin/executable_package-manager` | Complex setup (module sourcing, state initialization) |
+| `unzip` | `bin/executable_unzip` | Compatibility wrapper (unzip → unar) |
+
+**All other commands**: Call scripts directly (no wrappers needed)
+
+## Common Commands
+
+**Directly callable** (via PATH):
+
+| Command | Script Location | Purpose |
+|---------|-----------------|---------|
+| `system-health` | `system/system-health` | Health monitoring |
+| `system-maintenance` | `system/system-maintenance` | System maintenance |
+| `system-troubleshoot` | `system/troubleshoot` | Diagnostic tool |
+| `dotfiles-debug` | `utils/dotfiles-debug` | System debug report |
+| `dotfiles-hook-create` | `user-interface/hook-create` | Create hook template |
+| `dotfiles-hook-list` | `user-interface/hook-list` | List hooks |
+| `regen-zsh-plugins` | `terminal/regen-zsh-plugins` | Zsh plugin bundle |
+| `regen-ssh-key` | `system/regenerate-ssh-key` | SSH key regeneration |
+| `screenshot` | `media/screenshot` | Screenshot with Satty |
+| `random-wallpaper` | `media/random-wallpaper` | Random wallpaper |
+| `set-wallpaper` | `media/set-wallpaper` | Set specific wallpaper |
+| `launch-or-focus` | `desktop/launch-or-focus` | Single-instance apps |
+| `hypr-session` | `desktop/hypr-session` | Hyprland session management |
+| `prune-branch` | `git/prune-branch` | Branch cleanup |
+| `ts` | `network/tailscale` | Tailscale helper |
 
 ## Subdirectories with CLAUDE.md
 

@@ -7,7 +7,7 @@
 
 # Terminal: Super + Return
 # Opens terminal in current working directory
-bindd = SUPER, Return, Launch terminal in CWD, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd.sh)
+bindd = SUPER, Return, Launch terminal in CWD, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)
 
 # Application launcher: Super + D
 # Wofi shows desktop applications from .desktop files
@@ -15,14 +15,14 @@ bindd = SUPER, D, Application launcher, exec, wofi --show drun
 
 # File manager: Super + E (GUI)
 # Uses launch-or-focus for single-instance behavior
-bindd = SUPER, E, File manager, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh thunar
+bindd = SUPER, E, File manager, exec, ~/.local/lib/scripts/desktop/launch-or-focus thunar
 
 # Web browser: Super + W
 bindd = SUPER, W, Web browser, exec, firefox
 
 # Visual editor: Super + O
 # Uses launch-or-focus for single-instance behavior
-bindd = SUPER, O, Visual editor, exec, ~/.local/lib/scripts/desktop/launch-or-focus.sh code
+bindd = SUPER, O, Visual editor, exec, ~/.local/lib/scripts/desktop/launch-or-focus code
 
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard

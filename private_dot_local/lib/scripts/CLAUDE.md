@@ -20,8 +20,8 @@
 ~/.local/lib/scripts/   # 51 total scripts
 ├── core/               # 3 files - Foundation
 │   ├── gum-ui.sh       # 572-line UI library
-│   ├── colors.sh.tmpl  # Oksolar color definitions
-│   └── hook-runner.sh  # User hook execution engine
+│   ├── hook-runner     # User hook execution engine
+│   └── state-manager.sh # State management library
 ├── desktop/            # 22 files - Hyprland utilities
 ├── media/              # 3 files - Wallpaper, screenshots
 ├── system/             # 6 files - Maintenance, health
@@ -148,13 +148,13 @@ fi
 **UI Pattern**: Templates use `{{ includeTemplate "log_*" }}`, `screenshot.sh` uses `notify-send`
 
 **Scripts**:
-- `screenshot.sh` - Smart screenshot with Satty annotation
+- `screenshot` - Smart screenshot with Satty annotation
   - Modes: smart (auto-snap window), region, window, fullscreen
   - Tools: grim (capture), slurp (selection), satty (annotation)
   - Smart mode: Auto-snap to window if <20px selection
 
-- `random-wallpaper.sh.tmpl` - Random wallpaper from collection (uses log templates)
-- `set-wallpaper.sh.tmpl` - Set specific wallpaper + color extraction (uses log templates)
+- `random-wallpaper.tmpl` - Random wallpaper from collection (uses log templates)
+- `set-wallpaper.tmpl` - Set specific wallpaper + color extraction (uses log templates)
 
 ### User Interface Menus (12 scripts)
 **Purpose**: Omarchy-inspired hierarchical menu system
@@ -432,25 +432,57 @@ Use the `/nerdfonts-search` skill for all glyph searches. The skill provides:
 
 **Process**:
 1. Choose category (or create new)
-2. Create script in `lib/scripts/{category}/`
-3. Create wrapper in `bin/executable_{name}` (if CLI tool)
-4. Source `$UI_LIB` in script
-5. **Select appropriate glyphs** using jq queries above
+2. Create script in `lib/scripts/{category}/` **WITHOUT .sh extension**
+3. Name: `executable_scriptname` (no .sh suffix)
+4. Source `$UI_LIB` at top of script (self-sufficient pattern)
+5. **Select appropriate glyphs** using `/nerdfonts-search` skill
 6. Test with `chezmoi apply`
+7. Call directly: `scriptname` (in PATH automatically)
+
+**Naming convention**:
+- ✅ `executable_prune-branch` (no .sh) → callable as `prune-branch`
+- ✅ `executable_screenshot` (no .sh) → callable as `screenshot`
+- ❌ `executable_script.sh` (DON'T add .sh extension)
 
 **Template decision**:
-- Need template vars? → `script.sh.tmpl` in lib/
-- Static script? → `script.sh` in lib/
+- Need template vars? → `executable_script.tmpl` (no .sh, just .tmpl)
+- Static script? → `executable_script` (no extensions)
+
+**Exceptions** (keep .sh extension):
+- `gum-ui.sh` - Sourced library (not executed directly)
+- `menu-helpers.sh` - Sourced library (not executed directly)
+- `state-manager.sh` - Sourced library (not executed directly)
+
+**Self-sufficient pattern**:
+```bash
+#!/usr/bin/env bash
+
+# Source UI library (supports direct execution)
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+# Script implementation
+ui_title "My Script"
+ui_info "Processing..."
+```
 
 **Icon selection**:
 - Use `/nerdfonts-search` skill to find appropriate glyphs
 - Prefer Material Design (md-) icons
 
+**No wrappers needed**: Scripts directly in PATH via `.zstyles` configuration
+
 ## Integration Points
 
-- **CLI wrappers**: `../../bin/` (10 executables)
-- **Zephyr config**: `.zstyles` (SCRIPTS_DIR, UI_LIB)
-- **Hyprland bindings**: `private_dot_config/hypr/conf/bindings.conf.tmpl`
+- **Direct execution**: All script directories in PATH (no wrappers)
+- **Zephyr config**: `.zstyles` (PATH, SCRIPTS_DIR, UI_LIB)
+- **Hyprland bindings**: `private_dot_config/hypr/conf/bindings/*.conf`
 - **Menu system**: `user-interface/` scripts
 - **Core UI**: `core/gum-ui.sh` (572-line library)
 
