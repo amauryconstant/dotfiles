@@ -67,6 +67,10 @@ packages:
         - xdg-desktop-portal # Desktop portal framework (file picker, OAuth)
         - xdg-desktop-portal-kde # KDE portal backend (better Electron/Flatpak compatibility)
         - nano # Simple terminal text editor
+        - vim # Fallback/recovery text editor
+        - sudo # Essential system package
+        - gptfdisk # Disk partitioning tool
+        - systemd-ukify # Unified kernel image generation
         - smartmontools # SMART disk health monitoring
         - btrfs-progs # Btrfs filesystem utilities
         - timeshift # System backup and restore (Btrfs snapshots)
@@ -124,6 +128,7 @@ packages:
       post_install_hook: ""
       packages:
         - ghostty # Modern GPU terminal
+        - kitty # Baseline terminal emulator
         - starship # Fast customizable shell prompt
         - zsh # POSIX shell with advanced features
         - zsh-antidote # Fast zsh plugin manager
@@ -142,12 +147,14 @@ packages:
         - eza # Modern ls with git integration
         - xh # User-friendly curl alternative
         - jaq # Fast jq alternative in Rust
+        - jq # JSON processor (compatibility)
         - go-yq # YAML processor (jq for YAML)
         - rsync # Incremental file transfer
         - tlrc # Community-driven simplified manpages
         - fzf # Fuzzy finder for CLI
         # System monitoring & diagnostics
         - fastfetch # Fast neofetch alternative
+        - htop # Classic process monitor
         - nvitop # htop-like GPU monitor (NVIDIA)
         - btop # Modern resource monitor
         - dust # Disk usage with tree visualization
@@ -251,6 +258,8 @@ packages:
         - hyprlock # Official Hyprland screen locker
         - hypridle # Official Hyprland idle daemon
         - polkit-gnome # Polkit authentication agent (hyprpolkitagent crashes)
+        - polkit-kde-agent # KDE PolicyKit agent (alternative)
+        - network-manager-applet # Network Manager GUI applet
         - darkman # Solar-based light/dark mode automation
         - hyprsunset # Blue light filter (gamma adjustment)
         - swww # Dynamic wallpaper daemon with transitions
@@ -295,6 +304,7 @@ packages:
         - nextcloud-client # Nextcloud desktop sync client
         # File management (GUI)
         - thunar # Lightweight GTK file manager
+        - dolphin # KDE file manager (alternative)
         - thunar-archive-plugin # Archive right-click integration
         - file-roller # Archive manager GUI
         # Qt configuration
@@ -332,6 +342,7 @@ packages:
       packages:
         - cups # UNIX printing system
         - cups-pdf # PDF virtual printer
+        - cups-pk-helper # CUPS PolicyKit integration
         - system-config-printer # Printer setup GUI
         - sane # Scanner access library
         - sane-airscan # eSCL/AirScan scanner driver
@@ -344,10 +355,5 @@ packages:
   # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
   delete:
     - yay # Replaced by paru
-    - htop # Redundant with btop/glances
-    - vim # Replaced by neovim
-    - kitty # Replaced by Ghostty
     - kitty-shell-integration
     - kitty-terminfo
-    - dolphin # Replaced by Thunar
-    - polkit-kde-agent # Replaced by hyprpolkitagent
