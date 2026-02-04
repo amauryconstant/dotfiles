@@ -19,3 +19,4 @@ pnpm = "latest"
 "pipx:oraios/serena" = "latest"
 "npm:@fission-ai/openspec" = "latest"
 "pipx:github/spec-kit" = "latest"
+"npm:playwright" = {version = "latest", postinstall = "playwright install"}
