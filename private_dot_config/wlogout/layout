@@ -6,7 +6,7 @@
 }
 {
     "label" : "logout",
-    "action" : "~/.local/lib/scripts/desktop/session-save.sh && hyprctl dispatch exit",
+    "action" : "~/.local/lib/scripts/desktop/session-save && hyprctl dispatch exit",
     "text" : "󰍃 Logout",
     "keybind" : "e"
 }
@@ -30,7 +30,7 @@
 }
 {
     "label" : "shutdown",
-    "action" : "~/.local/lib/scripts/desktop/session-save.sh && systemctl poweroff",
+    "action" : "~/.local/lib/scripts/desktop/session-save && systemctl poweroff",
     "text" : "󰤂 Shutdown",
     "keybind" : "s"
 }

@@ -2,7 +2,7 @@
 # Wrapper for theme-switcher.sh with tab completion
 
 theme() {
-    ~/.local/lib/scripts/desktop/theme-switcher.sh "$@"
+    ~/.local/lib/scripts/desktop/theme-switcher "$@"
 }
 
 # Tab completion for theme command

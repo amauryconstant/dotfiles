@@ -36,7 +36,7 @@ cmd_sync() {
                 shift
                 ;;
             --verbose)
-                VERBOSE=true
+                export VERBOSE=true
                 shift
                 ;;
             *)
@@ -98,8 +98,8 @@ cmd_sync() {
     _sync_finalize sync_results
 
     # Call user hook
-    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
-        "$HOME/.local/lib/scripts/core/hook-runner.sh" package-sync "sync" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
+        "$HOME/.local/lib/scripts/core/hook-runner" package-sync "sync" 2>/dev/null || true
     fi
 
     ui_success "Sync complete!"
@@ -225,7 +225,7 @@ _sync_build_plan() {
 
             # Use cached constraint parsing (PERF: 10-15% faster)
             local pkg_data=$(_parse_package_constraint_cached "$package")
-            IFS='|' read -r name version constraint_type <<< "$pkg_data"
+            local name="${pkg_data%%|*}"
 
             # Store declared name for prune phase (optimization)
             SYNC_DECLARED_PACKAGES+=("$name")

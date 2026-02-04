@@ -5,11 +5,10 @@
 # Requirements: Arch Linux, wofi
 
 # Show menu with Wofi dmenu mode
-# Usage: show_menu "Prompt text" "option1|option2|option3" [default_option]
+# Usage: show_menu "Prompt text" "option1|option2|option3"
 show_menu() {
     prompt="$1"
     options="$2"
-    default="${3:-}"
 
     # Convert pipe-separated options to newline-separated
     echo "$options" | tr '|' '\n' | wofi --dmenu \

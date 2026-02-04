@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Script: theme-switcher.sh
+# Script: theme-switcher
 # Purpose: Switch between themes and reload applications
 # Requirements: Arch Linux, Hyprland, Waybar, Dunst, Ghostty
 
@@ -24,7 +24,7 @@ format_theme_name() {
 # Display usage information
 show_usage() {
     cat <<EOF
-Usage: theme-switcher.sh <command> [theme-name]
+Usage: theme-switcher <command> [theme-name]
 
 Commands:
     switch <theme-name>    Switch to the specified theme
@@ -131,8 +131,8 @@ switch_theme() {
         wallpaper=$(find "$wallpaper_dir" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | shuf -n 1)
         if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
             # Call set-wallpaper script if it exists
-            if [ -x "$HOME/.local/lib/scripts/media/set-wallpaper.sh" ]; then
-                "$HOME/.local/lib/scripts/media/set-wallpaper.sh" "$wallpaper" fade 2 >/dev/null 2>&1 &
+            if [ -x "$HOME/.local/lib/scripts/media/set-wallpaper" ]; then
+                "$HOME/.local/lib/scripts/media/set-wallpaper" "$wallpaper" fade 2 >/dev/null 2>&1 &
             fi
         fi
     fi
@@ -141,28 +141,28 @@ switch_theme() {
     reload_applications
 
     # Apply theme to additional applications
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-vscode.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-vscode.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-vscode" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-vscode" 2>/dev/null || true
     fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-firefox.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-firefox.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" 2>/dev/null || true
     fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-spotify.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-spotify.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-spotify" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-spotify" 2>/dev/null || true
     fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-opencode.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-opencode.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-opencode" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-opencode" 2>/dev/null || true
     fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" 2>/dev/null || true
     fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-qt.sh" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-qt.sh" 2>/dev/null || true
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-qt" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-qt" 2>/dev/null || true
     fi
 
     # Call user hook
-    if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
-        "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name"
+    if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
+        "$HOME/.local/lib/scripts/core/hook-runner" theme-change "$theme_name"
     fi
 
     # Send desktop notification (monitor-focused if available)

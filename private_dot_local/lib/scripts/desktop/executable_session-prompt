@@ -44,5 +44,5 @@ choice=$(printf "Restore session ($window_count windows)\nSkip" | wofi \
 
 if [ "$choice" = "Restore session ($window_count windows)" ]; then
     # User chose to restore - launch in background with the correct slot
-    "$HOME/.local/lib/scripts/desktop/session-restore.sh" "$slot" &
+    "$HOME/.local/lib/scripts/desktop/session-restore" "$slot" &
 fi

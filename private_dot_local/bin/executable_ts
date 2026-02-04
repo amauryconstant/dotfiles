@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, tailscale
 
 # Use environment variables defined in shell/env
-TAILSCALE_SCRIPT="$SCRIPTS_DIR/network/tailscale.sh"
+TAILSCALE_SCRIPT="$SCRIPTS_DIR/network/tailscale"
 
 # Execute tailscale script
 if [ -f "$TAILSCALE_SCRIPT" ]; then
