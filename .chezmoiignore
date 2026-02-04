@@ -2,7 +2,8 @@
 **/*.src.ini
 
 # Development
-./mise.toml
+.mise/
+.pre-commit-config.yaml
 .mcp.json
 
 # Archive directory for storing old configurations

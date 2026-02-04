@@ -1,0 +1,15 @@
+repos:
+- repo: local
+  hooks:
+  - id: chezmoi-destroy
+    name: Chezmoi destroy staged deletions
+    entry: mise run destroy:staged
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: shellcheck-staged
+    name: Shellcheck staged scripts
+    entry: mise run lint:staged
+    language: system
+    pass_filenames: false
+    always_run: true

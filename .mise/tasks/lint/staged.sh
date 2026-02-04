@@ -1,28 +1,9 @@
-[tools]
-shellcheck = "latest"
-
-[tasks.lint]
-description = "Run shellcheck on all shell scripts"
-run = """
-#!/usr/bin/env bash
-set -euo pipefail
-echo "🔍 Running shellcheck on all scripts..."
-find . -name "*.sh" -o -name "*.bash" | while read -r script; do
-  echo "  → $script"
-  shellcheck --severity=warning "$script"
-done
-echo "✅ All scripts passed shellcheck"
-"""
-
-[tasks."lint:staged"]
-description = "Run shellcheck on staged scripts (used by pre-commit hook)"
-run = """
 #!/usr/bin/env bash
 set -euo pipefail
 
 # Get all staged shell scripts (both .sh and .sh.tmpl)
 staged_scripts=$(git diff --cached --name-only --diff-filter=ACM | \
-  grep -E '\\.(sh|bash|sh\\.tmpl|bash\\.tmpl)$' || true)
+  grep -E '\.(sh|bash|sh\.tmpl|bash\.tmpl)$' || true)
 
 if [ -z "$staged_scripts" ]; then
   exit 0
@@ -83,4 +64,3 @@ if [ $validation_failed -ne 0 ]; then
 fi
 
 echo "✅ All shell scripts passed shellcheck validation"
-"""
