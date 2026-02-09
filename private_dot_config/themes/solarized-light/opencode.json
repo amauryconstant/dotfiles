@@ -3,39 +3,44 @@
   "defs": {
     "bg-primary": "#fdf6e3",
     "bg-secondary": "#eee8d5",
-    "bg-tertiary": "#93a1a1",
+    "bg-tertiary": "#eee8d5",
     "bg-overlay": "#eee8d5",
+    "bg-diff-added": "#eee8d5",
+    "bg-diff-removed": "#eee8d5",
+    "bg-diff-context": "#eee8d5",
     "fg-primary": "#657b83",
-    "fg-secondary": "#586e75",
+    "fg-secondary": "#93a1a1",
     "fg-muted": "#93a1a1",
+    "fg-subtle": "#93a1a1",
     "fg-contrast": "#002b36",
+    "fg-keyword": "#268bd2",
+    "fg-code-block": "#657b83",
     "accent-primary": "#268bd2",
     "accent-info": "#2aa198",
     "accent-success": "#859900",
     "accent-warning": "#b58900",
     "accent-error": "#dc322f",
     "accent-highlight": "#6c71c4",
-    "accent-secondary": "#2aa198",
+    "accent-secondary": "#6c71c4",
     "accent-tertiary": "#cb4b16",
     "accent-modification": "#d33682",
-    "accent-border": "#6c71c4",
+    "accent-border": "#eee8d5",
+    "accent-border-active": "#93a1a1",
+    "accent-border-subtle": "#eee8d5",
     "accent-performance": "#d33682",
     "accent-media": "#6c71c4",
     "accent-subtle": "#93a1a1",
     "accent-alternative": "#2aa198",
     "accent-special": "#cb4b16",
     "accent-urgent-secondary": "#cb4b16",
-    "bg-diff-added": "#eee8d5",
-    "bg-diff-removed": "#fdf6e3",
-    "bg-diff-context": "#eee8d5",
-    "fg-keyword": "#268bd2",
-    "fg-code-block": "#657b83",
     "accent-variable": "#6c71c4",
-    "accent-type": "#cb4b16",
-    "accent-function-alt": "#2aa198",
+    "accent-type": "#b58900",
+    "accent-function-alt": "#268bd2",
     "accent-markdown-link": "#268bd2",
     "accent-markdown-code": "#859900",
-    "accent-syntax-operator": "#2aa198"
+    "accent-syntax-operator": "#2aa198",
+    "diff-line-number-bg-added": "#eee8d5",
+    "diff-line-number-bg-removed": "#eee8d5"
   },
   "theme": {
     "primary": {
@@ -47,8 +52,8 @@
       "light": "accent-secondary"
     },
     "accent": {
-      "dark": "accent-primary",
-      "light": "accent-primary"
+      "dark": "accent-modification",
+      "light": "accent-modification"
     },
     "error": {
       "dark": "accent-error",
@@ -71,8 +76,8 @@
       "light": "fg-primary"
     },
     "textMuted": {
-      "dark": "fg-muted",
-      "light": "fg-muted"
+      "dark": "fg-secondary",
+      "light": "fg-secondary"
     },
     "background": {
       "dark": "bg-primary",
@@ -88,15 +93,15 @@
     },
     "border": {
       "dark": "accent-border",
-      "light": "bg-tertiary"
-    },
-    "borderActive": {
-      "dark": "accent-border",
       "light": "accent-border"
     },
+    "borderActive": {
+      "dark": "accent-border-active",
+      "light": "accent-border-active"
+    },
     "borderSubtle": {
-      "dark": "bg-tertiary",
-      "light": "bg-secondary"
+      "dark": "accent-border-subtle",
+      "light": "accent-border-subtle"
     },
     "diffAdded": {
       "dark": "accent-success",
@@ -111,8 +116,8 @@
       "light": "fg-muted"
     },
     "diffHunkHeader": {
-      "dark": "fg-muted",
-      "light": "fg-muted"
+      "dark": "accent-tertiary",
+      "light": "accent-tertiary"
     },
     "diffHighlightAdded": {
       "dark": "accent-success",
@@ -135,76 +140,76 @@
       "light": "bg-diff-context"
     },
     "diffLineNumber": {
-      "dark": "fg-muted",
-      "light": "fg-muted"
+      "dark": "accent-border-active",
+      "light": "accent-border-active"
     },
     "diffAddedLineNumberBg": {
-      "dark": "bg-secondary",
-      "light": "bg-secondary"
+      "dark": "diff-line-number-bg-added",
+      "light": "diff-line-number-bg-added"
     },
     "diffRemovedLineNumberBg": {
-      "dark": "bg-secondary",
-      "light": "bg-secondary"
+      "dark": "diff-line-number-bg-removed",
+      "light": "diff-line-number-bg-removed"
     },
     "markdownText": {
       "dark": "fg-primary",
       "light": "fg-primary"
     },
     "markdownHeading": {
+      "dark": "accent-secondary",
+      "light": "accent-secondary"
+    },
+    "markdownLink": {
       "dark": "accent-primary",
       "light": "accent-primary"
     },
-    "markdownLink": {
-      "dark": "accent-markdown-link",
-      "light": "accent-markdown-link"
-    },
     "markdownLinkText": {
-      "dark": "accent-secondary",
-      "light": "accent-secondary"
+      "dark": "accent-alternative",
+      "light": "accent-alternative"
     },
     "markdownCode": {
       "dark": "accent-markdown-code",
       "light": "accent-markdown-code"
     },
     "markdownBlockQuote": {
-      "dark": "fg-secondary",
-      "light": "fg-secondary"
+      "dark": "accent-warning",
+      "light": "accent-warning"
     },
     "markdownEmph": {
       "dark": "accent-warning",
       "light": "accent-warning"
     },
     "markdownStrong": {
-      "dark": "accent-highlight",
-      "light": "accent-highlight"
+      "dark": "accent-tertiary",
+      "light": "accent-tertiary"
     },
     "markdownHorizontalRule": {
-      "dark": "fg-secondary",
-      "light": "fg-secondary"
+      "dark": "fg-subtle",
+      "light": "fg-subtle"
     },
     "markdownListItem": {
       "dark": "accent-primary",
       "light": "accent-primary"
     },
     "markdownListEnumeration": {
-      "dark": "accent-info",
-      "light": "accent-info"
+      "dark": "accent-alternative",
+      "light": "accent-alternative"
     },
     "markdownImage": {
-      "dark": "accent-info",
-      "light": "accent-info"
+      "dark": "accent-primary",
+      "light": "accent-primary"
     },
     "markdownImageText": {
-      "dark": "accent-secondary",
-      "light": "accent-secondary"
+      "dark": "accent-alternative",
+      "light": "accent-alternative"
     },
     "markdownCodeBlock": {
       "dark": "fg-code-block",
       "light": "fg-code-block"
     },
     "syntaxComment": {
-      "dark": "fg-secondary",
-      "light": "fg-secondary"
+      "dark": "fg-muted",
+      "light": "fg-muted"
     },
     "syntaxKeyword": {
       "dark": "fg-keyword",
@@ -223,8 +228,8 @@
       "light": "accent-success"
     },
     "syntaxNumber": {
-      "dark": "accent-warning",
-      "light": "accent-warning"
+      "dark": "accent-tertiary",
+      "light": "accent-tertiary"
     },
     "syntaxType": {
       "dark": "accent-type",
