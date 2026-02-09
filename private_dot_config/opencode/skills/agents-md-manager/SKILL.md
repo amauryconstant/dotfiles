@@ -298,10 +298,10 @@ Apply this same structure to your repository:
 
 ```bash
 # Validate single file
-python3 .opencode/skills/agents-md-manager/scripts/validate_agents_md.py AGENTS.md
+python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.py AGENTS.md
 
 # Validate all AGENTS.md files in repository
-python3 .opencode/skills/agents-md-manager/scripts/validate_agents_md.py .
+python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.py .
 ```
 
 **Checks**:
@@ -647,10 +647,10 @@ tiling Wayland compositor written in C++.
 
 ```bash
 # Validate all AGENTS.md files
-python3 .opencode/skills/agents-md-manager/scripts/validate_agents_md.py .
+python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.py .
 
 # Check specific file
-python3 .opencode/skills/agents-md-manager/scripts/validate_agents_md.py path/to/AGENTS.md
+python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.py path/to/AGENTS.md
 
 # Find all AGENTS.md files
 find . -name "AGENTS.md" -type f
