@@ -13,7 +13,7 @@ SLOT="${1:-default}"
 
 # Validate slot name (alphanumeric, dash, underscore only)
 if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
-    notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000
+    timeout 1 notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000 2>/dev/null || true
     exit 1
 fi
 
@@ -114,11 +114,11 @@ get_launch_command() {
 
 # Main save logic
 save_session() {
-    notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000
+    timeout 1 notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000 2>/dev/null || true
 
     # Phase 1: Use hyprdrover to save core session
     if ! hyprdrover --save "$SLOT" >/dev/null 2>&1; then
-        notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000
+        timeout 1 notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000 2>/dev/null || true
         exit 1
     fi
 
@@ -197,7 +197,7 @@ save_session() {
     hyprdrover_file="$HYPRDROVER_DIR/$SLOT.json"
 
     if [ ! -f "$hyprdrover_file" ]; then
-        notify-send "Session Manager" "❌ hyprdrover session file not found" -u critical -t 5000
+        timeout 1 notify-send "Session Manager" "❌ hyprdrover session file not found" -u critical -t 5000 2>/dev/null || true
         exit 1
     fi
 
@@ -245,7 +245,7 @@ save_session() {
     ln -sf "$enrichment_file" "$SESSION_DIR/hyprland-session.json"
 
     window_count=$(echo "$filtered_session" | jaq '.clients | length')
-    notify-send "Session Manager" "✅ Saved $window_count windows to slot: $SLOT" -t 3000
+    timeout 1 notify-send "Session Manager" "✅ Saved $window_count windows to slot: $SLOT" -t 3000 2>/dev/null || true
 }
 
 save_session
