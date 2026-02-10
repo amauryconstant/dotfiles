@@ -31,7 +31,6 @@ orange = "#fe8019"
 # MODULE CONFIGURATIONS
 # ============================================================
 
-
 [aws]
 symbol = " "
 
@@ -64,6 +63,9 @@ symbol = " "
 
 [directory]
 read_only = " 󰌾"
+style = "bold yellow"
+truncation_length = 4
+truncation_symbol = ""
 
 [docker_context]
 symbol = " "
@@ -88,6 +90,7 @@ symbol = " "
 
 [git_branch]
 symbol = " "
+style = "bold blue"
 
 [git_commit]
 tag_symbol = '  '

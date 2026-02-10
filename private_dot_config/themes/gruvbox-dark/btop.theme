@@ -11,12 +11,25 @@ theme[selected_fg]="#fabd2f"
 theme[inactive_fg]="#a89984"
 theme[graph_text]="#d5c4a1"
 
+# Background color of percentage meters
+theme[meter_bg]="#3c3836"
+
 # Proc box
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
 theme[proc_misc]="#fabd2f"
-theme[cpu_box]="#fabd2f"
-theme[mem_box]="#b8bb26"
-theme[net_box]="#8ec07c"
-theme[proc_box]="#d3869b"
+# CPU, Memory, Network, Proc box outline colors
+theme[cpu_box]="#fabd2f" #Yellow
+theme[mem_box]="#b8bb26" #Green
+theme[net_box]="#8ec07c" #Aqua
+theme[proc_box]="#d3869b" #Purple
+
+# Box divider line and small boxes line color
+theme[div_line]="#504945"
+
+# Temperature graph color (Green -> Yellow -> Red)
+theme[temp_start]="#b8bb26"
+theme[temp_mid]="#fabd2f"
+theme[temp_end]="#fb4934"
 
 # CPU graph colors
 theme[cpu_start]="#b8bb26"

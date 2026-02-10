@@ -25,7 +25,6 @@ iris = "#907aa9"
 # MODULE CONFIGURATIONS
 # ============================================================
 
-
 [aws]
 symbol = " "
 
@@ -58,6 +57,9 @@ symbol = " "
 
 [directory]
 read_only = " 󰌾"
+style = "bold iris"
+truncation_length = 4
+truncation_symbol = ""
 
 [docker_context]
 symbol = " "
@@ -82,6 +84,7 @@ symbol = " "
 
 [git_branch]
 symbol = " "
+style = "bold pine"
 
 [git_commit]
 tag_symbol = '  '

@@ -2,22 +2,39 @@
 /* Requires: toolkit.legacyUserProfileCustomizations.stylesheets = true in about:config */
 
 :root {
-  --bg-primary: #1d2021;
-  --bg-secondary: #282828;
-  --bg-tertiary: #3c3836;
+  /* Background Hierarchy */
+  --bg-primary: #282828;
+  --bg-secondary: #3c3836;
+  --bg-tertiary: #504945;
+  
+  /* Foreground Hierarchy */
   --fg-primary: #ebdbb2;
   --fg-secondary: #d5c4a1;
   --fg-muted: #a89984;
+  
+  /* Core Accents */
   --accent-primary: #83a598;
   --accent-border: #8ec07c;
-  --accent-info: #b8bb26;
+  --accent-info: #8ec07c;
+  --accent-success: #b8bb26;
+  --accent-warning: #fabd2f;
+  --accent-error: #fb4934;
 }
 
-/* Tab bar */
+/* ==================== NAVIGATION BUTTONS ==================== */
+
+#back-button > .toolbarbutton-icon {
+  --backbutton-background: transparent !important;
+  border: none !important;
+}
+
+/* ==================== TAB BAR ==================== */
+
 #TabsToolbar {
   background-color: var(--bg-primary) !important;
 }
 
+/* Tab background states */
 .tabbrowser-tab[selected] .tab-background {
   background-color: var(--bg-secondary) !important;
 }
@@ -26,15 +43,61 @@
   background-color: var(--bg-primary) !important;
 }
 
+.tabbrowser-tab:hover .tab-background {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Tab text - MAIN BAR READABILITY */
 .tab-text {
   color: var(--fg-primary) !important;
+  font-weight: 500 !important;
 }
 
 .tabbrowser-tab:not([selected]) .tab-text {
   color: var(--fg-secondary) !important;
 }
 
-/* URL bar */
+.tabbrowser-tab:hover .tab-text {
+  color: var(--fg-primary) !important;
+}
+
+/* Tab close button - MAIN BAR READABILITY */
+.tab-close-button {
+  opacity: 0.7 !important;
+  transition: opacity 0.2s !important;
+}
+
+.tab-close-button:hover {
+  opacity: 1 !important;
+  background-color: var(--accent-error) !important;
+  border-radius: 50% !important;
+}
+
+/* Tab audio indicator - MAIN BAR READABILITY */
+.tab-icon-sound-playing {
+  fill: var(--accent-warning) !important;
+}
+
+.tab-icon-sound-muted {
+  fill: var(--fg-muted) !important;
+}
+
+/* Tab loading indicator */
+.tab-throbber[progress] {
+  fill: var(--accent-primary) !important;
+}
+
+.tabbrowser-tab[busy] .tab-throbber {
+  fill: var(--accent-primary) !important;
+}
+
+/* Tab pinned state */
+.tabbrowser-tab[pinned] .tab-icon-image {
+  filter: saturate(1.5) !important;
+}
+
+/* ==================== URL BAR - MAIN BAR READABILITY ==================== */
+
 #urlbar,
 #searchbar {
   background-color: var(--bg-secondary) !important;
@@ -45,22 +108,50 @@
 #urlbar[focused],
 #searchbar[focused] {
   border-color: var(--accent-border) !important;
+  box-shadow: 0 0 0 1px var(--accent-border) !important;
 }
 
-/* Toolbar */
+/* URL bar input field - MAIN BAR READABILITY */
+#urlbar-input,
+#searchbar-input {
+  color: var(--fg-primary) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+}
+
+/* URL bar placeholder - MAIN BAR READABILITY */
+#urlbar::placeholder,
+#searchbar::placeholder {
+  color: var(--fg-muted) !important;
+  opacity: 0.8 !important;
+}
+
+/* URL bar identity box */
+#identity-box {
+  border-right: 1px solid var(--bg-tertiary) !important;
+  padding-right: 8px !important;
+}
+
+#identity-box .verifiedIdentity {
+  color: var(--accent-primary) !important;
+}
+
+/* URL bar page action buttons - MAIN BAR READABILITY */
+#page-action-buttons .urlbar-icon {
+  fill: var(--fg-secondary) !important;
+}
+
+#page-action-buttons .urlbar-icon:hover {
+  fill: var(--fg-primary) !important;
+}
+
+/* ==================== TOOLBAR ==================== */
+
 #nav-bar {
   background-color: var(--bg-primary) !important;
 }
 
-/* Sidebar */
-#sidebar-box {
-  background-color: var(--bg-secondary) !important;
-  border-color: var(--bg-tertiary) !important;
-}
-
-/* CONTRAST FIX: Ensure all elements on elevated surfaces use primary text */
-
-/* Toolbar icons and buttons on elevated surfaces */
+/* Toolbar icons - MAIN BAR READABILITY */
 #nav-bar toolbarbutton,
 #nav-bar toolbaritem,
 #nav-bar .toolbarbutton-text,
@@ -69,7 +160,7 @@
   fill: var(--fg-primary) !important;
 }
 
-/* URL bar icons (refresh, bookmarks, etc.) */
+/* URL bar icons - MAIN BAR READABILITY */
 #urlbar toolbarbutton,
 #urlbar .urlbar-icon,
 #urlbar .urlbar-icon-wrapper {
@@ -77,7 +168,7 @@
   fill: var(--fg-primary) !important;
 }
 
-/* Searchbar icons */
+/* Searchbar icons - MAIN BAR READABILITY */
 #searchbar toolbarbutton,
 #searchbar .searchbar-search-icon {
   color: var(--fg-primary) !important;
@@ -92,8 +183,162 @@
   fill: var(--fg-primary) !important;
 }
 
-/* Sidebar content */
+/* ==================== BOOKMARKS BAR ==================== */
+
+#PersonalToolbar {
+  background-color: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--bg-tertiary) !important;
+}
+
+/* Bookmarks toolbar items - MAIN BAR READABILITY */
+#PersonalToolbar .bookmark-item {
+  color: var(--fg-primary) !important;
+}
+
+#PersonalToolbar .bookmark-item:hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--fg-primary) !important;
+}
+
+/* Bookmarks folder */
+#PersonalToolbar .bookmark-item[container] {
+  list-style-image: url(chrome://user/skin/folder.svg) !important;
+  fill: var(--accent-primary) !important;
+}
+
+/* ==================== SIDEBAR ==================== */
+
+#sidebar-box {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--bg-tertiary) !important;
+}
+
+/* Sidebar content - MAIN BAR READABILITY */
 #sidebar-box .sidebar-title,
 #sidebar-box treechildren {
   color: var(--fg-primary) !important;
+}
+
+/* ==================== CONTEXT MENUS ==================== */
+
+menupopup,
+panel[type="arrow"] {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--bg-tertiary) !important;
+  border-radius: 8px !important;
+}
+
+/* Context menu items - MAIN BAR READABILITY */
+menuitem,
+menu {
+  color: var(--fg-primary) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+menuitem:hover,
+menu:hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--fg-primary) !important;
+}
+
+/* Context menu separator */
+menuseparator {
+  border-color: var(--bg-tertiary) !important;
+}
+
+/* Context menu disabled items */
+menuitem[disabled],
+menu[disabled] {
+  color: var(--fg-muted) !important;
+}
+
+/* Context menu icons */
+.menu-iconic-left {
+  fill: var(--fg-secondary) !important;
+}
+
+/* Context menu accelerator text */
+.menu-accelerator {
+  color: var(--fg-muted) !important;
+}
+
+/* Context menu checkbox */
+menuitem[checked="true"] .menu-iconic-icon {
+  fill: var(--accent-primary) !important;
+}
+
+/* ==================== FIND BAR ==================== */
+
+FindToolbar {
+  background-color: var(--bg-tertiary) !important;
+  border-top: 1px solid var(--bg-tertiary) !important;
+}
+
+/* Find bar input - MAIN BAR READABILITY */
+.findbar-textbox {
+  background-color: var(--bg-primary) !important;
+  color: var(--fg-primary) !important;
+  border: 1px solid var(--bg-tertiary) !important;
+}
+
+.findbar-textbox:focus {
+  border-color: var(--accent-primary) !important;
+}
+
+/* Find bar buttons */
+.findbar-button {
+  background-color: var(--bg-secondary) !important;
+  color: var(--fg-primary) !important;
+  border: 1px solid var(--bg-tertiary) !important;
+}
+
+.findbar-button:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Find bar status labels */
+.findbar-find-status,
+.findbar-matched {
+  color: var(--fg-primary) !important;
+}
+
+/* ==================== DOWNLOADS PANEL ==================== */
+
+.panel-subview-body {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Downloads items */
+.downloadMainArea {
+  background-color: var(--bg-secondary) !important;
+}
+
+.download-state {
+  color: var(--fg-primary) !important;
+}
+
+/* Downloads progress bar */
+.downloadProgress {
+  background-color: var(--bg-tertiary) !important;
+}
+
+.downloadProgress::-moz-progress-bar {
+  background-color: var(--accent-primary) !important;
+}
+
+/* ==================== ABOUT PAGES ==================== */
+
+@-moz-document url-prefix("about:") {
+  body {
+    background-color: var(--bg-primary) !important;
+    color: var(--fg-primary) !important;
+  }
+
+  a {
+    color: var(--accent-primary) !important;
+  }
+
+  h1, h2, h3 {
+    color: var(--fg-primary) !important;
+  }
 }

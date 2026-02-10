@@ -7,8 +7,6 @@ gui:
       - "#f2e9e1"  # overlay (bg-tertiary)
     selectedLineBgColor:
       - "#fffaf3"  # surface (bg-secondary)
-    selectedRangeBgColor:
-      - "#fffaf3"  # surface
     cherryPickedCommitBgColor:
       - "#286983"  # pine (accent-success)
     cherryPickedCommitFgColor:

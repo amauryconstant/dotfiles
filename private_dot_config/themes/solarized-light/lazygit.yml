@@ -7,8 +7,6 @@ gui:
       - "#93a1a1"  # base1 (bg-tertiary)
     selectedLineBgColor:
       - "#eee8d5"  # base2 (bg-secondary)
-    selectedRangeBgColor:
-      - "#eee8d5"  # base2
     cherryPickedCommitBgColor:
       - "#859900"  # green (accent-success)
     cherryPickedCommitFgColor:

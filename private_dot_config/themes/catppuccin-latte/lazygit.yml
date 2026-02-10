@@ -7,8 +7,6 @@ gui:
       - "#bcc0cc"  # surface1 (bg-tertiary)
     selectedLineBgColor:
       - "#ccd0da"  # surface0 (bg-secondary)
-    selectedRangeBgColor:
-      - "#ccd0da"  # surface0
     cherryPickedCommitBgColor:
       - "#40a02b"  # green (accent-success)
     cherryPickedCommitFgColor:

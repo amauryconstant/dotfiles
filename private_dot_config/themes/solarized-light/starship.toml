@@ -29,7 +29,6 @@ green = "#859900"
 # MODULE CONFIGURATIONS
 # ============================================================
 
-
 [aws]
 symbol = " "
 
@@ -62,6 +61,9 @@ symbol = " "
 
 [directory]
 read_only = " 󰌾"
+style = "bold orange"
+truncation_length = 4
+truncation_symbol = ""
 
 [docker_context]
 symbol = " "
@@ -86,6 +88,7 @@ symbol = " "
 
 [git_branch]
 symbol = " "
+style = "bold green"
 
 [git_commit]
 tag_symbol = '  '
@@ -127,7 +130,7 @@ symbol = " "
 symbol = "󰍛 "
 
 [meson]
-symbol = "󰔷 "
+symbol = "�7 "
 
 [nim]
 symbol = "󰆥 "
@@ -161,7 +164,7 @@ FreeBSD = " "
 Garuda = "󰛓 "
 Gentoo = " "
 HardenedBSD = "󰞌 "
-Illumos = "󰈸 "
+Illumos = "�8 "
 Kali = " "
 Linux = " "
 Mabox = " "
@@ -173,7 +176,7 @@ Mint = " "
 NetBSD = " "
 NixOS = " "
 Nobara = " "
-OpenBSD = "󰈺 "
+OpenBSD = "�7 "
 openSUSE = " "
 OracleLinux = "󰌷 "
 Pop = " "
@@ -182,7 +185,7 @@ Redhat = " "
 RedHatEnterprise = " "
 RockyLinux = " "
 Redox = "󰀘 "
-Solus = "󰠳 "
+Solus = "�3 "
 SUSE = " "
 Ubuntu = " "
 Unknown = " "

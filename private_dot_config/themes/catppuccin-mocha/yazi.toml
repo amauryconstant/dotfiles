@@ -1,4 +1,3 @@
-{{- if eq $theme "catppuccin-mocha" }}
 [manager]
 cwd = { fg = "#89b4fa" }  # blue (accent-primary)
 hovered = { fg = "#1e1e2e", bg = "#89b4fa" }  # base + blue (inverted)
@@ -37,7 +36,7 @@ rules = [
   { mime = "video/*", fg = "#a6e3a1" },
   # Audio → mauve (media)
   { mime = "audio/*", fg = "#cba6f7" },
-  # Archives → orange
+  # Archives → peach
   { mime = "application/*zip", fg = "#fab387" },
   { mime = "application/*tar", fg = "#fab387" },
   { mime = "application/*gzip", fg = "#fab387" },
@@ -49,4 +48,3 @@ rules = [
   { name = "*.zsh", fg = "#94e2d5" },
   { name = "*.fish", fg = "#94e2d5" },
 ]
-
