@@ -6,7 +6,7 @@
 }
 {
     "label" : "logout",
-    "action" : "~/.local/lib/scripts/desktop/session-save && hyprctl dispatch exit",
+    "action" : "hypr-session save && hyprctl dispatch exit",
     "text" : "󰍃 Logout",
     "keybind" : "e"
 }
@@ -18,19 +18,19 @@
 }
 {
     "label" : "hibernate",
-    "action" : "systemctl hibernate",
+    "action" : "hypr-session save hibernate && systemctl hibernate",
     "text" : "󰜗 Hibernate",
     "keybind" : "h"
 }
 {
     "label" : "reboot",
-    "action" : "systemctl reboot",
+    "action" : "hypr-session save reboot && systemctl reboot",
     "text" : "󰜉 Reboot",
     "keybind" : "r"
 }
 {
     "label" : "shutdown",
-    "action" : "~/.local/lib/scripts/desktop/session-save && systemctl poweroff",
+    "action" : "hypr-session save shutdown && systemctl poweroff",
     "text" : "󰤂 Shutdown",
     "keybind" : "s"
 }

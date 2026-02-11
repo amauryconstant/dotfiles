@@ -11,6 +11,15 @@ HYPRDROVER_DIR="$HOME/.config/hyprdrover/sessions"
 # Default slot name
 SLOT="${1:-default}"
 
+# Debug logging (for AI debugging)
+log_debug() {
+    logger -t hypr-session "[DEBUG] $*"
+}
+
+log_info() {
+    logger -t hypr-session "[INFO] $*"
+}
+
 # Validate slot name (alphanumeric, dash, underscore only)
 if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
     timeout 1 notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000 2>/dev/null || true
@@ -112,15 +121,60 @@ get_launch_command() {
     esac
 }
 
+# Check critical dependencies
+check_dependencies() {
+    for cmd in hyprdrover hyprctl jaq; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            timeout 1 notify-send "Session Manager" "❌ Missing dependency: $cmd\nRun: package-manager sync" -u critical -t 5000 2>/dev/null || true
+            logger -t hypr-session "[ERROR] session-save: missing dependency $cmd"
+            exit 1
+        fi
+    done
+    log_debug "session-save: dependencies OK"
+}
+
+# Wait for Hyprland to be ready
+wait_for_hyprland() {
+    local timeout="${1:-30}"
+    local elapsed=0
+    
+    log_debug "session-save: waiting for Hyprland (timeout: ${timeout}s)"
+    while [ $elapsed -lt $timeout ]; do
+        if hyprctl version >/dev/null 2>&1; then
+            log_debug "session-save: Hyprland ready"
+            return 0
+        fi
+        sleep 0.5
+        elapsed=$((elapsed + 1))
+    done
+    
+    timeout 1 notify-send "Session Manager" "❌ Hyprland not responding after ${timeout}s" -u critical -t 5000 2>/dev/null || true
+    logger -t hypr-session "[ERROR] session-save: Hyprland not responding after ${timeout}s"
+    return 1
+}
+
+check_dependencies
+wait_for_hyprland || exit 1
+
 # Main save logic
 save_session() {
     timeout 1 notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000 2>/dev/null || true
+    log_info "session-save: started slot=$SLOT"
 
-    # Phase 1: Use hyprdrover to save core session
-    if ! hyprdrover --save "$SLOT" >/dev/null 2>&1; then
-        timeout 1 notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000 2>/dev/null || true
+    # Phase 1: Use hyprdrover to save core session (with timeout)
+    log_debug "session-save: calling hyprdrover --save $SLOT"
+    if ! timeout 30 hyprdrover --save "$SLOT" >/dev/null 2>&1; then
+        local exit_code=$?
+        if [ $exit_code -eq 124 ]; then
+            timeout 1 notify-send "Session Manager" "❌ hyprdrover save timed out (30s)" -u critical -t 5000 2>/dev/null || true
+            logger -t hypr-session "[ERROR] session-save: hyprdrover timeout (30s)"
+        else
+            timeout 1 notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000 2>/dev/null || true
+            logger -t hypr-session "[ERROR] session-save: hyprdrover failed exit=$exit_code"
+        fi
         exit 1
     fi
+    log_debug "session-save: hyprdrover save completed"
 
     # Phase 2: Extract terminal CWDs for enrichment
     windows_json=$(hyprctl clients -j)
@@ -246,6 +300,7 @@ save_session() {
 
     window_count=$(echo "$filtered_session" | jaq '.clients | length')
     timeout 1 notify-send "Session Manager" "✅ Saved $window_count windows to slot: $SLOT" -t 3000 2>/dev/null || true
+    log_info "session-save: completed windows=$window_count slot=$SLOT"
 }
 
 save_session

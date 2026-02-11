@@ -6,6 +6,50 @@
 
 SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
 
+# Debug logging (for AI debugging)
+log_debug() {
+    logger -t hypr-session "[DEBUG] $*"
+}
+
+log_info() {
+    logger -t hypr-session "[INFO] $*"
+}
+
+# Check critical dependencies
+check_dependencies() {
+    for cmd in jaq wofi; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            logger -t hypr-session "[WARN] session-prompt: missing dependency $cmd"
+            exit 0  # Silent degradation for session-prompt
+        fi
+    done
+    log_debug "session-prompt: dependencies OK"
+}
+
+# Wait for session services to be ready
+wait_for_session_ready() {
+    local max_wait=15
+    local elapsed=0
+    
+    log_debug "session-prompt: waiting for services (timeout: ${max_wait}s)"
+    while [ $elapsed -lt $max_wait ]; do
+        if command -v hyprctl >/dev/null 2>&1 && \
+           hyprctl version >/dev/null 2>&1 && \
+           command -v notify-send >/dev/null 2>&1; then
+            log_debug "session-prompt: services ready"
+            return 0
+        fi
+        sleep 0.5
+        elapsed=$((elapsed + 1))
+    done
+    
+    log_debug "session-prompt: services not ready after ${max_wait}s, exiting"
+    return 1
+}
+
+check_dependencies
+wait_for_session_ready || exit 0
+
 # Check if session file exists (symlink to current slot)
 if [ ! -f "$SESSION_FILE" ]; then
     # No saved session - exit silently
@@ -20,6 +64,7 @@ max_age=$((24 * 60 * 60))  # 24 hours in seconds
 
 if [ "$session_age" -gt "$max_age" ]; then
     # Session too old - don't prompt
+    log_debug "session-prompt: session too old (${session_age}s), exiting"
     exit 0
 fi
 
@@ -27,6 +72,7 @@ fi
 window_count=$(jaq -r '.clients | length' "$SESSION_FILE" 2>/dev/null || echo "?")
 timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE" 2>/dev/null || echo "")
 slot=$(jaq -r '.metadata.slot' "$SESSION_FILE" 2>/dev/null || echo "default")
+log_debug "session-prompt: prompting slot=$slot windows=$window_count"
 
 # Format timestamp for display
 if [ -n "$timestamp" ] && [ "$timestamp" != "null" ]; then
@@ -44,5 +90,8 @@ choice=$(printf "Restore session ($window_count windows)\nSkip" | wofi \
 
 if [ "$choice" = "Restore session ($window_count windows)" ]; then
     # User chose to restore - launch in background with the correct slot
+    log_info "session-prompt: user chose to restore slot=$slot"
     "$HOME/.local/lib/scripts/desktop/session-restore" "$slot" &
+else
+    log_debug "session-prompt: user chose to skip"
 fi
