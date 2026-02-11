@@ -8,11 +8,11 @@
 
 ## Quick Reference
 
-- **Theme system**: Semantic variable abstraction (16 variables)
+- **Theme system**: Semantic variable abstraction (24 variables)
 - **8 variants**: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - **Switching**: `theme switch <name>`, darkman (solar), Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 - **Location**: `~/.config/themes/current` → symlink to active theme
-- **Apps**: Desktop (7), CLI tools (6), Shell scripts (8 via gum-ui)
+- **Apps**: Desktop (7), CLI tools (7), Shell scripts (8 via gum-ui)
 - **Style guides**: Each theme has `STYLE-GUIDE.md` with color selection methodology
 
 ---
@@ -34,7 +34,7 @@
 
 ## Semantic Variable Schema
 
-**24 variables** organized into 3 categories (Phase 3 - expanded system):
+**24 variables** organized into 3 categories:
 
 ### Background Hierarchy (4)
 
@@ -56,7 +56,7 @@
 
 ### Accent Colors (16 semantic roles - Phase 1+2+3)
 
-**Core Accents (8 - Phase 1)**:
+**Core Accents (8)**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -69,7 +69,7 @@
 | `@accent-secondary` | Tertiary actions | Alternative interactive elements |
 | `@accent-tertiary` | Quaternary | Lock, logout buttons |
 
-**Extended Accents (8 - Phase 2+3)**:
+**Extended Accents (8)**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -82,7 +82,7 @@
 | `@accent-special` | Special states | Custom modules, rare indicators |
 | `@accent-urgent-secondary` | Moderate urgency | Battery 20-30%, moderate warnings |
 
-**Hover Variants (4 - Phase 3)**:
+**Hover Variants (4)**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -227,11 +227,34 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 
 **Switching**: Symlinks automatically update when `theme switch` runs
 
+### Lazygit Semantic Mapping
+
+All 12 lazygit theme fields and their semantic mappings:
+
+| Field | Semantic | Notes |
+|-------|----------|-------|
+| `activeBorderColor` | `accent-border` + bold | Active panel border |
+| `inactiveBorderColor` | `fg-muted` | **Must be foreground-class** |
+| `searchingActiveBorderColor` | `accent-warning` + bold | Search mode border |
+| `optionsTextColor` | `accent-info` | Help/options text |
+| `selectedLineBgColor` | `bg-secondary` | Active panel row highlight |
+| `inactiveViewSelectedLineBgColor` | `bg-tertiary` | Inactive panel row highlight |
+| `cherryPickedCommitBgColor` | `accent-success` | Cherry-pick marker bg |
+| `cherryPickedCommitFgColor` | `fg-contrast` | Cherry-pick marker fg |
+| `markedBaseCommitBgColor` | `accent-warning` | Rebase base marker bg |
+| `markedBaseCommitFgColor` | `fg-contrast` | Rebase base marker fg |
+| `unstagedChangesColor` | `accent-modification` | Unstaged file indicator |
+| `defaultFgColor` | `fg-primary` | Default text |
+
+**Critical rule**: Border/outline colors MUST use foreground-hierarchy colors (`fg-muted`, `fg-secondary`, `accent-*`), NOT background-hierarchy colors (`bg-secondary`, `bg-tertiary`). Background colors are designed to be near-identical to bg-primary; they cannot provide border contrast.
+
+**Calibration note**: For themes where bg-secondary ≈ bg-primary (Rose Pine), use the palette's dedicated highlight tier colors for `selectedLineBgColor` and `inactiveViewSelectedLineBgColor`. See Rose Pine STYLE-GUIDE.md files for details.
+
 ---
 
 ## Shell Script Integration (CLI Tools)
 
-**7th integration category** - System CLI tools via gum-ui library
+System CLI tools source `colors.sh` from the active theme via gum-ui library.
 
 **Implementation**: Shell-sourceable `colors.sh` files in each theme
 
@@ -282,7 +305,7 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 ### Consumer Scripts
 
 **8 system CLI tools** use theme colors via gum-ui:
-1. package-manager (3,069 lines)
+1. package-manager
 2. system-health
 3. system-maintenance
 4. system-health-dashboard

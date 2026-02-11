@@ -4,18 +4,25 @@ gui:
       - "#7287fd"  # lavender (accent-border)
       - bold
     inactiveBorderColor:
-      - "#bcc0cc"  # surface1 (bg-tertiary)
+      - "#7c7f93"  # overlay2 (fg-muted)
+    searchingActiveBorderColor:
+      - "#df8e1d"  # yellow (accent-warning)
+      - bold
+    optionsTextColor:
+      - "#179299"  # teal (accent-info)
     selectedLineBgColor:
       - "#ccd0da"  # surface0 (bg-secondary)
+    inactiveViewSelectedLineBgColor:
+      - "#bcc0cc"  # surface1 (bg-tertiary)
     cherryPickedCommitBgColor:
       - "#40a02b"  # green (accent-success)
     cherryPickedCommitFgColor:
       - "#dce0e8"  # crust (fg-contrast)
+    markedBaseCommitBgColor:
+      - "#df8e1d"  # yellow (accent-warning)
+    markedBaseCommitFgColor:
+      - "#dce0e8"  # crust (fg-contrast)
     unstagedChangesColor:
-      - "#d20f39"  # red (accent-error)
+      - "#ea76cb"  # pink (accent-modification)
     defaultFgColor:
       - "#4c4f69"  # text (fg-primary)
-    searchingActiveBorderColor:
-      - "#df8e1d"  # yellow (accent-warning)
-    optionsTextColor:
-      - "#179299"  # teal (accent-info)

@@ -73,35 +73,12 @@ Only the absolute hex values differ, not the semantic mappings.
 
 ---
 
-## OpenCode Implementation Notes
+## OpenCode
 
-### Official Base16 Alignment
-
-**Reference**: This theme aligns with [base16-opencode](https://github.com/scaryrawr/base16-opencode) color mappings for OpenCode terminal UI.
-
-**Background Hierarchy**:
+**Base16 mapping**: [base16-rose-pine-dawn](https://github.com/scaryrawr/base16-opencode) | [OPENCODE.md](./OPENCODE.md)
 - `bg-primary` → `base00` (#faf4ed - base)
 - `bg-secondary` → `base01` (#fffaf3 - surface)
 - `bg-tertiary` → `base02` (#f2e9e1 - overlay)
-
-**Rose Pine Surface Naming**: Rose Pine uses nature-inspired names (base/surface/overlay) that directly correspond to elevation layers. The base16 mapping follows: base (foundation) → surface (raised) → overlay (floating).
-
-**Architecture**: We use separate theme directories (dawn/moon) for symlink-based switching integrated with desktop environment (Waybar, Dunst, Hyprland). Color values align with official base16-rose-pine implementation while maintaining our multi-app theme system.
-
-**Status**: ✅ **Already aligned** - No color changes needed. All values match official base16-rose-pine implementation.
-
-### Validation Checklist
-
-**Contrast Compliance**:
-- [x] bg-tertiary ≠ fg-muted (no invisible text)
-- [x] FG_PRIMARY on BG_SECONDARY ≥ 4.5:1 (WCAG AA: 7.0:1)
-
-**Color Accuracy**:
-- [x] Background tiers match official base00/01/02 (base/surface/overlay)
-- [x] Foreground hierarchy uses official Rose Pine palette
-- [x] No custom colors introduced
-
-**Official Reference**: [base16-rose-pine.json](https://github.com/scaryrawr/base16-opencode)
 
 ---
 
@@ -164,6 +141,16 @@ highlightHigh: #6e6a86  (strong emphasis - darker)
 ```
 
 **Note**: Highlight colors not explicitly defined in official Rose Pine Dawn palette - these are inferred from the pattern.
+
+### Lazygit Calibration Override
+
+Rose Pine Dawn's surface tier (base → surface → overlay) produces only ~1.05:1 contrast ratio, making standard `bg-secondary`/`bg-tertiary` row highlights invisible in lazygit.
+
+**Override**:
+- `selectedLineBgColor` → `highlightMed` (#cecacd) instead of `surface` (#fffaf3)
+- `inactiveViewSelectedLineBgColor` → `highlightLow` (#dfdad9) instead of `overlay` (#f2e9e1)
+
+This uses Rose Pine's dedicated highlight tier (designed for selection states) rather than the surface elevation tier (designed for panel depth).
 
 ---
 

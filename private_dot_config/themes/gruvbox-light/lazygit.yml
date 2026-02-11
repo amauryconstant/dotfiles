@@ -4,18 +4,25 @@ gui:
       - "#d79921"  # neutral_yellow (accent-border)
       - bold
     inactiveBorderColor:
-      - "#d5c4a1"  # bg2 (bg-tertiary)
+      - "#7c6f64"  # fg4 (fg-muted)
+    searchingActiveBorderColor:
+      - "#d79921"  # neutral_yellow (accent-warning)
+      - bold
+    optionsTextColor:
+      - "#689d6a"  # neutral_aqua (accent-info)
     selectedLineBgColor:
       - "#ebdbb2"  # bg1 (bg-secondary)
+    inactiveViewSelectedLineBgColor:
+      - "#d5c4a1"  # bg2 (bg-tertiary)
     cherryPickedCommitBgColor:
       - "#98971a"  # neutral_green (accent-success)
     cherryPickedCommitFgColor:
       - "#282828"  # fg0 (fg-contrast)
+    markedBaseCommitBgColor:
+      - "#d79921"  # neutral_yellow (accent-warning)
+    markedBaseCommitFgColor:
+      - "#282828"  # fg0 (fg-contrast)
     unstagedChangesColor:
-      - "#cc241d"  # neutral_red (accent-error)
+      - "#d65d0e"  # neutral_orange (accent-modification)
     defaultFgColor:
       - "#3c3836"  # fg1 (fg-primary)
-    searchingActiveBorderColor:
-      - "#d79921"  # neutral_yellow (accent-warning)
-    optionsTextColor:
-      - "#689d6a"  # neutral_aqua (accent-info)

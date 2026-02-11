@@ -4,18 +4,25 @@ gui:
       - "#907aa9"  # iris (accent-border)
       - bold
     inactiveBorderColor:
-      - "#f2e9e1"  # overlay (bg-tertiary)
+      - "#9893a5"  # muted (fg-muted)
+    searchingActiveBorderColor:
+      - "#ea9d34"  # gold (accent-warning)
+      - bold
+    optionsTextColor:
+      - "#56949f"  # foam (accent-info)
     selectedLineBgColor:
-      - "#fffaf3"  # surface (bg-secondary)
+      - "#cecacd"  # highlightMed (calibration: surface tier too tight ~1.05:1)
+    inactiveViewSelectedLineBgColor:
+      - "#dfdad9"  # highlightLow (calibration override)
     cherryPickedCommitBgColor:
       - "#286983"  # pine (accent-success)
     cherryPickedCommitFgColor:
       - "#faf4ed"  # base (fg-contrast)
+    markedBaseCommitBgColor:
+      - "#ea9d34"  # gold (accent-warning)
+    markedBaseCommitFgColor:
+      - "#faf4ed"  # base (fg-contrast)
     unstagedChangesColor:
-      - "#b4637a"  # love (accent-error)
+      - "#d7827e"  # rose (accent-modification)
     defaultFgColor:
       - "#575279"  # text (fg-primary)
-    searchingActiveBorderColor:
-      - "#ea9d34"  # gold (accent-warning)
-    optionsTextColor:
-      - "#56949f"  # foam (accent-info)
