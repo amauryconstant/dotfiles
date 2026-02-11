@@ -87,7 +87,6 @@ validate_session_schema() {
 
 check_dependencies
 wait_for_hyprland || exit 1
-validate_session_schema "$enrichment_file" || exit 1
 
 # Validate slot name
 if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
@@ -103,6 +102,8 @@ if [ ! -f "$enrichment_file" ]; then
     logger -t hypr-session "[ERROR] session-restore: no session file for slot=$SLOT"
     exit 1
 fi
+
+validate_session_schema "$enrichment_file" || exit 1
 
 # Load single-instance apps (one per line)
 load_single_instance_apps() {
@@ -136,19 +137,17 @@ is_single_instance_app() {
     echo "$single_instance_apps" | grep -qi "^${base_cmd}$"
 }
 
-# Validate workspace exists, fallback to current workspace
+# Validate workspace id, fallback to current workspace
 validate_workspace() {
     workspace_id="$1"
-    log_debug "session-restore: validating workspace=$workspace_id"
-
-    # Check if workspace exists in current Hyprland session
-    if hyprctl workspaces -j 2>/dev/null | jaq -e --arg id "$workspace_id" '.[] | select(.id == ($id | tonumber))' >/dev/null 2>&1; then
-        log_debug "session-restore: workspace $workspace_id exists"
+    # Hyprland creates workspaces on-demand via [workspace N silent]
+    # Only reject genuinely invalid IDs (empty, non-numeric, <= 0)
+    if echo "$workspace_id" | grep -qE '^[0-9]+$' && [ "$workspace_id" -gt 0 ]; then
+        log_debug "session-restore: using saved workspace=$workspace_id"
         echo "$workspace_id"
     else
-        # Workspace doesn't exist, use current workspace
         local current=$(hyprctl activeworkspace -j 2>/dev/null | jaq -r '.id' || echo "1")
-        log_debug "session-restore: workspace $workspace_id not found, using current=$current"
+        log_debug "session-restore: invalid workspace id='$workspace_id', falling back to current=$current"
         echo "$current"
     fi
 }
@@ -159,7 +158,8 @@ launch_app() {
     launch_cmd="$2"
     workspace_id="$3"
     cwd="$4"
-    log_debug "session-restore: launching class=$class workspace=$workspace_id"
+    monitor_name="${5:-}"
+    log_debug "session-restore: launching class=$class workspace=$workspace_id monitor=$monitor_name"
 
     # CWD validation - fallback to HOME if directory doesn't exist
     if [ -n "$cwd" ] && [ ! -d "$cwd" ]; then
@@ -167,24 +167,28 @@ launch_app() {
         cwd="$HOME"
     fi
 
+    # Build dispatch rules: always include workspace; add monitor if known
+    if [ -n "$monitor_name" ]; then
+        rules="monitor $monitor_name; workspace $workspace_id silent"
+    else
+        rules="workspace $workspace_id silent"
+    fi
+
     # For terminal apps with CWD, append --working-directory if supported
     if [ -n "$cwd" ]; then
         case "$class" in
             "com.mitchellh.ghostty"|"ghostty")
-                # Ghostty: Launch in correct directory using --working-directory
-                hyprctl dispatch exec "[workspace $workspace_id silent] ghostty --working-directory='$cwd'" 2>&1 | grep -q "error" && return 1
+                hyprctl dispatch exec "[$rules] ghostty --working-directory='$cwd'" >/dev/null 2>&1
                 log_debug "session-restore: launched ghostty with CWD"
                 return 0
                 ;;
             "kitty")
-                # Kitty: Launch with --directory
-                hyprctl dispatch exec "[workspace $workspace_id silent] kitty --directory='$cwd'" 2>&1 | grep -q "error" && return 1
+                hyprctl dispatch exec "[$rules] kitty --directory='$cwd'" >/dev/null 2>&1
                 log_debug "session-restore: launched kitty with CWD"
                 return 0
                 ;;
             "alacritty")
-                # Alacritty: Launch with --working-directory
-                hyprctl dispatch exec "[workspace $workspace_id silent] alacritty --working-directory '$cwd'" 2>&1 | grep -q "error" && return 1
+                hyprctl dispatch exec "[$rules] alacritty --working-directory '$cwd'" >/dev/null 2>&1
                 log_debug "session-restore: launched alacritty with CWD"
                 return 0
                 ;;
@@ -192,13 +196,9 @@ launch_app() {
     fi
 
     # Standard app launch
-    if ! hyprctl dispatch exec "[workspace $workspace_id silent] $launch_cmd" 2>&1 | grep -q "error"; then
-        log_debug "session-restore: launched class=$class"
-        return 0
-    else
-        log_debug "session-restore: launch failed class=$class"
-        return 1
-    fi
+    hyprctl dispatch exec "[$rules] $launch_cmd" >/dev/null 2>&1
+    log_debug "session-restore: launched class=$class"
+    return 0
 }
 
 # Main restore logic
@@ -218,18 +218,18 @@ restore_session() {
 
     echo "$session_data" | jaq -r '
         .clients[] |
-        "\(.launchCommand)|\(.workspace.id)|\(.cwd // "")"
-    ' | while IFS='|' read -r launch_cmd workspace_id cwd; do
+        "\(.launchCommand)|\(.workspace.id)|\(.cwd // "")|\(.monitor // "")"
+    ' | while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
         # Check if single-instance app
         if is_single_instance_app "$launch_cmd" "$single_instance_apps"; then
             # Single-instance: Check if already added
             if ! grep -q "^${launch_cmd}|" "$temp_seen"; then
-                echo "$launch_cmd|$workspace_id|$cwd" >> "$temp_apps"
+                echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
                 echo "$launch_cmd|" >> "$temp_seen"
             fi
         else
             # Multi-instance: Add every occurrence
-            echo "$launch_cmd|$workspace_id|$cwd" >> "$temp_apps"
+            echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
         fi
     done
 
@@ -240,16 +240,16 @@ restore_session() {
     launch_success=0
 
     # Launch each app
-    while IFS='|' read -r launch_cmd workspace_id cwd; do
+    while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
         expected_count=$((expected_count + 1))
 
-        # Validate workspace exists
+        # Validate workspace id
         workspace_id=$(validate_workspace "$workspace_id")
 
         # Derive class from launch command for CWD handling (use first word for standard commands)
         class=$(echo "$launch_cmd" | awk '{print $1}' | xargs basename)
 
-        launch_app "$class" "$launch_cmd" "$workspace_id" "$cwd"
+        launch_app "$class" "$launch_cmd" "$workspace_id" "$cwd" "$monitor_name"
 
         # Small delay to avoid overwhelming the compositor
         sleep "$LAUNCH_DELAY"
@@ -264,7 +264,6 @@ restore_session() {
     # Count windows after restore and calculate restored count
     final_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
     restored_count=$((final_count - initial_count))
-    log_debug "session-restore: final windows=$final_count restored=$restored_count expected=$expected_count"
     log_debug "session-restore: final windows=$final_count restored=$restored_count expected=$expected_count"
 
     # Smart notification based on results
