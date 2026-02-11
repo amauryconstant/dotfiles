@@ -10,12 +10,16 @@ if [[ -n "$ZSH_DEBUGRC" ]]; then
   zmodload zsh/zprof
 fi
 
+# Load custom completions
+ZCOMPDIR=${ZDOTDIR:-$HOME}/.zcompletions
+fpath=($ZCOMPDIR $fpath)
+
 # Lazy-load (autoload) lightweight Zsh function files from a directory.
 ZFUNCDIR=${ZDOTDIR:-$HOME}/.zfunctions
 fpath=($ZFUNCDIR $fpath)
 
 # Only autoload lightweight functions immediately
-autoload -Uz $ZFUNCDIR/br(.:t) $ZFUNCDIR/commands(.:t) $ZFUNCDIR/debug-zsh-startup(.:t) $ZFUNCDIR/init-zsh-cmd(.:t) $ZFUNCDIR/rm-empty-dirs(.:t)
+autoload -Uz $ZFUNCDIR/br(.:t) $ZFUNCDIR/commands(.:t) $ZFUNCDIR/debug-zsh-startup(.:t) $ZFUNCDIR/rm-empty-dirs(.:t)
 
 # Lazy loading system for heavy commands
 _lazy_load_commands() {
