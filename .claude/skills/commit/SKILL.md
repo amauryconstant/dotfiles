@@ -41,7 +41,7 @@ git diff HEAD
 git status
 
 # View recent commits for style
-git log --oneline -20
+git log -20
 ```
 
 ### 2. Check for blockers and commit strategy
@@ -125,7 +125,7 @@ Determine the primary verb from the diff:
 Check that the message matches existing style:
 
 ```bash
-git log --oneline -20
+git log -20
 ```
 
 **This repository's conventions**:
@@ -357,7 +357,7 @@ Before presenting the message, verify:
 
 ## Reference
 
-- **Repository conventions**: `git log --oneline -20`
+- **Repository conventions**: `git log -20`
 - **Git config**: `private_dot_config/git/CLAUDE.md`
 - **CLAUDE.md**: HEREDOC commit pattern (lines 288-330)
 - **Commit guidelines**: CLAUDE.md core standards
