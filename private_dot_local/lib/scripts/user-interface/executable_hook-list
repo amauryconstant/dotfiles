@@ -45,6 +45,11 @@ cat <<EOF
   post-maintenance     After system maintenance completes
                        Args: \$1=status (success/failure)
                        Use case: Service restart, validation
+
+  menu-extend          Extend the system menu (Super+Space)
+                       Protocol: called with 'options' to list entries,
+                                 called with 'handle <choice>' to route them
+                       Use case: Custom launcher shortcuts, project menus
 EOF
 
 echo ""

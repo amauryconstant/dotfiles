@@ -10,8 +10,16 @@
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
+# Load menu extensions (optional)
+MENU_EXTEND_HOOK="$HOME/.config/dotfiles/hooks/menu-extend"
+EXTRA_OPTIONS=""
+if [ -x "$MENU_EXTEND_HOOK" ]; then
+    EXTRA_OPTIONS=$("$MENU_EXTEND_HOOK" options 2>/dev/null || true)
+fi
+
 # Main menu options (9 categories) - Using Material Design icons
 MAIN_OPTIONS="󰀻 Apps|󰗚 Learn|󰈿 Trigger|󰏘 Style|󰒓 Setup|󰏓 Install|󰚰 Update|󰋼 About|󰐥 System"
+[ -n "$EXTRA_OPTIONS" ] && MAIN_OPTIONS="${MAIN_OPTIONS}|${EXTRA_OPTIONS}"
 
 CHOICE=$(show_menu "Main Menu" "$MAIN_OPTIONS")
 
@@ -46,5 +54,11 @@ case "$CHOICE" in
         ;;
     "󰐥 System")
         "$SCRIPTS_DIR/user-interface/menu-system.sh"
+        ;;
+    *)
+        # Delegate unknown choices to extension handler
+        if [ -n "$CHOICE" ] && [ -x "$MENU_EXTEND_HOOK" ]; then
+            "$MENU_EXTEND_HOOK" handle "$CHOICE" 2>/dev/null || true
+        fi
         ;;
 esac

@@ -13,7 +13,7 @@
 - **Purpose**: User-extensible event-driven architecture for custom integrations
 - **Location**: `~/.config/dotfiles/hooks/`
 - **Pattern**: Silent hook execution without modifying core scripts
-- **Hook Points**: 6 total (theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance)
+- **Hook Points**: 7 total (theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, menu-extend)
 - **Discovery**: `dotfiles-hook-list` CLI
 - **Creation**: `dotfiles-hook-create` CLI
 
@@ -71,6 +71,26 @@ fi
 | `dark-mode-change` | `darkman` scripts | `dark/light` | Web browser themes, external apps |
 | `pre-maintenance` | `system-maintenance.sh` | none | Backup preparation, service stops |
 | `post-maintenance` | `system-maintenance.sh` | `success/failure` | Validation, cleanup, notifications |
+| `menu-extend` | `system-menu` | `options` / `handle <choice>` | Custom entries in Super+Space menu |
+
+**`menu-extend` two-phase protocol** (differs from other hooks):
+- Called with `options` → print pipe-separated entries to stdout
+- Called with `handle <choice>` → route and execute the chosen entry
+
+```sh
+#!/usr/bin/env sh
+# Hook: menu-extend
+case "$1" in
+    options)
+        echo "󰀻 My Project"   # single entry, or "A|B|C" for multiple
+        ;;
+    handle)
+        case "$2" in
+            "󰀻 My Project") ghostty -e zsh -c "cd ~/Projects/my-project && exec zsh" ;;
+        esac
+        ;;
+esac
+```
 
 ---
 
