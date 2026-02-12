@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Script: menu-trigger.sh
+# Script: menu-trigger
 # Purpose: Trigger menu (Capture/Share/Toggle quick actions)
 # Requirements: Arch Linux, wofi
 
@@ -13,7 +13,7 @@ CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰄀 Capture")
         # Capture submenu
@@ -22,28 +22,28 @@ case "$CHOICE" in
 
         case "$CAPTURE_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
+                "$SCRIPTS_DIR/user-interface/menu-trigger"
                 ;;
             "󰹑 Screenshot (Smart)")
-                "$SCRIPTS_DIR/media/screenshot.sh smart"
+                "$SCRIPTS_DIR/media/screenshot" smart
                 ;;
             "󰩭 Screenshot (Region)")
-                "$SCRIPTS_DIR/media/screenshot.sh region"
+                "$SCRIPTS_DIR/media/screenshot" region
                 ;;
             "󰖲 Screenshot (Window)")
-                "$SCRIPTS_DIR/media/screenshot.sh windows"
+                "$SCRIPTS_DIR/media/screenshot" windows
                 ;;
             "󰍹 Screenshot (Fullscreen)")
-                "$SCRIPTS_DIR/media/screenshot.sh fullscreen"
+                "$SCRIPTS_DIR/media/screenshot" fullscreen
                 ;;
             "󰨸 Screenshot → Clipboard")
-                "$SCRIPTS_DIR/media/screenshot.sh smart clipboard"
+                "$SCRIPTS_DIR/media/screenshot" smart clipboard
                 ;;
             "󰻂 Screen Record")
-                "$SCRIPTS_DIR/desktop/screenrecord.sh"
+                "$SCRIPTS_DIR/desktop/screenrecord"
                 ;;
             "󰕾 Screen Record + Audio")
-                "$SCRIPTS_DIR/desktop/screenrecord.sh --with-audio"
+                "$SCRIPTS_DIR/desktop/screenrecord" --with-audio
                 ;;
             "󰴱 Color Picker")
                 pkill hyprpicker || hyprpicker -a
@@ -57,7 +57,7 @@ case "$CHOICE" in
 
         case "$SHARE_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
+                "$SCRIPTS_DIR/user-interface/menu-trigger"
                 ;;
             "󰈔 Share File")
                 notify "󰒖 Share" "File sharing not yet implemented"
@@ -74,19 +74,19 @@ case "$CHOICE" in
 
         case "$TOGGLE_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-trigger.sh"
+                "$SCRIPTS_DIR/user-interface/menu-trigger"
                 ;;
             "󰛨 Nightlight")
-                "$SCRIPTS_DIR/desktop/nightlight-toggle.sh"
+                "$SCRIPTS_DIR/desktop/nightlight-toggle"
                 ;;
             "󰌾 Idle Lock")
-                "$SCRIPTS_DIR/desktop/idle-toggle.sh"
+                "$SCRIPTS_DIR/desktop/idle-toggle"
                 ;;
             "󰘯 Waybar")
-                "$SCRIPTS_DIR/desktop/waybar-toggle.sh"
+                "$SCRIPTS_DIR/desktop/waybar-toggle"
                 ;;
             "󰝘 Workspace Gaps")
-                "$SCRIPTS_DIR/desktop/workspace-gaps-toggle.sh"
+                "$SCRIPTS_DIR/desktop/workspace-gaps-toggle"
                 ;;
         esac
         ;;

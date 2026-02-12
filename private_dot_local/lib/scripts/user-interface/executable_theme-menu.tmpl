@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
-# Script: theme-menu.sh
+# Script: theme-menu
 # Purpose: Interactive theme selector using Wofi
-# Requirements: Arch Linux, Wofi, theme-switcher.sh
+# Requirements: Arch Linux, Wofi, theme-switcher
 
 # Source environment to get SCRIPTS_DIR
 if [ -f "$HOME/.config/shell/env" ]; then
@@ -78,5 +78,5 @@ SELECTED=$(printf "%b" "$THEME_LIST" | wofi --dmenu --prompt "Select Theme" --wi
 
 # Switch to selected theme
 if [ -n "$SELECTED" ]; then
-    "$SCRIPTS_DIR/desktop/theme-switcher.sh" switch "$SELECTED"
+    "$SCRIPTS_DIR/desktop/theme-switcher" switch "$SELECTED"
 fi

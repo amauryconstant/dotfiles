@@ -15,7 +15,7 @@
 # - Layer-shell protocol for proper Wayland integration
 #
 # USAGE:
-# - Run directly: ~/.local/lib/scripts/desktop/wlogout.sh
+# - Run directly: ~/.local/lib/scripts/desktop/wlogout
 # - Hyprland keybind: Super+Shift+Q
 # ============================================================================
 

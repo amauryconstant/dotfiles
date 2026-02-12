@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Script: set-wallpaper.sh
+# Script: set-wallpaper
 # Purpose: Change wallpaper using swww
 # Requirements: Arch Linux, swww
 
@@ -11,11 +11,11 @@ set -euo pipefail
 # Validate arguments
 if [ $# -eq 0 ]; then
     {{ includeTemplate "log_error" "No wallpaper path provided" }}
-    echo "Usage: set-wallpaper.sh /path/to/wallpaper.jpg"
+    echo "Usage: set-wallpaper /path/to/wallpaper.jpg"
     echo ""
     echo "Examples:"
-    echo "  set-wallpaper.sh ~/Pictures/Wallpapers/sunset.jpg"
-    echo "  set-wallpaper.sh \$(find ~/Pictures/Wallpapers -type f | shuf -n1)  # Random"
+    echo "  set-wallpaper ~/Pictures/Wallpapers/sunset.jpg"
+    echo "  set-wallpaper \$(find ~/Pictures/Wallpapers -type f | shuf -n1)  # Random"
     exit 1
 fi
 

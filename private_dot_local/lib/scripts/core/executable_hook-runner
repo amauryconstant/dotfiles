@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 
-# Script: hook-runner.sh
+# Script: hook-runner
 # Purpose: Execute user hooks without modifying core scripts
 # Requirements: Arch Linux
 
-# Usage: hook-runner.sh <hook-name> [args...]
-# Example: hook-runner.sh theme-change "catppuccin-latte"
+# Usage: hook-runner <hook-name> [args...]
+# Example: hook-runner theme-change "catppuccin-latte"
 
 HOOK_NAME="$1"
 shift

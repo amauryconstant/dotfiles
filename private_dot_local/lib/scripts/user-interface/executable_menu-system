@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 
-# Script: menu-system.sh
+# Script: menu-system
 # Purpose: Power/session controls submenu
 #          Lock/Suspend/Restart/Shutdown options
 # Requirements: Arch Linux, wofi
-# Note: Do not confuse with system-menu.sh (main entry point)
+# Note: Do not confuse with system-menu (main entry point)
 
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
@@ -16,7 +16,7 @@ CHOICE=$(show_menu "System" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰌾 Lock")
         hyprlock

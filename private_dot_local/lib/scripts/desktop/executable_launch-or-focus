@@ -1,19 +1,19 @@
 #!/usr/bin/env sh
 
-# Script: launch-or-focus.sh
+# Script: launch-or-focus
 # Purpose: Focus existing window or launch application (single-instance behavior)
 # Requirements: Arch Linux, hyprctl, jaq
 # Adapted from: Omarchy's omarchy-launch-or-focus
 
-# Usage: launch-or-focus.sh [pattern] [launch-command]
-# Example: launch-or-focus.sh dolphin
-# Example: launch-or-focus.sh btop "ghostty -e btop"
+# Usage: launch-or-focus [pattern] [launch-command]
+# Example: launch-or-focus dolphin
+# Example: launch-or-focus btop "ghostty -e btop"
 
 WINDOW_PATTERN="$1"
 LAUNCH_COMMAND="${2:-$WINDOW_PATTERN}"
 
 if [ -z "$WINDOW_PATTERN" ]; then
-    echo "Error: Usage: launch-or-focus.sh [pattern] [launch-command]" >&2
+    echo "Error: Usage: launch-or-focus [pattern] [launch-command]" >&2
     exit 1
 fi
 
