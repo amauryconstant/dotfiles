@@ -12,6 +12,7 @@
 
 !private_dot_config/**/commands/*.md
 !private_dot_config/**/skills/**/*.md
+!_plans/**.md
 !_research/**.md
 
 __pycache__

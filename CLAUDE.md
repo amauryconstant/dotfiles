@@ -60,6 +60,9 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ~/.local/share/chezmoi/
 ├── .claude/rules/          # Cross-cutting documentation (chezmoi-data, scripts, templates)
 ├── .chezmoidata/           # Template data (packages, colors, globals)
+├── _guides/                # Operational procedures and setup guides
+├── _research/              # Technology investigation and decision records
+├── _plans/                 # Feature roadmaps and phased implementation plans
 ├── .chezmoiscripts/        # Lifecycle scripts (run_once_*, run_onchange_*)
 ├── .chezmoitemplates/      # Reusable includes (log_*)
 ├── .scripts/               # Repository utilities (merge-driver)
@@ -154,6 +157,14 @@ chezmoi status
 ## Documentation Location Map
 
 **This section is your navigation guide**. Location-based CLAUDE.md files are automatically loaded when working in subdirectories.
+
+### Knowledge Directories (repo-only, not deployed)
+
+| Directory | Purpose | Examples |
+|-----------|---------|---------|
+| `_guides/` | Operational procedures and reference guides | `MULTI_DEVICE_BTRFS_SETUP.md` |
+| `_research/` | Technology investigation and decision records | `LLM_BACKENDS_RESEARCH.md` |
+| `_plans/` | Feature roadmaps and phased implementation plans | `VOICE_STT_ROADMAP.md` |
 
 ### Cross-Cutting Topics (.claude/rules/)
 

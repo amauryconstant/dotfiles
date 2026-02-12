@@ -9,7 +9,7 @@
 
 This document contains all implementation details and patterns for future phases beyond Phase 1. Content has been consolidated from research documents to focus on practical implementation guidance.
 
-**Phase 1 (Current)**: See `VOICE_STT_IMPLEMENTATION_PLAN.md`
+**Phase 1 (Current)**: See [`VOICE_STT_IMPLEMENTATION_PLAN.md`](VOICE_STT_IMPLEMENTATION_PLAN.md)
 **Phase 2+ (This Document)**: Future enhancements, two-way conversation, advanced features
 
 ---

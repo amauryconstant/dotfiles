@@ -42,7 +42,7 @@ Building a local-first voice-to-text CLI tool using modern STT models with the f
 **For Research**: See separate research files:
 
 - STT_MODELS_RESEARCH.md - STT engine comparison and benchmarks
-- FUTURE_PHASES.md - Phase 2+ implementation patterns and TTS/LLM frameworks
+- VOICE_STT_FUTURE_PHASES.md - Phase 2+ implementation patterns and TTS/LLM frameworks
 
 ---
 
@@ -702,7 +702,7 @@ voice_stt:
 - Error handling (stop and notify)
 - Basic configuration via YAML template
 
-**Future Phases**: See FUTURE_PHASES.md for Phase 2+ details
+**Future Phases**: See VOICE_STT_FUTURE_PHASES.md for Phase 2+ details
 
 ---
 
@@ -731,7 +731,7 @@ voice_stt:
 
 ### Implementation References
 
-- Voice STT Future Phases: See FUTURE_PHASES.md
+- Voice STT Future Phases: See VOICE_STT_FUTURE_PHASES.md
 - STT Models Research: See STT_MODELS_RESEARCH.md
-- CLI Implementation Patterns: See FUTURE_PHASES.md
-- Audio Processing: See FUTURE_PHASES.md
+- CLI Implementation Patterns: See VOICE_STT_FUTURE_PHASES.md
+- Audio Processing: See VOICE_STT_FUTURE_PHASES.md

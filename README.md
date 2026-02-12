@@ -272,6 +272,12 @@ chezmoi init --apply https://gitlab.com/amoconst/dotfiles.git
 - **[private_dot_local/CLAUDE.md](private_dot_local/CLAUDE.md)**: CLI tools and script library
 - **Location-specific**: CLAUDE.md files throughout repository for detailed implementation docs
 
+### Knowledge Base (repo-only, not deployed)
+
+- **[_guides/](_guides/)**: Operational procedures and reference guides
+- **[_research/](_research/)**: Technology investigation and decision records
+- **[_plans/](_plans/)**: Feature roadmaps and phased implementation plans
+
 ### Quick References
 
 - **Keybindings**: `Super+/` or `Super+Space` → Learn
