@@ -38,8 +38,3 @@ zstyle ':zephyr:plugin:environment' prepath \
     ~/.local/lib/scripts/terminal \
     ~/.local/lib/scripts/user-interface \
     ~/.local/lib/scripts/utils
-
-# Environment customizations (migrated from shell/env)
-zstyle ':zephyr:plugin:environment' 'SCRIPTS_DIR' "$HOME/.local/lib/scripts"
-zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-ui.sh"
-zstyle ':zephyr:plugin:environment' umask 0077

@@ -8,7 +8,7 @@ theme-list() {
 
     # Get current theme
     if [ -L "$current_link" ]; then
-        current_theme=$(readlink "$current_link" | xargs basename)
+        current_theme=$(basename "$(readlink "$current_link")")
     else
         current_theme="none"
     fi
@@ -42,5 +42,3 @@ theme-list() {
     echo "Switch themes: theme switch <theme-name>"
     echo "Interactive menu: theme-menu (or Super+Shift+Ctrl+Space)"
 }
-
-theme-list "$@"

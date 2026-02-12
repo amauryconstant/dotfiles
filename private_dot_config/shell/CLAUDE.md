@@ -192,7 +192,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 
 ## Integration Points
 
-- **Zsh**: `../zsh/dot_zshrc.tmpl` sources POSIX shell files
+- **Zsh**: `../zsh/dot_zshrc` sources POSIX shell files (see `../zsh/CLAUDE.md`)
 - **Bash**: `~/.bashrc` sources POSIX shell files
 - **Zephyr**: `../zsh/dot_zstyles` (environment plugin)
 - **XDG**: Defines base directories for all configs

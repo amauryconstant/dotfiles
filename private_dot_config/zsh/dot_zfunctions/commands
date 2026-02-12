@@ -8,45 +8,37 @@ commands() {
     local search_term="$1"
     local script_dir="$HOME/.local/lib/scripts"
     local bin_dir="$HOME/.local/bin"
-    
+
     echo "🔧 Available Custom Commands:"
     echo ""
-    
-    # List lazy-loaded commands from ~/.local/bin
+
     if [[ -n "$search_term" ]]; then
         echo "🔍 Searching for: $search_term"
         echo ""
     fi
-    
-    # Get list of CLI wrappers
-    local wrappers=($(ls -1 "$bin_dir" | grep -v "^test-"))
-    
+
+    local -a wrappers=(${bin_dir}/^test-*(N:t))
     for wrapper in "${wrappers[@]}"; do
-        if [[ -n "$search_term" ]] && [[ ! "$wrapper" =~ "$search_term" ]]; then
-            continue
-        fi
-        
-        # Get description from wrapper header
-        local desc=$(grep "^# Purpose:" "$bin_dir/$wrapper" 2>/dev/null | cut -d: -f2- | sed 's/^ *//')
-        if [[ -z "$desc" ]]; then
-            desc="CLI wrapper for $wrapper"
-        fi
-        
+        [[ -n "$search_term" && ! "$wrapper" =~ "$search_term" ]] && continue
+
+        local raw_desc desc
+        raw_desc=$(grep -m1 "^# Purpose:" "$bin_dir/$wrapper" 2>/dev/null)
+        desc=${raw_desc#'# Purpose: '}
+        [[ -z "$desc" || "$desc" == "$raw_desc" ]] && desc="CLI wrapper for $wrapper"
+
         printf "  %-20s %s\n" "$wrapper" "$desc"
     done
-    
+
     echo ""
     echo "📚 Available Script Categories:"
     echo ""
-    
-    # List script categories
-    local categories=($(ls -1 "$script_dir" | grep -v "^lib$"))
-    
+
+    local -a categories=(${script_dir}/^lib/(N/:t))
     for category in "${categories[@]}"; do
-        local count=$(ls -1 "$script_dir/$category" 2>/dev/null | wc -l)
-        printf "  %-20s %d scripts\n" "$category" "$count"
+        local -a scripts=(${script_dir}/${category}/*(N))
+        printf "  %-20s %d scripts\n" "$category" "${#scripts[@]}"
     done
-    
+
     echo ""
     echo "💡 Usage:"
     echo "  commands [search]    - Search for specific commands"

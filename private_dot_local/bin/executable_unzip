@@ -5,7 +5,7 @@
 # Requirements: unar (installed via packages.yaml)
 
 # Use environment variables defined in shell/env
-UNZIP_SCRIPT="$SCRIPTS_DIR/utils/unzip.sh"
+UNZIP_SCRIPT="$SCRIPTS_DIR/utils/unzip"
 
 # Execute unzip script
 if [ -f "$UNZIP_SCRIPT" ]; then

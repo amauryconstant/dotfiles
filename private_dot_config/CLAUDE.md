@@ -19,7 +19,8 @@
 | Directory | Purpose | Has CLAUDE.md? |
 |-----------|---------|----------------|
 | `hypr/` | Hyprland compositor | ✅ Yes |
-| `shell/` | Shell + Zsh config | ✅ Yes |
+| `shell/` | POSIX shell layer + Zephyr patterns | ✅ Yes |
+| `zsh/` | Zsh-specific config (antidote, plugins, functions) | ✅ Yes |
 | `systemd/user/` | User services | ✅ Yes |
 | `Nextcloud/` | Nextcloud client | ✅ Yes |
 | `git/` | Git config | ✅ Yes |
@@ -66,9 +67,9 @@
 ## Shell Configuration
 
 **Zsh** (`zsh/`):
-- Zephyr plugin framework (zstyle config)
-- Antidote plugin manager
+- Antidote plugin manager + Zephyr framework
 - Fish-like features (autosuggestions, syntax highlighting)
+- See: `zsh/CLAUDE.md`
 
 **Common shell** (`shell/`):
 - POSIX-compliant layered config
@@ -129,10 +130,11 @@
 **Detailed documentation**:
 1. `hypr/` - Hyprland compositor config
 2. `systemd/user/` - User services
-3. `shell/` - Common shell config (POSIX)
-4. `Nextcloud/` - Nextcloud client (modify_manager)
-5. `git/` - Git config
-6. `themes/` - Theme system (semantic variables, CLI integration)
+3. `shell/` - POSIX shell layer (env, interactive, login)
+4. `zsh/` - Zsh config (antidote plugins, zfunctions, zshrc.d)
+5. `Nextcloud/` - Nextcloud client (modify_manager)
+6. `git/` - Git config
+7. `themes/` - Theme system (semantic variables, CLI integration)
 
 **See individual CLAUDE.md files for detailed references**
 
