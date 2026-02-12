@@ -64,7 +64,7 @@ arguments = "--rebase --autostash --prune"
 # Custom commands for system-specific maintenance
 [commands]
 # Post-update system status
-"Post-update system status" = "{{ .chezmoi.homeDir }}/.local/bin/system-health --brief"
+"Post-update system status" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/system-health --brief"
 # Check for unmanaged packages (installed outside dotfiles)
 "Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/bin/package-manager merge --dry-run"
 # Remove orphaned packages (safe version - checks for orphans before attempting removal)
