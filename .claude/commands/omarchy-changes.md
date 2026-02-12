@@ -1,6 +1,6 @@
 ---
 description: Check for new releases in omarchy with AI-powered semantic classification and integration recommendations
-allowed-tools: Bash(bash:*), Read, Task(subagent_type:general-purpose)
+allowed-tools: Bash(OMARCHY_AUTO_UPDATE=true bash *), Read, Task(subagent_type:general-purpose)
 ---
 
 # Omarchy Release Tracker
