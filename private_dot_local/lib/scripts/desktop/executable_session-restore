@@ -201,40 +201,74 @@ launch_app() {
     return 0
 }
 
-# Post-restore: fix workspace placement for apps that ignore dispatch rules
-# (e.g. Electron apps with their own session restore open all windows on workspace 1)
-# Detects classes with multiple saved windows on distinct workspaces and moves them.
+# Post-restore: fix workspace placement for apps that ignore dispatch rules.
+# Handles all classes (including single-window apps like Spotify).
+# Uses title-based matching so Code windows land on the correct workspace.
 post_restore_workspace_fix() {
     local session_data="$1"
+    local current_clients temp_matched temp_plan
 
-    echo "$session_data" | jaq -r '
-        .clients |
-        group_by(.class) |
-        .[] |
-        select((map(.workspace.id) | unique | length) > 1) |
-        .[0].class
-    ' | while read -r class; do
-        temp_saved=$(mktemp)
-        temp_current=$(mktemp)
+    current_clients=$(hyprctl clients -j 2>/dev/null || echo "[]")
+    temp_matched=$(mktemp)
+    temp_plan=$(mktemp)
 
-        # Saved workspaces for this class in ascending order
+    # Process every class present in the saved session
+    echo "$session_data" | jaq -r '[.clients[].class] | unique | .[]' | while read -r class; do
+
+        # Iterate saved windows for this class, lowest workspace first
         echo "$session_data" | jaq -r --arg c "$class" '
-            [.clients[] | select(.class == $c) | .workspace.id] | sort | .[]
-        ' > "$temp_saved"
+            [.clients[] | select(.class == $c)] |
+            sort_by(.workspace.id) |
+            .[] |
+            "\(.workspace.id)|\(.title // "")"
+        ' | while IFS='|' read -r saved_ws saved_title; do
 
-        # Current window addresses for this class
-        hyprctl clients -j | jaq -r --arg c "$class" '
-            [.[] | select(.class == $c) | .address] | .[]
-        ' > "$temp_current"
+            addr=""
 
-        # Pair each address with a saved workspace and move
-        while IFS= read -r addr <&4 && IFS= read -r ws <&3; do
-            hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1
-            log_debug "session-restore: post-fix $class → workspace $ws"
-        done 3< "$temp_saved" 4< "$temp_current"
+            # 1. Exact title match among unmatched current windows
+            if [ -n "$saved_title" ]; then
+                addr=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" --arg t "$saved_title" '
+                    [.[] | select(.class == $c and .title == $t) | .address] | .[0] // empty
+                ')
+                if [ -n "$addr" ] && grep -qxF "$addr" "$temp_matched" 2>/dev/null; then
+                    addr=""
+                fi
+            fi
 
-        rm -f "$temp_saved" "$temp_current"
+            # 2. Fallback: first unmatched window of this class
+            if [ -z "$addr" ]; then
+                addr=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" '
+                    [.[] | select(.class == $c) | .address] | .[]
+                ' | while read -r candidate; do
+                    [ -n "$candidate" ] || continue
+                    if ! grep -qxF "$candidate" "$temp_matched" 2>/dev/null; then
+                        echo "$candidate"
+                        break
+                    fi
+                done)
+            fi
+
+            if [ -n "$addr" ]; then
+                echo "$addr" >> "$temp_matched"
+                echo "$addr|$saved_ws" >> "$temp_plan"
+                log_debug "session-restore: post-fix plan: $class → workspace $saved_ws"
+            fi
+        done
     done
+
+    # Execute moves — skip windows already on the correct workspace
+    while IFS='|' read -r addr ws; do
+        current_ws=$(echo "$current_clients" | jaq -r --arg a "$addr" \
+            '.[] | select(.address == $a) | .workspace.id | tostring')
+        if [ "$current_ws" != "$ws" ]; then
+            hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1
+            log_debug "session-restore: post-fix moved → workspace $ws"
+        fi
+    done < "$temp_plan"
+
+    rm -f "$temp_matched" "$temp_plan"
 }
 
 # Main restore logic
