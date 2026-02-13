@@ -56,14 +56,18 @@ if [ ! -f "$SESSION_FILE" ]; then
     exit 0
 fi
 
-# Check if session is recent (within last 24 hours)
+# Check if session is recent (within last 24 hours) using JSON metadata timestamp
 current_time=$(date +%s)
-file_time=$(stat -c %Y "$SESSION_FILE")
+json_timestamp=$(jaq -r '.metadata.timestamp // empty' "$SESSION_FILE" 2>/dev/null)
+if [ -n "$json_timestamp" ]; then
+    file_time=$(date -d "$json_timestamp" +%s 2>/dev/null || stat -c %Y "$SESSION_FILE")
+else
+    file_time=$(stat -c %Y "$SESSION_FILE")
+fi
 session_age=$((current_time - file_time))
 max_age=$((24 * 60 * 60))  # 24 hours in seconds
 
 if [ "$session_age" -gt "$max_age" ]; then
-    # Session too old - don't prompt
     log_debug "session-prompt: session too old (${session_age}s), exiting"
     exit 0
 fi

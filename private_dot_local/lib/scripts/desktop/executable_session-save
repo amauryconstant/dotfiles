@@ -6,7 +6,6 @@
 
 SESSION_DIR="$HOME/.local/state/dotfiles"
 DENYLIST_FILE="$HOME/.config/dotfiles/session-denylist.conf"
-HYPRDROVER_DIR="$HOME/.config/hyprdrover/sessions"
 
 # Default slot name
 SLOT="${1:-default}"
@@ -27,7 +26,7 @@ if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
 fi
 
 # Ensure directories exist
-mkdir -p "$SESSION_DIR" "$HYPRDROVER_DIR"
+mkdir -p "$SESSION_DIR"
 
 # Load denylist (one class per line)
 load_denylist() {
@@ -82,21 +81,21 @@ get_launch_command() {
 
         # Flatpak apps (detect by class pattern or explicit mapping)
         "slack")
-            if flatpak list --app 2>/dev/null | grep -q "com.slack.Slack"; then
+            if printf '%s\n' "$_flatpak_apps" | grep -q "com.slack.Slack"; then
                 echo "flatpak run com.slack.Slack"
             else
                 echo "slack"
             fi
             ;;
         "spotify")
-            if flatpak list --app 2>/dev/null | grep -q "com.spotify.Client"; then
+            if printf '%s\n' "$_flatpak_apps" | grep -q "com.spotify.Client"; then
                 echo "flatpak run com.spotify.Client"
             else
                 echo "spotify"
             fi
             ;;
         "discord")
-            if flatpak list --app 2>/dev/null | grep -q "com.discordapp.Discord"; then
+            if printf '%s\n' "$_flatpak_apps" | grep -q "com.discordapp.Discord"; then
                 echo "flatpak run com.discordapp.Discord"
             else
                 echo "discord"
@@ -161,23 +160,16 @@ save_session() {
     timeout 1 notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000 2>/dev/null || true
     log_info "session-save: started slot=$SLOT"
 
-    # Phase 1: Use hyprdrover to save core session (with timeout)
-    log_debug "session-save: calling hyprdrover --save $SLOT"
-    if ! timeout 30 hyprdrover --save "$SLOT" >/dev/null 2>&1; then
-        local exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-            timeout 1 notify-send "Session Manager" "❌ hyprdrover save timed out (30s)" -u critical -t 5000 2>/dev/null || true
-            logger -t hypr-session "[ERROR] session-save: hyprdrover timeout (30s)"
-        else
-            timeout 1 notify-send "Session Manager" "❌ Failed to save session with hyprdrover" -u critical -t 5000 2>/dev/null || true
-            logger -t hypr-session "[ERROR] session-save: hyprdrover failed exit=$exit_code"
-        fi
-        exit 1
-    fi
-    log_debug "session-save: hyprdrover save completed"
+    # Phase 1: Capture session from Hyprland (source of truth)
+    windows_json=$(hyprctl clients -j)
+    monitors_json=$(hyprctl monitors -j 2>/dev/null || echo "[]")
+    log_debug "session-save: captured $(echo "$windows_json" | jaq 'length') windows"
+
+    # Update hyprdrover index in parallel (non-blocking; for hyprdrover users)
+    timeout 30 hyprdrover --save "$SLOT" >/dev/null 2>&1 || \
+        logger -t hypr-session "[WARN] session-save: hyprdrover update skipped (non-critical)"
 
     # Phase 2: Extract terminal CWDs for enrichment
-    windows_json=$(hyprctl clients -j)
 
     # Get denylist as JSON array
     denylist_json=$(load_denylist | jaq -R -s 'split("\n") | map(select(length > 0))')
@@ -197,19 +189,20 @@ save_session() {
     while IFS='|' read -r pid _class address; do
         cwd=""
 
-        # Try direct CWD first
         if [ -d "/proc/$pid" ]; then
-            direct_cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || echo "")
-            if [ -n "$direct_cwd" ] && [ -d "$direct_cwd" ]; then
-                cwd="$direct_cwd"
-            else
-                # Try shell child process
-                shell_pid=$(pgrep -P "$pid" 2>/dev/null | head -n 1)
-                if [ -n "$shell_pid" ] && [ -d "/proc/$shell_pid" ]; then
-                    shell_cwd=$(readlink "/proc/$shell_pid/cwd" 2>/dev/null || echo "")
-                    if [ -n "$shell_cwd" ] && [ -d "$shell_cwd" ]; then
-                        cwd="$shell_cwd"
-                    fi
+            # Try shell child process first (reflects current shell dir, not terminal launch dir)
+            shell_pid=$(pgrep -P "$pid" 2>/dev/null | head -n 1)
+            if [ -n "$shell_pid" ] && [ -d "/proc/$shell_pid" ]; then
+                shell_cwd=$(readlink "/proc/$shell_pid/cwd" 2>/dev/null || echo "")
+                if [ -n "$shell_cwd" ] && [ -d "$shell_cwd" ]; then
+                    cwd="$shell_cwd"
+                fi
+            fi
+            # Fall back to terminal process's own CWD
+            if [ -z "$cwd" ]; then
+                direct_cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || echo "")
+                if [ -n "$direct_cwd" ] && [ -d "$direct_cwd" ]; then
+                    cwd="$direct_cwd"
                 fi
             fi
         fi
@@ -231,6 +224,8 @@ save_session() {
     rm -f "$temp_pids" "$temp_cwds"
 
     # Phase 3: Build launch command map
+    # Cache flatpak app list once (avoids repeated subprocess calls per window)
+    _flatpak_apps=$(flatpak list --app 2>/dev/null || echo "")
     temp_launch=$(mktemp)
 
     echo "$windows_json" | jaq -r '.[] | "\(.address)|\(.class)"' | while IFS='|' read -r address class; do
@@ -247,37 +242,26 @@ save_session() {
 
     rm -f "$temp_launch"
 
-    # Phase 4: Load hyprdrover's JSON and apply custom filters
-    hyprdrover_file="$HYPRDROVER_DIR/$SLOT.json"
-
-    if [ ! -f "$hyprdrover_file" ]; then
-        timeout 1 notify-send "Session Manager" "❌ hyprdrover session file not found" -u critical -t 5000 2>/dev/null || true
-        exit 1
-    fi
-
-    # Read hyprdrover session
-    hyprdrover_session=$(cat "$hyprdrover_file")
-
-    # Apply custom denylist + enrich with CWD and launch commands
-    filtered_session=$(echo "$hyprdrover_session" | jaq \
+    # Phase 4: Apply denylist + enrich with CWD, launch commands, and monitor names
+    # Uses hyprctl data directly — captures all windows regardless of hyprdrover filters
+    filtered_session=$(echo "$windows_json" | jaq \
         --argjson denylist "$denylist_json" \
         --argjson cwdMap "$cwd_map" \
-        --argjson launchMap "$launch_map" '
-        # Filter clients by denylist
-        .clients |= map(select([.class] | inside($denylist) | not)) |
-        # Enrich with CWD data and launch commands
-        .clients |= map(
-            .address as $addr |
-            . + {
-                launchCommand: $launchMap[$addr]
-            } + (
-                if $cwdMap[$addr] then
-                    {cwd: $cwdMap[$addr]}
-                else
-                    {}
-                end
+        --argjson launchMap "$launch_map" \
+        --argjson monitors "$monitors_json" '
+        # Build monitor ID → name map (hyprctl reports integer IDs, dispatch needs names)
+        ($monitors | map({key: (.id | tostring), value: .name}) | from_entries) as $monitorMap |
+        # Filter by denylist + enrich
+        {clients:
+            map(select([.class] | inside($denylist) | not)) |
+            map(
+                .address as $addr |
+                . + {
+                    launchCommand: $launchMap[$addr],
+                    monitor: $monitorMap[.monitor | tostring]
+                } + (if $cwdMap[$addr] then {cwd: $cwdMap[$addr]} else {} end)
             )
-        )
+        }
     ')
 
     # Phase 5: Write enrichment file with metadata
@@ -291,7 +275,7 @@ save_session() {
             metadata: {
                 timestamp: $timestamp,
                 slot: $slot,
-                source: "hyprdrover-hybrid"
+                source: "hyprctl-native"
             }
         }' > "$enrichment_file"
 

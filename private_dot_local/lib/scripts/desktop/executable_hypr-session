@@ -34,8 +34,12 @@ list_sessions() {
     echo "Saved sessions:"
     echo ""
 
-    # Check for any enrichment files
-    if ! ls "$SESSION_DIR"/hyprland-session-*.json >/dev/null 2>&1; then
+    # Check for any enrichment files (avoids ls with glob)
+    _has_sessions=0
+    for _f in "$SESSION_DIR"/hyprland-session-*.json; do
+        [ -f "$_f" ] && _has_sessions=1 && break
+    done
+    if [ "$_has_sessions" -eq 0 ]; then
         echo "  No saved sessions found"
         return
     fi
