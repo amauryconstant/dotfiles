@@ -50,6 +50,14 @@ cat <<EOF
                        Protocol: called with 'options' to list entries,
                                  called with 'handle <choice>' to route them
                        Use case: Custom launcher shortcuts, project menus
+
+  idle-change          On hypridle lock/unlock boundary (listener 1)
+                       Args: \$1=event (timeout/resume)
+                       Use case: Pause apps on lock, resume on unlock
+
+  session-start        On Hyprland session startup (after 5s delay)
+                       Args: none
+                       Use case: Restore state, launch personal services
 EOF
 
 echo ""

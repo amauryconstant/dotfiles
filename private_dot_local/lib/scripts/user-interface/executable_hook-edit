@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# Script: hook-edit
+# Purpose: Edit an installed user hook interactively
+# Requirements: Arch Linux, gum, $EDITOR
+
+# Source UI library
+# shellcheck disable=SC1090
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
+    . "$UI_LIB"
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+HOOKS_DIR="$HOME/.config/dotfiles/hooks"
+
+# If hook name provided as argument, open it directly
+if [[ -n "${1:-}" ]]; then
+    HOOK_PATH="$HOOKS_DIR/$1"
+    if [[ ! -f "$HOOK_PATH" ]]; then
+        ui_error "Hook not found: $1"
+        ui_info "Installed hooks:"
+        find "$HOOKS_DIR" -type f -executable 2>/dev/null | sort | xargs -I{} basename {} | while read -r h; do
+            ui_info "  $h"
+        done
+        exit 1
+    fi
+    ${EDITOR:-nano} "$HOOK_PATH"
+    exit 0
+fi
+
+# Interactive picker from installed hooks
+if [[ ! -d "$HOOKS_DIR" ]] || [[ -z "$(find "$HOOKS_DIR" -type f -executable 2>/dev/null)" ]]; then
+    ui_warning "No hooks installed"
+    ui_info "Create a hook first: dotfiles-hook-create"
+    exit 0
+fi
+
+ui_title "Edit Hook"
+
+HOOK_NAME=$(find "$HOOKS_DIR" -type f -executable | sort | xargs -I{} basename {} | ui_choose)
+
+if [[ -z "$HOOK_NAME" ]]; then
+    ui_info "Cancelled"
+    exit 0
+fi
+
+${EDITOR:-nano} "$HOOKS_DIR/$HOOK_NAME"

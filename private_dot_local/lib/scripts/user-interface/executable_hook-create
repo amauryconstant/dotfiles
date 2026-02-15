@@ -24,7 +24,9 @@ wallpaper-change
 dark-mode-change
 pre-maintenance
 post-maintenance
-menu-extend"
+menu-extend
+idle-change
+session-start"
 
 # Prompt for hook name
 ui_info "Select hook type:"
@@ -103,6 +105,24 @@ case "$HOOK_NAME" in
         esac
         ;;
 esac'
+        ;;
+    idle-change)
+        HOOK_DESC="On hypridle lock/unlock boundary"
+        HOOK_ARGS="\$1=event (timeout/resume)"
+        HOOK_EXAMPLE='case "$1" in
+    timeout)
+        # Session locked - pause apps, stop timers
+        ;;
+    resume)
+        # Session resumed - restart apps, refresh state
+        ;;
+esac'
+        ;;
+    session-start)
+        HOOK_DESC="On Hyprland session startup (after 5s delay)"
+        HOOK_ARGS="none"
+        HOOK_EXAMPLE='# Launch personal services on session start
+# systemctl --user start myservice'
         ;;
 esac
 

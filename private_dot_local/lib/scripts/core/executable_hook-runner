@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: hook-runner
 # Purpose: Execute user hooks without modifying core scripts
@@ -6,15 +6,24 @@
 
 # Usage: hook-runner <hook-name> [args...]
 # Example: hook-runner theme-change "catppuccin-latte"
+# Debug:   HOOK_DEBUG=1 hook-runner theme-change "catppuccin-latte"
 
 HOOK_NAME="$1"
 shift
 
 HOOKS_DIR="$HOME/.config/dotfiles/hooks"
 HOOK_PATH="$HOOKS_DIR/$HOOK_NAME"
+LOG_FILE="$HOME/.local/state/dotfiles/hook.log"
 
-# Silent execution - hooks are optional
-# Errors are suppressed to avoid breaking calling scripts
-if [ -x "$HOOK_PATH" ]; then
-    "$HOOK_PATH" "$@" 2>/dev/null || true
+# Execute hook if it exists and is executable
+if [[ -x "$HOOK_PATH" ]]; then
+    if [[ "${HOOK_DEBUG:-0}" = "1" ]]; then
+        mkdir -p "$(dirname "$LOG_FILE")"
+        { echo "--- $(date '+%Y-%m-%d %H:%M:%S') hook=$HOOK_NAME args=$* ---"
+          "$HOOK_PATH" "$@" 2>&1
+          echo "exit=$?"
+        } >> "$LOG_FILE"
+    else
+        "$HOOK_PATH" "$@" 2>/dev/null || true
+    fi
 fi

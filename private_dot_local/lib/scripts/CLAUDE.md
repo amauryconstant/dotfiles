@@ -54,7 +54,7 @@ if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
 fi
 ```
 
-**Available hook points** (6 total):
+**Available hook points** (9 total):
 | Hook | Triggered By | Arguments | Use Case |
 |------|--------------|-----------|----------|
 | `theme-change` | theme-switcher.sh | `$theme_name` | Custom app theming |
@@ -63,10 +63,16 @@ fi
 | `dark-mode-change` | darkman scripts | `dark/light` | Web app themes |
 | `pre-maintenance` | system-maintenance.sh | none | Backup preparation |
 | `post-maintenance` | system-maintenance.sh | `success/failure` | Validation, cleanup |
+| `menu-extend` | system-menu | `options`/`handle <choice>` | Super+Space custom entries |
+| `idle-change` | hypridle listener 1 | `timeout`/`resume` | Lock/unlock boundary events |
+| `session-start` | autostart.conf | none | Hyprland session startup |
 
 **Hook discovery**:
 - CLI: `dotfiles-hook-list` (shows available + installed hooks)
 - CLI: `dotfiles-hook-create` (interactive hook template generator)
+- CLI: `hook-edit [name]` (edit installed hook in `$EDITOR`)
+- CLI: `hook-test [name]` (run hook with default test args, shows output + exit code)
+- Debug: `HOOK_DEBUG=1 hook-runner <name>` (logs to `~/.local/state/dotfiles/hook.log`)
 
 **UI Library**: See `core/CLAUDE.md` for gum-ui.sh reference
 

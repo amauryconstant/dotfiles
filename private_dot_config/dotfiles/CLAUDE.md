@@ -13,9 +13,10 @@
 - **Purpose**: User-extensible event-driven architecture for custom integrations
 - **Location**: `~/.config/dotfiles/hooks/`
 - **Pattern**: Silent hook execution without modifying core scripts
-- **Hook Points**: 7 total (theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, menu-extend)
+- **Hook Points**: 9 total (theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, menu-extend, idle-change, session-start)
 - **Discovery**: `dotfiles-hook-list` CLI
 - **Creation**: `dotfiles-hook-create` CLI
+- **Debug**: `HOOK_DEBUG=1 hook-runner <name> [args]` → logs to `~/.local/state/dotfiles/hook.log`
 
 ---
 
@@ -42,6 +43,7 @@ fi
 - Silent execution (no errors if hook missing)
 - Optional hooks (graceful degradation)
 - Simple API (hook name + arguments)
+- `HOOK_DEBUG=1` → logs timestamp, output, exit code to `~/.local/state/dotfiles/hook.log`
 
 ### Integration Pattern
 
@@ -72,6 +74,8 @@ fi
 | `pre-maintenance` | `system-maintenance.sh` | none | Backup preparation, service stops |
 | `post-maintenance` | `system-maintenance.sh` | `success/failure` | Validation, cleanup, notifications |
 | `menu-extend` | `system-menu` | `options` / `handle <choice>` | Custom entries in Super+Space menu |
+| `idle-change` | `hypridle` listener 1 | `timeout` / `resume` | Pause apps on lock, resume on unlock |
+| `session-start` | `autostart.conf` (5s delay) | none | Launch personal services, restore state |
 
 **`menu-extend` two-phase protocol** (differs from other hooks):
 - Called with `options` → print pipe-separated entries to stdout

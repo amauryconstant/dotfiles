@@ -17,7 +17,8 @@ general {
 # Listener 1: Lock screen after 5 minutes of inactivity
 listener {
     timeout = 300                                # 5 minutes
-    on-timeout = loginctl lock-session          # Lock the session
+    on-timeout = loginctl lock-session; ~/.local/lib/scripts/core/hook-runner idle-change timeout
+    on-resume = ~/.local/lib/scripts/core/hook-runner idle-change resume
 }
 
 # Listener 2: Turn off displays after 10 minutes of inactivity

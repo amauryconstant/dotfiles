@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+# Script: hook-test
+# Purpose: Test a user hook with sensible default arguments
+# Requirements: Arch Linux, gum
+
+# Source UI library
+# shellcheck disable=SC1090
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
+    . "$UI_LIB"
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+HOOKS_DIR="$HOME/.config/dotfiles/hooks"
+
+# Default test arguments per hook type
+default_arg() {
+    case "$1" in
+        theme-change)         echo "catppuccin-mocha" ;;
+        idle-change)          echo "timeout" ;;
+        package-sync)         echo "sync" ;;
+        post-maintenance)     echo "success" ;;
+        menu-extend)          echo "options" ;;
+        *)                    echo "" ;;
+    esac
+}
+
+ui_title "Test Hook"
+
+# If hook name provided as argument, use it directly
+if [[ -n "${1:-}" ]]; then
+    HOOK_NAME="$1"
+else
+    if [[ ! -d "$HOOKS_DIR" ]] || [[ -z "$(find "$HOOKS_DIR" -type f -executable 2>/dev/null)" ]]; then
+        ui_warning "No hooks installed"
+        ui_info "Create a hook first: dotfiles-hook-create"
+        exit 0
+    fi
+    HOOK_NAME=$(find "$HOOKS_DIR" -type f -executable | sort | xargs -I{} basename {} | ui_choose)
+fi
+
+if [[ -z "$HOOK_NAME" ]]; then
+    ui_info "Cancelled"
+    exit 0
+fi
+
+HOOK_PATH="$HOOKS_DIR/$HOOK_NAME"
+if [[ ! -f "$HOOK_PATH" ]]; then
+    ui_error "Hook not found: $HOOK_NAME"
+    exit 1
+fi
+
+# Determine test arg
+DEFAULT=$(default_arg "$HOOK_NAME")
+if [[ -n "$DEFAULT" ]]; then
+    ui_info "Default arg: $DEFAULT (press Enter to use, or type custom)"
+    TEST_ARG=$(ui_input "Test argument" --placeholder "$DEFAULT")
+    TEST_ARG="${TEST_ARG:-$DEFAULT}"
+else
+    TEST_ARG=$(ui_input "Test argument (leave blank for none)" --placeholder "")
+fi
+
+ui_step "Running: $HOOK_NAME ${TEST_ARG:+$TEST_ARG}"
+echo ""
+
+# Run hook and capture output + exit code
+if [[ -n "$TEST_ARG" ]]; then
+    OUTPUT=$("$HOOK_PATH" "$TEST_ARG" 2>&1)
+    EXIT_CODE=$?
+else
+    OUTPUT=$("$HOOK_PATH" 2>&1)
+    EXIT_CODE=$?
+fi
+
+# Show output
+if [[ -n "$OUTPUT" ]]; then
+    ui_output "$OUTPUT"
+    echo ""
+fi
+
+# Show result
+if [[ $EXIT_CODE -eq 0 ]]; then
+    ui_success "Hook exited: $EXIT_CODE"
+else
+    ui_error "Hook exited: $EXIT_CODE"
+fi
