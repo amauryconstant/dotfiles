@@ -1,10 +1,11 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: session-prompt.sh
 # Purpose: Prompt user to restore saved Hyprland session (default slot)
 # Requirements: Arch Linux, wofi, notify-send, jaq
 
 SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
+SESSIONS_DIR="$HOME/.local/state/dotfiles"
 
 # Debug logging (for AI debugging)
 log_debug() {
@@ -30,9 +31,9 @@ check_dependencies() {
 wait_for_session_ready() {
     local max_wait=15
     local elapsed=0
-    
+
     log_debug "session-prompt: waiting for services (timeout: ${max_wait}s)"
-    while [ $elapsed -lt $max_wait ]; do
+    while [[ "$elapsed" -lt "$max_wait" ]]; do
         if command -v hyprctl >/dev/null 2>&1 && \
            hyprctl version >/dev/null 2>&1 && \
            command -v notify-send >/dev/null 2>&1; then
@@ -42,7 +43,7 @@ wait_for_session_ready() {
         sleep 0.5
         elapsed=$((elapsed + 1))
     done
-    
+
     log_debug "session-prompt: services not ready after ${max_wait}s, exiting"
     return 1
 }
@@ -51,15 +52,14 @@ check_dependencies
 wait_for_session_ready || exit 0
 
 # Check if session file exists (symlink to current slot)
-if [ ! -f "$SESSION_FILE" ]; then
-    # No saved session - exit silently
+if [[ ! -f "$SESSION_FILE" ]]; then
     exit 0
 fi
 
 # Check if session is recent (within last 24 hours) using JSON metadata timestamp
 current_time=$(date +%s)
 json_timestamp=$(jaq -r '.metadata.timestamp // empty' "$SESSION_FILE" 2>/dev/null)
-if [ -n "$json_timestamp" ]; then
+if [[ -n "$json_timestamp" ]]; then
     file_time=$(date -d "$json_timestamp" +%s 2>/dev/null || stat -c %Y "$SESSION_FILE")
 else
     file_time=$(stat -c %Y "$SESSION_FILE")
@@ -67,35 +67,74 @@ fi
 session_age=$((current_time - file_time))
 max_age=$((24 * 60 * 60))  # 24 hours in seconds
 
-if [ "$session_age" -gt "$max_age" ]; then
-    log_debug "session-prompt: session too old (${session_age}s), exiting"
-    exit 0
-fi
+if [[ "$session_age" -le "$max_age" ]]; then
+    # Recent session: show single-session prompt
+    window_count=$(jaq -r '.clients | length' "$SESSION_FILE" 2>/dev/null || echo "?")
+    timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE" 2>/dev/null || echo "")
+    slot=$(jaq -r '.metadata.slot' "$SESSION_FILE" 2>/dev/null || echo "default")
+    log_debug "session-prompt: prompting slot=$slot windows=$window_count"
 
-# Get session metadata
-window_count=$(jaq -r '.clients | length' "$SESSION_FILE" 2>/dev/null || echo "?")
-timestamp=$(jaq -r '.metadata.timestamp' "$SESSION_FILE" 2>/dev/null || echo "")
-slot=$(jaq -r '.metadata.slot' "$SESSION_FILE" 2>/dev/null || echo "default")
-log_debug "session-prompt: prompting slot=$slot windows=$window_count"
+    # Format timestamp for display
+    if [[ -n "$timestamp" ]] && [[ "$timestamp" != "null" ]]; then
+        formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "recent")
+    else
+        formatted_time="recent"
+    fi
 
-# Format timestamp for display
-if [ -n "$timestamp" ] && [ "$timestamp" != "null" ]; then
-    formatted_time=$(date -d "$timestamp" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "recent")
+    choice=$(printf 'Restore session (%s windows)\nSkip' "$window_count" | wofi \
+        --dmenu \
+        --prompt "Session '$slot' from $formatted_time" \
+        --width 400 \
+        --height 150)
+
+    if [[ "$choice" = "Restore session ($window_count windows)" ]]; then
+        log_info "session-prompt: user chose to restore slot=$slot"
+        "$HOME/.local/lib/scripts/desktop/session-restore" "$slot" &
+    else
+        log_debug "session-prompt: user chose to skip"
+    fi
 else
-    formatted_time="recent"
-fi
+    # Stale default session: show picker for all available sessions
+    log_debug "session-prompt: default session too old (${session_age}s), showing picker"
 
-# Show wofi dialog for selection
-choice=$(printf "Restore session ($window_count windows)\nSkip" | wofi \
-    --dmenu \
-    --prompt "Session '$slot' from $formatted_time" \
-    --width 400 \
-    --height 150)
+    menu_entries=""
+    for session_file in "$SESSIONS_DIR"/hyprland-session-*.json; do
+        [[ -f "$session_file" ]] || continue
+        s_slot=$(jaq -r '.metadata.slot // "unknown"' "$session_file" 2>/dev/null)
+        s_windows=$(jaq -r '.clients | length' "$session_file" 2>/dev/null || echo "?")
+        s_timestamp=$(jaq -r '.metadata.timestamp // empty' "$session_file" 2>/dev/null)
+        if [[ -n "$s_timestamp" ]] && [[ "$s_timestamp" != "null" ]]; then
+            s_formatted=$(date -d "$s_timestamp" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown")
+        else
+            s_mtime=$(stat -c %Y "$session_file")
+            s_formatted=$(date -d "@$s_mtime" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown")
+        fi
+        entry="${s_slot} (${s_windows} windows, ${s_formatted})"
+        if [[ -z "$menu_entries" ]]; then
+            menu_entries="$entry"
+        else
+            menu_entries="$menu_entries
+$entry"
+        fi
+    done
 
-if [ "$choice" = "Restore session ($window_count windows)" ]; then
-    # User chose to restore - launch in background with the correct slot
-    log_info "session-prompt: user chose to restore slot=$slot"
-    "$HOME/.local/lib/scripts/desktop/session-restore" "$slot" &
-else
-    log_debug "session-prompt: user chose to skip"
+    if [[ -z "$menu_entries" ]]; then
+        log_debug "session-prompt: no session files found"
+        exit 0
+    fi
+
+    choice=$(printf '%s\nSkip' "$menu_entries" | wofi \
+        --dmenu \
+        --prompt "Choose session to restore" \
+        --width 450 \
+        --height 250)
+
+    if [[ -z "$choice" ]] || [[ "$choice" = "Skip" ]]; then
+        log_debug "session-prompt: user chose to skip"
+        exit 0
+    fi
+
+    chosen_slot="${choice%% (*}"
+    log_info "session-prompt: user chose to restore slot=$chosen_slot"
+    "$HOME/.local/lib/scripts/desktop/session-restore" "$chosen_slot" &
 fi
