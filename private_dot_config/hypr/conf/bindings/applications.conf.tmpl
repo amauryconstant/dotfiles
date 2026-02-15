@@ -27,3 +27,6 @@ bindd = SUPER, O, Visual editor, exec, ~/.local/lib/scripts/desktop/launch-or-fo
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard
 bindd = SUPER, C, Clipboard history, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy
+
+# Delete from clipboard history: Super + Shift + C
+bindd = SUPER SHIFT, C, Delete from clipboard history, exec, cliphist list | wofi --dmenu | cliphist delete

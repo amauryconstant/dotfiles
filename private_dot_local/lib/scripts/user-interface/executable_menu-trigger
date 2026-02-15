@@ -8,7 +8,7 @@
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Main trigger menu - Using Material Design icons
-MAIN_OPTIONS="󰁍 Back|󰄀 Capture|󰒖 Share|󰔡 Toggle"
+MAIN_OPTIONS="󰁍 Back|󰄀 Capture|󰅟 Clipboard|󰒖 Share|󰔡 Toggle"
 CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS")
 
 case "$CHOICE" in
@@ -50,9 +50,17 @@ case "$CHOICE" in
                 ;;
         esac
         ;;
+    "󰅟 Clipboard")
+        CLIP_OPTIONS="󰁍 Back|󰅟 Clipboard History|󰅢 Clear Clipboard"
+        CLIP_CHOICE=$(show_menu "Clipboard" "$CLIP_OPTIONS")
+        case "$CLIP_CHOICE" in
+            "󰁍 Back") "$SCRIPTS_DIR/user-interface/menu-trigger" ;;
+            "󰅟 Clipboard History") cliphist list | wofi --dmenu | cliphist decode | wl-copy ;;
+            "󰅢 Clear Clipboard") cliphist wipe && notify "󰅟 Clipboard" "History cleared" ;;
+        esac ;;
     "󰒖 Share")
         # Share submenu (placeholder for future file sharing)
-        SHARE_OPTIONS="󰁍 Back|󰈔 Share File|󰨸 Share Clipboard"
+        SHARE_OPTIONS="󰁍 Back|󰈔 Share File"
         SHARE_CHOICE=$(show_menu "Share" "$SHARE_OPTIONS")
 
         case "$SHARE_CHOICE" in
@@ -61,9 +69,6 @@ case "$CHOICE" in
                 ;;
             "󰈔 Share File")
                 notify "󰒖 Share" "File sharing not yet implemented"
-                ;;
-            "󰨸 Share Clipboard")
-                notify "󰒖 Share" "Clipboard sharing not yet implemented"
                 ;;
         esac
         ;;
