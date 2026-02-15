@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Script: dotfiles-bindings-edit
+# Purpose: Edit extra Hyprland keybindings and auto-reload config
+# Requirements: Arch Linux, Hyprland, $EDITOR
+
+BINDINGS_FILE="$HOME/.config/dotfiles/extra-bindings.conf"
+
+# Ensure file exists (should always be present via chezmoi)
+if [[ ! -f "$BINDINGS_FILE" ]]; then
+    notify-send "󰌌 Bindings" "extra-bindings.conf not found — run: chezmoi apply"
+    exit 1
+fi
+
+# Open in editor
+${EDITOR:-nano} "$BINDINGS_FILE"
+
+# Reload Hyprland config after editing
+if hyprctl reload 2>/dev/null; then
+    notify-send "󰌌 Bindings" "Hyprland config reloaded"
+else
+    notify-send -u critical "󰌌 Bindings" "Reload failed — check hyprctl logs"
+fi

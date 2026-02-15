@@ -62,7 +62,15 @@ source = ~/.config/hypr/conf/bindings/applications.conf
 source = ~/.config/hypr/conf/bindings/desktop-utilities.conf
 # ... all 11 binding files (alphabetical) ...
 source = ~/.config/hypr/conf/windowrules.conf
+# User extension (sourced last)
+source = ~/.config/dotfiles/extra-bindings.conf
 ```
+
+**User extra bindings**: `~/.config/dotfiles/extra-bindings.conf`
+- Sourced last — personal bindings without modifying core config
+- Chezmoi-managed (always present, prevents Hyprland parse error)
+- Edit via: `dotfiles-bindings-edit` (auto-reloads on exit)
+- See: `dotfiles/CLAUDE.md` for full documentation
 
 ## Template Decisions
 

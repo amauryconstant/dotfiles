@@ -293,10 +293,34 @@ echo $?  # Should be 0
 
 ---
 
+---
+
+## Extra Bindings Extension Point
+
+**File**: `~/.config/dotfiles/extra-bindings.conf`
+**Chezmoi source**: `private_dot_config/dotfiles/extra-bindings.conf`
+
+User-defined Hyprland keybindings sourced from `hyprland.conf` at the end of the config. Chezmoi-managed so the file always exists, preventing Hyprland parse errors on a missing `source` target.
+
+**CLI**: `dotfiles-bindings-edit` — opens the file in `$EDITOR` and calls `hyprctl reload` on exit.
+
+**Syntax**:
+```conf
+bindd = SUPER SHIFT, F1, My description, exec, my-script
+```
+
+**Key facts**:
+- No chezmoi prefix (not `modify_`, not `private_`) — plain file, user-editable
+- Lives in `~/.config/dotfiles/` alongside hooks
+- Sourced last in `hyprland.conf` (overrides can follow core bindings)
+- Auto-reloaded via `dotfiles-bindings-edit` or `Super+Shift+R`
+
+---
+
 ## Integration Points
 
 **Hook runner**: `~/.local/lib/scripts/core/hook-runner.sh`
-**CLI tools**: `dotfiles-hook-list`, `dotfiles-hook-create`
+**CLI tools**: `dotfiles-hook-list`, `dotfiles-hook-create`, `dotfiles-bindings-edit`
 **Core scripts**: See `private_dot_local/lib/scripts/CLAUDE.md`
 **Theme system**: See `themes/CLAUDE.md`
 **Package manager**: See `private_dot_local/lib/scripts/system/CLAUDE.md`
