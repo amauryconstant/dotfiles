@@ -97,7 +97,7 @@ fi
 
 # Call the main set-wallpaper script with the random wallpaper
 # Pass transition settings as arguments
-SET_WALLPAPER_SCRIPT="$HOME/.local/lib/scripts/media/set-wallpaper.sh"
+SET_WALLPAPER_SCRIPT="$HOME/.local/lib/scripts/media/set-wallpaper"
 if [ ! -f "$SET_WALLPAPER_SCRIPT" ]; then
     {{ includeTemplate "log_error" "set-wallpaper script not found at $SET_WALLPAPER_SCRIPT" }}
     exit 1
