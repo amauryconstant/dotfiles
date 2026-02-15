@@ -51,9 +51,30 @@ else
     exit 1
 fi
 
-{{ includeTemplate "log_complete" "Wallpaper rotation configured successfully" }}
-
 echo ""
 echo "Wallpaper will change automatically every 30 minutes"
 echo "Check status: systemctl --user status wallpaper-cycle.timer"
 echo "Manual trigger: systemctl --user start wallpaper-cycle.service"
+
+# ============================================================================
+# SECTION 2: SYSTEM HEALTH CHECK TIMER
+# ============================================================================
+
+{{ includeTemplate "log_step" "Enabling system-health-check timer..." }}
+
+if ! systemctl --user list-unit-files system-health-check.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "system-health-check.timer unit file not found" }}
+    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/system-health-check.* exist" }}
+    {{ includeTemplate "log_skip" "Skipping health check timer setup" }}
+else
+    systemctl --user daemon-reload
+    systemctl --user enable --now system-health-check.timer
+
+    if systemctl --user is-active --quiet system-health-check.timer; then
+        {{ includeTemplate "log_success" "system-health-check.timer is active" }}
+    else
+        {{ includeTemplate "log_warning" "system-health-check.timer failed to start (check journalctl --user -u system-health-check.timer)" }}
+    fi
+fi
+
+{{ includeTemplate "log_complete" "User timers configured successfully" }}

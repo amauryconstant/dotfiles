@@ -1,0 +1,18 @@
+[Unit]
+Description=System health check and notification
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+# Only run when a Wayland display is available (notify-send requires display)
+ExecCondition=/bin/sh -c 'systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY="'
+ExecStart=%h/.local/lib/scripts/system/system-health --check
+Restart=no
+TimeoutSec=30s
+Environment=PATH=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/var/lib/flatpak/exports/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=HOME=%h
+
+[Install]
+WantedBy=default.target

@@ -5,9 +5,10 @@
 # Requirements: Arch Linux, systemctl
 
 # Source UI library
-if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+# shellcheck disable=SC1090,SC1091
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
     . "$UI_LIB"
-elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
     . "$HOME/.local/lib/scripts/core/gum-ui.sh"
 else
     echo "Error: UI library not found" >&2
@@ -19,11 +20,12 @@ fi
 system-health() {
     case "$1" in
         --help|-h)
-            ui_info "Usage: system-health [--brief|--help]"
+            ui_info "Usage: system-health [--brief|--check|--help]"
             ui_info "Simple system health check for automation"
             echo ""
             ui_info "Options:"
             ui_info "  --brief      Show brief system status (default)"
+            ui_info "  --check      Silent threshold check, fires notify-send on violations"
             ui_info "  --help, -h   Show this help message"
             return 0
             ;;
@@ -46,13 +48,47 @@ system-health() {
             # Failed services count
             if command -v systemctl >/dev/null 2>&1; then
                 failed_count=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
-                if [ "$failed_count" -eq 0 ]; then
+                if [[ "$failed_count" -eq 0 ]]; then
                     ui_success "All services running normally"
                 else
                     ui_warning "$failed_count failed service(s)"
                 fi
             else
                 ui_info "Service status: systemctl not available"
+            fi
+
+            return 0
+            ;;
+        --check)
+            # Silent threshold check — fires notify-send on violations, exits 0 always
+            # Designed for systemd timer invocation (no TTY)
+
+            # Disk: check all mounted filesystems
+            while IFS= read -r line; do
+                mount=$(echo "$line" | awk '{print $6}')
+                pct=$(echo "$line" | awk '{print $5}' | tr -d '%')
+                if [[ "$pct" -ge 95 ]]; then
+                    notify-send -u critical "󰋊 Disk Critical" "$mount at ${pct}%" -t 0
+                elif [[ "$pct" -ge 85 ]]; then
+                    notify-send -u normal "󰋊 Disk Warning" "$mount at ${pct}%"
+                fi
+            done < <(df -h --output=source,size,used,avail,pcent,target | tail -n +2 | grep -v '^tmpfs\|^devtmpfs\|^udev\|^none\|^/dev/loop' | awk '$5+0 > 0')
+
+            # Failed systemd user services
+            if command -v systemctl >/dev/null 2>&1; then
+                failed_units=$(systemctl --user list-units --type=service --state=failed --no-legend --plain 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
+                failed_count=$(echo "$failed_units" | wc -w)
+                if [[ "$failed_count" -gt 0 ]]; then
+                    notify-send -u critical "󰒘 Failed Services" "${failed_count} failed: ${failed_units}" -t 0
+                fi
+            fi
+
+            # Load average vs CPU count
+            nproc_count=$(nproc)
+            threshold=$(awk -v n="$nproc_count" 'BEGIN { printf "%.1f", n * 2 }')
+            load=$(uptime | awk -F'load average:' '{print $2}' | awk -F',' '{gsub(/ /, "", $1); print $1}')
+            if awk -v l="$load" -v t="$threshold" 'BEGIN { exit (l > t) ? 0 : 1 }'; then
+                notify-send -u normal "󰍛 High Load" "Load: ${load} (threshold: ${threshold})"
             fi
 
             return 0
