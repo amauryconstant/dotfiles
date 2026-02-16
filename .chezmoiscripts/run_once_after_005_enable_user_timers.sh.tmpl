@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# Script: run_once_after_005_setup_wallpaper_timer.sh.tmpl
-# Purpose: Enable and start wallpaper rotation timer
+# Script: run_once_after_005_enable_user_timers.sh.tmpl
+# Purpose: Enable and start user systemd timers (wallpaper, health, backup)
 # Requirements: Arch Linux, systemd
 
-{{ includeTemplate "log_start" "Setting up wallpaper rotation timer" }}
+{{ includeTemplate "log_start" "Setting up user systemd timers" }}
 
 set -euo pipefail
 
@@ -77,4 +77,28 @@ else
     fi
 fi
 
+
+# ============================================================================
+# SECTION 3: HOME BACKUP TIMER
+# ============================================================================
+
+{{ includeTemplate "log_step" "Enabling home-backup timer..." }}
+
+if ! systemctl --user list-unit-files home-backup.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "home-backup.timer unit file not found" }}
+    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/home-backup.* exist" }}
+    {{ includeTemplate "log_skip" "Skipping home backup timer setup" }}
+else
+    systemctl --user daemon-reload
+    systemctl --user enable home-backup.timer
+
+    if systemctl --user is-enabled --quiet home-backup.timer; then
+        {{ includeTemplate "log_success" "home-backup.timer enabled (runs daily at 2am)" }}
+        {{ includeTemplate "log_info" "Repository must be initialized first: home-backup init" }}
+    else
+        {{ includeTemplate "log_warning" "home-backup.timer failed to enable" }}
+    fi
+fi
+
 {{ includeTemplate "log_complete" "User timers configured successfully" }}
+

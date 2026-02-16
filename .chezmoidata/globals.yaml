@@ -58,6 +58,30 @@ globals:
     model: "Samsung M2070 Series"
     description: "Samsung M2070 Series Network Printer"
 
+  backup:
+    # restic home directory backup configuration
+    # Initialize with: home-backup init
+    # Repository stored locally (no remote sync by default)
+    repository: "$HOME/.local/share/backups/home-backup"
+    includes:
+      - Documents
+      - Projects
+      - Worktrees
+      - Pictures
+      - .config
+      - .local/share
+    excludes:
+      - .cache
+      - .local/share/Steam
+      - .local/share/flatpak
+      - node_modules
+      - .git/objects
+      - "*.log"
+    retention:
+      daily: 7      # Keep last 7 daily snapshots
+      weekly: 4     # Keep last 4 weekly snapshots (1 month)
+      monthly: 6    # Keep last 6 monthly snapshots (6 months)
+
   timeshift:
     # Timeshift automatic snapshot retention policy
     # Configure via: sudo timeshift-launcher (GUI) or automated setup

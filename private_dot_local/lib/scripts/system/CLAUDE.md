@@ -8,20 +8,21 @@
 
 ## Quick Reference
 
-- **Purpose**: System maintenance and monitoring tools (6 scripts)
-- **CLI wrappers**: `system-health`, `system-maintenance`, `system-troubleshoot`, `package-manager`
+- **Purpose**: System maintenance and monitoring tools (7 scripts)
+- **CLI wrappers**: `system-health`, `system-maintenance`, `system-troubleshoot`, `package-manager`, `home-backup`
 - **Integration**: topgrade, sudoers
 
 ## Tool Overview
 
 | Tool | Purpose | Mode |
 |------|---------|------|
-| `system-health.sh` | Health monitoring | Non-interactive (load, memory, disk, services) |
+| `system-health` | Health monitoring | `--check` (silent alerts) or interactive |
 | `system-health-dashboard.sh` | Interactive dashboard | TUI with gum |
 | `system-maintenance.sh` | Maintenance tasks | `--update`, `--cleanup` modes |
 | `troubleshoot.sh` | Diagnostic tool | Interactive troubleshooting |
 | `package-manager.sh` v3.0 | Module-based pkg management | NixOS-style version pinning, modularized architecture (521 lines) |
 | `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
+| `home-backup` | Incremental encrypted backup | `init/backup/restore/status/prune` subcommands |
 
 **Recent changes**:
 
@@ -186,6 +187,45 @@ package-manager outdated
 **Run script**: `run_onchange_before_sync_packages.sh.tmpl` (hash-triggered)
 **Topgrade**: Pre-command calls `package-manager update`
 **State files**: `~/.local/state/package-manager/`
+
+## home-backup
+
+**Purpose**: Incremental encrypted home directory backup via restic
+
+**Repository**: `~/.local/share/backups/home-backup` (local by default)
+**Password file**: `~/.local/share/backups/.restic-password`
+**Override**: `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE` env vars
+
+**Subcommands**:
+
+| Subcommand | Action |
+|-----------|--------|
+| `init` | Interactive setup: prompt for password, create repo |
+| `backup` | Create snapshot (includes, excludes from config) |
+| `restore` | Interactive: choose snapshot, target path |
+| `status` | Show last 10 snapshots + repo stats |
+| `prune` | Apply retention policy (daily: 7, weekly: 4, monthly: 6) |
+
+**Flags**:
+- `--non-interactive` — skips prompts + gum UI (used by systemd service)
+
+**Includes**: `Documents`, `Projects`, `Worktrees`, `Pictures`, `~/.config`, `~/.local/share`
+**Excludes**: `.cache`, Steam, flatpak, `node_modules`, `.git/objects`, `*.log`
+
+**Hook integration**: fires `pre-maintenance` before backup, `post-maintenance success/failure` after
+
+**Systemd service**: `~/.config/systemd/user/home-backup.{service,timer}`
+- Timer: daily at 2am (persistent, 30min randomized delay)
+- ExecCondition: skips if repo not initialized
+- Enabled by `run_once_after_005` (does NOT auto-start)
+
+**Workflow**:
+```bash
+home-backup init       # One-time setup (interactive)
+home-backup backup     # Manual snapshot
+home-backup status     # Check snapshots
+systemctl --user list-timers home-backup.timer  # Verify schedule
+```
 
 ## pacman-lock-cleanup.sh
 

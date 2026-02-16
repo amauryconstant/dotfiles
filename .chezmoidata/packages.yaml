@@ -75,6 +75,7 @@ packages:
         - btrfs-progs # Btrfs filesystem utilities
         - timeshift # System backup and restore (Btrfs snapshots)
         - timeshift-systemd-timer # Systemd timer for Timeshift scheduling (AUR)
+        - restic # Incremental encrypted backup tool (home directory)
         - poppler # PDF rendering utilities (used by GUI apps)
         - ventoy-bin
         # Desktop integration libraries

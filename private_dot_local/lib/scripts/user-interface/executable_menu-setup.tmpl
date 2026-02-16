@@ -8,7 +8,7 @@
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options - Using Material Design icons
-OPTIONS="󰁍 Back|󰕾 Audio (PulseAudio)|󰓃 Audio Output Switch|󰖩 Network (WiFi)|󰂯 Bluetooth|󰁹 Power Profile|󰍹 Displays|󰌑 Edit Keybindings|󰖳 Input Devices"
+OPTIONS="󰁍 Back|󰕾 Audio (PulseAudio)|󰓃 Audio Output Switch|󰖩 Network (WiFi)|󰂯 Bluetooth|󰁹 Power Profile|󰍹 Displays|󰌑 Edit Keybindings|󰖳 Input Devices|󰁢 Home Backup"
 
 CHOICE=$(show_menu "Setup" "$OPTIONS")
 
@@ -71,5 +71,8 @@ case "$CHOICE" in
         ;;
     "󰖳 Input Devices")
         {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/input.conf
+        ;;
+    "󰁢 Home Backup")
+        {{ .globals.applications.terminal }} -e home-backup
         ;;
 esac

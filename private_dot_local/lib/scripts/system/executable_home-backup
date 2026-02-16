@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+
+# Home Backup Tool
+# Purpose: Incremental encrypted home directory backup using restic
+# Requirements: Arch Linux, restic, notify-send (for --non-interactive)
+
+# Source UI library
+# shellcheck disable=SC1090,SC1091
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
+    . "$UI_LIB"
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+
+REPO="${RESTIC_REPOSITORY:-$HOME/.local/share/backups/home-backup}"
+PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-$HOME/.local/share/backups/.restic-password}"
+
+INCLUDES=(
+    "$HOME/Documents"
+    "$HOME/Projects"
+    "$HOME/Worktrees"
+    "$HOME/Pictures"
+    "$HOME/.config"
+    "$HOME/.local/share"
+)
+
+EXCLUDES=(
+    "$HOME/.cache"
+    "$HOME/.local/share/Steam"
+    "$HOME/.local/share/flatpak"
+    "**/node_modules"
+    "**/.git/objects"
+    "*.log"
+)
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+_restic_env() {
+    export RESTIC_REPOSITORY="$REPO"
+    export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
+}
+
+_check_deps() {
+    if ! command -v restic >/dev/null 2>&1; then
+        ui_error "restic not found — install with: sudo pacman -S restic"
+        exit 1
+    fi
+}
+
+_check_initialized() {
+    if [[ ! -d "$REPO" ]]; then
+        ui_error "Repository not initialized: $REPO"
+        ui_info "Run: home-backup init"
+        exit 1
+    fi
+    if [[ ! -f "$PASSWORD_FILE" ]]; then
+        ui_error "Password file not found: $PASSWORD_FILE"
+        ui_info "Run: home-backup init"
+        exit 1
+    fi
+}
+
+_build_exclude_args() {
+    local args=()
+    for ex in "${EXCLUDES[@]}"; do
+        args+=("--exclude" "$ex")
+    done
+    echo "${args[@]}"
+}
+
+# ── Subcommands ───────────────────────────────────────────────────────────────
+
+cmd_init() {
+    _check_deps
+    ui_title "󰁢 Home Backup — Init"
+
+    if [[ -d "$REPO" ]]; then
+        ui_warning "Repository already exists at $REPO"
+        if ! ui_confirm "Re-initialize? (this will NOT delete existing snapshots)"; then
+            return 0
+        fi
+    fi
+
+    mkdir -p "$(dirname "$PASSWORD_FILE")"
+    chmod 700 "$(dirname "$PASSWORD_FILE")"
+
+    ui_step "Enter a password to encrypt the backup repository"
+    local password
+    password=$(ui_input "Backup password (leave empty to generate random)")
+
+    if [[ -z "$password" ]]; then
+        password=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
+        ui_info "Generated password: $password"
+        ui_warning "Save this password somewhere safe — you cannot recover backups without it!"
+    fi
+
+    echo "$password" > "$PASSWORD_FILE"
+    chmod 600 "$PASSWORD_FILE"
+    ui_success "Password saved to $PASSWORD_FILE"
+
+    _restic_env
+    mkdir -p "$REPO"
+
+    ui_step "Initializing restic repository at $REPO"
+    if restic init; then
+        ui_success "Repository initialized successfully"
+        ui_info "Run: home-backup backup  to create your first snapshot"
+    else
+        ui_error "Repository initialization failed"
+        rm -f "$PASSWORD_FILE"
+        exit 1
+    fi
+}
+
+cmd_backup() {
+    local non_interactive="${1:-}"
+    _check_deps
+    _check_initialized
+    _restic_env
+
+    if [[ "$non_interactive" != "--non-interactive" ]]; then
+        ui_title "󰁢 Home Backup — Backup"
+    fi
+
+    # Fire pre-maintenance hook
+    if [[ -x "$HOME/.config/dotfiles/hooks/pre-maintenance" ]]; then
+        "$HOME/.local/lib/scripts/core/hook-runner" pre-maintenance 2>/dev/null || true
+    fi
+
+    # Build exclude args
+    local exclude_args
+    IFS=' ' read -r -a exclude_args <<< "$(_build_exclude_args)"
+
+    if [[ "$non_interactive" != "--non-interactive" ]]; then
+        ui_step "Creating restic snapshot..."
+    fi
+
+    if restic backup \
+        "${INCLUDES[@]}" \
+        "${exclude_args[@]}" \
+        --exclude-caches \
+        --one-file-system; then
+
+        if [[ "$non_interactive" != "--non-interactive" ]]; then
+            ui_success "Backup completed successfully"
+        else
+            notify-send "󰁢 Backup" "Home backup completed successfully" 2>/dev/null || true
+        fi
+
+        # Fire post-maintenance hook
+        if [[ -x "$HOME/.config/dotfiles/hooks/post-maintenance" ]]; then
+            "$HOME/.local/lib/scripts/core/hook-runner" post-maintenance success 2>/dev/null || true
+        fi
+    else
+        if [[ "$non_interactive" != "--non-interactive" ]]; then
+            ui_error "Backup failed"
+        else
+            notify-send -u critical "󰁢 Backup" "Home backup failed — check journalctl" 2>/dev/null || true
+        fi
+
+        # Fire post-maintenance hook with failure
+        if [[ -x "$HOME/.config/dotfiles/hooks/post-maintenance" ]]; then
+            "$HOME/.local/lib/scripts/core/hook-runner" post-maintenance failure 2>/dev/null || true
+        fi
+        exit 1
+    fi
+}
+
+cmd_restore() {
+    _check_deps
+    _check_initialized
+    _restic_env
+    ui_title "󰁢 Home Backup — Restore"
+
+    ui_step "Fetching available snapshots..."
+    local snapshots
+    snapshots=$(restic snapshots --no-lock 2>/dev/null) || {
+        ui_error "Failed to list snapshots"
+        exit 1
+    }
+
+    if [[ -z "$snapshots" ]]; then
+        ui_warning "No snapshots found"
+        return 0
+    fi
+
+    echo "$snapshots"
+    echo ""
+
+    local snapshot_id
+    snapshot_id=$(ui_input "Enter snapshot ID to restore (or 'latest')")
+    [[ -z "$snapshot_id" ]] && snapshot_id="latest"
+
+    local target
+    target=$(ui_input "Restore target directory (default: $HOME/restore-$(date +%Y%m%d))")
+    [[ -z "$target" ]] && target="$HOME/restore-$(date +%Y%m%d)"
+
+    mkdir -p "$target"
+    ui_step "Restoring snapshot $snapshot_id to $target..."
+
+    if restic restore "$snapshot_id" --target "$target"; then
+        ui_success "Restore completed: $target"
+    else
+        ui_error "Restore failed"
+        exit 1
+    fi
+}
+
+cmd_status() {
+    _check_deps
+    _check_initialized
+    _restic_env
+    ui_title "󰁢 Home Backup — Status"
+
+    ui_step "Repository location: $REPO"
+    ui_step "Recent snapshots:"
+    restic snapshots --no-lock --last 10 2>/dev/null || {
+        ui_error "Failed to list snapshots"
+        exit 1
+    }
+
+    echo ""
+    ui_step "Repository statistics:"
+    restic stats --no-lock 2>/dev/null || ui_warning "Could not retrieve stats"
+}
+
+cmd_prune() {
+    _check_deps
+    _check_initialized
+    _restic_env
+    ui_title "󰁢 Home Backup — Prune"
+
+    ui_step "Applying retention policy (daily: 7, weekly: 4, monthly: 6)..."
+    if restic forget \
+        --keep-daily 7 \
+        --keep-weekly 4 \
+        --keep-monthly 6 \
+        --prune; then
+        ui_success "Prune completed"
+    else
+        ui_error "Prune failed"
+        exit 1
+    fi
+}
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+home-backup() {
+    local subcommand="${1:-}"
+    shift || true
+
+    case "$subcommand" in
+        init)
+            cmd_init "$@"
+            ;;
+        backup)
+            cmd_backup "$@"
+            ;;
+        restore)
+            cmd_restore "$@"
+            ;;
+        status)
+            cmd_status "$@"
+            ;;
+        prune)
+            cmd_prune "$@"
+            ;;
+        --help|-h|help|"")
+            ui_info "Usage: home-backup <subcommand> [options]"
+            echo ""
+            ui_info "Subcommands:"
+            ui_info "  init      Initialize backup repository (interactive)"
+            ui_info "  backup    Create a new snapshot"
+            ui_info "  restore   Restore from a snapshot (interactive)"
+            ui_info "  status    Show snapshots and repository stats"
+            ui_info "  prune     Remove old snapshots per retention policy"
+            echo ""
+            ui_info "Options:"
+            ui_info "  --non-interactive  Skip prompts (for systemd service)"
+            echo ""
+            ui_info "Environment:"
+            ui_info "  RESTIC_REPOSITORY      Override repository path"
+            ui_info "  RESTIC_PASSWORD_FILE   Override password file path"
+            ;;
+        *)
+            ui_error "Unknown subcommand: $subcommand"
+            ui_info "Use 'home-backup --help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    home-backup "$@"
+fi
