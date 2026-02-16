@@ -20,7 +20,7 @@
 {{- else -}}
 {{-   $lspciOutput := output "lspci" | lower -}}
 {{-   if regexMatch "nvidia.*\\[\\s*(gtx|rtx|titan|quadro|tesla|geforce)" $lspciOutput -}}
-{{-     if regexMatch "gtx (9[0-9]{2}|10[0-9]{2})|titan (x|xp|z)\\b|quadro (m|p)[0-9]" $lspciOutput -}}
+{{-     if regexMatch "gtx (9[0-9]{2}|10[0-9]{2})|titan (x|xp|z)\\b|quadro (k|m|p)[0-9]|quadro fx" $lspciOutput -}}
 {{-       $nvidiaDriverType = "legacy" -}}
 {{-     end -}}
 {{-     $nvidiaGpuName = regexFind "nvidia.*\\[.*\\]" $lspciOutput -}}
