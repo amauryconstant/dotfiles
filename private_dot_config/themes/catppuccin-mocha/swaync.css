@@ -1,0 +1,27 @@
+/* swaync theme: Catppuccin Mocha */
+
+.notification-row {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border: 2px solid #89b4fa;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 12px;
+}
+.notification-row.critical { border-color: #f38ba8; }
+.notification-row:hover { background: #313244; }
+
+.control-center { background: #181825; color: #cdd6f4; }
+.widget-title > label { color: #cdd6f4; font-weight: bold; }
+
+button,
+.notification-action {
+  background: #313244;
+  color: #cdd6f4;
+  border-radius: 6px;
+}
+button:hover,
+.notification-action:hover {
+  background: #89b4fa;
+  color: #11111b;
+}

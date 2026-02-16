@@ -1,0 +1,27 @@
+/* swaync theme: Solarized Light */
+
+.notification-row {
+  background: #fdf6e3;
+  color: #657b83;
+  border: 2px solid #268bd2;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 12px;
+}
+.notification-row.critical { border-color: #dc322f; }
+.notification-row:hover { background: #eee8d5; }
+
+.control-center { background: #eee8d5; color: #657b83; }
+.widget-title > label { color: #657b83; font-weight: bold; }
+
+button,
+.notification-action {
+  background: #eee8d5;
+  color: #657b83;
+  border-radius: 6px;
+}
+button:hover,
+.notification-action:hover {
+  background: #268bd2;
+  color: #002b36;
+}

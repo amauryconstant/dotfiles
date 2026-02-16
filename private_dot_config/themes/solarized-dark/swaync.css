@@ -1,0 +1,27 @@
+/* swaync theme: Solarized Dark */
+
+.notification-row {
+  background: #002b36;
+  color: #839496;
+  border: 2px solid #268bd2;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 12px;
+}
+.notification-row.critical { border-color: #dc322f; }
+.notification-row:hover { background: #073642; }
+
+.control-center { background: #073642; color: #839496; }
+.widget-title > label { color: #839496; font-weight: bold; }
+
+button,
+.notification-action {
+  background: #073642;
+  color: #839496;
+  border-radius: 6px;
+}
+button:hover,
+.notification-action:hover {
+  background: #268bd2;
+  color: #fdf6e3;
+}

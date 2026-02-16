@@ -1,4 +1,6 @@
-# Dunst - Claude Code Reference
+# Dunst - Claude Code Reference (DEPRECATED)
+
+> **Replaced by swaync** — See `../swaync/CLAUDE.md`. Dunst configs retained as historical reference.
 
 **Location**: `/home/amaury/.local/share/chezmoi/private_dot_config/dunst/`
 **Parent**: See `../CLAUDE.md` for desktop environment overview

@@ -84,12 +84,8 @@ reload_applications() {
         killall -SIGUSR2 waybar 2>/dev/null
     fi
 
-    # Restart Dunst to reload theme
-    if pgrep -x dunst >/dev/null; then
-        killall dunst 2>/dev/null
-        sleep 0.5
-        dunst >/dev/null 2>&1 &
-    fi
+    # Reload swaync CSS via symlink (hot-reload, no restart needed)
+    swaync-client --reload-config 2>/dev/null || true
 
     # Reload Ghostty
     if pgrep -x ghostty >/dev/null; then

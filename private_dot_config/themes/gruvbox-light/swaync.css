@@ -1,0 +1,27 @@
+/* swaync theme: Gruvbox Light */
+
+.notification-row {
+  background: #fbf1c7;
+  color: #3c3836;
+  border: 2px solid #d79921;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 12px;
+}
+.notification-row.critical { border-color: #cc241d; }
+.notification-row:hover { background: #ebdbb2; }
+
+.control-center { background: #ebdbb2; color: #3c3836; }
+.widget-title > label { color: #3c3836; font-weight: bold; }
+
+button,
+.notification-action {
+  background: #ebdbb2;
+  color: #3c3836;
+  border-radius: 6px;
+}
+button:hover,
+.notification-action:hover {
+  background: #d79921;
+  color: #282828;
+}

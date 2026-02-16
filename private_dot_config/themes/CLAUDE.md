@@ -22,7 +22,7 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files**:
-- **Desktop**: `waybar.css`, `dunst.conf`, `ghostty.conf`, `hyprland.conf`, `hyprlock.conf`, `wlogout.css`, `wofi.css`
+- **Desktop**: `waybar.css`, `swaync.css`, `dunst.conf` (deprecated), `ghostty.conf`, `hyprland.conf`, `hyprlock.conf`, `wlogout.css`, `wofi.css`
 - **CLI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`
 - **Docs**: `STYLE-GUIDE.md`
 

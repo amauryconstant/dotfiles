@@ -273,7 +273,7 @@ packages:
         - brightnessctl # Screen brightness controller
         - playerctl # MPRIS media player controller
         - blueman # GTK Bluetooth manager GUI
-        - dunst # Notification daemon
+        - swaync # Notification daemon with persistent history panel (Super+Shift+N)
         - grim # Wayland screenshot utility
         - slurp # Select screen region for screenshots
         - satty # Screenshot annotation tool

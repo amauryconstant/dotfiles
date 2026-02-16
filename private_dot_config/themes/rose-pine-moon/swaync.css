@@ -1,0 +1,27 @@
+/* swaync theme: Rose Pine Moon */
+
+.notification-row {
+  background: #232136;
+  color: #e0def4;
+  border: 2px solid #c4a7e7;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 12px;
+}
+.notification-row.critical { border-color: #eb6f92; }
+.notification-row:hover { background: #2a273f; }
+
+.control-center { background: #393552; color: #e0def4; }
+.widget-title > label { color: #e0def4; font-weight: bold; }
+
+button,
+.notification-action {
+  background: #2a273f;
+  color: #e0def4;
+  border-radius: 6px;
+}
+button:hover,
+.notification-action:hover {
+  background: #c4a7e7;
+  color: #232136;
+}
