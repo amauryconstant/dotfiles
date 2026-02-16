@@ -241,6 +241,7 @@ packages:
       post_install_hook: ""
       packages:
         - ollama # Local LLM runtime
+        - cuda # CUDA toolkit for Parakeet STT (voxtype)
 
     # ============================================================
     # DESKTOP ENVIRONMENT
@@ -289,6 +290,8 @@ packages:
         - hyprdynamicmonitors-bin # Power-aware monitor manager with TUI
         - hyprwhenthen-bin # Event-driven window automation
         - hyprdrover # Rust-based session management for Hyprland
+        - wtype # Wayland keyboard simulation (voxtype dependency)
+        - voxtype-bin # Speech-to-text dictation (AUR)
 
     desktop_gui_apps:
       enabled: true

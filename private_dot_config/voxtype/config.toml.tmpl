@@ -1,0 +1,35 @@
+# Voxtype Configuration
+# Managed by chezmoi - do not edit directly
+# See: https://github.com/peteonrails/voxtype for full options
+
+[hotkey]
+enabled = false  # Use Hyprland bindings (Super+T) instead
+
+[audio]
+device = "default"
+sample_rate = 16000
+max_duration_secs = 60
+
+[audio.feedback]
+enabled = true
+theme = "default"
+volume = 0.7
+
+[whisper]
+model = "small.en"  # Better accuracy than base.en, still fast
+language = "auto"  # Set to "auto" for detection, or specific code
+translate = false
+on_demand_loading = true  # Load model only when recording starts
+
+[output]
+mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"
+fallback_to_clipboard = true
+type_delay_ms = 0
+auto_submit = false  # Don't send Enter after transcription
+
+[output.notification]
+on_recording_start = false
+on_transcription = true
+
+[text]
+spoken_punctuation = true  # "period" → "."
