@@ -220,8 +220,8 @@ post_restore_workspace_fix() {
             [.clients[] | select(.class == $c)] |
             sort_by(.workspace.id) |
             .[] |
-            "\(.workspace.id)|\(.title // "")"
-        ' | while IFS='|' read -r saved_ws saved_title; do
+            "\(.workspace.id)|\(.monitor // "")|\(.title // "")"
+        ' | while IFS='|' read -r saved_ws saved_monitor saved_title; do
 
             addr=""
 
@@ -252,14 +252,14 @@ post_restore_workspace_fix() {
 
             if [ -n "$addr" ]; then
                 echo "$addr" >> "$temp_matched"
-                echo "$addr|$saved_ws" >> "$temp_plan"
-                log_debug "session-restore: post-fix plan: $class → workspace $saved_ws"
+                echo "$addr|$saved_ws|$saved_monitor" >> "$temp_plan"
+                log_debug "session-restore: post-fix plan: $class → workspace $saved_ws monitor $saved_monitor"
             fi
         done
     done
 
     # Execute moves — skip windows already on the correct workspace
-    while IFS='|' read -r addr ws; do
+    while IFS='|' read -r addr ws _monitor; do
         current_ws=$(echo "$current_clients" | jaq -r --arg a "$addr" \
             '.[] | select(.address == $a) | .workspace.id | tostring')
         if [ "$current_ws" != "$ws" ]; then
@@ -267,6 +267,13 @@ post_restore_workspace_fix() {
             log_debug "session-restore: post-fix moved → workspace $ws"
         fi
     done < "$temp_plan"
+
+    # Fix workspace-to-monitor assignments (handles apps that ignore dispatch monitor rules)
+    cut -d'|' -f2,3 "$temp_plan" | sort -u | while IFS='|' read -r ws monitor_name; do
+        [ -n "$monitor_name" ] || continue
+        hyprctl dispatch moveworkspacetomonitor "$ws $monitor_name" >/dev/null 2>&1
+        log_debug "session-restore: post-fix workspace $ws → monitor $monitor_name"
+    done
 
     rm -f "$temp_matched" "$temp_plan"
 }
