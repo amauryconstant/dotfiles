@@ -1,27 +1,420 @@
-/* swaync theme: Solarized Light */
+/* ========================================================================== */
+/* Solarized Light - swaync Notification Theme */
+/* Based on official catppuccin/swaync structure with Solarized palette */
+/* ========================================================================== */
 
-.notification-row {
-  background: #fdf6e3;
-  color: #657b83;
-  border: 2px solid #268bd2;
-  border-radius: 10px;
-  margin: 5px;
-  padding: 12px;
+/* Background Hierarchy */
+@define-color bg-primary #fdf6e3;      /* base3 - main application background */
+@define-color bg-secondary #eee8d5;    /* base2 - elevated surfaces, cards, inputs */
+@define-color bg-tertiary #93a1a1;     /* base1 - popovers, notifications */
+@define-color bg-overlay #eee8d5;      /* base2 - modal overlays */
+
+/* Foreground/Text Hierarchy */
+@define-color fg-primary #657b83;      /* base00 - body text, main content */
+@define-color fg-secondary #586e75;    /* base01 - subtitles, labels */
+@define-color fg-muted #93a1a1;        /* base1 - disabled, unfocused elements */
+@define-color fg-contrast #002b36;     /* base03 - high contrast text on colored backgrounds */
+
+/* Core Accent Colors */
+@define-color accent-primary #268bd2;  /* blue - active states, primary actions */
+@define-color accent-info #2aa198;     /* cyan - information, connectivity */
+@define-color accent-success #859900;  /* green - success states */
+@define-color accent-warning #b58900;  /* yellow - warnings, caution */
+@define-color accent-error #dc322f;    /* red - errors, urgent, critical */
+@define-color accent-highlight #6c71c4; /* violet - secondary actions, audio */
+@define-color accent-secondary #2aa198; /* cyan - tertiary actions */
+@define-color accent-tertiary #cb4b16; /* orange - quaternary actions */
+
+/* Extended Accent Colors */
+@define-color accent-modification #d33682;  /* magenta - file changes, search highlights */
+@define-color accent-border #6c71c4;        /* violet - active borders, focus rings */
+@define-color accent-performance #d33682;   /* magenta - CPU, memory, disk metrics */
+@define-color accent-media #6c71c4;         /* violet - audio, video, media controls */
+
+/* ========================================================================== */
+/* Global Reset                                                                */
+/* ========================================================================== */
+
+* {
+  all: unset;
+  font-size: 0.875rem;
+  font-family: "FiraCode Nerd Font", "Symbols Nerd Font", monospace;
+  transition: 200ms;
 }
-.notification-row.critical { border-color: #dc322f; }
-.notification-row:hover { background: #eee8d5; }
 
-.control-center { background: #eee8d5; color: #657b83; }
-.widget-title > label { color: #657b83; font-weight: bold; }
+/* ========================================================================== */
+/* Sliders & Troughs (volume, brightness)                                      */
+/* ========================================================================== */
 
-button,
-.notification-action {
-  background: #eee8d5;
-  color: #657b83;
-  border-radius: 6px;
+trough {
+  background-color: @bg-secondary;
+  border-radius: 0.5rem;
 }
-button:hover,
-.notification-action:hover {
-  background: #268bd2;
-  color: #002b36;
+
+trough highlight {
+  background: @fg-primary;
+  border-radius: 0.5rem;
+}
+
+trough slider {
+  margin: -0.5rem;
+  border-radius: 0.5rem;
+  background-color: @accent-primary;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+trough slider:hover {
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3), 0 0 6px @accent-primary;
+}
+
+scale {
+  margin: 0 0.5rem;
+}
+
+scale trough {
+  margin: 0 1rem;
+  min-height: 0.5rem;
+  min-width: 4rem;
+}
+
+/* ========================================================================== */
+/* Floating Notifications (popup)                                               */
+/* ========================================================================== */
+
+.notification-background {
+  background: @bg-overlay;
+  color: @fg-primary;
+  border: 1px solid @accent-border;
+  border-radius: 0.75rem;
+  margin: 1rem;
+  padding: 0;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.notification-background .notification {
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+}
+
+.notification-background .notification.critical {
+  border: 1px solid @accent-error;
+  box-shadow: inset 0 0 0.5rem 0 @accent-error;
+}
+
+/* Notification content */
+.notification .notification-content {
+  margin: 0.5rem;
+}
+
+.notification .notification-content overlay {
+  margin: 0.25rem;
+}
+
+.notification-content .summary {
+  color: @fg-primary;
+  font-weight: bold;
+}
+
+.notification-content .time {
+  color: @fg-secondary;
+  font-size: 0.85em;
+}
+
+.notification-content .body {
+  color: @fg-secondary;
+}
+
+.notification > *:last-child > * {
+  min-height: 2.5rem;
+}
+
+/* Close button */
+.notification-background .close-button {
+  margin: 0.5rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background-color: @accent-error;
+  color: @fg-contrast;
+}
+
+.notification-background .close-button:hover {
+  background-color: @accent-modification;
+}
+
+.notification-background .close-button:active {
+  background-color: @accent-modification;
+  filter: brightness(1.1);
+}
+
+/* Notification actions */
+.notification .notification-action {
+  border-radius: 0.5rem;
+  color: @fg-primary;
+  background-color: @bg-secondary;
+  border: 1px solid @accent-border;
+  margin: 0.25rem;
+  padding: 0.5rem;
+}
+
+.notification .notification-action:hover {
+  background-color: @bg-tertiary;
+}
+
+.notification .notification-action:active {
+  background-color: @accent-primary;
+  color: @fg-contrast;
+}
+
+/* Progress bars in notifications */
+.notification progress,
+.notification trough,
+.notification progressbar {
+  border-radius: 0.5rem;
+  padding: 0.125rem 0;
+}
+
+.notification.critical progress {
+  background-color: @accent-error;
+}
+
+.notification.low progress,
+.notification.normal progress {
+  background-color: @accent-primary;
+}
+
+/* ========================================================================== */
+/* Control Center Panel                                                        */
+/* ========================================================================== */
+
+.control-center {
+  background-color: @bg-primary;
+  color: @fg-primary;
+  border: 1px solid @accent-border;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.control-center .notification-background {
+  border-radius: 0.5rem;
+  margin: 0.25rem 0.5rem;
+}
+
+.control-center .notification-background .notification {
+  border-radius: 0.5rem;
+}
+
+.control-center .notification-background .notification.low {
+  opacity: 0.8;
+}
+
+/* Notification groups */
+.control-center .notification-group {
+  margin-top: 0.5rem;
+}
+
+.control-center .notification-group:focus .notification-background {
+  background-color: @bg-secondary;
+}
+
+/* Scrollbar */
+scrollbar slider {
+  margin: -0.125rem;
+  opacity: 0.8;
+}
+
+scrollbar trough {
+  margin: 0.125rem 0;
+}
+
+/* ========================================================================== */
+/* Widget: Title (Notifications label + Clear All button)                      */
+/* ========================================================================== */
+
+.control-center .widget-title > label {
+  color: @fg-primary;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.control-center .widget-title button {
+  border-radius: 0.5rem;
+  color: @fg-primary;
+  background-color: @bg-secondary;
+  border: 1px solid @accent-border;
+  padding: 0.5rem;
+}
+
+.control-center .widget-title button:hover {
+  background-color: @bg-tertiary;
+}
+
+.control-center .widget-title button:active {
+  background-color: @accent-error;
+  color: @fg-contrast;
+}
+
+/* ========================================================================== */
+/* Widget: Do Not Disturb                                                      */
+/* ========================================================================== */
+
+.widget-dnd {
+  margin-top: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.widget-dnd > switch {
+  border-radius: 0.5rem;
+  background: @bg-secondary;
+  box-shadow: none;
+}
+
+.widget-dnd > switch:checked {
+  background: @accent-primary;
+}
+
+.widget-dnd > switch slider {
+  background: @bg-tertiary;
+  border-radius: 0.5rem;
+}
+
+/* ========================================================================== */
+/* Widget: MPRIS (Media Player)                                                */
+/* ========================================================================== */
+
+.widget-mpris-player {
+  background: @bg-secondary;
+  border-radius: 0.75rem;
+  color: @fg-primary;
+  padding: 0.75rem;
+}
+
+.mpris-overlay {
+  background-color: @bg-secondary;
+  opacity: 0.9;
+  padding: 1rem 0.5rem;
+}
+
+.widget-mpris-album-art {
+  -gtk-icon-size: 100px;
+  border-radius: 0.75rem;
+  margin: 0 0.5rem;
+}
+
+.widget-mpris-title {
+  font-size: 1.1rem;
+  color: @fg-primary;
+  font-weight: bold;
+}
+
+.widget-mpris-subtitle {
+  font-size: 0.9rem;
+  color: @fg-secondary;
+}
+
+.widget-mpris button {
+  border-radius: 0.75rem;
+  color: @fg-primary;
+  margin: 0 0.25rem;
+  padding: 0.25rem;
+}
+
+.widget-mpris button image {
+  -gtk-icon-size: 1.5rem;
+}
+
+.widget-mpris button:hover {
+  background-color: @bg-tertiary;
+}
+
+.widget-mpris button:active {
+  background-color: @accent-primary;
+  color: @fg-contrast;
+}
+
+.widget-mpris button:disabled {
+  opacity: 0.5;
+}
+
+/* ========================================================================== */
+/* Widget: Volume                                                              */
+/* ========================================================================== */
+
+.widget-volume {
+  padding: 1rem 0;
+}
+
+.widget-volume label {
+  color: @accent-info;
+  padding: 0 1rem;
+}
+
+.widget-volume trough highlight {
+  background: @accent-info;
+}
+
+/* ========================================================================== */
+/* Widget: Backlight                                                           */
+/* ========================================================================== */
+
+.widget-backlight {
+  padding: 0.5rem 0;
+}
+
+.widget-backlight trough highlight {
+  background: @accent-warning;
+}
+
+.widget-backlight label {
+  font-size: 1.1rem;
+  color: @accent-warning;
+}
+
+.widget-backlight .KB {
+  padding-bottom: 1rem;
+}
+
+/* ========================================================================== */
+/* Widget: Label & Buttons Grid                                                */
+/* ========================================================================== */
+
+.control-center .widget-label > label {
+  color: @fg-primary;
+  font-size: 1.5rem;
+}
+
+.widget-buttons-grid {
+  padding-top: 1rem;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button label {
+  font-size: 1.5rem;
+}
+
+/* ========================================================================== */
+/* Widget: Menubar & Power Buttons                                             */
+/* ========================================================================== */
+
+.widget-menubar > box > .menu-button-bar > button > label {
+  font-size: 2rem;
+  padding: 0.5rem 2rem;
+}
+
+.widget-menubar > box > .menu-button-bar > :last-child {
+  color: @accent-error;
+}
+
+.power-buttons button:hover,
+.powermode-buttons button:hover,
+.screenshot-buttons button:hover {
+  background: @bg-secondary;
+}
+
+/* ========================================================================== */
+/* Misc                                                                        */
+/* ========================================================================== */
+
+.image {
+  padding-right: 0.5rem;
 }

@@ -389,3 +389,61 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 **See**: `dotfiles/CLAUDE.md` for hook system documentation
+
+---
+
+## SwayNC Semantic Mapping
+
+**Based on**: Official catppuccin/swaync + rose-pine/swaync themes
+
+### Widget Coverage (10 widgets)
+
+| Widget | Purpose | Key Semantic Variables |
+|--------|---------|------------------------|
+| `.notification-background` | Popup notifications | `bg-overlay`, `fg-primary`, `accent-border`, `accent-error` |
+| `.control-center` | Main panel | `bg-primary`, `fg-primary`, `accent-border` |
+| `.widget-title` | Header + Clear All | `fg-primary`, `bg-secondary`, `accent-error` (active) |
+| `.widget-dnd` | Do Not Disturb toggle | `bg-secondary`, `accent-primary` (checked) |
+| `.widget-mpris-player` | Media player controls | `bg-secondary`, `fg-primary`, `accent-media` |
+| `.widget-volume` | Volume slider | `accent-info` (label + highlight) |
+| `.widget-backlight` | Brightness slider | `accent-warning` (label + highlight) |
+| `.widget-label` | Custom labels | `fg-primary` |
+| `.widget-buttons-grid` | Button grid | `fg-primary` |
+| `.widget-menubar` | Menu buttons | `accent-error` (last child / power) |
+
+### Semantic Variable Usage
+
+**Background hierarchy**:
+- `.notification-background` → `@bg-overlay` (mantle/surface)
+- `.control-center` → `@bg-primary` (base)
+- `.notification-action`, `.widget-mpris-player` → `@bg-secondary` (surface0)
+- Action hover → `@bg-tertiary` (surface1)
+
+**Foreground hierarchy**:
+- `.notification-content .summary` → `@fg-primary`
+- `.notification-content .body` → `@fg-secondary`
+- `.notification-content .time` → `@fg-secondary`
+- Close button text on error bg → `@fg-contrast`
+
+**Accent usage**:
+- Active states / DND on → `@accent-primary`
+- Critical notifications → `@accent-error` (border + progress)
+- Close button bg → `@accent-error`, hover → `@accent-modification`
+- Action button active → `@accent-primary`
+- Volume slider → `@accent-info`
+- Backlight slider → `@accent-warning`
+- Media controls → `@accent-media`
+- Borders → `@accent-border`
+
+### Design Decisions
+
+**From official themes**:
+- `* { all: unset; }` global reset
+- `rem` units for accessibility
+- `border: 1px solid` instead of `box-shadow: inset` (cleaner)
+- Progress bars for notification timeout
+- Full widget coverage (volume, backlight, MPRIS, buttons grid)
+
+**Theme-specific**:
+- Catppuccin: Uses `bg-overlay` (mantle) for notification popups
+- Rose Pine: Uses `bg-primary` (base) for notification popups, `fg-muted` for borders

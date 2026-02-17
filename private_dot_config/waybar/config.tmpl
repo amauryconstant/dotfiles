@@ -65,8 +65,9 @@
     "backlight",    // Screen brightness (laptop only)
     "battery",      // Battery status (laptop only)
 {{ end }}
-    "pulseaudio",   // Volume control
-    "mpris"         // Media control (Spotify, VLC, etc.)
+    "pulseaudio",       // Volume control
+    "mpris",            // Media control (Spotify, VLC, etc.)
+    "custom/swaync"     // Notification bell
   ],
 
   // Additional useful modules (uncomment and add to layout above):
@@ -318,6 +319,29 @@
     // "show-passive-items": false,  // Hide passive tray items
     // "reverse-direction": false,   // Reverse icon order
     // "on-click-middle": "none"     // Middle-click action
+  },
+
+  // --------------------------------------------------------------------------
+  // Notification Bell (swaync)
+  // --------------------------------------------------------------------------
+  // swaync-client -swb  → persistent JSON subscriber (text=count, alt=state)
+  // States: notification | none | dnd-notification | dnd-none
+  "custom/swaync": {
+    "return-type": "json",
+    "exec": "swaync-client -swb",
+    "exec-persistent": true,
+    "format": "{icon}{text}",
+    "format-icons": {
+      "notification":     "󰂚",
+      "none":             "󰂜",
+      "dnd-notification": "󰂛",
+      "dnd-none":         "󰪑"
+    },
+    "tooltip": true,
+    "escape": true,
+    "on-click":        "swaync-client -t -sw",
+    "on-click-right":  "swaync-client -d -sw",
+    "on-click-middle": "swaync-client -c -sw"
   },
 
   // ==========================================================================

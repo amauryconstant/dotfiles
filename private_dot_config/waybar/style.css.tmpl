@@ -302,6 +302,36 @@ window#waybar {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Notification Bell (swaync) */
+/* -------------------------------------------------------------------------- */
+#custom-swaync {
+  padding: 0 12px;
+  border-radius: 8px;
+  color: @fg-muted;
+}
+
+#custom-swaync.notification {
+  color: @accent-error;
+}
+
+#custom-swaync.none {
+  color: @fg-muted;
+}
+
+#custom-swaync.dnd-notification {
+  color: @accent-warning;
+}
+
+#custom-swaync.dnd-none {
+  color: @fg-secondary;
+}
+
+#custom-swaync:hover {
+  background-color: @bg-secondary;
+  color: @fg-primary;
+}
+
+/* -------------------------------------------------------------------------- */
 /* System Tray Module */
 /* -------------------------------------------------------------------------- */
 #tray {
