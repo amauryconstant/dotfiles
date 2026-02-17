@@ -31,33 +31,73 @@ else
 fi
 
 # ============================================================================
-# SECTION 2: GPU Detection and Configuration
+# SECTION 2: GPU Detection (User-Level, No Sudo)
 # ============================================================================
 
 {{ includeTemplate "log_step" "Detecting NVIDIA GPU..." }}
 
+NVIDIA_GPU=false
+CUDA_AVAILABLE=false
+
 if ! lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
-    {{ includeTemplate "log_warning" "No NVIDIA GPU detected" }}
-    {{ includeTemplate "log_skip" "Skipping GPU acceleration" }}
+    {{ includeTemplate "log_skip" "No NVIDIA GPU detected" }}
 else
+    NVIDIA_GPU=true
     {{ includeTemplate "log_success" "NVIDIA GPU detected" }}
 
-    # Enable Parakeet (CUDA-based, faster than Whisper)
-    {{ includeTemplate "log_step" "Enabling Parakeet engine..." }}
-
-    if [ -d /opt/cuda ]; then
-        voxtype setup parakeet --enable
-        {{ includeTemplate "log_success" "Parakeet engine enabled (CUDA)" }}
+    if pacman -Q cuda >/dev/null 2>&1; then
+        CUDA_AVAILABLE=true
     else
-        {{ includeTemplate "log_warning" "CUDA not found at /opt/cuda" }}
-        {{ includeTemplate "log_info" "Falling back to Whisper with Vulkan..." }}
-        sudo voxtype setup gpu --enable
-        {{ includeTemplate "log_success" "Whisper GPU acceleration enabled (Vulkan)" }}
+        {{ includeTemplate "log_warning" "CUDA package not installed" }}
     fi
 fi
 
 # ============================================================================
-# SECTION 3: Download STT Model
+# SECTION 3: GPU Acceleration Enablement (Requires Sudo)
+# ============================================================================
+
+{{ includeTemplate "log_step" "Enabling GPU acceleration..." }}
+
+CURRENT_SYMLINK=$(readlink /usr/bin/voxtype)
+ENGINE_ENABLED=""
+BACKEND_USED=""
+
+if [ "$NVIDIA_GPU" = true ]; then
+    if [ "$CUDA_AVAILABLE" = true ]; then
+        # Enable Parakeet (ONNX CUDA) - GPU auto-selected
+        if [ "$CURRENT_SYMLINK" = "/usr/lib/voxtype/voxtype-onnx-cuda" ]; then
+            {{ includeTemplate "log_skip" "Parakeet engine already enabled" }}
+            ENGINE_ENABLED="Parakeet"
+            BACKEND_USED="ONNX CUDA"
+        else
+            sudo voxtype setup parakeet --enable
+            {{ includeTemplate "log_success" "Parakeet engine enabled (CUDA)" }}
+            ENGINE_ENABLED="Parakeet"
+            BACKEND_USED="ONNX CUDA"
+        fi
+    else
+        # Enable Whisper (Vulkan) - Need to select NVIDIA GPU
+        if [ "$CURRENT_SYMLINK" = "/usr/lib/voxtype/voxtype-vulkan" ]; then
+            {{ includeTemplate "log_skip" "Vulkan GPU already enabled" }}
+            ENGINE_ENABLED="Whisper"
+            BACKEND_USED="Vulkan"
+        else
+            sudo voxtype setup gpu --enable
+            {{ includeTemplate "log_success" "Whisper GPU acceleration enabled (Vulkan)" }}
+            {{ includeTemplate "log_info" "NVIDIA GPU selected for Vulkan" }}
+            ENGINE_ENABLED="Whisper"
+            BACKEND_USED="Vulkan"
+        fi
+    fi
+else
+    {{ includeTemplate "log_skip" "No NVIDIA GPU - skipping GPU acceleration" }}
+fi
+
+# Reload systemd daemon for any changes
+systemctl --user daemon-reload
+
+# ============================================================================
+# SECTION 4: Download STT Model
 # ============================================================================
 
 {{ includeTemplate "log_step" "Checking for STT model..." }}
@@ -73,13 +113,17 @@ else
 fi
 
 # ============================================================================
-# SECTION 4: Enable Systemd User Service
+# SECTION 5: Enable Systemd User Service
 # ============================================================================
 
 {{ includeTemplate "log_step" "Enabling voxtype systemd service..." }}
 
-systemctl --user daemon-reload
-systemctl --user enable --now voxtype
+if systemctl --user is-enabled --quiet voxtype; then
+    {{ includeTemplate "log_skip" "Service already enabled" }}
+else
+    systemctl --user enable --now voxtype
+    {{ includeTemplate "log_success" "Voxtype service enabled" }}
+fi
 
 if systemctl --user is-active --quiet voxtype; then
     {{ includeTemplate "log_success" "Voxtype service running" }}
@@ -100,6 +144,18 @@ echo ""
 echo "  Usage: Hold Super+T, speak, release"
 echo "  Text appears in clipboard - paste with Ctrl+V"
 echo ""
+
+if [ -n "$ENGINE_ENABLED" ]; then
+    echo "  Configuration:"
+    echo "    Engine: $ENGINE_ENABLED"
+    echo "    Backend: $BACKEND_USED"
+    {{- if eq .chassisType "laptop" }}
+    if [ "$BACKEND_USED" = "Vulkan" ]; then
+        echo "    GPU: NVIDIA (auto-selected)"
+    fi
+    {{- end }}
+    echo ""
+fi
 
 if ! id -nG {{ $username }} | grep -qw input; then
     echo "  NOTE: Logout/login required for input group membership"
