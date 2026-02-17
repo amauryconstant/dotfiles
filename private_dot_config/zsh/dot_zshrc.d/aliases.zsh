@@ -35,3 +35,6 @@ alias lgit='lazygit'
 
 # Symlink
 alias lns='ln -sfn'
+
+# Symlink
+alias twg='twiggit'

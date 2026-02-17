@@ -1,15 +1,40 @@
 ### BEGIN TWIGGIT WRAPPER
-# Twiggit zsh wrapper - Generated on 2026-02-11 08:49:30
+# Twiggit zsh wrapper - Generated on 2026-02-17 12:28:30
 twiggit() {
-    if [ "$1" = "cd" ]; then
+case "$1" in
+    cd)
         # Handle cd command with directory change
         target_dir=$(command twiggit "$@")
         if [ $? -eq 0 ] && [ -n "$target_dir" ]; then
             builtin cd "$target_dir"
         fi
-    else
+        ;;
+    create)
+        # Handle create command with -C flag
+	if [[ " "$@" " == *" -C "* ]] || [[ " "$@" " == *" --cd "* ]]; then
+			target_dir=$(command twiggit "$@")
+			if [ $? -eq 0 ] && [ -n "$target_dir" ]; then
+				builtin cd "$target_dir"
+			fi
+		else
+			command twiggit "$@"
+		fi
+		;;
+	delete)
+		# Handle delete command with -C flag
+		if [[ " "$@" " == *" -C "* ]] || [[ " "$@" " == *" --cd "* ]]; then
+            target_dir=$(command twiggit "$@")
+            if [ $? -eq 0 ] && [ -n "$target_dir" ]; then
+                builtin cd "$target_dir"
+            fi
+        else
+            command twiggit "$@"
+        fi
+        ;;
+    *)
         # Pass through all other commands
         command twiggit "$@"
-    fi
+        ;;
+esac
 }
 ### END TWIGGIT WRAPPER

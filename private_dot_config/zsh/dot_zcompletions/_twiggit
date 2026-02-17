@@ -1,3 +1,4 @@
+❯ twiggit completion zsh                                  
 #compdef twiggit
 compdef _twiggit twiggit
 
