@@ -355,7 +355,9 @@ restore_session() {
     log_debug "session-restore: final windows=$final_count restored=$restored_count expected=$expected_count"
 
     # Smart notification based on results
-    if [ "$restored_count" -eq "$expected_count" ]; then
+    # restored_count may exceed expected_count when self-restoring apps (e.g. VS Code)
+    # open additional windows beyond the single launch we issued — that is still success.
+    if [ "$restored_count" -ge "$expected_count" ]; then
         timeout 1 notify-send "Session Manager" "✅ Restored session from slot: $SLOT ($restored_count windows)" -t 3000 2>/dev/null || true
         log_info "session-restore: completed restored=$restored_count expected=$expected_count"
     elif [ "$restored_count" -gt 0 ]; then
