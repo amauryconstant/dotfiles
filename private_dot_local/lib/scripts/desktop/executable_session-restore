@@ -334,10 +334,37 @@ restore_session() {
             class=$(echo "$launch_cmd" | awk '{print $1}' | xargs basename)
         fi
 
+        # For terminals: capture pre-launch window count so we can wait for the
+        # window to appear before launching the next instance.  Launching multiple
+        # Ghostty (or any GTK terminal) instances in rapid succession causes D-Bus
+        # startup-notification conflicts that result in "Application Not Responding".
+        case "$class" in
+            ghostty|kitty|alacritty|foot|wezterm)
+                pre_launch_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
+                ;;
+        esac
+
         launch_app "$class" "$launch_cmd" "$workspace_id" "$cwd" "$monitor_name"
 
-        # Small delay to avoid overwhelming the compositor
-        sleep "$LAUNCH_DELAY"
+        # After a terminal launch, wait until the new window is visible rather
+        # than sleeping a fixed delay.  This prevents GTK D-Bus startup conflicts
+        # when several terminal instances are restored at once.
+        case "$class" in
+            ghostty|kitty|alacritty|foot|wezterm)
+                elapsed=0
+                while [ "$elapsed" -lt 20 ]; do
+                    cur_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "$pre_launch_count")
+                    [ "$cur_count" -gt "$pre_launch_count" ] && break
+                    sleep 0.3
+                    elapsed=$((elapsed + 1))
+                done
+                log_debug "session-restore: terminal window appeared (waited ${elapsed}x0.3s)"
+                ;;
+            *)
+                # Small delay to avoid overwhelming the compositor
+                sleep "$LAUNCH_DELAY"
+                ;;
+        esac
     done < "$temp_apps"
 
     rm -f "$temp_apps" "$temp_seen"
