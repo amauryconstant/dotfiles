@@ -15,14 +15,14 @@ Host gitlab.com
 # OVH Server - VPS
 Host ovh-vps
   HostName {{ .ovhVPSServerIP }}
-  User debian
+  User amaury
   PreferredAuthentications publickey
   IdentityFile ~/.ssh/ovh-vps
 
 # OVH Server - Bare Metal KS5
 Host ovh-ks5
   HostName {{ .ovhKS5ServerIP }}
-  User debian
+  User amaury
   PreferredAuthentications publickey
   IdentityFile ~/.ssh/ovh-ks5
 
