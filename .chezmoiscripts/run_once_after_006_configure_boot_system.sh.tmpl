@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 
 # Script: run_once_after_006_configure_boot_system.sh.tmpl
-# Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM)
-# Requirements: Arch Linux, Plymouth, SDDM, Hyprland
+# Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM + Hibernation)
+# Requirements: Arch Linux, Plymouth, SDDM, Hyprland, Btrfs
 # Execution: Runs AFTER file application to configure complete boot stack
 #
-# This script consolidates three previously separate scripts:
+# This script consolidates:
 # - GPU driver configuration (NVIDIA DKMS)
 # - Plymouth graphical boot splash
 # - SDDM display manager
+# - Hibernation (Btrfs swapfile + resume)
 #
 # Benefits of consolidation:
-# - Single mkinitcpio -P rebuild (instead of 3×)
+# - Single mkinitcpio -P rebuild (instead of 4×)
 # - Atomic boot configuration changes
 # - Consistent backup/rollback strategy
 
-{{ includeTemplate "log_start" "Configure complete boot system (GPU + Plymouth + SDDM)" }}
+{{ includeTemplate "log_start" "Configure complete boot system (GPU + Plymouth + SDDM + Hibernation)" }}
 
 # Set strict error handling
 set -euo pipefail
@@ -27,11 +28,11 @@ trap 'echo "❌ [ERROR] Boot system configuration failed - check logs above" >&2
 # SECTION 1: GPU DRIVER CONFIGURATION (NVIDIA)
 # ============================================================================
 
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "  SECTION 1: GPU Driver Configuration" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
-{{ includeTemplate "log_info" "" }}
+echo ""
 
 # Initialize variables for NVIDIA DKMS information (available in summary)
 KERNELS_BUILT_COUNT=0
@@ -143,10 +144,11 @@ fi
 # SECTION 2: PLYMOUTH CONFIGURATION
 # ============================================================================
 
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "  SECTION 2: Plymouth Graphical Boot Splash" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
 
 {{ includeTemplate "log_step" "Verify Plymouth installation" }}
 
@@ -297,10 +299,11 @@ fi
 # SECTION 3: SDDM CONFIGURATION
 # ============================================================================
 
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "  SECTION 3: SDDM Display Manager" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
 
 {{ includeTemplate "log_step" "Verify SDDM installation" }}
 
@@ -435,13 +438,226 @@ EOF
 fi
 
 # ============================================================================
-# SECTION 4: SINGLE INITRAMFS REBUILD
+# SECTION 4: HIBERNATION CONFIGURATION
 # ============================================================================
 
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
-{{ includeTemplate "log_info" "  SECTION 4: Initramfs Rebuild (Consolidate all changes)" }}
+{{ includeTemplate "log_info" "  SECTION 4: Hibernation Configuration" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
+
+HIBERNATION_ENABLED=false
+SWAP_ENABLED=false
+HIBERNATION_CHANGED=false
+MEM_SIZE_HUMAN=""
+SWAP_SIZE_HUMAN=""
+
+SWAP_SUBVOLUME="/swap"
+SWAP_FILE="$SWAP_SUBVOLUME/swapfile"
+RESUME_CONF="/etc/mkinitcpio.conf.d/resume.conf"
+
+# Detect unsupported configurations
+HIBERNATION_UNSUPPORTED=""
+ROOT_DEV=$(findmnt -n -o SOURCE /)
+
+# Check for device-mapper (LUKS, LVM)
+if [[ "$ROOT_DEV" == /dev/mapper/* ]]; then
+    {{ includeTemplate "log_skip" "Root on device-mapper ($ROOT_DEV) — Btrfs swapfile not supported" }}
+    HIBERNATION_UNSUPPORTED="device-mapper"
+fi
+
+# Check for multi-device Btrfs
+if [[ -z "$HIBERNATION_UNSUPPORTED" ]] && command -v btrfs &>/dev/null; then
+    DEVICE_COUNT=$(btrfs filesystem show / 2>/dev/null | grep -c "devid" || echo 0)
+    if [ "$DEVICE_COUNT" -gt 1 ]; then
+        {{ includeTemplate "log_skip" "Multi-device Btrfs ($DEVICE_COUNT devices) — swapfile not supported" }}
+        HIBERNATION_UNSUPPORTED="multi-device"
+    fi
+fi
+
+if [[ -z "$HIBERNATION_UNSUPPORTED" ]]; then
+    {{ includeTemplate "log_step" "Check hibernation support" }}
+
+if [[ ! -f /sys/power/image_size ]]; then
+    {{ includeTemplate "log_skip" "Hibernation not supported on this system" }}
+else
+    {{ includeTemplate "log_success" "Hibernation is supported" }}
+
+    {{ includeTemplate "log_step" "Check existing configuration" }}
+
+    HIBERNATION_CONFIGURED=false
+    SWAP_EXISTS=false
+
+    if [ -f "$RESUME_CONF" ] && grep -q "^HOOKS+=(resume)$" "$RESUME_CONF"; then
+        HIBERNATION_CONFIGURED=true
+        {{ includeTemplate "log_success" "Hibernation already configured" }}
+        HIBERNATION_ENABLED=true
+        SWAP_SIZE_HUMAN=$(free -h | awk '/Mem/ {print $2}')
+    elif sudo swaplabel "$SWAP_FILE" &>/dev/null; then
+        SWAP_EXISTS=true
+        SWAP_SIZE_HUMAN=$(ls -lh "$SWAP_FILE" | awk '{print $5}')
+        {{ includeTemplate "log_info" "Swapfile exists but hibernation not configured" }}
+    fi
+
+    if [ "$HIBERNATION_CONFIGURED" = false ]; then
+        if [ "$SWAP_EXISTS" = true ]; then
+            {{ includeTemplate "log_step" "Enable hibernation on existing swapfile?" }}
+
+            if [[ "${1:-}" != "--force" ]]; then
+                if gum confirm "Enable hibernation on existing swapfile?"; then
+                    HIBERNATION_ENABLED=true
+                    SWAP_ENABLED=true
+                fi
+            else
+                HIBERNATION_ENABLED=true
+                SWAP_ENABLED=true
+            fi
+        else
+            {{ includeTemplate "log_step" "Gather system information" }}
+
+            MEM_SIZE_HUMAN=$(free -h | awk '/Mem/ {print $2}')
+            MEM_TOTAL_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+            SWAP_SIZE_FULL_KB="$MEM_TOTAL_KB"
+            SWAP_SIZE_HALF_KB=$((MEM_TOTAL_KB / 2))
+            SWAP_SIZE_FULL_HUMAN="$MEM_SIZE_HUMAN"
+            SWAP_SIZE_HALF_HUMAN=$(numfmt --to=iec --suffix=B $((SWAP_SIZE_HALF_KB * 1024)) | sed 's/B$/i/')
+
+            DISK_INFO=$(df -h --output=size,used,avail / | tail -1)
+            DISK_TOTAL=$(echo "$DISK_INFO" | awk '{print $1}')
+            DISK_USED=$(echo "$DISK_INFO" | awk '{print $2}')
+            DISK_AVAIL=$(echo "$DISK_INFO" | awk '{print $3}')
+
+            echo ""
+            {{ includeTemplate "log_info" "System Information:" }}
+            {{ includeTemplate "log_info" "  RAM: $MEM_SIZE_HUMAN" }}
+            {{ includeTemplate "log_info" "  Boot drive: $DISK_TOTAL total, $DISK_USED used, $DISK_AVAIL available" }}
+            echo ""
+
+            {{ includeTemplate "log_step" "Configure swap" }}
+
+            if [[ "${1:-}" != "--force" ]]; then
+                if gum confirm "Create $SWAP_SIZE_FULL_HUMAN swapfile with hibernation support?"; then
+                    HIBERNATION_ENABLED=true
+                    SWAP_ENABLED=true
+                    SWAP_SIZE_HUMAN="$SWAP_SIZE_FULL_HUMAN"
+                    SWAP_SIZE_KB="${SWAP_SIZE_FULL_KB}k"
+                elif gum confirm "Create $SWAP_SIZE_HALF_HUMAN swapfile (swap only, no hibernation)?"; then
+                    SWAP_ENABLED=true
+                    SWAP_SIZE_HUMAN="$SWAP_SIZE_HALF_HUMAN"
+                    SWAP_SIZE_KB="${SWAP_SIZE_HALF_KB}k"
+                else
+                    {{ includeTemplate "log_skip" "Swap creation declined by user" }}
+                fi
+            else
+                HIBERNATION_ENABLED=true
+                SWAP_ENABLED=true
+                SWAP_SIZE_HUMAN="$SWAP_SIZE_FULL_HUMAN"
+                SWAP_SIZE_KB="${SWAP_SIZE_FULL_KB}k"
+            fi
+        fi
+
+        if [ "$SWAP_ENABLED" = true ]; then
+            {{ includeTemplate "log_step" "Create swap subvolume" }}
+
+            if sudo btrfs subvolume show "$SWAP_SUBVOLUME" &>/dev/null; then
+                {{ includeTemplate "log_success" "Swap subvolume already exists: $SWAP_SUBVOLUME" }}
+            else
+                sudo btrfs subvolume create "$SWAP_SUBVOLUME"
+                sudo chattr +C "$SWAP_SUBVOLUME"
+                {{ includeTemplate "log_success" "Created swap subvolume: $SWAP_SUBVOLUME (CoW disabled)" }}
+            fi
+
+            {{ includeTemplate "log_step" "Create swapfile" }}
+
+            if [ "$SWAP_EXISTS" = true ]; then
+                {{ includeTemplate "log_success" "Using existing swapfile: $SWAP_FILE" }}
+            else
+                sudo btrfs filesystem mkswapfile -s "$SWAP_SIZE_KB" "$SWAP_FILE"
+                {{ includeTemplate "log_success" "Created swapfile: $SWAP_FILE ($SWAP_SIZE_HUMAN)" }}
+            fi
+
+            {{ includeTemplate "log_step" "Add swapfile to fstab" }}
+
+            if grep -Fq "$SWAP_FILE" /etc/fstab; then
+                {{ includeTemplate "log_success" "Swapfile already in /etc/fstab" }}
+            else
+                sudo cp -a /etc/fstab "/etc/fstab.$(date +%Y%m%d%H%M%S).back"
+                if [ "$HIBERNATION_ENABLED" = true ]; then
+                    printf "\n# Btrfs swapfile for system hibernation\n%s none swap defaults,pri=0 0 0\n" "$SWAP_FILE" | sudo tee -a /etc/fstab >/dev/null
+                else
+                    printf "\n# Btrfs swapfile\n%s none swap defaults,pri=0 0 0\n" "$SWAP_FILE" | sudo tee -a /etc/fstab >/dev/null
+                fi
+                {{ includeTemplate "log_success" "Added swapfile to /etc/fstab" }}
+            fi
+
+            {{ includeTemplate "log_step" "Enable swap" }}
+
+            if swapon --show | grep -q "$SWAP_FILE"; then
+                {{ includeTemplate "log_success" "Swap already enabled" }}
+            else
+                sudo swapon -p 0 "$SWAP_FILE"
+                {{ includeTemplate "log_success" "Enabled swap on $SWAP_FILE" }}
+            fi
+        fi
+
+        if [ "$HIBERNATION_ENABLED" = true ]; then
+            {{ includeTemplate "log_step" "Add resume hook to mkinitcpio" }}
+
+            sudo mkdir -p /etc/mkinitcpio.conf.d
+            echo "HOOKS+=(resume)" | sudo tee "$RESUME_CONF" >/dev/null
+            {{ includeTemplate "log_success" "Created $RESUME_CONF" }}
+
+            {{ includeTemplate "log_step" "Configure kernel cmdline for resume" }}
+
+            RESUME_OFFSET=$(sudo btrfs inspect-internal map-swapfile -r "$SWAP_FILE")
+            RESUME_UUID=$(findmnt -n -o UUID /)
+
+            CMDLINE_FILE="/etc/kernel/cmdline"
+            RESUME_PARAMS="resume=UUID=$RESUME_UUID resume_offset=$RESUME_OFFSET"
+
+            if [ -f "$CMDLINE_FILE" ]; then
+                if grep -q "resume=UUID=$RESUME_UUID" "$CMDLINE_FILE"; then
+                    {{ includeTemplate "log_success" "Resume parameters already in $CMDLINE_FILE" }}
+                else
+                    if [ ! -f "${CMDLINE_FILE}.backup" ]; then
+                        sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
+                        {{ includeTemplate "log_info" "Created backup: ${CMDLINE_FILE}.backup" }}
+                    fi
+
+                    CURRENT_CMDLINE=$(cat "$CMDLINE_FILE")
+                    echo "$CURRENT_CMDLINE $RESUME_PARAMS" | sudo tee "$CMDLINE_FILE" >/dev/null
+                    {{ includeTemplate "log_success" "Added resume parameters to $CMDLINE_FILE" }}
+                    HIBERNATION_CHANGED=true
+                fi
+            else
+                {{ includeTemplate "log_info" "Creating $CMDLINE_FILE from /proc/cmdline" }}
+
+                EXISTING_PARAMS=$(cat /proc/cmdline | tr ' ' '\n' | grep -v -E '^(BOOT_IMAGE=|initrd=)' | tr '\n' ' ' | sed 's/ $//')
+
+                echo "$EXISTING_PARAMS $RESUME_PARAMS" | sudo tee "$CMDLINE_FILE" >/dev/null
+                {{ includeTemplate "log_success" "Created $CMDLINE_FILE with resume parameters" }}
+                HIBERNATION_CHANGED=true
+            fi
+
+            HIBERNATION_CHANGED=true
+            {{ includeTemplate "log_success" "Hibernation configuration complete" }}
+        elif [ "$SWAP_ENABLED" = true ]; then
+            {{ includeTemplate "log_success" "Swap configuration complete (hibernation disabled)" }}
+        fi
+    fi
+fi
+fi  # End HIBERNATION_UNSUPPORTED check
+
+# ============================================================================
+# SECTION 5: SINGLE INITRAMFS REBUILD
+# ============================================================================
+
+echo ""
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 5: Initramfs Rebuild (Consolidate all changes)" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
 
 {{ includeTemplate "log_step" "Checking if initramfs rebuild is needed..." }}
 
@@ -455,10 +671,15 @@ if [ "$PLYMOUTH_INSTALLED" = true ]; then
     fi
 fi
 
+if [ "${HIBERNATION_CHANGED:-false}" = true ]; then
+    {{ includeTemplate "log_info" "Hibernation configuration changed - rebuild required" }}
+    REBUILD_NEEDED=true
+fi
+
 if [ "$REBUILD_NEEDED" = true ]; then
     {{ includeTemplate "log_step" "Rebuilding initramfs and UKI images (consolidated rebuild)..." }}
 
-    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes (GPU + Plymouth)" }}
+    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes (GPU + Plymouth + Hibernation)" }}
 
     # Rebuild all kernels (mkinitcpio includes NVIDIA modules if they're installed)
     # DKMS modules were built automatically by pacman hooks during package installation
@@ -473,11 +694,11 @@ fi
 # FINAL SUMMARY
 # ============================================================================
 
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "  Boot System Configuration Complete" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
-{{ includeTemplate "log_info" "" }}
+echo ""
 
 # GPU Summary
 if [ "$NVIDIA_DETECTED" = true ]; then
@@ -486,7 +707,7 @@ if [ "$NVIDIA_DETECTED" = true ]; then
     {{ includeTemplate "log_info" "  ✓ DKMS modules verified for $KERNELS_BUILT_COUNT kernel(s): $ALL_BUILT" }}
     {{ includeTemplate "log_info" "  ✓ Kernel parameters set via modprobe.d (nvidia-utils)" }}
     {{ includeTemplate "log_info" "  ✓ Power management services enabled (suspend/resume/hibernate)" }}
-    {{ includeTemplate "log_info" "" }}
+    echo ""
 fi
 
 # Plymouth Summary
@@ -499,7 +720,7 @@ if [ "$PLYMOUTH_INSTALLED" = true ]; then
     else
         {{ includeTemplate "log_info" "  ✓ Hooks: plymouth (before filesystems hook)" }}
     fi
-    {{ includeTemplate "log_info" "" }}
+    echo ""
 fi
 
 # SDDM Summary
@@ -508,11 +729,26 @@ if [ "$SDDM_INSTALLED" = true ]; then
     {{ includeTemplate "log_info" "  ✓ Theme: {{ .globals.sddm.theme }}" }}
     {{ includeTemplate "log_info" "  ✓ Display server: {{ .globals.sddm.display_server }}" }}
     {{ includeTemplate "log_info" "  ✓ Hyprland session available" }}
-    {{ includeTemplate "log_info" "" }}
+    echo ""
+fi
+
+# Hibernation Summary
+if [ "${HIBERNATION_ENABLED:-false}" = true ]; then
+    {{ includeTemplate "log_info" "Hibernation Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ Swap subvolume: /swap (CoW disabled)" }}
+    {{ includeTemplate "log_info" "  ✓ Swapfile: $SWAP_SIZE_HUMAN" }}
+    {{ includeTemplate "log_info" "  ✓ Resume hook: /etc/mkinitcpio.conf.d/resume.conf" }}
+    {{ includeTemplate "log_info" "  ✓ Resume params: resume=UUID=... resume_offset=..." }}
+    echo ""
+elif [ "${SWAP_ENABLED:-false}" = true ]; then
+    {{ includeTemplate "log_info" "Swap Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ Swap subvolume: /swap (CoW disabled)" }}
+    {{ includeTemplate "log_info" "  ✓ Swapfile: $SWAP_SIZE_HUMAN" }}
+    echo ""
 fi
 
 {{ includeTemplate "log_warning" "⚠️  REBOOT REQUIRED for all changes to take effect" }}
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "Boot sequence after reboot:" }}
 if [ "$PLYMOUTH_INSTALLED" = true ] && [ "$SDDM_INSTALLED" = true ]; then
     if [ "${USES_ENCRYPTION:-false}" = true ]; then
@@ -525,8 +761,8 @@ elif [ "$SDDM_INSTALLED" = true ]; then
 else
     {{ includeTemplate "log_info" "  Firmware → TTY/DM → Session" }}
 fi
-{{ includeTemplate "log_info" "" }}
+echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
-{{ includeTemplate "log_info" "" }}
+echo ""
 
 {{ includeTemplate "log_complete" "Complete boot system configuration finished - REBOOT REQUIRED" }}
