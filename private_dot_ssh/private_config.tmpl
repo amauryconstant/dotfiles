@@ -12,10 +12,17 @@ Host gitlab.com
    PreferredAuthentications publickey
    IdentityFile ~/.ssh/gitlab
 
-# OVH Server - Personal
-Host ovh
-  HostName {{ .ovhServerIP }}
-  Port {{ .ovhServerPort }}
+# OVH Server - VPS
+Host ovh-vps
+  HostName {{ .ovhVPSServerIP }}
   User debian
   PreferredAuthentications publickey
-  IdentityFile ~/.ssh/ovh-server
+  IdentityFile ~/.ssh/ovh-vps
+
+# OVH Server - Bare Metal KS5
+Host ovh-ks5
+  HostName {{ .ovhKS5ServerIP }}
+  User debian
+  PreferredAuthentications publickey
+  IdentityFile ~/.ssh/ovh-ks5
+
