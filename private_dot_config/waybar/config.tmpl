@@ -40,7 +40,7 @@
   // "margin": "5 10 0 10",  // "top right bottom left" in pixels
 
   // Exclusive: Reserve space (prevent windows from covering bar)
-  // "exclusive": true,
+  "exclusive": true,
 
   // --------------------------------------------------------------------------
   // Module Layout
@@ -59,8 +59,8 @@
 
   "modules-right": [
     "tray",         // System tray (Nextcloud, network, bluetooth icons)
-    "network",      // Network status and bandwidth
 {{ if eq .chassisType "laptop" }}
+    "network",      // Network status and bandwidth
     "bluetooth",    // Bluetooth control (laptop only)
     "backlight",    // Screen brightness (laptop only)
     "battery",      // Battery status (laptop only)
@@ -141,64 +141,24 @@
   // --------------------------------------------------------------------------
   "clock": {
     // Format: Date/time display (strftime format)
-    //   %A = Full weekday name (Monday)
-    //   %H = Hour 24-hour (00-23)
-    //   %M = Minute (00-59)
-    //   Common formats:
-    //     "%H:%M"           = 14:30
-    //     "%I:%M %p"        = 02:30 PM
-    //     "%Y-%m-%d %H:%M"  = 2025-10-10 14:30
-    "format": "{:%A %H:%M}",
+    //   %A  = Full weekday name (Friday)
+    //   %-d = Day without leading zero (20)
+    //   %b  = Abbreviated month (Feb)
+    //   %Y  = 4-digit year (2026)
+    //   %H:%M = 24-hour time
+    // Note: ordinal suffix (1st/2nd/3rd) requires a custom script; %-d gives plain number
+    "format": "{:%A %e %b. %Y - %H:%M}",
 
-    // Alternate format: Click to toggle between main and alt
-    "format-alt": "{:%Y-%m-%d %H:%M:%S}"
+    // Alternate format: Click to show calendar (click again to return)
+    "format-alt": "<tt><small>{calendar}</small></tt>",
 
-    // Additional options (uncomment to use):
-    // "tooltip-format": "<tt><small>{calendar}</small></tt>",
-    // "interval": 60,              // Update interval in seconds
-    // "timezone": "America/New_York",
-    // "locale": "fr_FR.UTF-8"
-  },
+    // Toggle between format and format-alt on click
+    "actions": {
+      "on-click": "mode"
+    },
 
-
-
-  // --------------------------------------------------------------------------
-  // Network Module
-  // --------------------------------------------------------------------------
-  "network": {
-    // Icons for different signal strengths (WiFi)
-    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
-
-    // Default format (auto-detects connection type)
-    "format": "{icon}",
-
-    // WiFi format
-    "format-wifi": "{icon}",
-
-    // Ethernet format: 󰈀 = Ethernet icon (Material Design)
-    "format-ethernet": "󰈀",
-
-    // Disconnected format: 󰖪 = No connection icon (Material Design)
-    "format-disconnected": "󰖪",
-
-    // Alternate format: Show IP address
-    "format-alt": "{ipaddr}/{cidr}",
-
-    // Enhanced tooltips with technical details
-    "tooltip-format-wifi": "{essid} ({frequency} GHz)\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
-    "tooltip-format-ethernet": "Ethernet\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
-    "tooltip-format-disconnected": "Disconnected\nNo network interface available",
-
-    // Update interval for bandwidth (seconds) - optimized for network monitoring
-    "interval": 5,
-
-    // Icon spacing
-    "spacing": 1,
-
-    // Multi-click actions
-    "on-click": "ghostty --class=network-manager -e nmtui",      // Left-click: NetworkManager TUI
-    "on-click-right": "networkctl status",                       // Right-click: Network status
-    "on-click-middle": "nmcli connection reload"                 // Middle-click: Reload connections
+    // Update interval in seconds
+    "interval": 60
   },
 
   // --------------------------------------------------------------------------
@@ -348,6 +308,46 @@
   // Laptop-Specific Modules (bluetooth, battery, backlight)
   // ==========================================================================
 {{ if eq .chassisType "laptop" }}
+
+    // --------------------------------------------------------------------------
+  // Network Module
+  // --------------------------------------------------------------------------
+  "network": {
+    // Icons for different signal strengths (WiFi)
+    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+
+    // Default format (auto-detects connection type)
+    "format": "{icon}",
+
+    // WiFi format
+    "format-wifi": "{icon}",
+
+    // Ethernet format: 󰈀 = Ethernet icon (Material Design)
+    "format-ethernet": "󰈀",
+
+    // Disconnected format: 󰖪 = No connection icon (Material Design)
+    "format-disconnected": "󰖪",
+
+    // Alternate format: Show IP address
+    "format-alt": "{ipaddr}/{cidr}",
+
+    // Enhanced tooltips with technical details
+    "tooltip-format-wifi": "{essid} ({frequency} GHz)\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
+    "tooltip-format-ethernet": "Ethernet\n{ipaddr}/{cidr}  {gwaddr}\n⇣{bandwidthDownBytes} ⇡{bandwidthUpBytes}",
+    "tooltip-format-disconnected": "Disconnected\nNo network interface available",
+
+    // Update interval for bandwidth (seconds) - optimized for network monitoring
+    "interval": 5,
+
+    // Icon spacing
+    "spacing": 1,
+
+    // Multi-click actions
+    "on-click": "ghostty --class=network-manager -e nmtui",      // Left-click: NetworkManager TUI
+    "on-click-right": "networkctl status",                       // Right-click: Network status
+    "on-click-middle": "nmcli connection reload"                 // Middle-click: Reload connections
+  },
+  
   // Bluetooth module: Device management and status
   "bluetooth": {
     // Conditional execution: Only load if blueman-manager is available
