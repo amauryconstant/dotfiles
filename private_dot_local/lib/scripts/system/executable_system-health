@@ -72,7 +72,7 @@ system-health() {
                 elif [[ "$pct" -ge 85 ]]; then
                     notify-send -u normal "󰋊 Disk Warning" "$mount at ${pct}%"
                 fi
-            done < <(df -h --output=source,size,used,avail,pcent,target | tail -n +2 | grep -v '^tmpfs\|^devtmpfs\|^udev\|^none\|^/dev/loop' | awk '$5+0 > 0')
+            done < <(df -h --output=source,size,used,avail,pcent,target | tail -n +2 | grep -v '^tmpfs\|^devtmpfs\|^udev\|^none\|^/dev/loop\|^efivarfs' | awk '$5+0 > 0')
 
             # Failed systemd user services
             if command -v systemctl >/dev/null 2>&1; then
