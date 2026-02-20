@@ -7,6 +7,7 @@ Type=oneshot
 # Only run when the backup repository is initialized
 ExecCondition=/bin/sh -c 'test -d "%h/.local/share/backups/home-backup"'
 ExecStart=%h/.local/lib/scripts/system/home-backup backup --non-interactive
+ExecStart=%h/.local/lib/scripts/system/home-backup prune
 Restart=no
 TimeoutSec=3600
 Environment=PATH=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin

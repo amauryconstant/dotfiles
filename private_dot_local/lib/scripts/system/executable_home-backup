@@ -76,7 +76,30 @@ _build_exclude_args() {
 # ── Subcommands ───────────────────────────────────────────────────────────────
 
 cmd_init() {
+    local non_interactive="${1:-}"
     _check_deps
+
+    if [[ "$non_interactive" == "--non-interactive" ]]; then
+        if [[ ! -f "$PASSWORD_FILE" ]]; then
+            echo "Error: password file not found at $PASSWORD_FILE — cannot init non-interactively" >&2
+            exit 1
+        fi
+        if [[ -d "$REPO" ]]; then
+            echo "Repository already exists at $REPO — skipping init" >&2
+            exit 0
+        fi
+        _restic_env
+        mkdir -p "$REPO"
+        echo "Initializing restic repository at $REPO"
+        if restic init; then
+            echo "Repository initialized successfully"
+        else
+            echo "Error: repository initialization failed" >&2
+            exit 1
+        fi
+        return 0
+    fi
+
     ui_title "󰁢 Home Backup — Init"
 
     if [[ -d "$REPO" ]]; then
