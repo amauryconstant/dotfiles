@@ -65,7 +65,8 @@ packages:
       packages:
         - xdg-utils # Desktop integration utilities
         - xdg-desktop-portal # Desktop portal framework (file picker, OAuth)
-        - xdg-desktop-portal-kde # KDE portal backend (better Electron/Flatpak compatibility)
+        - xdg-desktop-portal-gtk # GTK portal backend (Background, Notification, OpenURI, etc.)
+        - xdg-desktop-portal-kde # KDE portal backend (FileChooser, Settings — kept for superior UX)
         - nano # Simple terminal text editor
         - vim # Fallback/recovery text editor
         - sudo # Essential system package
