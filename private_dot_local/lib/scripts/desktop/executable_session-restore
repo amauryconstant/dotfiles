@@ -1,0 +1,413 @@
+#!/usr/bin/env sh
+
+# Script: session-restore.sh
+# Purpose: Restore Hyprland session using enriched data with proper launch commands
+# Requirements: Arch Linux, hyprctl, jaq
+
+SESSION_DIR="$HOME/.local/state/dotfiles"
+SINGLE_INSTANCE_FILE="$HOME/.config/dotfiles/session-single-instance-apps.conf"
+
+# Default slot name
+SLOT="${1:-default}"
+
+# Configurable timing (via environment variables)
+# Users can set in ~/.zshrc or per-command:
+#   export DOTFILES_SESSION_LAUNCH_DELAY=0.5
+#   export DOTFILES_SESSION_SETTLE_DELAY=5
+LAUNCH_DELAY="${DOTFILES_SESSION_LAUNCH_DELAY:-0.2}"
+SETTLE_DELAY="${DOTFILES_SESSION_SETTLE_DELAY:-3}"
+
+# Debug logging (for AI debugging)
+log_debug() {
+    logger -t hypr-session "[DEBUG] $*"
+}
+
+log_info() {
+    logger -t hypr-session "[INFO] $*"
+}
+
+# Check critical dependencies
+check_dependencies() {
+    for cmd in hyprctl jaq; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            timeout 1 notify-send "Session Manager" "❌ Missing dependency: $cmd\nRun: package-manager sync" -u critical -t 5000 2>/dev/null || true
+            logger -t hypr-session "[ERROR] session-restore: missing dependency $cmd"
+            exit 1
+        fi
+    done
+    log_debug "session-restore: dependencies OK"
+}
+
+# Wait for Hyprland to be ready
+wait_for_hyprland() {
+    local timeout="${1:-30}"
+    local elapsed=0
+    
+    log_debug "session-restore: waiting for Hyprland (timeout: ${timeout}s)"
+    while [ $elapsed -lt $timeout ]; do
+        if hyprctl version >/dev/null 2>&1; then
+            log_debug "session-restore: Hyprland ready"
+            return 0
+        fi
+        sleep 0.5
+        elapsed=$((elapsed + 1))
+    done
+    
+    timeout 1 notify-send "Session Manager" "❌ Hyprland not responding after ${timeout}s" -u critical -t 5000 2>/dev/null || true
+    logger -t hypr-session "[ERROR] session-restore: Hyprland not responding after ${timeout}s"
+    return 1
+}
+
+# Validate session schema
+validate_session_schema() {
+    local file="$1"
+    
+    if ! jaq -e '.clients' "$file" >/dev/null 2>&1; then
+        timeout 1 notify-send "Session Manager" "❌ Invalid session: missing 'clients' array" -u critical -t 5000 2>/dev/null || true
+        logger -t hypr-session "[ERROR] session-restore: invalid schema missing clients"
+        return 1
+    fi
+    
+    if ! jaq -e '.metadata' "$file" >/dev/null 2>&1; then
+        timeout 1 notify-send "Session Manager" "❌ Invalid session: missing 'metadata' object" -u critical -t 5000 2>/dev/null || true
+        logger -t hypr-session "[ERROR] session-restore: invalid schema missing metadata"
+        return 1
+    fi
+    
+    local invalid_clients
+    invalid_clients=$(jaq -r '[.clients[] | select(.launchCommand == null)] | length' "$file")
+    if [ "$invalid_clients" -gt 0 ]; then
+        timeout 1 notify-send "Session Manager" "⚠️ $invalid_clients window(s) will be skipped (no launch command)" -u normal -t 4000 2>/dev/null || true
+        logger -t hypr-session "[WARN] session-restore: $invalid_clients clients missing launchCommand, will skip"
+    fi
+    
+    log_debug "session-restore: schema validated"
+    return 0
+}
+
+check_dependencies
+wait_for_hyprland || exit 1
+
+# Validate slot name
+if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+    timeout 1 notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000 2>/dev/null || true
+    exit 1
+fi
+
+# Check if enrichment file exists
+enrichment_file="$SESSION_DIR/hyprland-session-$SLOT.json"
+
+if [ ! -f "$enrichment_file" ]; then
+    timeout 1 notify-send "Session Manager" "No saved session found for slot: $SLOT" -u critical -t 3000 2>/dev/null || true
+    logger -t hypr-session "[ERROR] session-restore: no session file for slot=$SLOT"
+    exit 1
+fi
+
+validate_session_schema "$enrichment_file" || exit 1
+
+# Load single-instance apps (one per line)
+load_single_instance_apps() {
+    if [ -f "$SINGLE_INSTANCE_FILE" ]; then
+        grep -v '^#' "$SINGLE_INSTANCE_FILE" | grep -v '^$'
+    else
+        # Default single-instance apps
+        printf "firefox\nchromium\nbrave\ncode\ncode-oss\nvscodium\n"
+    fi
+}
+
+# Check if app should launch only once
+is_single_instance_app() {
+    launch_cmd="$1"
+    single_instance_apps="$2"
+
+    # Extract base command - handle Flatpak and standard commands
+    if echo "$launch_cmd" | grep -q "^flatpak run"; then
+        # Flatpak: "flatpak run com.spotify.Client" → extract "spotify" (penultimate segment)
+        base_cmd=$(echo "$launch_cmd" | awk '{print $NF}' | awk -F'.' '{
+            # com.spotify.Client → spotify
+            if (NF > 1) print $(NF-1)
+            else print $NF
+        }' | tr '[:upper:]' '[:lower:]')
+    else
+        # Standard: "ghostty --arg value" → extract "ghostty" (first word only)
+        base_cmd=$(echo "$launch_cmd" | awk '{print $1}' | xargs basename | tr '[:upper:]' '[:lower:]')
+    fi
+
+    # Check if in single-instance list (case-insensitive)
+    echo "$single_instance_apps" | grep -qi "^${base_cmd}$"
+}
+
+# Validate workspace id, fallback to current workspace
+validate_workspace() {
+    workspace_id="$1"
+    # Hyprland creates workspaces on-demand via [workspace N silent]
+    # Only reject genuinely invalid IDs (empty, non-numeric, <= 0)
+    if echo "$workspace_id" | grep -qE '^[0-9]+$' && [ "$workspace_id" -gt 0 ]; then
+        log_debug "session-restore: using saved workspace=$workspace_id"
+        echo "$workspace_id"
+    else
+        local current=$(hyprctl activeworkspace -j 2>/dev/null | jaq -r '.id' || echo "1")
+        log_debug "session-restore: invalid workspace id='$workspace_id', falling back to current=$current"
+        echo "$current"
+    fi
+}
+
+# Launch application with proper command
+launch_app() {
+    class="$1"
+    launch_cmd="$2"
+    workspace_id="$3"
+    cwd="$4"
+    monitor_name="${5:-}"
+    log_debug "session-restore: launching class=$class workspace=$workspace_id monitor=$monitor_name"
+
+    # CWD validation - fallback to HOME if directory doesn't exist
+    if [ -n "$cwd" ] && [ ! -d "$cwd" ]; then
+        log_debug "session-restore: CWD $cwd not found, using HOME"
+        cwd="$HOME"
+    fi
+
+    # Build dispatch rules: always include workspace; add monitor if known
+    if [ -n "$monitor_name" ]; then
+        rules="monitor $monitor_name; workspace $workspace_id silent"
+    else
+        rules="workspace $workspace_id silent"
+    fi
+
+    # For terminal apps with CWD, append --working-directory if supported
+    if [ -n "$cwd" ]; then
+        case "$class" in
+            "com.mitchellh.ghostty"|"ghostty")
+                hyprctl dispatch exec "[$rules] $launch_cmd --working-directory='$cwd'" >/dev/null 2>&1
+                log_debug "session-restore: launched ghostty with CWD"
+                return 0
+                ;;
+            "kitty")
+                hyprctl dispatch exec "[$rules] $launch_cmd --directory='$cwd'" >/dev/null 2>&1
+                log_debug "session-restore: launched kitty with CWD"
+                return 0
+                ;;
+            "alacritty")
+                hyprctl dispatch exec "[$rules] $launch_cmd --working-directory '$cwd'" >/dev/null 2>&1
+                log_debug "session-restore: launched alacritty with CWD"
+                return 0
+                ;;
+        esac
+    fi
+
+    # Standard app launch
+    hyprctl dispatch exec "[$rules] $launch_cmd" >/dev/null 2>&1
+    log_debug "session-restore: launched class=$class"
+    return 0
+}
+
+# Post-restore: fix workspace placement for apps that ignore dispatch rules.
+# Handles all classes (including single-window apps like Spotify).
+# Uses title-based matching so Code windows land on the correct workspace.
+post_restore_workspace_fix() {
+    local session_data="$1"
+    local current_clients temp_matched temp_plan
+
+    current_clients=$(hyprctl clients -j 2>/dev/null || echo "[]")
+    temp_matched=$(mktemp)
+    temp_plan=$(mktemp)
+
+    # Process every class present in the saved session
+    echo "$session_data" | jaq -r '[.clients[].class] | unique | .[]' | while read -r class; do
+
+        # Iterate saved windows for this class, lowest workspace first
+        echo "$session_data" | jaq -r --arg c "$class" '
+            [.clients[] | select(.class == $c)] |
+            sort_by(.workspace.id) |
+            .[] |
+            "\(.workspace.id)|\(.monitor // "")|\(.title // "")"
+        ' | while IFS='|' read -r saved_ws saved_monitor saved_title; do
+
+            addr=""
+
+            # 1. Exact title match among unmatched current windows
+            if [ -n "$saved_title" ]; then
+                addr=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" --arg t "$saved_title" '
+                    [.[] | select(.class == $c and .title == $t) | .address] | .[0] // empty
+                ')
+                if [ -n "$addr" ] && grep -qxF "$addr" "$temp_matched" 2>/dev/null; then
+                    addr=""
+                fi
+            fi
+
+            # 2. Fallback: first unmatched window of this class
+            if [ -z "$addr" ]; then
+                addr=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" '
+                    [.[] | select(.class == $c) | .address] | .[]
+                ' | while read -r candidate; do
+                    [ -n "$candidate" ] || continue
+                    if ! grep -qxF "$candidate" "$temp_matched" 2>/dev/null; then
+                        echo "$candidate"
+                        break
+                    fi
+                done)
+            fi
+
+            if [ -n "$addr" ]; then
+                echo "$addr" >> "$temp_matched"
+                echo "$addr|$saved_ws|$saved_monitor" >> "$temp_plan"
+                log_debug "session-restore: post-fix plan: $class → workspace $saved_ws monitor $saved_monitor"
+            fi
+        done
+    done
+
+    log_debug "session-restore: post-fix starting window+workspace moves ts=$(date +%H:%M:%S.%3N 2>/dev/null || date +%H:%M:%S)"
+
+    # Execute moves — skip windows already on the correct workspace
+    while IFS='|' read -r addr ws _monitor; do
+        current_ws=$(echo "$current_clients" | jaq -r --arg a "$addr" \
+            '.[] | select(.address == $a) | .workspace.id | tostring')
+        if [ "$current_ws" != "$ws" ]; then
+            hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1
+            log_debug "session-restore: post-fix window $addr moved ws=$current_ws→$ws"
+        else
+            log_debug "session-restore: post-fix window $addr already on ws=$ws (no move)"
+        fi
+    done < "$temp_plan"
+
+    log_debug "session-restore: post-fix starting monitor assignments ts=$(date +%H:%M:%S.%3N 2>/dev/null || date +%H:%M:%S)"
+
+    # Fix workspace-to-monitor assignments (handles apps that ignore dispatch monitor rules)
+    workspaces_json=$(hyprctl workspaces -j 2>/dev/null || echo "[]")
+    cut -d'|' -f2,3 "$temp_plan" | sort -u | while IFS='|' read -r ws monitor_name; do
+        [ -n "$monitor_name" ] || continue
+        current_monitor=$(echo "$workspaces_json" | jaq -r --arg ws "$ws" \
+            '.[] | select(.id == ($ws | tonumber)) | .monitor // "unknown"' 2>/dev/null || echo "unknown")
+        if [ "$current_monitor" != "$monitor_name" ]; then
+            hyprctl dispatch moveworkspacetomonitor "$ws $monitor_name" >/dev/null 2>&1
+            log_debug "session-restore: post-fix ws $ws moved monitor=$current_monitor→$monitor_name"
+        else
+            log_debug "session-restore: post-fix ws $ws already on monitor=$monitor_name (no move)"
+        fi
+    done
+
+    log_debug "session-restore: post-fix complete ts=$(date +%H:%M:%S.%3N 2>/dev/null || date +%H:%M:%S)"
+    rm -f "$temp_matched" "$temp_plan"
+}
+
+# Main restore logic
+restore_session() {
+    timeout 1 notify-send "Session Manager" "Restoring session from slot: $SLOT\n(${SETTLE_DELAY}s settle time)" -t 2000 2>/dev/null || true
+    log_info "session-restore: started slot=$SLOT settle=${SETTLE_DELAY}s"
+
+    # Read enrichment file
+    session_data=$(cat "$enrichment_file")
+
+    # Load single-instance app list
+    single_instance_apps=$(load_single_instance_apps)
+
+    # Build launch list with smart grouping
+    temp_apps=$(mktemp)
+    temp_seen=$(mktemp)
+    trap 'rm -f "$temp_apps" "$temp_seen"' EXIT
+
+    echo "$session_data" | jaq -r '
+        [.clients[] | select(.launchCommand != null)] |
+        sort_by(.workspace.id) |
+        .[] |
+        "\(.launchCommand)|\(.workspace.id)|\(.cwd // "")|\(.monitor // "")"
+    ' | while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
+        # Check if single-instance app
+        if is_single_instance_app "$launch_cmd" "$single_instance_apps"; then
+            # Single-instance: Check if already added
+            if ! grep -q "^${launch_cmd}|" "$temp_seen"; then
+                echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
+                echo "$launch_cmd|" >> "$temp_seen"
+            fi
+        else
+            # Multi-instance: Add every occurrence
+            echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
+        fi
+    done
+
+    # Count windows before restore
+    initial_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
+    log_debug "session-restore: initial windows=$initial_count"
+    expected_count=0
+    launch_success=0
+
+    # Launch each app
+    while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
+        expected_count=$((expected_count + 1))
+
+        # Validate workspace id
+        workspace_id=$(validate_workspace "$workspace_id")
+
+        # Derive class from launch command for CWD handling (use first word for standard commands)
+        # Derive class: handle Flatpak (last dot-segment) and standard commands
+        if echo "$launch_cmd" | grep -q "^flatpak run"; then
+            class=$(echo "$launch_cmd" | awk '{print $NF}' | awk -F'.' '{print $NF}' | tr '[:upper:]' '[:lower:]')
+        else
+            class=$(echo "$launch_cmd" | awk '{print $1}' | xargs basename)
+        fi
+
+        # For terminals: capture pre-launch window count so we can wait for the
+        # window to appear before launching the next instance.  Launching multiple
+        # Ghostty (or any GTK terminal) instances in rapid succession causes D-Bus
+        # startup-notification conflicts that result in "Application Not Responding".
+        case "$class" in
+            ghostty|kitty|alacritty|foot|wezterm)
+                pre_launch_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
+                ;;
+        esac
+
+        launch_app "$class" "$launch_cmd" "$workspace_id" "$cwd" "$monitor_name"
+
+        # After a terminal launch, wait until the new window is visible rather
+        # than sleeping a fixed delay.  This prevents GTK D-Bus startup conflicts
+        # when several terminal instances are restored at once.
+        case "$class" in
+            ghostty|kitty|alacritty|foot|wezterm)
+                elapsed=0
+                while [ "$elapsed" -lt 20 ]; do
+                    cur_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "$pre_launch_count")
+                    [ "$cur_count" -gt "$pre_launch_count" ] && break
+                    sleep 0.3
+                    elapsed=$((elapsed + 1))
+                done
+                log_debug "session-restore: terminal window appeared (waited ${elapsed}x0.3s)"
+                ;;
+            *)
+                # Small delay to avoid overwhelming the compositor
+                sleep "$LAUNCH_DELAY"
+                ;;
+        esac
+    done < "$temp_apps"
+
+    rm -f "$temp_apps" "$temp_seen"
+
+    # Wait for windows to appear and settle
+    log_debug "session-restore: waiting ${SETTLE_DELAY}s for settle"
+    sleep "$SETTLE_DELAY"
+
+    # Fix workspace placement for apps that ignore dispatch rules (e.g. VS Code, Electron apps)
+    post_restore_workspace_fix "$session_data"
+
+    # Count windows after restore and calculate restored count
+    final_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
+    restored_count=$((final_count - initial_count))
+    log_debug "session-restore: final windows=$final_count restored=$restored_count expected=$expected_count"
+
+    # Smart notification based on results
+    # restored_count may exceed expected_count when self-restoring apps (e.g. VS Code)
+    # open additional windows beyond the single launch we issued — that is still success.
+    if [ "$restored_count" -ge "$expected_count" ]; then
+        timeout 1 notify-send "Session Manager" "✅ Restored session from slot: $SLOT ($restored_count windows)" -t 3000 2>/dev/null || true
+        log_info "session-restore: completed restored=$restored_count expected=$expected_count"
+    elif [ "$restored_count" -gt 0 ]; then
+        timeout 1 notify-send "Session Manager" "⚠️ Partial restore: $restored_count/$expected_count windows\nSome apps may have failed" -u normal -t 5000 2>/dev/null || true
+        logger -t hypr-session "[WARN] session-restore: partial $restored_count/$expected_count"
+    else
+        timeout 1 notify-send "Session Manager" "❌ Restore failed\nNo windows launched" -u critical -t 5000 2>/dev/null || true
+        logger -t hypr-session "[ERROR] session-restore: failed no windows launched"
+    fi
+}
+
+restore_session
