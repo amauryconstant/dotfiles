@@ -1,39 +1,151 @@
 #!/usr/bin/env bash
 
-# Script: run_once_before_001_validate_hyprland_session.sh.tmpl
-# Purpose: Validate Hyprland dependencies BEFORE installation to prevent session crashes
-# Requirements: Arch Linux, run after package manager setup
+# Script: run_once_before_001_preflight_and_session_validation.sh.tmpl
+# Purpose: Consolidated preflight checks and Hyprland session validation
+# Requirements: Arch Linux base system
+# Execution: Runs BEFORE file application and package installation
+#
+# This script consolidates:
+# - System prerequisites (sudo, commands, internet, package manager)
+# - GPU detection and driver migration checks
+# - Wayland environment validation
+# - Theme and font dependencies
+#
+# Benefits of consolidation:
+# - Single validation pass before installation
+# - Early failure detection
+# - Clear dependency chain
 
-{{ includeTemplate "log_start" "Validating Hyprland session requirements..." }}
+{{ includeTemplate "log_start" "Running preflight checks and session validation..." }}
 
 set -euo pipefail
 
-# Track if any checks fail
-VALIDATION_FAILED=false
+PREFLIGHT_FAILED=false
 
 # ============================================================================
-# NOTE: Package validation moved to run_once_after_008
+# SECTION 1: SUDO PRIVILEGES
 # ============================================================================
-#
-# This script focuses on pre-installation validation:
-# - NVIDIA driver migration detection (must happen BEFORE package sync)
-# - Graphics driver compatibility checks
-#
-# Package existence validation happens in run_once_after_008 (after packages installed)
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 1: System Prerequisites"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Verifying sudo privileges..." }}
+
+if sudo -v >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "User has sudo privileges" }}
+else
+    {{ includeTemplate "log_error" "User does not have sudo privileges" }}
+    {{ includeTemplate "log_info" "Fix: Add user to wheel group and configure /etc/sudoers" }}
+    {{ includeTemplate "log_info" "  1. sudo usermod -aG wheel $USER" }}
+    {{ includeTemplate "log_info" "  2. sudo visudo (uncomment %wheel line)" }}
+    PREFLIGHT_FAILED=true
+fi
 
 # ============================================================================
-# CHECK 1: NVIDIA GPU DETECTION
+# SECTION 2: CRITICAL SYSTEM COMMANDS
 # ============================================================================
+
+{{ includeTemplate "log_step" "Verifying critical system commands..." }}
+
+REQUIRED_COMMANDS="sudo git systemctl"
+MISSING_COMMANDS=""
+
+for cmd in $REQUIRED_COMMANDS; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        {{ includeTemplate "log_warning" "Required command not found: $cmd" }}
+        MISSING_COMMANDS="$MISSING_COMMANDS $cmd"
+    fi
+done
+
+if [ -z "$MISSING_COMMANDS" ]; then
+    {{ includeTemplate "log_success" "All critical commands available: $REQUIRED_COMMANDS" }}
+else
+    {{ includeTemplate "log_step" "Attempting to install missing packages..." }}
+
+    if sudo pacman -S --needed --noconfirm base base-devel git 2>&1 | grep -v "warning: "; then
+        {{ includeTemplate "log_success" "Package installation completed" }}
+
+        STILL_MISSING=""
+        for cmd in $REQUIRED_COMMANDS; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                STILL_MISSING="$STILL_MISSING $cmd"
+            fi
+        done
+
+        if [ -n "$STILL_MISSING" ]; then
+            {{ includeTemplate "log_error" "Commands still missing after installation:$STILL_MISSING" }}
+            {{ includeTemplate "log_info" "Fix: Install manually with: sudo pacman -S base base-devel git" }}
+            PREFLIGHT_FAILED=true
+        else
+            {{ includeTemplate "log_success" "All critical commands now available: $REQUIRED_COMMANDS" }}
+        fi
+    else
+        {{ includeTemplate "log_error" "Failed to install missing packages" }}
+        {{ includeTemplate "log_info" "Fix: Install manually with: sudo pacman -S base base-devel git" }}
+        PREFLIGHT_FAILED=true
+    fi
+fi
+
+# ============================================================================
+# SECTION 3: INTERNET CONNECTIVITY
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying internet connectivity..." }}
+
+if ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Internet connectivity verified (archlinux.org reachable)" }}
+elif ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "Network accessible but DNS may have issues" }}
+    {{ includeTemplate "log_info" "Can reach 8.8.8.8 but not archlinux.org" }}
+    {{ includeTemplate "log_info" "Check DNS configuration in /etc/resolv.conf" }}
+else
+    {{ includeTemplate "log_error" "No internet connectivity detected" }}
+    {{ includeTemplate "log_info" "Fix: Verify network connection" }}
+    {{ includeTemplate "log_info" "  - Check network cable or WiFi connection" }}
+    {{ includeTemplate "log_info" "  - Verify NetworkManager: systemctl status NetworkManager" }}
+    {{ includeTemplate "log_info" "  - Test manually: ping 8.8.8.8" }}
+    PREFLIGHT_FAILED=true
+fi
+
+# ============================================================================
+# SECTION 4: PACKAGE MANAGER AVAILABILITY
+# ============================================================================
+
+{{ includeTemplate "log_step" "Verifying package manager..." }}
+
+if command -v pacman >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "pacman package manager available" }}
+
+    if [ -f /var/lib/pacman/db.lck ]; then
+        {{ includeTemplate "log_warning" "pacman database is locked" }}
+        {{ includeTemplate "log_info" "Another package operation may be in progress" }}
+        {{ includeTemplate "log_info" "If stuck, remove lock: sudo rm /var/lib/pacman/db.lck" }}
+    fi
+else
+    {{ includeTemplate "log_error" "pacman not found - not an Arch Linux system?" }}
+    PREFLIGHT_FAILED=true
+fi
+
+# ============================================================================
+# SECTION 5: NVIDIA GPU DETECTION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 5: GPU Detection and Driver Migration"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 
 {{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
 
-# Check for NVIDIA drivers (common crash source)
 if lspci | grep -i nvidia >/dev/null 2>&1; then
 {{- $gpuName := .nvidiaGpuDetected | default "unknown" }}
     {{ includeTemplate "log_info" (printf "NVIDIA GPU detected: %s" $gpuName) }}
     {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
 
-    # Check for nouveau (archinstall default on fresh installations)
     if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
         {{ includeTemplate "log_warning" "Nouveau drivers currently active (archinstall default)" }}
         {{ includeTemplate "log_info" "Proprietary NVIDIA drivers will be installed during package sync" }}
@@ -41,14 +153,12 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
     else
         {{ includeTemplate "log_info" "Proprietary NVIDIA drivers active" }}
 
-        # Verify DKMS modules are loaded (non-critical check)
         if ! modinfo nvidia >/dev/null 2>&1; then
             {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
             {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
         fi
     fi
 
-    # Check for driver migration (if NVIDIA GPU detected)
     {{ includeTemplate "log_step" "Checking for driver migration..." }}
     CURRENT_DRIVER=""
     if pacman -Q nvidia-open >/dev/null 2>&1; then
@@ -90,8 +200,6 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         echo "════════════════════════════════════════════════════════════════"
         echo ""
 
-        # Timeout after 60 seconds (prevents unattended installation hang)
-        # Default to 'N' (safe option) on timeout
         if read -t 60 -p "  Continue with driver migration? [y/N] " -n 1 -r; then
             echo ""
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -112,58 +220,49 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
     fi
 fi
 
-# Check for Intel GPU
 if lspci | grep -i "intel.*graphics" >/dev/null 2>&1; then
     {{ includeTemplate "log_info" "Intel GPU detected (uses mesa - built-in)" }}
 fi
 
 # ============================================================================
-# CHECK 3: WAYLAND SESSION REQUIREMENTS
+# SECTION 6: WAYLAND SESSION REQUIREMENTS
 # ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 6: Wayland Environment"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 
 {{ includeTemplate "log_step" "Verifying Wayland environment setup..." }}
 
-# Check for seat management (required for Wayland)
 if ! command -v seatd >/dev/null 2>&1 && ! systemctl is-active --quiet systemd-logind; then
     {{ includeTemplate "log_warning" "Neither seatd nor systemd-logind active" }}
     {{ includeTemplate "log_info" "Wayland needs seat management for input devices" }}
     {{ includeTemplate "log_info" "Systemd-logind should be active by default" }}
 fi
 
-# Check XDG_RUNTIME_DIR (critical for Wayland)
 if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
     {{ includeTemplate "log_error" "XDG_RUNTIME_DIR not set" }}
     {{ includeTemplate "log_info" "Required for Wayland socket creation" }}
     {{ includeTemplate "log_info" "Should be set by display manager (SDDM)" }}
-    VALIDATION_FAILED=true
+    PREFLIGHT_FAILED=true
 else
     {{ includeTemplate "log_success" "XDG_RUNTIME_DIR configured: $XDG_RUNTIME_DIR" }}
 fi
 
 # ============================================================================
-# NOTE: Package validation deferred to run_once_after_008
-# ============================================================================
-# The following checks moved to post-install validation:
-# - SDDM installation and configuration
-# - Hyprland package and session file
-# - Terminal emulator availability
-#
-# These checks require packages to be installed first
-
-# ============================================================================
-# CHECK 6: CRITICAL SYSTEM SERVICES
+# SECTION 7: CRITICAL SYSTEM SERVICES
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying critical system services..." }}
 
-# D-Bus (critical for desktop apps)
 if ! systemctl --user is-active --quiet dbus.service 2>/dev/null; then
     {{ includeTemplate "log_warning" "User D-Bus session not active" }}
     {{ includeTemplate "log_info" "Required for application communication" }}
     {{ includeTemplate "log_info" "Should start automatically with graphical session" }}
 fi
 
-# PipeWire (audio - not critical but commonly needed)
 if command -v pipewire >/dev/null 2>&1; then
     if ! systemctl --user is-active --quiet pipewire.service 2>/dev/null; then
         {{ includeTemplate "log_info" "PipeWire installed but not running" }}
@@ -172,25 +271,17 @@ if command -v pipewire >/dev/null 2>&1; then
 fi
 
 # ============================================================================
-# CHECK 7: CONFIG FILE SYNTAX VALIDATION
+# SECTION 8: THEME SYSTEM DEPENDENCIES
 # ============================================================================
 
-{{ includeTemplate "log_step" "Pre-validating Hyprland config syntax..." }}
-
-# Check if hyprctl is available (for syntax validation)
-if command -v hyprctl >/dev/null 2>&1; then
-    {{ includeTemplate "log_info" "Hyprland installed - will validate config after chezmoi apply" }}
-else
-    {{ includeTemplate "log_info" "Hyprland not running - skipping syntax validation" }}
-fi
-
-# ============================================================================
-# CHECK 8: THEME SYSTEM DEPENDENCIES
-# ============================================================================
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 8: Theme and Font Dependencies"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 
 {{ includeTemplate "log_step" "Verifying theme system requirements..." }}
 
-# Theme system needs these for proper operation
 THEME_DEPS="jq"
 THEME_MISSING=""
 
@@ -214,12 +305,11 @@ else
 fi
 
 # ============================================================================
-# CHECK 9: FONT DEPENDENCIES
+# SECTION 9: FONT DEPENDENCIES
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying font packages..." }}
 
-# Critical fonts for UI rendering
 FONT_PACKAGES="noto-fonts noto-fonts-emoji"
 FONT_MISSING=""
 
@@ -243,7 +333,7 @@ else
 fi
 
 # ============================================================================
-# CHECK 10: GNOME KEYRING (WiFi credentials)
+# SECTION 10: GNOME KEYRING (WiFi credentials)
 # ============================================================================
 
 {{ includeTemplate "log_step" "Verifying credential storage..." }}
@@ -268,15 +358,15 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  Hyprland Session Validation Summary"
+echo "  Preflight and Session Validation Summary"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
-if [ "$VALIDATION_FAILED" = true ]; then
-    {{ includeTemplate "log_error" "❌ VALIDATION FAILED - Session crashes likely" }}
+if [ "$PREFLIGHT_FAILED" = true ]; then
+    {{ includeTemplate "log_error" "❌ VALIDATION FAILED - Fix issues above before proceeding" }}
     echo ""
-    echo "  Critical issues detected. Hyprland session will likely fail."
-    echo "  Review error messages above and fix problems before proceeding."
+    echo "  Critical issues detected. Installation cannot continue."
+    echo "  Review error messages above and fix the problems."
     echo ""
     echo "  Common fixes:"
     echo "    1. Ensure desktop_hyprland module enabled in packages.yaml"
@@ -290,14 +380,17 @@ if [ "$VALIDATION_FAILED" = true ]; then
     echo ""
     exit 1
 else
-    {{ includeTemplate "log_success" "✅ ALL CRITICAL CHECKS PASSED" }}
+    {{ includeTemplate "log_success" "✅ ALL VALIDATION CHECKS PASSED" }}
     echo ""
-    echo "  Hyprland session requirements verified:"
-    echo "    ✓ Core packages installed (hyprland, waybar, etc.)"
+    echo "  System prerequisites verified:"
+    echo "    ✓ Sudo privileges available"
+    echo "    ✓ Critical commands present (sudo, git, systemctl)"
+    echo "    ✓ Internet connectivity confirmed"
+    echo "    ✓ Package manager ready"
+    echo ""
+    echo "  Session requirements verified:"
     echo "    ✓ Graphics drivers available"
     echo "    ✓ Wayland environment configured"
-    echo "    ✓ Display manager ready (SDDM)"
-    echo "    ✓ Terminal emulator available"
     echo "    ✓ Critical services present"
     echo ""
 
@@ -307,10 +400,10 @@ else
         echo ""
     fi
 
-    echo "  Safe to proceed with Hyprland session."
+    echo "  Safe to proceed with installation."
     echo ""
     echo "════════════════════════════════════════════════════════════════"
     echo ""
 fi
 
-{{ includeTemplate "log_complete" "Hyprland session validation completed" }}
+{{ includeTemplate "log_complete" "Preflight and session validation completed successfully" }}

@@ -1,0 +1,116 @@
+#!/usr/bin/env sh
+
+# Script: run_once_after_001_configure_developer_tools.sh.tmpl
+# Purpose: Consolidated developer tools configuration (CLI, shell, git merge driver)
+# Requirements: Arch Linux
+# Execution: Runs AFTER file application to configure developer tooling
+#
+# This script consolidates:
+# - Shell environment (zsh as default shell)
+# - Version management (mise tools)
+# - Git template merge driver for chezmoi repos
+#
+# Benefits of consolidation:
+# - Single pass for all developer tool configuration
+# - Consistent ordering (shell → tools → git)
+
+{{ includeTemplate "log_start" "Configuring developer tools and shell environment..." }}
+
+set -eu
+
+# ============================================================================
+# SECTION 1: SHELL CONFIGURATION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 1: Shell Configuration"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+# Configure zsh as default shell if installed
+if command -v zsh >/dev/null 2>&1; then
+    CURRENT_SHELL=$(getent passwd "$USER" | cut -d: -f7)
+    ZSH_PATH=$(which zsh)
+
+    if [ "$CURRENT_SHELL" = "$ZSH_PATH" ]; then
+        {{ includeTemplate "log_success" "zsh already set as default shell" }}
+    else
+        {{ includeTemplate "log_step" "Setting zsh as default shell..." }}
+        chsh -s "$ZSH_PATH"
+        {{ includeTemplate "log_success" "zsh set as default shell (logout/login to apply)" }}
+    fi
+else
+    {{ includeTemplate "log_skip" "zsh not installed, skipping" }}
+fi
+
+# ============================================================================
+# SECTION 2: VERSION MANAGEMENT (MISE)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 2: Version Management"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+# Initialize mise
+if command -v mise >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Installing mise tools..." }}
+    mise install
+    {{ includeTemplate "log_success" "mise tools installed" }}
+else
+    {{ includeTemplate "log_skip" "mise not installed, skipping" }}
+fi
+
+# ============================================================================
+# SECTION 3: GIT MERGE DRIVER CONFIGURATION
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 3: Git Merge Driver"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_step" "Making merge driver executable..." }}
+chmod +x "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh"
+
+# Change to the chezmoi source directory to run git commands
+cd "{{ .chezmoi.sourceDir }}"
+
+{{ includeTemplate "log_step" "Registering chezmoi-template merge driver..." }}
+
+git config merge.chezmoi-template.name "Chezmoi template merge driver"
+git config merge.chezmoi-template.driver "{{ .chezmoi.sourceDir }}/.scripts/template-merge-driver.sh %O %A %B %L %P"
+
+{{ includeTemplate "log_step" "Verifying merge driver configuration..." }}
+
+if git config --get merge.chezmoi-template.driver >/dev/null 2>&1; then
+    {{ includeTemplate "log_success" "Template merge driver configured successfully" }}
+    {{ includeTemplate "log_info" "Template files (.tmpl) will now preserve variable syntax during merges" }}
+else
+    {{ includeTemplate "log_error" "Failed to configure template merge driver" }}
+    exit 1
+fi
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  Developer Tools Configuration Complete"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+echo "  Configured:"
+echo "    ✓ Shell: zsh (default)"
+echo "    ✓ Tools: mise (version manager)"
+echo "    ✓ Git: template merge driver"
+echo ""
+echo "  ⚠️  NOTE: Logout/login required for shell change to take effect"
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+{{ includeTemplate "log_complete" "Developer tools configuration completed successfully" }}
