@@ -21,20 +21,13 @@ REPO="${RESTIC_REPOSITORY:-$HOME/.local/share/backups/home-backup}"
 PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-$HOME/.local/share/backups/.restic-password}"
 
 INCLUDES=(
-    "$HOME/Documents"
-    "$HOME/Projects"
-    "$HOME/Worktrees"
     "$HOME/Pictures"
-    "$HOME/.config"
-    "$HOME/.local/share"
+    "$HOME/Documents"
+    "$HOME/.local/share/keyrings"
+    "$HOME/.gnupg"
 )
 
 EXCLUDES=(
-    "$HOME/.cache"
-    "$HOME/.local/share/Steam"
-    "$HOME/.local/share/flatpak"
-    "**/node_modules"
-    "**/.git/objects"
     "*.log"
 )
 

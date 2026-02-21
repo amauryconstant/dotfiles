@@ -209,8 +209,8 @@ package-manager outdated
 **Flags**:
 - `--non-interactive` — skips prompts + gum UI (used by systemd service)
 
-**Includes**: `Documents`, `Projects`, `Worktrees`, `Pictures`, `~/.config`, `~/.local/share`
-**Excludes**: `.cache`, Steam, flatpak, `node_modules`, `.git/objects`, `*.log`
+**Includes**: `Pictures`, `Documents`, `~/.local/share/keyrings`, `~/.gnupg`
+**Excludes**: `*.log`
 
 **Hook integration**: fires `pre-maintenance` before backup, `post-maintenance success/failure` after
 
