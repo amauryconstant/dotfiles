@@ -83,6 +83,7 @@ packages:
         - gnome-keyring # Credential storage service (WiFi passwords)
         - gvfs # Virtual filesystem (SMB/FTP support)
         - tumbler # Thumbnail generation service
+        - ffmpegthumbnailer # Video thumbnail generation
         - kdegraphics-thumbnailers # KDE thumbnail generators
         # Qt/KDE libraries
         - qt5-wayland # Qt5 Wayland support
@@ -265,6 +266,7 @@ packages:
         - network-manager-applet # Network Manager GUI applet
         - darkman # Solar-based light/dark mode automation
         - hyprsunset # Blue light filter (gamma adjustment)
+        - hyprland-guiutils # Hyprland GUI utilities (renamed from hyprland-qtutils)
         - swww # Dynamic wallpaper daemon with transitions
         - wallust-git # Color palette generator from wallpapers (chaotic-aur)
         - cliphist # Clipboard history manager
@@ -275,6 +277,7 @@ packages:
         - brightnessctl # Screen brightness controller
         - playerctl # MPRIS media player controller
         - blueman # GTK Bluetooth manager GUI
+        - bluetui # Bluetooth TUI manager (AUR)
         - swaync # Notification daemon with persistent history panel (Super+Shift+N)
         - grim # Wayland screenshot utility
         - slurp # Select screen region for screenshots

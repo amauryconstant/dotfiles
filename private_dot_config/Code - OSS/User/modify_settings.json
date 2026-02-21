@@ -49,6 +49,9 @@
 {{- $_ := set $settings "terminal.integrated.defaultProfile.osx" "zsh" -}}
 {{- $_ := set $settings "terminal.integrated.enableMultiLinePasteWarning" "never" -}}
 
+{{- /* Update - disable auto-update (pacman managed) */ -}}
+{{- $_ := set $settings "update.mode" "none" -}}
+
 {{- /* Workbench (NOT workbench.colorTheme - managed by theme-apply-vscode.sh) */ -}}
 {{- $_ := set $settings "workbench.editor.enablePreview" false -}}
 {{- $_ := set $settings "workbench.sideBar.location" "right" -}}

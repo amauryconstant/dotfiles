@@ -14,8 +14,8 @@ Last updated: 2026-02-21 (through v3.3.3).
 **Target files**: `.chezmoidata/packages.yaml`
 **Note**: Neither name currently appears in packages.yaml. Verify whether `hyprland-qtutils` is installed on the system and if so, add `hyprland-guiutils` and add `hyprland-qtutils` to the `delete:` list.
 
-- [ ] Check if `hyprland-qtutils` is installed: `pacman -Q hyprland-qtutils`
-- [ ] If installed: add `hyprland-guiutils` to `desktop_hyprland` module, add `hyprland-qtutils` to `delete:` list
+- [x] Check if `hyprland-qtutils` is installed: `pacman -Q hyprland-qtutils` — not installed
+- [x] Add `hyprland-guiutils` to `desktop_hyprland` module *(done 2026-02-21)*
 
 ---
 
@@ -90,8 +90,9 @@ Last updated: 2026-02-21 (through v3.3.3).
 **Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
 **Note**: `blueman` is currently in `desktop_hyprland` module. `bluetui` not present.
 
-- [ ] Evaluate `bluetui` (AUR) vs `blueman-manager` — does it handle pairing fully?
-- [ ] If adopted: add `bluetui` to packages, change `Super+Ctrl+B` exec to `ghostty -e bluetui`, keep `blueman` or add to delete list
+- [x] Evaluate `bluetui` (AUR) vs `blueman-manager` — both installed, TUI and GUI available *(done 2026-02-21)*
+- [x] Add `bluetui` to packages — kept `blueman` for GUI, added `bluetui` for TUI *(done 2026-02-21)*
+- [x] No binding added — run directly via `ghostty -e bluetui` *(decided 2026-02-21)*
 
 ---
 
@@ -119,8 +120,8 @@ Last updated: 2026-02-21 (through v3.3.3).
 **What**: Enables thumbnail generation for video files in file manager (Thunar/Dolphin). `tumbler` is already in packages and handles images; this adds video.
 **Target files**: `.chezmoidata/packages.yaml`
 
-- [ ] Add `ffmpegthumbnailer` to `system_utilities` or `desktop_gui_apps` module
-- [ ] Verify `tumbler` picks it up automatically or if additional config needed
+- [x] Add `ffmpegthumbnailer` to `system_utilities` module *(done 2026-02-21)*
+- [x] Verify `tumbler` picks it up automatically — works out of box with tumbler *(confirmed 2026-02-21)*
 
 ---
 
@@ -130,8 +131,7 @@ Last updated: 2026-02-21 (through v3.3.3).
 **What**: Node.js added to support tree-sitter in LazyVim. May already be covered by `mise`.
 **Target files**: `.chezmoidata/packages.yaml`
 
-- [ ] Verify: `mise which node` — if already managed via mise, skip
-- [ ] If not managed via mise: add `nodejs` to `development_core` module
+- [x] Verify: `mise which node` — already managed via mise *(confirmed 2026-02-21)*
 
 ---
 
@@ -148,9 +148,8 @@ Last updated: 2026-02-21 (through v3.3.3).
 **What**: VSCode's built-in auto-update conflicts with pacman management. Disable in VSCode settings to prevent pacman conflicts on next upgrade.
 **Target files**: VSCode settings (likely managed separately or not in chezmoi)
 
-- [ ] Check if VSCode settings are managed in chezmoi
-- [ ] If yes: add `"update.mode": "none"` to settings.json
-- [ ] If no: add as manual step to setup guide
+- [x] Check if VSCode settings are managed in chezmoi — yes, `Code - OSS/User/modify_settings.json` *(confirmed 2026-02-21)*
+- [x] Add `"update.mode": "none"` to settings.json *(done 2026-02-21)*
 
 ---
 
@@ -158,8 +157,9 @@ Last updated: 2026-02-21 (through v3.3.3).
 **What**: Clipboard persistence daemon should exclude content from password managers. We use `cliphist` not `wl-clip-persist`, but same principle applies.
 **Target files**: Autostart config, `cliphist` invocation
 
-- [ ] Review `cliphist` invocation in autostart — check if type-based filtering is supported
-- [ ] Consider adding `--max-dedupe-search 0` or mime-type exclusion for password manager entries
+- [x] Review `cliphist` invocation in autostart — uses wrapper script with window-class detection *(done 2026-02-21)*
+- [x] Add window-class and title-based filtering for Bitwarden (Firefox), KeepassXC, etc. *(done 2026-02-21)*
+- **Implementation**: `~/.local/lib/scripts/media/clipboard-store` wrapper filters by `hyprctl activewindow` class/title
 
 ---
 
@@ -167,8 +167,8 @@ Last updated: 2026-02-21 (through v3.3.3).
 **What**: Ships `.config/fontconfig/fonts.conf` setting Liberation Sans/Serif and Cascadia Cove as system font fallbacks. Improves font consistency in GTK apps.
 **Target files**: `private_dot_config/fontconfig/fonts.conf` (new file)
 
-- [ ] Check if `~/.config/fontconfig/fonts.conf` exists on system
-- [ ] If not: evaluate adding a minimal `fonts.conf` to chezmoi with our font preferences (FiraCode Nerd Font, Liberation fonts)
+- [x] Check if `~/.config/fontconfig/fonts.conf` exists on system — did not exist *(confirmed 2026-02-21)*
+- [x] Add `fonts.conf` with our font preferences: FiraCode Nerd (mono), Fira Sans (sans), Liberation Serif (serif) *(done 2026-02-21)*
 
 ---
 

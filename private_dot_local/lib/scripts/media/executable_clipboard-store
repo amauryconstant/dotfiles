@@ -1,0 +1,20 @@
+#!/bin/sh
+# clipboard-store - Filter clipboard before storing in cliphist
+# Excludes content from password managers and sensitive windows
+
+active_window=$(hyprctl activewindow -j 2>/dev/null) || active_window="{}"
+window_class=$(echo "$active_window" | jaq -r '.class // ""' 2>/dev/null)
+window_title=$(echo "$active_window" | jaq -r '.title // ""' 2>/dev/null)
+
+EXCLUDE_CLASSES="bitwarden|keepassxc|1password|lastpass|enpass|seahorse"
+EXCLUDE_TITLES="bitwarden|vault|password|credential|master password"
+
+if echo "$window_class" | grep -qiE "$EXCLUDE_CLASSES"; then
+    exit 0
+fi
+
+if echo "$window_title" | grep -qiE "$EXCLUDE_TITLES"; then
+    exit 0
+fi
+
+wl-paste --no-newline | cliphist store
