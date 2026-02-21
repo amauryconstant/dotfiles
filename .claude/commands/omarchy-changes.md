@@ -1,78 +1,78 @@
 ---
-description: Check for new releases in omarchy with AI-powered semantic classification and integration recommendations
-allowed-tools: Bash(OMARCHY_AUTO_UPDATE=true bash *), Read, Task(subagent_type:general-purpose)
+description: Check for new Omarchy releases, generate per-release research docs, and update the integration backlog
+allowed-tools: Bash(OMARCHY_AUTO_UPDATE=true bash *), Read, Write, Glob, Task(subagent_type:omarchy-release-researcher), Task(subagent_type:omarchy-plan-updater)
 ---
 
 # Omarchy Release Tracker
 
-Check for new version releases in the omarchy repository since the last check. Uses AI-powered semantic analysis to classify changes and identify integration opportunities.
+Two-phase pipeline: per-release research docs → living integration backlog.
 
 ## Instructions
 
-1. Run the omarchy-changes script to fetch release data:
+### Phase 1 — Fetch release data
 
-!`OMARCHY_AUTO_UPDATE=true bash ~/.local/share/chezmoi/.claude/commands/omarchy-changes/script.sh`
+Run the script:
 
-The script will:
-- Check for new version tags (e.g., v3.2.2 → v3.2.3)
-- Fetch release notes from GitHub
-- Output formatted release data for analysis
+!`OMARCHY_AUTO_UPDATE=true bash ~/.local/share/chezmoi/.claude/commands/omarchy-changes/script.sh 2>/dev/null`
 
-2. When the script outputs "RELEASE DATA FOR AI CLASSIFICATION", invoke the omarchy-release-classifier agent to analyze:
+If output contains "No new releases", stop and report that to the user.
 
-Use the Task tool with the omarchy-release-classifier agent, passing the release data as context.
+### Phase 2 — Parse releases
 
-3. Review the AI classification:
-   - **Semantic categories**: Features, bug fixes, breaking changes, improvements
-   - **Integration opportunities**: Specific recommendations for dotfiles
-   - **Package changes**: New packages to consider
-   - **Configuration updates**: Config file changes to review
-   - **Recommended actions**: Prioritized next steps
+Parse the script output. Each release is delimited by:
+```
+═══════════════════════════════════════════════════════════
+Release: vX.Y.Z
+═══════════════════════════════════════════════════════════
+```
 
-4. If the user wants to explore specific changes:
-   - Read relevant files from `~/Projects/omarchy/`
-   - Explain what changed and implementation details
-   - Suggest adaptation strategies for chezmoi dotfiles
-   - Consider existing patterns (see CLAUDE.md files)
+Extract for each release:
+- `version` (e.g. `v3.2.3`)
+- `prev_version` (the tag before it, from the `Previous Version:` field in the data block)
+- `commit_count` (from `Commits Included:` field)
+- `release_notes` (the `Release Notes:` block content)
 
-5. For integration tasks:
-   - Show omarchy's implementation approach
-   - Propose chezmoi-compatible adaptation (templates, packages, scripts)
-   - Align with existing conventions and architecture
-   - Reference relevant CLAUDE.md documentation
+### Phase 3 — Research (parallel)
 
-## Example Workflow
+For each release, spawn an `omarchy-release-researcher` task **in parallel**. Pass a prompt containing:
 
 ```
-User: /omarchy-changes
+Version: vX.Y.Z
+Previous Version: vA.B.C
+Commits: N
 
-Script runs:
-→ Fetching updates from omarchy repository...
-→ Release: v3.2.3
-→ Fetching release notes from GitHub...
-→ [RELEASE DATA FOR AI CLASSIFICATION output]
+Release Notes:
+[raw notes here]
 
-You analyze with omarchy-release-classifier:
-→ ## Release Summary: Omarchy v3.2.3
-→ ### Features (5 items)
-→ - Alacritty fallback for terminal compatibility
-→ - Channel switching (stable/edge/dev)
-→ ...
-→ ### Integration Opportunities
-→ 1. **Alacritty fallback pattern** (Priority: High)
-→    - Review: bin/omarchy-launch-terminal
-→    ...
-
-User explores integration:
-"Tell me more about the Alacritty fallback pattern"
-
-You read ~/Projects/omarchy/bin/omarchy-launch-terminal:
-→ [Explain implementation and suggest adaptation]
+Write research doc to: /home/amaury/.local/share/chezmoi/_research/omarchy/OMARCHY_vX.Y.Z.md
 ```
+
+Wait for all researcher tasks to complete before proceeding.
+
+### Phase 4 — Plan update (sequential, after all researchers done)
+
+Spawn one `omarchy-plan-updater` task. Pass:
+
+```
+New research docs created:
+- /home/amaury/.local/share/chezmoi/_research/omarchy/OMARCHY_vX.Y.Z.md
+[list all new docs]
+
+Plan file: /home/amaury/.local/share/chezmoi/_plans/OMARCHY.md
+```
+
+### Phase 5 — Report to user
+
+Summarize:
+- N releases processed (list versions)
+- Research docs created (or skipped if already existed)
+- P1/P2/P3 item counts from updated plan
+- Any breaking changes detected (highlight prominently)
+- Point user to `_plans/OMARCHY.md` for the full backlog
 
 ## Notes
 
-- The script handles state migration from commit-based to tag-based tracking automatically
-- Multiple releases are processed if the user hasn't checked in a while
-- GitHub release notes are preferred; falls back to commit summaries if unavailable
-- State updates after user reviews classifications
+- Researcher agents are idempotent — they skip if the research doc already exists
+- State resets: `echo "v0" > ~/.local/state/omarchy-tracker/last-tag` to reprocess all history
+- Research docs land in `_research/omarchy/OMARCHY_vX.Y.Z.md`
+- Plan updater does a full rewrite of `_plans/OMARCHY.md` (not append)

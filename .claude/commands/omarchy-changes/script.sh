@@ -185,7 +185,6 @@ Commits Included: $commit_count
 Release Notes:
 $release_notes
 
-Provide semantic classification and integration recommendations.
 EOF
     echo ""
     echo "═══════════════════════════════════════════════════════════"
