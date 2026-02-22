@@ -1,0 +1,7 @@
+{{ if ne .chassisType "laptop" -}}
+[Service]
+ExecStart=
+ExecStart=/bin/true
+{{- else -}}
+# No override on laptop
+{{- end }}
