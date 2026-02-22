@@ -3,7 +3,8 @@ Description=Automatic wallpaper rotation timer (every 30 minutes)
 Documentation=man:systemd.timer(5)
 
 [Timer]
-# Trigger every 30 minutes after service completes
+# Trigger 5 minutes after boot (initial run), then every 30 minutes after service completes
+OnBootSec=5min
 OnUnitActiveSec=30min
 # Don't run immediately if a scheduled run was missed
 Persistent=false
