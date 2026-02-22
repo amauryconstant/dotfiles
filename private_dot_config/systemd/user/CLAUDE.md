@@ -9,9 +9,25 @@
 ## Quick Reference
 
 - **Purpose**: User-level systemd services and timers
-- **Key service**: wallpaper-cycle (dynamic wallpaper rotation)
 - **Location**: `~/.config/systemd/user/`
 - **Control**: `systemctl --user`
+- **Setup**: `run_once_after_004_enable_user_timers.sh.tmpl`
+
+## Services & Timers
+
+| Unit | Type | Purpose | Setup Script |
+|------|------|---------|-------------|
+| `wallpaper-cycle.{service,timer}` | timer | Random wallpaper every 30min | after_004 |
+| `system-health-check.{service,timer}` | timer | System health monitoring every 15min | after_004 |
+| `home-backup.{service,timer}` | timer | Restic home backup daily at 9am | after_010 |
+| `hyprdynamicmonitors.service` | service | Monitor profile manager daemon | before_008 |
+| `hyprdynamicmonitors-prepare.service` | service | Pre-Hyprland monitor prep | before_008 |
+| `hyprwhenthen.service` | service | Event-driven window automation | before_008 |
+| `darkman.service` | service | Solar-based auto theme switching | after_006 |
+| `wallpaper-cycle.service` | oneshot | Wallpaper rotation execution | after_004 |
+| `voxtype.service.d/` | drop-in | Voxtype GPU config override | after_010 |
+| `app-blueman@autostart.service.d/` | drop-in | Suppress blueman tray on desktop | static |
+| `app-nm-applet@autostart.service.d/` | drop-in | Suppress nm-applet tray on desktop | static |
 
 ## Wallpaper Cycle Service
 
@@ -34,7 +50,7 @@
 - **Restart**: on-failure with 30s backoff
 - **Logging**: systemd journal
 
-**Setup**: `.chezmoiscripts/run_once_after_006_setup_wallpaper_timer.sh.tmpl`
+**Setup**: `.chezmoiscripts/run_once_after_004_enable_user_timers.sh.tmpl`
 
 ### Script Integration
 
@@ -123,7 +139,7 @@ journalctl --user -u wallpaper-cycle.service --since "2024-01-01"
 
 ## Setup Script
 
-**File**: `.chezmoiscripts/run_once_after_006_setup_wallpaper_timer.sh.tmpl`
+**File**: `.chezmoiscripts/run_once_after_004_enable_user_timers.sh.tmpl`
 
 **Actions**:
 1. Copy units to `~/.config/systemd/user/`
@@ -153,10 +169,30 @@ which swww wallust find shuf
 
 **Lock file**: Remove stale lock at `$XDG_RUNTIME_DIR/random-wallpaper.lock`
 
+## Other Timers
+
+**system-health-check** (every 15min):
+```bash
+systemctl --user status system-health-check.timer
+journalctl --user -u system-health-check.service -n 20
+```
+
+**home-backup** (daily 9am):
+```bash
+systemctl --user status home-backup.timer
+systemctl --user start home-backup.service   # Manual run
+journalctl --user -u home-backup.service -n 20
+```
+
+## Autostart Drop-ins
+
+`app-blueman@autostart.service.d/` and `app-nm-applet@autostart.service.d/` suppress tray icons on desktop chassis (`{{ if eq .chassisType "desktop" }}`). These override GNOME autostart services that Hyprland doesn't need.
+
 ## Integration Points
 
 - **Wallust**: `~/.config/wallust/` (color extraction)
-- **Scripts**: `~/.local/lib/scripts/media/` (random-wallpaper.sh, set-wallpaper.sh)
+- **Scripts**: `~/.local/lib/scripts/media/` (random-wallpaper, set-wallpaper)
 - **Wallpapers**: `~/Pictures/wallpapers/` (image source)
 - **SWWW**: Wallpaper daemon (smooth transitions)
 - **Desktop**: Hyprland, Waybar, Wofi (color theming)
+- **Restic**: Home backup target (`~/.local/share/restic-home/`)

@@ -21,10 +21,12 @@
 
 ## Execution Order
 
-1. **`run_once_before_*`** (000-006)
+1. **`run_once_before_*`** (000-008)
    - 000: System prerequisites
    - 001: **Hyprland session validation** (prevents crashes)
    - 002-006: Setup tasks
+   - 007: Default theme structure (BEFORE file application — configs reference `~/.config/themes/current/`)
+   - 008: Hyprland plugins + monitor automation services
 
 2. **`run_onchange_before_*`** (sync_packages)
    - Runs on first install AND package changes
@@ -32,9 +34,9 @@
 3. **File application**
    - Chezmoi applies configs
 
-4. **`run_once_after_*`** (001-010, 999)
-   - 001-009: Configuration tasks
-   - 010: **Hyprland config validation** (post-install safety check)
+4. **`run_once_after_*`** (001-011, 999)
+   - 001-011: Configuration tasks
+   - 007: **Hyprland config validation** (post-install safety check)
    - 999: SSH remote switch
 
 5. **`run_onchange_after_*`** (hash-based, any order)
@@ -44,19 +46,21 @@
 
 ---
 
-## Current Scripts (22 total)
+## Current Scripts (26 total)
 
-### run_once_before_* (7)
+### run_once_before_* (9)
 
 | Number | Script | Purpose |
 |--------|--------|---------|
 | 000 | backup_archinstall_configs | Preflight checks (sudo, git, network, pacman) |
-| 001 | preflight_checks | Hyprland session validation + NVIDIA driver migration check |
-| 002 | validate_hyprland_session | Package manager setup + dependencies (paru, yq, gum) |
-| 003 | install_package_manager | Locale configuration |
-| 004 | configure_locale | Directory creation |
-| 005 | create_necessary_directories | Encryption key setup |
-| 006 | instantiate_encryption_key | chezmoi_modify_manager install |
+| 001 | preflight_and_session_validation | Hyprland session validation + NVIDIA driver migration check |
+| 002 | install_package_manager | Package manager setup + dependencies (paru, yq, gum) |
+| 003 | configure_locale | Locale configuration |
+| 004 | create_necessary_directories | Directory creation |
+| 005 | instantiate_encryption_key | Encryption key setup |
+| 006 | install_chezmoi_modify_manager | chezmoi_modify_manager install |
+| 007 | setup_default_theme | Theme directory structure + symlinks (must run before file application) |
+| 008 | setup_hyprland_plugins | hyprsplit via hyprpm + HyprDynamicMonitors/hyprwhenthen services |
 
 ### run_onchange_before_* (1)
 
@@ -64,22 +68,23 @@
 |--------|---------|---------|
 | sync_packages | Package sync (Arch + Flatpak) | First install AND `packages.yaml` changes |
 
-**Timing**: Runs BEFORE file application (ensures Docker, systemd services exist for config scripts)
+**Timing**: Runs BEFORE file application (ensures packages exist for config scripts)
 
-### run_once_after_* (11)
+### run_once_after_* (12)
 
 | Number | Script | Purpose |
 |--------|--------|---------|
-| 001 | generate_and_config_cli | CLI generation |
-| 002 | configure_system_services | System services |
+| 001 | configure_developer_tools | CLI generation, git tools |
+| 002 | configure_system_services | System services (Docker, etc.) |
 | 003 | setup_network_printer | Network printer |
-| 004 | configure_git_tools | Git tools |
-| 005 | setup_wallpaper_timer | Wallpaper timer |
-| 006 | configure_boot_system | Boot system |
-| 007 | setup_default_theme | Default theme setup |
-| 008 | setup_darkman | Darkman service |
-| 009 | configure_timeshift_retention | Timeshift retention policy |
-| 010 | validate_hyprland_config | Hyprland config validation |
+| 004 | enable_user_timers | Enable systemd timers (wallpaper, health, backup) |
+| 005 | configure_boot_system | Boot system (Plymouth, GRUB) |
+| 006 | setup_darkman | Darkman solar auto-theme service |
+| 007 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
+| 008 | configure_timeshift_retention | Timeshift retention policy |
+| 009 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |
+| 010 | setup_optional_services | Voxtype STT + Restic home backup init (skips if not installed) |
+| 011 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
 | 999 | switch_to_ssh_remote | SSH remote switch |
 
 ### run_onchange_after_* (4)

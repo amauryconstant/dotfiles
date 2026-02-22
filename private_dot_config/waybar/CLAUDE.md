@@ -53,6 +53,7 @@ window#waybar {
 | **Audio** | `@accent-highlight` | `@fg-muted` (muted) | Special interactive |
 | **Bluetooth** | `@accent-info` | `@accent-highlight` (connected), `@fg-muted` (disabled) | Connectivity |
 | **Backlight** | `@accent-warning` | - | Visual indicator |
+| **Notification center** | `@fg-primary` | `@accent-error` bg (dnd), `@accent-warning` (unread) | Alert state |
 | **Tray** | `@fg-primary` | `@accent-error` bg (needs-attention) | Neutral default |
 
 ### Background & Foreground Usage
@@ -163,12 +164,13 @@ See `config.tmpl` for module definitions. Key modules:
 
 - `hyprland/workspaces`: Workspace switcher (uses urgency hints)
 - `hyprland/window`: Window title display
-- `clock`: Date/time display
+- `clock`: Date/time display (format: `%H:%M  %a %d %b`)
 - `network`: Network connectivity
 - `pulseaudio`: Audio control
 - `battery`: Battery status (4 states)
 - `bluetooth`: Bluetooth status (3 states)
 - `backlight`: Screen brightness
+- `custom/swaync`: Notification center toggle (bell icon + unread count badge)
 - `tray`: System tray icons
 
 ## Testing Procedures

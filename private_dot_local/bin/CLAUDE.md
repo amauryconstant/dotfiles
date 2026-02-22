@@ -8,23 +8,22 @@
 
 ## ⚠️ DEPRECATION NOTICE
 
-**Most wrappers removed** (16 of 18 deprecated)
-
-**New architecture**: Scripts directly in PATH (no wrappers needed)
-- Scripts renamed without .sh extension
+**Most wrappers removed** — new architecture: scripts directly in PATH (no wrappers needed)
+- Scripts named without .sh extension
 - All script directories added to PATH
 - Direct execution: `prune-branch`, `screenshot`, `system-health`, `hypr-session`
 
-**Remaining wrappers** (2 total):
+**Remaining wrappers** (3 total):
 - `executable_package-manager` - Complex setup wrapper (module sourcing, state initialization)
+- `executable_ts` - Tailscale helper with subcommand routing
 - `executable_unzip` - Compatibility wrapper (unzip → unar)
 
-**For new scripts**: Don't create wrappers - add directly to `lib/scripts/` without .sh extension
+**For new scripts**: Don't create wrappers — add directly to `lib/scripts/` without .sh extension
 
 ## Quick Reference
 
-- **Purpose**: Special-case executable wrappers (2 files)
-- **Pattern**: Complex setup or compatibility needs only
+- **Purpose**: Special-case executable wrappers (3 files)
+- **Pattern**: Complex setup, subcommand routing, or compatibility needs only
 - **Naming**: `executable_*` (chezmoi convention)
 - **Templates**: NO templates in bin/ (static only)
 
@@ -74,43 +73,15 @@ fi
 - Simple wrapper code
 - All complexity in lib/ (where templates allowed)
 
-## Available Wrappers
+## Available Wrappers (3 total)
 
-**Script Wrappers** (18 CLI commands):
+| Executable | Purpose | Reason for wrapper |
+|------------|---------|-------------------|
+| `executable_package-manager` | Package management CLI | Complex module sourcing + state initialization |
+| `executable_ts` | Tailscale helper (`ts up`, `ts down`, `ts status`) | Subcommand routing to `network/tailscale` |
+| `executable_unzip` | `unzip` → `unar` compatibility shim | Some tools expect `unzip`; maps args to `unar` equivalents |
 
-| Executable | Script | Category |
-|------------|--------|----------|
-| `executable_package-manager` | `system/package-manager.sh` | System |
-| `executable_system-health` | `system/system-health.sh` | System |
-| `executable_system-maintenance` | `system/system-maintenance.sh` | System |
-| `executable_system-troubleshoot` | `system/troubleshoot.sh` | System |
-| `executable_dotfiles-debug` | `utils/dotfiles-debug.sh` | Utils |
-| `executable_dotfiles-hook-create` | `user-interface/hook-create.sh` | User Interface |
-| `executable_dotfiles-hook-list` | `user-interface/hook-list.sh` | User Interface |
-| `executable_regen-zsh-plugins` | `terminal/regen-zsh-plugins.sh` | Terminal |
-| `executable_regen-ssh-key` | `system/regenerate-ssh-key.sh` | System |
-| `executable_screenshot` | `media/screenshot.sh` | Media |
-| `executable_random-wallpaper` | `media/random-wallpaper.sh` | Media |
-| `executable_set-wallpaper` | `media/set-wallpaper.sh` | Media |
-| `executable_launch-or-focus` | `desktop/launch-or-focus.sh` | Desktop |
-| `executable_git-prune-branch` | `git/prune-branch.sh` | Git |
-| `executable_ts` | `network/tailscale.sh` | Network |
-
-**Compatibility Wrappers** (1 command):
-
-| Executable | Purpose | Wraps |
-|------------|---------|-------|
-| `executable_unzip` | unzip → unar compatibility wrapper | `utils/unzip.sh` |
-
-**Why unzip wrapper**:
-- System uses `unar` from `unarchiver` package (universal archive extractor)
-- Some scripts expect `unzip` command (e.g., spicetify marketplace installer)
-- Wrapper translates `unzip` arguments to `unar` equivalents
-- Mapping: `-q` → `-q`, `-d DIR` → `-o DIR`, `-o` → `-f`
-
-**User invokes**: `system-health` (not `executable_system-health`)
-
-**Chezmoi applies**: `~/.local/bin/system-health` (executable, no prefix)
+**unzip mapping**: `-q` → `-q`, `-d DIR` → `-o DIR`, `-o` → `-f`
 
 ## Environment Variables
 
@@ -134,30 +105,12 @@ fi
 - Missing script → Error message + exit 1
 - Script execution error → Propagates exit code
 
-## Adding New Wrapper
+## When to Add a Wrapper
 
-**Process**:
-1. Create implementation in `lib/scripts/{category}/script.sh`
-2. Create wrapper in `bin/executable_{name}`
-3. Set `SCRIPT_PATH` variable
-4. Copy standard wrapper pattern
-5. Test with `chezmoi apply`
-
-**Example** (new command `foo`):
-```bash
-# File: bin/executable_foo
-#!/usr/bin/env bash
-SCRIPT_PATH="$SCRIPTS_DIR/category/foo.sh"
-
-# [Standard wrapper code]
-```
-
-**Result**: User runs `foo` command
+Only add to bin/ if the script needs **complex initialization before executing** (like `package-manager`) or must **override a system command** (like `unzip`). For everything else, add directly to `lib/scripts/{category}/` without .sh extension.
 
 ## Integration Points
 
-- **lib/scripts/**: Implementation scripts (51+ files)
+- **lib/scripts/**: Implementation scripts (50+ files, directly in PATH)
 - **Zephyr**: Environment variables (SCRIPTS_DIR, UI_LIB)
 - **PATH**: `~/.local/bin` in PATH via Zephyr
-- **Hyprland**: Bindings call wrapper commands
-- **Menu system**: Menus call wrapper commands
