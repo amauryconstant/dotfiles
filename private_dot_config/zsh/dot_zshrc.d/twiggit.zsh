@@ -1,5 +1,5 @@
 ### BEGIN TWIGGIT WRAPPER
-# Twiggit zsh wrapper - Generated on 2026-02-17 12:28:30
+# Twiggit zsh wrapper - Generated on 2026-02-23 08:49:16
 twiggit() {
 case "$1" in
     cd)
