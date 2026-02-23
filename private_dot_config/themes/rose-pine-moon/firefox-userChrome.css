@@ -232,7 +232,6 @@ panel[type="arrow"] {
 menuitem,
 menu {
   color: var(--fg-primary) !important;
-  background-color: var(--bg-secondary) !important;
 }
 
 menuitem:hover,
