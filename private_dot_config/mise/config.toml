@@ -20,3 +20,5 @@ pnpm = "latest"
 "npm:@fission-ai/openspec" = "latest"
 "pipx:github/spec-kit" = "latest"
 "npm:playwright" = {version = "latest", postinstall = "playwright install"}
+"github:AlexsJones/llmfit" = "v0.4.2"
+"github:arimxyer/models" = "v0.8.8"
