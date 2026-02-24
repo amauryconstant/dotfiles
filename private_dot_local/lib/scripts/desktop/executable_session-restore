@@ -236,7 +236,24 @@ post_restore_workspace_fix() {
                 fi
             fi
 
-            # 2. Fallback: first unmatched window of this class
+            # 2. Workspace-based match: find unmatched window of this class already on the
+            #    target workspace. Correct for apps whose windows land on the right workspace
+            #    via Hyprland dispatch (e.g. Ghostty) but whose title differs from the saved
+            #    session (new shell session → different prompt/CWD in title).
+            if [ -z "$addr" ]; then
+                candidate=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" --arg ws "$saved_ws" '
+                    [.[] | select(.class == $c and (.workspace.id | tostring) == $ws) | .address] | .[0] // empty
+                ')
+                if [ -n "$candidate" ] && ! grep -qxF "$candidate" "$temp_matched" 2>/dev/null; then
+                    addr="$candidate"
+                    log_debug "session-restore: post-fix matched $class by workspace (ws=$saved_ws) addr=$addr"
+                fi
+            fi
+
+            # 3. Last resort: first unmatched window of this class in hyprctl output order.
+            #    Used for apps that land on the wrong workspace (e.g. Electron apps all pile
+            #    on ws=11). Order is non-deterministic, but no better option is available.
             if [ -z "$addr" ]; then
                 addr=$(echo "$current_clients" | jaq -r \
                     --arg c "$class" '
@@ -251,9 +268,11 @@ post_restore_workspace_fix() {
             fi
 
             if [ -n "$addr" ]; then
+                current_ws_now=$(echo "$current_clients" | jaq -r --arg a "$addr" \
+                    '.[] | select(.address == $a) | .workspace.id | tostring' 2>/dev/null || echo "?")
                 echo "$addr" >> "$temp_matched"
-                echo "$addr|$saved_ws|$saved_monitor" >> "$temp_plan"
-                log_debug "session-restore: post-fix plan: $class → workspace $saved_ws monitor $saved_monitor"
+                echo "$addr|$saved_ws|$saved_monitor|$class" >> "$temp_plan"
+                log_debug "session-restore: post-fix plan: class=$class addr=$addr title='$saved_title' current_ws=$current_ws_now → target_ws=$saved_ws monitor=$saved_monitor"
             fi
         done
     done
@@ -261,14 +280,14 @@ post_restore_workspace_fix() {
     log_debug "session-restore: post-fix starting window+workspace moves ts=$(date +%H:%M:%S.%3N 2>/dev/null || date +%H:%M:%S)"
 
     # Execute moves — skip windows already on the correct workspace
-    while IFS='|' read -r addr ws _monitor; do
+    while IFS='|' read -r addr ws _monitor window_class; do
         current_ws=$(echo "$current_clients" | jaq -r --arg a "$addr" \
             '.[] | select(.address == $a) | .workspace.id | tostring')
         if [ "$current_ws" != "$ws" ]; then
             hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1
-            log_debug "session-restore: post-fix window $addr moved ws=$current_ws→$ws"
+            log_debug "session-restore: post-fix MOVED class=$window_class addr=$addr ws=$current_ws→$ws"
         else
-            log_debug "session-restore: post-fix window $addr already on ws=$ws (no move)"
+            log_debug "session-restore: post-fix OK class=$window_class addr=$addr ws=$ws (no move needed)"
         fi
     done < "$temp_plan"
 
@@ -280,11 +299,14 @@ post_restore_workspace_fix() {
         [ -n "$monitor_name" ] || continue
         current_monitor=$(echo "$workspaces_json" | jaq -r --arg ws "$ws" \
             '.[] | select(.id == ($ws | tonumber)) | .monitor // "unknown"' 2>/dev/null || echo "unknown")
+        ws_classes=$(echo "$current_clients" | jaq -r --arg ws "$ws" \
+            '[.[] | select(.workspace.id | tostring == $ws) | .class] | unique | join(",")' \
+            2>/dev/null || echo "?")
         if [ "$current_monitor" != "$monitor_name" ]; then
             hyprctl dispatch moveworkspacetomonitor "$ws $monitor_name" >/dev/null 2>&1
-            log_debug "session-restore: post-fix ws $ws moved monitor=$current_monitor→$monitor_name"
+            log_debug "session-restore: post-fix MOVED ws=$ws classes=[$ws_classes] monitor=$current_monitor→$monitor_name"
         else
-            log_debug "session-restore: post-fix ws $ws already on monitor=$monitor_name (no move)"
+            log_debug "session-restore: post-fix OK ws=$ws classes=[$ws_classes] monitor=$monitor_name (no move needed)"
         fi
     done
 
@@ -354,7 +376,9 @@ restore_session() {
         # startup-notification conflicts that result in "Application Not Responding".
         case "$class" in
             ghostty|kitty|alacritty|foot|wezterm)
-                pre_launch_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
+                pre_launch_json=$(hyprctl clients -j 2>/dev/null || echo "[]")
+                pre_launch_count=$(echo "$pre_launch_json" | jaq '. | length')
+                pre_launch_addrs=$(echo "$pre_launch_json" | jaq '[.[].address]')
                 ;;
         esac
 
@@ -372,7 +396,13 @@ restore_session() {
                     sleep 0.3
                     elapsed=$((elapsed + 1))
                 done
-                log_debug "session-restore: terminal window appeared (waited ${elapsed}x0.3s)"
+                new_wins=$(hyprctl clients -j 2>/dev/null | jaq -r \
+                    --argjson prev "$pre_launch_addrs" \
+                    '[.[] | select(($prev | index(.address)) == null)] |
+                    if length == 0 then "none-detected"
+                    else .[] | "addr=\(.address) class=\(.class) ws=\(.workspace.id) monitor=\(.monitor // "?")"
+                    end' 2>/dev/null || echo "query-failed")
+                log_debug "session-restore: terminal appeared expected=class:$class/ws:$workspace_id actual: $new_wins (waited ${elapsed}x0.3s)"
                 ;;
             *)
                 # Small delay to avoid overwhelming the compositor
@@ -386,6 +416,15 @@ restore_session() {
     # Wait for windows to appear and settle
     log_debug "session-restore: waiting ${SETTLE_DELAY}s for settle"
     sleep "$SETTLE_DELAY"
+
+    # Snapshot all clients before post-fix to see exact workspace placement
+    log_debug "session-restore: client snapshot before post-fix (sorted by ws):"
+    hyprctl clients -j 2>/dev/null | jaq -r \
+        'sort_by(.workspace.id) | .[] |
+        "  class=\(.class) addr=\(.address) ws=\(.workspace.id) monitor=\(.monitor // "?") title=\"\(.title[0:50] // "")\""' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-restore:$line"
+    done
 
     # Fix workspace placement for apps that ignore dispatch rules (e.g. VS Code, Electron apps)
     post_restore_workspace_fix "$session_data"
