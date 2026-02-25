@@ -85,7 +85,7 @@ reload_applications() {
     fi
 
     # Reload swaync CSS via symlink (hot-reload, no restart needed)
-    swaync-client --reload-config 2>/dev/null || true
+    swaync-client --reload-css 2>/dev/null || true
 
     # Reload Ghostty
     if pgrep -x ghostty >/dev/null; then

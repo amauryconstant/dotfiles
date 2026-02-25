@@ -11,7 +11,8 @@
 - **Purpose**: Notification daemon with persistent control center panel
 - **Replaces**: dunst (retained in `../dunst/` as historical reference)
 - **Toggle**: `Super+Shift+N` → `swaync-client --toggle-panel`
-- **Reload**: `swaync-client --reload-config` (hot-reload CSS without restart)
+- **Reload CSS**: `swaync-client --reload-css` (hot-reload stylesheet without restart)
+- **Reload Config**: `swaync-client --reload-config` (reload JSON config only)
 - **DND toggle**: `swaync-client --toggle-dnd`
 
 ## File Structure
@@ -47,7 +48,7 @@
 
 **Per-theme files**: `../themes/{variant}/swaync.css` (8 files, hardcoded hex)
 
-**Theme switching**: `theme-switcher.tmpl` calls `swaync-client --reload-config` after updating the symlink.
+**Theme switching**: `theme-switcher.tmpl` calls `swaync-client --reload-css` after updating the symlink.
 
 ## Management
 
@@ -59,6 +60,9 @@ swaync-client --toggle-panel
 swaync-client --toggle-dnd
 
 # Hot-reload CSS (after theme switch)
+swaync-client --reload-css
+
+# Reload JSON config (position, timeouts)
 swaync-client --reload-config
 
 # View logs
