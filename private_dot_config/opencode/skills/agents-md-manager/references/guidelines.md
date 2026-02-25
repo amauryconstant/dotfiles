@@ -94,13 +94,6 @@ Based on best practices for AGENTS.md files, applicable to OpenCode.
 - Use code blocks for commands/examples
 - Keep sections focused and short
 
-### Emphasis for Critical Rules
-If opencode keeps ignoring a rule, add emphasis:
-- **IMPORTANT**
-- **YOU MUST**
-- **NEVER**
-- Bold or capitalization for critical constraints
-
 ### Import Syntax
 Use `@path/to/file` for modularity:
 
