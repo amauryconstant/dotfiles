@@ -6,6 +6,9 @@
 
 SESSION_DIR="$HOME/.local/state/dotfiles"
 DENYLIST_FILE="$HOME/.config/dotfiles/session-denylist.conf"
+# Apps whose own restoration dialog handles multi-window/tab recovery.
+# Only the first window (lowest workspace ID) is saved; the app restores the rest.
+BROWSERS_FILE="$HOME/.config/dotfiles/session-browsers.conf"
 
 # Default slot name
 SLOT="${1:-default}"
@@ -35,6 +38,16 @@ load_denylist() {
     else
         # Default denylist (ephemeral/UI elements)
         printf "wofi\nwlogout\ndunst\nwaybar\nhyprpicker\n"
+    fi
+}
+
+# Load browsers list (one class per line, lowercase)
+# Only the first window of each browser class is saved.
+load_browsers() {
+    if [ -f "$BROWSERS_FILE" ]; then
+        grep -v '^#' "$BROWSERS_FILE" | grep -v '^$'
+    else
+        printf "firefox\nchromium\nbrave\nvivaldi\nopera\n"
     fi
 }
 
@@ -242,18 +255,33 @@ save_session() {
 
     rm -f "$temp_launch"
 
+    # Get browsers list as JSON array (lowercase class names)
+    browsers_json=$(load_browsers | tr '[:upper:]' '[:lower:]' | jaq -R -s 'split("\n") | map(select(length > 0))')
+
     # Phase 4: Apply denylist + enrich with CWD, launch commands, and monitor names
     # Uses hyprctl data directly — captures all windows regardless of hyprdrover filters
     filtered_session=$(echo "$windows_json" | jaq \
         --argjson denylist "$denylist_json" \
+        --argjson browsers "$browsers_json" \
         --argjson cwdMap "$cwd_map" \
         --argjson launchMap "$launch_map" \
         --argjson monitors "$monitors_json" '
         # Build monitor ID → name map (hyprctl reports integer IDs, dispatch needs names)
         ($monitors | map({key: (.id | tostring), value: .name}) | from_entries) as $monitorMap |
+        ($browsers | map({key: ., value: true}) | from_entries) as $browserSet |
         # Filter by denylist + enrich
         {clients:
             map(select([.class] | inside($denylist) | not)) |
+            # For browsers (apps with their own session restore dialog), keep only the
+            # first window by workspace ID. The app restores the rest itself.
+            sort_by(.workspace.id) |
+            group_by(.class) |
+            map(
+                if ($browserSet[.[0].class | ascii_downcase] // false) then [.[0]]
+                else .
+                end
+            ) |
+            flatten(1) |
             map(
                 .address as $addr |
                 . + {
