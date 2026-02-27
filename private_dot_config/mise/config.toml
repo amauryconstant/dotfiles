@@ -21,3 +21,4 @@ pnpm = "latest"
 "npm:playwright" = {version = "latest", postinstall = "playwright install"}
 "github:AlexsJones/llmfit" = "latest"
 "github:arimxyer/models" = "latest"
+prettier = "latest"
