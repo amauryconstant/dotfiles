@@ -176,7 +176,12 @@ save_session() {
     # Phase 1: Capture session from Hyprland (source of truth)
     windows_json=$(hyprctl clients -j)
     monitors_json=$(hyprctl monitors -j 2>/dev/null || echo "[]")
-    log_debug "session-save: captured $(echo "$windows_json" | jaq 'length') windows"
+    log_debug "session-save: captured $(echo "$windows_json" | jaq 'length') windows (sorted by ws):"
+    echo "$windows_json" | jaq -r 'sort_by(.workspace.id) | .[] |
+        "  class=\(.class) ws=\(.workspace.id) addr=\(.address) title=\"\(.title[0:50] // "")\""' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-save:$line"
+    done
 
     # Update hyprdrover index in parallel (non-blocking; for hyprdrover users)
     timeout 30 hyprdrover --save "$SLOT" >/dev/null 2>&1 || \
@@ -186,6 +191,7 @@ save_session() {
 
     # Get denylist as JSON array
     denylist_json=$(load_denylist | jaq -R -s 'split("\n") | map(select(length > 0))')
+    log_debug "session-save: denylist=$(load_denylist | tr '\n' ',' | sed 's/,$//')"
 
     # Build CWD map for terminal windows
     temp_pids=$(mktemp)
@@ -201,6 +207,7 @@ save_session() {
     # Collect CWD for each terminal
     while IFS='|' read -r pid _class address; do
         cwd=""
+        cwd_method="none"
 
         if [ -d "/proc/$pid" ]; then
             # Try shell child process first (reflects current shell dir, not terminal launch dir)
@@ -209,6 +216,7 @@ save_session() {
                 shell_cwd=$(readlink "/proc/$shell_pid/cwd" 2>/dev/null || echo "")
                 if [ -n "$shell_cwd" ] && [ -d "$shell_cwd" ]; then
                     cwd="$shell_cwd"
+                    cwd_method="shell-child(pid=$shell_pid)"
                 fi
             fi
             # Fall back to terminal process's own CWD
@@ -216,9 +224,14 @@ save_session() {
                 direct_cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || echo "")
                 if [ -n "$direct_cwd" ] && [ -d "$direct_cwd" ]; then
                     cwd="$direct_cwd"
+                    cwd_method="terminal-proc"
                 fi
             fi
+        else
+            cwd_method="pid-not-found"
         fi
+
+        log_debug "session-save: cwd class=$_class addr=$address pid=$pid method=$cwd_method cwd=${cwd:-(none)}"
 
         # Store as JSON if CWD found
         if [ -n "$cwd" ]; then
@@ -243,6 +256,7 @@ save_session() {
 
     echo "$windows_json" | jaq -r '.[] | "\(.address)|\(.class)"' | while IFS='|' read -r address class; do
         launch_cmd=$(get_launch_command "$class")
+        log_debug "session-save: launch_cmd class=$class addr=$address cmd='$launch_cmd'"
         jaq -n --arg addr "$address" --arg cmd "$launch_cmd" \
             '{($addr): $cmd}' >> "$temp_launch"
     done
@@ -257,6 +271,7 @@ save_session() {
 
     # Get browsers list as JSON array (lowercase class names)
     browsers_json=$(load_browsers | tr '[:upper:]' '[:lower:]' | jaq -R -s 'split("\n") | map(select(length > 0))')
+    log_debug "session-save: browsers=$(load_browsers | tr '\n' ',' | sed 's/,$//')"
 
     # Phase 4: Apply denylist + enrich with CWD, launch commands, and monitor names
     # Uses hyprctl data directly — captures all windows regardless of hyprdrover filters
@@ -291,6 +306,35 @@ save_session() {
             )
         }
     ')
+
+    # Log what the denylist removed
+    echo "$windows_json" | jaq -r --argjson denylist "$denylist_json" \
+        '[.[] | select([.class] | inside($denylist))] | .[] |
+        "  class=\(.class) ws=\(.workspace.id) title=\"\(.title[0:40] // "")\" (denied)"' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-save:$line"
+    done
+
+    # Log what browser dedup removed (windows saved before dedup vs after)
+    echo "$windows_json" | jaq -r \
+        --argjson denylist "$denylist_json" \
+        --argjson browsers "$browsers_json" '
+        ($browsers | map({key: ., value: true}) | from_entries) as $browserSet |
+        [.[] | select([.class] | inside($denylist) | not)] |
+        sort_by(.workspace.id) | group_by(.class) |
+        map(select($browserSet[.[0].class | ascii_downcase] // false) | .[1:] | .[]) |
+        .[] | "  class=\(.class) ws=\(.workspace.id) title=\"\(.title[0:40] // "")\" (browser-deduped)"
+    ' 2>/dev/null | while IFS= read -r line; do
+        log_debug "session-save:$line"
+    done
+
+    # Log final saved entries
+    log_debug "session-save: final saved entries ($(echo "$filtered_session" | jaq '.clients | length')):"
+    echo "$filtered_session" | jaq -r '.clients[] |
+        "  class=\(.class) ws=\(.workspace.id) monitor=\(.monitor // "?") launch=\(.launchCommand // "(none)") cwd=\(.cwd // "(none)") title=\"\(.title[0:40] // "")\""' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-save:$line"
+    done
 
     # Phase 5: Write enrichment file with metadata
     enrichment_file="$SESSION_DIR/hyprland-session-$SLOT.json"

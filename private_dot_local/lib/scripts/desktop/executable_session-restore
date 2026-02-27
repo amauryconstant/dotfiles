@@ -178,26 +178,26 @@ launch_app() {
     if [ -n "$cwd" ]; then
         case "$class" in
             "com.mitchellh.ghostty"|"ghostty")
+                log_debug "session-restore: dispatch [$rules] $launch_cmd --working-directory='$cwd'"
                 hyprctl dispatch exec "[$rules] $launch_cmd --working-directory='$cwd'" >/dev/null 2>&1
-                log_debug "session-restore: launched ghostty with CWD"
                 return 0
                 ;;
             "kitty")
+                log_debug "session-restore: dispatch [$rules] $launch_cmd --directory='$cwd'"
                 hyprctl dispatch exec "[$rules] $launch_cmd --directory='$cwd'" >/dev/null 2>&1
-                log_debug "session-restore: launched kitty with CWD"
                 return 0
                 ;;
             "alacritty")
+                log_debug "session-restore: dispatch [$rules] $launch_cmd --working-directory '$cwd'"
                 hyprctl dispatch exec "[$rules] $launch_cmd --working-directory '$cwd'" >/dev/null 2>&1
-                log_debug "session-restore: launched alacritty with CWD"
                 return 0
                 ;;
         esac
     fi
 
     # Standard app launch
+    log_debug "session-restore: dispatch [$rules] $launch_cmd"
     hyprctl dispatch exec "[$rules] $launch_cmd" >/dev/null 2>&1
-    log_debug "session-restore: launched class=$class"
     return 0
 }
 
@@ -288,9 +288,13 @@ post_restore_workspace_fix() {
             if [ -n "$addr" ]; then
                 current_ws_now=$(echo "$current_clients" | jaq -r --arg a "$addr" \
                     '.[] | select(.address == $a) | .workspace.id | tostring' 2>/dev/null || echo "?")
+                current_title=$(echo "$current_clients" | jaq -r --arg a "$addr" \
+                    '.[] | select(.address == $a) | .title[0:40]' 2>/dev/null || echo "?")
                 echo "$addr" >> "$temp_matched"
                 echo "$addr|$saved_ws|$saved_monitor|$class" >> "$temp_plan"
-                log_debug "session-restore: post-fix plan: class=$class addr=$addr title='$saved_title' current_ws=$current_ws_now → target_ws=$saved_ws monitor=$saved_monitor"
+                log_debug "session-restore: post-fix plan: class=$class addr=$addr saved_title='$saved_title' current_title='$current_title' current_ws=$current_ws_now → target_ws=$saved_ws monitor=$saved_monitor"
+            else
+                log_debug "session-restore: post-fix NO MATCH class=$class saved_ws=$saved_ws saved_title='$saved_title' (window not found)"
             fi
         done
     done
@@ -330,6 +334,15 @@ post_restore_workspace_fix() {
 
     log_debug "session-restore: post-fix complete ts=$(date +%H:%M:%S.%3N 2>/dev/null || date +%H:%M:%S)"
     rm -f "$temp_matched" "$temp_plan"
+
+    # Final state snapshot after all moves
+    log_debug "session-restore: final window state (sorted by ws):"
+    hyprctl clients -j 2>/dev/null | jaq -r \
+        'sort_by(.workspace.id) | .[] |
+        "  class=\(.class) addr=\(.address) ws=\(.workspace.id) monitor=\(.monitor // "?") title=\"\(.title[0:50] // "")\""' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-restore:$line"
+    done
 }
 
 # Main restore logic
@@ -339,6 +352,19 @@ restore_session() {
 
     # Read enrichment file
     session_data=$(cat "$enrichment_file")
+
+    # Log session file summary
+    session_ts=$(echo "$session_data" | jaq -r '.metadata.timestamp // "unknown"')
+    session_total=$(echo "$session_data" | jaq '.clients | length')
+    log_debug "session-restore: session file=$enrichment_file saved_at=$session_ts entries=$session_total"
+    log_debug "session-restore: saved entries:"
+    echo "$session_data" | jaq -r '.clients[] |
+        "  class=\(.class) ws=\(.workspace.id) monitor=\(.monitor // "?") launch=\(.launchCommand // "(none)") title=\"\(.title[0:40] // "")\""' \
+        2>/dev/null | while IFS= read -r line; do
+        log_debug "session-restore:$line"
+    done
+    skipped=$(echo "$session_data" | jaq '[.clients[] | select(.launchCommand == null)] | length')
+    [ "$skipped" -gt 0 ] && log_debug "session-restore: $skipped entries have no launchCommand (will be skipped)"
 
     # Load single-instance app list
     single_instance_apps=$(load_single_instance_apps)
@@ -354,18 +380,29 @@ restore_session() {
         .[] |
         "\(.launchCommand)|\(.workspace.id)|\(.cwd // "")|\(.monitor // "")"
     ' | while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
+        # Derive class for logging
+        if echo "$launch_cmd" | grep -q "^flatpak run"; then
+            _log_class=$(echo "$launch_cmd" | awk '{print $NF}' | awk -F'.' '{print $NF}' | tr '[:upper:]' '[:lower:]')
+        else
+            _log_class=$(echo "$launch_cmd" | awk '{print $1}' | xargs basename)
+        fi
         # Check if single-instance app
         if is_single_instance_app "$launch_cmd" "$single_instance_apps"; then
             # Single-instance: Check if already added
             if ! grep -q "^${launch_cmd}|" "$temp_seen"; then
+                log_debug "session-restore: queued single-instance class=$_log_class ws=$workspace_id monitor=${monitor_name:-(none)} cmd='$launch_cmd'"
                 echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
                 echo "$launch_cmd|" >> "$temp_seen"
+            else
+                log_debug "session-restore: skipped duplicate single-instance class=$_log_class ws=$workspace_id cmd='$launch_cmd'"
             fi
         else
+            log_debug "session-restore: queued multi-instance class=$_log_class ws=$workspace_id monitor=${monitor_name:-(none)} cmd='$launch_cmd'"
             # Multi-instance: Add every occurrence
             echo "$launch_cmd|$workspace_id|$cwd|$monitor_name" >> "$temp_apps"
         fi
     done
+    log_debug "session-restore: launch queue has $(wc -l < "$temp_apps" 2>/dev/null || echo "?") entries"
 
     # Count windows before restore
     initial_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
