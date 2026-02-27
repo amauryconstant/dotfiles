@@ -152,6 +152,9 @@ switch_theme() {
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" 2>/dev/null || true
     fi
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" 2>/dev/null || true
+    fi
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-qt" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-qt" 2>/dev/null || true
     fi

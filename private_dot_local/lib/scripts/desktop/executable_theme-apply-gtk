@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+# Script: theme-apply-gtk
+# Purpose: Apply current dotfiles theme to GTK applications via gsettings
+# Requirements: Arch Linux, gsettings (glib2)
+
+THEME_DIR="$HOME/.config/themes/current"
+
+if [ ! -L "$THEME_DIR" ]; then
+    exit 0  # No current theme set, skip silently
+fi
+
+THEME_NAME=$(basename "$(readlink "$THEME_DIR")")
+
+# Map theme variant to GTK color-scheme preference
+case "$THEME_NAME" in
+    catppuccin-latte|rose-pine-dawn|gruvbox-light|solarized-light)
+        COLOR_SCHEME="prefer-light"
+        ;;
+    catppuccin-mocha|rose-pine-moon|gruvbox-dark|solarized-dark)
+        COLOR_SCHEME="prefer-dark"
+        ;;
+    *)
+        exit 0  # Unknown theme, skip
+        ;;
+esac
+
+# Skip if gsettings not available
+if ! command -v gsettings >/dev/null 2>&1; then
+    exit 0
+fi
+
+gsettings set org.gnome.desktop.interface color-scheme "$COLOR_SCHEME"
