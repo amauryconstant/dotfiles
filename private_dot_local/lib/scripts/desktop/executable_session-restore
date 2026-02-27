@@ -236,6 +236,24 @@ post_restore_workspace_fix() {
                 fi
             fi
 
+            # 1b. Fuzzy title match: saved title is a substring of current title.
+            #     Handles apps that prepend context to titles (e.g. code-oss adds
+            #     "Welcome - " prefix: saved "chezmoi - Code - OSS" matches current
+            #     "Welcome - chezmoi - Code - OSS"). Applied before workspace match
+            #     so that self-restoring single-instance apps (code-oss) get their
+            #     windows assigned to the correct workspace instead of whichever
+            #     window happens to land first on ws=11.
+            if [ -z "$addr" ] && [ -n "$saved_title" ]; then
+                addr=$(echo "$current_clients" | jaq -r \
+                    --arg c "$class" --arg t "$saved_title" '
+                    [.[] | select(.class == $c and (.title | contains($t))) | .address] | .[0] // empty
+                ')
+                if [ -n "$addr" ] && grep -qxF "$addr" "$temp_matched" 2>/dev/null; then
+                    addr=""
+                fi
+                [ -n "$addr" ] && log_debug "session-restore: post-fix matched $class by fuzzy title addr=$addr"
+            fi
+
             # 2. Workspace-based match: find unmatched window of this class already on the
             #    target workspace. Correct for apps whose windows land on the right workspace
             #    via Hyprland dispatch (e.g. Ghostty) but whose title differs from the saved
