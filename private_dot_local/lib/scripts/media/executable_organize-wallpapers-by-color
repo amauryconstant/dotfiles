@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Script: organize-wallpapers-by-color
-# Purpose: Organize wallpapers by color similarity to themes using wallust
+# Purpose: Organize wallpapers by color similarity to themes using 4-signal scoring
 # Location: ~/.local/lib/scripts/media/organize-wallpapers-by-color
-# Requirements: Arch Linux, wallust, imagemagick (identify), python3
+# Requirements: Arch Linux, imagemagick (magick), python3
 
 # Source UI library (before set -u to avoid unbound variable errors)
 UI_LIB="$HOME/.local/lib/scripts/core/gum-ui.sh"
@@ -12,9 +12,6 @@ if [ ! -f "$UI_LIB" ]; then
 fi
 # shellcheck source=/dev/null
 . "$UI_LIB"
-
-# Enable strict error handling (without -u due to gum-ui compatibility)
-# set -eo pipefail
 
 # Default configuration
 DEFAULT_SOURCE_DIR="$HOME/.config/wallpapers"
@@ -33,7 +30,7 @@ OPTIONS:
     -s, --source DIR      Source wallpaper directory (default: ~/.config/wallpapers)
     -o, --output DIR      Output directory (default: ~/.config/wallpapers)
     -t, --threshold NUM   Match quality threshold 0-100 (default: 50)
-                         Higher values = more inclusive matching
+                         Higher values = stricter matching
     -h, --help           Show this help message
 
 EXAMPLES:
@@ -53,10 +50,14 @@ EXAMPLES:
     $(basename "$0") -s ~/Pictures -o ~/custom-output -t 55
 
 WORKFLOW:
-    1. Analyzes each wallpaper's color palette using wallust
-    2. Compares against theme palettes using Delta E (LAB color space)
-    3. Assigns wallpapers via round-robin algorithm for balanced distribution
-    4. Creates git-ready repository structure with READMEs
+    1. Extracts dominant colors from each wallpaper using ImageMagick histogram
+    2. Classifies colors into background vs accent based on chroma and coverage
+    3. Scores wallpapers against themes using 4 signals:
+       - Luminance match (35%): dark wallpapers match dark themes
+       - Background proximity (35%): wallpaper base tones match theme backgrounds
+       - Accent harmony (20%): wallpaper accents complement theme palette
+       - Saturation profile (10%): chroma levels suit theme character
+    4. Assigns each wallpaper to its best-scoring theme (above threshold)
 
 OUTPUT STRUCTURE:
     {output_dir}/
@@ -168,7 +169,7 @@ check_git_status() {
 }
 
 # Validate dependencies
-for cmd in wallust identify python3; do
+for cmd in magick python3; do
     if ! command -v "$cmd" &> /dev/null; then
         ui_error "Required command not found: $cmd"
         exit 1
@@ -197,7 +198,7 @@ if [ "$WALLPAPER_COUNT" -eq 0 ]; then
     exit 1
 fi
 
-# Temporary directory for wallust output
+# Temporary directory for intermediate data
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
@@ -300,170 +301,60 @@ fi
 
 ui_spacer
 
-# Extract theme color palettes
+# ============================================================
+# Phase 1: Extract theme colors from colors.sh
+# ============================================================
 ui_step "Extracting theme color palettes"
-declare -A THEME_ACCENT_COLORS
+
+THEME_COLORS_TSV="$TEMP_DIR/theme_colors.tsv"
+: > "$THEME_COLORS_TSV"
 
 for theme in "${THEMES[@]}"; do
-    theme_config="$THEME_DIR/$theme/hyprland.conf"
-    if [ ! -f "$theme_config" ]; then
-        ui_warning "Theme config not found: $theme_config"
+    colors_file="$THEME_DIR/$theme/colors.sh"
+    if [ ! -f "$colors_file" ]; then
+        ui_warning "Theme colors not found: $colors_file"
         continue
     fi
 
-    # Extract hex colors from multiple formats:
-    # 1. rgb(RRGGBB) or rgba(RRGGBB) - Catppuccin style
-    # 2. 0xffRRGGBB or 0xRRGGBBaa - Rose Pine style (strip 0xff prefix and alpha)
-    # 3. Standalone 6-char hex - Gruvbox *Alpha variables
-    # Extract in ORDER to preserve light/dark differentiation (e.g., Solarized)
-    # First 4 colors are typically base colors (backgrounds) - critical for light/dark distinction
-    colors=$(grep -oP '(?<=rgb\()[a-fA-F0-9]{6}|(?<=rgba\()[a-fA-F0-9]{6}|(?<=0xff)[a-fA-F0-9]{6}|(?<= = )[a-fA-F0-9]{6}(?=\s*$)' "$theme_config")
+    # Extract background colors (strip # prefix)
+    bg_primary=$(grep -oP '(?<=BG_PRIMARY=")[^"]+' "$colors_file" | tr -d '#')
+    bg_secondary=$(grep -oP '(?<=BG_SECONDARY=")[^"]+' "$colors_file" | tr -d '#')
+    bg_overlay=$(grep -oP '(?<=BG_OVERLAY=")[^"]+' "$colors_file" | tr -d '#')
 
-    # Weight: Repeat first 4 colors (base tones) to give them more importance in matching
-    # This helps differentiate light/dark variants (e.g., solarized-light vs solarized-dark)
-    first_four=$(echo "$colors" | head -4)
-    colors=$(echo -e "$first_four\n$first_four\n$colors")
+    # Extract 8 core accent colors
+    accent_primary=$(grep -oP '(?<=ACCENT_PRIMARY=")[^"]+' "$colors_file" | tr -d '#')
+    accent_info=$(grep -oP '(?<=ACCENT_INFO=")[^"]+' "$colors_file" | tr -d '#')
+    accent_success=$(grep -oP '(?<=ACCENT_SUCCESS=")[^"]+' "$colors_file" | tr -d '#')
+    accent_warning=$(grep -oP '(?<=ACCENT_WARNING=")[^"]+' "$colors_file" | tr -d '#')
+    accent_error=$(grep -oP '(?<=ACCENT_ERROR=")[^"]+' "$colors_file" | tr -d '#')
+    accent_highlight=$(grep -oP '(?<=ACCENT_HIGHLIGHT=")[^"]+' "$colors_file" | tr -d '#')
+    accent_secondary=$(grep -oP '(?<=ACCENT_SECONDARY=")[^"]+' "$colors_file" | tr -d '#')
+    accent_tertiary=$(grep -oP '(?<=ACCENT_TERTIARY=")[^"]+' "$colors_file" | tr -d '#')
 
-    THEME_ACCENT_COLORS[$theme]="$colors"
+    # Format: theme<TAB>bg_colors(space-sep)<TAB>accent_colors(space-sep)
+    printf '%s\t%s\t%s\n' \
+        "$theme" \
+        "$bg_primary $bg_secondary $bg_overlay" \
+        "$accent_primary $accent_info $accent_success $accent_warning $accent_error $accent_highlight $accent_secondary $accent_tertiary" \
+        >> "$THEME_COLORS_TSV"
 
-    color_count=$(echo "$colors" | wc -w)
-    ui_text "$theme: $color_count colors extracted" "$FG_MUTED"
+    ui_text "$theme: 3 bg + 8 accent colors" "$FG_MUTED"
 done
 ui_spacer
 
-# Python color distance calculator
-PYTHON_SCRIPT=$(cat <<'PYTHON_EOF'
-import sys
-import math
-
-def hex_to_rgb(hex_color):
-    """Convert hex to RGB (0-1 range)"""
-    hex_color = hex_color.strip().lstrip('#')
-    if len(hex_color) != 6:
-        return None
-    try:
-        r = int(hex_color[0:2], 16) / 255.0
-        g = int(hex_color[2:4], 16) / 255.0
-        b = int(hex_color[4:6], 16) / 255.0
-        return (r, g, b)
-    except ValueError:
-        return None
-
-def rgb_to_lab(rgb):
-    """Convert RGB to LAB color space (simplified)"""
-    r, g, b = rgb
-
-    # Convert to linear RGB
-    def to_linear(c):
-        if c <= 0.04045:
-            return c / 12.92
-        return ((c + 0.055) / 1.055) ** 2.4
-
-    r, g, b = map(to_linear, (r, g, b))
-
-    # Convert to XYZ (D65 illuminant)
-    x = r * 0.4124564 + g * 0.3575761 + b * 0.1804375
-    y = r * 0.2126729 + g * 0.7151522 + b * 0.0721750
-    z = r * 0.0193339 + g * 0.1191920 + b * 0.9503041
-
-    # Convert to LAB
-    def f(t):
-        if t > 0.008856:
-            return t ** (1.0/3.0)
-        return 7.787 * t + 16.0/116.0
-
-    xn, yn, zn = 0.95047, 1.00000, 1.08883
-
-    l = 116 * f(y / yn) - 16
-    a = 500 * (f(x / xn) - f(y / yn))
-    b_val = 200 * (f(y / yn) - f(z / zn))
-
-    return (l, a, b_val)
-
-def color_distance(hex1, hex2):
-    """Calculate Delta E distance between two colors"""
-    rgb1 = hex_to_rgb(hex1)
-    rgb2 = hex_to_rgb(hex2)
-
-    if rgb1 is None or rgb2 is None:
-        return 999.0
-
-    try:
-        lab1 = rgb_to_lab(rgb1)
-        lab2 = rgb_to_lab(rgb2)
-
-        # Euclidean distance in LAB space
-        delta_l = lab1[0] - lab2[0]
-        delta_a = lab1[1] - lab2[1]
-        delta_b = lab1[2] - lab2[2]
-
-        return math.sqrt(delta_l**2 + delta_a**2 + delta_b**2)
-    except:
-        return 999.0
-
-def palette_distance(wallpaper_colors_str, theme_colors_str):
-    """Calculate average minimum distance between palettes with lightness weighting"""
-    wp_colors = [c.strip() for c in wallpaper_colors_str.split() if c.strip()]
-    theme_colors = [c.strip() for c in theme_colors_str.split() if c.strip()]
-
-    if not wp_colors or not theme_colors:
-        return 999.0
-
-    # Calculate average lightness of both palettes
-    wp_labs = [rgb_to_lab(hex_to_rgb(c)) for c in wp_colors if hex_to_rgb(c)]
-    theme_labs = [rgb_to_lab(hex_to_rgb(c)) for c in theme_colors if hex_to_rgb(c)]
-
-    if not wp_labs or not theme_labs:
-        return 999.0
-
-    wp_avg_lightness = sum(lab[0] for lab in wp_labs) / len(wp_labs)
-    theme_avg_lightness = sum(lab[0] for lab in theme_labs) / len(theme_labs)
-
-    # Lightness penalty (helps distinguish light vs dark themes)
-    lightness_penalty = abs(wp_avg_lightness - theme_avg_lightness) * 0.5
-
-    total_distance = 0
-    count = 0
-
-    # For each wallpaper color, find closest theme color
-    for wp_color in wp_colors:
-        min_dist = min(color_distance(wp_color, tc) for tc in theme_colors)
-        total_distance += min_dist
-        count += 1
-
-    # Return average distance + lightness penalty
-    avg_distance = total_distance / count if count > 0 else 999.0
-    return avg_distance + lightness_penalty
-
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("999.0")
-        sys.exit(0)
-
-    wallpaper_palette = sys.argv[1]
-    theme_palette = sys.argv[2]
-
-    distance = palette_distance(wallpaper_palette, theme_palette)
-    print(f"{distance:.2f}")
-PYTHON_EOF
-)
-
-# Process each wallpaper
+# ============================================================
+# Phase 2: Extract wallpaper colors via ImageMagick histogram
+# ============================================================
 ui_title "Analyzing Wallpapers"
-ui_info "This may take a while..."
+ui_info "Extracting dominant colors via ImageMagick..."
 ui_spacer
 
-# Statistics and data structures
-declare -A THEME_COUNTS
-for theme in "${THEMES[@]}"; do
-    THEME_COUNTS[$theme]=0
-done
-UNASSIGNED_COUNT=0
-PROCESSED=0
+WALLPAPER_COLORS_TSV="$TEMP_DIR/wallpaper_colors.tsv"
+: > "$WALLPAPER_COLORS_TSV"
 
-# Wallpaper rankings: stores "theme1:distance1 theme2:distance2 ..." for each wallpaper
-declare -A WALLPAPER_RANKINGS
-declare -A WALLPAPER_PATHS  # Maps filename to full path
+# Statistics
+PROCESSED=0
+SKIPPED=0
 
 # Get list of wallpapers
 mapfile -t WALLPAPERS < <(find "$SOURCE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | sort)
@@ -474,164 +365,336 @@ for wallpaper in "${WALLPAPERS[@]}"; do
 
     ui_step "[$PROCESSED/$WALLPAPER_COUNT] $filename"
 
-    # Extract colors with wallust (using resized backend - full has bugs)
-    # --skip-sequences prevents wallust from changing terminal colors
-    if ! wallust run --quiet --skip-sequences "$wallpaper" --backend resized 2>/dev/null; then
+    # Extract histogram: pixel_count + hex color
+    # Resize to 200x200 for speed, quantize to 10 colors
+    histogram=$(magick "$wallpaper" -resize 200x200 -colors 10 -depth 8 -format '%c' histogram:info:- 2>/dev/null)
+
+    if [ -z "$histogram" ]; then
         ui_warning "  Failed to analyze, skipping"
+        SKIPPED=$((SKIPPED + 1))
         continue
     fi
 
-    # Find the most recent wallust cache directory (wallust creates hash-named dirs)
-    WALLUST_CACHE="$HOME/.cache/wallust"
-    latest_cache=$(find "$WALLUST_CACHE" -maxdepth 1 -type d ! -name "sequences" ! -name "wallust" -printf "%T@ %f\n" 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
+    # Parse histogram lines: extract pixel_count and hex color
+    # Format per line: "  12345: (R,G,B,...) #RRGGBB ..."
+    # Output: "count:hex count:hex ..." sorted by count descending
+    color_data=$(echo "$histogram" | \
+        grep -oP '^\s*(\d+):.*#([0-9A-Fa-f]{6})' | \
+        sed -E 's/^\s*([0-9]+):.*#([0-9A-Fa-f]{6}).*/\1:\2/' | \
+        sort -t: -k1 -rn)
 
-    if [ -z "$latest_cache" ]; then
-        ui_warning "  No cache directory found, skipping"
-        continue
-    fi
-
-    # Find the color file (backend name varies: Resized, Full, etc.)
-    colors_file=$(find "$WALLUST_CACHE/$latest_cache" -name "*SoftDark16" -o -name "*SoftLight16" | head -n 1)
-
-    # Fallback: try any JSON-like file
-    if [ -z "$colors_file" ] || [ ! -f "$colors_file" ]; then
-        colors_file=$(find "$WALLUST_CACHE/$latest_cache" -type f -size +100c | grep -v "Resized$\|Full$" | head -n 1)
-    fi
-
-    if [ ! -f "$colors_file" ]; then
-        ui_warning "  Colors file not found, skipping"
-        continue
-    fi
-
-    # Extract hex colors from JSON (remove # prefix)
-    wallpaper_colors=$(grep -oP '(?<=#)[a-fA-F0-9]{6}' "$colors_file" | sort -u | tr '\n' ' ')
-
-    if [ -z "$wallpaper_colors" ]; then
+    if [ -z "$color_data" ]; then
         ui_warning "  No colors extracted, skipping"
+        SKIPPED=$((SKIPPED + 1))
         continue
     fi
 
-    # Calculate distance to ALL themes (store for later ranking-based assignment)
-    rankings=""
+    # Format: filepath<TAB>count1:hex1 count2:hex2 ...
+    color_entries=$(echo "$color_data" | tr '\n' ' ' | sed 's/ $//')
+    printf '%s\t%s\n' "$wallpaper" "$color_entries" >> "$WALLPAPER_COLORS_TSV"
 
-    for theme in "${THEMES[@]}"; do
-        theme_colors="${THEME_ACCENT_COLORS[$theme]}"
-
-        if [ -z "$theme_colors" ]; then
-            continue
-        fi
-
-        # Calculate palette distance using Python (no balancing penalty yet)
-        distance=$(python3 -c "$PYTHON_SCRIPT" "$wallpaper_colors" "$theme_colors")
-
-        # Store as "theme:distance" pairs
-        if [ -z "$rankings" ]; then
-            rankings="$theme:$distance"
-        else
-            rankings="$rankings $theme:$distance"
-        fi
-    done
-
-    # Store rankings and path for this wallpaper
-    WALLPAPER_RANKINGS["$filename"]="$rankings"
-    WALLPAPER_PATHS["$filename"]="$wallpaper"
-
-    # Show progress (just the best match for now)
-    best_entry=$(echo "$rankings" | tr ' ' '\n' | sort -t: -k2 -n | head -1)
-    best_theme=$(echo "$best_entry" | cut -d: -f1)
-    best_distance=$(echo "$best_entry" | cut -d: -f2)
-    ui_text "  Best: $best_theme ($best_distance)" "$FG_MUTED"
-
-    ui_spacer
+    # Show dominant color count
+    num_colors=$(echo "$color_data" | wc -l)
+    dominant_hex=$(echo "$color_data" | head -1 | cut -d: -f2)
+    ui_text "  $num_colors colors, dominant: #$dominant_hex" "$FG_MUTED"
 done
+ui_spacer
 
-# Round-robin assignment phase
+if [ "$SKIPPED" -gt 0 ]; then
+    ui_warning "Skipped $SKIPPED wallpapers (extraction failed)"
+fi
+
+# ============================================================
+# Phase 3: Score all wallpapers x themes via Python batch
+# ============================================================
 ui_separator
-ui_title "Round-Robin Assignment"
-ui_info "Balancing wallpapers across themes..."
+ui_title "Scoring Wallpapers"
+ui_info "Computing 4-signal scores..."
 ui_spacer
 
-# Calculate target quota per theme (with tolerance)
-TARGET_QUOTA=$(awk -v total="$PROCESSED" 'BEGIN { printf "%d", total / 8 }')
-QUOTA_TOLERANCE=$(awk -v quota="$TARGET_QUOTA" 'BEGIN { printf "%d", quota * 0.2 }')  # ±20%
-ui_info "Target per theme: $TARGET_QUOTA ±$QUOTA_TOLERANCE wallpapers"
-ui_spacer
+SCORES_TSV="$TEMP_DIR/scores.tsv"
 
-# Track assigned wallpapers
-declare -A ASSIGNED_WALLPAPERS
+PYTHON_SCORER=$(cat <<'PYTHON_EOF'
+import sys
+import math
 
-# Round-robin assignment loop
-MAX_ROUNDS=50  # Safety limit
-for round in $(seq 1 $MAX_ROUNDS); do
-    assignments_this_round=0
+def hex_to_rgb(h):
+    """Hex string (no #) -> (R,G,B) 0-255"""
+    h = h.strip().lstrip('#')
+    if len(h) != 6:
+        return None
+    try:
+        return (int(h[0:2],16), int(h[2:4],16), int(h[4:6],16))
+    except ValueError:
+        return None
 
-    for theme in "${THEMES[@]}"; do
-        current_count=${THEME_COUNTS[$theme]}
+def rgb_to_lab(rgb):
+    """(R,G,B) 0-255 -> (L*,a*,b*) CIE-LAB"""
+    r, g, b = [c / 255.0 for c in rgb]
+    def to_linear(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = map(to_linear, (r, g, b))
+    x = r * 0.4124564 + g * 0.3575761 + b * 0.1804375
+    y = r * 0.2126729 + g * 0.7151522 + b * 0.0721750
+    z = r * 0.0193339 + g * 0.1191920 + b * 0.9503041
+    def f(t):
+        return t ** (1.0/3.0) if t > 0.008856 else 7.787 * t + 16.0/116.0
+    xn, yn, zn = 0.95047, 1.00000, 1.08883
+    L = 116 * f(y / yn) - 16
+    a = 500 * (f(x / xn) - f(y / yn))
+    bv = 200 * (f(y / yn) - f(z / zn))
+    return (L, a, bv)
 
-        # Skip if theme reached quota
-        if [ "$current_count" -ge $((TARGET_QUOTA + QUOTA_TOLERANCE)) ]; then
+def lab_to_lch(lab):
+    """(L*,a*,b*) -> (L, C, H) where C=chroma, H=hue in degrees"""
+    L, a, b = lab
+    C = math.sqrt(a*a + b*b)
+    H = math.degrees(math.atan2(b, a)) % 360
+    return (L, C, H)
+
+def delta_e(lab1, lab2):
+    """CIE76 Delta E"""
+    return math.sqrt(sum((a-b)**2 for a,b in zip(lab1, lab2)))
+
+def parse_wallpaper_colors(color_str):
+    """Parse 'count1:hex1 count2:hex2 ...' -> [(count, hex, lab, lch), ...]"""
+    results = []
+    for entry in color_str.strip().split():
+        parts = entry.split(':')
+        if len(parts) != 2:
             continue
-        fi
+        count = int(parts[0])
+        rgb = hex_to_rgb(parts[1])
+        if rgb is None:
+            continue
+        lab = rgb_to_lab(rgb)
+        lch = lab_to_lch(lab)
+        results.append((count, parts[1], lab, lch))
+    return results
 
-        # Find best available wallpaper for this theme
-        best_wallpaper=""
-        best_distance=999.0
+def classify_colors(colors):
+    """Split wallpaper colors into background and accent lists.
+    colors: [(count, hex, lab, lch), ...] sorted by count desc.
+    Returns (bg_colors, accent_colors) each as list of (count, hex, lab, lch).
+    """
+    if not colors:
+        return [], []
+    bg = [colors[0]]  # dominant is always background
+    accent = []
+    dominant_lab = colors[0][2]
+    for c in colors[1:]:
+        count, hexc, lab, lch = c
+        chroma = lch[1]
+        de = delta_e(lab, dominant_lab)
+        # Low chroma or similar to dominant -> background
+        if chroma < 15 or de < 15:
+            bg.append(c)
+        else:
+            accent.append(c)
+    return bg, accent
 
-        for filename in "${!WALLPAPER_RANKINGS[@]}"; do
-            # Skip if already assigned
-            if [ -n "${ASSIGNED_WALLPAPERS[$filename]:-}" ]; then
+def parse_theme_colors(bg_str, accent_str):
+    """Parse space-separated hex strings -> list of (hex, lab, lch)"""
+    results = []
+    for h in bg_str.strip().split() + accent_str.strip().split():
+        rgb = hex_to_rgb(h)
+        if rgb is None:
+            continue
+        lab = rgb_to_lab(rgb)
+        lch = lab_to_lch(lab)
+        results.append((h, lab, lch))
+    return results
+
+def parse_hex_list(hex_str):
+    """Parse space-separated hex -> [(hex, lab, lch), ...]"""
+    results = []
+    for h in hex_str.strip().split():
+        rgb = hex_to_rgb(h)
+        if rgb is None:
+            continue
+        lab = rgb_to_lab(rgb)
+        lch = lab_to_lch(lab)
+        results.append((h, lab, lch))
+    return results
+
+def score_wallpaper_theme(wp_colors, theme_bg_str, theme_accent_str):
+    """Compute composite score (0-100) for wallpaper vs theme.
+    wp_colors: [(count, hex, lab, lch), ...]
+    Returns (composite_score, s1, s2, s3, s4)
+    """
+    if not wp_colors:
+        return (0, 0, 0, 0, 0)
+
+    theme_bgs = parse_hex_list(theme_bg_str)
+    theme_accents = parse_hex_list(theme_accent_str)
+
+    if not theme_bgs:
+        return (0, 0, 0, 0, 0)
+
+    bg_primary_lab = theme_bgs[0][1]
+    bg_primary_lch = theme_bgs[0][2]
+    is_light = bg_primary_lab[0] > 50
+
+    bg_colors, accent_colors = classify_colors(wp_colors)
+    total_pixels = sum(c[0] for c in wp_colors)
+
+    # --- Signal 1: Luminance Match (weight 0.35) ---
+    dominant_lab = wp_colors[0][2]
+    delta_L = abs(dominant_lab[0] - bg_primary_lab[0])
+    s1 = max(0, 100 - delta_L * 2.0)
+
+    # --- Signal 2: Background Proximity (weight 0.35) ---
+    if bg_colors:
+        bg_total_pixels = sum(c[0] for c in bg_colors)
+        weighted_sum = 0
+        for count, hexc, lab, lch in bg_colors:
+            # Find closest theme background
+            min_de = min(delta_e(lab, tb[1]) for tb in theme_bgs)
+            color_score = max(0, 100 - min_de * 2.0)
+            weight = count / bg_total_pixels
+            weighted_sum += color_score * weight
+        s2 = weighted_sum
+    else:
+        s2 = 0
+
+    # --- Signal 3: Accent Harmony (weight 0.20) ---
+    if accent_colors and theme_accents:
+        # Best-3-matches approach
+        match_scores = []
+        for count, hexc, lab, lch in accent_colors:
+            min_de = min(delta_e(lab, ta[1]) for ta in theme_accents)
+            match_scores.append(max(0, 100 - min_de * 2.5))
+        match_scores.sort(reverse=True)
+        best_3 = match_scores[:3]
+        s3 = sum(best_3) / len(best_3)
+    elif not accent_colors:
+        # Monochrome wallpaper - neutral score
+        s3 = 50
+    else:
+        s3 = 0
+
+    # --- Signal 4: Saturation Profile (weight 0.10) ---
+    # Average chroma weighted by coverage
+    if total_pixels > 0:
+        avg_chroma = sum(c[0] * c[3][1] for c in wp_colors) / total_pixels
+    else:
+        avg_chroma = 0
+
+    if is_light:
+        # Light themes: peak at moderate chroma (~30)
+        s4 = max(0, 100 - abs(avg_chroma - 30) * 2.5)
+    else:
+        # Dark themes: wider peak, centered higher (~40)
+        s4 = max(0, 100 - abs(avg_chroma - 40) * 2.0)
+
+    # --- Composite ---
+    composite = 0.35 * s1 + 0.35 * s2 + 0.20 * s3 + 0.10 * s4
+
+    return (composite, s1, s2, s3, s4)
+
+
+def main():
+    if len(sys.argv) != 4:
+        print("Usage: score.py <wallpaper_tsv> <theme_tsv> <output_tsv>", file=sys.stderr)
+        sys.exit(1)
+
+    wp_tsv = sys.argv[1]
+    theme_tsv = sys.argv[2]
+    out_tsv = sys.argv[3]
+
+    # Load themes: {name: (bg_str, accent_str)}
+    themes = {}
+    with open(theme_tsv) as f:
+        for line in f:
+            parts = line.strip().split('\t')
+            if len(parts) >= 3:
+                themes[parts[0]] = (parts[1], parts[2])
+
+    # Load wallpapers and score
+    results = []
+    with open(wp_tsv) as f:
+        for line in f:
+            parts = line.strip().split('\t')
+            if len(parts) < 2:
                 continue
-            fi
+            wp_path = parts[0]
+            wp_colors = parse_wallpaper_colors(parts[1])
 
-            # Get distance for this theme
-            rankings="${WALLPAPER_RANKINGS[$filename]}"
-            distance=$(echo "$rankings" | tr ' ' '\n' | grep "^$theme:" | cut -d: -f2)
+            best_theme = ""
+            best_score = -1
+            all_scores = {}
 
-            if [ -z "$distance" ]; then
-                continue
-            fi
+            for theme_name, (bg_str, accent_str) in themes.items():
+                composite, s1, s2, s3, s4 = score_wallpaper_theme(wp_colors, bg_str, accent_str)
+                all_scores[theme_name] = (composite, s1, s2, s3, s4)
+                if composite > best_score:
+                    best_score = composite
+                    best_theme = theme_name
 
-            # Check if below threshold (convert distance to score)
-            score=$(awk -v d="$distance" 'BEGIN { printf "%.2f", 100 - d }')
-            if ! awk -v s="$score" -v t="$MATCH_THRESHOLD" 'BEGIN { exit !(s >= t) }'; then
-                continue  # Quality too low
-            fi
+            # Output: wp_path<TAB>best_theme<TAB>best_score<TAB>s1<TAB>s2<TAB>s3<TAB>s4
+            if best_theme and best_theme in all_scores:
+                sc = all_scores[best_theme]
+                results.append((wp_path, best_theme, sc[0], sc[1], sc[2], sc[3], sc[4]))
 
-            # Check if this is the best match for this theme
-            if awk -v d="$distance" -v bd="$best_distance" 'BEGIN { exit !(d < bd) }'; then
-                best_distance=$distance
-                best_wallpaper=$filename
-            fi
-        done
+    with open(out_tsv, 'w') as f:
+        for r in results:
+            f.write(f"{r[0]}\t{r[1]}\t{r[2]:.1f}\t{r[3]:.1f}\t{r[4]:.1f}\t{r[5]:.1f}\t{r[6]:.1f}\n")
 
-        # Assign if found a good match
-        if [ -n "$best_wallpaper" ]; then
-            wallpaper_path="${WALLPAPER_PATHS[$best_wallpaper]}"
-            cp "$wallpaper_path" "$OUTPUT_DIR/$theme/"
-            ASSIGNED_WALLPAPERS[$best_wallpaper]=1
-            THEME_COUNTS[$theme]=$((THEME_COUNTS[$theme] + 1))
-            assignments_this_round=$((assignments_this_round + 1))
-        fi
-    done
 
-    # Break if no assignments this round
-    if [ "$assignments_this_round" -eq 0 ]; then
-        ui_info "Round $round: No more valid assignments"
-        break
-    fi
+if __name__ == "__main__":
+    main()
+PYTHON_EOF
+)
 
-    ui_text "Round $round: Assigned $assignments_this_round wallpapers" "$FG_MUTED"
-done
+# Write Python script to temp and run batch scoring
+PYTHON_FILE="$TEMP_DIR/scorer.py"
+echo "$PYTHON_SCORER" > "$PYTHON_FILE"
+
+python3 "$PYTHON_FILE" "$WALLPAPER_COLORS_TSV" "$THEME_COLORS_TSV" "$SCORES_TSV"
+
+if [ ! -f "$SCORES_TSV" ] || [ ! -s "$SCORES_TSV" ]; then
+    ui_error "Scoring failed - no results produced"
+    exit 1
+fi
+
+ui_success "Scoring complete"
 ui_spacer
 
-# Assign remaining unassigned wallpapers to unassigned directory
-for filename in "${!WALLPAPER_RANKINGS[@]}"; do
-    if [ -z "${ASSIGNED_WALLPAPERS[$filename]:-}" ]; then
-        wallpaper_path="${WALLPAPER_PATHS[$filename]}"
-        cp "$wallpaper_path" "$UNASSIGNED_DIR/"
-        UNASSIGNED_COUNT=$((UNASSIGNED_COUNT + 1))
-    fi
+# ============================================================
+# Phase 4: Assign wallpapers based on best score
+# ============================================================
+ui_separator
+ui_title "Assigning Wallpapers"
+ui_spacer
+
+declare -A THEME_COUNTS
+for theme in "${THEMES[@]}"; do
+    THEME_COUNTS[$theme]=0
 done
+UNASSIGNED_COUNT=0
+ASSIGNED_COUNT=0
+
+while IFS=$'\t' read -r wp_path best_theme score _s1 _s2 _s3 _s4; do
+    filename=$(basename "$wp_path")
+
+    # Score is 0-100, threshold check
+    if awk -v s="$score" -v t="$MATCH_THRESHOLD" 'BEGIN { exit !(s >= t) }'; then
+        cp "$wp_path" "$OUTPUT_DIR/$best_theme/"
+        THEME_COUNTS[$best_theme]=$((THEME_COUNTS[$best_theme] + 1))
+        ASSIGNED_COUNT=$((ASSIGNED_COUNT + 1))
+        ui_text "  $filename -> $best_theme (${score})" "$FG_MUTED"
+    else
+        cp "$wp_path" "$UNASSIGNED_DIR/"
+        UNASSIGNED_COUNT=$((UNASSIGNED_COUNT + 1))
+        ui_text "  $filename -> unassigned (${score} < $MATCH_THRESHOLD)" "$FG_MUTED"
+    fi
+done < "$SCORES_TSV"
+
+ui_spacer
+ui_success "Assigned $ASSIGNED_COUNT wallpapers to themes"
+if [ "$UNASSIGNED_COUNT" -gt 0 ]; then
+    ui_warning "$UNASSIGNED_COUNT wallpapers below threshold"
+fi
 
 # Create READMEs
 for theme in "${THEMES[@]}"; do
@@ -640,11 +703,12 @@ for theme in "${THEMES[@]}"; do
 
 Color-matched wallpapers for the $theme theme.
 
-**Assignment Method**: Automatic color palette matching using wallust
+**Assignment Method**: 4-signal color scoring (ImageMagick + CIE-LAB)
 **Match Count**: ${THEME_COUNTS[$theme]} wallpapers
 **Match Threshold**: $MATCH_THRESHOLD (0-100 scale)
 
-These wallpapers were automatically selected based on color similarity to the theme's palette.
+These wallpapers were automatically selected based on luminance, background proximity,
+accent harmony, and saturation profile matching against the theme's color palette.
 EOF
 done
 
@@ -672,12 +736,15 @@ Personal wallpaper collection organized by theme using automated color matching.
 
 ## Organization Method
 
-Wallpapers were automatically assigned using **color palette analysis**:
+Wallpapers were automatically assigned using a **4-signal scoring model**:
 
-1. **Color Extraction**: wallust analyzes each wallpaper's dominant colors
-2. **Theme Comparison**: Colors compared against each theme's palette
-3. **Distance Calculation**: Delta E (LAB color space) perceptual difference
-4. **Round-Robin Assignment**: Balanced distribution with quality threshold
+1. **Luminance Match** (35%): Ensures dark wallpapers match dark themes, light match light
+2. **Background Proximity** (35%): Wallpaper base tones match theme background colors
+3. **Accent Harmony** (20%): Wallpaper accent colors complement the theme palette
+4. **Saturation Profile** (10%): Chroma levels suit the theme's character
+
+Color data extracted via ImageMagick histogram analysis with pixel coverage weighting.
+Scoring uses CIE-LAB perceptual color space with Delta E distance.
 
 ## Statistics
 
