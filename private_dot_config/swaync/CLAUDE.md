@@ -34,19 +34,44 @@
 
 ## Theme Integration
 
-**6 semantic variables used** per theme (from `waybar.css` hex values):
+**Implementation**: Direct translation of official catppuccin/swaync theme
+- Uses `border: 1px solid` instead of `box-shadow: inset` for borders
+- Follows official padding/margin values (rem-based accessibility)
+- See: https://github.com/catppuccin/swaync
+
+**Semantic variables used** per theme (from `waybar.css`):
+
+### Background Hierarchy (5 variables)
 
 | Variable | Role | CSS Target |
 |----------|------|-----------|
-| `bg-primary` | Notification background | `.notification-row` background |
-| `fg-primary` | Text | All text |
-| `bg-secondary` | Hover / button background | `.notification-row:hover`, `button` |
-| `bg-overlay` | Control center panel | `.control-center` background |
-| `accent-primary` | Border | `.notification-row` border |
-| `accent-error` | Critical border | `.notification-row.critical` border |
-| `fg-contrast` | Button hover text | `button:hover` text |
+| `bg-primary` | Main background | `.control-center` background |
+| `bg-secondary` | Elevated surfaces | `.notification-action`, `.widget-mpris-player` |
+| `bg-tertiary` | Popovers | Action hover, DND checked |
+| `bg-elevated` | Highest elevation | Special elevated elements |
+| `bg-overlay` | Modal overlays | `.notification-background` |
 
-**Per-theme files**: `../themes/{variant}/swaync.css` (8 files, hardcoded hex)
+### Foreground Hierarchy (4 variables)
+
+| Variable | Role | CSS Target |
+|----------|------|-----------|
+| `fg-primary` | Primary text | All body text, `.summary` |
+| `fg-secondary` | Secondary text | `.time`, `.body` |
+| `fg-muted` | Disabled/inactive | Unfocused elements |
+| `fg-contrast` | High contrast | Text on colored backgrounds (close button, active actions) |
+
+### Accent Colors (8+ core, extended)
+
+| Variable | Role | CSS Target |
+|----------|------|-----------|
+| `accent-primary` | Active states | DND checked, slider background, active actions |
+| `accent-error` | Critical/urgent | Critical border, close button, Clear All |
+| `accent-modification` | File changes | Close button hover |
+| `accent-info` | Information | Volume slider highlight |
+| `accent-warning` | Warnings | Backlight slider highlight |
+| `accent-media` | Media controls | MPRIS player |
+
+**Per-theme files**: `../themes/{variant}/swaync.css` (8 files, semantic CSS variables)
 
 **Theme switching**: `theme-switcher.tmpl` calls `swaync-client --reload-css` after updating the symlink.
 

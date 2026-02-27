@@ -8,6 +8,7 @@
 @define-color bg-primary #1e1e2e;      /* base - main application background */
 @define-color bg-secondary #313244;    /* surface0 - elevated surfaces, cards, inputs */
 @define-color bg-tertiary #45475a;     /* surface1 - popovers, notifications */
+@define-color bg-elevated #585b70;     /* surface2 - highest elevation level */
 @define-color bg-overlay #181825;      /* mantle - modal overlays */
 
 /* Foreground/Text Hierarchy */

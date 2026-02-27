@@ -133,15 +133,16 @@ scale trough {
   padding: 0.25rem;
   border-radius: 0.5rem;
   background-color: @accent-error;
-  color: @fg-primary;
+  color: @fg-contrast;
 }
 
 .notification-background .close-button:hover {
-  color: @fg-contrast;
+  background-color: @accent-modification;
 }
 
 .notification-background .close-button:active {
   background-color: @accent-modification;
+  filter: brightness(1.1);
 }
 
 /* Notification actions */
@@ -242,20 +243,20 @@ scrollbar trough {
 
 .control-center .widget-title button {
   border-radius: 0.5rem;
-  color: @accent-error;
-  background-color: @bg-secondary;
-  box-shadow: inset 0 0 0 1px @accent-error;
+  color: @fg-contrast;
+  background-color: @accent-error;
+  box-shadow: inset 0 0 0 1px @accent-modification;
   padding: 0.5rem;
 }
 
 .control-center .widget-title button:hover {
-  background-color: @accent-error;
+  background-color: @accent-modification;
   color: @fg-contrast;
   box-shadow: none;
 }
 
 .control-center .widget-title button:active {
-  background-color: @accent-error;
+  background-color: @accent-modification;
   color: @fg-contrast;
   box-shadow: none;
 }

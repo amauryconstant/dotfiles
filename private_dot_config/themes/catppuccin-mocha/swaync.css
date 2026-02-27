@@ -8,6 +8,7 @@
 @define-color bg-primary #1e1e2e;      /* base - main application background */
 @define-color bg-secondary #313244;    /* surface0 - elevated surfaces, cards, inputs */
 @define-color bg-tertiary #45475a;     /* surface1 - popovers, notifications */
+@define-color bg-elevated #585b70;     /* surface2 - highest elevation level */
 @define-color bg-overlay #181825;      /* mantle - modal overlays */
 
 /* Foreground/Text Hierarchy */
@@ -31,6 +32,17 @@
 @define-color accent-border #b4befe;        /* lavender - active borders, focus rings */
 @define-color accent-performance #eba0ac;   /* maroon - CPU, memory, disk metrics */
 @define-color accent-media #cba6f7;         /* mauve - audio, video, media controls */
+@define-color accent-subtle #f5e0dc;        /* rosewater - cursors, subtle hints */
+@define-color accent-alternative #89dceb;   /* sky - alternative actions */
+@define-color accent-special #f2cdcd;       /* flamingo - special states */
+@define-color accent-urgent-secondary #fab387; /* peach - moderate urgency */
+
+/* Hover Variants */
+@define-color accent-info-hover rgba(148, 226, 213, 0.1);      /* teal */
+@define-color accent-highlight-hover rgba(203, 166, 247, 0.1); /* mauve */
+@define-color accent-warning-hover rgba(249, 226, 175, 0.1);   /* yellow */
+@define-color accent-success-hover rgba(166, 227, 161, 0.1);   /* green */
+@define-color accent-media-hover rgba(203, 166, 247, 0.1);     /* mauve */
 
 /* ========================================================================== */
 /* Global Reset                                                                */
@@ -44,7 +56,7 @@
 }
 
 /* ========================================================================== */
-/* Sliders & Troughs (volume, brightness)                                      */
+/* Sliders & Troughs                                                          */
 /* ========================================================================== */
 
 trough {
@@ -85,7 +97,8 @@ scale trough {
 .notification-background {
   background: @bg-overlay;
   color: @fg-primary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8), inset 0 0 0 1px @bg-tertiary;
+  border: 1px solid @bg-tertiary;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
   border-radius: 0.75rem;
   margin: 1rem;
   padding: 0;
@@ -100,7 +113,6 @@ scale trough {
   box-shadow: inset 0 0 0.5rem 0 @accent-error;
 }
 
-/* Notification content */
 .notification .notification-content {
   margin: 0.5rem;
 }
@@ -127,7 +139,6 @@ scale trough {
   min-height: 2.5rem;
 }
 
-/* Close button */
 .notification-background .close-button {
   margin: 0.5rem;
   padding: 0.25rem;
@@ -145,12 +156,11 @@ scale trough {
   filter: brightness(1.1);
 }
 
-/* Notification actions */
 .notification .notification-action {
   border-radius: 0.5rem;
   color: @fg-primary;
   background-color: @bg-secondary;
-  box-shadow: inset 0 0 0 1px @bg-tertiary;
+  border: 1px solid @bg-tertiary;
   margin: 0.25rem;
   padding: 0.5rem;
 }
@@ -164,7 +174,6 @@ scale trough {
   color: @fg-contrast;
 }
 
-/* Progress bars in notifications */
 .notification progress,
 .notification trough,
 .notification progressbar {
@@ -188,14 +197,15 @@ scale trough {
 .control-center {
   background-color: @bg-primary;
   color: @fg-primary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8), inset 0 0 0 1px @bg-secondary;
+  border: 1px solid @bg-secondary;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
   border-radius: 0.75rem;
   padding: 1rem;
 }
 
 .control-center .notification-background {
   border-radius: 0.5rem;
-  box-shadow: inset 0 0 0 1px @bg-tertiary;
+  border: 1px solid @bg-tertiary;
   margin: 0.25rem 0.5rem;
 }
 
@@ -207,7 +217,6 @@ scale trough {
   opacity: 0.8;
 }
 
-/* Notification groups */
 .control-center .notification-group {
   margin-top: 0.5rem;
 }
@@ -216,7 +225,6 @@ scale trough {
   background-color: @bg-secondary;
 }
 
-/* Scrollbar */
 scrollbar slider {
   margin: -0.125rem;
   opacity: 0.8;
@@ -227,7 +235,7 @@ scrollbar trough {
 }
 
 /* ========================================================================== */
-/* Widget: Title (Notifications label + Clear All button)                      */
+/* Widget: Title                                                              */
 /* ========================================================================== */
 
 .control-center .widget-title > label {
@@ -238,20 +246,20 @@ scrollbar trough {
 
 .control-center .widget-title button {
   border-radius: 0.5rem;
-  color: @accent-error;
-  background-color: @bg-secondary;
-  box-shadow: inset 0 0 0 1px @accent-error;
+  color: @fg-contrast;
+  background-color: @accent-error;
+  box-shadow: inset 0 0 0 1px @accent-modification;
   padding: 0.5rem;
 }
 
 .control-center .widget-title button:hover {
-  background-color: @accent-error;
+  background-color: @accent-modification;
   color: @fg-contrast;
   box-shadow: none;
 }
 
 .control-center .widget-title button:active {
-  background-color: @accent-error;
+  background-color: @accent-modification;
   color: @fg-contrast;
   box-shadow: none;
 }
