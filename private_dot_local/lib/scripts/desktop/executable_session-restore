@@ -453,11 +453,18 @@ restore_session() {
                 done
                 new_wins=$(hyprctl clients -j 2>/dev/null | jaq -r \
                     --argjson prev "$pre_launch_addrs" \
-                    '[.[] | select(($prev | index(.address)) == null)] |
+                    '[.[] | select([.address] | inside($prev) | not)] |
                     if length == 0 then "none-detected"
                     else .[] | "addr=\(.address) class=\(.class) ws=\(.workspace.id) monitor=\(.monitor // "?")"
                     end' 2>/dev/null || echo "query-failed")
                 log_debug "session-restore: terminal appeared expected=class:$class/ws:$workspace_id actual: $new_wins (waited ${elapsed}x0.3s)"
+                # GTK4 startup-notification settling: the window appears in Wayland
+                # before GDK calls gdk_notify_startup_complete() in response to
+                # xdg_activation_v1. In UWSM sessions, each unacknowledged activation
+                # token triggers "Application Not Responding" if the next GTK4 instance
+                # starts before the previous one completes its startup protocol.
+                # 1 s is sufficient; total restore overhead: ~1s × (N_terminals - 1).
+                sleep 1
                 ;;
             *)
                 # Small delay to avoid overwhelming the compositor
