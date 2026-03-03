@@ -12,6 +12,12 @@ Host gitlab.com
    PreferredAuthentications publickey
    IdentityFile ~/.ssh/gitlab
 
+Match host ovh-vps exec "ping -c1 -W1 100.64.0.1"
+  HostName 100.64.0.1
+
+Match host ovh-ks5 exec "ping -c1 -W1 100.64.0.2"
+  HostName 100.64.0.2
+
 # OVH Server - VPS
 Host ovh-vps
   HostName {{ .ovhVPSServerIP }}
