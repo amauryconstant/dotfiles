@@ -69,6 +69,8 @@ packages:
         - xdg-desktop-portal-kde # KDE portal backend (FileChooser, Settings — kept for superior UX)
         - nano # Simple terminal text editor
         - vim # Fallback/recovery text editor
+        - man-db # Manual page viewer
+        - man-pages # Linux manual pages
         - sudo # Essential system package
         - gptfdisk # Disk partitioning tool
         - systemd-ukify # Unified kernel image generation
@@ -235,6 +237,7 @@ packages:
         - lazygit # Terminal UI for git commands
         - lazydocker # Terminal UI for docker management
         - posting # Modern API client (Postman alternative)
+        - mkcert # Local HTTPS development certificates
 
     ai_tools:
       enabled: true
