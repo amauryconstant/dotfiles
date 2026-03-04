@@ -242,6 +242,10 @@
     "syntaxPunctuation": {
       "dark": "fg-primary",
       "light": "fg-primary"
+    },
+    "selectedListItemText": {
+      "dark": "fg-primary",
+      "light": "fg-primary"
     }
   }
 }

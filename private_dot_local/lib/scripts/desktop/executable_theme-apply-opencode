@@ -41,4 +41,26 @@ if command -v jaq >/dev/null 2>&1; then
     else
         rm -f "$OPENCODE_CONFIG.tmp"
     fi
+
+    # Sync theme_mode in KV store based on light/dark theme
+    THEME_NAME=$(basename "$THEME_DIR")
+    case "$THEME_NAME" in
+        *latte*|*light*|*dawn*)
+            OPENCODE_MODE="light"
+            ;;
+        *)
+            OPENCODE_MODE="dark"
+            ;;
+    esac
+
+    KV_FILE="$HOME/.local/state/opencode/kv.json"
+    if [ -f "$KV_FILE" ]; then
+        jaq --arg mode "$OPENCODE_MODE" '.theme_mode = $mode' \
+            "$KV_FILE" > "$KV_FILE.tmp" 2>/dev/null
+        if [ $? -eq 0 ] && [ -f "$KV_FILE.tmp" ]; then
+            mv "$KV_FILE.tmp" "$KV_FILE"
+        else
+            rm -f "$KV_FILE.tmp"
+        fi
+    fi
 fi
