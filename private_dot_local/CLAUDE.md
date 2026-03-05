@@ -142,7 +142,8 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `dotfiles-hook-create` | `user-interface/hook-create` | Create hook template |
 | `dotfiles-hook-list` | `user-interface/hook-list` | List hooks |
 | `regen-zsh-plugins` | `terminal/regen-zsh-plugins` | Zsh plugin bundle |
-| `regen-ssh-key` | `system/regenerate-ssh-key` | SSH key regeneration |
+| `rotate-ssh-key` | `system/rotate-ssh-key` | SSH key rotation |
+| `rotate-key` | `system/rotate-key` | Key rotation (API, dotfiles, restic) |
 | `screenshot` | `media/screenshot` | Screenshot with Satty |
 | `random-wallpaper` | `media/random-wallpaper` | Random wallpaper |
 | `set-wallpaper` | `media/set-wallpaper` | Set specific wallpaper |

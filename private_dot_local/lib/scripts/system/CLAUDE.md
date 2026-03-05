@@ -8,8 +8,8 @@
 
 ## Quick Reference
 
-- **Purpose**: System maintenance and monitoring tools (7 scripts)
-- **CLI wrappers**: `system-health`, `system-maintenance`, `system-troubleshoot`, `package-manager`, `home-backup`
+- **Purpose**: System maintenance and monitoring tools (8 scripts)
+- **CLI wrappers**: `system-health`, `system-maintenance`, `system-troubleshoot`, `package-manager`, `home-backup`, `rotate-key`
 - **Integration**: topgrade, sudoers
 
 ## Tool Overview
@@ -23,6 +23,7 @@
 | `package-manager.sh` v3.0 | Module-based pkg management | NixOS-style version pinning, modularized architecture (521 lines) |
 | `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
 | `home-backup` | Incremental encrypted backup | `init/backup/restore/status/prune` subcommands |
+| `rotate-key` | Key rotation tool | `list/api/dotfiles/restic` subcommands |
 
 **Recent changes**:
 
@@ -225,6 +226,41 @@ home-backup init       # One-time setup (interactive)
 home-backup backup     # Manual snapshot
 home-backup status     # Check snapshots
 systemctl --user list-timers home-backup.timer  # Verify schedule
+```
+
+## rotate-key
+
+**Purpose**: Unified key rotation tool for all secret categories
+**Location**: `system/executable_rotate-key`
+**CLI**: `rotate-key <subcommand>`
+
+**Subcommands**:
+
+| Subcommand | Purpose |
+|-----------|---------|
+| `list` | List all rotatable keys with metadata (name, size, modified date) |
+| `api <keyname>` | Rotate API key in `~/.keys/` + re-encrypt in chezmoi |
+| `dotfiles` | Rotate master age keypair → re-encrypts all `.age` files |
+| `restic` | Rotate restic backup password + re-key repository |
+
+**Note**: SSH keys are NOT managed here — use `rotate-ssh-key <keyname>` instead.
+
+**Security**:
+- Temp files: `mktemp`, `chmod 600`, deleted with `shred -u`
+- Passwords input via `ui_password` (no terminal echo)
+- Old dotfiles key backed up to `~/.keys/dotfiles-key.backup-<timestamp>.txt`
+
+**dotfiles rotation requires**:
+1. All `.age` targets applied (live files must exist)
+2. `rage-keygen` installed (`rage-encryption` package)
+3. Manual Vaultwarden update after rotation: `rbw edit dotfiles-key`
+
+**Usage**:
+```bash
+rotate-key list
+rotate-key api anthropic-key
+rotate-key dotfiles
+rotate-key restic
 ```
 
 ## pacman-lock-cleanup.sh

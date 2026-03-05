@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+
+# SSH Key Rotation Tool
+# Purpose: Rotate SSH key and reimport into chezmoi dotfiles
+# Requirements: Arch Linux, chezmoi, openssh, gum (UI library)
+
+# shellcheck disable=SC1090,SC1091
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
+    . "$UI_LIB"
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+CHEZMOI_SOURCE="$(chezmoi source-path 2>/dev/null || echo "$HOME/.local/share/chezmoi")"
+SSH_DIR="$HOME/.ssh"
+CHEZMOI_SSH_DIR="$CHEZMOI_SOURCE/private_dot_ssh"
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+_check_chezmoi() {
+    if ! command -v chezmoi >/dev/null 2>&1; then
+        ui_error "chezmoi not found"
+        exit 1
+    fi
+}
+
+_check_ssh_keygen() {
+    if ! command -v ssh-keygen >/dev/null 2>&1; then
+        ui_error "ssh-keygen not found — install openssh"
+        exit 1
+    fi
+}
+
+_format_date() {
+    date -r "$1" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown"
+}
+
+# =============================================================================
+# SUBCOMMAND: list
+# =============================================================================
+
+cmd_list() {
+    ui_title "SSH KEYS"
+
+    local found=false
+    while IFS= read -r file; do
+        local name
+        name=$(basename "$file" | sed 's/^encrypted_private_//' | sed 's/\.age$//')
+        found=true
+        ui_key_value "Name" "$name"
+        ui_key_value "Modified" "$(_format_date "$file")"
+        ui_spacer
+    done < <(find "$CHEZMOI_SSH_DIR" -name 'encrypted_private_*.age' -not -name '*.pub.age' -type f 2>/dev/null | sort)
+
+    if [[ "$found" == "false" ]]; then
+        ui_info "No SSH keys found in $CHEZMOI_SSH_DIR"
+    fi
+}
+
+# =============================================================================
+# SUBCOMMAND: rotate
+# =============================================================================
+
+_backup_existing_keys() {
+    local keyname="$1"
+    local backup_dir="$2"
+    local private_key="$SSH_DIR/$keyname"
+    local public_key="$SSH_DIR/${keyname}.pub"
+
+    ui_step "Backing up existing keys"
+
+    if [[ ! -f "$private_key" ]] && [[ ! -f "$public_key" ]]; then
+        ui_info "No existing keys found for '$keyname', skipping backup"
+        return 0
+    fi
+
+    mkdir -p "$backup_dir"
+
+    if [[ -f "$private_key" ]]; then
+        cp -p "$private_key" "$backup_dir/"
+        ui_info "Backed up: $private_key"
+    fi
+
+    if [[ -f "$public_key" ]]; then
+        cp -p "$public_key" "$backup_dir/"
+        ui_info "Backed up: $public_key"
+    fi
+
+    ui_success "Keys backed up to: $backup_dir"
+}
+
+_generate_new_key() {
+    local keyname="$1"
+    local private_key="$SSH_DIR/$keyname"
+    local public_key="$SSH_DIR/${keyname}.pub"
+
+    ui_step "Generating new ED25519 keypair"
+
+    rm -f "$private_key" "$public_key"
+
+    local comment
+    comment=$(ui_input "Enter key comment (e.g., email)" "")
+
+    if [[ -n "$comment" ]]; then
+        ssh-keygen -t ed25519 -C "$comment" -f "$private_key" -N "" >/dev/null 2>&1
+    else
+        ssh-keygen -t ed25519 -f "$private_key" -N "" >/dev/null 2>&1
+    fi
+
+    if [[ ! -f "$private_key" ]] || [[ ! -f "$public_key" ]]; then
+        ui_error "Key generation failed"
+        exit 1
+    fi
+
+    ui_success "Generated: $private_key"
+    ui_success "Generated: $public_key"
+}
+
+_import_into_chezmoi() {
+    local keyname="$1"
+    local private_key="$SSH_DIR/$keyname"
+    local public_key="$SSH_DIR/${keyname}.pub"
+
+    ui_step "Importing keys into chezmoi"
+
+    ui_info "Encrypting private key..."
+    chezmoi add --encrypt "$private_key"
+
+    ui_info "Encrypting public key..."
+    chezmoi add --encrypt "$public_key"
+
+    local encrypted_private="$CHEZMOI_SSH_DIR/encrypted_private_${keyname}.age"
+    local encrypted_public="$CHEZMOI_SSH_DIR/encrypted_${keyname}.pub.age"
+
+    if [[ ! -f "$encrypted_private" ]]; then
+        ui_error "Private key encryption failed: $encrypted_private not found"
+        exit 1
+    fi
+
+    if [[ ! -f "$encrypted_public" ]]; then
+        ui_error "Public key encryption failed: $encrypted_public not found"
+        exit 1
+    fi
+
+    ui_success "Imported: $encrypted_private"
+    ui_success "Imported: $encrypted_public"
+}
+
+_display_public_key() {
+    local keyname="$1"
+    local public_key="$SSH_DIR/${keyname}.pub"
+
+    ui_separator
+    ui_title "PUBLIC KEY"
+    ui_separator
+
+    cat "$public_key"
+
+    ui_separator
+    ui_info "Copy this public key and add it to:"
+
+    case "$keyname" in
+        github)
+            ui_output "  → GitHub: https://github.com/settings/keys"
+            ;;
+        gitlab)
+            ui_output "  → GitLab: https://gitlab.com/-/profile/keys"
+            ;;
+        ovh-server|ovh-*)
+            ui_output "  → OVH Server: ~/.ssh/authorized_keys"
+            ;;
+        *)
+            ui_output "  → Your target service/server"
+            ;;
+    esac
+
+    ui_separator
+}
+
+cmd_rotate() {
+    local keyname="$1"
+    local backup_dir
+    backup_dir="$SSH_DIR/backup-${keyname}-$(date +%Y-%m-%d-%H%M%S)"
+
+    _check_chezmoi
+    _check_ssh_keygen
+
+    ui_title "ROTATE SSH KEY: $keyname"
+
+    if ! ui_confirm "Rotate SSH key '$keyname'? Old keys will be backed up."; then
+        ui_info "Operation cancelled"
+        return 0
+    fi
+
+    _backup_existing_keys "$keyname" "$backup_dir"
+    _generate_new_key "$keyname"
+    _import_into_chezmoi "$keyname"
+
+    ui_success "SSH key '$keyname' rotated successfully"
+
+    _display_public_key "$keyname"
+
+    ui_title "NEXT STEPS"
+    ui_output "1. Add public key to service (displayed above)"
+    ui_output "2. Test connection:"
+    case "$keyname" in
+        github)   ui_output "   ssh -T git@github.com" ;;
+        gitlab)   ui_output "   ssh -T git@gitlab.com" ;;
+        ovh-*)    ui_output "   ssh ovh" ;;
+        *)        ui_output "   ssh <your-service>" ;;
+    esac
+    ui_output "3. Commit changes:"
+    ui_output "   cd $CHEZMOI_SOURCE"
+    ui_output "   git add private_dot_ssh/"
+    ui_output "   git commit -m 'Rotate SSH key: $keyname'"
+    ui_output "   git push"
+    ui_separator
+}
+
+# =============================================================================
+# USAGE
+# =============================================================================
+
+_show_usage() {
+    ui_error "Usage: rotate-ssh-key <subcommand> [args]"
+    ui_list "Subcommands:" \
+        "list           List SSH keys tracked in chezmoi" \
+        "<keyname>      Rotate SSH key"
+    ui_list "Examples:" \
+        "rotate-ssh-key list" \
+        "rotate-ssh-key github" \
+        "rotate-ssh-key gitlab" \
+        "rotate-ssh-key ovh-ks5"
+}
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+rotate_ssh_key() {
+    local subcommand="${1:-}"
+
+    case "$subcommand" in
+        list)
+            cmd_list
+            ;;
+        ""|--help|-h)
+            _show_usage
+            [[ -z "$subcommand" ]] && exit 1 || return 0
+            ;;
+        *)
+            cmd_rotate "$subcommand"
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    rotate_ssh_key "$@"
+fi

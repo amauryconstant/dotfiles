@@ -201,9 +201,9 @@ fi
 - `system-health.sh` - System health monitoring and diagnostics
 - `system-maintenance.sh` - Automated maintenance tasks
 - `troubleshoot.sh` - System troubleshooting wizard
-- `regenerate-ssh-key.sh` - SSH key regeneration + chezmoi reimport
+- `rotate-ssh-key` - SSH key rotation + chezmoi reimport
   - Features: ED25519 keys, automatic backup, encryption, chezmoi integration
-  - Usage: `regen-ssh-key <keyname>` (e.g., github, gitlab, ovh-server)
+  - Usage: `rotate-ssh-key <keyname>` (e.g., github, gitlab, ovh-server)
   - Backup: Timestamped to `~/.ssh/backup-{YYYY-MM-DD-HHMMSS}/`
   - Encryption: Automatic via `chezmoi add --encrypt`
 - `system-health-dashboard.sh` - Real-time system monitoring dashboard

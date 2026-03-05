@@ -1,0 +1,510 @@
+#!/usr/bin/env bash
+
+# Key Rotation Tool
+# Purpose: Rotate API keys, dotfiles master age keypair, and restic backup password
+# Requirements: Arch Linux, chezmoi, rage-keygen, gum (UI library)
+
+# shellcheck disable=SC1090,SC1091
+if [[ -n "$UI_LIB" ]] && [[ -f "$UI_LIB" ]]; then
+    . "$UI_LIB"
+elif [[ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+KEYS_DIR="$HOME/.keys"
+CHEZMOI_SOURCE="$(chezmoi source-path 2>/dev/null || echo "$HOME/.local/share/chezmoi")"
+RESTIC_REPO="${RESTIC_REPOSITORY:-$HOME/.local/share/backups/home-backup}"
+RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-$HOME/.local/share/backups/.restic-password}"
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+_secure_delete() {
+    local file="$1"
+    if command -v shred >/dev/null 2>&1; then
+        shred -u "$file" 2>/dev/null || rm -f "$file"
+    else
+        rm -f "$file"
+    fi
+}
+
+_check_chezmoi() {
+    if ! command -v chezmoi >/dev/null 2>&1; then
+        ui_error "chezmoi not found"
+        exit 1
+    fi
+}
+
+_check_encryption_key() {
+    if [[ ! -f "$KEYS_DIR/dotfiles-key.txt" ]]; then
+        ui_error "Encryption key not found at $KEYS_DIR/dotfiles-key.txt"
+        ui_info "Run 'chezmoi init' or retrieve key from Vaultwarden"
+        exit 1
+    fi
+}
+
+_format_date() {
+    date -r "$1" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown"
+}
+
+_format_size() {
+    local bytes
+    bytes=$(wc -c < "$1" 2>/dev/null || echo 0)
+    echo "${bytes} bytes"
+}
+
+# =============================================================================
+# SUBCOMMAND: list
+# =============================================================================
+
+cmd_list() {
+    ui_title "ROTATABLE KEYS"
+
+    # API keys
+    ui_subtitle "API Keys (~/.keys/)"
+    local found_api=false
+    while IFS= read -r -d '' file; do
+        local name
+        name=$(basename "$file" .txt)
+        [[ "$name" == "dotfiles-key" ]] && continue
+        found_api=true
+        ui_key_value "Name" "$name"
+        ui_key_value "Size" "$(_format_size "$file")"
+        ui_key_value "Modified" "$(_format_date "$file")"
+        ui_spacer
+    done < <(find "$KEYS_DIR" -name "*.txt" -not -name "dotfiles-key*" -print0 2>/dev/null | sort -z)
+
+    if [[ "$found_api" == "false" ]]; then
+        ui_info "No API keys found in $KEYS_DIR"
+    fi
+
+    # Dotfiles key
+    ui_subtitle "Dotfiles Master Age Keypair"
+    local recipient
+    recipient=$(grep -o 'recipient: "[^"]*"' "$CHEZMOI_SOURCE/.chezmoi.yaml.tmpl" 2>/dev/null | cut -d'"' -f2 || echo "unknown")
+    ui_key_value "Public Key" "$recipient"
+    if [[ -f "$KEYS_DIR/dotfiles-key.txt" ]]; then
+        ui_key_value "Private Key" "$KEYS_DIR/dotfiles-key.txt"
+        ui_key_value "Modified" "$(_format_date "$KEYS_DIR/dotfiles-key.txt")"
+    fi
+
+    # Restic
+    ui_subtitle "Restic Backup Password"
+    if [[ -d "$RESTIC_REPO" ]] && [[ -f "$RESTIC_PASSWORD_FILE" ]]; then
+        ui_key_value "Repository" "$RESTIC_REPO"
+        ui_key_value "Password File" "$RESTIC_PASSWORD_FILE"
+        ui_key_value "Modified" "$(_format_date "$RESTIC_PASSWORD_FILE")"
+    elif [[ -d "$RESTIC_REPO" ]]; then
+        ui_warning "Repository exists but password file not found: $RESTIC_PASSWORD_FILE"
+    else
+        ui_info "Restic repository not initialized ($RESTIC_REPO)"
+    fi
+
+}
+
+# =============================================================================
+# SUBCOMMAND: api
+# =============================================================================
+
+cmd_api() {
+    local keyname="$1"
+
+    if [[ -z "$keyname" ]]; then
+        ui_error "Usage: rotate-age-key api <keyname>"
+        local keys=()
+        while IFS= read -r f; do keys+=("$(basename "$f" .txt)"); done \
+            < <(find "$KEYS_DIR" -name "*.txt" -not -name "dotfiles-key*" -type f 2>/dev/null | sort)
+        ui_list "Available keys:" "${keys[@]}"
+        exit 1
+    fi
+
+    local key_file="$KEYS_DIR/${keyname}.txt"
+    local chezmoi_keys_dir="$CHEZMOI_SOURCE/private_dot_keys"
+    local source_file="$chezmoi_keys_dir/encrypted_private_${keyname}.txt.age"
+
+    _check_chezmoi
+    _check_encryption_key
+
+    # Validate key exists
+    if [[ ! -f "$key_file" ]]; then
+        ui_error "Key not found: $key_file"
+        local keys=()
+        while IFS= read -r f; do keys+=("$(basename "$f" .txt)"); done \
+            < <(find "$KEYS_DIR" -name "*.txt" -not -name "dotfiles-key*" -type f 2>/dev/null | sort)
+        ui_list "Available keys:" "${keys[@]}"
+        exit 1
+    fi
+
+    if [[ ! -f "$source_file" ]]; then
+        ui_warning "Source file not found in chezmoi: $source_file"
+        ui_info "The live key exists but may not be tracked in chezmoi"
+    fi
+
+    ui_title "ROTATE API KEY: $keyname"
+    ui_key_value \
+        "File" "$key_file" \
+        "Size" "$(_format_size "$key_file")" \
+        "Modified" "$(_format_date "$key_file")"
+
+    if ! ui_confirm "Rotate API key '$keyname'?"; then
+        ui_info "Operation cancelled"
+        return 0
+    fi
+
+    # Get new key value
+    local new_value
+    new_value=$(ui_password "New key value for '$keyname'")
+    if [[ -z "$new_value" ]]; then
+        ui_error "Key value cannot be empty"
+        exit 1
+    fi
+
+    # Confirm
+    local confirm_value
+    confirm_value=$(ui_password "Confirm key value")
+    if [[ "$new_value" != "$confirm_value" ]]; then
+        ui_error "Key values do not match"
+        exit 1
+    fi
+
+    # Write to temp file
+    local tmpfile
+    tmpfile=$(mktemp)
+    chmod 600 "$tmpfile"
+    printf '%s' "$new_value" > "$tmpfile"
+
+    ui_step "Writing new key to $key_file"
+    cp "$tmpfile" "$key_file"
+    chmod 600 "$key_file"
+    _secure_delete "$tmpfile"
+
+    ui_step "Re-encrypting in chezmoi"
+    chezmoi add --encrypt "$key_file"
+
+    ui_success "API key '$keyname' rotated"
+
+    ui_subtitle "NEXT STEPS"
+    ui_output "Commit the change:"
+    ui_output "  cd $CHEZMOI_SOURCE"
+    ui_output "  git add private_dot_keys/"
+    ui_output "  git commit -m 'Rotate API key: $keyname'"
+    ui_output "  git push"
+}
+
+# =============================================================================
+# SUBCOMMAND: dotfiles
+# =============================================================================
+
+cmd_dotfiles() {
+    _check_chezmoi
+    _check_encryption_key
+
+    ui_title "ROTATE DOTFILES MASTER AGE KEYPAIR"
+
+    ui_warning "This is a DESTRUCTIVE operation."
+    ui_info "All .age files will be re-encrypted with a new keypair."
+    ui_info "The old private key will be backed up locally but you MUST update Vaultwarden."
+
+    if ! ui_confirm "Proceed with dotfiles keypair rotation?"; then
+        ui_info "Operation cancelled"
+        return 0
+    fi
+
+    # Prerequisites: verify live chezmoi config exists
+    local live_config="$HOME/.config/chezmoi/chezmoi.yaml"
+    if [[ ! -f "$live_config" ]]; then
+        # Try alternate location
+        live_config="$HOME/.config/chezmoi/chezmoi.yaml"
+        if [[ ! -f "$live_config" ]]; then
+            ui_error "Live chezmoi config not found at $live_config"
+            ui_info "Ensure chezmoi is initialized: chezmoi init"
+            exit 1
+        fi
+    fi
+
+    # Step 1: Generate new keypair
+    ui_step "Generating new age keypair"
+    local new_key_file
+    new_key_file=$(mktemp)
+    chmod 600 "$new_key_file"
+
+    if ! rage-keygen -o "$new_key_file" 2>/dev/null; then
+        _secure_delete "$new_key_file"
+        ui_error "rage-keygen failed — install with: sudo pacman -S rage-encryption"
+        exit 1
+    fi
+
+    # Extract new public key
+    local new_public_key
+    new_public_key=$(grep '^# public key:' "$new_key_file" | awk '{print $NF}')
+    if [[ -z "$new_public_key" ]]; then
+        _secure_delete "$new_key_file"
+        ui_error "Failed to extract public key from new keypair"
+        exit 1
+    fi
+    ui_success "New public key: $new_public_key"
+
+    # Step 2: Backup old private key
+    local timestamp
+    timestamp=$(date +%Y%m%d-%H%M%S)
+    local backup_key="$KEYS_DIR/dotfiles-key.backup-${timestamp}.txt"
+    ui_step "Backing up old private key to $backup_key"
+    cp "$KEYS_DIR/dotfiles-key.txt" "$backup_key"
+    chmod 600 "$backup_key"
+    ui_success "Old key backed up"
+
+    # Step 3: Enumerate all encrypted targets
+    ui_step "Enumerating encrypted files"
+    local encrypted_targets=()
+    while IFS= read -r rel_path; do
+        local source_file
+        source_file=$(chezmoi source-path "$HOME/$rel_path" 2>/dev/null || true)
+        if [[ "$source_file" == *.age ]]; then
+            encrypted_targets+=("$HOME/$rel_path")
+        fi
+    done < <(chezmoi managed 2>/dev/null)
+
+    if [[ ${#encrypted_targets[@]} -eq 0 ]]; then
+        _secure_delete "$new_key_file"
+        ui_error "No encrypted targets found — is chezmoi applied?"
+        exit 1
+    fi
+    ui_info "Found ${#encrypted_targets[@]} encrypted file(s)"
+
+    # Step 4: Update live config recipient
+    ui_step "Updating live chezmoi config recipient"
+    local old_public_key
+    old_public_key=$(grep 'recipient:' "$live_config" | awk '{print $2}' | tr -d '"')
+    ui_info "Old recipient: $old_public_key"
+
+    # sed in-place
+    sed -i "s|recipient:.*|recipient: \"$new_public_key\"|" "$live_config"
+    ui_success "Live config updated"
+
+    # Step 5: Re-encrypt all targets with new key
+    ui_step "Re-encrypting all files with new key"
+    local failed=0
+    for target in "${encrypted_targets[@]}"; do
+        if chezmoi add --encrypt "$target" 2>/dev/null; then
+            ui_info "Re-encrypted: $target"
+        else
+            ui_warning "Failed to re-encrypt: $target"
+            failed=$((failed + 1))
+        fi
+    done
+
+    if [[ $failed -gt 0 ]]; then
+        ui_warning "$failed file(s) failed to re-encrypt — rolling back live config"
+        sed -i "s|recipient:.*|recipient: \"$old_public_key\"|" "$live_config"
+        _secure_delete "$new_key_file"
+        ui_error "Rotation aborted. Old recipient restored in live config."
+        exit 1
+    fi
+
+    # Step 6: Install new private key
+    ui_step "Installing new private key"
+    cp "$new_key_file" "$KEYS_DIR/dotfiles-key.txt"
+    chmod 600 "$KEYS_DIR/dotfiles-key.txt"
+
+    # Step 7: Re-encrypt the dotfiles key itself
+    ui_step "Re-encrypting dotfiles private key in chezmoi"
+    chezmoi add --encrypt "$KEYS_DIR/dotfiles-key.txt"
+
+    # Step 8: Update .chezmoi.yaml.tmpl
+    ui_step "Updating .chezmoi.yaml.tmpl recipient"
+    sed -i "s|recipient:.*|    recipient: \"$new_public_key\"|" "$CHEZMOI_SOURCE/.chezmoi.yaml.tmpl"
+    ui_success "Source template updated"
+
+    # Step 9: Secure delete temp key
+    _secure_delete "$new_key_file"
+
+    ui_success "Dotfiles keypair rotation complete"
+
+    ui_subtitle "CRITICAL NEXT STEPS"
+    ui_output "1. Update Vaultwarden with new private key:"
+    ui_output "   rbw edit dotfiles-key"
+    ui_output "   (paste the contents of $KEYS_DIR/dotfiles-key.txt)"
+    ui_spacer
+    ui_output "2. Verify all files decrypt correctly:"
+    ui_output "   chezmoi diff  # should show no diff"
+    ui_spacer
+    ui_output "3. Commit changes:"
+    ui_output "   cd $CHEZMOI_SOURCE"
+    ui_output "   git add .chezmoi.yaml.tmpl private_dot_keys/ private_dot_ssh/"
+    ui_output "   git commit -m 'Rotate dotfiles master age keypair'"
+    ui_output "   git push"
+    ui_spacer
+    ui_output "4. On other machines, re-init after retrieving new key from vault:"
+    ui_output "   chezmoi init --apply"
+    ui_spacer
+    ui_warning "Old key backup: $backup_key — delete manually after verifying everything works"
+}
+
+# =============================================================================
+# SUBCOMMAND: restic
+# =============================================================================
+
+cmd_restic() {
+    _check_chezmoi
+    _check_encryption_key
+
+    ui_title "ROTATE RESTIC BACKUP PASSWORD"
+
+    # Validate repo exists
+    if [[ ! -d "$RESTIC_REPO" ]]; then
+        ui_error "Restic repository not found: $RESTIC_REPO"
+        ui_info "Initialize with: home-backup init"
+        exit 1
+    fi
+
+    if [[ ! -f "$RESTIC_PASSWORD_FILE" ]]; then
+        ui_error "Password file not found: $RESTIC_PASSWORD_FILE"
+        ui_info "Initialize with: home-backup init"
+        exit 1
+    fi
+
+    if ! command -v restic >/dev/null 2>&1; then
+        ui_error "restic not found — install with: sudo pacman -S restic"
+        exit 1
+    fi
+
+    ui_key_value \
+        "Repository" "$RESTIC_REPO" \
+        "Password File" "$RESTIC_PASSWORD_FILE"
+
+    if ! ui_confirm "Rotate restic backup password?"; then
+        ui_info "Operation cancelled"
+        return 0
+    fi
+
+    # Get new password
+    local new_password
+    new_password=$(ui_password "New backup password")
+    if [[ -z "$new_password" ]]; then
+        ui_error "Password cannot be empty"
+        exit 1
+    fi
+
+    local confirm_password
+    confirm_password=$(ui_password "Confirm backup password")
+    if [[ "$new_password" != "$confirm_password" ]]; then
+        ui_error "Passwords do not match"
+        exit 1
+    fi
+
+    # Write new password to temp file
+    local tmpfile
+    tmpfile=$(mktemp)
+    chmod 600 "$tmpfile"
+    printf '%s' "$new_password" > "$tmpfile"
+
+    # Re-key the repository
+    ui_step "Re-keying restic repository"
+    if ! restic \
+        --repo "$RESTIC_REPO" \
+        --password-file "$RESTIC_PASSWORD_FILE" \
+        key passwd \
+        --new-password-file "$tmpfile"; then
+        _secure_delete "$tmpfile"
+        ui_error "Failed to re-key repository"
+        exit 1
+    fi
+
+    # Update password file
+    ui_step "Updating password file"
+    cp "$tmpfile" "$RESTIC_PASSWORD_FILE"
+    chmod 600 "$RESTIC_PASSWORD_FILE"
+    _secure_delete "$tmpfile"
+
+    # Re-encrypt in chezmoi
+    local chezmoi_password_file="$CHEZMOI_SOURCE/private_dot_local/share/private_backups/encrypted_private_dot_restic-password.age"
+    if [[ -f "$chezmoi_password_file" ]] || chezmoi managed 2>/dev/null | grep -q "\.local/share/backups/.restic-password"; then
+        ui_step "Re-encrypting password in chezmoi"
+        chezmoi add --encrypt "$RESTIC_PASSWORD_FILE"
+        ui_success "Password re-encrypted in chezmoi"
+    else
+        ui_info "Password file not tracked in chezmoi — skipping chezmoi add"
+    fi
+
+    ui_success "Restic backup password rotated"
+
+    # Verify new password works
+    ui_step "Verifying repository access with new password"
+    if restic --repo "$RESTIC_REPO" --password-file "$RESTIC_PASSWORD_FILE" snapshots --quiet >/dev/null 2>&1; then
+        ui_success "Repository access verified"
+    else
+        ui_error "Repository verification failed — check the password manually"
+        ui_output "  restic -r $RESTIC_REPO --password-file $RESTIC_PASSWORD_FILE snapshots"
+        exit 1
+    fi
+
+    ui_subtitle "NEXT STEPS"
+    ui_output "Commit the change:"
+    ui_output "  cd $CHEZMOI_SOURCE"
+    ui_output "  git add private_dot_local/share/private_backups/"
+    ui_output "  git commit -m 'Rotate restic backup password'"
+    ui_output "  git push"
+}
+
+# =============================================================================
+# USAGE
+# =============================================================================
+
+_show_usage() {
+    ui_error "Usage: rotate-age-key <subcommand> [args]"
+    ui_list "Subcommands:" \
+        "list              List all rotatable keys with metadata" \
+        "api <keyname>     Rotate API key in ~/.keys/" \
+        "dotfiles          Rotate master age keypair (re-encrypts all .age files)" \
+        "restic            Rotate restic backup password + re-key repository"
+    ui_list "Examples:" \
+        "rotate-age-key list" \
+        "rotate-age-key api anthropic-key" \
+        "rotate-age-key dotfiles" \
+        "rotate-age-key restic"
+}
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+rotate_age_key() {
+    local subcommand="${1:-}"
+
+    case "$subcommand" in
+        list)
+            cmd_list
+            ;;
+        api)
+            shift
+            cmd_api "$@"
+            ;;
+        dotfiles)
+            cmd_dotfiles
+            ;;
+        restic)
+            cmd_restic
+            ;;
+        ""|--help|-h)
+            _show_usage
+            [[ -z "$subcommand" ]] && exit 1 || return 0
+            ;;
+        *)
+            ui_error "Unknown subcommand: $subcommand"
+            _show_usage
+            exit 1
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    rotate_age_key "$@"
+fi
