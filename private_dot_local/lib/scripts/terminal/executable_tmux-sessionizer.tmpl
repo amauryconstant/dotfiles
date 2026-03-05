@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+
+# Script: tmux-sessionizer
+# Purpose: Fuzzy-find a project dir and create/switch tmux session
+# Requirements: fzf, tmux
+
+PROJECTS="{{ .globals.paths.projects }}"
+WORKTREES="{{ .globals.paths.worktrees }}"
+
+selected=$(find "$PROJECTS" "$WORKTREES" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | fzf --prompt="Session: " --height=40% --reverse)
+
+[ -z "$selected" ] && exit 0
+
+name=$(basename "$selected" | tr '.' '_')
+
+if ! tmux has-session -t "$name" 2>/dev/null; then
+    tmux new-session -ds "$name" -c "$selected"
+fi
+
+if [ -n "$TMUX" ]; then
+    tmux switch-client -t "$name"
+else
+    tmux attach-session -t "$name"
+fi

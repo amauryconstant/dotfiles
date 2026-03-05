@@ -81,10 +81,15 @@ if [[ "$session_age" -le "$max_age" ]]; then
         formatted_time="recent"
     fi
 
+    # Build window class summary (e.g. "ghostty ×3, code ×1")
+    summary=$(jaq -r '[.clients[].class] | group_by(.) | map("\(.[0]) ×\(length)") | join(", ")' "$SESSION_FILE" 2>/dev/null || echo "")
+    prompt_text="Session '$slot' from $formatted_time"
+    [[ -n "$summary" ]] && prompt_text="$prompt_text — $summary"
+
     choice=$(printf 'Restore session (%s windows)\nSkip' "$window_count" | wofi \
         --dmenu \
-        --prompt "Session '$slot' from $formatted_time" \
-        --width 400 \
+        --prompt "$prompt_text" \
+        --width 550 \
         --height 150)
 
     if [[ "$choice" = "Restore session ($window_count windows)" ]]; then

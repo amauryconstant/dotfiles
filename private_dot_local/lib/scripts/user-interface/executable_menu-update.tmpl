@@ -27,9 +27,9 @@ case "$CHOICE" in
         fi
         ;;
     "󰑓 Config Refresh (chezmoi)")
-        if confirm "Apply latest dotfiles configuration?"; then
-            {{ .globals.applications.terminal }} -e sh -c "chezmoi diff && chezmoi apply; read -p 'Press Enter to continue...'"
-            notify "󰑓 Chezmoi" "Configuration refreshed"
+        if confirm "Pull and apply latest dotfiles?"; then
+            {{ .globals.applications.terminal }} -e sh -c "chezmoi update; read -p 'Press Enter to continue...'"
+            notify "󰑓 Chezmoi" "Dotfiles updated"
         fi
         ;;
     "󰦖 Package Sync Only")

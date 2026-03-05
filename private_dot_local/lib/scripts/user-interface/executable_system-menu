@@ -17,8 +17,8 @@ if [ -x "$MENU_EXTEND_HOOK" ]; then
     EXTRA_OPTIONS=$("$MENU_EXTEND_HOOK" options 2>/dev/null || true)
 fi
 
-# Main menu options (9 categories) - Using Material Design icons
-MAIN_OPTIONS="󰀻 Apps|󰗚 Learn|󰈿 Trigger|󰏘 Style|󰒓 Setup|󰏓 Install|󰚰 Update|󰋼 About|󰐥 System"
+# Main menu options (10 categories) - Using Material Design icons
+MAIN_OPTIONS="󰀻 Apps|󰗚 Learn|󰈿 Trigger|󰏘 Style|󰒓 Setup|󰏓 Install|󰚰 Update|󱚣 AI|󰋼 About|󰐥 System"
 [ -n "$EXTRA_OPTIONS" ] && MAIN_OPTIONS="${MAIN_OPTIONS}|${EXTRA_OPTIONS}"
 
 CHOICE=$(show_menu "Main Menu" "$MAIN_OPTIONS")
@@ -48,6 +48,9 @@ case "$CHOICE" in
     #     ;;
     "󰚰 Update")
         "$SCRIPTS_DIR/user-interface/menu-update"
+        ;;
+    "󱚣 AI")
+        "$SCRIPTS_DIR/user-interface/menu-ai"
         ;;
     "󰋼 About")
         "$SCRIPTS_DIR/user-interface/menu-about"

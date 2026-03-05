@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# Script: wifi-switch
+# Purpose: Interactive WiFi network switcher
+# Requirements: nmcli, fzf
+
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    # shellcheck source=/dev/null
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    # shellcheck source=/dev/null
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+if ! command -v nmcli >/dev/null 2>&1; then
+    ui_error "nmcli not found — install networkmanager"
+    exit 1
+fi
+
+ui_title "WiFi Networks"
+ui_step "Scanning..."
+
+SELECTED=$(nmcli -t -f SSID,SIGNAL,SECURITY dev wifi list 2>/dev/null \
+    | sort -t: -k2 -rn \
+    | awk -F: '$1!="" {printf "%s  signal:%s%%  [%s]\n", $1, $2, $3}' \
+    | fzf --prompt="Connect to: " --height=40% --reverse)
+
+[ -z "$SELECTED" ] && exit 0
+
+SSID=$(echo "$SELECTED" | awk '{print $1}')
+
+ui_spin_verbose "Connecting to $SSID..." nmcli dev wifi connect "$SSID"

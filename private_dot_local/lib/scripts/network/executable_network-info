@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Script: network-info
+# Purpose: Display local and Tailscale network info
+# Requirements: ip, tailscale (optional)
+
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    # shellcheck source=/dev/null
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    # shellcheck source=/dev/null
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+ui_title "Network Info"
+
+LOCAL_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+ui_key_value "Local IP" "${LOCAL_IP:-unavailable}"
+
+GW=$(ip route 2>/dev/null | awk '/default/ {print $3; exit}')
+ui_key_value "Gateway" "${GW:-unavailable}"
+
+if command -v tailscale >/dev/null 2>&1; then
+    TS_IP=$(tailscale ip -4 2>/dev/null || echo "not connected")
+    ui_key_value "Tailscale IP" "$TS_IP"
+fi
+
+PING=$(ping -c1 -W1 8.8.8.8 2>/dev/null | awk -F'/' 'END{print $5"ms"}')
+ui_key_value "Internet ping" "${PING:-unreachable}"

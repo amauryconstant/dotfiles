@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+# Script: menu-ai
+# Purpose: AI tools submenu
+# Requirements: Arch Linux, wofi
+
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
+
+OPTIONS="󰁍 Back|󱚣 opencode|󱙺 claude-code|󰋼 Ollama Status"
+
+CHOICE=$(show_menu "AI" "$OPTIONS")
+
+case "$CHOICE" in
+    "󰁍 Back")
+        "$SCRIPTS_DIR/user-interface/system-menu"
+        ;;
+    "󱚣 opencode")
+        {{ .globals.applications.terminal }} --class ai-scratchpad -e opencode
+        ;;
+    "󱙺 claude-code")
+        {{ .globals.applications.terminal }} --class ai-scratchpad -e claude
+        ;;
+    "󰋼 Ollama Status")
+        {{ .globals.applications.terminal }} --class ai-scratchpad -e sh -c "ollama list; echo ''; read -p 'Press Enter to continue...'"
+        ;;
+esac
