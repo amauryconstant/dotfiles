@@ -1,23 +1,13 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-02-21 (through v3.3.3).
+Last updated: 2026-03-05 (through v3.4.1).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
 ---
 
 ## P1 — High Priority
-
-### hyprland-guiutils package rename (v3.1.7)
-**What**: `hyprland-qtutils` was renamed upstream to `hyprland-guiutils`. Omarchy updated the reference; our setup should do the same to avoid package conflicts on next sync.
-**Target files**: `.chezmoidata/packages.yaml`
-**Note**: Neither name currently appears in packages.yaml. Verify whether `hyprland-qtutils` is installed on the system and if so, add `hyprland-guiutils` and add `hyprland-qtutils` to the `delete:` list.
-
-- [x] Check if `hyprland-qtutils` is installed: `pacman -Q hyprland-qtutils` — not installed
-- [x] Add `hyprland-guiutils` to `desktop_hyprland` module *(done 2026-02-21)*
-
----
 
 ### Hyprland tiling group keybindings (v3.1.0)
 **What**: Full tiling group management: toggle group, move in/out, navigate within group with arrows/TAB. Omarchy uses `Super+G` for group toggle; we use it for gap toggle.
@@ -28,6 +18,27 @@ Last updated: 2026-02-21 (through v3.3.3).
 - [ ] Decide: resolve `SUPER+ALT+Arrows` conflict (monitor focus vs group navigation) — consider `SUPER+CTRL+Arrows` for group navigation (currently used for window resize, also conflict)
 - [ ] Add group toggle, move-out, and navigate bindings to `focus-navigation.conf`
 - [ ] Add `Super+Alt+Mouse scroll` for group window cycling (v3.1.2, no conflict)
+
+---
+
+### `Super+L` conflict — layout toggle vs lock screen (v3.4.1)
+**What**: v3.4.1 adds `Super+L` to toggle between Hyprland's scrolling layout and dwindle. We already bind `Super+L` to lock screen (`hyprlock`). These conflict.
+**Target files**: `private_dot_config/hypr/conf/bindings/system-control.conf`
+**Conflict**: `SUPER+L` is our lock screen binding. Cannot add layout toggle without remapping one.
+
+- [ ] Decide: remap lock screen to `SUPER+SHIFT+L` (or another free binding) and use `SUPER+L` for layout toggle — or skip layout toggle entirely
+- [ ] If adopted: add `bindd = SUPER, L, Toggle scrolling/dwindle layout, exec, <dispatch>` to layout-relevant conf
+- [ ] Update lock screen binding reference if remapped
+
+---
+
+### `Super+/` conflict — keybinding help vs display resolution cycling (v3.4.1)
+**What**: v3.4.1 maps `Super+/` to cycle display resolutions. We bind `Super+/` to the keybinding cheatsheet script.
+**Target files**: `private_dot_config/hypr/conf/bindings/system-control.conf`
+**Conflict**: `SUPER+slash` is our keybinding help script.
+
+- [ ] Decide: remap keybinding help to another key (e.g., `SUPER+F1`) and free `SUPER+/` for resolution cycling — or keep current and skip resolution cycling
+- [ ] If resolution cycling adopted: implement or script the resolution cycling logic (Omarchy uses `omarchy-cmd-display-resolution`)
 
 ---
 
@@ -74,6 +85,57 @@ Last updated: 2026-02-21 (through v3.3.3).
 
 ---
 
+### Tmux integration (v3.4.0)
+**What**: Tmux added with tailored config for aesthetics and ergonomics; `t` alias opens it. AI agent layouts: `tdl`, `tdlm`, `tsl` commands. Keybind `Super+Alt+Return` launches terminal in Tmux mode. `Alt+left/right` moves between tmux windows; `Alt+up/down` moves between sessions (v3.4.1).
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/hypr/conf/bindings/applications.conf`, `private_dot_config/` (new tmux config)
+
+- [ ] Add `tmux` to packages.yaml (e.g., `terminal_tools` module)
+- [ ] Create `private_dot_config/tmux/` with tailored config (aesthetics, `Alt+arrows` nav)
+- [ ] Add `t` alias to zsh aliases
+- [ ] Add `Super+Alt+Return` binding to launch terminal in tmux mode
+- [ ] Evaluate `tdl`/`tdlm`/`tsl` layout scripts for AI agent workflows
+
+---
+
+### Waybar idle-lock and notification-silencing icons (v3.4.0)
+**What**: Two new Waybar status indicators: idle-lock state and notification-silencing (DND) state. Complements existing `Super+I` idle toggle.
+**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`
+
+- [ ] Review Omarchy's Waybar module implementation for these two indicators
+- [ ] Add idle-lock status module to Waybar config
+- [ ] Add notification-silencing (DND) status module to Waybar config
+- [ ] Add corresponding CSS for both indicators
+
+---
+
+### SSH port forwarding shell functions (v3.4.0)
+**What**: `fip` (forward IP port), `dip` (dynamic IP port), `lip` (local IP port) — convenience functions for web development port forwarding over SSH.
+**Target files**: `private_dot_config/zsh/dot_zshrc.d/` (new functions file or additions to existing)
+
+- [ ] Review Omarchy's implementation of `fip`/`dip`/`lip` for exact function signatures
+- [ ] Add to zsh functions or aliases file
+
+---
+
+### `eff` command — fuzzy-find to editor (v3.4.0)
+**What**: Opens fuzzy-find results directly in the configured editor. Similar to `fzf` + `$EDITOR` integration.
+**Target files**: `private_dot_config/zsh/dot_zshrc.d/` or `private_dot_local/bin/`
+
+- [ ] Review Omarchy's `eff` implementation
+- [ ] Add to shell functions or as a local bin script
+
+---
+
+### Toggle menu `Super+Ctrl+O` (v3.4.1)
+**What**: Consolidates Window Gaps, 1-Window Ratio, and Display Scaling controls into a single wofi/menu invocation. Replaces having separate bindings for each.
+**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`, new menu script
+**Conflict**: `SUPER+CTRL+O` is currently free.
+
+- [ ] Design a wofi-based toggle menu covering gaps, window ratio, and display scaling
+- [ ] Add `bindd = SUPER CTRL, O, Toggle menu, exec, <menu-script>` to `desktop-utilities.conf`
+
+---
+
 ### colors.toml theme generation pattern (v3.3.0, v3.3.1)
 **What**: Single `colors.toml` (24 semantic color fields) generates all app configs via templates. Directly parallels our 24-variable semantic architecture. Could reduce per-theme manual maintenance (currently each theme has 13 separate config files).
 **Target files**: `private_dot_config/themes/`
@@ -85,14 +147,12 @@ Last updated: 2026-02-21 (through v3.3.3).
 
 ---
 
-### BlueTUI as Bluetooth backend (v3.2.0)
-**What**: TUI Bluetooth manager replacing `blueman-manager`. Consistent with btop/yazi/lazygit terminal-first philosophy. Already in packages.yaml partially (check).
-**Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
-**Note**: `blueman` is currently in `desktop_hyprland` module. `bluetui` not present.
+### Docker socket activation (v3.4.0)
+**What**: Docker reconfigured to use socket activation for on-demand startup (saves memory, starts on first use). Our setup currently enables `docker.service` directly.
+**Target files**: `.chezmoiscripts/run_once_after_002_configure_system_services.sh.tmpl`
 
-- [x] Evaluate `bluetui` (AUR) vs `blueman-manager` — both installed, TUI and GUI available *(done 2026-02-21)*
-- [x] Add `bluetui` to packages — kept `blueman` for GUI, added `bluetui` for TUI *(done 2026-02-21)*
-- [x] No binding added — run directly via `ghostty -e bluetui` *(decided 2026-02-21)*
+- [ ] Switch from `systemctl enable docker.service` to `systemctl enable docker.socket` in the configure_system_services script
+- [ ] Verify Docker still starts on first use with socket activation
 
 ---
 
@@ -116,22 +176,43 @@ Last updated: 2026-02-21 (through v3.3.3).
 
 ---
 
-### `ffmpegthumbnailer` for video thumbnails (v1.2.0)
-**What**: Enables thumbnail generation for video files in file manager (Thunar/Dolphin). `tumbler` is already in packages and handles images; this adds video.
-**Target files**: `.chezmoidata/packages.yaml`
+## P3 — Low Priority / Evaluate
 
-- [x] Add `ffmpegthumbnailer` to `system_utilities` module *(done 2026-02-21)*
-- [x] Verify `tumbler` picks it up automatically — works out of box with tumbler *(confirmed 2026-02-21)*
+### Monitor scaling cycle keybinding (v3.4.0)
+**What**: `Super+Ctrl+Backspace` cycles through 1x, 1.6x, 2x, 3x monitor scaling. Useful for HiDPI workflows.
+**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
+**Conflict**: `SUPER+CTRL+Backspace` is currently free.
+
+- [ ] Implement a monitor scaling cycle script (or use Omarchy's `omarchy-cmd-display-scaling` logic)
+- [ ] Add binding to `desktop-utilities.conf`
 
 ---
 
-## P3 — Low Priority / Evaluate
+### Zoom keybindings (v3.4.0)
+**What**: `Super+Ctrl+Z` zooms in (repeatable); `Super+Ctrl+Alt+Z` zooms out. Uses Hyprland's cursor zoom feature.
+**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
+**Conflict**: Neither binding is currently in use.
 
-### `nodejs` package for tree-sitter (v3.1.0)
-**What**: Node.js added to support tree-sitter in LazyVim. May already be covered by `mise`.
+- [ ] Add `bindd = SUPER CTRL, Z, Zoom in, exec, hyprctl keyword misc:cursor_zoom_factor <val>` (or the correct dispatch)
+- [ ] Add `bindd = SUPER CTRL ALT, Z, Zoom out, exec, <inverse>`
+
+---
+
+### `nautilus-python` for "Open in Ghostty" (v3.4.0)
+**What**: Adds a "Open in Ghostty" context menu entry in Nautilus. Quality-of-life for file manager users.
 **Target files**: `.chezmoidata/packages.yaml`
 
-- [x] Verify: `mise which node` — already managed via mise *(confirmed 2026-02-21)*
+- [ ] Add `nautilus-python` to packages.yaml (e.g., `desktop_gui_apps` module)
+- [ ] Verify the extension is auto-loaded after package install
+
+---
+
+### Automatic power profile on AC plug/unplug (v3.4.0)
+**What**: Power profile switches automatically based on AC state. We already have manual power profile switching in the menu-setup script.
+**Target files**: Systemd udev rule or `~/.config/` trigger
+
+- [ ] Review Omarchy's implementation (likely a udev rule or UPower hook)
+- [ ] Evaluate whether to add automatic switching alongside the existing manual control
 
 ---
 
@@ -141,34 +222,6 @@ Last updated: 2026-02-21 (through v3.3.3).
 
 - [ ] Evaluate: install `try` from AUR/OPR and assess utility in daily workflow
 - [ ] If adopted: add to `terminal_tools` module
-
----
-
-### VSCode auto-update disable (v3.1.0)
-**What**: VSCode's built-in auto-update conflicts with pacman management. Disable in VSCode settings to prevent pacman conflicts on next upgrade.
-**Target files**: VSCode settings (likely managed separately or not in chezmoi)
-
-- [x] Check if VSCode settings are managed in chezmoi — yes, `Code - OSS/User/modify_settings.json` *(confirmed 2026-02-21)*
-- [x] Add `"update.mode": "none"` to settings.json *(done 2026-02-21)*
-
----
-
-### `wl-clip-persist` sensitive data exclusion (v1.3.1)
-**What**: Clipboard persistence daemon should exclude content from password managers. We use `cliphist` not `wl-clip-persist`, but same principle applies.
-**Target files**: Autostart config, `cliphist` invocation
-
-- [x] Review `cliphist` invocation in autostart — uses wrapper script with window-class detection *(done 2026-02-21)*
-- [x] Add window-class and title-based filtering for Bitwarden (Firefox), KeepassXC, etc. *(done 2026-02-21)*
-- **Implementation**: `~/.local/lib/scripts/media/clipboard-store` wrapper filters by `hyprctl activewindow` class/title
-
----
-
-### `fontconfig/fonts.conf` defaults (v1.4.0)
-**What**: Ships `.config/fontconfig/fonts.conf` setting Liberation Sans/Serif and Cascadia Cove as system font fallbacks. Improves font consistency in GTK apps.
-**Target files**: `private_dot_config/fontconfig/fonts.conf` (new file)
-
-- [x] Check if `~/.config/fontconfig/fonts.conf` exists on system — did not exist *(confirmed 2026-02-21)*
-- [x] Add `fonts.conf` with our font preferences: FiraCode Nerd (mono), Fira Sans (sans), Liberation Serif (serif) *(done 2026-02-21)*
 
 ---
 
@@ -245,6 +298,14 @@ Last updated: 2026-02-21 (through v3.3.3).
 - [x] **`btop` vim keybindings** (v3.1.0) — Noted; btop in packages, config managed separately *(confirmed 2026-02-21)*
 - [x] **`localsend`** (v3.0.0) — In packages (`desktop_gui_apps` module) *(confirmed 2026-02-21)*
 - [x] **`tailscale`** (v1.13.0) — In packages (`network` module) *(confirmed 2026-02-21)*
+- [x] **hyprland-guiutils package rename** (v3.1.7) — Added `hyprland-guiutils` to `desktop_hyprland` module *(done 2026-02-21)*
+- [x] **BlueTUI as Bluetooth backend** (v3.2.0) — Evaluated; kept `blueman` for GUI, added `bluetui` for TUI *(done 2026-02-21)*
+- [x] **`ffmpegthumbnailer` for video thumbnails** (v1.2.0) — Added to `system_utilities` module *(done 2026-02-21)*
+- [x] **`nodejs` package for tree-sitter** (v3.1.0) — Already managed via mise *(confirmed 2026-02-21)*
+- [x] **VSCode auto-update disable** (v3.1.0) — Added `"update.mode": "none"` to settings.json *(done 2026-02-21)*
+- [x] **`wl-clip-persist` sensitive data exclusion** (v1.3.1) — `clipboard-store` wrapper filters by window class/title *(done 2026-02-21)*
+- [x] **`fontconfig/fonts.conf` defaults** (v1.4.0) — Added `fonts.conf` with FiraCode Nerd, Fira Sans, Liberation Serif *(done 2026-02-21)*
+- [x] **`hyprpicker` for HDR screenshots** (v3.4.0) — Already in packages.yaml *(confirmed 2026-03-05)*
 
 ---
 
@@ -256,6 +317,7 @@ Last updated: 2026-02-21 (through v3.3.3).
 - [SKIPPED] **Helium browser** (v3.0.2) — out of scope
 - [SKIPPED] **Voxtype `Super+Ctrl+X`** (v3.3.0) — we use `Super+T` push-to-talk (different UX model)
 - [SKIPPED] **SDDM keyring unlock** (v3.1.0) — uses sddm for login; our setup uses different login flow
+- [SKIPPED] **SDDM styling** (v3.4.0) — not using SDDM
 - [SKIPPED] **Windows VM** (v3.1.0+) — out of scope
 - [SKIPPED] **Omarchy ISO/installer** (v2.0.0, v3.0.0) — not applicable
 - [SKIPPED] **OPR (Omarchy Package Repository)** (v2.0.0+) — uses standard Arch + AUR
@@ -267,8 +329,27 @@ Last updated: 2026-02-21 (through v3.3.3).
 - [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Omarchy-specific; uses Wofi-based system-menu
 - [SKIPPED] **T1/T2 MacBook support** (v3.0.0) — not applicable hardware
 - [SKIPPED] **Omarchy Chromium fork** (v2.0.0) — uses upstream Chromium
-- [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0) — Omarchy-specific extension point
+- [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0, v3.4.0) — Omarchy-specific extension point
 - [SKIPPED] **`colors.toml` generation (immediate adoption)** — monitor as the pattern stabilizes; tracked under P2 for future evaluation
+- [SKIPPED] **Voxtype dictation features** — out of scope per permanent skip list
+- [SKIPPED] **Asus/Slimbook/Tuxedo/Surface hardware drivers** (v3.4.0) — hardware-specific, not applicable
+- [SKIPPED] **NVIDIA GeForce Now installer** (v3.4.0) — out of scope
+- [SKIPPED] **Alacritty as default terminal** (v3.4.0) — using Ghostty as primary terminal
+- [SKIPPED] **Walker crash fix** (v3.4.0) — not using Walker
+- [SKIPPED] **`omarchy-drive-select` partition info** (v3.4.0) — Omarchy-specific script
+- [SKIPPED] **Remove Preinstalls menu** (v3.4.0) — Omarchy-specific menu system
+- [SKIPPED] **Audio soft mixer toggle** (v3.4.0) — Asus Zephyrus-specific
+- [SKIPPED] **Favicon extraction for web apps** (v3.4.0) — Omarchy-specific web app creation
+- [SKIPPED] **Scala installer** (v3.4.0) — not in current dev stack
+- [SKIPPED] **NordVPN installer** (v3.4.0) — uses Tailscale, not NordVPN
+- [SKIPPED] **Google DNS option** (v3.4.0) — DNS config handled separately
+- [SKIPPED] **User theme override system** (v3.4.0) — Omarchy-specific theme mechanism
+- [SKIPPED] **`omarchy-cmd-screenshot` geometry fix** (v3.4.0) — Omarchy-specific script
+- [SKIPPED] **fcitx5 double auto-start fix** (v3.4.1) — not using fcitx5
+- [SKIPPED] **SDDM password field overflow** (v3.4.1) — not using SDDM
+- [SKIPPED] **`OMARCHY_PATH` SSH environment export** (v3.4.1) — Omarchy-specific env var
+- [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script
+- [SKIPPED] **Screensaver `slidein` animation** (v3.4.1) — minor, Omarchy-specific default
 
 ---
 
@@ -324,3 +405,5 @@ Last updated: 2026-02-21 (through v3.3.3).
 | v3.3.1 | `_research/omarchy/OMARCHY_v3.3.1.md` | 2026-02-21 |
 | v3.3.2 | `_research/omarchy/OMARCHY_v3.3.2.md` | 2026-02-21 |
 | v3.3.3 | `_research/omarchy/OMARCHY_v3.3.3.md` | 2026-02-21 |
+| v3.4.0 | `_research/omarchy/OMARCHY_v3.4.0.md` | 2026-03-05 |
+| v3.4.1 | `_research/omarchy/OMARCHY_v3.4.1.md` | 2026-03-05 |
