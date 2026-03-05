@@ -275,7 +275,6 @@ packages:
         - hyprsunset # Blue light filter (gamma adjustment)
         - hyprland-guiutils # Hyprland GUI utilities (renamed from hyprland-qtutils)
         - swww # Dynamic wallpaper daemon with transitions
-        - wallust-git # Color palette generator from wallpapers (chaotic-aur)
         - cliphist # Clipboard history manager
         - wofi # Application launcher
         - wlogout # Logout/shutdown menu

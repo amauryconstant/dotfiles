@@ -78,7 +78,7 @@ trap "rm -f $LOCK_FILE" EXIT
 **Dependency checks**:
 ```bash
 # Validate required tools
-for cmd in swww wallust find shuf; do
+for cmd in swww find shuf; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "Error: $cmd not found" >&2
         exit 1
@@ -163,7 +163,7 @@ systemctl --user enable --now wallpaper-cycle.timer
 **Service failures**:
 ```bash
 journalctl --user -u wallpaper-cycle.service -n 50
-which swww wallust find shuf
+which swww find shuf
 ~/.local/bin/random-wallpaper
 ```
 
@@ -190,9 +190,8 @@ journalctl --user -u home-backup.service -n 20
 
 ## Integration Points
 
-- **Wallust**: `~/.config/wallust/` (color extraction)
 - **Scripts**: `~/.local/lib/scripts/media/` (random-wallpaper, set-wallpaper)
-- **Wallpapers**: `~/Pictures/wallpapers/` (image source)
+- **Wallpapers**: `~/.config/wallpapers/` (theme-organized image source)
 - **SWWW**: Wallpaper daemon (smooth transitions)
-- **Desktop**: Hyprland, Waybar, Wofi (color theming)
+- **Themes**: `~/.config/themes/current/` (color system)
 - **Restic**: Home backup target (`~/.local/share/restic-home/`)

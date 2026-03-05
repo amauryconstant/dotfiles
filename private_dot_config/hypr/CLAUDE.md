@@ -103,26 +103,6 @@ monitor=DP-1,2560x1440@144,0x0,1
 {{ end }}
 ```
 
-## Wallust Integration
-
-**Dynamic color generation**:
-- Hyprland sources `~/.config/hypr/wallust/wallust-hyprland.conf` (generated)
-- Wallust extracts colors from wallpaper
-- Updates borders, active window colors
-
-**Configuration** (`hyprland.conf`):
-```
-source = ~/.config/hypr/wallust/wallust-hyprland.conf
-```
-
-**Template** (`wallust/templates/colors-hyprland.conf`):
-```
-col.active_border = {{color6}} {{color4}} 45deg
-col.inactive_border = {{color0}}
-```
-
-**NOT managed by chezmoi**: Generated files in `wallust/` subdirectory (ephemeral state)
-
 ## Theme System Integration (Phase 2+3)
 
 **Static theme files**: Unlike GTK apps (Waybar, Wofi, Wlogout), Hyprland uses static theme files per theme variant.
@@ -253,9 +233,8 @@ exec-once = swww init
 
 ## Integration Points
 
-- **Waybar**: Status bar styling from wallust
-- **Wofi**: Launcher styling from wallust
-- **Terminal**: Ghostty theme from wallust
+- **Waybar**: Status bar styling from `~/.config/themes/current/`
+- **Wofi**: Launcher styling from `~/.config/themes/current/`
+- **Terminal**: Ghostty theme from `~/.config/themes/current/`
 - **Desktop scripts**: `~/.local/lib/scripts/desktop/` (16 utilities)
-- **Wallust**: `~/.config/wallust/` (color generation)
 - **Menu system**: `~/.local/lib/scripts/user-interface/` (Super+Space)

@@ -148,7 +148,7 @@ fi
 
 ### Media Scripts (3 scripts)
 **Purpose**: Media capture and wallpaper management
-**Tools**: grim, slurp, satty, swww, wallust
+**Tools**: grim, slurp, satty, swww
 **Integration**: Hyprland bindings, systemd timer
 
 **UI Pattern**: Templates use `{{ includeTemplate "log_*" }}`, `screenshot.sh` uses `notify-send`
@@ -160,7 +160,7 @@ fi
   - Smart mode: Auto-snap to window if <20px selection
 
 - `random-wallpaper.tmpl` - Random wallpaper from collection (uses log templates)
-- `set-wallpaper.tmpl` - Set specific wallpaper + color extraction (uses log templates)
+- `set-wallpaper.tmpl` - Set specific wallpaper via swww (uses log templates)
 
 ### User Interface Menus (12 scripts)
 **Purpose**: Omarchy-inspired hierarchical menu system
