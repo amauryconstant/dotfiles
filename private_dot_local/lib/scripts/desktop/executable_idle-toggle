@@ -15,3 +15,6 @@ else
     hypridle &
     notify-send "▶️ Idle Lock" "Auto-lock enabled" -t 2000
 fi
+
+# Refresh Waybar idle indicator
+pkill -RTMIN+9 waybar 2>/dev/null || true

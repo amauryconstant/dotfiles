@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# Script: idle-indicator
+# Purpose: Waybar custom module showing idle-lock disabled state
+# Returns: JSON for Waybar (only visible when idle-lock is OFF)
+
+if pgrep -x hypridle >/dev/null; then
+    # hypridle running = idle-lock enabled = nothing to show
+    echo '{"text": ""}'
+else
+    # hypridle not running = idle-lock disabled = show indicator
+    echo '{"text": "󱫖", "tooltip": "Idle lock disabled", "class": "active"}'
+fi

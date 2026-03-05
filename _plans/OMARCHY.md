@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-03-05 (through v3.4.1).
+Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items applied).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
@@ -53,45 +53,6 @@ Last updated: 2026-03-05 (through v3.4.1).
 - [ ] Add `bindd = SUPER, O, Pinned floating overlay, exec, <implementation>` to `window-management.conf`
 
 ---
-
-### Tmux integration (v3.4.0)
-**What**: Tmux added with tailored config for aesthetics and ergonomics; `t` alias opens it. AI agent layouts: `tdl`, `tdlm`, `tsl` commands. Keybind `Super+Alt+Return` launches terminal in Tmux mode. `Alt+left/right` moves between tmux windows; `Alt+up/down` moves between sessions (v3.4.1).
-**Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/hypr/conf/bindings/applications.conf`, `private_dot_config/` (new tmux config)
-
-- [ ] Add `tmux` to packages.yaml (e.g., `terminal_tools` module)
-- [ ] Create `private_dot_config/tmux/` with tailored config (aesthetics, `Alt+arrows` nav)
-- [ ] Add `t` alias to zsh aliases
-- [ ] Add `Super+Alt+Return` binding to launch terminal in tmux mode
-- [ ] Evaluate `tdl`/`tdlm`/`tsl` layout scripts for AI agent workflows
-
----
-
-### Waybar idle-lock and notification-silencing icons (v3.4.0)
-**What**: Two new Waybar status indicators: idle-lock state and notification-silencing (DND) state. Complements existing `Super+I` idle toggle.
-**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`
-
-- [ ] Review Omarchy's Waybar module implementation for these two indicators
-- [ ] Add idle-lock status module to Waybar config
-- [ ] Add notification-silencing (DND) status module to Waybar config
-- [ ] Add corresponding CSS for both indicators
-
----
-
-### SSH port forwarding shell functions (v3.4.0)
-**What**: `fip` (forward IP port), `dip` (dynamic IP port), `lip` (local IP port) — convenience functions for web development port forwarding over SSH.
-**Target files**: `private_dot_config/zsh/dot_zshrc.d/` (new functions file or additions to existing)
-
-- [ ] Review Omarchy's implementation of `fip`/`dip`/`lip` for exact function signatures
-- [ ] Add to zsh functions or aliases file
-
----
-
-### `eff` command — fuzzy-find to editor (v3.4.0)
-**What**: Opens fuzzy-find results directly in the configured editor. Similar to `fzf` + `$EDITOR` integration.
-**Target files**: `private_dot_config/zsh/dot_zshrc.d/` or `private_dot_local/bin/`
-
-- [ ] Review Omarchy's `eff` implementation
-- [ ] Add to shell functions or as a local bin script
 
 ---
 
@@ -252,6 +213,14 @@ Last updated: 2026-03-05 (through v3.4.1).
 - [x] **Docker socket activation** (v3.4.0) — Switched to `docker.socket` in `configure_system_services.sh.tmpl` *(done 2026-03-05)*
 - [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
 - [SKIPPED] **Notification recall keybindings** (v3.2.0, v3.2.2) — `swaync-client` lacks `--activate-last`/`--close-last` flags in current version
+- [x] **`eff` + `ff` aliases** (v3.4.0) — Added to `aliases.zsh` *(done 2026-03-05)*
+- [x] **SSH port forwarding `fip`/`dip`/`lip`** (v3.4.0) — Added to `ssh-port-forwarding.zsh` (`dip` = disconnect, not dynamic) *(done 2026-03-05)*
+- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)*
+- [x] **Waybar idle-lock indicator** (v3.4.0) — `idle-indicator` script + Waybar module + CSS; DND already covered by `custom/swaync` *(done 2026-03-05)*
+- [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
+- [SKIPPED] **wireless-regdb** (v2.1.1) — No 6GHz hardware detected
+- [SKIPPED] **impala TUI** — Depends directly on `iwd` binary, incompatible with our NM+iwd backend setup
+- [SKIPPED] **Hypridle timing tuning** — Our 5/10/15min is intentionally more relaxed than Omarchy's 2.5/5/5.5min
 
 ---
 

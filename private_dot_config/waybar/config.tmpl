@@ -65,9 +65,10 @@
     "backlight",    // Screen brightness (laptop only)
     "battery",      // Battery status (laptop only)
 {{ end }}
-    "pulseaudio",       // Volume control
-    "mpris",            // Media control (Spotify, VLC, etc.)
-    "custom/swaync"     // Notification bell
+    "pulseaudio",           // Volume control
+    "mpris",               // Media control (Spotify, VLC, etc.)
+    "custom/idle-indicator", // Idle-lock disabled indicator (hidden when active)
+    "custom/swaync"        // Notification bell
   ],
 
   // Additional useful modules (uncomment and add to layout above):
@@ -279,6 +280,19 @@
     // "show-passive-items": false,  // Hide passive tray items
     // "reverse-direction": false,   // Reverse icon order
     // "on-click-middle": "none"     // Middle-click action
+  },
+
+  // --------------------------------------------------------------------------
+  // Idle-lock Disabled Indicator
+  // --------------------------------------------------------------------------
+  // Only visible when hypridle is NOT running (idle-lock disabled)
+  // Toggle with Super+I; signal 9 triggers refresh
+  "custom/idle-indicator": {
+    "exec": "~/.local/lib/scripts/desktop/idle-indicator",
+    "interval": "once",
+    "signal": 9,
+    "return-type": "json",
+    "on-click": "~/.local/lib/scripts/desktop/idle-toggle"
   },
 
   // --------------------------------------------------------------------------
