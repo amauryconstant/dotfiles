@@ -165,6 +165,10 @@ packages:
         - dust # Disk usage with tree visualization
         - inxi # Comprehensive system info tool
         - lm_sensors # Hardware sensor monitoring
+        # Terminal multiplexer
+        - tmux # Terminal multiplexer with session management
+        # Experiment namespacing
+        - try # Run commands in isolation before applying changes
         # Shell utilities
         - usage # Cheat sheet for CLI commands
         - vhs # Record terminal sessions as GIFs
