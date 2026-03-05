@@ -33,9 +33,9 @@ echo ""
 
 {{ includeTemplate "log_step" "Configuring Docker service..." }}
 
-# Enable Docker service
-sudo systemctl enable docker.service
-{{ includeTemplate "log_success" "Docker service enabled" }}
+# Enable Docker socket (on-demand startup via socket activation)
+sudo systemctl enable docker.socket
+{{ includeTemplate "log_success" "Docker socket enabled (on-demand startup)" }}
 
 # Add current user to docker group for socket access
 {{- $username := .chezmoi.username }}
@@ -339,7 +339,7 @@ sudo systemctl daemon-reload
 {{ includeTemplate "log_step" "Verifying all enabled services..." }}
 
 # Verify core services
-for service in docker.service bluetooth.service NetworkManager.service iwd.service; do
+for service in docker.socket bluetooth.service NetworkManager.service iwd.service; do
     if systemctl is-enabled "$service" >/dev/null 2>&1; then
         {{ includeTemplate "log_success" "$service is enabled" }}
     else
@@ -374,7 +374,7 @@ echo "  System Services Configuration Complete"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 echo "Core Services Configured:"
-echo "  ✓ Docker (enabled, user added to docker group)"
+echo "  ✓ Docker (socket activation, user added to docker group)"
 echo "  ✓ Bluetooth (enabled and active)"
 echo "  ✓ NetworkManager with iwd backend (WiFi)"
 

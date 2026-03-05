@@ -44,37 +44,6 @@ Last updated: 2026-03-05 (through v3.4.1).
 
 ## P2 — Medium Priority
 
-### Notification recall keybindings (v3.2.0, v3.2.2)
-**What**: `Super+Alt+,` opens last notification; `Super+Shift+Alt+,` restores last dismissed notification.
-**Target files**: `private_dot_config/hypr/conf/bindings/system-control.conf` or `desktop-utilities.conf`
-**Conflict**: None detected. `Super+Shift+N` (notification panel) is the only existing notification binding.
-
-- [ ] Add `bindd = SUPER ALT, comma, Open last notification, exec, swaync-client --activate-last` to `system-control.conf`
-- [ ] Add `bindd = SUPER SHIFT ALT, comma, Restore dismissed notification, exec, swaync-client --activate-last --close-last` to `system-control.conf`
-- [ ] Verify exact `swaync-client` flags for these actions
-
----
-
-### Cross-monitor workspace move (v3.2.0)
-**What**: `Super+Shift+Alt+Left/Right` moves current workspace to adjacent monitor. Complements HyprDynamicMonitors.
-**Target files**: `private_dot_config/hypr/conf/bindings/workspace-management.conf`
-**Conflict**: `SUPER+SHIFT+Left/Right` bound to window movement (arrow keys). `SUPER+SHIFT+ALT+Left/Right` is free.
-
-- [ ] Add `bindd = SUPER SHIFT ALT, left, Move workspace to left monitor, movecurrentworkspacetomonitor, l`
-- [ ] Add `bindd = SUPER SHIFT ALT, right, Move workspace to right monitor, movecurrentworkspacetomonitor, r`
-
----
-
-### WiFi quick-control binding (v3.3.0)
-**What**: `Super+Ctrl+W` for Wi-Fi controls (nmtui or impala TUI). Completes the `Super+Ctrl+[letter]` pattern already used for btop (`+T`) and Bluetooth (`+B`).
-**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
-**Conflict**: None detected — `SUPER+CTRL+W` is currently free.
-
-- [ ] Add `bindd = SUPER CTRL, W, WiFi settings, exec, ghostty -e nmtui` to `desktop-utilities.conf`
-- [ ] Evaluate `impala` package as nmtui alternative (Omarchy uses it since v1.3.0)
-
----
-
 ### Window pinned floating overlay (v3.1.5)
 **What**: `Super+O` pops focused window into a pinned floating overlay (always-on-top). Different from PiP (`Super+Shift+P`) — simpler, no resize.
 **Target files**: `private_dot_config/hypr/conf/bindings/window-management.conf`
@@ -144,35 +113,6 @@ Last updated: 2026-03-05 (through v3.4.1).
 - [ ] Review final `colors.toml` format in Omarchy (post v3.3.1 stabilization)
 - [ ] Prototype: extend `generate-theme-shell-colors.sh` to output a `colors.toml` alongside existing shell format
 - [ ] Evaluate whether template-driven per-app generation would reduce maintenance burden vs current symlink approach
-
----
-
-### Docker socket activation (v3.4.0)
-**What**: Docker reconfigured to use socket activation for on-demand startup (saves memory, starts on first use). Our setup currently enables `docker.service` directly.
-**Target files**: `.chezmoiscripts/run_once_after_002_configure_system_services.sh.tmpl`
-
-- [ ] Switch from `systemctl enable docker.service` to `systemctl enable docker.socket` in the configure_system_services script
-- [ ] Verify Docker still starts on first use with socket activation
-
----
-
-### Screen recording with audio keybindings (v2.1.1)
-**What**: `Alt+Shift+Print` for region recording with audio; `Ctrl+Alt+Shift+Print` for full-screen with audio. We have screen recording but need to check if audio capture is wired in.
-**Target files**: `private_dot_config/hypr/conf/bindings/screenshots.conf`
-**Conflict**: Check existing `Alt+Print` binding — Omarchy uses this for webcam+screen since v3.1.0.
-
-- [ ] Review current `screenshots.conf` for any `Alt+Print` variants
-- [ ] Add audio recording variants if not present: `ALT SHIFT, Print` and `CTRL ALT SHIFT, Print`
-- [ ] Verify `gpu-screen-recorder-git` supports audio capture (already in packages)
-
----
-
-### Numlock enabled by default (v2.1.1)
-**What**: `numlock_by_default = true` in Hyprland input config. Simple ergonomic improvement.
-**Target files**: `private_dot_config/hypr/conf/input.conf`
-
-- [ ] Add `numlock_by_default = true` to `input.conf` under the `input {` section
-- [ ] Validate with `chezmoi diff`
 
 ---
 
@@ -306,6 +246,12 @@ Last updated: 2026-03-05 (through v3.4.1).
 - [x] **`wl-clip-persist` sensitive data exclusion** (v1.3.1) — `clipboard-store` wrapper filters by window class/title *(done 2026-02-21)*
 - [x] **`fontconfig/fonts.conf` defaults** (v1.4.0) — Added `fonts.conf` with FiraCode Nerd, Fira Sans, Liberation Serif *(done 2026-02-21)*
 - [x] **`hyprpicker` for HDR screenshots** (v3.4.0) — Already in packages.yaml *(confirmed 2026-03-05)*
+- [x] **Numlock enabled by default** (v2.1.1) — Added `numlock_by_default = true` to `input.conf` *(done 2026-03-05)*
+- [x] **Cross-monitor workspace move** (v3.2.0) — `SUPER+SHIFT+ALT+Left/Right` added to `workspace-management.conf` *(done 2026-03-05)*
+- [x] **WiFi quick-control `Super+Ctrl+W`** (v3.3.0) — Added `ghostty -e nmtui` binding to `desktop-utilities.conf` *(done 2026-03-05)*
+- [x] **Docker socket activation** (v3.4.0) — Switched to `docker.socket` in `configure_system_services.sh.tmpl` *(done 2026-03-05)*
+- [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
+- [SKIPPED] **Notification recall keybindings** (v3.2.0, v3.2.2) — `swaync-client` lacks `--activate-last`/`--close-last` flags in current version
 
 ---
 
