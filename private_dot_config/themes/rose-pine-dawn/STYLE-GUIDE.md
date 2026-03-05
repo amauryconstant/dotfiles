@@ -97,8 +97,8 @@ Rose Pine Dawn is **not an inversion** of Moon - it's a complete re-calibration:
 - Example: pine #3e8fb0 (moon) → #286983 (dawn) - significantly darker
 
 **Foreground inversion**:
-- Text goes from light (#e0def4) to dark (#575279)
-- Muted goes from dark (#6e6a86) to light (#9893a5)
+- Text goes from light #e0def4 to dark #575279
+- Muted goes from dark #6e6a86 to light #9893a5
 
 **Semantic preservation**:
 - `pine` still means success/additions/keywords
@@ -147,8 +147,8 @@ highlightHigh: #6e6a86  (strong emphasis - darker)
 Rose Pine Dawn's surface tier (base → surface → overlay) produces only ~1.05:1 contrast ratio, making standard `bg-secondary`/`bg-tertiary` row highlights invisible in lazygit.
 
 **Override**:
-- `selectedLineBgColor` → `highlightMed` (#cecacd) instead of `surface` (#fffaf3)
-- `inactiveViewSelectedLineBgColor` → `highlightLow` (#dfdad9) instead of `overlay` (#f2e9e1)
+- `selectedLineBgColor` → `highlightMed` #cecacd instead of `surface` #fffaf3
+- `inactiveViewSelectedLineBgColor` → `highlightLow` #dfdad9 instead of `overlay` #f2e9e1
 
 This uses Rose Pine's dedicated highlight tier (designed for selection states) rather than the surface elevation tier (designed for panel depth).
 
@@ -195,9 +195,9 @@ This uses Rose Pine's dedicated highlight tier (designed for selection states) r
 
 ## Known Contrast Limitations
 
-Rose Pine Dawn's official palette prioritizes aesthetic minimalism over maximum contrast. The `subtle` color (#797593) provides only 4.02:1 contrast on `base` (#faf4ed), slightly below WCAG AA requirements (4.5:1).
+Rose Pine Dawn's official palette prioritizes aesthetic minimalism over maximum contrast. The `subtle` color #797593 provides only 4.02:1 contrast on `base` #faf4ed, slightly below WCAG AA requirements (4.5:1).
 
-**Solution**: Use `text` color (#575279) for all elevated surfaces (`surface` backgrounds) instead of `subtle`. This achieves 7.00:1 contrast while staying within the official palette.
+**Solution**: Use `text` color #575279 for all elevated surfaces (`surface` backgrounds) instead of `subtle`. This achieves 7.00:1 contrast while staying within the official palette.
 
 **Implementation**: Firefox userChrome.css explicitly uses `text` for all icons and buttons on `surface` backgrounds (URL bar, selected tabs, sidebar).
 

@@ -70,11 +70,11 @@ Deliberately warm color temperature throughout. Avoids clinical whites and pure 
 
 | State                | Color Strategy                    | Application                                     |
 | -------------------- | --------------------------------- | ----------------------------------------------- |
-| **Active / Focused** | `yellow` (#fabd2f) background     | Warm-first approach; yellow for active states   |
-| **Hover**            | `dark1` (#3c3836) background      | Elevated surface indication                     |
-| **Inactive**         | `light4` (#a89984) foreground     | Disabled or unfocused elements                  |
-| **Selection**        | `dark2` (#504945) at 30-40% opacity | Text selection with warm undertone              |
-| **Borders / Hints**  | `orange` (#fe8019)                | Warm accent for active borders                  |
+| **Active / Focused** | `yellow` #fabd2f background     | Warm-first approach; yellow for active states   |
+| **Hover**            | `dark1` #3c3836 background      | Elevated surface indication                     |
+| **Inactive**         | `light4` #a89984 foreground     | Disabled or unfocused elements                  |
+| **Selection**        | `dark2` #504945 at 30-40% opacity | Text selection with warm undertone              |
+| **Borders / Hints**  | `orange` #fe8019                | Warm accent for active borders                  |
 
 **Decision rule**: Yellow for active (not blue). Warm accents (orange, yellow) preferred for interactive feedback.
 

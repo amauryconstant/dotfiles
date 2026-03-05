@@ -65,11 +65,11 @@ Key symmetry:
 
 | State               | Color Strategy                         | Change from Mocha                |
 | ------------------- | -------------------------------------- | -------------------------------- |
-| **Active / Focused** | `blue` (#1e66f5) background           | Darker blue for visibility       |
-| **Hover**           | `surface0` (#ccd0da) background        | Inverted from Mocha surface0     |
-| **Inactive**        | `overlay2` (#7c7f93) foreground        | Lighter (inverted)               |
-| **Selection**       | `overlay2` (#7c7f93) at 20-30% opacity | Same opacity strategy            |
-| **Borders / Hints** | `lavender` (#7287fd)                   | Darker lavender                  |
+| **Active / Focused** | `blue` #1e66f5 background           | Darker blue for visibility       |
+| **Hover**           | `surface0` #ccd0da background        | Inverted from Mocha surface0     |
+| **Inactive**        | `overlay2` #7c7f93 foreground        | Lighter (inverted)               |
+| **Selection**       | `overlay2` #7c7f93 at 20-30% opacity | Same opacity strategy            |
+| **Borders / Hints** | `lavender` #7287fd                   | Darker lavender                  |
 
 ---
 
@@ -90,9 +90,9 @@ Only the accent hex values differ, not the semantic mappings.
 - Variables: `text` or `flamingo` (#4c4f69 or #dd7878 darker)
 - Parameters: `maroon` (#e64553 darker)
 - Operators: `sky` or `teal` (#04a5e5 or #179299 darker)
-- Git additions: `green` (#40a02b)
-- Git modifications: `pink` (#ea76cb)
-- Git deletions: `red` (#d20f39)
+- Git additions: `green` #40a02b
+- Git modifications: `pink` #ea76cb
+- Git deletions: `red` #d20f39
 
 ---
 

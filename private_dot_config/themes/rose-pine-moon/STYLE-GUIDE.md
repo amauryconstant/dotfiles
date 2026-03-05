@@ -71,8 +71,8 @@ Limited to **15 colors total** - forces consistency and creates cohesion across 
 | State                    | Color Strategy                                        | Application                                                |
 | ------------------------ | ----------------------------------------------------- | ---------------------------------------------------------- |
 | **Active / Focused**     | Semantic accent color                                 | Choose based on meaning (success → `pine`, error → `love`) |
-| **Hover**                | `highlightMed` (#403d52) or accent at 60% opacity     | Non-semantic hover states                                  |
-| **Inactive / Unfocused** | `muted` (#6e6a86)                                     | Disabled or unfocused elements                             |
+| **Hover**                | `highlightMed` #403d52 or accent at 60% opacity     | Non-semantic hover states                                  |
+| **Inactive / Unfocused** | `muted` #6e6a86                                     | Disabled or unfocused elements                             |
 | **Selection**            | `highlightLow/Med/High` ( #21202e / #403d52 / #524f67) | Based on intensity needed                                  |
 
 **Decision rule**: Use accent colors for semantic meaning, highlight tiers for non-semantic interaction states.
@@ -179,8 +179,8 @@ highlightHigh: #524f67  (strong emphasis)
 Rose Pine Moon's surface tier (base → surface → overlay) produces only ~1.4:1 contrast ratio, making standard `bg-secondary`/`bg-tertiary` row highlights barely visible in lazygit.
 
 **Override**:
-- `selectedLineBgColor` → `highlightMed` (#403d52) instead of `surface` (#2a273f)
-- `inactiveViewSelectedLineBgColor` → `highlightLow` (#21202e) instead of `overlay` (#393552)
+- `selectedLineBgColor` → `highlightMed` #403d52 instead of `surface` #2a273f
+- `inactiveViewSelectedLineBgColor` → `highlightLow` #21202e instead of `overlay` #393552
 
 This uses Rose Pine's dedicated highlight tier (designed for selection states) rather than the surface elevation tier (designed for panel depth).
 

@@ -72,10 +72,10 @@ Sixteen colors (eight monotones + eight accents) scale down to minimal five-colo
 
 | State                | Color Strategy                             | Application                                       |
 | -------------------- | ------------------------------------------ | ------------------------------------------------- |
-| **Active / Focused** | `blue` (#268bd2) background                | Primary interactive elements, active workspaces   |
-| **Hover**            | `base02` (#073642) background              | Elevated surface indication                       |
-| **Inactive**         | `base01` (#586e75) foreground              | Disabled or unfocused elements                    |
-| **Selection**        | `base02` bg (#073642) + `base1` fg (#93a1a1) | Text selection, highlighted items                 |
+| **Active / Focused** | `blue` #268bd2 background                | Primary interactive elements, active workspaces   |
+| **Hover**            | `base02` #073642 background              | Elevated surface indication                       |
+| **Inactive**         | `base01` #586e75 foreground              | Disabled or unfocused elements                    |
+| **Selection**        | `base02` bg #073642 + `base1` fg #93a1a1 | Text selection, highlighted items                 |
 
 **Decision rule**: Use monotone background progression for hover states. Use blue accent for semantic focus. Maintain CIELAB lightness relationships.
 

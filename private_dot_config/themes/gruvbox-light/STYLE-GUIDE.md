@@ -64,11 +64,11 @@ Key symmetry:
 
 | State               | Color Strategy                    | Change from Dark                 |
 | ------------------- | --------------------------------- | -------------------------------- |
-| **Active / Focused** | `yellow` (#d79921) background     | Darker yellow for visibility     |
-| **Hover**           | `light1` (#ebdbb2) background     | Inverted from dark1              |
-| **Inactive**        | `dark4` (#7c6f64) foreground      | Inverted from light4             |
-| **Selection**       | `light2` (#d5c4a1) at 30-40% opacity | Same opacity strategy            |
-| **Borders / Hints** | `orange` (#d65d0e)                | Darker orange                    |
+| **Active / Focused** | `yellow` #d79921 background     | Darker yellow for visibility     |
+| **Hover**           | `light1` #ebdbb2 background     | Inverted from dark1              |
+| **Inactive**        | `dark4` #7c6f64 foreground      | Inverted from light4             |
+| **Selection**       | `light2` #d5c4a1 at 30-40% opacity | Same opacity strategy            |
+| **Borders / Hints** | `orange` #d65d0e                | Darker orange                    |
 
 ---
 
@@ -89,9 +89,9 @@ Only the accent hex values differ, not the semantic mappings.
 - Variables: `blue` (#458588 darker)
 - Parameters: `aqua` (#689d6a darker - LSP/Tree-sitter)
 - Operators: `orange` or `dark1` (#d65d0e or #3c3836 - stylistic)
-- Git additions: `green` (#98971a)
-- Git modifications: `orange` (#d65d0e)
-- Git deletions: `red` (#cc241d)
+- Git additions: `green` #98971a
+- Git modifications: `orange` #d65d0e
+- Git deletions: `red` #cc241d
 
 ---
 

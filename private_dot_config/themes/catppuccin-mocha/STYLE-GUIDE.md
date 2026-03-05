@@ -71,11 +71,11 @@ While maintaining readable contrast ratios, **legibility always comes first**. T
 
 | State                | Color Strategy                           | Application                                       |
 | -------------------- | ---------------------------------------- | ------------------------------------------------- |
-| **Active / Focused** | `blue` (#89b4fa) background              | Primary interactive elements, active workspaces   |
-| **Hover**            | `surface0` (#313244) background          | Elevated surface indication                       |
-| **Inactive**         | `overlay2` (#9399b2) foreground          | Disabled or unfocused elements                    |
-| **Selection**        | `overlay2` (#9399b2) at 20-30% opacity   | Text selection (per official guide)               |
-| **Borders / Hints**  | `lavender` (#b4befe)                     | Active borders, hints (per official guide)        |
+| **Active / Focused** | `blue` #89b4fa background              | Primary interactive elements, active workspaces   |
+| **Hover**            | `surface0` #313244 background          | Elevated surface indication                       |
+| **Inactive**         | `overlay2` #9399b2 foreground          | Disabled or unfocused elements                    |
+| **Selection**        | `overlay2` #9399b2 at 20-30% opacity   | Text selection (per official guide)               |
+| **Borders / Hints**  | `lavender` #b4befe                     | Active borders, hints (per official guide)        |
 
 **Decision rule**: Use blue for semantic active states. Lavender for borders/hints (official recommendation). Overlay opacity for selections.
 

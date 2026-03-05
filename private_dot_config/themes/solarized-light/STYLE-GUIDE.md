@@ -13,6 +13,7 @@
 **Identical to Solarized Dark** - see Dark style guide for detailed principles.
 
 Key symmetry:
+
 - Same 5 design principles (CIELAB calibration, selective contrast, symmetric design, hue over brightness, scalable structure)
 - Same color selection framework
 - Same decision rules
@@ -41,21 +42,21 @@ Key symmetry:
 
 ### Background Surfaces (Inverted Monotones)
 
-| Surface Type | Color | Hex | Change from Dark |
-|--------------|-------|-----|------------------|
-| **Primary / Base** | `base3` | #fdf6e3 | **Lightest** (was base03 darkest) |
-| **Secondary / Elevated** | `base2` | #eee8d5 | **Mid-light** (was base02 mid-dark) |
-| **Tertiary / Overlays** | `base1` | #93a1a1 | **Darker overlay** (was base01 lighter) |
+| Surface Type             | Color   | Hex     | Change from Dark                        |
+| ------------------------ | ------- | ------- | --------------------------------------- |
+| **Primary / Base**       | `base3` | #fdf6e3 | **Lightest** (was base03 darkest)       |
+| **Secondary / Elevated** | `base2` | #eee8d5 | **Mid-light** (was base02 mid-dark)     |
+| **Tertiary / Overlays**  | `base1` | #93a1a1 | **Darker overlay** (was base01 lighter) |
 
 **Decision rule**: Same CIELAB lightness progression, inverted absolute values. Don't skip tiers.
 
 ### Text Hierarchy (Inverted Contrast)
 
-| Content Type | Color | Hex | Change from Dark |
-|--------------|-------|-----|------------------|
-| **Primary Content** | `base00` | #657b83 | **Dark text** (was base0 light) |
-| **Secondary / Emphasized** | `base01` | #586e75 | **Darker emphasis** (was base1 lighter) |
-| **Disabled / Dimmed** | `base1` | #93a1a1 | **Lighter disabled** (was base01 darker) |
+| Content Type                   | Color    | Hex     | Change from Dark                          |
+| ------------------------------ | -------- | ------- | ----------------------------------------- |
+| **Primary Content**            | `base00` | #657b83 | **Dark text** (was base0 light)           |
+| **Secondary / Emphasized**     | `base01` | #586e75 | **Darker emphasis** (was base1 lighter)   |
+| **Disabled / Dimmed**          | `base1`  | #93a1a1 | **Lighter disabled** (was base01 darker)  |
 | **High Contrast (on accents)** | `base03` | #002b36 | **Darkest contrast** (was base3 lightest) |
 
 **Decision rule**: Same contrast hierarchy, inverted values. Normal text uses base3:base00 pairing. Emphasized uses base2:base01.
@@ -64,41 +65,44 @@ Key symmetry:
 
 **Identical framework to Dark** - use same color strategy with Light's inverted monotones:
 
-| State | Color Strategy | Change from Dark |
-|-------|---------------|------------------|
-| **Active / Focused** | `blue` (#268bd2) background | **Unchanged accent** |
-| **Hover** | `base2` (#eee8d5) background | Inverted from base02 |
-| **Inactive** | `base1` (#93a1a1) foreground | Inverted from base01 |
-| **Selection** | `base2` bg (#eee8d5) + `base01` fg (#586e75) | Inverted pairing |
+| State                | Color Strategy                           | Change from Dark     |
+| -------------------- | ---------------------------------------- | -------------------- |
+| **Active / Focused** | `blue` #268bd2 background                | **Unchanged accent** |
+| **Hover**            | `base2` #eee8d5 background               | Inverted from base02 |
+| **Inactive**         | `base1` #93a1a1 foreground               | Inverted from base01 |
+| **Selection**        | `base2` bg #eee8d5 + `base01` fg #586e75 | Inverted pairing     |
 
 ---
 
 ## Context-Specific Selection
 
 **Use identical tables from Solarized Dark**:
+
 - Syntax highlighting - same color assignments (constants = yellow, types = orange)
 - Git operations - same color assignments (modifications = orange)
 
 Only the monotone hex values differ, not the semantic mappings or accent colors.
 
 **Key assignments** (see Dark style guide for full table):
-- Keywords: `green` (#859900)
-- Functions: `blue` (#268bd2)
-- Strings: `cyan` (#2aa198)
-- Constants: `yellow` (#b58900)
-- Types: `orange` (#cb4b16)
-- Git additions: `green` (#859900)
-- Git modifications: `orange` (#cb4b16)
-- Git deletions: `red` (#dc322f)
+
+- Keywords: `green` #859900
+- Functions: `blue` #268bd2
+- Strings: `cyan` #2aa198
+- Constants: `yellow` #b58900
+- Types: `orange` #cb4b16
+- Git additions: `green` #859900
+- Git modifications: `orange` #cb4b16
+- Git deletions: `red` #dc322f
 
 ---
 
 ## OpenCode
 
 **Base16 mapping**: [base16-solarized-light](https://github.com/scaryrawr/base16-opencode) | [OPENCODE.md](./OPENCODE.md)
-- `bg-primary` → `base00` (#fdf6e3 - Solarized base3)
-- `bg-secondary` → `base01` (#eee8d5 - Solarized base2)
-- `bg-tertiary` → `base02` (#93a1a1 - Solarized base1)
+
+- `bg-primary` → `base00` #fdf6e3 - Solarized base3
+- `bg-secondary` → `base01` #eee8d5 - Solarized base2
+- `bg-tertiary` → `base02` #93a1a1 - Solarized base1
 
 **Note**: Base16 base00-0F ≠ Solarized base00-3 naming; higher number = lighter in both, but different offsets.
 
@@ -111,18 +115,22 @@ Only the monotone hex values differ, not the semantic mappings or accent colors.
 Solarized Light uses **precise monotone inversion** while **preserving accent colors**:
 
 **Background inversion**:
+
 - Dark: base03 (darkest) → base02 → base01
 - Light: base3 (lightest) → base2 → base1
 
 **Foreground inversion**:
+
 - Dark: base0 (light text) / base1 (emphasized) / base01 (disabled)
 - Light: base00 (dark text) / base01 (emphasized) / base1 (disabled)
 
 **Accent preservation**:
+
 - All eight accent colors **unchanged**: blue, cyan, green, yellow, orange, red, magenta, violet
 - Same hex values work on both dark and light backgrounds due to CIELAB calibration
 
 **CIELAB preservation**:
+
 - Lightness differences between monotone tiers remain constant
 - Only absolute RGB values change
 - Perceived contrast identical to dark variant
@@ -132,12 +140,14 @@ Solarized Light uses **precise monotone inversion** while **preserving accent co
 ## Complete Palette Reference
 
 ### Backgrounds (Inverted)
+
 ```
 base3: #fdf6e3  (lightest - primary background)
 base2: #eee8d5  (mid-light - elevated surfaces)
 ```
 
 ### Content Tones (Inverted)
+
 ```
 base1:  #93a1a1  (light disabled text / tertiary surfaces)
 base00: #657b83  (dark primary text)
@@ -146,12 +156,14 @@ base0:  #839496  (optional - not typically used in light mode)
 ```
 
 ### Dark Backgrounds (Contrast Use)
+
 ```
 base02: #073642  (dark alternate)
 base03: #002b36  (darkest - text on accents)
 ```
 
 ### Accents (Unchanged from Dark)
+
 ```
 yellow:  #b58900  (warnings, constants, numbers)
 orange:  #cb4b16  (modifications, types/classes)
@@ -169,13 +181,13 @@ green:   #859900  (success, additions, keywords)
 
 **Identical mapping to Dark**, same accent hex values:
 
-| ANSI | Solarized | Hex | Notes |
-|------|-----------|-----|-------|
-| Red | `red` | #dc322f | Unchanged from dark |
-| Yellow | `yellow` | #b58900 | Unchanged from dark |
-| Green | `green` | #859900 | Unchanged from dark |
-| Cyan | `cyan` | #2aa198 | Unchanged from dark |
-| Blue | `blue` | #268bd2 | Unchanged from dark |
+| ANSI    | Solarized | Hex     | Notes               |
+| ------- | --------- | ------- | ------------------- |
+| Red     | `red`     | #dc322f | Unchanged from dark |
+| Yellow  | `yellow`  | #b58900 | Unchanged from dark |
+| Green   | `green`   | #859900 | Unchanged from dark |
+| Cyan    | `cyan`    | #2aa198 | Unchanged from dark |
+| Blue    | `blue`    | #268bd2 | Unchanged from dark |
 | Magenta | `magenta` | #d33682 | Unchanged from dark |
 
 **Note**: Terminal palette includes monotones in bright variants. Background/foreground inverted from dark mode.
@@ -185,6 +197,7 @@ green:   #859900  (success, additions, keywords)
 ## Validation Checklist
 
 **Color Assignment:**
+
 - [ ] **Semantic consistency**: Color hue matches functional purpose (same as Dark)
 - [ ] **Contrast hierarchy**: Progressive monotone tiers (base3 → base2 → base1) used correctly
 - [ ] **CIELAB calibration**: Lightness differences maintained (same as Dark)
@@ -195,6 +208,7 @@ green:   #859900  (success, additions, keywords)
 - [ ] **Accent preservation**: All eight accents use identical hex values to Dark
 
 **Accessibility (WCAG AA):**
+
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
@@ -202,6 +216,7 @@ green:   #859900  (success, additions, keywords)
   - FG_SECONDARY on BG_SECONDARY: 4.39:1 (✗ fails, use PRIMARY only)
 
 **Official palette alignment:**
+
 - [ ] Colors match official Solarized Light palette exactly
 - [ ] No custom colors introduced
 
@@ -210,15 +225,18 @@ green:   #859900  (success, additions, keywords)
 ## References
 
 ### Official Specification
+
 - [Solarized Official Site](https://ethanschoonover.com/solarized/) - Philosophy, CIELAB methodology
 - [Official Repository](https://github.com/altercation/solarized) - Canonical palette values
 
 ### Community Implementations (Semantic Guidance)
+
 - [VSCode Official Theme](https://github.com/microsoft/vscode/tree/main/extensions/theme-solarized-light) - Detailed semantic assignments
 - [Vim Colors Solarized](https://github.com/altercation/vim-colors-solarized) - Original editor implementation
 - [Solarized.nvim](https://github.com/maxmx03/solarized.nvim) - Modern Neovim with LSP/Treesitter
 
 ### Related
+
 - [Solarized Dark Style Guide](../solarized-dark/STYLE-GUIDE.md) - Dark variant reference
 
 > **See also**: [OPENCODE.md](./OPENCODE.md) for OpenCode CLI integration details
