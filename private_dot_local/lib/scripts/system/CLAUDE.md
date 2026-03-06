@@ -34,7 +34,7 @@
 - **Code quality**: Deprecated legacy commands, reduced main file by 24.4%
 
 **v2.2.1 (security fix)**:
-- **yq injection vulnerability patched**: 16+ vulnerable lines converted to use `--arg` flag
+- **yq injection vulnerability patched**: 16+ vulnerable lines converted to use `env()` substitution (yq v4 style)
 - **State file corruption risk eliminated**: Safe variable substitution in all yq operations
 - **Input validation improved**: Module and package names now properly escaped
 - **Strict mode added**: `set -euo pipefail` prevents partial state corruption

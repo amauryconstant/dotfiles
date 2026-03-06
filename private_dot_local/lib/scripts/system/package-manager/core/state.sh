@@ -78,24 +78,18 @@ _do_package_update() {
     local pinned="false"
     [[ "$constraint" != "null" ]] && pinned="true"
 
-    # Add new entry using yq --arg for safe variable substitution
-    yq eval -i \
-        --arg name "$name" \
-        --arg version "$version" \
-        --arg type "$type" \
-        --arg module "$module" \
-        --argjson constraint "$constraint" \
-        --argjson pinned "$pinned" \
-        --arg timestamp "$timestamp" \
-        '.packages += [{
-          "name": $name,
-          "version": $version,
-          "type": $type,
-          "module": $module,
-          "constraint": $constraint,
-          "pinned": $pinned,
-          "installed_at": $timestamp,
-          "last_updated": $timestamp
+    # Add new entry using env() for safe variable substitution (yq v4 style)
+    NAME="$name" VERSION="$version" TYPE="$type" MODULE="$module" \
+    CONSTRAINT="$constraint" PINNED="$pinned" TIMESTAMP="$timestamp" \
+    yq eval -i '.packages += [{
+          "name": env(NAME),
+          "version": env(VERSION),
+          "type": env(TYPE),
+          "module": env(MODULE),
+          "constraint": (if env(CONSTRAINT) == "null" then null else env(CONSTRAINT) end),
+          "pinned": (env(PINNED) == "true"),
+          "installed_at": env(TIMESTAMP),
+          "last_updated": env(TIMESTAMP)
         }]' "$temp_state"
 }
 

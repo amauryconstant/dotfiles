@@ -256,8 +256,8 @@ _backup_state_file
 TEMP_FILE=$(mktemp)
 trap 'rm -f "$TEMP_FILE"' EXIT ERR
 
-# 3. Perform mutation
-yq eval --arg name "$package" '...' "$STATE_FILE" > "$TEMP_FILE"
+# 3. Perform mutation (yq v4: use env() for variable substitution)
+NAME="$package" VERSION="$version" yq eval '...' "$STATE_FILE" > "$TEMP_FILE"
 
 # 4. Atomic replace
 mv "$TEMP_FILE" "$STATE_FILE"
@@ -278,7 +278,7 @@ _restore_state_file "backup_path"
 - Location: `~/.local/state/package-manager/backups/`
 - Naming: `package-state-YYYYMMDD-HHMMSS.yaml`
 
-**Security**: All yq operations use `--arg` flag (prevents injection, v2.2.1 fix)
+**Security**: All yq operations use `env(VAR)` for variable substitution (yq v4 style — `--arg` is a jq flag, not supported by yq)
 
 ## Operations Modules (Workflow Layer)
 
@@ -820,8 +820,7 @@ _parse_package_constraint_cached() {
 
     # Check disk cache (TTL: 1 hour)
     if [ -f "$CONSTRAINT_CACHE_FILE" ]; then
-        local cached=$(yq eval --arg pkg "$pkg" \
-            '.[$pkg] // ""' "$CONSTRAINT_CACHE_FILE")
+        local cached=$(PKG="$pkg" yq eval '.[$ENV.PKG] // ""' "$CONSTRAINT_CACHE_FILE")
         if [ -n "$cached" ]; then
             _cache_set "constraints" "$pkg" "$cached"
             echo "$cached"
@@ -834,8 +833,7 @@ _parse_package_constraint_cached() {
 
     # Cache to memory + disk
     _cache_set "constraints" "$pkg" "$result"
-    yq eval --arg pkg "$pkg" --arg result "$result" \
-        '.[$pkg] = $result' -i "$CONSTRAINT_CACHE_FILE"
+    PKG="$pkg" RESULT="$result" yq eval '.[$ENV.PKG] = env(RESULT)' -i "$CONSTRAINT_CACHE_FILE"
 
     echo "$result"
 }
@@ -913,9 +911,8 @@ _generate_lockfile() {
         local module=$(echo "$pkg" | yq eval '.module')
 
         # Write to lockfile
-        yq eval --arg module "$module" --arg name "$name" \
-            --arg version "$version" \
-            '.packages[$module][$name] = $version' -i "$LOCKFILE"
+        MODULE="$module" NAME="$name" VERSION="$version" \
+            yq eval '.packages[env(MODULE)][env(NAME)] = env(VERSION)' -i "$LOCKFILE"
     done
 }
 ```
@@ -1532,16 +1529,15 @@ fi
 ### Security Fix (v2.2.1)
 
 **yq injection vulnerability patched**:
-- 16+ vulnerable lines converted to `--arg` flag
-- All yq operations now use safe substitution
+- 16+ vulnerable lines converted to use `env()` variable substitution
+- All yq operations now use safe substitution (yq v4 style — `--arg` is jq-only)
 - Example:
   ```bash
   # Before (vulnerable)
   yq eval ".packages.modules.$module.enabled = true"
 
   # After (safe)
-  yq eval --arg module "$module" \
-      '.packages.modules[$module].enabled = true'
+  MODULE="$module" yq eval '.packages.modules[env(MODULE)].enabled = true'
   ```
 
 **Strict mode enabled**:
@@ -1789,9 +1785,9 @@ _backup_state_file
 TEMP_FILE=$(mktemp)
 trap 'rm -f "$TEMP_FILE"' EXIT ERR
 
-# 3. Perform mutation (yq with --arg for safety)
-yq eval --arg name "$package" --arg version "$version" \
-    '.packages += [{"name": $name, "version": $version}]' \
+# 3. Perform mutation (yq v4: use env() for variable substitution)
+NAME="$package" VERSION="$version" \
+    yq eval '.packages += [{"name": env(NAME), "version": env(VERSION)}]' \
     "$STATE_FILE" > "$TEMP_FILE"
 
 # 4. Atomic replace
