@@ -25,7 +25,7 @@ window {
   border-radius: 8px;
 
   /* Font: Monospace for aligned columns */
-  font-family: "FiraCode Nerd Font", "JetBrainsMono Nerd Font", monospace;
+  font-family: {{ .terminalFont | quote }}, monospace;
   font-size: 13px;
 
   /* Padding: Space around content */
@@ -124,7 +124,7 @@ window {
   border-radius: 4px;
 
   /* Monospace font for alignment */
-  font-family: "FiraCode Nerd Font", monospace;
+  font-family: {{ .terminalFont | quote }}, monospace;
   font-size: 13px;
 }
 
@@ -211,7 +211,7 @@ window {
  * - Uses semantic variables (accent-primary, bg-primary, etc.)
  *
  * FONT:
- * - Uses FiraCode Nerd Font (installed in system)
+ * - Uses Geist Mono Nerd Font (installed in system)
  * - Falls back to JetBrainsMono Nerd Font
  * - Monospace critical for keybinding alignment
  *

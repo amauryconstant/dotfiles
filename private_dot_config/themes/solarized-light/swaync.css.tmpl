@@ -1,48 +1,35 @@
 /* ========================================================================== */
-/* Catppuccin Mocha - swaync Notification Theme */
-/* Based on official catppuccin/swaync with semantic variable abstraction */
-/* https://github.com/catppuccin/swaync */
+/* Solarized Light - swaync Notification Theme */
+/* Based on official catppuccin/swaync structure with Solarized palette */
 /* ========================================================================== */
 
 /* Background Hierarchy */
-@define-color bg-primary #1e1e2e;      /* base - main application background */
-@define-color bg-secondary #313244;    /* surface0 - elevated surfaces, cards, inputs */
-@define-color bg-tertiary #45475a;     /* surface1 - popovers, notifications */
-@define-color bg-elevated #585b70;     /* surface2 - highest elevation level */
-@define-color bg-overlay #181825;      /* mantle - modal overlays */
+@define-color bg-primary #fdf6e3;      /* base3 - main application background */
+@define-color bg-secondary #eee8d5;    /* base2 - elevated surfaces, cards, inputs */
+@define-color bg-tertiary #93a1a1;     /* base1 - popovers, notifications */
+@define-color bg-overlay #eee8d5;      /* base2 - modal overlays */
 
 /* Foreground/Text Hierarchy */
-@define-color fg-primary #cdd6f4;      /* text - body text, main content */
-@define-color fg-secondary #bac2de;    /* subtext1 - subtitles, labels */
-@define-color fg-muted #9399b2;        /* overlay2 - disabled, unfocused elements */
-@define-color fg-contrast #11111b;     /* crust - high contrast text on colored backgrounds */
+@define-color fg-primary #657b83;      /* base00 - body text, main content */
+@define-color fg-secondary #586e75;    /* base01 - subtitles, labels */
+@define-color fg-muted #93a1a1;        /* base1 - disabled, unfocused elements */
+@define-color fg-contrast #002b36;     /* base03 - high contrast text on colored backgrounds */
 
 /* Core Accent Colors */
-@define-color accent-primary #89b4fa;  /* blue - active states, primary actions */
-@define-color accent-info #94e2d5;     /* teal - information, connectivity */
-@define-color accent-success #a6e3a1;  /* green - success states */
-@define-color accent-warning #f9e2af;  /* yellow - warnings, caution */
-@define-color accent-error #f38ba8;    /* red - errors, urgent, critical */
-@define-color accent-highlight #cba6f7; /* mauve - secondary actions, audio */
-@define-color accent-secondary #74c7ec; /* sapphire - tertiary actions */
-@define-color accent-tertiary #fab387; /* peach - quaternary actions */
+@define-color accent-primary #268bd2;  /* blue - active states, primary actions */
+@define-color accent-info #2aa198;     /* cyan - information, connectivity */
+@define-color accent-success #859900;  /* green - success states */
+@define-color accent-warning #b58900;  /* yellow - warnings, caution */
+@define-color accent-error #dc322f;    /* red - errors, urgent, critical */
+@define-color accent-highlight #6c71c4; /* violet - secondary actions, audio */
+@define-color accent-secondary #2aa198; /* cyan - tertiary actions */
+@define-color accent-tertiary #cb4b16; /* orange - quaternary actions */
 
 /* Extended Accent Colors */
-@define-color accent-modification #f5c2e7;  /* pink - file changes, search highlights */
-@define-color accent-border #b4befe;        /* lavender - active borders, focus rings */
-@define-color accent-performance #eba0ac;   /* maroon - CPU, memory, disk metrics */
-@define-color accent-media #cba6f7;         /* mauve - audio, video, media controls */
-@define-color accent-subtle #f5e0dc;        /* rosewater - cursors, subtle hints */
-@define-color accent-alternative #89dceb;   /* sky - alternative actions */
-@define-color accent-special #f2cdcd;       /* flamingo - special states */
-@define-color accent-urgent-secondary #fab387; /* peach - moderate urgency */
-
-/* Hover Variants */
-@define-color accent-info-hover rgba(148, 226, 213, 0.1);      /* teal */
-@define-color accent-highlight-hover rgba(203, 166, 247, 0.1); /* mauve */
-@define-color accent-warning-hover rgba(249, 226, 175, 0.1);   /* yellow */
-@define-color accent-success-hover rgba(166, 227, 161, 0.1);   /* green */
-@define-color accent-media-hover rgba(203, 166, 247, 0.1);     /* mauve */
+@define-color accent-modification #d33682;  /* magenta - file changes, search highlights */
+@define-color accent-border #6c71c4;        /* violet - active borders, focus rings */
+@define-color accent-performance #d33682;   /* magenta - CPU, memory, disk metrics */
+@define-color accent-media #6c71c4;         /* violet - audio, video, media controls */
 
 /* ========================================================================== */
 /* Global Reset                                                                */
@@ -51,12 +38,12 @@
 * {
   all: unset;
   font-size: 0.875rem;
-  font-family: "Ubuntu Nerd Font", "Symbols Nerd Font", sans-serif;
+  font-family: "Inter", {{ .terminalFont | quote }}, "Symbols Nerd Font", sans-serif;
   transition: 200ms;
 }
 
 /* ========================================================================== */
-/* Sliders & Troughs                                                          */
+/* Sliders & Troughs (volume, brightness)                                      */
 /* ========================================================================== */
 
 trough {
@@ -73,11 +60,11 @@ trough slider {
   margin: -0.5rem;
   border-radius: 0.5rem;
   background-color: @accent-primary;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
 trough slider:hover {
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8), 0 0 6px @accent-primary;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3), 0 0 6px @accent-primary;
 }
 
 scale {
@@ -97,8 +84,7 @@ scale trough {
 .notification-background {
   background: @bg-overlay;
   color: @fg-primary;
-  border: 1px solid @bg-tertiary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px @bg-tertiary;
   border-radius: 0.75rem;
   margin: 1rem;
   padding: 0;
@@ -113,6 +99,7 @@ scale trough {
   box-shadow: inset 0 0 0.5rem 0 @accent-error;
 }
 
+/* Notification content */
 .notification .notification-content {
   margin: 0.5rem;
 }
@@ -139,6 +126,7 @@ scale trough {
   min-height: 2.5rem;
 }
 
+/* Close button */
 .notification-background .close-button {
   margin: 0.5rem;
   padding: 0.25rem;
@@ -156,11 +144,12 @@ scale trough {
   filter: brightness(1.1);
 }
 
+/* Notification actions */
 .notification .notification-action {
   border-radius: 0.5rem;
   color: @fg-primary;
   background-color: @bg-secondary;
-  border: 1px solid @bg-tertiary;
+  box-shadow: inset 0 0 0 1px @bg-tertiary;
   margin: 0.25rem;
   padding: 0.5rem;
 }
@@ -174,6 +163,7 @@ scale trough {
   color: @fg-contrast;
 }
 
+/* Progress bars in notifications */
 .notification progress,
 .notification trough,
 .notification progressbar {
@@ -197,15 +187,14 @@ scale trough {
 .control-center {
   background-color: @bg-primary;
   color: @fg-primary;
-  border: 1px solid @bg-secondary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px @bg-secondary;
   border-radius: 0.75rem;
   padding: 1rem;
 }
 
 .control-center .notification-background {
   border-radius: 0.5rem;
-  border: 1px solid @bg-tertiary;
+  box-shadow: inset 0 0 0 1px @bg-tertiary;
   margin: 0.25rem 0.5rem;
 }
 
@@ -217,6 +206,7 @@ scale trough {
   opacity: 0.8;
 }
 
+/* Notification groups */
 .control-center .notification-group {
   margin-top: 0.5rem;
 }
@@ -225,6 +215,7 @@ scale trough {
   background-color: @bg-secondary;
 }
 
+/* Scrollbar */
 scrollbar slider {
   margin: -0.125rem;
   opacity: 0.8;
@@ -235,7 +226,7 @@ scrollbar trough {
 }
 
 /* ========================================================================== */
-/* Widget: Title                                                              */
+/* Widget: Title (Notifications label + Clear All button)                      */
 /* ========================================================================== */
 
 .control-center .widget-title > label {

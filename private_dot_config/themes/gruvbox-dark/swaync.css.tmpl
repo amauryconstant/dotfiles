@@ -1,35 +1,35 @@
 /* ========================================================================== */
-/* Solarized Light - swaync Notification Theme */
-/* Based on official catppuccin/swaync structure with Solarized palette */
+/* Gruvbox Dark - swaync Notification Theme */
+/* Based on official catppuccin/swaync structure with Gruvbox palette */
 /* ========================================================================== */
 
 /* Background Hierarchy */
-@define-color bg-primary #fdf6e3;      /* base3 - main application background */
-@define-color bg-secondary #eee8d5;    /* base2 - elevated surfaces, cards, inputs */
-@define-color bg-tertiary #93a1a1;     /* base1 - popovers, notifications */
-@define-color bg-overlay #eee8d5;      /* base2 - modal overlays */
+@define-color bg-primary #282828;      /* dark0 - main application background */
+@define-color bg-secondary #3c3836;    /* dark1 - elevated surfaces, cards, inputs */
+@define-color bg-tertiary #504945;     /* dark2 - popovers, notifications */
+@define-color bg-overlay #3c3836;      /* dark1 - modal overlays */
 
 /* Foreground/Text Hierarchy */
-@define-color fg-primary #657b83;      /* base00 - body text, main content */
-@define-color fg-secondary #586e75;    /* base01 - subtitles, labels */
-@define-color fg-muted #93a1a1;        /* base1 - disabled, unfocused elements */
-@define-color fg-contrast #002b36;     /* base03 - high contrast text on colored backgrounds */
+@define-color fg-primary #ebdbb2;      /* light1 - body text, main content */
+@define-color fg-secondary #d5c4a1;    /* light2 - subtitles, labels */
+@define-color fg-muted #a89984;        /* light4 - disabled, unfocused elements */
+@define-color fg-contrast #fbf1c7;     /* light0 - high contrast text on colored backgrounds */
 
 /* Core Accent Colors */
-@define-color accent-primary #268bd2;  /* blue - active states, primary actions */
-@define-color accent-info #2aa198;     /* cyan - information, connectivity */
-@define-color accent-success #859900;  /* green - success states */
-@define-color accent-warning #b58900;  /* yellow - warnings, caution */
-@define-color accent-error #dc322f;    /* red - errors, urgent, critical */
-@define-color accent-highlight #6c71c4; /* violet - secondary actions, audio */
-@define-color accent-secondary #2aa198; /* cyan - tertiary actions */
-@define-color accent-tertiary #cb4b16; /* orange - quaternary actions */
+@define-color accent-primary #fabd2f;  /* bright_yellow - active states, primary actions */
+@define-color accent-info #8ec07c;     /* bright_aqua - information, connectivity */
+@define-color accent-success #b8bb26;  /* bright_green - success states */
+@define-color accent-warning #fabd2f;  /* bright_yellow - warnings, caution */
+@define-color accent-error #fb4934;    /* bright_red - errors, urgent, critical */
+@define-color accent-highlight #d3869b; /* bright_purple - secondary actions, audio */
+@define-color accent-secondary #8ec07c; /* bright_aqua - tertiary actions */
+@define-color accent-tertiary #fe8019; /* bright_orange - quaternary actions */
 
 /* Extended Accent Colors */
-@define-color accent-modification #d33682;  /* magenta - file changes, search highlights */
-@define-color accent-border #6c71c4;        /* violet - active borders, focus rings */
-@define-color accent-performance #d33682;   /* magenta - CPU, memory, disk metrics */
-@define-color accent-media #6c71c4;         /* violet - audio, video, media controls */
+@define-color accent-modification #fe8019;  /* bright_orange - file changes, search highlights */
+@define-color accent-border #fabd2f;        /* bright_yellow - active borders, focus rings */
+@define-color accent-performance #d3869b;   /* bright_purple - CPU, memory, disk metrics */
+@define-color accent-media #d3869b;         /* bright_purple - audio, video, media controls */
 
 /* ========================================================================== */
 /* Global Reset                                                                */
@@ -38,7 +38,7 @@
 * {
   all: unset;
   font-size: 0.875rem;
-  font-family: "FiraCode Nerd Font", "Symbols Nerd Font", monospace;
+  font-family: "Inter", {{ .terminalFont | quote }}, "Symbols Nerd Font", sans-serif;
   transition: 200ms;
 }
 
@@ -60,11 +60,11 @@ trough slider {
   margin: -0.5rem;
   border-radius: 0.5rem;
   background-color: @accent-primary;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
 trough slider:hover {
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3), 0 0 6px @accent-primary;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5), 0 0 6px @accent-primary;
 }
 
 scale {
@@ -84,7 +84,7 @@ scale trough {
 .notification-background {
   background: @bg-overlay;
   color: @fg-primary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px @bg-tertiary;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5), inset 0 0 0 1px @bg-tertiary;
   border-radius: 0.75rem;
   margin: 1rem;
   padding: 0;
@@ -187,7 +187,7 @@ scale trough {
 .control-center {
   background-color: @bg-primary;
   color: @fg-primary;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px @bg-secondary;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5), inset 0 0 0 1px @bg-secondary;
   border-radius: 0.75rem;
   padding: 1rem;
 }

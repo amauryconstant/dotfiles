@@ -2,6 +2,8 @@
 # Central source of truth for all shell environment and XDG configuration
 
 globals:
+  guiFont: "Inter"    # GUI font for GTK, Qt, Waybar, Wofi, Hyprlock, Dunst
+
   applications:
     # Default applications for various tasks
     # These are used by both shell environment ($EDITOR, $VISUAL, $BROWSER)

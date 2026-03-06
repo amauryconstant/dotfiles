@@ -195,6 +195,7 @@ packages:
         - otf-opendyslexic-nerd # Dyslexia-friendly font
         - otf-geist-mono-nerd # Vercel's monospace font
         - ttf-iosevka-nerd # Programming font with ligatures
+        - inter-font    # Inter UI font for GUI applications
         - ttf-fira-sans # Sans-serif system font
         # Unicode & international coverage
         - noto-fonts # Google Noto (Latin/Greek/Cyrillic)

@@ -24,7 +24,7 @@ label {
     monitor =
     text = cmd[update:1000] echo "$(date +"%H:%M")"
     font_size = 90
-    font_family = Fira Sans
+    font_family = {{ .globals.guiFont }}
 
     position = 0, 80
     halign = center
@@ -36,7 +36,7 @@ label {
     monitor =
     text = cmd[update:60000] echo "$(date +"%A, %B %d")"
     font_size = 24
-    font_family = Fira Sans
+    font_family = {{ .globals.guiFont }}
 
     position = 0, -20
     halign = center
