@@ -210,7 +210,7 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 |------|-------------|------------------|---------|
 | **bat** | `bat.conf` | `~/.config/bat/config` | Syntax highlighting theme selection |
 | **broot** | `broot.hjson` | `~/.config/broot/skin.hjson` | File tree skin colors |
-| **btop** | `btop.theme` | `~/.config/btop/color_theme` | System monitor color scheme |
+| **btop** | `btop.theme` | `~/.config/btop/themes/color_theme.theme` | System monitor color scheme |
 | **lazygit** | `lazygit.yml` | `~/.config/lazygit/config.yml` | Git TUI theme colors |
 | **opencode** | `opencode.json` | `~/.config/opencode/themes/current.json` | TUI theme via custom JSON |
 | **starship** | `starship.toml` | `~/.config/starship.toml` | Shell prompt colors/symbols |

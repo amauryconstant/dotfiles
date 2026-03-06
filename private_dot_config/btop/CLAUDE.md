@@ -11,8 +11,8 @@
 ## Quick Reference
 
 - **Config**: `btop.conf` (static — not a template)
-- **Theme symlink**: `symlink_color_theme` → `../themes/current/btop.theme`
-- **Active theme**: `~/.config/btop/color_theme` → `~/.config/themes/current/btop.theme`
+- **Theme symlink**: `themes/symlink_color_theme.theme` → `../../themes/current/btop.theme`
+- **Active theme**: `~/.config/btop/themes/color_theme.theme` → `~/.config/themes/current/btop.theme`
 - **8 variants**: One `btop.theme` per theme in `private_dot_config/themes/{variant}/`
 - **No semantic CSS variables**: btop uses direct hex codes (unlike Waybar)
 
@@ -21,7 +21,7 @@
 ## Symlink Mechanism
 
 ```
-~/.config/btop/color_theme
+~/.config/btop/themes/color_theme.theme
     → ~/.config/themes/current/btop.theme
     → ~/.config/themes/{active-variant}/btop.theme
 ```
