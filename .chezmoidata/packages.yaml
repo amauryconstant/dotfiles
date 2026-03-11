@@ -166,7 +166,7 @@ packages:
         - inxi # Comprehensive system info tool
         - lm_sensors # Hardware sensor monitoring
         # Terminal multiplexer
-        - tmux # Terminal multiplexer with session management
+        - zellij # Modal terminal multiplexer
         # Experiment namespacing
         - try # Run commands in isolation before applying changes
         # Shell utilities

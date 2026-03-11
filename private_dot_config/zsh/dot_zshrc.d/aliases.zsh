@@ -40,5 +40,3 @@ alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 # Fuzzy-find and open in editor
 alias eff='$EDITOR "$(ff)"'
 
-# Tmux: attach or create new Work session
-alias t='tmux attach || tmux new -s Work'

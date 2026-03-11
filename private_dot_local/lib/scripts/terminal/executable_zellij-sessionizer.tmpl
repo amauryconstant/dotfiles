@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+# Script: zellij-sessionizer
+# Purpose: Fuzzy-find a project dir and create/switch zellij session
+# Requirements: fzf, zellij
+
+PROJECTS="{{ .globals.paths.projects }}"
+WORKTREES="{{ .globals.paths.worktrees }}"
+
+selected=$(find "$PROJECTS" "$WORKTREES" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | fzf --prompt="Session: " --height=40% --reverse)
+
+[ -z "$selected" ] && exit 0
+
+name=$(basename "$selected" | tr '.' '_')
+session_exists=false
+if zellij list-sessions 2>/dev/null | grep -q "^${name}[[:space:]\[]"; then
+    session_exists=true
+fi
+
+if [ -n "$ZELLIJ" ]; then
+    # Inside zellij: switch to existing or open new ghostty window for new session
+    if $session_exists; then
+        zellij action switch-to-session "$name"
+    else
+        (cd "$selected" && ghostty -- zellij -s "$name") &
+    fi
+else
+    # Outside zellij: attach existing or create new
+    if $session_exists; then
+        zellij attach "$name"
+    else
+        cd "$selected" && zellij -s "$name"
+    fi
+fi

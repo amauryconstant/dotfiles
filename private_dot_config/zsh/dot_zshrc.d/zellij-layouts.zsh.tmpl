@@ -1,0 +1,207 @@
+#!/usr/bin/env zsh
+#
+# zellij-layouts.zsh - Zellij AI/dev workflow layout helpers
+#
+
+# Auto-session: when navigating anywhere inside a project dir, rename current
+# session to the project name or switch to the existing session with that name.
+_zellij_project_session() {
+  [[ -z $ZELLIJ ]] && return
+  local projects_dir="{{ .globals.paths.projects }}"
+  [[ $PWD != ${projects_dir}/* ]] && return
+  # Extract top-level project name at any depth under projects_dir
+  local rel="${PWD#${projects_dir}/}"
+  local name="${${rel%%/*}//./_}"
+
+  if zellij list-sessions 2>/dev/null | grep -qE "^${name}[[:space:]\[]"; then
+    zellij action switch-to-session "$name" 2>/dev/null
+  else
+    zellij action rename-session "$name" 2>/dev/null
+  fi
+}
+
+autoload -Uz add-zsh-hook
+add-zsh-hook chpwd _zellij_project_session
+
+# Attach or create a session: uses project name when inside ~/Projects/*, else 'Work'
+zj() {
+  local projects_dir="{{ .globals.paths.projects }}"
+  local name="Work"
+  if [[ $PWD == ${projects_dir}/* ]]; then
+    local rel="${PWD#${projects_dir}/}"
+    name="${${rel%%/*}//./_}"
+  fi
+  zellij attach "$name" 2>/dev/null || zellij -s "$name"
+}
+
+# Internal: derive session name from a directory path
+_zdl_session_name() {
+  local dir="$1"
+  local projects_dir="{{ .globals.paths.projects }}"
+  local name
+  name="$(basename "$dir")"
+  if [[ $dir == ${projects_dir}/* ]]; then
+    local rel="${dir#${projects_dir}/}"
+    name="${${rel%%/*}//./_}"
+  fi
+  echo "$name"
+}
+
+# Internal: emit the inner pane block (no layout {} wrapper)
+# Usage: _zdl_pane_content <dir> <ai> [ai2]
+_zdl_pane_content() {
+  local dir="$1" ai="$2" ai2="$3"
+  local editor="${EDITOR:-nvim}"
+
+  if [[ -n $ai2 ]]; then
+    cat <<EOF
+  pane split_direction="vertical" {
+    pane size="70%" split_direction="horizontal" {
+      pane size="85%" focus=true cwd "$dir" {
+        command "$editor"
+        args "."
+      }
+      pane size="15%" cwd "$dir" {}
+    }
+    pane size="30%" cwd "$dir" split_direction="vertical" {
+      pane {
+        command "sh"
+        args "-c" "$ai"
+      }
+      pane {
+        command "sh"
+        args "-c" "$ai2"
+      }
+    }
+  }
+EOF
+  else
+    cat <<EOF
+  pane split_direction="vertical" {
+    pane size="70%" split_direction="horizontal" {
+      pane size="85%" focus=true cwd "$dir" {
+        command "$editor"
+        args "."
+      }
+      pane size="15%" cwd "$dir" {}
+    }
+    pane size="30%" cwd "$dir" {
+      command "sh"
+      args "-c" "$ai"
+    }
+  }
+EOF
+  fi
+}
+
+# Internal: write a single-tab KDL layout file, print its path
+# Usage: _zdl_layout_file <dir> <ai> [ai2]
+_zdl_layout_file() {
+  local dir="$1" ai="$2" ai2="$3"
+  local tmp
+  tmp="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
+  { echo "layout {"; _zdl_pane_content "$dir" "$ai" "$ai2"; echo "}"; } > "$tmp"
+  echo "$tmp"
+}
+
+# Dev layout: editor (70%) + terminal strip (15%) + AI pane (30%)
+# Usage: zdl <ai-command> [second-ai-command]
+zdl() {
+  [[ -z $1 ]] && { echo "Usage: zdl <ai-command> [second-ai-command]"; return 1; }
+
+  local ai="$1" ai2="$2"
+  local dir="$PWD"
+  local tab_name
+  tab_name="$(basename "$dir")"
+
+  local tmp_layout
+  tmp_layout="$(_zdl_layout_file "$dir" "$ai" "$ai2")"
+
+  if [[ -n $ZELLIJ ]]; then
+    zellij action new-tab --layout "$tmp_layout" --tab-name "$tab_name"
+  else
+    zellij --layout "$tmp_layout" -s "$(_zdl_session_name "$dir")"
+  fi
+  rm -f "$tmp_layout"
+}
+
+# Multi-project dev layout: one zdl tab per subdirectory
+# Usage: zdlm <ai-command> [second-ai-command]
+zdlm() {
+  [[ -z $1 ]] && { echo "Usage: zdlm <ai-command> [second-ai-command]"; return 1; }
+
+  local ai="$1" ai2="$2"
+  local base_dir="$PWD"
+
+  if [[ -n $ZELLIJ ]]; then
+    for dir in "$base_dir"/*/; do
+      [[ -d $dir ]] || continue
+      local dirpath="${dir%/}"
+      local tab_name
+      tab_name="$(basename "$dirpath")"
+      local tmp_layout
+      tmp_layout="$(_zdl_layout_file "$dirpath" "$ai" "$ai2")"
+      zellij action new-tab --layout "$tmp_layout" --tab-name "$tab_name"
+      rm -f "$tmp_layout"
+    done
+  else
+    # Build a single multi-tab layout file
+    local tmp_multi
+    tmp_multi="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
+    echo "layout {" > "$tmp_multi"
+    for dir in "$base_dir"/*/; do
+      [[ -d $dir ]] || continue
+      local dirpath="${dir%/}"
+      local tab_name
+      tab_name="$(basename "$dirpath")"
+      echo "  tab name=\"$tab_name\" {" >> "$tmp_multi"
+      _zdl_pane_content "$dirpath" "$ai" "$ai2" >> "$tmp_multi"
+      echo "  }" >> "$tmp_multi"
+    done
+    echo "}" >> "$tmp_multi"
+    zellij --layout "$tmp_multi" -s "$(_zdl_session_name "$base_dir")"
+    rm -f "$tmp_multi"
+  fi
+}
+
+# Swarm layout: N panes all running the same command
+# Usage: zsl <pane-count> <command>
+zsl() {
+  [[ -z $1 || -z $2 ]] && { echo "Usage: zsl <pane-count> <command>"; return 1; }
+
+  local count="$1" cmd="$2"
+  local dir="$PWD"
+
+  if [[ -n $ZELLIJ ]]; then
+    # Send command to current (first) pane
+    zellij action write-chars "${cmd}"
+    zellij action write 10  # Enter key (LF)
+
+    # Create remaining panes — each receives focus on creation
+    local i
+    for ((i = 1; i < count; i++)); do
+      zellij action new-pane --cwd "$dir"
+      zellij action write-chars "${cmd}"
+      zellij action write 10
+    done
+  else
+    # Build a layout with N panes all running the command
+    local tmp_layout
+    tmp_layout="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
+    {
+      echo "layout {"
+      echo "  pane split_direction=\"horizontal\" {"
+      local i
+      for ((i = 0; i < count; i++)); do
+        echo "    pane cwd \"$dir\" {"
+        echo "      command \"sh\""
+        echo "      args \"-c\" \"$cmd\""
+        echo "    }"
+      done
+      echo "  }"
+      echo "}"
+    } > "$tmp_layout"
+    zellij --layout "$tmp_layout" -s "$(_zdl_session_name "$dir")"
+    rm -f "$tmp_layout"
+  fi
+}
