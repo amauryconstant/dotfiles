@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+# Script: vpn-toggle
+# Purpose: Toggle Tailscale VPN on/off with status notification
+# Requirements: Arch Linux, tailscale, notify-send
+
+if ! command -v tailscale >/dev/null 2>&1; then
+    notify-send "󰌾 VPN" "Tailscale not installed" -u critical
+    exit 1
+fi
+
+if ! systemctl is-active tailscaled >/dev/null 2>&1; then
+    notify-send "󰌾 VPN" "Tailscale daemon not running" -u critical
+    exit 1
+fi
+
+if tailscale status >/dev/null 2>&1; then
+    # Connected → disconnect
+    sudo tailscale down 2>/dev/null
+    notify-send "󰌾 VPN Off" "Tailscale disconnected" -t 3000
+else
+    # Disconnected → connect
+    sudo tailscale up 2>/dev/null
+    ip=$(tailscale ip -4 2>/dev/null || echo "unknown")
+    notify-send "󰒄 VPN On" "Tailscale connected — $ip" -t 3000
+fi

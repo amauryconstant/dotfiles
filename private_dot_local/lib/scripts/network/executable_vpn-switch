@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Script: vpn-switch
+# Purpose: Interactive Tailscale account/tailnet switcher
+# Requirements: Arch Linux, tailscale, fzf
+
+if ! command -v tailscale >/dev/null 2>&1; then
+    notify-send "󰌾 VPN" "Tailscale not installed" -u critical
+    exit 1
+fi
+
+if ! systemctl is-active tailscaled >/dev/null 2>&1; then
+    notify-send "󰌾 VPN" "Tailscale daemon not running" -u critical
+    exit 1
+fi
+
+ACCOUNTS=$(sudo tailscale switch --list 2>/dev/null)
+ACCOUNTS_LIST=$(echo "$ACCOUNTS" | awk 'NR>1 && $1!="" {printf "%s  %s  (%s)\n", $1, $2, $3}')
+SELECTED=$(fzf --prompt="Switch account: " --height=40% --reverse <<< "$ACCOUNTS_LIST" || true)
+
+[[ -z "$SELECTED" ]] && exit 0
+
+ID=$(echo "$SELECTED" | awk '{print $1}')
+TAILNET=$(echo "$SELECTED" | awk '{print $2}')
+
+sudo tailscale switch "$ID" 2>/dev/null
+notify-send "󰒄 VPN" "Switched to Tailscale Account $TAILNET" -t 3000
