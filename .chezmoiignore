@@ -20,3 +20,6 @@ LICENSE
 README.md
 
 __pycache__
+
+# Broot build artifact (auto-generated marker file)
+private_dot_config/broot/launcher/

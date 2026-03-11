@@ -30,7 +30,6 @@
 | `btop/` | System monitor (themed) | ❌ No |
 | `lazygit/` | Git TUI (themed) | ❌ No |
 | `yazi/` | File manager (themed) | ❌ No |
-| `dunst/` | Notifications | ❌ No |
 | `ghostty/` | Terminal config | ❌ No |
 | `starship.toml` | Prompt (themed via symlink) | ❌ No |
 | `topgrade.toml.tmpl` | Update tool | ❌ No |
@@ -47,7 +46,7 @@
 **Theme system** (`themes/`):
 - 8 variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - 24 semantic variables (backgrounds, foregrounds, accents)
-- Desktop apps: Waybar, Dunst, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock
+- Desktop apps: Waybar, Swaync, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock
 - CLI tools: bat, broot, btop, lazygit, starship, yazi
 - Switching: `theme switch <name>`, darkman (solar auto), keybindings
 - See: `themes/CLAUDE.md`
