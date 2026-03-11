@@ -22,7 +22,7 @@
 {{- $_ := set $settings "diffEditor.maxComputationTime" 0 -}}
 
 {{- /* Editor */ -}}
-{{- $_ := set $settings "editor.fontFamily" (printf "\"%s\"" .terminalFont) -}}
+{{- $_ := set $settings "editor.fontFamily" (printf "\"%s\"" .globals.terminalFont) -}}
 
 {{- /* Explorer */ -}}
 {{- $_ := set $settings "explorer.confirmDragAndDrop" false -}}

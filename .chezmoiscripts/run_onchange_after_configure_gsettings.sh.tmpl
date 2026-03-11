@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_gsettings.sh
+# Purpose: Configure GSettings font settings for Wayland (used by Firefox and GTK apps via XDG portal)
+# Requirements: Arch Linux, gsettings
+
+# Hash: {{ printf "%s %s" .globals.guiFont .globals.terminalFont | sha256sum }}
+
+{{ includeTemplate "log_start" "Configuring GSettings font settings..." }}
+
+set -euo pipefail
+
+if ! command -v gsettings >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "gsettings not available, skipping" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Setting GUI font (sans-serif)..." }}
+gsettings set org.gnome.desktop.interface font-name '{{ .globals.guiFont }} 11'
+
+{{ includeTemplate "log_step" "Setting monospace font (terminal)..." }}
+gsettings set org.gnome.desktop.interface monospace-font-name '{{ .globals.terminalFont }} 11'
+
+{{ includeTemplate "log_step" "Setting document font..." }}
+gsettings set org.gnome.desktop.interface document-font-name '{{ .globals.guiFont }} 12'
+
+{{ includeTemplate "log_complete" "GSettings fonts configured (Firefox and GTK apps will use Inter as GUI font)" }}

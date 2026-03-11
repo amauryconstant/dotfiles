@@ -25,7 +25,7 @@ window {
   border-radius: 8px;
 
   /* Font: Monospace for aligned columns */
-  font-family: {{ .terminalFont | quote }}, monospace;
+  font-family: {{ .globals.terminalFont | quote }}, monospace;
   font-size: 13px;
 
   /* Padding: Space around content */
@@ -124,7 +124,7 @@ window {
   border-radius: 4px;
 
   /* Monospace font for alignment */
-  font-family: {{ .terminalFont | quote }}, monospace;
+  font-family: {{ .globals.terminalFont | quote }}, monospace;
   font-size: 13px;
 }
 
@@ -211,8 +211,7 @@ window {
  * - Uses semantic variables (accent-primary, bg-primary, etc.)
  *
  * FONT:
- * - Uses Geist Mono Nerd Font (installed in system)
- * - Falls back to JetBrainsMono Nerd Font
+ * - Uses terminal font from globals ({{ .globals.terminalFont }})
  * - Monospace critical for keybinding alignment
  *
  * DIMENSIONS:

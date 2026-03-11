@@ -4,7 +4,6 @@
 {{ $privateServer := promptStringOnce . "privateServer" "What is the URL of your private server? " -}}
 {{ $ovhKS5ServerIP := promptStringOnce . "ovhKS5ServerIP" "What is the IP v4 of your OVH Bare Metal server? " -}}
 {{ $ovhVPSServerIP := promptStringOnce . "ovhVPSServerIP" "What is the IP v4 of your OVH VPS server? " -}}
-{{ $terminalFont := promptChoiceOnce . "terminalFont" "Terminal font? " (list "FiraCode Nerd Font" "Iosevka Nerd Font" "GeistMono Nerd Font") "FiraCode Nerd Font" -}}
 {{ $nameDict := splitn " " 2 $fullname }}
 
 
@@ -50,7 +49,6 @@ data:
     ovhVPSServerIP: {{ $ovhVPSServerIP }}
     nvidiaDriverType: {{ $nvidiaDriverType | quote }}
     nvidiaGpuDetected: {{ $nvidiaGpuName | quote }}
-    terminalFont: {{ $terminalFont | quote }}
 
 diff:
   pager: "delta"
