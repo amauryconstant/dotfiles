@@ -54,59 +54,41 @@ Where `{version}` is the exact tag string (e.g. `OMARCHY_v3.2.3.md`).
 
 [2-3 sentences on major themes of this release.]
 
-## Features
-
-- **Name**: Description. Omarchy path: `file` (if known).
-
-*None* (if empty)
-
-## Bug Fixes
-
-- **Name**: Description.
-
-*None* (if empty)
-
 ## Breaking Changes
 
 - **Name**: Description. General action required.
 
-*None* (if empty)
+*None*
+
+## Features
+
+- **Name**: Description. Omarchy path: `file` (if known).
+
+## Bug Fixes
+
+- **Name**: Description. Omarchy path: `file` (if known).
 
 ## Improvements
 
 - **Name**: Description.
 
-*None* (if empty)
-
 ## Configuration Changes
 
-- **Name**: What changed, which files in omarchy repo, old vs new format.
-
-*None* (if empty)
+- **Name**: What changed, which files in omarchy repo, old vs new format. Omarchy path: `file` (if known).
 
 ## Package Changes
 
 | Action | Package | Purpose |
 |--------|---------|---------|
 | Added/Removed/Renamed | `pkg` | reason |
-
-*None* (if empty)
-
----
-
-<details><summary>Original release notes</summary>
-
-```
-{verbatim notes verbatim here}
-```
-
-</details>
 ```
 
 ## Rules
 
-- Use `*None*` explicitly when a category has no items — never omit a section
+- **Breaking Changes**: always present, even if `*None*` — its absence is meaningful
+- **All other sections**: omit entirely if empty (no `*None*` filler)
 - For "Source": use "GitHub release notes" if notes were proper markdown release notes; use "Commit log fallback" if it was a `## Commit Summary` block
 - Date researched: use today's date (check with `date +%Y-%m-%d` if unsure)
 - Keep descriptions factual — no "we should", "consider adopting", "integration opportunity" language
 - Package Changes table: infer from commit messages and diff stat when not explicit in notes
+- `Omarchy path:` is an optional field in Features, Bug Fixes, and Configuration Changes — include when the file path in the omarchy repo is known
