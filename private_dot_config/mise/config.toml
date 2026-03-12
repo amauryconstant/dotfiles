@@ -9,16 +9,23 @@ uv_venv_auto = true
 bun = true
 
 [tools]
+# Runner & Package manager
 uv = "latest"
 bun = "latest"
 node = "latest"
 pnpm = "latest"
 
+# Tools
+prettier = "latest"
+"npm:playwright" = {version = "latest", postinstall = "playwright install"}
+
+# AI Tools
 "npm:@anthropic-ai/claude-code" = "latest"
 "npm:opencode-ai" = "latest"
 "pipx:oraios/serena" = "latest"
 "npm:@fission-ai/openspec" = "latest"
-"npm:playwright" = {version = "latest", postinstall = "playwright install"}
 "github:AlexsJones/llmfit" = "latest"
 "github:arimxyer/models" = "latest"
-prettier = "latest"
+
+# Custom tools
+"gitlab:amoconst/twiggit" = "latest"
