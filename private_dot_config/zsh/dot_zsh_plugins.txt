@@ -30,6 +30,7 @@ ohmyzsh/ohmyzsh path:plugins/fzf
 z-shell/zsh-zoxide
 fdw/yazi-zoxide-zsh
 ohmyzsh/ohmyzsh path:plugins/aws
+https://gitlab.com/amoconst/twiggit.git path:contrib/zsh
 
 # Package Version Managers
 ohmyzsh/ohmyzsh path:plugins/uv
