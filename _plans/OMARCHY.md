@@ -68,8 +68,8 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 **What**: Omarchy changed `~/.config/uwsm/env` to use `mise activate bash --shims` instead of `mise activate bash`. The `--shims` flag ensures mise-managed tools are available in non-interactive Wayland session environments (e.g., for apps launched from Hyprland that don't spawn a login shell).
 **Target files**: `private_dot_config/uwsm/env` (new managed file)
 
-- [ ] Create `private_dot_config/uwsm/env` managed by chezmoi
-- [ ] Set `mise activate bash --shims` (or equivalent for zsh) in that file
+- [x] Create `private_dot_config/uwsm/env` managed by chezmoi
+- [x] Set `mise activate bash --shims` in that file
 - [ ] Verify mise-managed tools (e.g., node, ruby) are visible to Wayland-launched apps
 
 ---
@@ -78,7 +78,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 **What**: LocalSend opens with a small default window. A `windowrulev2` with `minsize` fixes this.
 **Target files**: `private_dot_config/hypr/conf/windowrules.conf`
 
-- [ ] Add window rule for LocalSend: `windowrulev2 = minsize 600 400, class:(localsend)` (verify correct class name with `hyprctl clients`)
+- [x] Add window rule for LocalSend: `windowrule = match:class localsend, minsize 600 400`
 - [ ] Confirm localsend class name: `hyprctl clients | grep -A5 -i localsend`
 
 ---
@@ -100,7 +100,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 **What**: Omarchy adds `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` for a smooth vertical slide-in when toggling the scratchpad. We have this line commented out in `animations.conf` with a different curve (`default`).
 **Target files**: `private_dot_config/hypr/conf/animations.conf`
 
-- [ ] Uncomment/enable `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` (requires `bezier = easeOutQuint` to be defined, or use built-in)
+- [x] Enable `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` + `bezier = easeOutQuint, 0.23, 1, 0.32, 1`
 - [ ] Test visually — scratchpad toggle should animate vertically
 
 ---
@@ -118,7 +118,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 **What**: Setting `default_page: outputs` in `~/.config/hyprland-preview-share-picker/config.yaml` makes screen share picker default to display outputs rather than individual windows. More natural for most sharing scenarios.
 **Target files**: `private_dot_config/hyprland-preview-share-picker/config.yaml` (new managed file)
 
-- [ ] Create `private_dot_config/hyprland-preview-share-picker/config.yaml` with `default_page: outputs`
+- [x] Create `private_dot_config/hyprland-preview-share-picker/config.yaml` with `default_page: outputs`
 
 ---
 
@@ -137,8 +137,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 **Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
 **Conflict**: Neither binding is currently in use.
 
-- [ ] Add `bindd = SUPER CTRL, Z, Zoom in, exec, hyprctl keyword misc:cursor_zoom_factor <val>` (or the correct dispatch)
-- [ ] Add `bindd = SUPER CTRL ALT, Z, Zoom out, exec, <inverse>`
+- [x] Add zoom in/out bindings via `zoom-cursor` script (±0.2 per press, min 1.0)
 
 ---
 
@@ -188,13 +187,11 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 
 ### Fuller battery status notification (v3.4.2)
 **What**: On-demand notification (`Super+Ctrl+Alt+B`) showing battery percentage, time remaining (charging or discharging), power draw in watts, and battery capacity in Wh. Three scripts in Omarchy: `omarchy-battery-status`, `omarchy-battery-remaining-time`, `omarchy-battery-capacity`.
-**Target files**: `private_dot_local/bin/` or `private_dot_local/lib/scripts/desktop/`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
+**Target files**: `private_dot_local/lib/scripts/desktop/executable_battery-status`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
 **Effort**: Low
-**Adapt from**: `bin/omarchy-battery-status`, `bin/omarchy-battery-remaining-time`, `bin/omarchy-battery-capacity`
 
-- [ ] Review Omarchy's three battery scripts for data sources (likely `upower -i $(upower -e | grep BAT)`)
-- [ ] Implement as a single shell script using `upower` output
-- [ ] Add `Super+Ctrl+Alt+B` binding to `desktop-utilities.conf`
+- [x] Implemented as `battery-status` script using `upower` output
+- [x] Added `Super+Ctrl+Alt+B` binding to `desktop-utilities.conf`
 
 ---
 
@@ -208,17 +205,6 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 - [ ] Implement wrapper: start/stop recording, extract thumbnail frame, send `notify-send` with open action
 - [ ] Update screen recording binding in `screenshots.conf` to use new wrapper
 - [ ] Add `Super+Alt+,` open-last-recording binding
-
----
-
-### Tmux navigation keybinds (v3.4.1)
-**What**: `Alt+Left/Right` moves between tmux windows; `Alt+Up/Down` moves between tmux sessions. Tmux is installed and configured.
-**Target files**: `private_dot_config/tmux/tmux.conf` (or equivalent managed path)
-**Effort**: Low
-
-- [ ] Add `bind -n M-Left previous-window` / `bind -n M-Right next-window` to tmux config
-- [ ] Add `bind -n M-Up switch-client -p` / `bind -n M-Down switch-client -n` for session navigation
-- [ ] Verify no conflict with zsh/terminal Alt+Arrow keybinds
 
 ---
 
@@ -263,7 +249,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 - [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
 - [x] **`eff` + `ff` aliases** (v3.4.0) — Added to `aliases.zsh` *(done 2026-03-05)*
 - [x] **SSH port forwarding `fip`/`dip`/`lip`** (v3.4.0) — Added to `ssh-port-forwarding.zsh` (`dip` = disconnect, not dynamic) *(done 2026-03-05)*
-- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)*
+- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)* — **superseded**: replaced by zellij
 - [x] **Waybar idle-lock indicator** (v3.4.0) — `idle-indicator` script + Waybar module + CSS; DND already covered by `custom/swaync` *(done 2026-03-05)*
 - [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
 
@@ -310,6 +296,7 @@ Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 - [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script; concept tracked in P3
 - [SKIPPED] **Screensaver `slidein` animation** (v3.4.1) — minor, Omarchy-specific default
 - [SKIPPED] **Copilot key remapping via makima** (v3.4.2) — hardware-specific (Copilot key keyboards only); `makima-bin` not applicable to our hardware
+- [SKIPPED] **Tmux navigation keybinds** (v3.4.1) — using zellij, not tmux
 - [SKIPPED] **`Alt+Shift+Arrow` tmux window swap** (v3.4.2) — using zellij, not tmux
 - [SKIPPED] **Tmux automatic window renaming** (v3.4.2) — using zellij, not tmux
 - [SKIPPED] **Tmux zoom indicator** (v3.4.2) — using zellij, not tmux
