@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items applied).
+Last updated: 2026-03-12 (through v3.4.2).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
@@ -54,8 +54,6 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 
 ---
 
----
-
 ### Toggle menu `Super+Ctrl+O` (v3.4.1)
 **What**: Consolidates Window Gaps, 1-Window Ratio, and Display Scaling controls into a single wofi/menu invocation. Replaces having separate bindings for each.
 **Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`, new menu script
@@ -63,6 +61,25 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 
 - [ ] Design a wofi-based toggle menu covering gaps, window ratio, and display scaling
 - [ ] Add `bindd = SUPER CTRL, O, Toggle menu, exec, <menu-script>` to `desktop-utilities.conf`
+
+---
+
+### `mise activate bash --shims` in uwsm/env (v3.4.2)
+**What**: Omarchy changed `~/.config/uwsm/env` to use `mise activate bash --shims` instead of `mise activate bash`. The `--shims` flag ensures mise-managed tools are available in non-interactive Wayland session environments (e.g., for apps launched from Hyprland that don't spawn a login shell).
+**Target files**: `private_dot_config/uwsm/env` (if managed) or relevant environment setup
+
+- [ ] Check if `~/.config/uwsm/env` is chezmoi-managed; if not, create it
+- [ ] Set `mise activate bash --shims` (or equivalent for zsh) in that file
+- [ ] Verify mise-managed tools (e.g., node, ruby) are visible to Wayland-launched apps
+
+---
+
+### LocalSend minimum window size rule (v3.4.2)
+**What**: LocalSend opens with a small default window. A `windowrulev2` with `minsize` fixes this.
+**Target files**: `private_dot_config/hypr/conf/windowrules.conf`
+
+- [ ] Add window rule for LocalSend: `windowrulev2 = minsize 600 400, class:(localsend)` (verify correct class name with `hyprctl clients`)
+- [ ] Confirm localsend class name: `hyprctl clients | grep -A5 -i localsend`
 
 ---
 
@@ -78,6 +95,32 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 ---
 
 ## P3 — Low Priority / Evaluate
+
+### Scratchpad slide-in animation (v3.4.2)
+**What**: Omarchy adds `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` for a smooth vertical slide-in when toggling the scratchpad. We have this line commented out in `animations.conf` with a different curve (`default`).
+**Target files**: `private_dot_config/hypr/conf/animations.conf`
+
+- [ ] Uncomment/enable `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` (requires `bezier = easeOutQuint` to be defined, or use built-in)
+- [ ] Test visually — scratchpad toggle should animate vertically
+
+---
+
+### Git worktree helpers `ga`/`gd` (v3.4.2)
+**What**: Shell functions `ga <branch>` (create worktree at `../<repo>--<branch>`, run `mise trust`, cd in) and `gd` (remove current worktree + branch with `gum confirm`). Lightweight, no external deps beyond mise and gum (both already installed).
+**Target files**: `private_dot_config/zsh/zshrc.d/` or `private_dot_local/lib/scripts/`
+
+- [ ] Implement `ga` and `gd` as zsh functions (adapt from Omarchy's `default/bash/fns/worktrees` — switch bash-isms to zsh-compatible)
+- [ ] Add to appropriate zsh functions file
+
+---
+
+### `hyprland-preview-share-picker` default page (v3.4.2)
+**What**: Setting `default_page: outputs` in `~/.config/hyprland-preview-share-picker/config.yaml` makes screen share picker default to display outputs rather than individual windows. More natural for most sharing scenarios.
+**Target files**: `private_dot_config/hyprland-preview-share-picker/config.yaml` (new managed file)
+
+- [ ] Create `private_dot_config/hyprland-preview-share-picker/config.yaml` with `default_page: outputs`
+
+---
 
 ### Monitor scaling cycle keybinding (v3.4.0)
 **What**: `Super+Ctrl+Backspace` cycles through 1x, 1.6x, 2x, 3x monitor scaling. Useful for HiDPI workflows.
@@ -117,15 +160,6 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 
 ---
 
-### `try` command (v3.2.0)
-**What**: Experiment namespacing tool by @tobi, organizes quick code attempts under `~/Work/tries`. Low overhead addition.
-**Target files**: `.chezmoidata/packages.yaml`
-
-- [ ] Evaluate: install `try` from AUR/OPR and assess utility in daily workflow
-- [ ] If adopted: add to `terminal_tools` module
-
----
-
 ### Sticky CWD when opening new terminal (v2.0.0)
 **What**: New terminal windows inherit the current working directory from an existing terminal. Quality-of-life improvement.
 **Target files**: Ghostty config or terminal keybinding exec command
@@ -145,15 +179,6 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 
 ---
 
-### `wireless-regdb` for 6GHz Wi-Fi (v2.1.1)
-**What**: Regulatory database enabling 6GHz band support. Only relevant if hardware supports 6GHz.
-**Target files**: `.chezmoidata/packages.yaml`
-
-- [ ] Check hardware: `iw list | grep -i 6ghz` or `iw phy | grep 6000`
-- [ ] If 6GHz hardware present: add `wireless-regdb` to `network` module
-
----
-
 ### Screensaver (hypridle/hyprlock) tuning (v1.10.0)
 **What**: Omarchy idle timeout settled at 2.5 minutes. Battery notification persistence at 30 seconds. Check our hypridle config against these values.
 **Target files**: `private_dot_config/hypridle.conf` or equivalent
@@ -161,15 +186,6 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 - [ ] Review hypridle timeout values in our config
 - [ ] Review battery notification duration in dunst/swaync config
 - [ ] Align with Omarchy's tested values if different
-
----
-
-### Impala TUI for Wi-Fi (v1.3.0)
-**What**: TUI for Wi-Fi network selection. More ergonomic than nmtui for switching networks.
-**Target files**: `.chezmoidata/packages.yaml`, WiFi binding exec
-
-- [ ] Evaluate `impala` (AUR) — check if it supports NetworkManager backend (we use NM, not iwd directly)
-- [ ] If compatible: add to packages and use as default Wi-Fi TUI
 
 ---
 
@@ -212,7 +228,6 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 - [x] **WiFi quick-control `Super+Ctrl+W`** (v3.3.0) — Added `ghostty -e nmtui` binding to `desktop-utilities.conf` *(done 2026-03-05)*
 - [x] **Docker socket activation** (v3.4.0) — Switched to `docker.socket` in `configure_system_services.sh.tmpl` *(done 2026-03-05)*
 - [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
-- [SKIPPED] **Notification recall keybindings** (v3.2.0, v3.2.2) — `swaync-client` lacks `--activate-last`/`--close-last` flags in current version
 - [x] **`eff` + `ff` aliases** (v3.4.0) — Added to `aliases.zsh` *(done 2026-03-05)*
 - [x] **SSH port forwarding `fip`/`dip`/`lip`** (v3.4.0) — Added to `ssh-port-forwarding.zsh` (`dip` = disconnect, not dynamic) *(done 2026-03-05)*
 - [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)*
@@ -265,6 +280,18 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 - [SKIPPED] **`OMARCHY_PATH` SSH environment export** (v3.4.1) — Omarchy-specific env var
 - [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script
 - [SKIPPED] **Screensaver `slidein` animation** (v3.4.1) — minor, Omarchy-specific default
+- [SKIPPED] **Fuller battery status notification** (v3.4.2) — uses `omarchy-battery-*` scripts, Omarchy-specific
+- [SKIPPED] **Screen recording notification thumbnail + open** (v3.4.2) — uses `omarchy-cmd-screenrecord`, Omarchy-specific
+- [SKIPPED] **Copilot key remapping via makima** (v3.4.2) — hardware-specific (Copilot key keyboards only); `makima-bin` not applicable to our hardware
+- [SKIPPED] **`Alt+Shift+Arrow` tmux window swap** (v3.4.2) — using zellij, not tmux
+- [SKIPPED] **Tmux automatic window renaming** (v3.4.2) — using zellij, not tmux
+- [SKIPPED] **Tmux zoom indicator** (v3.4.2) — using zellij, not tmux
+- [SKIPPED] **`Super+Shift+Return` browser shortcut** (v3.4.2) — we already have `Super+W` for browser; redundant binding
+- [SKIPPED] **`plocate` AC-only indexing** (v3.4.2) — `plocate` not in our packages
+- [SKIPPED] **Intel Panther Lake/Arc GPU fixes** (v3.4.2) — hardware-specific, NVIDIA setup
+- [SKIPPED] **`wayfreeze-git` migration cleanup** (v3.4.2) — `wayfreeze-git` still in our packages (intentional)
+- [SKIPPED] **Limine cmdline spacing fixes** (v3.4.2) — not using Limine bootloader
+- [SKIPPED] **LM Studio downgrade fix** (v3.4.2) — LM Studio not in our packages
 
 ---
 
@@ -322,3 +349,4 @@ Last updated: 2026-03-05 (through v3.4.1; immediate wins + non-binding items app
 | v3.3.3 | `_research/omarchy/OMARCHY_v3.3.3.md` | 2026-02-21 |
 | v3.4.0 | `_research/omarchy/OMARCHY_v3.4.0.md` | 2026-03-05 |
 | v3.4.1 | `_research/omarchy/OMARCHY_v3.4.1.md` | 2026-03-05 |
+| v3.4.2 | `_research/omarchy/OMARCHY_v3.4.2.md` | 2026-03-12 |
