@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-03-12 (through v3.4.2).
+Last updated: 2026-03-12 (through v3.4.2). Skipped items re-audited 2026-03-12.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
@@ -66,9 +66,9 @@ Last updated: 2026-03-12 (through v3.4.2).
 
 ### `mise activate bash --shims` in uwsm/env (v3.4.2)
 **What**: Omarchy changed `~/.config/uwsm/env` to use `mise activate bash --shims` instead of `mise activate bash`. The `--shims` flag ensures mise-managed tools are available in non-interactive Wayland session environments (e.g., for apps launched from Hyprland that don't spawn a login shell).
-**Target files**: `private_dot_config/uwsm/env` (if managed) or relevant environment setup
+**Target files**: `private_dot_config/uwsm/env` (new managed file)
 
-- [ ] Check if `~/.config/uwsm/env` is chezmoi-managed; if not, create it
+- [ ] Create `private_dot_config/uwsm/env` managed by chezmoi
 - [ ] Set `mise activate bash --shims` (or equivalent for zsh) in that file
 - [ ] Verify mise-managed tools (e.g., node, ruby) are visible to Wayland-launched apps
 
@@ -180,12 +180,45 @@ Last updated: 2026-03-12 (through v3.4.2).
 ---
 
 ### Screensaver (hypridle/hyprlock) tuning (v1.10.0)
-**What**: Omarchy idle timeout settled at 2.5 minutes. Battery notification persistence at 30 seconds. Check our hypridle config against these values.
-**Target files**: `private_dot_config/hypridle.conf` or equivalent
+**What**: Omarchy tested battery notification persistence at 30 seconds. Our idle timeout values are intentionally more relaxed (5/10/15min vs Omarchy's 2.5/5/5.5min), but the notification duration may differ.
+**Target files**: dunst or swaync config
+**Effort**: Low
 
-- [ ] Review hypridle timeout values in our config
-- [ ] Review battery notification duration in dunst/swaync config
-- [ ] Align with Omarchy's tested values if different
+- [ ] Review battery notification duration in dunst/swaync config — confirm 30s persistence or adjust to taste
+
+### Fuller battery status notification (v3.4.2)
+**What**: On-demand notification (`Super+Ctrl+Alt+B`) showing battery percentage, time remaining (charging or discharging), power draw in watts, and battery capacity in Wh. Three scripts in Omarchy: `omarchy-battery-status`, `omarchy-battery-remaining-time`, `omarchy-battery-capacity`.
+**Target files**: `private_dot_local/bin/` or `private_dot_local/lib/scripts/desktop/`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
+**Effort**: Low
+**Adapt from**: `bin/omarchy-battery-status`, `bin/omarchy-battery-remaining-time`, `bin/omarchy-battery-capacity`
+
+- [ ] Review Omarchy's three battery scripts for data sources (likely `upower -i $(upower -e | grep BAT)`)
+- [ ] Implement as a single shell script using `upower` output
+- [ ] Add `Super+Ctrl+Alt+B` binding to `desktop-utilities.conf`
+
+---
+
+### Screen recording notification thumbnail + open (v3.4.2)
+**What**: After stopping a screen recording, generates a thumbnail via `ffmpeg` and sends a desktop notification. Pressing `Super+Alt+,` (or clicking the notification action) opens the video in `mpv`. Wraps the existing `gpu-screen-recorder-git` workflow.
+**Target files**: `private_dot_local/bin/` (new wrapper script), `private_dot_config/hypr/conf/bindings/screenshots.conf`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-cmd-screenrecord`
+
+- [ ] Review Omarchy's `omarchy-cmd-screenrecord` for thumbnail generation approach (`ffmpeg -ss 0 -vframes 1`)
+- [ ] Implement wrapper: start/stop recording, extract thumbnail frame, send `notify-send` with open action
+- [ ] Update screen recording binding in `screenshots.conf` to use new wrapper
+- [ ] Add `Super+Alt+,` open-last-recording binding
+
+---
+
+### Tmux navigation keybinds (v3.4.1)
+**What**: `Alt+Left/Right` moves between tmux windows; `Alt+Up/Down` moves between tmux sessions. Tmux is installed and configured.
+**Target files**: `private_dot_config/tmux/tmux.conf` (or equivalent managed path)
+**Effort**: Low
+
+- [ ] Add `bind -n M-Left previous-window` / `bind -n M-Right next-window` to tmux config
+- [ ] Add `bind -n M-Up switch-client -p` / `bind -n M-Down switch-client -n` for session navigation
+- [ ] Verify no conflict with zsh/terminal Alt+Arrow keybinds
 
 ---
 
@@ -233,16 +266,12 @@ Last updated: 2026-03-12 (through v3.4.2).
 - [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)*
 - [x] **Waybar idle-lock indicator** (v3.4.0) — `idle-indicator` script + Waybar module + CSS; DND already covered by `custom/swaync` *(done 2026-03-05)*
 - [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
-- [SKIPPED] **wireless-regdb** (v2.1.1) — No 6GHz hardware detected
-- [SKIPPED] **impala TUI** — Depends directly on `iwd` binary, incompatible with our NM+iwd backend setup
-- [SKIPPED] **Hypridle timing tuning** — Our 5/10/15min is intentionally more relaxed than Omarchy's 2.5/5/5.5min
 
 ---
 
 ## Skipped / Out of Scope
 
 - [SKIPPED] **Walker launcher** (v1.6.0+) — uses Wofi, not Walker
-- [SKIPPED] **`omarchy-*` scripts** — not applicable to chezmoi setup
 - [SKIPPED] **Aether theme creator** (v3.1.0) — Omarchy-specific app
 - [SKIPPED] **Helium browser** (v3.0.2) — out of scope
 - [SKIPPED] **Voxtype `Super+Ctrl+X`** (v3.3.0) — we use `Super+T` push-to-talk (different UX model)
@@ -256,7 +285,7 @@ Last updated: 2026-03-12 (through v3.4.2).
 - [SKIPPED] **`omarchy-launch-browser`/`omarchy-launch-webapp`** (v2.0.0) — Omarchy-specific launcher scripts
 - [SKIPPED] **Chaotic-AUR** (v1.6.2) — already in packages.yaml; decision to keep or remove is independent
 - [SKIPPED] **Dictation `Super+Ctrl+X`** (v3.3.0) — uses `Super+T` push-to-talk already
-- [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Omarchy-specific; uses Wofi-based system-menu
+- [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Walker-specific; *workflow pattern* (system quick-action menu) is partially covered by our Wofi system-menu
 - [SKIPPED] **T1/T2 MacBook support** (v3.0.0) — not applicable hardware
 - [SKIPPED] **Omarchy Chromium fork** (v2.0.0) — uses upstream Chromium
 - [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0, v3.4.0) — Omarchy-specific extension point
@@ -278,10 +307,8 @@ Last updated: 2026-03-12 (through v3.4.2).
 - [SKIPPED] **fcitx5 double auto-start fix** (v3.4.1) — not using fcitx5
 - [SKIPPED] **SDDM password field overflow** (v3.4.1) — not using SDDM
 - [SKIPPED] **`OMARCHY_PATH` SSH environment export** (v3.4.1) — Omarchy-specific env var
-- [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script
+- [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script; concept tracked in P3
 - [SKIPPED] **Screensaver `slidein` animation** (v3.4.1) — minor, Omarchy-specific default
-- [SKIPPED] **Fuller battery status notification** (v3.4.2) — uses `omarchy-battery-*` scripts, Omarchy-specific
-- [SKIPPED] **Screen recording notification thumbnail + open** (v3.4.2) — uses `omarchy-cmd-screenrecord`, Omarchy-specific
 - [SKIPPED] **Copilot key remapping via makima** (v3.4.2) — hardware-specific (Copilot key keyboards only); `makima-bin` not applicable to our hardware
 - [SKIPPED] **`Alt+Shift+Arrow` tmux window swap** (v3.4.2) — using zellij, not tmux
 - [SKIPPED] **Tmux automatic window renaming** (v3.4.2) — using zellij, not tmux
@@ -292,6 +319,9 @@ Last updated: 2026-03-12 (through v3.4.2).
 - [SKIPPED] **`wayfreeze-git` migration cleanup** (v3.4.2) — `wayfreeze-git` still in our packages (intentional)
 - [SKIPPED] **Limine cmdline spacing fixes** (v3.4.2) — not using Limine bootloader
 - [SKIPPED] **LM Studio downgrade fix** (v3.4.2) — LM Studio not in our packages
+- [SKIPPED] **wireless-regdb** (v2.1.1) — No 6GHz hardware detected
+- [SKIPPED] **impala TUI** — Depends directly on `iwd` binary, incompatible with our NM+iwd backend setup
+- [SKIPPED] **Hypridle timing tuning** — Our 5/10/15min is intentionally more relaxed than Omarchy's 2.5/5/5.5min
 
 ---
 
