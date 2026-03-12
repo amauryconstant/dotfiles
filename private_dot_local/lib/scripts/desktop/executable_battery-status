@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Script: battery-status
+# Purpose: Show battery status notification (percentage, time remaining, power draw, capacity)
+# Requirements: upower, notify-send
+# Keybinding: Super+Ctrl+Alt+B
+
+# shellcheck disable=SC2312
+battery=$(upower -e | grep BAT | head -n1)
+
+if [[ -z "$battery" ]]; then
+    notify-send "🔋 Battery" "No battery detected" -t 3000
+    exit 0
+fi
+
+info=$(upower -i "$battery")
+
+percentage=$(echo "$info" | awk '/percentage/ {print $2}')
+state=$(echo "$info" | awk '/^\s+state:/ {print $2}')
+energy_rate=$(echo "$info" | awk '/energy-rate/ {printf "%.1f W", $2}')
+energy_full=$(echo "$info" | awk '/energy-full:/ {printf "%.0f Wh", $2}')
+
+# Time remaining or time to full
+if echo "$info" | grep -q "time to full"; then
+    time_val=$(echo "$info" | awk '/time to full/ {print $4, $5}')
+    time_line="Time to full: $time_val"
+    icon="🔌"
+elif echo "$info" | grep -q "time to empty"; then
+    time_val=$(echo "$info" | awk '/time to empty/ {print $4, $5}')
+    time_line="Time remaining: $time_val"
+    icon="🔋"
+else
+    time_line=""
+    icon="🔋"
+fi
+
+msg="$percentage ($state)"
+[[ -n "$time_line" ]] && msg="$msg\n$time_line"
+[[ -n "$energy_rate" ]] && msg="$msg\nPower: $energy_rate"
+[[ -n "$energy_full" ]] && msg="$msg\nCapacity: $energy_full"
+
+notify-send "$icon Battery" "$msg" -t 8000

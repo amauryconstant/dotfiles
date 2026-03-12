@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+# Script: zoom-cursor
+# Purpose: Increment/decrement Hyprland cursor zoom factor
+# Requirements: Hyprland, jaq
+# Usage: zoom-cursor [in|out|reset]
+
+case "$1" in
+    in)
+        # shellcheck disable=SC2312
+        current=$(hyprctl -j getoption misc:cursor_zoom_factor | jaq -r '.float')
+        new=$(echo "$current" | awk '{printf "%.1f", $1 + 0.2}')
+        hyprctl keyword misc:cursor_zoom_factor "$new"
+        ;;
+    out)
+        # shellcheck disable=SC2312
+        current=$(hyprctl -j getoption misc:cursor_zoom_factor | jaq -r '.float')
+        new=$(echo "$current" | awk '{x = $1 - 0.2; printf "%.1f", (x < 1.0) ? 1.0 : x}')
+        hyprctl keyword misc:cursor_zoom_factor "$new"
+        ;;
+    reset)
+        hyprctl keyword misc:cursor_zoom_factor 1.0
+        ;;
+    *)
+        echo "Usage: zoom-cursor [in|out|reset]" >&2
+        exit 1
+        ;;
+esac
