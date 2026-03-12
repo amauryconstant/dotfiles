@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# uwsm session environment
+# Sets environment for Wayland session (sourced by uwsm before launching Hyprland)
+# mise shims: makes mise-managed tools (node, ruby, etc.) visible to apps
+# launched from Hyprland that don't go through a login shell
+eval "$(mise activate bash --shims)"
