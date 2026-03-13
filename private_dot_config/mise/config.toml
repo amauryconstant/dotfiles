@@ -12,7 +12,10 @@ bun = true
 # Runner & Package manager
 uv = "latest"
 bun = "latest"
-node = "latest"
+node = [
+    {version = "24"},
+    {version="latest"}
+]
 pnpm = "latest"
 
 # Tools
