@@ -11,6 +11,8 @@ cleanup = true
 no_retry = true
 # Sudo command to be used
 sudo_command = "sudo"
+# Automatically handle .pacnew files after updates
+pacdiff_on_update = true
 # Disable specific steps - exclude development tools handled separately
 disable = [
     "cargo",
@@ -23,9 +25,11 @@ disable = [
     "go",
     "deno",
     "bun",
+    "bun_packages",
     "uv",
     "system",    # Disable pacman/paru (handled by package-manager)
     "flatpak",   # Disable flatpak (handled by package-manager)
+    "oh_my_zsh", # Disable oh-my-zsh (plugins handled by antidote)
 ]
 
 # Package managers configuration
@@ -39,11 +43,6 @@ show_arch_news = true
 [firmware]
 # Update firmware when available
 upgrade = true
-
-# Flatpak configuration
-[flatpak]
-# DISABLED: Flatpak management handled by package-manager.sh
-# use_sudo = true
 
 # Git repositories maintenance
 [git]
@@ -63,6 +62,8 @@ arguments = "--rebase --autostash --prune"
 
 # Custom commands for system-specific maintenance
 [commands]
+# Update antidote-managed Zsh plugins
+"Antidote plugin update" = "zsh -c 'source /usr/share/zsh-antidote/antidote.zsh && antidote update'"
 # Post-update system status
 "Post-update system status" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/system-health --brief"
 # Check for unmanaged packages (installed outside dotfiles)
