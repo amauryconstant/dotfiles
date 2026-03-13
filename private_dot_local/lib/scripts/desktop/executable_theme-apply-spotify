@@ -30,5 +30,7 @@ case "$THEME_NAME" in
         ;;
 esac
 
-# Apply theme
-spicetify apply >/dev/null 2>&1
+# Apply theme (restore backup if data is outdated, e.g. after Spotify update)
+if ! spicetify apply 2>&1 | grep -q "Applied"; then
+    spicetify restore backup apply >/dev/null 2>&1
+fi
