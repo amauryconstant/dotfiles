@@ -40,3 +40,6 @@ alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 # Fuzzy-find and open in editor
 alias eff='$EDITOR "$(ff)"'
 
+# Openspec
+alias osc='openspec'
+alias osx='openspec-extended'
