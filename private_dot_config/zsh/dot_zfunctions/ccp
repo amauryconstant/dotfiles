@@ -1,0 +1,44 @@
+# Zsh function: ccp
+# Launch Claude Code with merged settings profiles
+
+ccp() {
+  local CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/claude"
+  local CLAUDE_PROFILES_DIR="${CLAUDE_CONFIG_DIR}/profiles"
+  local base_settings="${CLAUDE_CONFIG_DIR}/settings.json"
+  local profile_names=()
+  local claude_args=()
+  local parsing_profiles=true
+
+  for arg in "$@"; do
+    if [[ "$arg" == "--" ]]; then
+      parsing_profiles=false
+      continue
+    fi
+    if $parsing_profiles; then profile_names+=("$arg"); else claude_args+=("$arg"); fi
+  done
+
+  if [[ ${#profile_names[@]} -eq 0 ]]; then
+    echo "Usage: ccp <profile> [profile2...] [-- <claude args>]"
+    echo ""
+    echo "Available profiles:"
+    ls "$CLAUDE_PROFILES_DIR"/*.json 2>/dev/null | xargs -n1 basename | sed 's/\.json$//'
+    return 0
+  fi
+
+  for p in "${profile_names[@]}"; do
+    [[ ! -f "${CLAUDE_PROFILES_DIR}/${p}.json" ]] && echo "Profile not found: $p" >&2 && return 1
+  done
+
+  local tmpfile
+  tmpfile=$(mktemp --suffix=.json)
+  trap "rm -f '$tmpfile'" EXIT
+
+  local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
+  profile_files=("${profile_files[@]/%/.json}")
+  local merged
+  merged=$(cat "$base_settings" "${profile_files[@]}" | jaq -s 'reduce .[] as $item ({}; . * $item)') \
+    || { echo "Failed to merge profiles" >&2; return 1; }
+  print -r -- "$merged" >| "$tmpfile"
+
+  claude --settings "$tmpfile" "${claude_args[@]}"
+}

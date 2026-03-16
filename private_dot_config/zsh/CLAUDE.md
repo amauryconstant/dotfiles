@@ -65,13 +65,14 @@ Auto-sourced in `dot_zshrc` (alphabetical order, ignores `~*` files):
 
 Autoloaded via Zephyr `zfunctions` plugin:
 
-| Function            | Purpose                                                   |
-| ------------------- | --------------------------------------------------------- |
-| `br`                | broot wrapper (executes shell commands produced by broot) |
-| `commands`          | List all custom CLI tools with descriptions               |
-| `debug-zsh-startup` | Startup time profiling utility                            |
-| `theme`             | Wrapper for `theme-switcher` with tab completion          |
-| `theme-list`        | Display available themes with current indicator           |
+| Function            | Purpose                                                                        |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `br`                | broot wrapper (executes shell commands produced by broot)                      |
+| `ccp`               | Launch Claude Code with merged settings profiles (`ccp glm -- -p`)            |
+| `commands`          | List all custom CLI tools with descriptions                                    |
+| `debug-zsh-startup` | Startup time profiling utility                                                 |
+| `theme`             | Wrapper for `theme-switcher` with tab completion                               |
+| `theme-list`        | Display available themes with current indicator                                |
 
 ## Custom Completions (`dot_zcompletions/`)
 
