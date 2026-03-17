@@ -1,0 +1,35 @@
+# Service configuration for systemd enablement
+# Used by: run_once_after_002, run_once_after_004, run_once_after_006
+
+system_services:
+  # Core system services to enable at boot
+  # requires_command: skip if this binary is not installed
+  - name: docker.socket
+    enabled: true
+    user_groups: [docker]
+  - name: bluetooth.service
+    enabled: true
+  - name: tailscaled.service
+    enabled: true
+    requires_command: tailscale
+  - name: cups.service
+    enabled: true
+    requires_command: lpstat
+
+user_services:
+  # User-level systemd services to enable
+  - name: darkman.service
+    enabled: true
+
+user_timers:
+  # User-level systemd timers to enable
+  # start: true = enable AND start immediately; false = enable only
+  - name: wallpaper-cycle
+    enabled: true
+    start: true
+  - name: system-health-check
+    enabled: true
+    start: true
+  - name: home-backup
+    enabled: true
+    start: false    # enable only — needs restic repo init first

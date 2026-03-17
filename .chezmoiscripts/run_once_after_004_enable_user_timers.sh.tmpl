@@ -8,97 +8,47 @@
 
 set -euo pipefail
 
-# Verify wallpaper-cycle timer unit file exists
-{{ includeTemplate "log_step" "Verifying wallpaper-cycle.timer exists..." }}
-
-# Check if timer file is available
-if ! systemctl --user list-unit-files wallpaper-cycle.timer >/dev/null 2>&1; then
-    {{ includeTemplate "log_warning" "wallpaper-cycle.timer unit file not found" }}
-    {{ includeTemplate "log_info" "" }}
-    {{ includeTemplate "log_info" "The wallpaper timer service files may not be deployed yet." }}
-    {{ includeTemplate "log_info" "This can happen if:" }}
-    {{ includeTemplate "log_info" "  1. The systemd user service files haven't been applied" }}
-    {{ includeTemplate "log_info" "  2. The service is in a different directory" }}
-    {{ includeTemplate "log_info" "" }}
-    {{ includeTemplate "log_info" "To fix:" }}
-    {{ includeTemplate "log_info" "  1. Verify files exist: ~/.config/systemd/user/wallpaper-cycle.*" }}
-    {{ includeTemplate "log_info" "  2. Re-run: chezmoi apply" }}
-    {{ includeTemplate "log_info" "  3. Reload daemon: systemctl --user daemon-reload" }}
-    {{ includeTemplate "log_info" "" }}
-    {{ includeTemplate "log_skip" "Skipping wallpaper timer setup" }}
-    exit 0
-fi
-
-{{ includeTemplate "log_success" "wallpaper-cycle.timer found" }}
-
 {{ includeTemplate "log_step" "Reloading systemd user daemon" }}
 systemctl --user daemon-reload
 
-{{ includeTemplate "log_step" "Enabling wallpaper-cycle.timer" }}
-systemctl --user enable wallpaper-cycle.timer
+{{ range .services.user_timers }}
+{{ if .enabled }}
+# ----------------------------------------------------------------------------
+# Timer: {{ .name }}
+# ----------------------------------------------------------------------------
 
-{{ includeTemplate "log_step" "Starting wallpaper-cycle.timer" }}
-systemctl --user start wallpaper-cycle.timer
+{{ includeTemplate "log_step" "Enabling {{ .name }}.timer..." }}
 
+if ! systemctl --user list-unit-files {{ .name }}.timer >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "{{ .name }}.timer unit file not found — skipping" }}
+    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/{{ .name }}.* exist" }}
+else
+    systemctl --user enable {{ .name }}.timer
+    {{ if .start }}
+    {{ includeTemplate "log_step" "Starting {{ .name }}.timer" }}
+    systemctl --user start {{ .name }}.timer
+
+    if systemctl --user is-active --quiet {{ .name }}.timer; then
+        {{ includeTemplate "log_success" "{{ .name }}.timer is active" }}
+    else
+        {{ includeTemplate "log_warning" "{{ .name }}.timer failed to start (check journalctl --user -u {{ .name }}.timer)" }}
+    fi
+    {{ else }}
+    if systemctl --user is-enabled --quiet {{ .name }}.timer; then
+        {{ includeTemplate "log_success" "{{ .name }}.timer enabled (not started — needs init first)" }}
+        {{ includeTemplate "log_info" "Repository must be initialized first before starting this timer" }}
+    else
+        {{ includeTemplate "log_warning" "{{ .name }}.timer failed to enable" }}
+    fi
+    {{ end }}
+fi
+{{ end }}
+{{ end }}
+
+# Trigger initial wallpaper change for wallpaper-cycle after enabling
+{{ range .services.user_timers }}{{ if and .enabled (eq .name "wallpaper-cycle") }}
 {{ includeTemplate "log_step" "Triggering initial wallpaper change" }}
-systemctl --user start wallpaper-cycle.service
-
-{{ includeTemplate "log_step" "Verifying timer status" }}
-if systemctl --user is-active --quiet wallpaper-cycle.timer; then
-    {{ includeTemplate "log_success" "Wallpaper timer is active" }}
-else
-    {{ includeTemplate "log_error" "Wallpaper timer failed to start" }}
-    exit 1
-fi
-
-echo ""
-echo "Wallpaper will change automatically every 30 minutes"
-echo "Check status: systemctl --user status wallpaper-cycle.timer"
-echo "Manual trigger: systemctl --user start wallpaper-cycle.service"
-
-# ============================================================================
-# SECTION 2: SYSTEM HEALTH CHECK TIMER
-# ============================================================================
-
-{{ includeTemplate "log_step" "Enabling system-health-check timer..." }}
-
-if ! systemctl --user list-unit-files system-health-check.timer >/dev/null 2>&1; then
-    {{ includeTemplate "log_warning" "system-health-check.timer unit file not found" }}
-    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/system-health-check.* exist" }}
-    {{ includeTemplate "log_skip" "Skipping health check timer setup" }}
-else
-    systemctl --user daemon-reload
-    systemctl --user enable --now system-health-check.timer
-
-    if systemctl --user is-active --quiet system-health-check.timer; then
-        {{ includeTemplate "log_success" "system-health-check.timer is active" }}
-    else
-        {{ includeTemplate "log_warning" "system-health-check.timer failed to start (check journalctl --user -u system-health-check.timer)" }}
-    fi
-fi
-
-
-# ============================================================================
-# SECTION 3: HOME BACKUP TIMER
-# ============================================================================
-
-{{ includeTemplate "log_step" "Enabling home-backup timer..." }}
-
-if ! systemctl --user list-unit-files home-backup.timer >/dev/null 2>&1; then
-    {{ includeTemplate "log_warning" "home-backup.timer unit file not found" }}
-    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/home-backup.* exist" }}
-    {{ includeTemplate "log_skip" "Skipping home backup timer setup" }}
-else
-    systemctl --user daemon-reload
-    systemctl --user enable home-backup.timer
-
-    if systemctl --user is-enabled --quiet home-backup.timer; then
-        {{ includeTemplate "log_success" "home-backup.timer enabled (runs daily at 2am)" }}
-        {{ includeTemplate "log_info" "Repository must be initialized first: home-backup init" }}
-    else
-        {{ includeTemplate "log_warning" "home-backup.timer failed to enable" }}
-    fi
-fi
+systemctl --user start wallpaper-cycle.service 2>/dev/null || true
+{{ end }}{{ end }}
 
 {{ includeTemplate "log_complete" "User timers configured successfully" }}
-

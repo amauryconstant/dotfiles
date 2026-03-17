@@ -21,8 +21,42 @@
 # Set strict error handling
 set -euo pipefail
 
+{{- $username := .chezmoi.username }}
+
 # ============================================================================
-# SECTION 1: CORE SERVICES (Docker, Bluetooth, NVIDIA Power)
+# DATA-DRIVEN: Enable system services from services.yaml
+# ============================================================================
+
+{{ includeTemplate "log_step" "Enabling system services from configuration..." }}
+
+{{ range .services.system_services }}
+{{ if .enabled }}
+{{ if .requires_command }}
+if ! command -v {{ .requires_command }} >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Skipping {{ .name }} ({{ .requires_command }} not installed)" }}
+else
+{{ end }}
+    sudo systemctl enable {{ .name }} 2>/dev/null || true
+    {{ includeTemplate "log_success" "{{ .name }} enabled" }}
+    {{ range .user_groups }}
+    if getent group {{ . }} >/dev/null 2>&1; then
+        if id -nG {{ $username }} | grep -qw {{ . }}; then
+            {{ includeTemplate "log_skip" "User already in {{ . }} group" }}
+        else
+            sudo usermod -aG {{ . }} {{ $username }}
+            {{ includeTemplate "log_success" "User added to {{ . }} group" }}
+            {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
+        fi
+    fi
+    {{ end }}
+{{ if .requires_command }}
+fi
+{{ end }}
+{{ end }}
+{{ end }}
+
+# ============================================================================
+# SECTION 1: ADDITIONAL CORE SERVICE CONFIGURATION (Bluetooth, NVIDIA Power)
 # ============================================================================
 
 echo ""
@@ -30,35 +64,6 @@ echo "════════════════════════�
 echo "  SECTION 1: Core System Services"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-
-{{ includeTemplate "log_step" "Configuring Docker service..." }}
-
-# Enable Docker socket (on-demand startup via socket activation)
-sudo systemctl enable docker.socket
-{{ includeTemplate "log_success" "Docker socket enabled (on-demand startup)" }}
-
-# Add current user to docker group for socket access
-{{- $username := .chezmoi.username }}
-{{ includeTemplate "log_step" "Adding user to docker group..." }}
-
-if getent group docker >/dev/null 2>&1; then
-    # Check if user is already in docker group
-    if id -nG {{ $username }} | grep -qw docker; then
-        {{ includeTemplate "log_skip" "User already in docker group" }}
-    else
-        sudo usermod -aG docker {{ $username }}
-        {{ includeTemplate "log_success" "User added to docker group" }}
-        {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
-    fi
-else
-    {{ includeTemplate "log_warning" "Docker group not found - ensure Docker is installed" }}
-fi
-
-{{ includeTemplate "log_step" "Configuring Bluetooth service..." }}
-
-# Enable Bluetooth (basic system service)
-sudo systemctl enable --now bluetooth
-{{ includeTemplate "log_success" "Bluetooth service enabled" }}
 
 {{ includeTemplate "log_step" "Configuring Blueman notification daemon..." }}
 

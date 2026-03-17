@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-# Script: run_once_after_013_setup_darkman.sh.tmpl
+# Script: run_once_after_006_setup_darkman.sh.tmpl
 # Purpose: Enable and start darkman service for solar theme switching
 # Requirements: Arch Linux, darkman package
+
+{{- $darkmanService := "darkman.service" -}}
+{{- range .services.user_services }}{{- if eq .name "darkman.service" }}{{- $darkmanService = .name }}{{- end }}{{- end }}
 
 {{ includeTemplate "log_start" "Setting up darkman solar automation" }}
 
@@ -20,11 +23,11 @@ if [ ! -f "$HOME/.local/lib/scripts/desktop/theme-switcher" ]; then
     {{ includeTemplate "log_warning" "theme-switcher not yet deployed" }}
     {{ includeTemplate "log_info" "This can happen during fresh installation" }}
     {{ includeTemplate "log_info" "Darkman service will be configured but not started" }}
-    {{ includeTemplate "log_info" "Run 'systemctl --user start darkman.service' after chezmoi apply completes" }}
+    {{ includeTemplate "log_info" "Run 'systemctl --user start {{ $darkmanService }}' after chezmoi apply completes" }}
 
     # Configure but don't start
     systemctl --user daemon-reload
-    systemctl --user enable darkman.service
+    systemctl --user enable {{ $darkmanService }}
 
     {{ includeTemplate "log_complete" "Darkman configured (manual start required)" }}
     exit 0
@@ -35,21 +38,21 @@ fi
 {{ includeTemplate "log_step" "Reloading systemd user daemon" }}
 systemctl --user daemon-reload
 
-{{ includeTemplate "log_step" "Enabling darkman.service" }}
-systemctl --user enable darkman.service
+{{ includeTemplate "log_step" "Enabling {{ $darkmanService }}" }}
+systemctl --user enable {{ $darkmanService }}
 
-{{ includeTemplate "log_step" "Starting darkman.service" }}
-systemctl --user start darkman.service
+{{ includeTemplate "log_step" "Starting {{ $darkmanService }}" }}
+systemctl --user start {{ $darkmanService }}
 
 # Wait a moment for service to start
 sleep 2
 
 {{ includeTemplate "log_step" "Verifying darkman service status" }}
-if systemctl --user is-active --quiet darkman.service; then
+if systemctl --user is-active --quiet {{ $darkmanService }}; then
     {{ includeTemplate "log_success" "darkman service is running" }}
 else
     {{ includeTemplate "log_error" "darkman service failed to start" }}
-    systemctl --user status darkman.service --no-pager
+    systemctl --user status {{ $darkmanService }} --no-pager
     exit 1
 fi
 
