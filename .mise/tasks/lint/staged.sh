@@ -25,9 +25,10 @@ while IFS= read -r script; do
   if [[ "$script" == *.tmpl ]]; then
     echo "  → Validating template: $script"
 
-    # Pre-render template with chezmoi
+    # Pre-render template with chezmoi (use current worktree as source for correct data files)
     rendered_file="$temp_dir/$(basename "$script" .tmpl)"
-    if ! chezmoi execute-template < "$script" > "$rendered_file" 2>/dev/null; then
+    worktree_root=$(git rev-parse --show-toplevel)
+    if ! chezmoi execute-template --source "$worktree_root" < "$script" > "$rendered_file" 2>/dev/null; then
       echo "    ❌ Template rendering failed: $script"
       echo "       Run: chezmoi execute-template < $script"
       validation_failed=1
