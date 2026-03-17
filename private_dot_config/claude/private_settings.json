@@ -4,7 +4,17 @@
   },
   "includeCoAuthoredBy": false,
   "enabledPlugins": {
-    "context7@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
   },
-  "model": "sonnet"
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  }
 }
