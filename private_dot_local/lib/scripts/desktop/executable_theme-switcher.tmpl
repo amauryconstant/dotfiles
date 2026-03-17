@@ -155,6 +155,9 @@ switch_theme() {
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-zellij" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-zellij" 2>/dev/null || true
     fi
+    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-neovim" ]; then
+        "$HOME/.local/lib/scripts/desktop/theme-apply-neovim" 2>/dev/null || true
+    fi
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" 2>/dev/null || true
     fi

@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# Script: theme-apply-neovim
+# Purpose: Reload colorscheme in all running Neovim instances via RPC
+# Requirements: Arch Linux, neovim
+
+# Find nvim server sockets (XDG_RUNTIME_DIR and /tmp fallback)
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+for socket in "$runtime_dir"/nvim.*.0 /tmp/nvim*/nvim.*.0; do
+    [ -S "$socket" ] || continue
+    nvim --server "$socket" --remote-send \
+        ":lua require('dotfiles_theme').reload()<CR>" 2>/dev/null &
+done
