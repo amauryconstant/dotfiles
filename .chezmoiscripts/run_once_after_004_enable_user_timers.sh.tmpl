@@ -17,28 +17,28 @@ systemctl --user daemon-reload
 # Timer: {{ .name }}
 # ----------------------------------------------------------------------------
 
-{{ includeTemplate "log_step" "Enabling {{ .name }}.timer..." }}
+{{ includeTemplate "log_step" (printf "Enabling %s.timer..." .name) }}
 
 if ! systemctl --user list-unit-files {{ .name }}.timer >/dev/null 2>&1; then
-    {{ includeTemplate "log_warning" "{{ .name }}.timer unit file not found — skipping" }}
-    {{ includeTemplate "log_info" "Verify: ~/.config/systemd/user/{{ .name }}.* exist" }}
+    {{ includeTemplate "log_warning" (printf "%s.timer unit file not found — skipping" .name) }}
+    {{ includeTemplate "log_info" (printf "Verify: ~/.config/systemd/user/%s.* exist" .name) }}
 else
     systemctl --user enable {{ .name }}.timer
     {{ if .start }}
-    {{ includeTemplate "log_step" "Starting {{ .name }}.timer" }}
+    {{ includeTemplate "log_step" (printf "Starting %s.timer" .name) }}
     systemctl --user start {{ .name }}.timer
 
     if systemctl --user is-active --quiet {{ .name }}.timer; then
-        {{ includeTemplate "log_success" "{{ .name }}.timer is active" }}
+        {{ includeTemplate "log_success" (printf "%s.timer is active" .name) }}
     else
-        {{ includeTemplate "log_warning" "{{ .name }}.timer failed to start (check journalctl --user -u {{ .name }}.timer)" }}
+        {{ includeTemplate "log_warning" (printf "%s.timer failed to start (check journalctl --user -u %s.timer)" .name .name) }}
     fi
     {{ else }}
     if systemctl --user is-enabled --quiet {{ .name }}.timer; then
-        {{ includeTemplate "log_success" "{{ .name }}.timer enabled (not started — needs init first)" }}
+        {{ includeTemplate "log_success" (printf "%s.timer enabled (not started — needs init first)" .name) }}
         {{ includeTemplate "log_info" "Repository must be initialized first before starting this timer" }}
     else
-        {{ includeTemplate "log_warning" "{{ .name }}.timer failed to enable" }}
+        {{ includeTemplate "log_warning" (printf "%s.timer failed to enable" .name) }}
     fi
     {{ end }}
 fi
