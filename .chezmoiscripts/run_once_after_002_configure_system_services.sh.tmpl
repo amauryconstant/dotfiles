@@ -31,25 +31,26 @@ set -euo pipefail
 
 {{ range .services.system_services }}
 {{ if .enabled }}
-{{ if .requires_command }}
-if ! command -v {{ .requires_command }} >/dev/null 2>&1; then
-    {{ includeTemplate "log_skip" "Skipping {{ .name }} ({{ .requires_command }} not installed)" }}
+{{- $requiresCmd := index . "requires_command" | default "" -}}
+{{ if $requiresCmd }}
+if ! command -v {{ $requiresCmd }} >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" (printf "Skipping %s (%s not installed)" .name $requiresCmd) }}
 else
 {{ end }}
     sudo systemctl enable {{ .name }} 2>/dev/null || true
-    {{ includeTemplate "log_success" "{{ .name }} enabled" }}
-    {{ range .user_groups }}
+    {{ includeTemplate "log_success" (printf "%s enabled" .name) }}
+    {{ range (index . "user_groups" | default list) }}
     if getent group {{ . }} >/dev/null 2>&1; then
         if id -nG {{ $username }} | grep -qw {{ . }}; then
-            {{ includeTemplate "log_skip" "User already in {{ . }} group" }}
+            {{ includeTemplate "log_skip" (printf "User already in %s group" .) }}
         else
             sudo usermod -aG {{ . }} {{ $username }}
-            {{ includeTemplate "log_success" "User added to {{ . }} group" }}
+            {{ includeTemplate "log_success" (printf "User added to %s group" .) }}
             {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
         fi
     fi
     {{ end }}
-{{ if .requires_command }}
+{{ if $requiresCmd }}
 fi
 {{ end }}
 {{ end }}

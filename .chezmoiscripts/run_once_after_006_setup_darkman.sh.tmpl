@@ -23,7 +23,7 @@ if [ ! -f "$HOME/.local/lib/scripts/desktop/theme-switcher" ]; then
     {{ includeTemplate "log_warning" "theme-switcher not yet deployed" }}
     {{ includeTemplate "log_info" "This can happen during fresh installation" }}
     {{ includeTemplate "log_info" "Darkman service will be configured but not started" }}
-    {{ includeTemplate "log_info" "Run 'systemctl --user start {{ $darkmanService }}' after chezmoi apply completes" }}
+    {{ includeTemplate "log_info" (printf "Run 'systemctl --user start %s' after chezmoi apply completes" $darkmanService) }}
 
     # Configure but don't start
     systemctl --user daemon-reload
@@ -38,10 +38,10 @@ fi
 {{ includeTemplate "log_step" "Reloading systemd user daemon" }}
 systemctl --user daemon-reload
 
-{{ includeTemplate "log_step" "Enabling {{ $darkmanService }}" }}
+{{ includeTemplate "log_step" (printf "Enabling %s" $darkmanService) }}
 systemctl --user enable {{ $darkmanService }}
 
-{{ includeTemplate "log_step" "Starting {{ $darkmanService }}" }}
+{{ includeTemplate "log_step" (printf "Starting %s" $darkmanService) }}
 systemctl --user start {{ $darkmanService }}
 
 # Wait a moment for service to start
