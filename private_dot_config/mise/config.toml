@@ -29,6 +29,8 @@ prettier = "latest"
 "npm:@fission-ai/openspec" = "latest"
 "github:AlexsJones/llmfit" = "latest"
 "github:arimxyer/models" = "latest"
+"pipx:claude-monitor" = "latest"
+"npm:ccusage"  = "latest"
 
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"
