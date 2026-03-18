@@ -50,6 +50,7 @@ else
     {{ includeTemplate "log_info" "NVIDIA GPU detected: $GPU_VENDOR" }}
     NVIDIA_DETECTED=true
 
+{{ if .boot.gpu.kms }}
     {{ includeTemplate "log_step" "Configure initramfs NVIDIA modules BEFORE package installation" }}
 
     # CRITICAL: Configure mkinitcpio BEFORE installing nvidia-open-dkms
@@ -93,6 +94,7 @@ EOF
         {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
         {{ includeTemplate "log_info" "NVIDIA kernel modules loaded via extramodules" }}
     fi
+{{ end }}
 
     {{ includeTemplate "log_step" "Verify NVIDIA drivers installed" }}
 
@@ -114,6 +116,7 @@ EOF
         exit 1
     fi
 
+{{ if .boot.gpu.power_management }}
     {{ includeTemplate "log_step" "Enable NVIDIA power management services" }}
 
     # Re-enable NVIDIA power management services (removed during package reinstall)
@@ -136,6 +139,9 @@ EOF
             {{ includeTemplate "log_warning" "$service not found" }}
         fi
     done
+{{ else }}
+    {{ includeTemplate "log_skip" "NVIDIA power management services skipped (boot.gpu.power_management=false)" }}
+{{ end }}
 
     {{ includeTemplate "log_success" "GPU driver configuration complete" }}
 fi
@@ -476,6 +482,7 @@ if [[ -z "$HIBERNATION_UNSUPPORTED" ]] && command -v btrfs &>/dev/null; then
     fi
 fi
 
+{{ if .boot.hibernation.enabled }}
 if [[ -z "$HIBERNATION_UNSUPPORTED" ]]; then
     {{ includeTemplate "log_step" "Check hibernation support" }}
 
@@ -648,6 +655,9 @@ else
     fi
 fi
 fi  # End HIBERNATION_UNSUPPORTED check
+{{ else }}
+{{ includeTemplate "log_skip" "Hibernation configuration skipped (boot.hibernation.enabled=false)" }}
+{{ end }}
 
 # ============================================================================
 # SECTION 5: SINGLE INITRAMFS REBUILD

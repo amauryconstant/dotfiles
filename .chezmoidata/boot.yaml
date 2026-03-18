@@ -1,0 +1,11 @@
+# Boot system configuration
+# GPU vendor detection (lspci) stays in scripts — these flags control behavior WHEN GPU is detected
+# Plymouth theme and SDDM config come from globals.yaml (globals.plymouth.*, globals.sddm.*)
+
+boot:
+  gpu:
+    kms: true               # Enable kernel modesetting (add nvidia_drm.modeset=1 to GRUB)
+    power_management: true  # Enable NVIDIA power management services (suspend/resume/hibernate)
+  hibernation:
+    enabled: true
+    filesystem: btrfs       # btrfs requires special swap configuration
