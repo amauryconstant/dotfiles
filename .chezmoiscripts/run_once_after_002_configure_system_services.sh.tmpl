@@ -56,6 +56,36 @@ fi
 {{ end }}
 {{ end }}
 
+# Migrate ollama from system service to user service (one-time cleanup)
+if systemctl is-enabled ollama.service 2>/dev/null | grep -q "enabled"; then
+    {{ includeTemplate "log_step" "Migrating ollama from system service to user service..." }}
+    sudo systemctl stop ollama.service 2>/dev/null || true
+    sudo systemctl disable ollama.service 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/ollama.service
+    sudo systemctl daemon-reload
+    {{ includeTemplate "log_success" "Legacy ollama system service removed" }}
+fi
+
+{{ includeTemplate "log_step" "Enabling user services..." }}
+
+{{ range .services.user_services }}
+{{ if .enabled }}
+{{- $requiresCmd := index . "requires_command" | default "" -}}
+{{ if $requiresCmd }}
+if command -v {{ $requiresCmd }} > /dev/null 2>&1; then
+{{ end }}
+    systemctl --user enable {{ .name }} 2>/dev/null || true
+    {{ includeTemplate "log_success" (printf "%s enabled" .name) }}
+{{ if index . "start" | default false }}
+    systemctl --user start {{ .name }} 2>/dev/null || true
+    {{ includeTemplate "log_success" (printf "%s started" .name) }}
+{{ end }}
+{{ if $requiresCmd }}
+fi
+{{ end }}
+{{ end }}
+{{ end }}
+
 # ============================================================================
 # SECTION 1: ADDITIONAL CORE SERVICE CONFIGURATION (Bluetooth, NVIDIA Power)
 # ============================================================================
@@ -103,50 +133,6 @@ if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
     {{ includeTemplate "log_success" "NVIDIA power management services configured" }}
 else
     {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA power management" }}
-fi
-
-# ============================================================================
-# SECTION 2: OLLAMA AI SERVICE (Optional)
-# ============================================================================
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 2: Ollama AI Service"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-{{ includeTemplate "log_step" "Checking for Ollama installation..." }}
-
-# Check if ollama is installed
-if ! command -v ollama >/dev/null 2>&1; then
-    {{ includeTemplate "log_skip" "Ollama not found, skipping configuration" }}
-else
-    {{ includeTemplate "log_success" "Ollama is installed" }}
-
-    {{ includeTemplate "log_step" "Installing Ollama service file..." }}
-    # Copy ollama service file to system location
-    sudo cp "{{ .chezmoi.sourceDir }}/.data/ollama.service" /etc/systemd/system/ollama.service
-
-    {{ includeTemplate "log_step" "Enabling and starting Ollama service..." }}
-
-    # Enable and start ollama system service
-    sudo systemctl enable ollama
-    sudo systemctl start ollama
-
-    # Wait for service to be ready (proper wait loop instead of arbitrary sleep)
-    {{ includeTemplate "log_step" "Waiting for Ollama service to be ready..." }}
-    MAX_WAIT=30
-    WAIT_COUNT=0
-    while ! systemctl is-active ollama >/dev/null 2>&1; do
-        if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
-            {{ includeTemplate "log_error" "Ollama service failed to start within ${MAX_WAIT}s" }}
-            exit 1
-        fi
-        sleep 1
-        WAIT_COUNT=$((WAIT_COUNT + 1))
-    done
-
-    {{ includeTemplate "log_success" "Ollama service ready after ${WAIT_COUNT}s" }}
 fi
 
 # ============================================================================
@@ -354,14 +340,6 @@ for service in docker.socket bluetooth.service NetworkManager.service iwd.servic
 done
 
 # Verify optional services (only if installed)
-if command -v ollama >/dev/null 2>&1; then
-    if systemctl is-enabled ollama.service >/dev/null 2>&1; then
-        {{ includeTemplate "log_success" "ollama.service is enabled" }}
-    else
-        {{ includeTemplate "log_warning" "ollama.service is not enabled" }}
-    fi
-fi
-
 if command -v tailscale >/dev/null 2>&1; then
     if systemctl is-enabled tailscaled.service >/dev/null 2>&1; then
         {{ includeTemplate "log_success" "tailscaled.service is enabled" }}
@@ -388,19 +366,9 @@ if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
     echo "  ✓ NVIDIA power management (suspend/resume)"
 fi
 
-if command -v ollama >/dev/null 2>&1; then
+if command -v tailscale >/dev/null 2>&1; then
     echo ""
     echo "Optional Services Configured:"
-    echo "  ✓ Ollama AI service (enabled and running)"
-fi
-
-if command -v tailscale >/dev/null 2>&1; then
-    if [ ! -f /tmp/tailscale_configured_flag ] || command -v ollama >/dev/null 2>&1; then
-        echo ""
-    fi
-    if [ ! -f /tmp/tailscale_configured_flag ]; then
-        echo "Optional Services Configured:"
-    fi
     echo "  ✓ Tailscale VPN (enabled and running)"
 fi
 

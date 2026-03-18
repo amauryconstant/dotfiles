@@ -5,7 +5,7 @@
 # Requirements: Arch Linux, code (VSCode), firefox
 
 # Hash: {{ .extensions.code | toJson | sha256sum }}
-# Hash: {{ include ".data/firefox-policies.json" | sha256sum }}
+# Hash: {{ .firefox_policies | toJson | sha256sum }}
 
 {{ includeTemplate "log_start" "Installing extensions for Arch Linux..." }}
 
@@ -33,12 +33,12 @@ fi
 {{ includeTemplate "log_success" "VSCode extension installation finished" }}
 
 # Install Firefox policies
-if [ -f "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" ]; then
-    {{ includeTemplate "log_step" "Installing Firefox policies..." }}
-    sudo mkdir -p /usr/lib/firefox/distribution
-    sudo cp "{{ .chezmoi.sourceDir }}/.data/firefox-policies.json" /usr/lib/firefox/distribution/policies.json
-    sudo chmod 644 /usr/lib/firefox/distribution/policies.json
-    {{ includeTemplate "log_success" "Firefox policies installed" }}
-fi
+{{ includeTemplate "log_step" "Installing Firefox policies..." }}
+sudo mkdir -p /usr/lib/firefox/distribution
+sudo tee /usr/lib/firefox/distribution/policies.json > /dev/null << 'FIREFOX_POLICIES_EOF'
+{{ .firefox_policies | toPrettyJson }}
+FIREFOX_POLICIES_EOF
+sudo chmod 644 /usr/lib/firefox/distribution/policies.json
+{{ includeTemplate "log_success" "Firefox policies installed" }}
 
 {{ includeTemplate "log_complete" "Extension installation completed" }}

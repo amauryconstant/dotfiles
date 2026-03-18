@@ -22,8 +22,10 @@
 | `boot.yaml` | Boot config (GPU KMS, power management, hibernation) | `{{ .boot.* }}` |
 | `gsettings.yaml` | GSettings font config (schema, sizes, extra_settings) | `{{ .gsettings.* }}` |
 | `developer.yaml` | Developer env (shell, mise) | `{{ .developer.* }}` |
+| `firefox_policies.json` | Firefox policy config (extensions, settings) | `{{ .firefox_policies.* }}` |
 
 **Note**: All color theming uses theme system from `~/.config/themes/current/`
+**Note**: User service files live in `private_dot_config/systemd/user/` (e.g. `ollama.service`, `darkman.service`)
 
 ---
 

@@ -21,6 +21,10 @@ services:
     # User-level systemd services to enable
     - name: darkman.service
       enabled: true
+    - name: ollama.service
+      enabled: true
+      start: true
+      requires_command: ollama
 
   user_timers:
     # User-level systemd timers to enable
