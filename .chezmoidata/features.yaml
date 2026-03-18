@@ -1,0 +1,9 @@
+# Optional feature toggles
+# Set enabled: false to skip setup without removing the package from packages.yaml
+
+features:
+  voxtype:
+    enabled: true
+    gpu_device: 0
+  restic:
+    enabled: true
