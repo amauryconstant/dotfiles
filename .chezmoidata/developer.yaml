@@ -1,0 +1,6 @@
+# Developer environment configuration
+
+developer:
+  shell: zsh
+  mise:
+    enabled: true

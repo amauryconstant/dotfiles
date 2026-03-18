@@ -28,20 +28,20 @@ echo "  SECTION 1: Shell Configuration"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
-# Configure zsh as default shell if installed
-if command -v zsh >/dev/null 2>&1; then
+# Configure {{ .developer.shell }} as default shell if installed
+if command -v {{ .developer.shell }} >/dev/null 2>&1; then
     CURRENT_SHELL=$(getent passwd "$USER" | cut -d: -f7)
-    ZSH_PATH=$(which zsh)
+    SHELL_PATH=$(which {{ .developer.shell }})
 
-    if [ "$CURRENT_SHELL" = "$ZSH_PATH" ]; then
-        {{ includeTemplate "log_success" "zsh already set as default shell" }}
+    if [ "$CURRENT_SHELL" = "$SHELL_PATH" ]; then
+        {{ includeTemplate "log_success" (printf "%s already set as default shell" .developer.shell) }}
     else
-        {{ includeTemplate "log_step" "Setting zsh as default shell..." }}
-        chsh -s "$ZSH_PATH"
-        {{ includeTemplate "log_success" "zsh set as default shell (logout/login to apply)" }}
+        {{ includeTemplate "log_step" (printf "Setting %s as default shell..." .developer.shell) }}
+        chsh -s "$SHELL_PATH"
+        {{ includeTemplate "log_success" (printf "%s set as default shell (logout/login to apply)" .developer.shell) }}
     fi
 else
-    {{ includeTemplate "log_skip" "zsh not installed, skipping" }}
+    {{ includeTemplate "log_skip" (printf "%s not installed, skipping" .developer.shell) }}
 fi
 
 # ============================================================================
@@ -54,6 +54,7 @@ echo "  SECTION 2: Version Management"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
+{{ if .developer.mise.enabled }}
 # Initialize mise
 if command -v mise >/dev/null 2>&1; then
     {{ includeTemplate "log_step" "Installing mise tools..." }}
@@ -62,6 +63,7 @@ if command -v mise >/dev/null 2>&1; then
 else
     {{ includeTemplate "log_skip" "mise not installed, skipping" }}
 fi
+{{ end }}
 
 # ============================================================================
 # SECTION 3: GIT MERGE DRIVER CONFIGURATION
@@ -104,7 +106,7 @@ echo "  Developer Tools Configuration Complete"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 echo "  Configured:"
-echo "    ✓ Shell: zsh (default)"
+echo "    ✓ Shell: {{ .developer.shell }} (default)"
 echo "    ✓ Tools: mise (version manager)"
 echo "    ✓ Git: template merge driver"
 echo ""
