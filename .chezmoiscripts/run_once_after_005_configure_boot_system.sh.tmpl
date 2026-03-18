@@ -723,7 +723,7 @@ fi
 # Plymouth Summary
 if [ "$PLYMOUTH_INSTALLED" = true ]; then
     {{ includeTemplate "log_info" "Plymouth Configuration:" }}
-    {{ includeTemplate "log_info" "  ✓ Theme: {{ .globals.plymouth.theme }}" }}
+    {{ includeTemplate "log_info" (printf "  ✓ Theme: %s" .globals.plymouth.theme) }}
     {{ includeTemplate "log_info" "  ✓ Kernel parameters: splash quiet" }}
     if [ "${USES_ENCRYPTION:-false}" = true ]; then
         {{ includeTemplate "log_info" "  ✓ Hooks: plymouth (before encrypt hook)" }}
@@ -736,8 +736,8 @@ fi
 # SDDM Summary
 if [ "$SDDM_INSTALLED" = true ]; then
     {{ includeTemplate "log_info" "SDDM Configuration:" }}
-    {{ includeTemplate "log_info" "  ✓ Theme: {{ .globals.sddm.theme }}" }}
-    {{ includeTemplate "log_info" "  ✓ Display server: {{ .globals.sddm.display_server }}" }}
+    {{ includeTemplate "log_info" (printf "  ✓ Theme: %s" .globals.sddm.theme) }}
+    {{ includeTemplate "log_info" (printf "  ✓ Display server: %s" .globals.sddm.display_server) }}
     {{ includeTemplate "log_info" "  ✓ Hyprland session available" }}
     echo ""
 fi
