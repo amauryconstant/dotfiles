@@ -1,0 +1,11 @@
+# GSettings configuration for GTK/GNOME apps on Wayland
+# Font names come from globals.yaml (globals.guiFont, globals.terminalFont)
+# Sizes and schema configured here
+
+gsettings:
+  font_schema: "org.gnome.desktop.interface"
+  sizes:
+    gui: 11
+    mono: 11
+    document: 12
+  extra_settings: []  # Future: [{schema: "...", key: "...", value: "..."}]

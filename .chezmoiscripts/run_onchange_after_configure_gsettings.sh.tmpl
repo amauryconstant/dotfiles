@@ -4,7 +4,7 @@
 # Purpose: Configure GSettings font settings for Wayland (used by Firefox and GTK apps via XDG portal)
 # Requirements: Arch Linux, gsettings
 
-# Hash: {{ printf "%s %s" .globals.guiFont .globals.terminalFont | sha256sum }}
+# Hash: {{ list .globals.guiFont .globals.terminalFont (.gsettings | toJson) | join " " | sha256sum }}
 
 {{ includeTemplate "log_start" "Configuring GSettings font settings..." }}
 
@@ -16,12 +16,16 @@ if ! command -v gsettings >/dev/null 2>&1; then
 fi
 
 {{ includeTemplate "log_step" "Setting GUI font (sans-serif)..." }}
-gsettings set org.gnome.desktop.interface font-name '{{ .globals.guiFont }} 11'
+gsettings set {{ .gsettings.font_schema }} font-name '{{ .globals.guiFont }} {{ .gsettings.sizes.gui }}'
 
 {{ includeTemplate "log_step" "Setting monospace font (terminal)..." }}
-gsettings set org.gnome.desktop.interface monospace-font-name '{{ .globals.terminalFont }} 11'
+gsettings set {{ .gsettings.font_schema }} monospace-font-name '{{ .globals.terminalFont }} {{ .gsettings.sizes.mono }}'
 
 {{ includeTemplate "log_step" "Setting document font..." }}
-gsettings set org.gnome.desktop.interface document-font-name '{{ .globals.guiFont }} 12'
+gsettings set {{ .gsettings.font_schema }} document-font-name '{{ .globals.guiFont }} {{ .gsettings.sizes.document }}'
 
+{{ range .gsettings.extra_settings }}
+{{ includeTemplate "log_step" (printf "Setting %s %s..." .schema .key) }}
+gsettings set {{ .schema }} {{ .key }} '{{ .value }}'
+{{ end }}
 {{ includeTemplate "log_complete" "GSettings fonts configured (Firefox and GTK apps will use Inter as GUI font)" }}
