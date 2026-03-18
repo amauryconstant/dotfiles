@@ -17,6 +17,11 @@
 | `ai.yaml` | AI model configuration | `{{ .ai.* }}` |
 | `extensions.yaml` | VSCode extensions | `{{ .extensions.* }}` |
 | `globals.yaml` | Global env vars (XDG, apps, boot, timeshift) | `{{ .globals.* }}` |
+| `services.yaml` | Service enablement (system services, user services, timers) | `{{ .services.* }}` |
+| `features.yaml` | Optional feature toggles (voxtype, restic) | `{{ .features.* }}` |
+| `boot.yaml` | Boot config (GPU KMS, power management, hibernation) | `{{ .boot.* }}` |
+| `gsettings.yaml` | GSettings font config (schema, sizes, extra_settings) | `{{ .gsettings.* }}` |
+| `developer.yaml` | Developer env (shell, mise) | `{{ .developer.* }}` |
 
 **Note**: All color theming uses theme system from `~/.config/themes/current/`
 
@@ -46,6 +51,14 @@
 .extensions.code          # VSCode extension arrays
 .globals.applications.*   # Default apps (EDITOR, VISUAL, BROWSER)
 .globals.xdg.*           # XDG Base Directory paths
+.services.user_timers     # List of user timers with name/enabled/start fields
+.features.voxtype.enabled # Boolean toggle for Voxtype setup
+.boot.gpu.kms             # Boolean: enable NVIDIA KMS modeset
+.boot.hibernation.enabled # Boolean: configure hibernation
+.gsettings.font_schema    # GSettings schema string
+.gsettings.sizes.gui      # Font size integer
+.developer.shell          # Default shell (e.g. zsh)
+.developer.mise.enabled   # Boolean: enable mise setup
 ```
 
 ### Common Patterns
