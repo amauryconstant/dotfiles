@@ -15,7 +15,7 @@ clip() {
 
   pkill -f 'wl-paste --watch.*clipboard-store' 2>/dev/null
   printf '%s' "$content" | wl-copy
-  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &>/dev/null &
+  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &</dev/null & disown
 
   echo "Copied." >&2
 }
