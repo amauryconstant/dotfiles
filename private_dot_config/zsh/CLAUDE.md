@@ -68,6 +68,7 @@ Autoloaded via Zephyr `zfunctions` plugin:
 | Function            | Purpose                                                                        |
 | ------------------- | ------------------------------------------------------------------------------ |
 | `br`                | broot wrapper (executes shell commands produced by broot)                      |
+| `clip`              | Copy content to clipboard without storing in clipboard history                  |
 | `ccp`               | Launch Claude Code with merged settings profiles (`ccp glm -- -p`)            |
 | `commands`          | List all custom CLI tools with descriptions                                    |
 | `debug-zsh-startup` | Startup time profiling utility                                                 |

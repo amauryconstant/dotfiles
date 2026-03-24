@@ -277,6 +277,7 @@ packages:
         - hyprland-guiutils # Hyprland GUI utilities (renamed from hyprland-qtutils)
         - swww # Dynamic wallpaper daemon with transitions
         - cliphist # Clipboard history manager
+        - gitleaks # Secret detection for clipboard filter
         - wofi # Application launcher
         - wlogout # Logout/shutdown menu
         - wl-clipboard # Wayland clipboard CLI utilities

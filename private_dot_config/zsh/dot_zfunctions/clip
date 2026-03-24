@@ -1,0 +1,21 @@
+# Zsh function: clip
+# Copy content to clipboard (wl-copy), bypassing clipboard history
+
+clip() {
+  local content
+
+  if [[ -p /dev/stdin ]]; then
+    content=$(cat)
+  elif [[ $# -gt 0 ]]; then
+    content="$*"
+  else
+    echo "Usage: clip <text> | cmd | clip" >&2
+    return 1
+  fi
+
+  pkill -f 'wl-paste --watch.*clipboard-store' 2>/dev/null
+  printf '%s' "$content" | wl-copy
+  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &>/dev/null &
+
+  echo "Copied." >&2
+}
