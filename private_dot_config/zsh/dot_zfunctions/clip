@@ -1,21 +1,102 @@
 # Zsh function: clip
 # Copy content to clipboard (wl-copy), bypassing clipboard history
 
-clip() {
-  local content
+setopt EXTENDED_GLOB
 
-  if [[ -p /dev/stdin ]]; then
+# _clip_extract_value LINE
+# Extract the value from a key=value / key: value / Word value formatted line.
+# Prints the extracted value to stdout. Returns 1 if no pattern matches.
+# Empty lines and grep separators (--) print nothing and return 0 (skip).
+_clip_extract_value() {
+  local line="$1"
+
+  # Trim leading/trailing whitespace (requires EXTENDED_GLOB, active in zsh interactive)
+  line="${line##[[:space:]]##}"
+  line="${line%%[[:space:]]##}"
+
+  # Skip empty lines and grep context separators
+  [[ -z "$line" || "$line" == "--" ]] && return 0
+
+  local value
+
+  # Pattern 1: (export )?VAR=value — value in $match[2]
+  if [[ "$line" =~ '^(export )?[A-Za-z_][A-Za-z0-9_]+=(.*)$' ]]; then
+    value="${match[2]}"
+
+  # Pattern 2: Key: value (colon + one-or-more spaces) — value in $match[1]
+  # Requires space after colon to avoid matching bare URLs (https://...)
+  elif [[ "$line" =~ '^[^:]+:[[:space:]]+(.*)$' ]]; then
+    value="${match[1]}"
+
+  # Pattern 3: Word value (uppercase-led 3+ alpha word, e.g. Bearer, Token) — value in $match[1]
+  # Uppercase first char prevents matching arbitrary lowercase prose; min 3 chars avoids IPs
+  elif [[ "$line" =~ '^[A-Z][A-Za-z]{2,}[[:space:]]+(.+)$' ]]; then
+    value="${match[1]}"
+
+  else
+    printf 'clip: no recognizable pattern in: %s\n' "$line" >&2
+    return 1
+  fi
+
+  # Strip surrounding matching quotes ("..." or '...')
+  if [[ "$value" == '"'*'"' || "$value" == "'"*"'" ]]; then
+    value="${value:1:-1}"
+  fi
+
+  printf '%s' "$value"
+}
+
+clip() {
+  local content extract=0
+
+  # Parse flags before reading content
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -v|--value) extract=1; shift ;;
+      --) shift; break ;;
+      -*) printf 'clip: unknown option: %s\n' "$1" >&2; return 1 ;;
+      *) break ;;
+    esac
+  done
+
+  if [[ ! -t 0 ]]; then
     content=$(cat)
   elif [[ $# -gt 0 ]]; then
     content="$*"
   else
-    echo "Usage: clip <text> | cmd | clip" >&2
+    printf 'Usage: clip [-v|--value] <text> | cmd | clip [-v|--value]\n' >&2
     return 1
+  fi
+
+  # Value extraction mode: process each line, collect results or failures
+  if [[ $extract -eq 1 ]]; then
+    local lines extracted_lines=() failed_lines=() line extracted trimmed
+    lines=("${(f)content}")
+
+    for line in "${lines[@]}"; do
+      trimmed="${line##[[:space:]]##}"
+      trimmed="${trimmed%%[[:space:]]##}"
+      [[ -z "$trimmed" || "$trimmed" == "--" ]] && continue
+
+      extracted=$(_clip_extract_value "$trimmed")
+      if [[ $? -eq 0 ]]; then
+        extracted_lines+=("$extracted")
+      else
+        failed_lines+=("$trimmed")
+      fi
+    done
+
+    # Atomic: report all failures before exiting, copy nothing
+    if [[ ${#failed_lines[@]} -gt 0 ]]; then
+      return 1
+    fi
+
+    content="${(j:$'\n':)extracted_lines}"
   fi
 
   pkill -f 'wl-paste --watch.*clipboard-store' 2>/dev/null
   printf '%s' "$content" | wl-copy
-  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &</dev/null & disown
+  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &>/dev/null & disown
 
-  echo "Copied." >&2
+  printf 'Copied.\n' >&2
 }
