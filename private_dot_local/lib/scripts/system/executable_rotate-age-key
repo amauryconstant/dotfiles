@@ -181,6 +181,12 @@ cmd_api() {
     chmod 600 "$tmpfile"
     printf '%s' "$new_value" > "$tmpfile"
 
+    ui_step "Backing up old key"
+    local backup_file="$KEYS_DIR/backup-${keyname}-$(date +%Y-%m-%d-%H%M%S).txt"
+    cp -p "$key_file" "$backup_file"
+    chmod 600 "$backup_file"
+    ui_success "Old key backed up: $backup_file"
+
     ui_step "Writing new key to $key_file"
     cp "$tmpfile" "$key_file"
     chmod 600 "$key_file"
@@ -188,6 +194,13 @@ cmd_api() {
 
     ui_step "Re-encrypting in chezmoi"
     chezmoi add --encrypt "$key_file"
+
+    local encrypted_file="$CHEZMOI_SOURCE/private_dot_keys/encrypted_private_${keyname}.txt.age"
+    if [[ ! -f "$encrypted_file" ]]; then
+        ui_error "Encryption failed: $encrypted_file not found"
+        exit 1
+    fi
+    ui_success "Imported: $encrypted_file"
 
     ui_success "API key '$keyname' rotated"
 
@@ -197,6 +210,8 @@ cmd_api() {
     ui_output "  git add private_dot_keys/"
     ui_output "  git commit -m 'Rotate API key: $keyname'"
     ui_output "  git push"
+    ui_output "Delete backup after verifying the new key works:"
+    ui_output "  shred -u $backup_file"
 }
 
 # =============================================================================
@@ -212,8 +227,11 @@ cmd_dotfiles() {
     ui_warning "This is a DESTRUCTIVE operation."
     ui_info "All .age files will be re-encrypted with a new keypair."
     ui_info "The old private key will be backed up locally but you MUST update Vaultwarden."
-
-    if ! ui_confirm "Proceed with dotfiles keypair rotation?"; then
+    ui_spacer
+    ui_output "Type 'rotate dotfiles key' to confirm (anything else cancels):"
+    local typed_confirm
+    typed_confirm=$(gum input --placeholder "rotate dotfiles key")
+    if [[ "$typed_confirm" != "rotate dotfiles key" ]]; then
         ui_info "Operation cancelled"
         return 0
     fi
@@ -256,10 +274,13 @@ cmd_dotfiles() {
     local timestamp
     timestamp=$(date +%Y%m%d-%H%M%S)
     local backup_key="$KEYS_DIR/dotfiles-key.backup-${timestamp}.txt"
-    ui_step "Backing up old private key to $backup_key"
+    ui_step "Backing up old private key"
     cp "$KEYS_DIR/dotfiles-key.txt" "$backup_key"
     chmod 600 "$backup_key"
-    ui_success "Old key backed up"
+    local backup_hash
+    backup_hash=$(sha256sum "$backup_key" | awk '{print $1}')
+    ui_success "Old key backed up: $backup_key"
+    ui_info "SHA256: $backup_hash"
 
     # Step 3: Enumerate all encrypted targets
     ui_step "Enumerating encrypted files"
@@ -318,6 +339,13 @@ cmd_dotfiles() {
     ui_step "Re-encrypting dotfiles private key in chezmoi"
     chezmoi add --encrypt "$KEYS_DIR/dotfiles-key.txt"
 
+    local encrypted_dotfiles_key="$CHEZMOI_SOURCE/private_dot_keys/encrypted_private_dotfiles-key.txt.age"
+    if [[ ! -f "$encrypted_dotfiles_key" ]]; then
+        ui_error "Dotfiles key encryption failed: $encrypted_dotfiles_key not found"
+        exit 1
+    fi
+    ui_success "Dotfiles key imported: $encrypted_dotfiles_key"
+
     # Step 8: Update .chezmoi.yaml.tmpl
     ui_step "Updating .chezmoi.yaml.tmpl recipient"
     sed -i "s|recipient:.*|    recipient: \"$new_public_key\"|" "$CHEZMOI_SOURCE/.chezmoi.yaml.tmpl"
@@ -345,7 +373,9 @@ cmd_dotfiles() {
     ui_output "4. On other machines, re-init after retrieving new key from vault:"
     ui_output "   chezmoi init --apply"
     ui_spacer
-    ui_warning "Old key backup: $backup_key — delete manually after verifying everything works"
+    ui_warning "Old key backup: $backup_key (SHA256: $backup_hash)"
+    ui_output "Delete backup after verifying everything works:"
+    ui_output "  shred -u $backup_key"
 }
 
 # =============================================================================
@@ -425,11 +455,17 @@ cmd_restic() {
     _secure_delete "$tmpfile"
 
     # Re-encrypt in chezmoi
-    local chezmoi_password_file="$CHEZMOI_SOURCE/private_dot_local/share/private_backups/encrypted_private_dot_restic-password.age"
-    if [[ -f "$chezmoi_password_file" ]] || chezmoi managed 2>/dev/null | grep -q "\.local/share/backups/.restic-password"; then
+    if chezmoi managed 2>/dev/null | grep -q "\.local/share/backups/.restic-password"; then
         ui_step "Re-encrypting password in chezmoi"
         chezmoi add --encrypt "$RESTIC_PASSWORD_FILE"
-        ui_success "Password re-encrypted in chezmoi"
+
+        local encrypted_restic
+        encrypted_restic=$(chezmoi source-path "$RESTIC_PASSWORD_FILE" 2>/dev/null || true)
+        if [[ -n "$encrypted_restic" ]] && [[ ! -f "$encrypted_restic" ]]; then
+            ui_error "Restic password encryption failed: $encrypted_restic not found"
+            exit 1
+        fi
+        [[ -n "$encrypted_restic" ]] && ui_success "Imported: $encrypted_restic"
     else
         ui_info "Password file not tracked in chezmoi — skipping chezmoi add"
     fi

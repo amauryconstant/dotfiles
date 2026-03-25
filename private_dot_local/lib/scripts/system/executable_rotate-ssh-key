@@ -139,7 +139,7 @@ _import_into_chezmoi() {
     chezmoi add --encrypt "$public_key"
 
     local encrypted_private="$CHEZMOI_SSH_DIR/encrypted_private_${keyname}.age"
-    local encrypted_public="$CHEZMOI_SSH_DIR/encrypted_${keyname}.pub.age"
+    local encrypted_public="$CHEZMOI_SSH_DIR/encrypted_private_${keyname}.pub.age"
 
     if [[ ! -f "$encrypted_private" ]]; then
         ui_error "Private key encryption failed: $encrypted_private not found"
@@ -212,12 +212,7 @@ cmd_rotate() {
     ui_title "NEXT STEPS"
     ui_output "1. Add public key to service (displayed above)"
     ui_output "2. Test connection:"
-    case "$keyname" in
-        github)   ui_output "   ssh -T git@github.com" ;;
-        gitlab)   ui_output "   ssh -T git@gitlab.com" ;;
-        ovh-*)    ui_output "   ssh ovh" ;;
-        *)        ui_output "   ssh <your-service>" ;;
-    esac
+    ui_output "   ssh <your-service>"
     ui_output "3. Commit changes:"
     ui_output "   cd $CHEZMOI_SOURCE"
     ui_output "   git add private_dot_ssh/"
