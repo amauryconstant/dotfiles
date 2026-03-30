@@ -96,7 +96,10 @@ clip() {
 
   pkill -f 'wl-paste --watch.*clipboard-store' 2>/dev/null
   printf '%s' "$content" | wl-copy
-  wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &>/dev/null & disown
+  { wl-paste --watch ~/.local/lib/scripts/media/clipboard-store &>/dev/null & } 2>/dev/null
+  disown %% 2>/dev/null
 
   printf 'Copied.\n' >&2
 }
+
+clip "$@"
