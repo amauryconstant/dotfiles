@@ -243,6 +243,7 @@ packages:
         - lazydocker # Terminal UI for docker management
         - posting # Modern API client (Postman alternative)
         - mkcert # Local HTTPS development certificates
+        - ghgrab-bin # GitHub release asset downloader
 
     ai_tools:
       enabled: true
