@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Script: run_once_after_005_configure_boot_system.sh.tmpl
-# Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM + Hibernation)
+# Purpose: Consolidated boot system configuration (GPU + Plymouth + SDDM + Hibernation + UKI Presets)
 # Requirements: Arch Linux, Plymouth, SDDM, Hyprland, Btrfs
 # Execution: Runs AFTER file application to configure complete boot stack
 #
@@ -10,9 +10,10 @@
 # - Plymouth graphical boot splash
 # - SDDM display manager
 # - Hibernation (Btrfs swapfile + resume)
+# - UKI preset enforcement (all kernels build Unified Kernel Images)
 #
 # Benefits of consolidation:
-# - Single mkinitcpio -P rebuild (instead of 4×)
+# - Single mkinitcpio -P rebuild (instead of 5×)
 # - Atomic boot configuration changes
 # - Consistent backup/rollback strategy
 
@@ -660,12 +661,175 @@ fi  # End HIBERNATION_UNSUPPORTED check
 {{ end }}
 
 # ============================================================================
-# SECTION 5: SINGLE INITRAMFS REBUILD
+# SECTION 5: UNIFIED KERNEL IMAGE (UKI) PRESET CONFIGURATION
 # ============================================================================
 
 echo ""
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
-{{ includeTemplate "log_info" "  SECTION 5: Initramfs Rebuild (Consolidate all changes)" }}
+{{ includeTemplate "log_info" "  SECTION 5: Unified Kernel Image (UKI) Presets" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
+
+UKI_PRESETS_CHANGED=false
+EFI_LINUX_DIR="/efi/EFI/Linux"
+UKI_SPLASH="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+
+{{ includeTemplate "log_step" "Ensure EFI Linux directory exists" }}
+
+if [ -d "$EFI_LINUX_DIR" ]; then
+    {{ includeTemplate "log_success" "$EFI_LINUX_DIR already exists" }}
+else
+    sudo mkdir -p "$EFI_LINUX_DIR"
+    {{ includeTemplate "log_success" "Created $EFI_LINUX_DIR" }}
+fi
+
+{{ includeTemplate "log_step" "Check mkinitcpio presets for UKI configuration" }}
+
+for preset_file in /etc/mkinitcpio.d/*.preset; do
+    [ -f "$preset_file" ] || continue
+
+    preset_name=$(basename "$preset_file" .preset)
+
+    # Derive UKI path: linux -> arch-linux.efi, linux-lts -> arch-linux-lts.efi
+    uki_path="${EFI_LINUX_DIR}/arch-${preset_name}.efi"
+
+    # Check if already UKI-configured (default_uki set, no default_image)
+    if sudo grep -q "^default_uki=" "$preset_file" && ! sudo grep -q "^default_image=" "$preset_file"; then
+        current_uki=$(sudo grep "^default_uki=" "$preset_file" | cut -d= -f2- | tr -d '"')
+        {{ includeTemplate "log_success" "${preset_name}: already configured for UKI at ${current_uki}" }}
+        continue
+    fi
+
+    {{ includeTemplate "log_info" "${preset_name}: converting to UKI preset..." }}
+
+    # Back up original (only if no backup exists yet)
+    if [ ! -f "${preset_file}.backup" ]; then
+        sudo cp "$preset_file" "${preset_file}.backup"
+        {{ includeTemplate "log_info" "Created backup: ${preset_file}.backup" }}
+    fi
+
+    # Preserve ALL_kver from existing preset
+    all_kver=$(sudo grep "^ALL_kver=" "$preset_file" | head -1)
+
+    # Write the new UKI-configured preset
+    sudo tee "$preset_file" > /dev/null <<PRESET_EOF
+# mkinitcpio preset file for the '${preset_name}' package
+# Modified by chezmoi boot system configuration for UKI support
+
+${all_kver}
+
+PRESETS=('default')
+
+default_uki="${uki_path}"
+default_options="${UKI_SPLASH}"
+PRESET_EOF
+
+    sudo chmod 644 "$preset_file"
+    {{ includeTemplate "log_success" "${preset_name}: configured for UKI at ${uki_path}" }}
+    UKI_PRESETS_CHANGED=true
+done
+
+# --- Clean up orphaned traditional initramfs images ---
+{{ includeTemplate "log_step" "Clean up orphaned traditional initramfs images" }}
+
+ORPHANS_FOUND=false
+for img in /boot/initramfs-*.img; do
+    [ -f "$img" ] || continue
+    {{ includeTemplate "log_info" "Removing orphaned initramfs: $img" }}
+    sudo rm -f "$img"
+    ORPHANS_FOUND=true
+done
+
+if [ "$ORPHANS_FOUND" = true ]; then
+    {{ includeTemplate "log_success" "Orphaned initramfs images cleaned up" }}
+else
+    {{ includeTemplate "log_success" "No orphaned initramfs images found" }}
+fi
+
+# --- Install pacman hook to protect UKI presets across kernel updates ---
+{{ includeTemplate "log_step" "Install pacman hook for UKI preset enforcement" }}
+
+HOOK_DIR="/etc/pacman.d/hooks"
+HOOK_FILE="${HOOK_DIR}/60-mkinitcpio-uki-presets.hook"
+HELPER_SCRIPT="/usr/local/bin/enforce-uki-presets"
+
+sudo mkdir -p "$HOOK_DIR"
+
+# Write the helper script
+sudo tee "$HELPER_SCRIPT" > /dev/null <<'HELPER_EOF'
+#!/usr/bin/env bash
+# Enforce UKI presets for all installed kernels
+# Installed by chezmoi boot system configuration
+set -euo pipefail
+
+EFI_LINUX_DIR="/efi/EFI/Linux"
+UKI_SPLASH="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+
+for preset_file in /etc/mkinitcpio.d/*.preset; do
+    [ -f "$preset_file" ] || continue
+
+    preset_name=$(basename "$preset_file" .preset)
+    uki_path="${EFI_LINUX_DIR}/arch-${preset_name}.efi"
+
+    # Skip if already UKI-configured
+    if grep -q "^default_uki=" "$preset_file" && ! grep -q "^default_image=" "$preset_file"; then
+        continue
+    fi
+
+    # Preserve ALL_kver
+    all_kver=$(grep "^ALL_kver=" "$preset_file" | head -1)
+
+    cat > "$preset_file" <<INNER_EOF
+# mkinitcpio preset file for the '${preset_name}' package
+# Modified by chezmoi UKI enforcement hook
+
+${all_kver}
+
+PRESETS=('default')
+
+default_uki="${uki_path}"
+default_options="${UKI_SPLASH}"
+INNER_EOF
+
+    chmod 644 "$preset_file"
+    echo "UKI preset enforced: ${preset_name} -> ${uki_path}"
+done
+HELPER_EOF
+
+sudo chmod 755 "$HELPER_SCRIPT"
+{{ includeTemplate "log_success" "Installed helper script: $HELPER_SCRIPT" }}
+
+# Write the pacman hook
+sudo tee "$HOOK_FILE" > /dev/null <<'HOOK_EOF'
+# Enforce UKI presets after kernel package installs/upgrades
+# Runs BEFORE the stock 90-mkinitcpio-install.hook rebuilds initcpios
+# Installed by chezmoi boot system configuration
+
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = usr/lib/modules/*/vmlinuz
+
+[Action]
+Description = Enforcing UKI presets for all kernels...
+When = PostTransaction
+Exec = /usr/local/bin/enforce-uki-presets
+HOOK_EOF
+
+{{ includeTemplate "log_success" "Installed pacman hook: $HOOK_FILE" }}
+
+if [ "$UKI_PRESETS_CHANGED" = true ]; then
+    {{ includeTemplate "log_info" "UKI preset changes detected - rebuild required" }}
+fi
+
+# ============================================================================
+# SECTION 6: SINGLE INITRAMFS REBUILD
+# ============================================================================
+
+echo ""
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 6: Initramfs Rebuild (Consolidate all changes)" }}
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 echo ""
 
@@ -686,16 +850,21 @@ if [ "${HIBERNATION_CHANGED:-false}" = true ]; then
     REBUILD_NEEDED=true
 fi
 
-if [ "$REBUILD_NEEDED" = true ]; then
-    {{ includeTemplate "log_step" "Rebuilding initramfs and UKI images (consolidated rebuild)..." }}
+if [ "${UKI_PRESETS_CHANGED:-false}" = true ]; then
+    {{ includeTemplate "log_info" "UKI preset configuration changed - rebuild required" }}
+    REBUILD_NEEDED=true
+fi
 
-    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes (GPU + Plymouth + Hibernation)" }}
+if [ "$REBUILD_NEEDED" = true ]; then
+    {{ includeTemplate "log_step" "Rebuilding UKI images (consolidated rebuild)..." }}
+
+    {{ includeTemplate "log_info" "This rebuilds ALL kernels with ALL changes (GPU + Plymouth + Hibernation + UKI)" }}
 
     # Rebuild all kernels (mkinitcpio includes NVIDIA modules if they're installed)
     # DKMS modules were built automatically by pacman hooks during package installation
     sudo mkinitcpio -P
 
-    {{ includeTemplate "log_success" "Initramfs and UKI images rebuilt successfully" }}
+    {{ includeTemplate "log_success" "UKI images rebuilt successfully" }}
 else
     {{ includeTemplate "log_skip" "No changes detected - skipping initramfs rebuild" }}
 fi
@@ -754,6 +923,19 @@ elif [ "${SWAP_ENABLED:-false}" = true ]; then
     {{ includeTemplate "log_info" "Swap Configuration:" }}
     {{ includeTemplate "log_info" "  ✓ Swap subvolume: /swap (CoW disabled)" }}
     {{ includeTemplate "log_info" "  ✓ Swapfile: $SWAP_SIZE_HUMAN" }}
+    echo ""
+fi
+
+# UKI Preset Summary
+if [ "${UKI_PRESETS_CHANGED:-false}" = true ]; then
+    {{ includeTemplate "log_info" "UKI Preset Configuration:" }}
+    for preset_file in /etc/mkinitcpio.d/*.preset; do
+        [ -f "$preset_file" ] || continue
+        preset_name=$(basename "$preset_file" .preset)
+        uki_path=$(sudo grep "^default_uki=" "$preset_file" | cut -d= -f2- | tr -d '"')
+        {{ includeTemplate "log_info" "  ✓ ${preset_name}: ${uki_path}" }}
+    done
+    {{ includeTemplate "log_info" "  ✓ Pacman hook: /etc/pacman.d/hooks/60-mkinitcpio-uki-presets.hook" }}
     echo ""
 fi
 
