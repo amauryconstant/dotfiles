@@ -276,7 +276,7 @@ packages:
         - darkman # Solar-based light/dark mode automation
         - hyprsunset # Blue light filter (gamma adjustment)
         - hyprland-guiutils # Hyprland GUI utilities (renamed from hyprland-qtutils)
-        - swww # Dynamic wallpaper daemon with transitions
+        - awww # Dynamic wallpaper daemon with smooth transitions (renamed from swww)
         - cliphist # Clipboard history manager
         - gitleaks # Secret detection for clipboard filter
         - wofi # Application launcher

@@ -2,7 +2,7 @@
 
 # Script: random-wallpaper.sh
 # Purpose: Select and set a random wallpaper from current theme's collection
-# Requirements: Arch Linux, swww, find, shuf
+# Requirements: Arch Linux, awww, find, shuf
 
 {{ includeTemplate "log_start" "Selecting random wallpaper" }}
 
@@ -38,7 +38,7 @@ fi
 echo "$(date +%s)" > "$LOCK_FILE"
 
 # Pre-flight checks for required dependencies
-for cmd in swww find shuf; do
+for cmd in awww find shuf; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         {{ includeTemplate "log_error" "Required command not found: $cmd" }}
         exit 1

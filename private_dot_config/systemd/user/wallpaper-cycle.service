@@ -1,6 +1,6 @@
 [Unit]
 Description=Automatic wallpaper rotation service
-Documentation=man:swww(1)
+Documentation=man:awww(1)
 After=graphical-session.target
 PartOf=graphical-session.target
 StartLimitIntervalSec=300
@@ -10,8 +10,8 @@ StartLimitBurst=3
 Type=oneshot
 # Wait for WAYLAND_DISPLAY to be set in systemd environment before starting
 ExecCondition=/bin/sh -c 'systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY="'
-# Wait for swww-daemon to be ready
-ExecCondition=/bin/sh -c 'pgrep swww-daemon > /dev/null'
+# Wait for awww-daemon to be ready
+ExecCondition=/bin/sh -c 'pgrep awww-daemon > /dev/null'
 # Wait for theme symlink to exist
 ExecCondition=/bin/sh -c 'test -L %h/.config/themes/current'
 ExecStart=%h/.local/lib/scripts/media/random-wallpaper fade 3

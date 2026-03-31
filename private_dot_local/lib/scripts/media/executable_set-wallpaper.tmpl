@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Script: set-wallpaper
-# Purpose: Change wallpaper using swww
-# Requirements: Arch Linux, swww
+# Purpose: Change wallpaper using awww
+# Requirements: Arch Linux, awww
 
 {{ includeTemplate "log_start" "Setting wallpaper" }}
 
@@ -29,15 +29,15 @@ if [ ! -f "$WALLPAPER_PATH" ]; then
     exit 1
 fi
 
-# Check if swww daemon is running
-if ! pgrep -x swww-daemon > /dev/null; then
-    {{ includeTemplate "log_step" "Starting swww daemon" }}
-    swww-daemon 2>/dev/null &
+# Check if awww daemon is running
+if ! pgrep -x awww-daemon > /dev/null; then
+    {{ includeTemplate "log_step" "Starting awww daemon" }}
+    awww-daemon 2>/dev/null &
     sleep 1
 fi
 
-{{ includeTemplate "log_step" "Setting wallpaper with swww" }}
-swww img "$WALLPAPER_PATH" \
+{{ includeTemplate "log_step" "Setting wallpaper with awww" }}
+awww img "$WALLPAPER_PATH" \
     --transition-type "$TRANSITION_TYPE" \
     --transition-duration "$TRANSITION_DURATION"
 
