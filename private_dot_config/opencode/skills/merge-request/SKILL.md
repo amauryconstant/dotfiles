@@ -1,6 +1,6 @@
 ---
 name: merge-request
-description: Generate markdown-formatted merge request/PR descriptions and titles. Analyzes branch changes against target branch (default: main, auto-detects alternatives). Use when user asks to create MR/PR, "write PR description", or for help with merge request content.
+description: "Generate markdown-formatted merge request/PR descriptions and titles. Analyzes branch changes against target branch (default: main, auto-detects alternatives). Use when user asks to create MR/PR, \"write PR description\", or for help with merge request content."
 license: MIT
 ---
 
