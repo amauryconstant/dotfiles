@@ -228,10 +228,7 @@ func TestCreateService(t *testing.T) {
 | Stage 1-2                | Default          | —                  |
 | Stage 3+                 | Small interfaces | Default            |
 
-**Use `moq` for mock generation.** It generates behavior-based mocks (defines expected
-calls). When used without expectations (filling only function fields), it acts as a
-state-based mock. The `testify` package (assert/require) provides assertions — Go's
-built-in `testing` is the runner. For E2E, Ginkgo is an alternative runner.
+**Use `moq` for mock generation.** It generates structs with function fields — no expectations, no call setup, no assertion on invocation count. Each method becomes a `FooFunc` field you assign a closure to. This is state-based mocking at the call site, not expectation-based. The `testify` package (assert/require) provides assertions — Go's built-in `testing` is the runner. For E2E, Ginkgo is an alternative runner.
 
 ## CLI Command Tests
 

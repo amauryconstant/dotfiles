@@ -29,10 +29,11 @@ graph TD
         Infrastructure["Infrastructure Layer (internal/infrastructure/)<br/>External tools, filesystem, config, APIs, shell<br/>Implements interfaces defined in application/"]
     end
 
-    CLI -->|depends on| Presenter
-    Presenter -->|depends on| Service
-    Service -->|depends on| Domain
-    Infrastructure -->|implements| Application
+    CLI -->|calls| Service
+    CLI -->|passes results to| Presenter
+    Presenter -->|formats domain types| Domain
+    Service -->|uses| Domain
+    Infrastructure -->|implements application interfaces| Service
 ```
 
 **The dependency rule**: each layer depends only on the layers below it. Domain
@@ -497,28 +498,29 @@ See: `references/testing.md` for patterns.
 
 ## Common Libraries
 
-| Concern            | Recommended             | Alternative        | Stage |
-| ------------------ | ----------------------- | ------------------ | ----- |
-| CLI framework      | `cobra`                 | `urfave/cli`       | 1+    |
-| Shell completion   | `carapace`              | Cobra built-in     | 2+    |
-| Config             | `koanf`                 | `viper`            | 1+    |
-| Config format      | TOML                    | YAML               | 1+    |
-| Collections        | `samber/lo`             | —                  | 1+    |
-| Monads/Option      | `samber/mo`             | —                  | 3+    |
-| DI container       | `samber/do`             | Manual wiring      | 4     |
-| Terminal styling   | `lipgloss`              | `fatih/color`      | 1+    |
-| Interactive TUI    | `bubbletea` + `bubbles` | —                  | 4     |
-| Forms/prompts      | `huh`                   | `promptui`         | 3+    |
-| Markdown rendering | `glamour`               | —                  | 4     |
-| Structured logging | `log/slog` (stdlib)     | `zerolog`          | 2+    |
-| Concurrency        | `errgroup`              | `sourcegraph/conc` | 4     |
+| Concern            | Recommended             | Alternative      | Stage |
+| ------------------ | ----------------------- | ---------------- | ----- |
+| CLI framework      | `cobra`                 | `urfave/cli`     | 1+    |
+| Shell completion   | `carapace`              | Cobra built-in   | 2+    |
+| Config             | `koanf`                 | `viper`          | 1+    |
+| Config format      | TOML                    | YAML             | 1+    |
+| Collections        | `samber/lo`             | —                | 1+    |
+| Monads/Option      | `samber/mo`             | —                | 3+    |
+| DI container       | `samber/do`             | Manual wiring    | 4     |
+| Terminal styling   | `lipgloss`              | `fatih/color`    | 1+    |
+| Interactive TUI    | `bubbletea` + `bubbles` | —                | 4     |
+| Forms/prompts      | `huh`                   | `promptui`       | 3+    |
+| Markdown rendering | `glamour`               | —                | 4     |
+| Structured logging | `log/slog` (stdlib)     | `zerolog`        | 2+    |
+| Concurrency (few)  | `errgroup`              | —                | 3+    |
+| Concurrency (many) | `sourcegraph/conc`      | —                | 4     |
+| Testing            | `testify`               | `gotest.tools`   | 1+    |
+| Deep comparison    | `go-cmp`                | `testify/assert` | 3+    |
+| Mock generation    | `matryer/moq`           | Hand-written     | 3+    |
+| BDD testing        | `ginkgo` + `gomega`     | —                | 3+    |
+| CLI E2E            | `testscript`            | Ginkgo `gexec`   | 3+    |
+| Linting            | `golangci-lint`         | —                | 1+    |
+| Arch linting       | `depguard`              | `go-cleanarch`   | 2+    |
+| Release            | `goreleaser`            | —                | 2+    |
 
 See: `references/concurrency.md` for parallel patterns and primitives.
-| Testing | `testify` | `gotest.tools` | 1+ |
-| Deep comparison | `go-cmp` | `testify/assert` | 3+ |
-| Mock generation | `matryer/moq` | Hand-written | 3+ |
-| BDD testing | `ginkgo` + `gomega` | — | 3+ |
-| CLI E2E | `testscript` | Ginkgo `gexec` | 3+ |
-| Linting | `golangci-lint` | — | 1+ |
-| Arch linting | `depguard` | `go-cleanarch` | 2+ |
-| Release | `goreleaser` | — | 2+ |

@@ -122,9 +122,9 @@ type ExternalError struct {
     Operation string
 }
 
-func NewExternalError(tool, operation, message string, cause error) *ExternalError {
+func NewExternalError(tool, operation, message string, cause error, kind ErrorKind) *ExternalError {
     return &ExternalError{
-        baseError: baseError{message: message, cause: cause, exitCode: 4},
+        baseError: baseError{message: message, cause: cause, exitCode: 4, kind: kind},
         Tool:      tool,
         Operation: operation,
     }
@@ -216,15 +216,7 @@ errors become typed domain errors.
 func (c *client) ListItems(ctx context.Context, path string) ([]domain.ItemInfo, error) {
     output, err := c.executor.Run(ctx, "tool", "list")
     if err != nil {
-        return nil, &domain.ExternalError{
-            baseError: baseError{
-                message: "failed to list items",
-                kind:    classifyError(err),
-                cause:   err,
-            },
-            Tool:      "tool",
-            Operation: "list",
-        }
+        return nil, domain.NewExternalError("tool", "list", "failed to list items", err, classifyError(err))
     }
     // parse output into domain types...
 }

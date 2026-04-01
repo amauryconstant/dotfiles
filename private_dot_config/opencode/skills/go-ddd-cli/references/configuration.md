@@ -187,7 +187,7 @@ func (c *Config) IsProtected(name string) bool {
 // Normalization + validation in one pass
 func (c *Config) NormalizeAndValidate() error {
     c.ProjectsDir = expandPath(c.ProjectsDir)
-    c.WorktreesDir = expandPath(c.WorktreesDir)
+    // expand any other path fields here
     return c.validate()
 }
 

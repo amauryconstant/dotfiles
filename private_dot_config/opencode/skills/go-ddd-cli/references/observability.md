@@ -142,10 +142,7 @@ func (c *client) Create(ctx context.Context, name, source string) error {
     cmd := exec.CommandContext(ctx, "tool", "create", name, "--from", source)
     output, err := cmd.CombinedOutput()
     if ctx.Err() == context.DeadlineExceeded {
-        return &domain.ExternalError{
-            baseError: baseError{message: "operation timed out", kind: domain.KindTimeout},
-            Tool: "tool", Operation: "create",
-        }
+        return domain.NewExternalError("tool", "create", "operation timed out", ctx.Err(), domain.KindTimeout)
     }
     // ...
 }

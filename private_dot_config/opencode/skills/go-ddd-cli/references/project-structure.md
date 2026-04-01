@@ -158,6 +158,8 @@ linters-settings:
           - $gostd
           - github.com/samber/lo
           - github.com/samber/mo
+          # depguard v2: allow takes precedence over deny, so lo/mo are
+          # permitted despite the broad github.com/* deny below.
         deny:
           - pkg: "github.com/*"
             desc: "domain allows only stdlib and curated libs (lo, mo)"

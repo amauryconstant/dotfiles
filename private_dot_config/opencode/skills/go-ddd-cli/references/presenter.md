@@ -262,7 +262,7 @@ func (p *Formatter) Confirm(message string) (bool, error) {
 
 ```go
 func (p *Formatter) SelectItem(items []domain.ItemInfo) (*domain.ItemInfo, error) {
-    options := lo.Map(items, func(item domain.ItemInfo, _ int) huh.Option[int] {
+    options := lo.Map(items, func(item domain.ItemInfo, idx int) huh.Option[int] {
         return huh.NewOption(item.Name, idx)
     })
 
