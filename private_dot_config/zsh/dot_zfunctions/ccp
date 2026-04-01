@@ -29,9 +29,8 @@ ccp() {
     [[ ! -f "${CLAUDE_PROFILES_DIR}/${p}.json" ]] && echo "Profile not found: $p" >&2 && return 1
   done
 
-  local tmpfile
-  tmpfile=$(mktemp --suffix=.json)
-  trap "rm -f '$tmpfile'" EXIT
+  local merged_name="${(j:+:)profile_names}"
+  local tmpfile="${CLAUDE_CONFIG_DIR}/profiles/.merged-${merged_name}.json"
 
   local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
   profile_files=("${profile_files[@]/%/.json}")
