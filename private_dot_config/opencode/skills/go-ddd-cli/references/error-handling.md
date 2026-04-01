@@ -2,7 +2,7 @@
 
 ## Three-Tier Error Architecture
 
-```
+```text
 Domain Layer          CLI Layer                 CLI Layer
 (define errors)  →    (categorize + exit code)  →  (format for user)
 domain/errors.go      cmd/error_handler.go      cmd/error_formatter.go

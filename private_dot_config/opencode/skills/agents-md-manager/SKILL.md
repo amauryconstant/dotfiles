@@ -11,15 +11,15 @@ Manage AGENTS.md file quality and content based on best practices.
 
 ## Reference Files
 
-| File | When to Load |
-|------|-------------|
-| [guidelines.md](references/guidelines.md) | Include/exclude lists, examples, structure |
+| File                                                          | When to Load                                  |
+| ------------------------------------------------------------- | --------------------------------------------- |
+| [guidelines.md](references/guidelines.md)                     | Include/exclude lists, examples, structure    |
 | [instruction-patterns.md](references/instruction-patterns.md) | Writing rules AI follows, phrasing, placement |
-| [diagnostic-workflow.md](references/diagnostic-workflow.md) | Troubleshooting when rules aren't working |
-| [quality-checklist.md](references/quality-checklist.md) | Manual quality review checklist |
-| [task-patterns.md](references/task-patterns.md) | Creating, refactoring, improving files |
-| [hierarchy.md](references/hierarchy.md) | Root vs subdirectory organization |
-| [token-budget.md](references/token-budget.md) | Optimizing token usage |
+| [diagnostic-workflow.md](references/diagnostic-workflow.md)   | Troubleshooting when rules aren't working     |
+| [quality-checklist.md](references/quality-checklist.md)       | Manual quality review checklist               |
+| [task-patterns.md](references/task-patterns.md)               | Creating, refactoring, improving files        |
+| [hierarchy.md](references/hierarchy.md)                       | Root vs subdirectory organization             |
+| [token-budget.md](references/token-budget.md)                 | Optimizing token usage                        |
 
 ## Validation Workflow
 
@@ -34,6 +34,7 @@ python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.p
 ```
 
 **Checks**:
+
 - File length (warns >500 lines, errors >1000)
 - Token estimation (calculates approximate cost)
 - Common anti-patterns (generic advice, tutorials, verbose descriptions)
@@ -46,6 +47,7 @@ python3 ~/.config/opencode/skills/agents-md-manager/scripts/validate_agents_md.p
 Use the checklist: [quality-checklist.md](references/quality-checklist.md)
 
 **Key checks**:
+
 - [ ] Conciseness test (every line justified)
 - [ ] Specificity test (no vague instructions)
 - [ ] Value test (AI can't infer from code)
@@ -57,6 +59,7 @@ Use the checklist: [quality-checklist.md](references/quality-checklist.md)
 Refer to: [guidelines.md](references/guidelines.md)
 
 **Validate against**:
+
 - Include/exclude lists
 - Structure recommendations
 - Import syntax usage
@@ -86,11 +89,11 @@ grep -ni "clean code\|best practices\|good code" AGENTS.md
 
 ## Target Lengths
 
-| Scope | Ideal | Max |
-|-------|-------|-----|
-| Root file | 200-300 lines | 500 lines |
+| Scope        | Ideal         | Max       |
+| ------------ | ------------- | --------- |
+| Root file    | 200-300 lines | 500 lines |
 | Subdirectory | 150-250 lines | 400 lines |
-| Total tokens | <1200 | <4000 |
+| Total tokens | <1200         | <4000     |
 
 ## When to Split
 

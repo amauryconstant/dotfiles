@@ -7,6 +7,7 @@ Use these patterns to structure multi-step processes in skills. Choose based on 
 For fixed-order processes where steps must execute in sequence.
 
 ### When to Use
+
 - Clear dependency chain (step 2 needs step 1 output)
 - No branching or conditional logic
 - Straightforward linear process
@@ -30,6 +31,7 @@ Filling a PDF form involves these steps:
 For tasks with binary branching logic based on a single decision point.
 
 ### When to Use
+
 - Two distinct approaches based on one condition
 - Clear decision criteria
 - Each branch is self-contained
@@ -60,6 +62,7 @@ For tasks with binary branching logic based on a single decision point.
 For multi-variant decisions with 3+ branches.
 
 ### When to Use
+
 - Multiple distinct approaches based on type or category
 - Clear classification criteria
 - Each branch handles different scenarios
@@ -77,12 +80,14 @@ For multi-variant decisions with 3+ branches.
    **Scanned image (PDF/JPG)?** → See "OCR Workflow"
 
 ## PDF Form Workflow
+
 1. Extract form fields (scripts/extract_fields.py)
 2. Validate field structure
 3. Fill fields with data
 4. Save and verify
 
 ## DOCX Workflow
+
 1. Parse document structure (scripts/parse_docx.py)
 2. Identify sections to modify
 3. Apply changes using docx API
@@ -90,6 +95,7 @@ For multi-variant decisions with 3+ branches.
 5. Output modified document
 
 ## Text Workflow
+
 1. Read file content
 2. Process with text manipulation
 3. Write output
@@ -102,6 +108,7 @@ For multi-variant decisions with 3+ branches.
 For error-prone processes requiring checkpoints and error recovery.
 
 ### When to Use
+
 - Operations that can fail midway
 - Need to verify intermediate results
 - Rollback or recovery options exist
@@ -140,6 +147,7 @@ For error-prone processes requiring checkpoints and error recovery.
 For fragile operations with alternative approaches.
 
 ### When to Use
+
 - External API calls that may fail
 - Network-dependent operations
 - Multiple implementation options available
@@ -175,6 +183,7 @@ For fragile operations with alternative approaches.
 For independent tasks that can run simultaneously.
 
 ### When to Use
+
 - Multiple operations with no dependencies
 - Performance optimization needed
 - Tasks are isolated from each other
@@ -208,13 +217,14 @@ After all tasks complete:
 For processes that need to maintain context across steps.
 
 ### When to Use
+
 - Steps share common state or configuration
 - Incremental builds or processing
 - Need to track progress or decisions
 
 ### Example
 
-```markdown
+````markdown
 ## Gradual Code Refactoring
 
 **Maintain state file `refactor_state.json`:**
@@ -227,6 +237,9 @@ For processes that need to maintain context across steps.
   "issues_encountered": []
 }
 ```
+````
+
+---
 
 ### Phase 1: Identify Candidates
 
@@ -254,21 +267,20 @@ For processes that need to maintain context across steps.
 2. Check for regressions
 3. Update state with results
 4. Generate final report
-```
 
 ---
 
 ## Choosing a Pattern
 
-| Pattern | Complexity | Error Prone | Parallelizable | Best For |
-|----------|-------------|-------------|-----------------|-----------|
-| Sequential | Low | Low | No | Fixed processes, clear dependencies |
-| Conditional | Medium | Low | No | Binary decisions, distinct approaches |
-| Decision Tree | High | Low | No | Multi-variant tasks, type-specific handling |
-| Validation-Driven | Medium | High | No | Error-prone operations, data processing |
-| Retry/Fallback | Medium | High | No | Fragile operations, APIs, network calls |
-| Parallel Processing | Medium | Medium | Yes | Independent tasks, batch operations |
-| Stateful | High | Medium | No | Incremental processing, context tracking |
+| Pattern             | Complexity | Error Prone | Parallelizable | Best For                                    |
+| ------------------- | ---------- | ----------- | -------------- | ------------------------------------------- |
+| Sequential          | Low        | Low         | No             | Fixed processes, clear dependencies         |
+| Conditional         | Medium     | Low         | No             | Binary decisions, distinct approaches       |
+| Decision Tree       | High       | Low         | No             | Multi-variant tasks, type-specific handling |
+| Validation-Driven   | Medium     | High        | No             | Error-prone operations, data processing     |
+| Retry/Fallback      | Medium     | High        | No             | Fragile operations, APIs, network calls     |
+| Parallel Processing | Medium     | Medium      | Yes            | Independent tasks, batch operations         |
+| Stateful            | High       | Medium      | No             | Incremental processing, context tracking    |
 
 ---
 

@@ -6,29 +6,34 @@ mise is a drop-in replacement for nvm, pyenv, rbenv, asdf, direnv, and more. Thi
 
 asdf users have the easiest migration path—mise reads `.tool-versions` format natively.
 
-**Step 1: Install mise**
+### Step 1: Install mise
+
 ```sh
 curl https://mise.jdx.dev/install.sh | sh
 ```
 
-**Step 2: Add to shell**
+### Step 2: Add to shell
+
 ```sh
 eval "$(mise activate zsh)"  # or bash, fish, etc.
 ```
 
-**Step 3: Enable idiomatic version file reading**
+### Step 3: Enable idiomatic version file reading
+
 ```toml
 # ~/.config/mise/config.toml
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python", "ruby", "go"]
 ```
 
-**Step 4: Install all tools**
+### Step 4: Install all tools
+
 ```sh
 mise install    # Reads your existing .tool-versions file
 ```
 
-**Step 5 (optional): Migrate to mise.toml**
+### Step 5 (optional): Migrate to mise.toml
+
 ```sh
 # Your .tool-versions still works, but optionally convert to mise.toml
 cat .tool-versions
@@ -45,6 +50,7 @@ go = "latest"' > mise.toml
 ```
 
 **Why migrate to mise.toml:**
+
 - More powerful (env vars, tasks, settings)
 - Easier to read than `.tool-versions`
 - Can add tasks and environment setup
@@ -57,7 +63,8 @@ go = "latest"' > mise.toml
 
 Node Version Manager users have most setup in shell rc.
 
-**Step 1: Remove nvm from shell**
+### Step 1: Remove nvm from shell
+
 ```bash
 # Remove or comment out from ~/.zshrc or ~/.bashrc
 # Lines like:
@@ -65,17 +72,20 @@ Node Version Manager users have most setup in shell rc.
 #   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 ```
 
-**Step 2: Install mise**
+### Step 2: Install mise
+
 ```sh
 curl https://mise.jdx.dev/install.sh | sh
 ```
 
-**Step 3: Add mise to shell**
+### Step 3: Add mise to shell
+
 ```sh
 eval "$(mise activate zsh)"
 ```
 
-**Step 4: Migrate `.nvmrc` files**
+### Step 4: Migrate `.nvmrc` files
+
 ```sh
 # If you have .nvmrc in projects:
 cat .nvmrc
@@ -86,18 +96,21 @@ echo '[tools]
 node = "20.0.0"' > mise.toml
 ```
 
-**Step 5: Install Node versions**
+### Step 5: Install Node versions
+
 ```sh
 mise install
 ```
 
-**Step 6: Verify**
+### Step 6: Verify
+
 ```sh
 node -v        # Should show configured version
 mise current   # Shows active versions
 ```
 
-**Bonus: Add npm global packages**
+### Bonus: Add npm global packages
+
 ```toml
 [tools]
 node = "20.0.0"
@@ -114,7 +127,8 @@ node = "20.0.0"
 
 Python Version Manager users have pyenv in shell rc and `.python-version` files.
 
-**Step 1: Remove pyenv from shell**
+### Step 1: Remove pyenv from shell
+
 ```bash
 # Remove or comment out from ~/.zshrc or ~/.bashrc
 # Lines like:
@@ -123,29 +137,34 @@ Python Version Manager users have pyenv in shell rc and `.python-version` files.
 #   eval "$(pyenv init -)"
 ```
 
-**Step 2: Install mise**
+### Step 2: Install mise
+
 ```sh
 curl https://mise.jdx.dev/install.sh | sh
 ```
 
-**Step 3: Add mise to shell**
+### Step 3: Add mise to shell
+
 ```sh
 eval "$(mise activate zsh)"
 ```
 
-**Step 4: Enable `.python-version` reading**
+### Step 4: Enable `.python-version` reading
+
 ```toml
 # ~/.config/mise/config.toml
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
 ```
 
-**Step 5: Install Python versions**
+### Step 5: Install Python versions
+
 ```sh
 mise install    # Reads .python-version files and installs
 ```
 
-**Step 6: Migrate to mise.toml (optional)**
+### Step 6: Migrate to mise.toml (optional)
+
 ```sh
 # If you have .python-version in projects:
 cat .python-version
@@ -156,7 +175,8 @@ echo '[tools]
 python = "3.12"' > mise.toml
 ```
 
-**Step 7: Add Python tools (optional)**
+### Step 7: Add Python tools (optional)
+
 ```toml
 [tools]
 python = "3.12"
@@ -168,7 +188,8 @@ python = "3.12"
 uv_venv_auto = true    # Auto-create venvs
 ```
 
-**Step 8: Verify**
+### Step 8: Verify
+
 ```sh
 python -v
 poetry --version    # If added to tools
@@ -182,7 +203,8 @@ poetry --version    # If added to tools
 
 Ruby Version Manager users have rbenv in shell rc and `.ruby-version` files.
 
-**Step 1: Remove rbenv from shell**
+### Step 1: Remove rbenv from shell
+
 ```bash
 # Remove or comment out from ~/.zshrc or ~/.bashrc
 # Lines like:
@@ -190,29 +212,34 @@ Ruby Version Manager users have rbenv in shell rc and `.ruby-version` files.
 #   eval "$(rbenv init -)"
 ```
 
-**Step 2: Install mise**
+### Step 2: Install mise
+
 ```sh
 curl https://mise.jdx.dev/install.sh | sh
 ```
 
-**Step 3: Add mise to shell**
+### Step 3: Add mise to shell
+
 ```sh
 eval "$(mise activate zsh)"
 ```
 
-**Step 4: Enable `.ruby-version` reading**
+### Step 4: Enable `.ruby-version` reading
+
 ```toml
 # ~/.config/mise/config.toml
 [settings]
 idiomatic_version_file_enable_tools = ["ruby"]
 ```
 
-**Step 5: Install Ruby versions**
+### Step 5: Install Ruby versions
+
 ```sh
 mise install    # Reads .ruby-version files
 ```
 
-**Step 6: Migrate to mise.toml (optional)**
+### Step 6: Migrate to mise.toml (optional)
+
 ```sh
 cat .ruby-version
 # Output: 3.2.0
@@ -221,7 +248,8 @@ echo '[tools]
 ruby = "3.2.0"' > mise.toml
 ```
 
-**Step 7: Verify**
+### Step 7: Verify
+
 ```sh
 ruby -v
 gem -v
@@ -235,20 +263,23 @@ gem -v
 
 direnv is an environment loader; mise covers environment setup via `[env]` section.
 
-**Step 1: Remove direnv from shell**
+### Step 1: Remove direnv from shell
+
 ```bash
 # Remove eval "$(direnv hook zsh)" or similar from ~/.zshrc
 ```
 
-**Step 2: Install mise**
+### Step 2: Install mise
+
 ```sh
 curl https://mise.jdx.dev/install.sh | sh
 eval "$(mise activate zsh)"
 ```
 
-**Step 3: Convert `.envrc` to `mise.toml`**
+### Step 3: Convert `.envrc` to `mise.toml`
 
-**Before (direnv):**
+#### Before (direnv)
+
 ```bash
 # .envrc
 export DATABASE_URL="postgres://localhost/mydb"
@@ -257,6 +288,7 @@ PATH_add "./bin"
 ```
 
 **After (mise):**
+
 ```toml
 # mise.toml
 [env]
@@ -265,10 +297,9 @@ LOG_LEVEL = "debug"
 _.path = "./bin"
 ```
 
-**Step 4: Advanced direnv patterns**
+#### After (mise)
 
-**Load env file:**
-```bash
+```toml
 # Before (.envrc):
 dotenv .env.local
 
@@ -277,7 +308,8 @@ dotenv .env.local
 _.file = ".env.local"
 ```
 
-**Source shell script:**
+#### Source shell script
+
 ```bash
 # Before (.envrc):
 source_env .envrc.sh
@@ -287,7 +319,8 @@ source_env .envrc.sh
 _.source = ".envrc.sh"
 ```
 
-**Required variable:**
+#### Required variable
+
 ```bash
 # Before (.envrc):
 export_if_undefined API_KEY "Get key at..."
@@ -297,7 +330,8 @@ export_if_undefined API_KEY "Get key at..."
 API_KEY = { required = "Get key at..." }
 ```
 
-**Step 5: Verify**
+### Step 5: Verify
+
 ```sh
 mise env                # See all env vars
 env | grep DATABASE_URL # Should be set
@@ -312,6 +346,7 @@ env | grep DATABASE_URL # Should be set
 If using multiple tools (nvm + pyenv + rbenv), consolidate into one:
 
 **Before:**
+
 ```bash
 # ~/.zshrc has:
 export NVM_DIR=~/.nvm
@@ -323,12 +358,14 @@ eval "$(direnv hook zsh)"
 ```
 
 **After:**
+
 ```bash
 # ~/.zshrc has:
 eval "$(mise activate zsh)"
 ```
 
 **Single mise.toml:**
+
 ```toml
 [tools]
 node = "22"

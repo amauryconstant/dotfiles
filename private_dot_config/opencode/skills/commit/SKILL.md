@@ -202,7 +202,7 @@ git log -20
 
 Format the presentation clearly:
 
-```
+```text
 Proposed commit message:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [Subject line]
@@ -249,13 +249,13 @@ git show --stat
 
 ### Simple commits
 
-```
+```text
 Fix authentication token expiration
 ```
 
 ### Complex commits
 
-```
+```text
 Fix argument parsing for subcommands
 
 Subcommands were failing when passed with the --separator flag due to incorrect argument order handling.
@@ -269,7 +269,7 @@ Closes: #123
 
 OR
 
-```
+```text
 Amend existing specs to match actual implementation
 
 - domain-models: Claude Code format (name, tools, model) instead of planned fields
@@ -323,7 +323,7 @@ Amend existing specs to match actual implementation
 
 **Good** (diverse examples):
 
-```
+```text
 ✓ Fix authentication token expiration
 ✓ Add interactive confirmation prompts for destructive operations
 ✓ Migrate shell config to POSIX-compliant syntax
@@ -340,7 +340,7 @@ These examples demonstrate specific, descriptive commit messages that clearly st
 
 **Vague examples to avoid**:
 
-```
+```text
 ❌ Fix config
 ❌ Update script
 ❌ Fix stuff
@@ -353,7 +353,7 @@ These examples demonstrate specific, descriptive commit messages that clearly st
 
 ### No changes staged
 
-```
+```text
 No changes staged for commit.
 
 Use:
@@ -370,7 +370,7 @@ Use Git's auto-generated merge message. Don't override unless necessary.
 
 Use `git revert` auto-generated message format:
 
-```
+```text
 Revert "Original commit message"
 
 This reverts commit <hash>.
@@ -384,7 +384,7 @@ This reverts commit <hash>.
 
 Focus on the overall goal, not individual files:
 
-```
+```text
 ✓ Add argument subcommands
 ❌ Update parser.go, handler.go, and flags.go
 ```
@@ -416,7 +416,7 @@ git commit -m "Add validation hooks"
 
 Consider adding a footer:
 
-```
+```text
 Refactor command-line argument interface
 
 - Migrate from flags to subcommands

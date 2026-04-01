@@ -155,17 +155,19 @@ mise use <tool>@<version>  # Optionally write to mise.toml
 
 ## Shell Integration
 
-| Mode | Command | Use case |
-|------|---------|----------|
-| **activate** | `eval "$(mise activate zsh)"` | Interactive shells — dynamic version switching |
-| **shims** | `eval "$(mise activate bash --shims)"` | Non-interactive / GUI / CI — static PATH |
+| Mode         | Command                                | Use case                                       |
+| ------------ | -------------------------------------- | ---------------------------------------------- |
+| **activate** | `eval "$(mise activate zsh)"`          | Interactive shells — dynamic version switching |
+| **shims**    | `eval "$(mise activate bash --shims)"` | Non-interactive / GUI / CI — static PATH       |
 
 Add to your shell rc (`~/.zshrc`, `~/.bashrc`):
+
 ```sh
 eval "$(mise activate zsh)"   # or bash, fish, etc.
 ```
 
 For GUI apps launched outside the terminal (e.g., from a desktop environment):
+
 ```sh
 eval "$(mise activate bash --shims)"  # in ~/.profile or a session env file
 ```
@@ -181,7 +183,8 @@ mise searches from cwd up through parents; closer files take precedence:
 5. `~/.config/mise/config.toml` — global user config
 
 JSON Schema for editor autocompletion:
-```
+
+```text
 https://mise.jdx.dev/schema/mise.json
 ```
 
@@ -194,25 +197,25 @@ Enable per-language reading of tool-native version files:
 idiomatic_version_file_enable_tools = ["node", "python", "ruby", "go", "java"]
 ```
 
-| Language | Supported files |
-|----------|----------------|
-| Node | `.nvmrc`, `.node-version`, `package.json` engines |
-| Python | `.python-version`, `.python-versions` |
-| Ruby | `.ruby-version`, `Gemfile` |
-| Go | `.go-version` |
-| Java | `.java-version`, `.sdkmanrc` |
+| Language | Supported files                                   |
+| -------- | ------------------------------------------------- |
+| Node     | `.nvmrc`, `.node-version`, `package.json` engines |
+| Python   | `.python-version`, `.python-versions`             |
+| Ruby     | `.ruby-version`, `Gemfile`                        |
+| Go       | `.go-version`                                     |
+| Java     | `.java-version`, `.sdkmanrc`                      |
 
 ## Env Variables (mise itself)
 
-| Variable | Purpose |
-|----------|---------|
-| `MISE_DATA_DIR` | Where tools are installed |
-| `MISE_GLOBAL_CONFIG_FILE` | Override global config path |
-| `MISE_<TOOL>_VERSION` | Override a tool version (e.g., `MISE_NODE_VERSION=20`) |
-| `MISE_LOG_LEVEL` | Verbosity: `trace`, `debug`, `info`, `warn`, `error` |
-| `MISE_QUIET=1` | Suppress non-error output |
-| `MISE_RAW=1` | Pass plugin stdout/stderr directly (for interactive prompts) |
-| `MISE_CEILING_PATHS` | Stop directory traversal at these paths |
+| Variable                  | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `MISE_DATA_DIR`           | Where tools are installed                                    |
+| `MISE_GLOBAL_CONFIG_FILE` | Override global config path                                  |
+| `MISE_<TOOL>_VERSION`     | Override a tool version (e.g., `MISE_NODE_VERSION=20`)       |
+| `MISE_LOG_LEVEL`          | Verbosity: `trace`, `debug`, `info`, `warn`, `error`         |
+| `MISE_QUIET=1`            | Suppress non-error output                                    |
+| `MISE_RAW=1`              | Pass plugin stdout/stderr directly (for interactive prompts) |
+| `MISE_CEILING_PATHS`      | Stop directory traversal at these paths                      |
 
 ## Troubleshooting Installation
 
@@ -223,6 +226,7 @@ Check if mise is installed and properly activated:
 ```
 
 This script verifies:
+
 - `mise` is in PATH
 - Correct version is installed
 - Shell integration is activated
@@ -235,5 +239,5 @@ This script verifies:
 - `mise.local.toml` is for machine-local overrides — git-ignore it
 - Tasks support `depends`, `sources`, `outputs` for smart caching
 - File-based tasks: place executable scripts in `mise-tasks/` or `.mise/tasks/`
-- See `references/env.md` for advanced `[env]` directives (_.file, _.path, templating)
+- See `references/env.md` for advanced `[env]` directives (_.file,_.path, templating)
 - See `references/tasks.md` for full task options (args, shebang, file-based tasks)

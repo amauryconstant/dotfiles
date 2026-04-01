@@ -5,6 +5,7 @@ Common workflows for creating and maintaining AGENTS.md files.
 ## Creating New AGENTS.md
 
 **Workflow**:
+
 1. Determine location (root, subdirectory, or `.opencode/rules/`)
 2. Start with minimal template
 3. Add only essential, non-inferable content
@@ -12,6 +13,7 @@ Common workflows for creating and maintaining AGENTS.md files.
 5. Manual review against checklist
 
 **Minimal template**:
+
 ```markdown
 # [Component] Reference
 
@@ -21,6 +23,7 @@ Common workflows for creating and maintaining AGENTS.md files.
 **CRITICAL**: Be concise. Sacrifice grammar for token-efficiency.
 
 ## Quick Reference
+
 - Purpose: [Brief description]
 - Key files: [Main files]
 - Integration: [How it connects]
@@ -31,6 +34,7 @@ Common workflows for creating and maintaining AGENTS.md files.
 ## Refactoring Existing AGENTS.md
 
 **When to refactor**:
+
 - File >500 lines
 - AI ignores documented rules
 - AI asks questions answered in file
@@ -39,7 +43,7 @@ Common workflows for creating and maintaining AGENTS.md files.
 
 ### Strategy 1: Split into Modular Rules
 
-```
+```text
 # Before: Single 800-line file
 AGENTS.md (800 lines)
 
@@ -56,16 +60,19 @@ AGENTS.md (800 lines)
 
 ```markdown
 # In main AGENTS.md
+
 ## Script Standards
+
 @.opencode/rules/scripts.md
 
 ## Template System
+
 @.opencode/rules/templates.md
 ```
 
 ### Strategy 3: Location-Based Hierarchy
 
-```
+```text
 # Before: Everything in root
 AGENTS.md (1200 lines covering all)
 
@@ -79,33 +86,39 @@ src/
 
 ## Improving Specificity
 
-**Pattern: Vague → Specific**
+### Pattern: Vague → Specific
 
 Before:
+
 ```markdown
 Test your code properly before committing.
 Run the appropriate validation commands.
 ```
 
 After:
+
 ```markdown
 # Pre-Commit Validation
+
 1. `npm run typecheck` - TypeScript check
 2. `npm test -- --related` - Run affected tests
 3. `npm run lint` - Style check
 ```
 
-**Pattern: Generic → Concrete**
+### Pattern: Generic → Concrete
 
 Before:
+
 ```markdown
 Follow coding best practices.
 Write clean, maintainable code.
 ```
 
 After:
+
 ```markdown
 # Code Style
+
 - Use `const` over `let` when possible
 - Max function length: 50 lines
 - Destructure imports: `import { foo } from 'bar'`
@@ -116,6 +129,7 @@ After:
 ### Use Tables Instead of Verbose Lists
 
 Before (147 tokens):
+
 ```markdown
 - config.ts: This file handles application configuration
   including environment variables and defaults.
@@ -124,38 +138,47 @@ Before (147 tokens):
 ```
 
 After (47 tokens):
+
 ```markdown
-| File | Purpose |
-|------|---------|
+| File      | Purpose                     |
+| --------- | --------------------------- |
 | config.ts | App configuration, env vars |
-| utils.ts | String/date utilities |
+| utils.ts  | String/date utilities       |
 ```
 
 ### Use Cross-References Instead of Duplication
 
 Before:
+
 ```markdown
 # In multiple files: 400 lines of duplicated API docs
 ```
 
 After:
+
 ```markdown
 # In each file:
+
 **API Reference**: See `docs/api.md` for complete documentation
 ```
 
 ### Front-Load Essentials
 
 Before:
+
 ```markdown
 [500 lines of detailed content]
+
 ## Summary
+
 Key points buried at end
 ```
 
 After:
+
 ```markdown
 ## Quick Reference
+
 - Purpose: [Brief]
 - Commands: [Key commands]
 - Files: [Count]

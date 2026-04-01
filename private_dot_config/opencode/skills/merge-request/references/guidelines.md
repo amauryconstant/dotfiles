@@ -60,11 +60,13 @@ This file contains title guidelines, anti-patterns, and validation checklists fo
 **Purpose**: 2-3 sentences, high-level purpose
 
 **Good**:
+
 ```markdown
 Add OAuth2 authentication support for user login and token management.
 ```
 
 **Bad**:
+
 ```markdown
 I added OAuth2. The OAuth2 provider configuration is now done. Token refresh logic is implemented too. Error handling is there.
 ```
@@ -74,6 +76,7 @@ I added OAuth2. The OAuth2 provider configuration is now done. Token refresh log
 **Purpose**: Bullet points organized by category
 
 **Good**:
+
 ```markdown
 - Add OAuth2 provider configuration
 - Implement token refresh logic
@@ -81,6 +84,7 @@ I added OAuth2. The OAuth2 provider configuration is now done. Token refresh log
 ```
 
 **Bad**:
+
 ```markdown
 - Updated auth.py with OAuth2 logic
 - Modified token.py to add refresh
@@ -94,6 +98,7 @@ I added OAuth2. The OAuth2 provider configuration is now done. Token refresh log
 **Purpose**: Specific steps for verification (omit if obvious)
 
 **Good**:
+
 ```markdown
 1. Configure OAuth2 provider credentials
 2. Try logging in with OAuth2
@@ -101,11 +106,13 @@ I added OAuth2. The OAuth2 provider configuration is now done. Token refresh log
 ```
 
 **Bad**:
+
 ```markdown
 Test it works
 ```
 
 **When to omit**:
+
 - Trivial changes (typo fix, documentation update)
 - Obvious changes (adding a simple flag)
 
@@ -114,6 +121,7 @@ Test it works
 **Purpose**: Only include if applicable
 
 **Good**:
+
 ```markdown
 Old configuration format no longer supported. Run migration script:
 `bin/migrate-config --from-legacy`
@@ -122,11 +130,13 @@ See `MIGRATION.md` for details.
 ```
 
 **Bad**:
+
 ```markdown
 Some things might break.
 ```
 
 **When to omit**:
+
 - No breaking changes
 - Minor changes that don't affect compatibility
 
@@ -135,12 +145,14 @@ Some things might break.
 **Purpose**: Optional, include if relevant
 
 **Good**:
+
 ```markdown
 Closes #123
 Related to #456, #789
 ```
 
 **Bad**:
+
 ```markdown
 Issues: 123, 456, 789 (without context)
 ```
@@ -150,6 +162,7 @@ Issues: 123, 456, 789 (without context)
 Before presenting the merge request description, verify:
 
 **Content**:
+
 - [ ] Target branch is confirmed
 - [ ] Current branch is not the target
 - [ ] Title is descriptive and reviewer-friendly
@@ -160,12 +173,14 @@ Before presenting the merge request description, verify:
 - [ ] Related issues referenced (if applicable)
 
 **Format**:
+
 - [ ] Format is markdown-ready for copy-paste
 - [ ] Uses `###` for section headers
 - [ ] No markdown formatting errors
 - [ ] Proper code fences for examples
 
 **Quality**:
+
 - [ ] Not overly verbose (summarize, don't list every file)
 - [ ] No copy-pasted commit messages without synthesis
 - [ ] No implementation details in title

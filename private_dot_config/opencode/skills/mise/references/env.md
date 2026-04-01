@@ -86,6 +86,7 @@ mise env --redacted --values
 ## Merge Behavior
 
 Across multiple config files (closer directory wins):
+
 - `[tools]` — additive, closer overrides
 - `[env]` — additive, closer overrides
 - `[settings]` — additive, closer overrides

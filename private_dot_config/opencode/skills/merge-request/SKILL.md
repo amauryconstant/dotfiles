@@ -1,8 +1,10 @@
 ---
 name: merge-request
-description: "Generate markdown-formatted merge request/PR descriptions and titles. Analyzes branch changes against target branch (default: main, auto-detects alternatives). Use when user asks to create MR/PR, \"write PR description\", or for help with merge request content."
+description: 'Generate markdown-formatted merge request/PR descriptions and titles. Analyzes branch changes against target branch (default: main, auto-detects alternatives). Use when user asks to create MR/PR, "write PR description", or for help with merge request content.'
 license: MIT
 ---
+
+# Merge Request
 
 Generate markdown-formatted merge request/PR descriptions and titles.
 
@@ -15,7 +17,7 @@ Generate markdown-formatted merge request/PR descriptions and titles.
 - User mentions creating MR/PR for current branch
 - User asks for help with MR/PR content
 
-**Steps**
+## Steps
 
 1. **Determine current branch and target**
 
@@ -27,10 +29,12 @@ Generate markdown-formatted merge request/PR descriptions and titles.
    - Use provided target branch if specified
    - Default to `main`
    - If multiple targets detected, ask user:
-     ```
+
+     ```text
      Multiple target branches detected: main, master, develop
      Which branch should be used for comparison?
      ```
+
    - Always announce: "Target branch: <name>" and "Current branch: <name>"
 
 2. **Get change context**
@@ -50,14 +54,12 @@ Generate markdown-formatted merge request/PR descriptions and titles.
    ```
 
 3. **Analyze overall change purpose**
-
    - Identify primary change type: feature, bugfix, refactor, docs, chore
    - Group related changes logically
    - If purpose is unclear → Read key files or **ask user** for motivation
    - Determine if breaking changes exist
 
 4. **Draft MR title**
-
    - More flexible than commit titles (aim ≤100 chars if possible)
    - Descriptive but concise
    - Can use different tenses/styles (not strictly imperative)
@@ -71,19 +73,24 @@ Generate markdown-formatted merge request/PR descriptions and titles.
 
    ```markdown
    ### Summary
+
    [Brief overview of what was accomplished]
 
    ### Changes
+
    - [Category]: [Description]
    - [Category]: [Description]
 
    ### Testing
+
    [How reviewers can verify the changes]
 
    ### Breaking Changes
+
    [Any breaking changes or migration notes, if applicable]
 
    ### Related Issues
+
    [Issue numbers or links, if applicable]
    ```
 
@@ -101,33 +108,35 @@ Generate markdown-formatted merge request/PR descriptions and titles.
    2. Make revisions
    3. Regenerate with different focus
 
-**Output Format**
+## Output Format
 
+```markdown
+## Merge Request Description
 
-      ## Merge Request Description
+**Title**: <title>
 
-      **Title**: <title>
+### Summary
 
-      ```markdown
-      ### Summary
-      <summary>
+<summary>
 
-      ### Changes
-      - <change 1>
-      - <change 2>
+### Changes
 
-      ### Testing
-      <testing guidance>
-      ```
+- <change 1>
+- <change 2>
 
-      Choose an option:
+### Testing
 
-      1. Copy this description for you
-      2. Make revisions
-      3. Regenerate with different focus
+<testing guidance>
 
+Choose an option:
 
-**Guardrails**
+1. Copy this description for you
+2. Make revisions
+3. Regenerate with different focus
+```
+
+## Guardrails
+
 - Always check current branch before starting
 - Auto-detect target branches (`main`, `master`, `develop`) before asking
 - Read key files only if change purpose is unclear from diff
@@ -140,7 +149,7 @@ Generate markdown-formatted merge request/PR descriptions and titles.
 - Output must be markdown-formatted for GitHub/GitLab
 - Pause if breaking changes detected and confirm with user
 
-**References**
+## References
 
 - **Examples**: See [references/examples.md](references/examples.md) for detailed MR examples (simple features, bugfixes, refactors, documentation)
 - **Special cases**: See [references/special-cases.md](references/special-cases.md) for WIP MRs, backports, breaking changes, security fixes, performance improvements

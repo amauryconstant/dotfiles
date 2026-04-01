@@ -14,7 +14,7 @@ go = "latest"
 rust = "1.78"
 ```
 
-**Built-in tools** have pre-built plugins in mise. Full list: https://mise.jdx.dev/lang/
+**Built-in tools** have pre-built plugins in mise. Full list: <https://mise.jdx.dev/lang/>
 
 ---
 
@@ -23,6 +23,7 @@ rust = "1.78"
 Install global npm packages as tools.
 
 **Syntax:**
+
 ```toml
 [tools]
 "npm:package-name" = "version"
@@ -30,6 +31,7 @@ Install global npm packages as tools.
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "npm:typescript" = "latest"
@@ -41,17 +43,20 @@ Install global npm packages as tools.
 ```
 
 **With postinstall hook** (e.g., for playwright):
+
 ```toml
 [tools]
 "npm:playwright" = {version = "latest", postinstall = "playwright install"}
 ```
 
 **Install globally:**
+
 ```sh
 mise use npm:typescript
 ```
 
 **Use:**
+
 ```sh
 prettier --write src/
 ```
@@ -63,6 +68,7 @@ prettier --write src/
 Install Python CLI tools via pipx (isolated venvs).
 
 **Syntax:**
+
 ```toml
 [tools]
 "pipx:package-name" = "version"
@@ -70,6 +76,7 @@ Install Python CLI tools via pipx (isolated venvs).
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "pipx:black" = "latest"
@@ -81,17 +88,20 @@ Install Python CLI tools via pipx (isolated venvs).
 ```
 
 **GitHub format** (installs from git):
+
 ```toml
 [tools]
 "pipx:oraios/serena" = "latest"
 ```
 
 **Install:**
+
 ```sh
 mise use pipx:black
 ```
 
 **Use:**
+
 ```sh
 black .
 ```
@@ -103,12 +113,14 @@ black .
 Install Rust crates as binary tools.
 
 **Syntax:**
+
 ```toml
 [tools]
 "cargo:crate-name" = "version"
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "cargo:ripgrep" = "latest"
@@ -120,11 +132,13 @@ Install Rust crates as binary tools.
 ```
 
 **Install:**
+
 ```sh
 mise use cargo:ripgrep
 ```
 
 **Use:**
+
 ```sh
 rg "pattern" src/
 ```
@@ -136,6 +150,7 @@ rg "pattern" src/
 Install binary tools from GitHub releases.
 
 **Syntax:**
+
 ```toml
 [tools]
 "github:owner/repo" = "version"
@@ -143,6 +158,7 @@ Install binary tools from GitHub releases.
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "github:BurntSushi/ripgrep" = "latest"
@@ -153,17 +169,20 @@ Install binary tools from GitHub releases.
 ```
 
 **With asset filter** (if repo has multiple binaries):
+
 ```toml
 [tools]
 "github:owner/repo@binary-name" = "latest"
 ```
 
 **Install:**
+
 ```sh
 mise use github:cli/cli
 ```
 
 **Use:**
+
 ```sh
 gh repo list
 ```
@@ -175,12 +194,14 @@ gh repo list
 Install binary tools from GitLab releases.
 
 **Syntax:**
+
 ```toml
 [tools]
 "gitlab:owner/repo" = "version"
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "gitlab:company/internal-tool" = "latest"
@@ -188,6 +209,7 @@ Install binary tools from GitLab releases.
 ```
 
 **Install:**
+
 ```sh
 mise use gitlab:owner/repo
 ```
@@ -199,12 +221,14 @@ mise use gitlab:owner/repo
 Install tools from the Aqua ecosystem (registry of Go tools).
 
 **Syntax:**
+
 ```toml
 [tools]
 "aqua:registry/name" = "version"
 ```
 
 **Examples:**
+
 ```toml
 [tools]
 "aqua:cli/cli" = "latest"
@@ -212,6 +236,7 @@ Install tools from the Aqua ecosystem (registry of Go tools).
 ```
 
 **Install:**
+
 ```sh
 mise use aqua:cli/cli
 ```
@@ -228,16 +253,16 @@ Create custom backends by writing plugins. See mise documentation for plugin dev
 
 All backends support version specifiers:
 
-| Specifier | Meaning | Example |
-|-----------|---------|---------|
-| `"latest"` | Latest available version | `"npm:typescript" = "latest"` |
-| `"22"` | Latest 22.x | `node = "22"` |
-| `"1.78"` | Exact version | `rust = "1.78"` |
-| `"^1.0"` | Caret range (semver) | `"npm:jest" = "^29.0"` |
-| `"~1.0"` | Tilde range (semver) | `"npm:lodash" = "~4.17"` |
-| `"ref:master"` | Git ref (if supported) | `go = "ref:master"` |
-| `"prefix:1.20"` | Any matching prefix | `python = "prefix:3.1"` |
-| `"path:/usr/local"` | Use local binary | `node = "path:/usr/local/bin/node"` |
+| Specifier           | Meaning                  | Example                             |
+| ------------------- | ------------------------ | ----------------------------------- |
+| `"latest"`          | Latest available version | `"npm:typescript" = "latest"`       |
+| `"22"`              | Latest 22.x              | `node = "22"`                       |
+| `"1.78"`            | Exact version            | `rust = "1.78"`                     |
+| `"^1.0"`            | Caret range (semver)     | `"npm:jest" = "^29.0"`              |
+| `"~1.0"`            | Tilde range (semver)     | `"npm:lodash" = "~4.17"`            |
+| `"ref:master"`      | Git ref (if supported)   | `go = "ref:master"`                 |
+| `"prefix:1.20"`     | Any matching prefix      | `python = "prefix:3.1"`             |
+| `"path:/usr/local"` | Use local binary         | `node = "path:/usr/local/bin/node"` |
 
 ---
 
@@ -270,14 +295,14 @@ uv_venv_auto = true     # Auto-create venvs with uv
 
 ## Choosing a Backend
 
-| Tool Type | Backend | When to Use |
-|-----------|---------|------------|
-| Node global CLI | npm | You need a Node-based tool (prettier, typescript, eslint) |
-| Python CLI | pipx | Self-contained Python tools (black, ruff, poetry) |
-| Rust binary | cargo | Fast native tools (ripgrep, fd, bat) |
-| Any binary release | github | Tools published on GitHub releases |
-| GitLab tools | gitlab | Internal or GitLab-hosted tools |
-| Go ecosystem | aqua | Go-based tools and registries |
+| Tool Type          | Backend | When to Use                                               |
+| ------------------ | ------- | --------------------------------------------------------- |
+| Node global CLI    | npm     | You need a Node-based tool (prettier, typescript, eslint) |
+| Python CLI         | pipx    | Self-contained Python tools (black, ruff, poetry)         |
+| Rust binary        | cargo   | Fast native tools (ripgrep, fd, bat)                      |
+| Any binary release | github  | Tools published on GitHub releases                        |
+| GitLab tools       | gitlab  | Internal or GitLab-hosted tools                           |
+| Go ecosystem       | aqua    | Go-based tools and registries                             |
 
 ---
 
@@ -334,6 +359,7 @@ go = "latest"
 ## Troubleshooting Backends
 
 **Tool not found after install:**
+
 ```sh
 mise which npm:prettier        # Check install path
 mise ls | grep prettier        # Verify it's listed
@@ -341,11 +367,13 @@ mise install npm:prettier      # Force reinstall
 ```
 
 **Version not available:**
+
 ```sh
 mise ls-remote npm:prettier    # List available versions
 ```
 
 **Permission issues:**
+
 ```sh
 # Some backends need write permissions to install location
 export MISE_DATA_DIR=~/my_tools
@@ -354,6 +382,7 @@ mise install npm:prettier
 ```
 
 **Slow installation:**
+
 ```sh
 # Check network
 mise ls-remote npm:prettier

@@ -5,6 +5,9 @@
 .mise/
 .pre-commit-config.yaml
 .mcp.json
+.markdownlint-cli2.jsonc
+.markdownlint.jsonc
+.prettierignore
 
 # Archive directory for storing old configurations
 archives/

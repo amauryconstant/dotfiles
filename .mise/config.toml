@@ -1,3 +1,13 @@
 [tools]
 shellcheck = "latest"
 pre-commit = {version = "latest", postinstall = "pre-commit install"}
+markdownlint-cli2 = "latest"
+prettier = "latest"
+
+[tasks."lint:md"]
+description = "Lint and fix Markdown files"
+run = "markdownlint-cli2 '**/opencode/**/*.{md,markdown}'"
+
+[tasks."format:md"]
+description = "Format Markdown files"
+run = "prettier --write '**/opencode/**/*.{md,markdown}' --log-level warn"

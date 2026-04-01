@@ -5,6 +5,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Content Quality
 
 ### Conciseness Test
+
 - [ ] Every line passes the test: "Would removing this cause opencode to make mistakes?"
 - [ ] No generic advice opencode already knows ("write clean code")
 - [ ] No self-evident information (standard language conventions)
@@ -12,6 +13,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] File length appropriate (consider splitting if >500 lines)
 
 ### Specificity Test
+
 - [ ] Instructions are specific, not vague
   - ✅ "Use 2-space indentation for TypeScript"
   - ❌ "Format code properly"
@@ -21,6 +23,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] Examples include actual code/commands, not placeholders
 
 ### Value Test (opencode Can't Infer)
+
 - [ ] Contains project-specific commands opencode can't guess
 - [ ] Documents non-standard conventions
 - [ ] Explains project-specific architectural decisions
@@ -32,6 +35,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Structure Quality
 
 ### Markdown Formatting
+
 - [ ] Proper heading hierarchy (# → ## → ###)
 - [ ] Scannable lists for related items
 - [ ] Code blocks for commands and examples
@@ -39,6 +43,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] No wall-of-text paragraphs
 
 ### Organization
+
 - [ ] Logical sections with clear purposes
 - [ ] Related content grouped together
 - [ ] Quick reference section at top (optional but helpful)
@@ -46,6 +51,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] Cross-references clear and accurate
 
 ### Modularity
+
 - [ ] Consider splitting if file >500 lines
 - [ ] Use `.opencode/rules/` for topic-specific content
 - [ ] Use `@imports` for referencing external docs
@@ -55,6 +61,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Hierarchy Quality
 
 ### Location Appropriateness
+
 - [ ] Content in correct location for scope:
   - User preferences → `~/.config/opencode/AGENTS.md`
   - Team-shared → `./AGENTS.md` or `./.opencode/AGENTS.md`
@@ -62,6 +69,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
   - Modular → `./.opencode/rules/*.md`
 
 ### Parent-Child Relationships
+
 - [ ] Parent files cover general principles
 - [ ] Child files provide specific details
 - [ ] No duplication between parent and child
@@ -69,6 +77,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] Subdirectory AGENTS.md files loaded correctly
 
 ### Cross-References
+
 - [ ] References to parent files include path
 - [ ] References to sibling files accurate
 - [ ] References to root file clear
@@ -78,6 +87,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Token Efficiency
 
 ### Length Indicators
+
 - [ ] Total line count reasonable (<500 lines ideal, <1000 acceptable)
 - [ ] Average section length <50 lines
 - [ ] No section >100 lines (split into subsections)
@@ -85,6 +95,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] Tables used instead of verbose lists where appropriate
 
 ### Redundancy Check
+
 - [ ] No information duplicated from other AGENTS.md files
 - [ ] No information duplicated from code comments
 - [ ] No information duplicated from README
@@ -92,6 +103,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - [ ] Cross-references instead of repetition
 
 ### Pruning Opportunities
+
 - [ ] Remove information opencode hasn't needed
 - [ ] Remove rules opencode already follows without instruction
 - [ ] Remove outdated temporary workarounds
@@ -101,6 +113,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Effectiveness Indicators
 
 ### Positive Signs (Keep These)
+
 - Commands opencode uses regularly
 - Rules that prevent recurring mistakes
 - Conventions that differ from defaults
@@ -108,6 +121,7 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 - Environment quirks that cause issues
 
 ### Negative Signs (Consider Removing)
+
 - opencode asks questions answered in file → Phrasing unclear or file too long
 - opencode ignores documented rules → File too long or rule needs emphasis
 - You never see opencode reference a section → Probably not needed
@@ -117,32 +131,40 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Common Issues
 
 ### Too Long
+
 **Symptom**: opencode ignores documented rules
 **Fix**:
+
 - Ruthlessly prune content
 - Split into modular `.opencode/rules/` files
 - Move detailed docs to references with imports
 - Add emphasis to critical rules
 
 ### Too Vague
+
 **Symptom**: opencode asks for clarification on documented topics
 **Fix**:
+
 - Add specific examples
 - Include actual commands with flags
 - Show concrete code patterns
 - Use code blocks instead of descriptions
 
 ### Wrong Location
+
 **Symptom**: Content duplicated or conflicts across files
 **Fix**:
+
 - Move personal preferences to `~/.config/opencode/AGENTS.md`
 - Move team conventions to project AGENTS.md
 - Move topic-specific rules to `.opencode/rules/`
 - Use imports to reference, not duplicate
 
 ### Stale Content
+
 **Symptom**: Documented patterns no longer used
 **Fix**:
+
 - Review periodically (quarterly)
 - Remove deprecated information
 - Update changed conventions
@@ -151,15 +173,18 @@ Use this checklist to validate AGENTS.md files for OpenCode.
 ## Maintenance Schedule
 
 ### Weekly
+
 - Note when opencode violates or ignores rules
 - Track questions opencode asks that are documented
 
 ### Monthly
+
 - Review sections for continued relevance
 - Prune content that hasn't been referenced
 - Update changed workflows
 
 ### Quarterly
+
 - Full audit against this checklist
 - Reorganize if file grew >500 lines
 - Validate all imports and cross-references

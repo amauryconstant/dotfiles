@@ -4,7 +4,7 @@
 
 mise searches upward from the current directory, checking for config files in this order:
 
-```
+```text
 Current directory / project root
 ├── 1. mise.local.toml          ← Local overrides (git-ignore this)
 ├── 2. mise.toml                ← Project config
@@ -20,6 +20,7 @@ System-wide
 ```
 
 **Key points:**
+
 - Search continues upward until a config is found
 - Closer (more specific) directories override parent directories
 - `mise.local.toml` is always checked first in each directory (if present)
@@ -27,7 +28,7 @@ System-wide
 
 ## Config Precedence Example
 
-```
+```text
 Project structure:
 ~/work/myapp/
 ├── mise.toml              ← Closest to cwd
@@ -43,12 +44,12 @@ Result: ~/work/myapp/mise.toml wins
 
 When multiple config files are loaded (from parent directories or `conf.d/`), sections merge differently:
 
-| Section | Behavior | Example |
-|---------|----------|---------|
-| `[tools]` | **Additive** — closer files add/override | Parent: `node=20`, Child: `node=22` → Child wins |
-| `[env]` | **Additive** — closer files add/override | Parent: `FOO=a`, Child: `FOO=b` → Child wins |
-| `[settings]` | **Additive** — closer files add/override | Parent: `jobs=4`, Child: `jobs=8` → Child wins |
-| `[tasks]` | **Replace per task** — no merging | Parent: `[tasks.build]`, Child: `[tasks.build]` → Child's version used |
+| Section      | Behavior                                 | Example                                                                |
+| ------------ | ---------------------------------------- | ---------------------------------------------------------------------- |
+| `[tools]`    | **Additive** — closer files add/override | Parent: `node=20`, Child: `node=22` → Child wins                       |
+| `[env]`      | **Additive** — closer files add/override | Parent: `FOO=a`, Child: `FOO=b` → Child wins                           |
+| `[settings]` | **Additive** — closer files add/override | Parent: `jobs=4`, Child: `jobs=8` → Child wins                         |
+| `[tasks]`    | **Replace per task** — no merging        | Parent: `[tasks.build]`, Child: `[tasks.build]` → Child's version used |
 
 **Example:**
 
@@ -71,6 +72,7 @@ run = "npm test && pytest"  # Replaces parent's task entirely
 ```
 
 **Result after merging:**
+
 ```toml
 [tools]
 node = "22"        ← from child (override)
@@ -100,6 +102,7 @@ python = "3.11"
 **Use case:** Developer-specific versions, machine-specific paths, secrets
 
 **Git setup:**
+
 ```bash
 echo "mise.local.toml" >> .gitignore
 ```
@@ -155,7 +158,7 @@ mise untrust /path/to/config
 
 ### Project with subdirectories
 
-```
+```text
 myapp/
 ├── mise.toml                     ← Shared config
 ├── backend/
@@ -168,7 +171,7 @@ Each backend/frontend config inherits from root and adds/overrides as needed.
 
 ### Monorepo setup
 
-```
+```text
 monorepo/
 ├── mise.toml                     ← Global tools + shared tasks
 ├── packages/

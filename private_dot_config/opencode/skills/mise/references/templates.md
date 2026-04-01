@@ -173,6 +173,7 @@ run = "turbo run lint"
 ```
 
 **Each subdirectory (e.g., `packages/api/mise.toml`):**
+
 ```toml
 [tools]
 node = "22"
@@ -219,6 +220,7 @@ run = ["npm run lint", "npm test", "npm run type-check"]
 ```
 
 **GitHub Actions workflow:**
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -388,6 +390,7 @@ run = "npm test"
 5. **Test:** `mise run dev` or specific task
 
 **Customize:**
+
 - Change tool versions to match your needs
 - Add/remove tasks as needed
 - Extend `[env]` section for your variables

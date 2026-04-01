@@ -7,6 +7,7 @@ Use these patterns to ensure consistent, high-quality output from skills. Choose
 Provide structured templates for output format. Match strictness to your needs.
 
 ### When to Use
+
 - Output must follow specific structure
 - Multiple sections or components required
 - Consistency across generations matters
@@ -23,18 +24,22 @@ ALWAYS use this exact template:
 # [Analysis Title]
 
 ## Executive Summary
+
 [One-paragraph overview of key findings]
 
 ## Key Findings
+
 - Finding 1 with supporting data
 - Finding 2 with supporting data
 - Finding 3 with supporting data
 
 ## Recommendations
+
 1. Specific actionable recommendation
 2. Specific actionable recommendation
 
 ## Appendix
+
 - Additional data or references
 ```
 
@@ -50,18 +55,25 @@ Here is a sensible default format, but adapt based on analysis type:
 # [Analysis Title]
 
 ## Executive Summary
+
 [Overview of findings]
 
 ## Key Findings
+
 [Include 3-5 main findings with data]
+
 - Adjust number and depth based on available information
 
 ## Recommendations
+
 [Provide 2-4 actionable recommendations]
+
 - Tailor to specific context and feasibility
 
 ## Next Steps
+
 [If applicable: what should happen next]
+
 - Optional section if not relevant
 
 Adjust sections as needed for specific analysis type.
@@ -74,13 +86,14 @@ Adjust sections as needed for specific analysis type.
 Provide input/output pairs to demonstrate desired style, tone, and level of detail.
 
 ### When to Use
+
 - Output quality depends on seeing examples
 - Style conventions are non-obvious
 - Need to demonstrate format beyond structure
 
 ### Example
 
-```markdown
+````markdown
 ## Commit Message Format
 
 Generate commit messages following these examples:
@@ -88,16 +101,19 @@ Generate commit messages following these examples:
 **Example 1:**
 Input: Added user authentication with JWT tokens
 Output:
-```
+
+```text
 feat(auth): implement JWT-based authentication
 
 Add login endpoint and token validation middleware
 ```
+````
 
 **Example 2:**
 Input: Fixed bug where dates displayed incorrectly in reports
 Output:
-```
+
+```text
 fix(reports): correct date formatting in timezone conversion
 
 Use UTC timestamps consistently across report generation
@@ -106,14 +122,14 @@ Use UTC timestamps consistently across report generation
 **Example 3:**
 Input: Updated documentation for new API endpoints
 Output:
-```
+
+```text
 docs(api): document v2 endpoints and breaking changes
 
 Update API.md with new endpoint signatures and migration guide
 ```
 
 Follow this pattern: `type(scope): brief description`, then detailed explanation on next line.
-```
 
 ---
 
@@ -122,6 +138,7 @@ Follow this pattern: `type(scope): brief description`, then detailed explanation
 Define verification steps to complete before considering output finished.
 
 ### When to Use
+
 - Multi-component output requiring validation
 - Quality gates before finalization
 - Preventing common mistakes or omissions
@@ -134,24 +151,28 @@ Define verification steps to complete before considering output finished.
 Before finalizing code, verify:
 
 ### Core Functionality
+
 - [ ] Code solves the stated problem
 - [ ] Handles edge cases
 - [ ] Error messages are helpful and specific
 - [ ] No obvious bugs or logic errors
 
 ### Code Quality
+
 - [ ] Variable and function names are descriptive
 - [ ] Code follows project conventions
 - [ ] Comments only for non-obvious logic
 - [ ] Consistent formatting throughout
 
 ### Testing
+
 - [ ] Code compiles/runs without errors
 - [ ] Type checks pass (if applicable)
 - [ ] Tests included for non-trivial logic
 - [ ] Manual test completed successfully
 
 ### Documentation
+
 - [ ] README or usage instructions included
 - [ ] Dependencies documented
 - [ ] Examples provided where helpful
@@ -165,13 +186,14 @@ Before finalizing code, verify:
 Define input constraints, validation rules, and error handling for data processing.
 
 ### When to Use
+
 - Skills process user input or external data
 - Need to validate before processing
 - Provide clear error feedback
 
 ### Example
 
-```markdown
+````markdown
 ## Input Validation Requirements
 
 ### Field Constraints
@@ -197,6 +219,7 @@ Define input constraints, validation rules, and error handling for data processi
   }
 }
 ```
+````
 
 ### Validation Steps
 
@@ -230,6 +253,9 @@ For each validation failure, provide:
 - `MAX_LENGTH_EXCEEDED`: Value too long
 - `INVALID_PATTERN`: Value doesn't match pattern
 - `INVALID_ENUM_VALUE`: Value not in allowed list
+
+```text
+
 ```
 
 ---
@@ -239,13 +265,14 @@ For each validation failure, provide:
 Define structured data formats (JSON, YAML, XML) for output.
 
 ### When to Use
+
 - Output must be machine-readable
 - Integration with other tools/systems
 - Data exchange requirements
 
 ### Example
 
-```markdown
+````markdown
 ## API Response Schema
 
 ### Success Response
@@ -265,6 +292,7 @@ Define structured data formats (JSON, YAML, XML) for output.
   }
 }
 ```
+````
 
 ### Error Response
 
@@ -296,22 +324,22 @@ Define structured data formats (JSON, YAML, XML) for output.
 - **metadata.version**: Semantic version (X.Y.Z)
 - **metadata.tags**: Array of strings, max 50 tags
 
-### Common Error Codes
+### Error Codes
 
 - `VALIDATION_ERROR`: Input validation failed
 - `NOT_FOUND`: Resource not found
 - `UNAUTHORIZED`: Authentication required
 - `RATE_LIMITED`: Too many requests
 - `INTERNAL_ERROR`: Server-side error
-```
 
----
+`---
 
 ## Progressive Disclosure Pattern
 
 Structure output from summary to detailed levels, allowing readers to digest at their own pace.
 
 ### When to Use
+
 - Complex information with varying audience needs
 - Need both quick overview and deep details
 - Technical reports or documentation
@@ -322,42 +350,51 @@ Structure output from summary to detailed levels, allowing readers to digest at 
 ## System Health Report
 
 ### Executive Summary (30 seconds)
+
 **Status**: Healthy | **Uptime**: 99.9% | **Issues**: 2 minor
 
 All systems operational. Two minor warnings require attention this week.
 
 ### Key Metrics (2 minutes)
+
 - **API Response Time**: 45ms (target: <100ms) ✅
 - **Database Connections**: 85% utilized (warning threshold: 90%) ⚠️
 - **Error Rate**: 0.01% (target: <0.1%) ✅
 - **Disk Usage**: 78% full (warning threshold: 80%) ⚠️
 
 ### Issues Detected (5 minutes)
+
 **Issue 1: Database Connection Usage**
+
 - Current: 85% | Warning threshold: 90%
 - Trend: Increasing 2% per week
 - Impact: If trend continues, will hit threshold in ~3 weeks
 - Recommendation: Optimize queries or increase connection pool
 
 **Issue 2: Disk Usage**
+
 - Current: 78% | Warning threshold: 80%
 - Trend: Stable for past month
 - Impact: Will hit warning threshold in ~1 week
 - Recommendation: Review logs for cleanup opportunities
 
 ### Detailed Analysis (15 minutes)
+
 **Database Performance:**
+
 - Top 5 slow queries identified
 - Query optimization recommendations
 - Connection pool configuration details
 - Historical performance charts
 
 **Disk Analysis:**
+
 - Directory breakdown by size
 - Log rotation recommendations
 - Archive strategy options
 
 **Full Metrics:**
+
 - All 47 system metrics with historical trends
 - Service-level agreements (SLAs) status
 - Incident history for past 30 days
@@ -367,14 +404,14 @@ All systems operational. Two minor warnings require attention this week.
 
 ## Choosing a Pattern
 
-| Pattern | Output Type | Strictness | Best For |
-|----------|-------------|------------|-----------|
-| Template | Structured documents, reports | Exact or Flexible | Multi-section outputs, consistency matters |
-| Examples | Code, text, messages | Style-focused | Learning conventions, tone, format |
-| Checklist | Multi-component outputs | Verification | Quality gates, preventing omissions |
-| Data Validation | Forms, APIs, inputs | Constraint-driven | User input, external data |
-| Schema-Based | JSON, YAML, XML | Structured | Machine-readable, data exchange |
-| Progressive Disclosure | Complex information | Tiered depth | Reports, documentation, briefings |
+| Pattern                | Output Type                   | Strictness        | Best For                                   |
+| ---------------------- | ----------------------------- | ----------------- | ------------------------------------------ |
+| Template               | Structured documents, reports | Exact or Flexible | Multi-section outputs, consistency matters |
+| Examples               | Code, text, messages          | Style-focused     | Learning conventions, tone, format         |
+| Checklist              | Multi-component outputs       | Verification      | Quality gates, preventing omissions        |
+| Data Validation        | Forms, APIs, inputs           | Constraint-driven | User input, external data                  |
+| Schema-Based           | JSON, YAML, XML               | Structured        | Machine-readable, data exchange            |
+| Progressive Disclosure | Complex information           | Tiered depth      | Reports, documentation, briefings          |
 
 ---
 
@@ -383,16 +420,19 @@ All systems operational. Two minor warnings require attention this week.
 Choose the right level for your use case:
 
 ### Exact (No Deviations)
+
 - **Use when**: Automation, APIs, data exchange
 - **Enforce via**: Schema validation, automated tests
 - **Risk**: Inflexibility if requirements change
 
 ### Flexible (Adaptable Framework)
+
 - **Use when**: Documents, reports, general guidance
 - **Enforce via**: Examples, guidelines, human review
 - **Risk**: Inconsistency without oversight
 
 ### Adaptive (Context-Dependent)
+
 - **Use when**: Creative outputs, varied contexts
 - **Enforce via**: Principles, examples, judgment
 - **Risk**: Quality varies based on agent
@@ -402,24 +442,28 @@ Choose the right level for your use case:
 ## Quality Rubrics
 
 ### Code Quality
+
 - **Correctness**: Solves the problem, handles edge cases
 - **Maintainability**: Clear naming, comments for non-obvious logic
 - **Testability**: Can be tested, has tests
 - **Efficiency**: Appropriate performance for use case
 
 ### Document Quality
+
 - **Completeness**: All required sections present
 - **Clarity**: Clear, concise language
 - **Accuracy**: Factual, correct information
 - **Structure**: Logical flow, good formatting
 
 ### Data Quality
+
 - **Validity**: Meets all constraints and schemas
 - **Consistency**: No contradictions, follows patterns
 - **Completeness**: Required fields present
 - **Timeliness**: Current, not outdated
 
 ### Overall Quality
+
 - **Purpose alignment**: Meets user's actual needs
 - **Context awareness**: Appropriate for audience/use case
 - **Actionability**: Enables next steps or decisions

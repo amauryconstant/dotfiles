@@ -38,7 +38,7 @@ principles. Produces actionable findings with severity and refactoring guidance.
 
 ### Dependency Direction
 
-```
+```text
 VALID:                          INVALID:
 cmd/ → service/ → domain/      domain/ → infrastructure/
 cmd/ → application/            service/ → cmd/
@@ -149,31 +149,31 @@ When aligning an existing project, follow this order:
 
 ### Phase 2: Error Handling (user-visible improvement)
 
-5. Create typed domain errors
-6. Add exit code mapping in `cmd/`
-7. Add error formatter for user-friendly messages
-8. Add suggestions to error types
+1. Create typed domain errors
+2. Add exit code mapping in `cmd/`
+3. Add error formatter for user-friendly messages
+4. Add suggestions to error types
 
 ### Phase 3: Composition Root (testability)
 
-9. Move all wiring to `main.go`
-10. Create ServiceContainer
-11. Use constructor injection everywhere
-12. Remove global state and `init()` side effects
+1. Move all wiring to `main.go`
+2. Create ServiceContainer
+3. Use constructor injection everywhere
+4. Remove global state and `init()` side effects
 
 ### Phase 4: Domain Richness (long-term quality)
 
-13. Add behavior to domain types
-14. Add validation pipelines
-15. Create value objects for validated data
-16. Add always-valid construction
+1. Add behavior to domain types
+2. Add validation pipelines
+3. Create value objects for validated data
+4. Add always-valid construction
 
 ### Phase 5: Testing (confidence)
 
-17. Add domain unit tests (table-driven)
-18. Add service tests with mock infrastructure
-19. Add E2E tests (testscript or Ginkgo)
-20. Add contract tests for interface compliance
+1. Add domain unit tests (table-driven)
+2. Add service tests with mock infrastructure
+3. Add E2E tests (testscript or Ginkgo)
+4. Add contract tests for interface compliance
 
 ## Common Refactoring Patterns
 
@@ -270,7 +270,7 @@ RunE: func(cmd *cobra.Command, args []string) error {
 
 When reviewing a Go CLI, produce a summary in this format:
 
-```
+```text
 ## Architecture Assessment: <project>
 
 **Current State**: <flat / partially layered / well-layered>

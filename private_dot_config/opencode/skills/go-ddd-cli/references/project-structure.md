@@ -26,7 +26,7 @@ Do NOT extract for:
 
 ## Standard Directory Layout
 
-```
+```text
 myapp/
   main.go                    # Composition root (ONLY wiring, no logic)
   go.mod
@@ -105,7 +105,7 @@ myapp/
 
 ## Package Dependency Rules
 
-```
+```text
 cmd/ ──────────► application/ (interfaces)
   │                  ▲
   │                  │ implements
@@ -143,7 +143,7 @@ linters-settings:
 
 ### One File Per Command
 
-```
+```text
 cmd/
   root.go          # Root command + global flags
   create.go        # create command
@@ -153,7 +153,7 @@ cmd/
 
 ### Grouped Subcommands
 
-```
+```text
 cmd/
   root.go
   worktree.go          # worktree command group (create, delete, list)
@@ -197,7 +197,7 @@ func NewRootCommand(cfg *CommandConfig) *cobra.Command {
 
 ## Configuration File Convention
 
-```
+```text
 $XDG_CONFIG_HOME/myapp/config.toml    # Primary
 ~/.config/myapp/config.toml           # Fallback
 ```
@@ -226,14 +226,14 @@ Prefer `mise` tasks or a `Makefile` with standard targets:
 .PHONY: build test lint e2e
 
 build:
-	go build -o bin/myapp .
+ go build -o bin/myapp .
 
 test:
-	go test ./...
+ go test ./...
 
 lint:
-	golangci-lint run
+ golangci-lint run
 
 e2e:
-	go test -tags e2e ./test/e2e/...
+ go test -tags e2e ./test/e2e/...
 ```

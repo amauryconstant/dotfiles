@@ -2,7 +2,7 @@
 
 ## Testing Pyramid for Go CLIs
 
-```
+```text
         ╱╲
        ╱E2E╲         Few — full binary, slow, high confidence
       ╱──────╲
@@ -220,7 +220,7 @@ var _ = Describe("create command", func() {
 
 Write `.txtar` files that describe CLI interactions declaratively:
 
-```
+```text
 # test_create.txtar
 
 # Setup
@@ -259,7 +259,7 @@ func TestCLI(t *testing.T) {
 
 ### Directory Structure
 
-```
+```text
 test/
   fixtures/
     configs/           # Test config files

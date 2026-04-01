@@ -5,6 +5,7 @@ Guidelines for organizing AGENTS.md files across project structure.
 ## Loading Order
 
 Files load in hierarchical order:
+
 1. User memory (`~/.config/opencode/AGENTS.md`)
 2. Project root (`./AGENTS.md` or `./.opencode/AGENTS.md`)
 3. Parent directories (walks up from cwd)
@@ -15,6 +16,7 @@ Files load in hierarchical order:
 **Scope**: Repository-wide standards, architecture, core patterns
 
 **Include**:
+
 - Critical safety protocols
 - Architecture overview (high-level only)
 - Coding standards (patterns, not exhaustive)
@@ -22,9 +24,10 @@ Files load in hierarchical order:
 - Cross-references to subdirectories
 
 **Targets**:
-| Metric | Ideal | Max |
-|--------|-------|-----|
-| Lines | 200-300 | 500 |
+
+| Metric | Ideal    | Max  |
+| ------ | -------- | ---- |
+| Lines  | 200-300  | 500  |
 | Tokens | 800-1200 | 2000 |
 
 ## Subdirectory AGENTS.md
@@ -32,6 +35,7 @@ Files load in hierarchical order:
 **Scope**: Component-specific implementation details
 
 **Include**:
+
 - Component purpose and structure
 - Configuration syntax (specific patterns only)
 - Integration points
@@ -39,12 +43,14 @@ Files load in hierarchical order:
 - Cross-references to parent/root
 
 **Targets**:
-| Metric | Ideal | Max |
-|--------|-------|-----|
-| Lines | 150-250 | 400 |
+
+| Metric | Ideal    | Max  |
+| ------ | -------- | ---- |
+| Lines  | 150-250  | 400  |
 | Tokens | 600-1000 | 1600 |
 
 **Pattern**:
+
 ```markdown
 **Location**: `/path/to/directory`
 **Parent**: See `../AGENTS.md` for overview
@@ -58,12 +64,14 @@ Files load in hierarchical order:
 **Scope**: Topic-specific instructions
 
 **When to use**:
+
 - File >500 lines
 - Distinct topics that can be separated
 - Path-specific rules needed
 
 **Structure**:
-```
+
+```text
 .opencode/rules/
 ├── topic1.md
 ├── topic2.md
@@ -73,6 +81,7 @@ Files load in hierarchical order:
 ```
 
 **Path-scoped rules** (YAML frontmatter):
+
 ```markdown
 ---
 paths:
@@ -81,11 +90,13 @@ paths:
 ---
 
 # API Development Rules
+
 - All endpoints must include input validation
 - Use standard error response format
 ```
 
 **Supported glob patterns**:
+
 - `**/*.ts` - All TypeScript files
 - `src/**/*` - All files under src/
 - `*.md` - Markdown in root

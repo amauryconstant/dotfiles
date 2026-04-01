@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
+
 """
 Skill Initializer - Creates a new skill from template
 
@@ -13,7 +14,6 @@ Examples:
 
 import sys
 from pathlib import Path
-
 
 SKILL_TEMPLATE = """---
 name: {skill_name}
@@ -31,21 +31,25 @@ description: 'TODO: Complete and informative explanation of what the skill does 
 [TODO: Choose the structure that best fits this skill's purpose. Common patterns:
 
 **1. Workflow-Based** (best for sequential processes)
+
 - Works well when there are clear step-by-step procedures
 - Example: DOCX skill with "Workflow Decision Tree" → "Reading" → "Creating" → "Editing"
 - Structure: ## Overview → ## Workflow Decision Tree → ## Step 1 → ## Step 2...
 
 **2. Task-Based** (best for tool collections)
+
 - Works well when the skill offers different operations/capabilities
 - Example: PDF skill with "Quick Start" → "Merge PDFs" → "Split PDFs" → "Extract Text"
 - Structure: ## Overview → ## Quick Start → ## Task Category 1 → ## Task Category 2...
 
 **3. Reference/Guidelines** (best for standards or specifications)
+
 - Works well for brand guidelines, coding standards, or requirements
 - Example: Brand styling with "Brand Guidelines" → "Colors" → "Typography" → "Features"
 - Structure: ## Overview → ## Guidelines → ## Specifications → ## Usage...
 
 **4. Capabilities-Based** (best for integrated systems)
+
 - Works well when the skill provides multiple interrelated features
 - Example: Product Management with "Core Capabilities" → numbered capability list
 - Structure: ## Overview → ## Core Capabilities → ### 1. Feature → ### 2. Feature...
@@ -57,6 +61,7 @@ Delete this entire "Structuring This Skill" section when done - it's just guidan
 ## [TODO: Replace with the first main section based on chosen structure]
 
 [TODO: Add content here. See examples in existing skills:
+
 - Code samples for technical skills
 - Decision trees for complex workflows
 - Concrete examples with realistic user requests
@@ -67,9 +72,11 @@ Delete this entire "Structuring This Skill" section when done - it's just guidan
 This skill includes example resource directories that demonstrate how to organize different types of bundled resources:
 
 ### scripts/
+
 Executable code (Python/Bash/etc.) that can be run directly to perform specific operations.
 
 **Examples from other skills:**
+
 - PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
 - DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
 
@@ -78,9 +85,11 @@ Executable code (Python/Bash/etc.) that can be run directly to perform specific 
 **Note:** Scripts may be executed without loading into context, but can still be read by Claude for patching or environment adjustments.
 
 ### references/
+
 Documentation and reference material intended to be loaded into context to inform Claude's process and thinking.
 
 **Examples from other skills:**
+
 - Product management: `communication.md`, `context_building.md` - detailed workflow guides
 - BigQuery: API reference documentation and query examples
 - Finance: Schema documentation, company policies
@@ -88,9 +97,11 @@ Documentation and reference material intended to be loaded into context to infor
 **Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Claude should reference while working.
 
 ### assets/
+
 Files not intended to be loaded into context, but rather used within the output Claude produces.
 
 **Examples from other skills:**
+
 - Brand styling: PowerPoint template files (.pptx), logo files
 - Frontend builder: HTML/React boilerplate project directories
 - Typography: Font files (.ttf, .woff2)
@@ -110,6 +121,7 @@ This is a placeholder script that can be executed directly.
 Replace with actual implementation or delete if not needed.
 
 Example real scripts from other skills:
+
 - pdf/scripts/fill_fillable_fields.py - Fills PDF form fields
 - pdf/scripts/convert_pdf_to_images.py - Converts PDF pages to images
 """
@@ -119,7 +131,7 @@ def main():
     # TODO: Add actual script logic here
     # This could be data processing, file conversion, API calls, etc.
 
-if __name__ == "__main__":
+if **name** == "**main**":
     main()
 '''
 
@@ -129,6 +141,7 @@ This is a placeholder for detailed reference documentation.
 Replace with actual reference content or delete if not needed.
 
 Example real reference docs from other skills:
+
 - product-management/references/communication.md - Comprehensive guide for status updates
 - product-management/references/context_building.md - Deep-dive on gathering context
 - bigquery/references/ - API references and query examples
@@ -136,6 +149,7 @@ Example real reference docs from other skills:
 ## When Reference Docs Are Useful
 
 Reference docs are ideal for:
+
 - Comprehensive API documentation
 - Detailed workflow guides
 - Complex multi-step processes
@@ -145,6 +159,7 @@ Reference docs are ideal for:
 ## Structure Suggestions
 
 ### API Reference Example
+
 - Overview
 - Authentication
 - Endpoints with examples
@@ -152,6 +167,7 @@ Reference docs are ideal for:
 - Rate limits
 
 ### Workflow Guide Example
+
 - Prerequisites
 - Step-by-step instructions
 - Common patterns
@@ -168,6 +184,7 @@ Asset files are NOT intended to be loaded into context, but rather used within
 the output Claude produces.
 
 Example asset files from other skills:
+
 - Brand guidelines: logo.png, slides_template.pptx
 - Frontend builder: hello-world/ directory with HTML/React boilerplate
 - Typography: custom-font.ttf, font-family.woff2
@@ -185,11 +202,9 @@ Example asset files from other skills:
 Note: This is a text placeholder. Actual assets can be any file type.
 """
 
-
 def title_case_skill_name(skill_name):
     """Convert hyphenated skill name to Title Case for display."""
     return " ".join(word.capitalize() for word in skill_name.split("-"))
-
 
 def init_skill(skill_name, path):
     """
@@ -270,7 +285,6 @@ def init_skill(skill_name, path):
 
     return skill_dir
 
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: init_skill.py <skill-name> [--path <path>]")
@@ -318,6 +332,5 @@ def main():
     else:
         sys.exit(1)
 
-
-if __name__ == "__main__":
+if **name** == "**main**":
     main()

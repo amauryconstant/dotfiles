@@ -19,7 +19,7 @@ Invoke: `mise run build`
 
 Place executable scripts in these directories (mise auto-discovers them):
 
-```
+```text
 mise-tasks/          ← Primary location
 .mise-tasks/
 mise/tasks/
@@ -28,11 +28,13 @@ mise/tasks/
 ```
 
 Examples:
+
 - `mise-tasks/build` → `mise run build`
 - `mise-tasks/test/unit` → `mise run test:unit`
 - `mise-tasks/deploy/prod` → `mise run deploy:prod`
 
 Script must be executable:
+
 ```sh
 chmod +x mise-tasks/build
 ```
@@ -41,18 +43,18 @@ chmod +x mise-tasks/build
 
 TOML tasks take precedence over file-based tasks with the same name.
 
-```
+```text
 mise-tasks/build           ← File-based
 [tasks.build]              ← TOML (wins if both exist)
 ```
 
 ### When to Use Each
 
-| Type | When to Use | Example |
-|------|-------------|---------|
-| TOML | Simple tasks, settings, dependencies | `run = "npm test"` |
-| File-based | Complex logic, cross-language | Shell script with Python subprocess |
-| Both | Organize tasks by domain | TOML for core, file-based for complex subdomain |
+| Type       | When to Use                          | Example                                         |
+| ---------- | ------------------------------------ | ----------------------------------------------- |
+| TOML       | Simple tasks, settings, dependencies | `run = "npm test"`                              |
+| File-based | Complex logic, cross-language        | Shell script with Python subprocess             |
+| Both       | Organize tasks by domain             | TOML for core, file-based for complex subdomain |
 
 ---
 
@@ -62,7 +64,7 @@ Organize related tasks by domain using directories.
 
 ### Directory Structure
 
-```
+```text
 mise-tasks/
 ├── build               ← Task: mise run build
 ├── test/
@@ -74,6 +76,7 @@ mise-tasks/
 ```
 
 Colon (`:`) separates namespace from task name:
+
 - `mise run test:unit` — run `mise-tasks/test/unit`
 - `mise run deploy:prod` — run `mise-tasks/deploy/prod`
 
@@ -100,11 +103,13 @@ run = "pytest tests/unit/"
 ### When to Use Domains
 
 **Use domains when:**
+
 - Tasks are related (e.g., multiple test types)
 - Project has multiple concerns (frontend:build, backend:build)
 - Large number of tasks
 
 **Flat (no domains) when:**
+
 - Simple projects with few tasks
 - Each task is independent
 
@@ -180,6 +185,7 @@ Arguments injected as `usage_<name>` env vars.
 ## File-Based Tasks
 
 Place executable scripts in any of:
+
 - `mise-tasks/`
 - `.mise-tasks/`
 - `mise/tasks/`
@@ -207,20 +213,21 @@ If a formatter breaks `#MISE`, use `# [MISE]` form instead.
 
 ## Automatic Task Env Vars
 
-| Variable | Value |
-|----------|-------|
-| `MISE_ORIGINAL_CWD` | Where the task was invoked |
-| `MISE_CONFIG_ROOT` | Directory containing `mise.toml` |
-| `MISE_PROJECT_ROOT` | Project root |
-| `MISE_TASK_NAME` | Current task name |
-| `MISE_TASK_DIR` | Directory of the task script |
-| `MISE_TASK_FILE` | Full path to the task script |
+| Variable            | Value                            |
+| ------------------- | -------------------------------- |
+| `MISE_ORIGINAL_CWD` | Where the task was invoked       |
+| `MISE_CONFIG_ROOT`  | Directory containing `mise.toml` |
+| `MISE_PROJECT_ROOT` | Project root                     |
+| `MISE_TASK_NAME`    | Current task name                |
+| `MISE_TASK_DIR`     | Directory of the task script     |
+| `MISE_TASK_FILE`    | Full path to the task script     |
 
 ## Task Environment
 
 ### Full mise Environment Available
 
 Tasks run with the complete mise environment:
+
 - All configured tools (`[tools]`) installed and on PATH
 - All environment variables (`[env]`) set
 - Both TOML and file-based env vars merged
@@ -239,6 +246,7 @@ run = "node server.js"      # DEBUG=true for this task only
 ```
 
 When task runs:
+
 - Global `[env]` variables available
 - Task `env = {}` overrides global values
 - Auto-variables (`MISE_*`) always available
@@ -378,6 +386,7 @@ file = "https://example.com/setup.sh"
 ```
 
 **Script with metadata** (scripts/build.sh):
+
 ```bash
 #!/usr/bin/env bash
 #MISE description="Build the project"
@@ -402,6 +411,7 @@ run = "pytest ${usage_file} ${usage_watch:+--watch} ${usage_coverage:+--cov}"
 ```
 
 Invoke:
+
 ```sh
 mise run test                      # Run all tests
 mise run test tests/unit.py        # Specific file
@@ -440,6 +450,7 @@ run = "echo $LAZY"  # Only evaluated when task runs
 ## Troubleshooting Tasks
 
 **Task not found:**
+
 ```sh
 # List all available
 mise tasks
@@ -450,6 +461,7 @@ ls -la mise-tasks/mytask  # Must be executable
 ```
 
 **Task fails silently:**
+
 ```sh
 # Run with debug output
 MISE_LOG_LEVEL=debug mise run mytask
@@ -459,6 +471,7 @@ bash scripts/build.sh
 ```
 
 **Dependencies not running:**
+
 ```toml
 # Ensure syntax is correct
 depends = ["task1", "task2"]  # Array
@@ -466,6 +479,7 @@ depends = "task1"             # Single task
 ```
 
 **Environment vars not set:**
+
 ```sh
 # Check what's available
 mise env
@@ -473,6 +487,7 @@ mise run mytask -- env | grep MYVAR
 ```
 
 **Argument parsing issues:**
+
 ```toml
 # Verify syntax
 usage = '''

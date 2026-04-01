@@ -18,7 +18,7 @@ architecture) without strategic overhead (bounded contexts, event storming).
 
 ## The Four Layers
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │  CLI Layer (cmd/)                                │
 │  Cobra commands, flag parsing, output formatting │
@@ -135,7 +135,7 @@ See: `references/domain-modeling.md` for patterns.
 
 Concrete implementations of application interfaces. Organized by external dependency:
 
-```
+```text
 infrastructure/
   git/           # Git operations (go-git, CLI fallback)
   config/        # Config file loading (koanf, viper)
@@ -152,7 +152,7 @@ Each sub-package implements one or more application interfaces.
 
 ### Stage 1: Simple CLI (<5 commands, single concern)
 
-```
+```text
 myapp/
   main.go           # Composition root + Run()
   cmd/
@@ -165,7 +165,7 @@ myapp/
 
 ### Stage 2: Growing CLI (5-15 commands, multiple concerns)
 
-```
+```text
 myapp/
   main.go
   cmd/
@@ -190,7 +190,7 @@ myapp/
 
 ### Stage 3: Mature CLI (15+ commands, complex domain)
 
-```
+```text
 myapp/
   main.go
   cmd/

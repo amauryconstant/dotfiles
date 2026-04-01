@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
+
 """
 AGENTS.md Validation Script
 
@@ -10,7 +11,6 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
-
 class AGENTSValidator:
     def __init__(self, filepath: Path):
         self.filepath = filepath
@@ -18,8 +18,11 @@ class AGENTSValidator:
         self.lines = self.content.split("\n")
         self.issues: List[Tuple[str, str, int]] = []
 
+```python
     def validate(self) -> bool:
         """Run all validation checks. Returns True if no errors."""
+```
+
         self.check_length()
         self.estimate_tokens()
         self.check_anti_patterns()
@@ -254,11 +257,9 @@ class AGENTSValidator:
         report_lines.append("\n" + "=" * 60)
         return "\n".join(report_lines)
 
-
 def find_agents_md_files(root_path: Path) -> List[Path]:
     """Find all AGENTS.md files in directory tree."""
     return sorted(root_path.rglob("AGENTS.md"))
-
 
 def main():
     if len(sys.argv) < 2:
@@ -266,6 +267,7 @@ def main():
         print("  <path> can be a AGENTS.md file or directory to search")
         sys.exit(1)
 
+```python
     path = Path(sys.argv[1])
 
     if not path.exists():
@@ -277,6 +279,7 @@ def main():
         files_to_validate = [path]
     else:
         files_to_validate = find_agents_md_files(path)
+```
 
     if not files_to_validate:
         print(f"No AGENTS.md files found in {path}")
@@ -300,7 +303,6 @@ def main():
     else:
         print("❌ Some AGENTS.md files have errors")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

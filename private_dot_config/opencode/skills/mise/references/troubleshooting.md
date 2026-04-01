@@ -1,6 +1,7 @@
 # mise Troubleshooting Guide
 
 Always start with:
+
 ```sh
 mise doctor        # Comprehensive diagnostic report
 ```
@@ -14,6 +15,7 @@ mise doctor        # Comprehensive diagnostic report
 **Likely causes:**
 
 1. **Shell integration not activated**
+
    ```sh
    # Check if activated
    echo $MISE_SHELL_INIT    # Should be non-empty
@@ -28,6 +30,7 @@ mise doctor        # Comprehensive diagnostic report
    - GUI apps need --shims, but interactive shells need activate
 
 3. **Shell rc file not being sourced**
+
    ```sh
    # Verify rc file is loaded
    grep "mise activate" ~/.zshrc    # For zsh
@@ -35,6 +38,7 @@ mise doctor        # Comprehensive diagnostic report
    ```
 
 **Solution:**
+
 ```sh
 # 1. Add to shell rc
 echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
@@ -55,6 +59,7 @@ mise current    # Should show your configured versions
 **Causes:**
 
 1. **Tools installed but not in PATH**
+
    ```sh
    mise which npm      # Should show path
    echo $PATH          # Should include ~/.local/share/mise/shims
@@ -66,6 +71,7 @@ mise current    # Should show your configured versions
    - GUI app (Hyprland): use --shims in `~/.profile` or session env
 
 3. **Shell doesn't source activation**
+
    ```sh
    # Test directly
    eval "$(mise activate bash)"
@@ -73,6 +79,7 @@ mise current    # Should show your configured versions
    ```
 
 **Solution:**
+
 ```sh
 # For interactive shells
 eval "$(mise activate zsh)"
@@ -89,14 +96,16 @@ eval "$(mise activate bash --shims)"
 
 **Common doctor errors:**
 
-**Error: "mise not found in PATH"**
+### Error: "mise not found in PATH"
+
 ```sh
 # Reinstall or add to PATH
 ~/.local/bin/mise --version
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-**Error: "No tools defined"**
+### Error: "No tools defined"
+
 ```sh
 # Create a mise.toml
 echo '[tools]
@@ -104,7 +113,8 @@ node = "22"' > mise.toml
 mise install
 ```
 
-**Error: "Tool version not installed"**
+### Error: "Tool version not installed"
+
 ```sh
 # Install tools defined in mise.toml
 mise install
@@ -133,11 +143,13 @@ mise ls-remote node    # If slow, network issue
 **Slow version switching:**
 
 Use shims for better performance in non-interactive contexts:
+
 ```sh
 eval "$(mise activate bash --shims)"   # vs activate
 ```
 
 **Keep downloaded archives:**
+
 ```toml
 [settings]
 always_keep_download = true   # Don't delete after install
@@ -150,6 +162,7 @@ always_keep_download = true   # Don't delete after install
 **Symptom:** `mise tasks` shows nothing or task is missing
 
 **TOML tasks:**
+
 ```sh
 # Verify mise.toml exists and has [tasks]
 cat mise.toml | grep "\[tasks"
@@ -159,6 +172,7 @@ mise tasks                    # Lists all available tasks
 ```
 
 **File-based tasks:**
+
 ```sh
 # Task must be in correct directory
 ls mise-tasks/                # or .mise/tasks/, .mise-tasks/, etc.
@@ -172,6 +186,7 @@ ls -l mise-tasks/mytask       # Should show 'x' permission
 ```
 
 **Namespace/domain not found:**
+
 ```sh
 # For task in directory structure
 ls mise-tasks/build/          # File: mise-tasks/build/compile
@@ -192,6 +207,7 @@ run = "..."
 **Causes:**
 
 1. **Wrong file being loaded**
+
    ```sh
    # Check which config is active
    mise config                      # Shows current config path
@@ -201,6 +217,7 @@ run = "..."
    ```
 
 2. **Parent directory config overriding**
+
    ```sh
    # Check if parent has different config
    cat ../mise.toml
@@ -211,6 +228,7 @@ run = "..."
    ```
 
 3. **min_version check**
+
    ```sh
    # Verify installed version meets requirement
    mise --version
@@ -218,6 +236,7 @@ run = "..."
    ```
 
 **Solution:**
+
 ```sh
 # 1. Verify config file location
 cat mise.toml
@@ -242,6 +261,7 @@ mise current
 **Causes:**
 
 1. **Shell activation missing**
+
    ```sh
    # Env vars only set when activated
    eval "$(mise activate zsh)"
@@ -249,6 +269,7 @@ mise current
    ```
 
 2. **Wrong syntax in `[env]`**
+
    ```toml
    # Wrong:
    [env]
@@ -260,6 +281,7 @@ mise current
    ```
 
 3. **Variable redacted in output**
+
    ```sh
    # Sensitive vars are redacted by default
    mise env                    # Shows [redacted]
@@ -267,6 +289,7 @@ mise current
    ```
 
 4. **Templating syntax error**
+
    ```toml
    # Check for typos in template
    LD_LIBRARY_PATH = "{{env.LD_LIBRARY_PATH}}"  # Correct
@@ -274,6 +297,7 @@ mise current
    ```
 
 **Debug:**
+
 ```sh
 mise env                       # See all vars
 mise env --json                # Structured format
@@ -291,6 +315,7 @@ MISE_LOG_LEVEL=debug mise env # Verbose
 **Solution:**
 
 1. **Add to `~/.profile` or `~/.bashrc` (not rc files)**
+
    ```sh
    eval "$(mise activate bash --shims)"
    ```
@@ -312,17 +337,20 @@ MISE_LOG_LEVEL=debug mise env # Verbose
 **Causes:**
 
 1. **Task defined but has error**
+
    ```sh
    # Run with verbose output
    MISE_LOG_LEVEL=debug mise run mytask
    ```
 
 2. **File-based task not executable**
+
    ```sh
    chmod +x mise-tasks/mytask
    ```
 
 3. **External script missing**
+
    ```toml
    [tasks.mytask]
    file = "scripts/build.sh"
@@ -330,12 +358,14 @@ MISE_LOG_LEVEL=debug mise env # Verbose
    ```
 
 4. **Task has dependencies that fail**
+
    ```toml
    [tasks.mytask]
    depends = ["other_task"]    # Check if other_task succeeds
    ```
 
 **Debug:**
+
 ```sh
 # Run task with output
 mise run mytask --verbose
@@ -356,6 +386,7 @@ mise tasks mytask
 **Cause:** MISE_DATA_DIR not writable
 
 **Solution:**
+
 ```sh
 # Check where tools are installed
 echo $MISE_DATA_DIR            # Usually ~/.local/share/mise
@@ -378,6 +409,7 @@ mkdir -p $MISE_DATA_DIR
 **Solution:**
 
 1. **Remove or disable other version managers**
+
    ```sh
    # Remove from shell rc
    grep -n "nvm\|pyenv\|asdf" ~/.zshrc
@@ -385,6 +417,7 @@ mkdir -p $MISE_DATA_DIR
    ```
 
 2. **Use mise exclusively**
+
    ```toml
    [tools]
    node = "22"
@@ -392,6 +425,7 @@ mkdir -p $MISE_DATA_DIR
    ```
 
 3. **Verify only mise is active**
+
    ```sh
    which node
    # Should show ~/.local/share/mise/shims/node
@@ -402,27 +436,31 @@ mkdir -p $MISE_DATA_DIR
 ## Getting Help
 
 1. **Run diagnostics:**
+
    ```sh
    mise doctor        # Comprehensive check
    ```
 
 2. **Check logs:**
+
    ```sh
    MISE_LOG_LEVEL=debug mise install
    ```
 
 3. **Verify config:**
+
    ```sh
    cat mise.toml
    mise config
    ```
 
 4. **Test specific tool:**
+
    ```sh
    mise exec node@22 -- node -v
    ```
 
 5. **Check documentation:**
-   - https://mise.jdx.dev
+   - <https://mise.jdx.dev>
    - `mise --help`
    - `mise <command> --help`
