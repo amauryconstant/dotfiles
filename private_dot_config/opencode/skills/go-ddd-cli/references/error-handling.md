@@ -1,233 +1,349 @@
 # Error Handling Reference
 
-## Three-Tier Error Architecture
+See also: `domain-modeling.md` for domain type patterns (error types are domain types).
 
-```text
-Domain Layer          CLI Layer                 CLI Layer
-(define errors)  →    (categorize + exit code)  →  (format for user)
-domain/errors.go      cmd/error_handler.go      cmd/error_formatter.go
-```
+## Standardized Error Types
 
-## Tier 1: Domain Error Types
+Error types are aligned 1:1 with exit codes. Six types cover all CLI error
+scenarios. If two errors produce the same exit code and the same formatting
+template, they are the same type with a distinguishing field.
 
-Each error type carries context. Use the builder pattern for optional fields.
+### The DomainError Interface
+
+All domain errors implement a common interface. This enables single-dispatch
+error handling without `errors.As` chains.
 
 ```go
-// Base pattern: typed error with context
-type ValidationError struct {
-    Field       string
-    Value       string
-    Message     string
-    Suggestions []string
-}
-
-func (e *ValidationError) Error() string {
-    return fmt.Sprintf("validation failed for %s: %s", e.Field, e.Message)
-}
-
-// Constructor
-func NewValidationError(field, value, message string) *ValidationError {
-    return &ValidationError{Field: field, Value: value, Message: message}
-}
-
-// Builder for optional fields
-func (e *ValidationError) WithSuggestions(s ...string) *ValidationError {
-    e.Suggestions = s
-    return e
+type DomainError interface {
+    error
+    Unwrap() error
+    ExitCode() int
+    ErrorSuggestions() []string
 }
 ```
 
-### Standard Error Types for CLIs
+### Base Error Embedding
 
-| Error Type        | When to Use                             | Exit Code |
-| ----------------- | --------------------------------------- | --------- |
-| `ValidationError` | Invalid user input, bad flags           | 5         |
-| `ConfigError`     | Config file missing, invalid, malformed | 3         |
-| `NotFoundError`   | Resource doesn't exist                  | 6         |
-| `OperationError`  | Business operation failed               | 1         |
-| `ExternalError`   | External tool/API failed (git, API)     | 4         |
-| `FileError`       | File I/O problems                       | 1         |
-| `ConflictError`   | Resource already exists, state conflict | 1         |
+Reduce boilerplate by embedding a base type. Concrete error types only define
+their unique fields and constructor.
 
 ```go
-// ExternalError for tool/API failures
+type baseError struct {
+    message     string
+    kind        ErrorKind
+    cause       error
+    suggestions []string
+    exitCode    int
+}
+
+func (e *baseError) Error() string            { return e.message }
+func (e *baseError) Unwrap() error            { return e.cause }
+func (e *baseError) ExitCode() int            { return e.exitCode }
+func (e *baseError) ErrorSuggestions() []string { return e.suggestions }
+func (e *baseError) WithSuggestions(s ...string) { e.suggestions = s }
+```
+
+### ErrorKind Sub-Classification
+
+A single enum shared across all error types. Drives formatting and suggestions
+without multiplying types.
+
+```go
+type ErrorKind int
+
+const (
+    KindGeneral    ErrorKind = iota
+    KindNotFound             // resource/tool doesn't exist
+    KindTimeout              // operation exceeded deadline
+    KindPermission           // access denied
+    KindConflict             // resource already exists or state conflict
+)
+```
+
+### The Six Error Types
+
+**OperationError** — exit code 1. Business logic or general failure.
+
+```go
+type OperationError struct {
+    baseError
+    Operation string
+    Component string
+}
+
+func NewOperationError(operation, message string, cause error) *OperationError {
+    return &OperationError{
+        baseError: baseError{message: message, cause: cause, exitCode: 1},
+        Operation: operation,
+    }
+}
+```
+
+**UsageError** — exit code 2. Bad flags or arguments. Cobra handles this
+automatically for flag parsing; define this type for commands that need to
+report argument-level validation errors.
+
+```go
+type UsageError struct {
+    baseError
+    Command string
+}
+
+func NewUsageError(command, message string) *UsageError {
+    return &UsageError{
+        baseError: baseError{message: message, exitCode: 2},
+        Command:   command,
+    }
+}
+```
+
+**ConfigError** — exit code 3. Configuration problems.
+
+```go
+type ConfigError struct {
+    baseError
+    Path string
+}
+
+func NewConfigError(path, message string, cause error) *ConfigError {
+    return &ConfigError{
+        baseError: baseError{message: message, cause: cause, exitCode: 3},
+        Path:      path,
+    }
+}
+```
+
+**ExternalError** — exit code 4. External tool, API, or network failure.
+
+```go
 type ExternalError struct {
-    Tool      string   // "git", "docker", etc.
-    Operation string   // "clone", "push", etc.
-    Message   string
-    Cause     error
-    Suggestions []string
+    baseError
+    Tool      string
+    Operation string
 }
 
-func (e *ExternalError) Error() string {
-    return fmt.Sprintf("%s %s failed: %s", e.Tool, e.Operation, e.Message)
+func NewExternalError(tool, operation, message string, cause error) *ExternalError {
+    return &ExternalError{
+        baseError: baseError{message: message, cause: cause, exitCode: 4},
+        Tool:      tool,
+        Operation: operation,
+    }
+}
+```
+
+**ValidationError** — exit code 5. Domain input validation.
+
+```go
+type ValidationError struct {
+    baseError
+    Field string
+    Value string
 }
 
-func (e *ExternalError) Unwrap() error { return e.Cause }
+func NewValidationError(field, value, message string) *ValidationError {
+    return &ValidationError{
+        baseError: baseError{message: message, exitCode: 5},
+        Field:     field,
+        Value:     value,
+    }
+}
+```
 
-// NotFoundError
+**NotFoundError** — exit code 6. Resource doesn't exist.
+
+```go
 type NotFoundError struct {
-    Entity string // "project", "branch", "worktree"
+    baseError
+    Entity string
     Name   string
 }
 
-func (e *NotFoundError) Error() string {
-    return fmt.Sprintf("%s %q not found", e.Entity, e.Name)
+func NewNotFoundError(entity, name string) *NotFoundError {
+    return &NotFoundError{
+        baseError: baseError{
+            message:  fmt.Sprintf("%s %q not found", entity, name),
+            exitCode: 6,
+        },
+        Entity: entity,
+        Name:   name,
+    }
 }
 ```
 
-## Tier 2: Error Categorization & Exit Codes
-
-In `cmd/error_handler.go`. Maps domain errors to exit codes using `errors.As`.
+## Exit Code Constants
 
 ```go
 type ExitCode int
 
 const (
     ExitSuccess    ExitCode = 0
-    ExitError      ExitCode = 1 // General error
+    ExitError      ExitCode = 1 // General / operation error
     ExitUsage      ExitCode = 2 // Bad flags/args (Cobra handles this)
     ExitConfig     ExitCode = 3 // Config error
     ExitExternal   ExitCode = 4 // External tool failure
     ExitValidation ExitCode = 5 // Input validation
     ExitNotFound   ExitCode = 6 // Resource not found
 )
+```
 
+## Error Handler
+
+Single-dispatch via the `DomainError` interface. No `errors.As` chain needed
+for exit code mapping.
+
+```go
 func GetExitCodeForError(err error) ExitCode {
     if err == nil {
         return ExitSuccess
     }
-    var valErr *domain.ValidationError
-    if errors.As(err, &valErr) {
-        return ExitValidation
-    }
-    var cfgErr *domain.ConfigError
-    if errors.As(err, &cfgErr) {
-        return ExitConfig
-    }
-    var extErr *domain.ExternalError
-    if errors.As(err, &extErr) {
-        return ExitExternal
-    }
-    var nfErr *domain.NotFoundError
-    if errors.As(err, &nfErr) {
-        return ExitNotFound
+    var domErr DomainError
+    if errors.As(err, &domErr) {
+        return ExitCode(domErr.ExitCode())
     }
     return ExitError
 }
 ```
 
-### Top-Level Error Handler
+## Wrapping Policy
 
-Called from `main.go` when `rootCmd.Execute()` returns an error:
+Three rules govern error propagation across layers:
+
+**1. Infrastructure wraps once.** This is the single point where raw external
+errors become typed domain errors.
 
 ```go
-func HandleCLIError(cmd *cobra.Command, err error) ExitCode {
-    // Cobra already printed usage errors
-    if isCobraUsageError(err) {
-        return ExitUsage
+// infrastructure/tool/client.go
+func (c *client) ListItems(ctx context.Context, path string) ([]domain.ItemInfo, error) {
+    output, err := c.executor.Run(ctx, "tool", "list")
+    if err != nil {
+        return nil, &domain.ExternalError{
+            baseError: baseError{
+                message: "failed to list items",
+                kind:    classifyError(err),
+                cause:   err,
+            },
+            Tool:      "tool",
+            Operation: "list",
+        }
     }
-
-    // Format and print
-    formatted := globalConfig.ErrorFormatter.Format(err)
-    fmt.Fprintln(cmd.ErrOrStderr(), formatted)
-
-    return GetExitCodeForError(err)
+    // parse output into domain types...
 }
 ```
 
-## Tier 3: Error Formatting
+**2. Services translate, not wrap.** If infrastructure returns a typed error
+and the service adds no new semantic meaning, pass it through unchanged. Only
+create a new error when the meaning changes:
 
-Strategy pattern — register formatters per error type. Produces user-friendly
-output with actionable suggestions.
+```go
+func (s *service) Create(ctx context.Context, req *domain.CreateRequest) (*domain.CreateResult, error) {
+    exists, err := s.reader.Exists(ctx, req.Name)
+    if err != nil {
+        return nil, err // pass through — no new meaning to add
+    }
+    if exists {
+        // translate — "exists" in infrastructure becomes "conflict" in domain
+        return nil, domain.NewOperationError("create",
+            fmt.Sprintf("%s already exists", req.Name), nil)
+    }
+    // ...
+}
+```
+
+**3. Commands never wrap.** The command returns the error as-is. The error
+handler and formatter in the presenter layer handle exit codes and display.
+
+```go
+RunE: func(cmd *cobra.Command, args []string) error {
+    result, err := cfg.Services.Creator.Create(cmd.Context(), req)
+    if err != nil {
+        return err // no wrapping, no fmt.Errorf
+    }
+    cfg.Presenter.FormatResult(cmd.OutOrStdout(), result)
+    return nil
+},
+```
+
+## Infrastructure Error Classification
+
+A shared helper in the infrastructure layer maps raw errors to `ErrorKind`.
+
+```go
+func classifyError(err error) domain.ErrorKind {
+    if errors.Is(err, exec.ErrNotFound) {
+        return domain.KindNotFound
+    }
+    if errors.Is(err, context.DeadlineExceeded) {
+        return domain.KindTimeout
+    }
+    if errors.Is(err, os.ErrPermission) {
+        return domain.KindPermission
+    }
+    return domain.KindGeneral
+}
+```
+
+## Error Formatting
+
+Error formatting lives in the presenter layer (`presenter/error_formatter.go`).
+The formatter uses the `DomainError` interface for common behavior and
+`errors.As` for type-specific field access.
 
 ```go
 type ErrorFormatter struct {
-    formatters []errorFormatEntry
-    quiet      bool
+    styles *Styles
 }
 
-type errorFormatEntry struct {
-    match  func(error) bool
-    format func(error) string
-}
-
-func NewErrorFormatter() *ErrorFormatter {
-    f := &ErrorFormatter{}
-    f.Register(
-        func(err error) bool { var e *domain.ValidationError; return errors.As(err, &e) },
-        formatValidationError,
-    )
-    f.Register(
-        func(err error) bool { var e *domain.NotFoundError; return errors.As(err, &e) },
-        formatNotFoundError,
-    )
-    // ... more formatters
-    return f
-}
-
-func (f *ErrorFormatter) Format(err error) string {
-    for _, entry := range f.formatters {
-        if entry.match(err) {
-            return entry.format(err)
-        }
+func (f *ErrorFormatter) Format(w io.Writer, err error) {
+    var domErr domain.DomainError
+    if !errors.As(err, &domErr) {
+        fmt.Fprintf(w, "Error: %s\n", err.Error())
+        return
     }
-    return fmt.Sprintf("Error: %s", err.Error())
+
+    // Type-specific formatting
+    var extErr *domain.ExternalError
+    if errors.As(err, &extErr) {
+        f.formatExternal(w, extErr)
+        return
+    }
+    // ... other type-specific formatters
+
+    // Fallback: generic domain error
+    f.formatGeneric(w, domErr)
 }
 
-// Example formatter
-func formatValidationError(err error) string {
-    var valErr *domain.ValidationError
-    errors.As(err, &valErr)
+func (f *ErrorFormatter) formatExternal(w io.Writer, err *domain.ExternalError) {
+    fmt.Fprintf(w, "%s %s failed: %s\n",
+        f.styles.Error.Render(err.Tool),
+        err.Operation,
+        err.Error())
 
-    msg := fmt.Sprintf("Error: %s\n", valErr.Message)
-    if valErr.Field != "" {
-        msg += fmt.Sprintf("  Field: %s\n", valErr.Field)
+    for _, s := range f.suggestionsForKind(err.Tool, err.Kind()) {
+        fmt.Fprintf(w, "  %s %s\n", f.styles.Dim.Render("→"), s)
     }
-    if len(valErr.Suggestions) > 0 {
-        msg += "\nSuggestions:\n"
-        for _, s := range valErr.Suggestions {
-            msg += fmt.Sprintf("  - %s\n", s)
-        }
-    }
-    return msg
 }
 ```
 
-## Error Wrapping Rules
-
-1. **Wrap with `%w`** when the caller should be able to inspect the original error.
-2. **Wrap with `%s`** (or create a new error) when you want to hide internals.
-3. **Add context** at each layer boundary (service → infrastructure).
-4. **Don't double-wrap**: if the error already has good context, pass it through.
+### Kind-Driven Suggestions
 
 ```go
-// In service layer — add context about the operation
-func (s *creatorService) Create(ctx context.Context, req *CreateRequest) (*CreateResult, error) {
-    branches, err := s.git.ListBranches(ctx, req.Project)
-    if err != nil {
-        return nil, fmt.Errorf("listing branches for project %q: %w", req.Project, err)
+func (f *ErrorFormatter) suggestionsForKind(tool string, kind domain.ErrorKind) []string {
+    switch kind {
+    case domain.KindNotFound:
+        return []string{fmt.Sprintf("install %s or check your PATH", tool)}
+    case domain.KindTimeout:
+        return []string{"increase timeout in config", "check network connectivity"}
+    case domain.KindPermission:
+        return []string{"check file permissions"}
+    default:
+        return nil
     }
-    // ...
-}
-
-// In infrastructure — wrap external errors with domain types
-func (c *gitClient) ListBranches(ctx context.Context, repo string) ([]string, error) {
-    output, err := c.executor.Run(ctx, "git", "branch", "--list")
-    if err != nil {
-        return nil, &domain.ExternalError{
-            Tool: "git", Operation: "list-branches",
-            Message: "failed to list branches",
-            Cause: err,
-        }
-    }
-    // ...
 }
 ```
 
 ## Panic Recovery
 
-Top-level recovery in `main.go`. Show stack trace only in debug mode.
+Top-level recovery in `main.go`. Stack trace only in debug mode.
 
 ```go
 func recoverPanic() {
@@ -241,21 +357,27 @@ func recoverPanic() {
         os.Exit(1)
     }
 }
-
-func main() {
-    defer recoverPanic()
-    // ...
-}
 ```
 
-## Common Anti-Patterns
+## Stage Progression
 
-| Anti-Pattern                      | Fix                                                |
-| --------------------------------- | -------------------------------------------------- |
-| `log.Fatal()` in library code     | Return errors; only `main` calls `os.Exit()`       |
-| `panic()` for expected errors     | Return typed domain errors                         |
-| `err.Error()` in user output      | Use ErrorFormatter for friendly messages           |
-| Exit codes in domain layer        | Domain defines error types; CLI maps to exit codes |
-| Swallowing errors with `_ =`      | Handle or propagate every error                    |
-| String matching on error messages | Use `errors.As()` with typed errors                |
-| Wrapping then re-wrapping         | Wrap once at the boundary, pass through otherwise  |
+| Concern             | Stage 1-2                                    | Stage 3                              | Stage 4                            |
+| ------------------- | -------------------------------------------- | ------------------------------------ | ---------------------------------- |
+| Error types         | 6 types inline                               | 6 types with `baseError`             | Shared module across projects      |
+| ErrorKind           | `KindGeneral`, `KindNotFound`, `KindTimeout` | Add `KindPermission`, `KindConflict` | Full kind × tool suggestion matrix |
+| Formatting          | Simple `err.Error()` output                  | Presenter with strategy              | Kind-driven suggestions            |
+| `DomainError` iface | Optional                                     | Required                             | Required                           |
+| `classifyError`     | Inline in adapters                           | Shared infra helper                  | Shared infra helper                |
+
+## Anti-Patterns
+
+| Anti-Pattern                      | Fix                                                            |
+| --------------------------------- | -------------------------------------------------------------- |
+| One error type per service        | One type per exit code, use fields to distinguish              |
+| `log.Fatal()` in library code     | Return errors; only `main` calls `os.Exit()`                   |
+| `panic()` for expected errors     | Return typed domain errors                                     |
+| `fmt.Errorf` wrapping in commands | Return the error unchanged                                     |
+| Service wrapping typed errors     | Pass through or translate, never re-wrap                       |
+| String matching on error messages | Use `errors.As()` with typed errors or `DomainError` interface |
+| `err.Error()` in user output      | Use ErrorFormatter in presenter layer                          |
+| Exit codes in domain layer        | Domain defines types; exit codes on `DomainError`              |
