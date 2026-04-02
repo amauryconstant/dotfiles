@@ -1,0 +1,496 @@
+#!/usr/bin/env bash
+
+# firefox-debug-trace - Comprehensive Firefox hang diagnostic
+# Purpose: Multi-layered tracing to identify why FF149 hangs on NVIDIA/Wayland
+# Usage: firefox-debug-trace
+
+set -euo pipefail
+
+UI_LIB="${UI_LIB:-}"
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+    . "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+    . "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+    echo "Error: UI library not found" >&2
+    exit 1
+fi
+
+FIREFOX_BIN="${FIREFOX_BIN:-}"
+if [ -z "$FIREFOX_BIN" ]; then
+    FIREFOX_BIN="$(command -v firefox 2>/dev/null || echo '/usr/bin/firefox')"
+fi
+
+TIMEOUT_SECS=60
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+OUTPUT_BASE="$HOME/.local/share/chezmoi/_research/firefox-debug-${TIMESTAMP}"
+LOGS_DIR="$OUTPUT_BASE/logs"
+STATE_DIR="$OUTPUT_BASE/state"
+ANALYSIS_DIR="$OUTPUT_BASE/analysis"
+TARBALL="$OUTPUT_BASE.tar.gz"
+
+trap cleanup EXIT INT TERM
+
+cleanup() {
+    local ret=$?
+    if [ -d "$OUTPUT_BASE" ] && [ ! -f "$TARBALL" ]; then
+        ui_warning "Interrupted - generating partial report..."
+        generate_reports "INTERRUPTED"
+    fi
+    exit $ret
+}
+
+check_dependencies() {
+    ui_step "Checking dependencies..."
+
+    local missing=()
+    for cmd in strace nvidia-smi; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        ui_error "Missing required tools: ${missing[*]}"
+        ui_info "Install with: pacman -S ${missing[*]}"
+        exit 1
+    fi
+
+    ui_success "All dependencies available"
+}
+
+capture_baseline_state() {
+    ui_step "Capturing baseline system state..."
+
+    mkdir -p "$STATE_DIR"
+
+    {
+        echo "=== Environment Variables ==="
+        env | grep -iE 'nvidia|wayland|moz|gpu|display' | sort
+        echo
+        echo "=== nvidia-smi ==="
+        nvidia-smi --query-gpu=name,driver_version,driver_model --format=csv,noheader 2>/dev/null || echo "nvidia-smi failed"
+        echo
+        echo "=== Firefox Version ==="
+        "$FIREFOX_BIN" --version 2>/dev/null || echo "firefox not found"
+        echo
+        echo "=== Portal Status ==="
+        systemctl --user status xdg-desktop-portal xdg-desktop-portal-hyprland 2>/dev/null | head -20 || echo "portal status check failed"
+    } > "$STATE_DIR/baseline.txt"
+
+    if command -v dmesg >/dev/null 2>&1; then
+        if dmesg > "$STATE_DIR/dmesg-baseline.txt" 2>&1; then
+            ui_success "Baseline dmesg captured"
+        else
+            ui_warning "dmesg requires root - skipping kernel messages"
+            echo "dmesg requires root privileges" > "$STATE_DIR/dmesg-baseline.txt"
+        fi
+    else
+        echo "dmesg not available" > "$STATE_DIR/dmesg-baseline.txt"
+    fi
+
+    ui_success "Baseline state captured"
+}
+
+run_test() {
+    local test_num="$1"
+    local test_name="$2"
+    local test_cmd="$3"
+    local test_env="$4"
+    local expected="$5"
+
+    ui_separator
+    ui_title "Test $test_num: $test_name"
+    ui_box "$test_cmd" "$ACCENT_PRIMARY"
+    ui_info "Expected: $expected"
+
+    local test_dir="$LOGS_DIR/test-$(printf '%02d' "$test_num")-$test_name"
+    mkdir -p "$test_dir"
+
+    local pid=""
+    local timed_out=false
+    local launch_success=false
+
+    ui_step "Launching Firefox with tracing..."
+
+    (
+        eval "env $test_env WAYLAND_DEBUG=1 \"$FIREFOX_BIN\" $test_cmd" \
+            > "$test_dir/wayland.log" 2>&1
+    ) &
+    pid=$!
+
+    local countdown=$TIMEOUT_SECS
+    while kill -0 "$pid" 2>/dev/null; do
+        if [ $countdown -gt 0 ]; then
+            printf "\r    Waiting... %2ds " $countdown
+            sleep 1
+            countdown=$((countdown - 1))
+        else
+            timed_out=true
+            break
+        fi
+    done
+    echo
+
+    if kill -0 "$pid" 2>/dev/null; then
+        ui_warning "Firefox still running after ${TIMEOUT_SECS}s"
+    else
+        wait "$pid" 2>/dev/null
+        local exit_code=$?
+        if [ $exit_code -eq 0 ]; then
+            launch_success=true
+            ui_success "Firefox exited cleanly"
+        else
+            ui_error "Firefox exited with code $exit_code"
+        fi
+    fi
+
+    if $timed_out; then
+        ui_warning "TIMEOUT - Firefox is hanging"
+
+        if ui_confirm "Kill Firefox and capture trace?"; then
+            kill -9 "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+        else
+            ui_error "Test aborted by user"
+            echo "HUNG" > "$test_dir/result.txt"
+            return 1
+        fi
+    fi
+
+    if $timed_out; then
+        echo "HUNG"
+    else
+        echo "LAUNCHED"
+    fi > "$test_dir/result.txt"
+
+    capture_test_artifacts "$test_dir"
+
+    analyze_test "$test_dir" "$test_env"
+
+    if $timed_out; then
+        ui_error "Test $test_num: HUNG"
+    elif $launch_success; then
+        ui_success "Test $test_num: LAUNCHED"
+    else
+        ui_error "Test $test_num: FAILED"
+    fi
+
+    if ! ui_confirm "Continue to next test?"; then
+        return 1
+    fi
+
+    return 0
+}
+
+capture_test_artifacts() {
+    local test_dir="$1"
+
+    ui_step "Capturing test artifacts..."
+
+    {
+        echo "=== Test Command ==="
+        echo "Command: $test_cmd"
+        echo "Environment: $test_env"
+        echo "Result: $(cat "$test_dir/result.txt")"
+    } > "$test_dir/info.txt"
+
+    if [ -f "$test_dir/wayland.log" ]; then
+        wc -l "$test_dir/wayland.log"
+    fi
+
+    if dmesg > "$test_dir/dmesg-after.txt" 2>&1; then
+        if command -v comm >/dev/null 2>&1; then
+            comm -13 "$STATE_DIR/dmesg-baseline.txt" "$test_dir/dmesg-after.txt" > "$test_dir/dmesg.diff" 2>/dev/null || \
+                diff "$STATE_DIR/dmesg-baseline.txt" "$test_dir/dmesg-after.txt" > "$test_dir/dmesg.diff" 2>/dev/null || \
+                echo "dmesg diff failed" > "$test_dir/dmesg.diff"
+        else
+            diff "$STATE_DIR/dmesg-baseline.txt" "$test_dir/dmesg-after.txt" > "$test_dir/dmesg.diff" 2>/dev/null || \
+                echo "dmesg diff failed" > "$test_dir/dmesg.diff"
+        fi
+    else
+        echo "dmesg requires root" > "$test_dir/dmesg-after.txt"
+        echo "dmesg skipped (requires root)" > "$test_dir/dmesg.diff"
+    fi
+
+    ui_success "Artifacts captured"
+}
+
+analyze_test() {
+    local test_dir="$1"
+    local test_env="$2"
+
+    mkdir -p "$ANALYSIS_DIR"
+
+    local test_name
+    test_name=$(basename "$test_dir" | cut -d'-' -f3-)
+
+    {
+        echo "=== Analysis for Test: $test_name ==="
+        echo
+
+        if [ -f "$test_dir/wayland.log" ]; then
+            echo "--- XDG Portal / D-Bus Issues ---"
+            grep -iE 'portal|dbus|xdg' "$test_dir/wayland.log" 2>/dev/null | tail -10 || echo "No portal-related messages"
+            echo
+
+            echo "--- Wayland Errors ---"
+            grep -iE 'error|failed|timeout' "$test_dir/wayland.log" 2>/dev/null | tail -10 || echo "No errors found"
+            echo
+
+            echo "--- Last 20 Wayland Messages ---"
+            tail -20 "$test_dir/wayland.log" 2>/dev/null || echo "No wayland log"
+            echo
+        fi
+
+        if [ -f "$test_dir/dmesg.diff" ]; then
+            echo "--- Kernel Messages (new) ---"
+            grep -iE 'nvidia|gpu|error|warn' "$test_dir/dmesg.diff" 2>/dev/null | tail -10 || echo "No relevant dmesg"
+            echo
+        fi
+    } > "$ANALYSIS_DIR/analysis-$(basename "$test_dir").txt"
+}
+
+generate_reports() {
+    local status="${1:-COMPLETED}"
+
+    ui_step "Generating reports..."
+
+    mkdir -p "$OUTPUT_BASE"
+
+    generate_text_report "$status"
+    generate_markdown_report "$status"
+    create_tarball
+
+    ui_success "Reports generated"
+}
+
+generate_text_report() {
+    local status="$1"
+
+    {
+        echo "═══════════════════════════════════════════════════════"
+        echo " Firefox Hang Debug Report - $(date)"
+        echo "═══════════════════════════════════════════════════════"
+        echo
+        echo "SYSTEM"
+        echo "  GPU:      $(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader 2>/dev/null | head -1)"
+        echo "  Driver:   Wayland + Hyprland"
+        echo "  Firefox:  $("$FIREFOX_BIN" --version 2>/dev/null || echo 'unknown')"
+        echo
+        echo "TESTS"
+        for log_dir in "$LOGS_DIR"/test-*; do
+            if [ -d "$log_dir" ]; then
+                local test_num
+                test_num=$(basename "$log_dir" | cut -d'-' -f1 | cut -d't' -f2)
+                local test_name
+                test_name=$(basename "$log_dir" | cut -d'-' -f3-)
+                local result
+                result=$(cat "$log_dir/result.txt" 2>/dev/null || echo "UNKNOWN")
+                local icon
+                case "$result" in
+                    LAUNCHED) icon="✅" ;;
+                    HUNG) icon="❌" ;;
+                    *) icon="⚠️" ;;
+                esac
+                printf "  [%s] %-20s %s\n" "$test_num" "$test_name" "$icon $result"
+            fi
+        done
+        echo
+        echo "ANALYSIS"
+        echo "  Blocking syscalls: See strace analysis in logs/"
+        echo "  GPU-related ioctls: Check dmesg.diff files"
+        echo
+
+        local hung_tests
+        hung_tests=$(grep -l HUNG "$LOGS_DIR"/test-*/result.txt 2>/dev/null | wc -l)
+        if [ "$hung_tests" -gt 0 ]; then
+            echo "  Tests that HUNG: $hung_tests"
+            echo
+            echo "  Most likely causes:"
+            echo "  1. XDG Portal D-Bus communication (FF149 changed default)"
+            echo "  2. EGL/Wayland initialization on NVIDIA"
+            echo "  3. PDF hardware acceleration (new in FF149)"
+            echo
+            echo "RECOMMENDATION"
+            echo "  Try adding to environment.conf:"
+            echo "    env = MOZ_XDG_DESKTOP_PORTAL,0"
+        fi
+
+        echo
+        echo "═══════════════════════════════════════════════════════"
+        echo " Full logs: $LOGS_DIR/"
+        echo " Analysis:  $ANALYSIS_DIR/"
+        echo " Status:    $status"
+        echo "═══════════════════════════════════════════════════════"
+    } > "$OUTPUT_BASE/report.txt"
+}
+
+generate_markdown_report() {
+    local status="$1"
+
+    local gpu_info
+    gpu_info=$(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader 2>/dev/null | head -1)
+
+    local ff_version
+    ff_version=$("$FIREFOX_BIN" --version 2>/dev/null || echo "unknown")
+
+    {
+        echo "# Firefox Hang Debug Report"
+        echo
+        echo "**Date**: $(date)"
+        echo "**GPU**: $gpu_info"
+        echo "**Environment**: Wayland + Hyprland"
+        echo "**Firefox**: $ff_version"
+        echo
+        echo "## Test Results"
+        echo
+        echo "| # | Test | Command | Result |"
+        echo "|---|------|---------|--------|"
+
+        for log_dir in "$LOGS_DIR"/test-*; do
+            if [ -d "$log_dir" ]; then
+                local test_num
+                test_num=$(basename "$log_dir" | cut -d'-' -f1 | cut -d't' -f2)
+                local test_name
+                test_name=$(basename "$log_dir" | cut -d'-' -f3-)
+                local result
+                result=$(cat "$log_dir/result.txt" 2>/dev/null || echo "UNKNOWN")
+                local cmd
+                cmd=$(grep "^Command:" "$log_dir/info.txt" 2>/dev/null | cut -d: -f2- | xargs || echo "unknown")
+
+                echo "| $test_num | $test_name | \`$cmd\` | $result |"
+            fi
+        done
+
+        echo
+        echo "## Root Cause Analysis"
+        echo
+
+        local hung_tests
+        hung_tests=$(grep -l HUNG "$LOGS_DIR"/test-*/result.txt 2>/dev/null | wc -l)
+        if [ "$hung_tests" -gt 0 ]; then
+            echo "**Issue**: Firefox hangs on startup (${hung_tests} test(s) affected)"
+            echo
+            echo "### Possible Causes"
+            echo
+            echo "1. **XDG Portal D-Bus Hang** (most likely)"
+            echo "   - FF149 changed to default to XDG portal file picker"
+            echo "   - D-Bus communication with portal can timeout/hang"
+            echo
+            echo "2. **EGL/Wayland Initialization**"
+            echo "   - NVIDIA EGL implementation on Wayland can block"
+            echo
+            echo "3. **PDF Hardware Acceleration**"
+            echo "   - FF149 added GPU-accelerated PDF rendering"
+            echo
+            echo "### Recommended Workaround"
+            echo
+            echo 'Add to `~/.config/hypr/conf/environment.conf`:'
+            echo
+            echo '```bash'
+            echo 'env = MOZ_XDG_DESKTOP_PORTAL,0'
+            echo '```'
+            echo
+            echo 'Then restart Hyprland or source the config.'
+        else
+            echo "No hangs detected - issue may be intermittent or resolved."
+        fi
+
+        echo
+        echo "## Full Logs"
+        echo
+        echo "- Logs: \`$LOGS_DIR/\`"
+        echo "- Analysis: \`$ANALYSIS_DIR/\`"
+        echo "- Archive: \`$(basename "$TARBALL")\`"
+        echo
+        echo "---"
+        echo "*Generated by firefox-debug-trace*"
+    } > "$OUTPUT_BASE/report.md"
+}
+
+create_tarball() {
+    ui_step "Creating tarball..."
+
+    if command -v tar >/dev/null 2>&1; then
+        tar -czf "$TARBALL" -C "$(dirname "$OUTPUT_BASE")" "$(basename "$OUTPUT_BASE")" 2>/dev/null && \
+            ui_success "Created: $TARBALL" || \
+            ui_warning "Tarball creation failed"
+    else
+        ui_warning "tar not available - skipping tarball"
+    fi
+}
+
+print_summary() {
+    ui_separator
+    ui_title "Debug Complete"
+
+    ui_box "Reports saved to:" "$ACCENT_PRIMARY"
+    echo "  $OUTPUT_BASE/"
+    echo "  - report.txt (plain text)"
+    echo "  - report.md (markdown)"
+    echo "  - logs/ (raw trace data)"
+    echo "  - analysis/ (per-test analysis)"
+
+    if [ -f "$TARBALL" ]; then
+        echo
+        echo "  Archive: $TARBALL"
+    fi
+
+    local hung_tests
+    hung_tests=$(grep -l HUNG "$LOGS_DIR"/test-*/result.txt 2>/dev/null | wc -l)
+
+    if [ "$hung_tests" -gt 0 ]; then
+        echo
+        ui_warning "Firefox hung on $hung_tests test(s)"
+
+        ui_list "Next steps" \
+            "1. Review report.md for root cause analysis" \
+            "2. Try the MOZ_XDG_DESKTOP_PORTAL=0 workaround" \
+            "3. If issue persists, file a bug with the tarball"
+    else
+        echo
+        ui_success "No hangs detected during testing"
+        ui_info "Issue may be intermittent or already resolved"
+    fi
+}
+
+main() {
+    ui_title "Firefox Hang Debug Trace"
+    ui_info "Tracing Firefox startup to identify hang cause"
+    ui_spacer
+
+    check_dependencies
+    capture_baseline_state
+
+    local test_results=()
+
+    ui_spacer
+    ui_title "Starting Test Sequence"
+    ui_info "Each test waits up to ${TIMEOUT_SECS}s for Firefox"
+    ui_info "Press Ctrl+C to abort"
+    ui_spacer
+
+    run_test 1 "safe-mode" "--safe-mode" "" "Should work (baseline)" || test_results+=("Test 1 failed")
+    run_test 2 "normal" "" "" "EXPECTED TO HANG" || test_results+=("Test 2 failed")
+
+    if grep -q "HUNG" "$LOGS_DIR/test-02-normal/result.txt" 2>/dev/null; then
+        ui_warning "Confirmed: Normal Firefox hangs"
+        ui_info "Running workgroup tests..."
+
+        run_test 3 "no-xdg-portal" "" "MOZ_XDG_DESKTOP_PORTAL=0" "Might work" || test_results+=("Test 3 failed")
+        run_test 4 "no-egl" "" "MOZ_WAYLAND_USE_EGL=0" "Might work" || test_results+=("Test 4 failed")
+    else
+        ui_success "Normal Firefox did NOT hang during trace"
+        ui_info "This is unexpected - Firefox may need user interaction to trigger hang"
+        if ! ui_confirm "Skip workaround tests and generate report?"; then
+            run_test 3 "no-xdg-portal" "" "MOZ_XDG_DESKTOP_PORTAL=0" "Might work" || test_results+=("Test 3 failed")
+            run_test 4 "no-egl" "" "MOZ_WAYLAND_USE_EGL=0" "Might work" || test_results+=("Test 4 failed")
+        fi
+    fi
+
+    generate_reports "COMPLETED"
+    print_summary
+}
+
+main "$@"
