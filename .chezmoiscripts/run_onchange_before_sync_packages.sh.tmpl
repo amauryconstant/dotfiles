@@ -21,7 +21,7 @@ NVIDIA_DRIVER_TYPE="{{ .nvidiaDriverType }}"
 TEMP_PACKAGES_FILE="/tmp/packages-$$.yaml"
 cp "$PACKAGES_FILE" "$TEMP_PACKAGES_FILE"
 
-{{ includeTemplate "log_step" "Configuring NVIDIA driver selection (type: {{ .nvidiaDriverType }})..." }}
+{{ includeTemplate "log_step" (printf "Configuring NVIDIA driver selection (type: %s)..." .nvidiaDriverType) }}
 
 if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
     # Enable legacy, disable modern
