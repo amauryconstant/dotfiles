@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 
 # Script: run_once_after_010_setup_optional_services.sh.tmpl
-# Purpose: Consolidated optional services setup (Voxtype STT, Home Backup)
-# Requirements: Arch Linux, optional packages (voxtype-bin, restic)
+# Purpose: Consolidated optional services setup (Voxtype STT, Home Backup, Kanata)
+# Requirements: Arch Linux, optional packages (voxtype-bin, restic, kanata-bin)
 # Execution: Runs AFTER file application to configure optional services
 #
 # This script consolidates:
 # - Voxtype speech-to-text with Parakeet + CUDA
 # - Restic home backup repository initialization
+# - Kanata keyboard remapper (laptop only — Workman layout)
 #
 # Benefits of consolidation:
 # - Single pass for optional service configuration
 # - Consistent pattern: check package → configure → enable service
 # - Graceful handling of missing packages (skip vs error)
 
-{{ includeTemplate "log_start" "Setting up optional services (Voxtype, Home Backup)..." }}
+{{ includeTemplate "log_start" "Setting up optional services (Voxtype, Home Backup, Kanata)..." }}
 
 set -euo pipefail
 
@@ -170,6 +171,97 @@ fi
 {{ end }}
 
 # ============================================================================
+# SECTION 3: KANATA KEYBOARD REMAPPER (laptop only)
+# ============================================================================
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "  SECTION 3: Kanata Keyboard Remapper"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+KANATA_CONFIGURED=false
+
+{{- $username := .chezmoi.username }}
+{{ if and .features.kanata.enabled (eq .chassisType "laptop") }}
+if ! command -v kanata >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Kanata not installed — skipping setup" }}
+    {{ includeTemplate "log_info" "To install: add kanata-bin to packages.yaml and run chezmoi apply" }}
+else
+    # Ensure uinput group exists
+    {{ includeTemplate "log_step" "Checking uinput group..." }}
+    if ! getent group uinput > /dev/null 2>&1; then
+        sudo groupadd --system uinput
+        {{ includeTemplate "log_success" "uinput group created" }}
+    else
+        {{ includeTemplate "log_skip" "uinput group already exists" }}
+    fi
+
+    # Add user to input and uinput groups (idempotent)
+    {{ includeTemplate "log_step" "Checking group membership (input, uinput)..." }}
+    for grp in input uinput; do
+        if id -nG {{ $username }} | grep -qw "$grp"; then
+            {{ includeTemplate "log_skip" "User already in $grp group" }}
+        else
+            sudo usermod -aG "$grp" {{ $username }}
+            {{ includeTemplate "log_success" "User added to $grp group" }}
+            {{ includeTemplate "log_warning" "Logout/login required for $grp group change" }}
+        fi
+    done
+
+    # udev rule for uinput device permissions
+    {{ includeTemplate "log_step" "Checking udev rule for uinput..." }}
+    UDEV_RULE='KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"'
+    UDEV_FILE="/etc/udev/rules.d/99-uinput.rules"
+    if [ -f "$UDEV_FILE" ]; then
+        {{ includeTemplate "log_skip" "udev rule already exists" }}
+    else
+        echo "$UDEV_RULE" | sudo tee "$UDEV_FILE" > /dev/null
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+        {{ includeTemplate "log_success" "udev rule created and applied" }}
+    fi
+
+    # Load uinput kernel module (persistent)
+    # On some kernels uinput is built-in (CONFIG_INPUT_UINPUT=y) and /dev/uinput
+    # already exists without any module loading. Only modprobe if the device is absent.
+    {{ includeTemplate "log_step" "Checking uinput availability..." }}
+    if [ -e /dev/uinput ]; then
+        {{ includeTemplate "log_skip" "uinput available (/dev/uinput exists)" }}
+    elif lsmod | grep -q uinput; then
+        {{ includeTemplate "log_skip" "uinput module already loaded" }}
+    else
+        if sudo modprobe uinput 2>/dev/null; then
+            {{ includeTemplate "log_success" "uinput module loaded" }}
+            if [ ! -f /etc/modules-load.d/uinput.conf ]; then
+                echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf > /dev/null
+                {{ includeTemplate "log_success" "uinput module set to load on boot" }}
+            fi
+        else
+            {{ includeTemplate "log_warning" "Could not load uinput module — /dev/uinput unavailable, kanata will fail to start" }}
+        fi
+    fi
+
+    # Enable systemd user service (no --now: group changes require logout first)
+    {{ includeTemplate "log_step" "Enabling kanata systemd service..." }}
+    if systemctl --user is-enabled --quiet kanata 2>/dev/null; then
+        {{ includeTemplate "log_skip" "Kanata service already enabled" }}
+    else
+        systemctl --user enable kanata
+        {{ includeTemplate "log_success" "Kanata service enabled" }}
+        {{ includeTemplate "log_warning" "Log out and back in, then: systemctl --user start kanata" }}
+    fi
+
+    KANATA_CONFIGURED=true
+    SERVICES_CONFIGURED=true
+fi
+{{ else if not (eq .chassisType "laptop") }}
+{{ includeTemplate "log_skip" "Kanata setup skipped (desktop — keyboard is hardware-remapped)" }}
+{{ else }}
+{{ includeTemplate "log_skip" "Kanata setup disabled in features.yaml" }}
+{{ end }}
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 
@@ -194,6 +286,16 @@ if [ "$BACKUP_CONFIGURED" = true ]; then
     echo "    Repository: $REPO"
     echo "    Schedule: daily at 2am (home-backup.timer)"
     echo "    Manual run: home-backup backup"
+    echo ""
+fi
+
+if [ "$KANATA_CONFIGURED" = true ]; then
+    echo "  Kanata Keyboard Remapper:"
+    echo "    Layout: Workman (ANSI)"
+    echo "    Caps Lock → Backspace"
+    echo "    Right Meta → live reload config"
+    echo "    Config: ~/.config/kanata/kanata.kbd"
+    echo "    Service: systemctl --user start kanata  (after logout/login)"
     echo ""
 fi
 

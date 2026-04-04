@@ -1,0 +1,54 @@
+;; kanata.kbd — Workman keyboard layout for ANSI laptop
+;; Default layer: Workman (remaps QWERTY physical positions to Workman output)
+;;
+;; Key remapping summary:
+;;   Row 1 (QWERTY): w→d  e→r  r→w  t→b  y→j  u→f  i→u  o→p  p→;
+;;   Row 2 (QWERTY): d→h  f→t  h→y  j→n  k→e  l→o  ;→i
+;;   Row 3 (QWERTY): c→m  v→c  b→v  n→k  m→l
+;;   Caps Lock → Backspace
+;;   Right Meta → live reload config (rmet)
+;;
+;; To add home row mods, per-app layers, or other features:
+;;   https://github.com/jtroo/kanata/tree/main/cfg_samples
+
+(defcfg
+  process-unmapped-keys yes
+  ;; Restrict to built-in laptop keyboard only — prevents double-remapping the
+  ;; hardware-programmed mechanical keyboard if plugged into the laptop.
+  ;; Default path covers most laptops (PS/2 controller); adjust if needed.
+  ;; Find your device: ls /dev/input/by-path/ | grep kbd
+  linux-dev /dev/input/by-path/platform-i8042-serio-0-event-kbd
+)
+
+(defsrc
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  caps a    s    d    f    g    h    j    k    l    ;    '    ret
+  lsft z    x    c    v    b    n    m    ,    .    /    rsft
+  lctl lmet lalt           spc            ralt rmet rctl
+)
+
+(defalias
+  ;; Live reload: reloads this config without restarting the kanata service.
+  ;; Bound to rmet (right Meta/Super) — unused on laptop since Hyprland uses lmet.
+  rl lrld
+)
+
+(deflayer workman
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    d    r    w    b    j    f    u    p    ;    [    ]    \
+  bspc a    s    h    t    g    y    n    e    o    i    '    ret
+  lsft z    x    m    c    v    k    l    ,    .    /    rsft
+  lctl lmet lalt           spc            ralt @rl  rctl
+)
+
+;; Skeleton layer — full passthrough, no remapping.
+;; Reserved for future use: per-app layer switching, gaming mode, etc.
+;; Activate with: (layer-switch base) or (layer-while-held base) in a defalias.
+(deflayer base
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _              _              _    _    _
+)

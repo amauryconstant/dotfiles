@@ -305,6 +305,7 @@ packages:
         - hyprdrover # Rust-based session management for Hyprland
         - wtype # Wayland keyboard simulation (voxtype dependency)
         - voxtype-bin # Speech-to-text dictation (AUR)
+        - kanata-bin # Software keyboard remapper — Workman layout on laptop (AUR)
 
     desktop_gui_apps:
       enabled: true
