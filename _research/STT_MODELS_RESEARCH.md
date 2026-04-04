@@ -1,11 +1,37 @@
-# STT Models Research - February 2026
+# STT Models Research
+**Created**: February 2026 | **Updated**: April 2026
 **Focus**: Speech-to-text engines for local voice dictation
 
 ---
 
-## Executive Summary
+## Status Update (April 2026)
 
-**Recommendation**: **Moonshine Medium Streaming** for Phase 1
+**Tool in use**: **voxtype** — ships 7 engines via two runtime backends (whisper.cpp and ONNX Runtime). No custom implementation needed.
+
+**Current engine**: Whisper small.en (Vulkan) → **migrating to Parakeet ONNX CUDA**
+
+**Voxtype engine matrix**:
+
+| Engine | Backend | Languages | Best For | Status |
+|--------|---------|-----------|----------|--------|
+| **Whisper** | whisper.cpp | 99+ | General multilingual | ✅ Active (default) |
+| **Parakeet** | ONNX CUDA | English | Fast English dictation | ⏳ Migrate to |
+| **Moonshine** | ONNX | English | Low-memory edge | ⏳ Secondary model |
+| **SenseVoice** | ONNX | zh/en/ja/ko/yue | Asian languages | Future |
+| **Paraformer** | ONNX | zh+en bilingual | Chinese-English | Future |
+| **Dolphin** | ONNX | 40 langs (no English) | Eastern languages | Not relevant |
+| **Omnilingual** | ONNX | 1600+ langs | Rare languages | Not relevant |
+
+**Switching**: `sudo voxtype setup onnx --enable` → `voxtype-onnx-cuda` binary
+**Engine selection**: `engine = "parakeet"` in `config.toml` (top-level key)
+
+---
+
+## Original Research (February 2026)
+
+*Context: was evaluating engines for a custom Python STT tool. Now superseded by voxtype adoption. Kept for historical reference and benchmark data.*
+
+**Original recommendation**: **Moonshine Medium Streaming** for Phase 1
 
 **Rationale**:
 - Purpose-built for real-time streaming (no 30s window)

@@ -314,6 +314,45 @@ window#waybar {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Voxtype Voice Dictation Status */
+/* -------------------------------------------------------------------------- */
+#custom-voxtype {
+  padding: 0 8px;
+  color: @fg-muted;
+}
+
+#custom-voxtype.idle {
+  color: @fg-muted;
+}
+
+#custom-voxtype.recording {
+  color: @accent-error;
+  animation: voxtype-pulse 1s ease-in-out infinite;
+}
+
+#custom-voxtype.transcribing {
+  color: @accent-warning;
+}
+
+#custom-voxtype.stopped {
+  opacity: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+@keyframes voxtype-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Notification Bell (swaync) */
 /* -------------------------------------------------------------------------- */
 #custom-swaync {

@@ -48,71 +48,52 @@ else
         {{ includeTemplate "log_warning" "Logout/login required for group change" }}
     fi
 
-    # GPU Detection (User-Level, No Sudo)
-    {{ includeTemplate "log_step" "Detecting NVIDIA GPU..." }}
-
-    NVIDIA_GPU=false
-    CUDA_AVAILABLE=false
-
-    if ! lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
-        {{ includeTemplate "log_skip" "No NVIDIA GPU detected" }}
-    else
-        NVIDIA_GPU=true
-        {{ includeTemplate "log_success" "NVIDIA GPU detected" }}
-
-        if pacman -Q cuda >/dev/null 2>&1; then
-            CUDA_AVAILABLE=true
-        else
-            {{ includeTemplate "log_warning" "CUDA package not installed" }}
-        fi
-    fi
-
-    # GPU Acceleration Enablement (Requires Sudo)
-    {{ includeTemplate "log_step" "Enabling GPU acceleration..." }}
+    # Enable ONNX Engine (auto-selects CUDA when available)
+    {{ includeTemplate "log_step" "Enabling ONNX engine..." }}
 
     CURRENT_SYMLINK=$(readlink /usr/bin/voxtype)
-    ENGINE_ENABLED=""
-    BACKEND_USED=""
 
-    if [ "$NVIDIA_GPU" = true ]; then
-        if [ "$CUDA_AVAILABLE" = true ]; then
-            if [ "$CURRENT_SYMLINK" = "/usr/lib/voxtype/voxtype-onnx-cuda" ]; then
-                {{ includeTemplate "log_skip" "Parakeet engine already enabled" }}
-                ENGINE_ENABLED="Parakeet"
-                BACKEND_USED="ONNX CUDA"
-            else
-                sudo voxtype setup parakeet --enable
-                {{ includeTemplate "log_success" "Parakeet engine enabled (CUDA)" }}
-                ENGINE_ENABLED="Parakeet"
-                BACKEND_USED="ONNX CUDA"
-            fi
-        else
-            if [ "$CURRENT_SYMLINK" = "/usr/lib/voxtype/voxtype-vulkan" ]; then
-                {{ includeTemplate "log_skip" "Vulkan GPU already enabled" }}
-                ENGINE_ENABLED="Whisper"
-                BACKEND_USED="Vulkan"
-            else
-                sudo voxtype setup gpu --enable
-                {{ includeTemplate "log_success" "Whisper GPU acceleration enabled (Vulkan)" }}
-                ENGINE_ENABLED="Whisper"
-                BACKEND_USED="Vulkan"
-            fi
-        fi
-    else
-        {{ includeTemplate "log_skip" "No NVIDIA GPU - skipping GPU acceleration" }}
-    fi
+    case "$CURRENT_SYMLINK" in
+        */voxtype-onnx-cuda|*/voxtype-onnx-rocm|*/voxtype-onnx-avx2|*/voxtype-onnx-avx512)
+            {{ includeTemplate "log_skip" "ONNX engine already enabled" }}
+            ;;
+        *)
+            sudo voxtype setup onnx --enable
+            {{ includeTemplate "log_success" "ONNX engine enabled" }}
+            ;;
+    esac
 
-    # Download STT Model
-    {{ includeTemplate "log_step" "Checking for STT model..." }}
-
+    # Download STT Models
     VOXTYPE_DATA="$HOME/.local/share/voxtype"
 
-    if [ -d "$VOXTYPE_DATA" ] && [ "$(ls -A $VOXTYPE_DATA 2>/dev/null)" ]; then
-        {{ includeTemplate "log_skip" "Model already downloaded" }}
+    # Parakeet (primary — fast English, ONNX CUDA)
+    {{ includeTemplate "log_step" "Checking for Parakeet model..." }}
+    if find "$VOXTYPE_DATA/models" -name "*.onnx" -maxdepth 2 2>/dev/null | grep -qi parakeet; then
+        {{ includeTemplate "log_skip" "Parakeet model already downloaded" }}
     else
-        {{ includeTemplate "log_step" "Downloading STT model (this may take a moment)..." }}
-        voxtype setup model
-        {{ includeTemplate "log_success" "STT model downloaded" }}
+        {{ includeTemplate "log_step" "Downloading Parakeet model (~600 MB)..." }}
+        voxtype setup --download --model parakeet-tdt-0.6b-v3 --no-post-install
+        {{ includeTemplate "log_success" "Parakeet model downloaded" }}
+    fi
+
+    # Moonshine (secondary English engine, lower VRAM)
+    {{ includeTemplate "log_step" "Checking for Moonshine model..." }}
+    if find "$VOXTYPE_DATA/models" -name "*.onnx" -maxdepth 2 2>/dev/null | grep -qi moonshine; then
+        {{ includeTemplate "log_skip" "Moonshine model already downloaded" }}
+    else
+        {{ includeTemplate "log_step" "Downloading Moonshine base model (~237 MB)..." }}
+        voxtype setup --download --model moonshine-base --no-post-install
+        {{ includeTemplate "log_success" "Moonshine model downloaded" }}
+    fi
+
+    # Whisper large-v3-turbo (multilingual fallback)
+    {{ includeTemplate "log_step" "Checking for Whisper large-v3-turbo model..." }}
+    if find "$VOXTYPE_DATA/models" -name "ggml-large-v3-turbo.bin" -maxdepth 1 2>/dev/null | grep -q .; then
+        {{ includeTemplate "log_skip" "Whisper large-v3-turbo already downloaded" }}
+    else
+        {{ includeTemplate "log_step" "Downloading Whisper large-v3-turbo model (~1.5 GB)..." }}
+        voxtype setup --download --model large-v3-turbo --no-post-install
+        {{ includeTemplate "log_success" "Whisper large-v3-turbo downloaded" }}
     fi
 
     # Enable Systemd User Service
@@ -200,12 +181,11 @@ echo ""
 
 if [ "$VOXTYPE_CONFIGURED" = true ]; then
     echo "  Voxtype Speech-to-Text:"
-    echo "    Usage: Hold Super+T, speak, release"
+    echo "    SUPER+T       → Parakeet  (fast English, ONNX CUDA)"
+    echo "    SUPER+SHIFT+T → Moonshine (alternate English)"
+    echo "    SUPER+CTRL+T  → Whisper   (multilingual)"
     echo "    Text appears in clipboard - paste with Ctrl+V"
-    if [ -n "$ENGINE_ENABLED" ]; then
-        echo "    Engine: $ENGINE_ENABLED"
-        echo "    Backend: $BACKEND_USED"
-    fi
+    echo "    Engine binary: $(readlink /usr/bin/voxtype 2>/dev/null || echo 'unknown')"
     echo ""
 fi
 

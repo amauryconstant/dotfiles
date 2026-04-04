@@ -68,6 +68,7 @@
     "pulseaudio",           // Volume control
     "mpris",               // Media control (Spotify, VLC, etc.)
     "custom/idle-indicator", // Idle-lock disabled indicator (hidden when active)
+    "custom/voxtype",      // Voice dictation state (hidden when idle/stopped)
     "custom/swaync"        // Notification bell
   ],
 
@@ -293,6 +294,27 @@
     "signal": 9,
     "return-type": "json",
     "on-click": "~/.local/lib/scripts/desktop/idle-toggle"
+  },
+
+  // --------------------------------------------------------------------------
+  // Voxtype Voice Dictation Status
+  // --------------------------------------------------------------------------
+  // States: idle | recording | transcribing | stopped
+  // Uses --follow for event-driven updates (no polling)
+  // Icons: md-microphone_outline / md-record_rec / md-transcribe
+  "custom/voxtype": {
+    "exec": "voxtype status --follow --format json",
+    "exec-persistent": true,
+    "return-type": "json",
+    "format": "{icon}",
+    "format-icons": {
+      "idle":         "",
+      "recording":    "󰑋",
+      "transcribing": "󰔮",
+      "stopped":      ""
+    },
+    "tooltip": true,
+    "on-click": "systemctl --user restart voxtype"
   },
 
   // --------------------------------------------------------------------------

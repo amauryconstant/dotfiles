@@ -2,6 +2,10 @@
 # Managed by chezmoi - do not edit directly
 # See: https://github.com/peteonrails/voxtype for full options
 
+engine = "parakeet"  # ONNX CUDA engine (fast English)
+# Override per-recording via: voxtype record start --engine <name>
+# Engines: parakeet (SUPER+T), moonshine (SUPER+SHIFT+T), whisper (SUPER+CTRL+T)
+
 [hotkey]
 enabled = false  # Use Hyprland bindings (Super+T) instead
 
@@ -16,13 +20,25 @@ theme = "default"
 volume = 0.7
 
 [whisper]
-model = "small.en"  # Better accuracy than base.en, still fast
-language = "auto"  # Set to "auto" for detection, or specific code
+model = "large-v3-turbo"  # Multilingual fallback (SUPER+CTRL+T)
+language = "auto"
 translate = false
 on_demand_loading = true  # Load model only when recording starts
 
+[parakeet]
+model = "parakeet-tdt-0.6b-v3"  # Primary engine (SUPER+T)
+
+[moonshine]
+model = "base"          # Secondary English engine (SUPER+SHIFT+T)
+quantized = true        # Use INT8 quantized variant when available
+
 [output]
 mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"
+
+# Compositor integration hooks (modifier key fix)
+pre_recording_command = "hyprctl dispatch submap voxtype_recording"
+pre_output_command = "hyprctl dispatch submap voxtype_suppress"
+post_output_command = "hyprctl dispatch submap reset"
 fallback_to_clipboard = true
 type_delay_ms = 0
 auto_submit = false  # Don't send Enter after transcription
@@ -33,3 +49,6 @@ on_transcription = true
 
 [text]
 spoken_punctuation = true  # "period" → "."
+
+[status]
+   icon_theme = "nerd-font"

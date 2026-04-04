@@ -1,7 +1,14 @@
 # Voice STT - Future Phases and Implementation Patterns
-**Date**: February 10, 2026
-**Status**: Planning for Phase 2+ implementation
-**Prerequisite**: Complete Phase 1 (Core STT implementation)
+**Created**: February 2026 | **Archived**: April 2026
+**Status**: ⚠️ SUPERSEDED — content below is from the custom Python tool era
+
+This document planned a custom Python STT implementation. That approach was abandoned in favour of **voxtype**, which ships all of this natively (7 engines, streaming, VAD, Waybar integration, compositor hooks, meeting mode).
+
+**See**: `VOICE_STT_IMPLEMENTATION_PLAN.md` for current status and actual next steps.
+
+The implementation patterns below (Python audio capture, Rich UI, LLM/TTS pipelines) remain potentially useful as reference for future standalone tooling, but are not on the active roadmap.
+
+---
 
 ---
 
