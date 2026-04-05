@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# Streams Kanata layer changes as Waybar JSON (persistent).
+# Connects to kanata TCP server on port 5829; kanata sends current layer on
+# connect, then broadcasts ChangeLayer events on subsequent switches.
+# Reconnects automatically if kanata restarts.
+
+PORT=5829
+
+while true; do
+  nc localhost "$PORT" </dev/null 2>/dev/null | while IFS= read -r line; do
+    layer=$(printf '%s' "$line" | jq -r '.LayerChange.new // empty' 2>/dev/null)
+    if [ -n "$layer" ]; then
+      printf '{"text":"%s","class":"%s","tooltip":"Kanata layer: %s"}\n' \
+        "$layer" "$layer" "$layer"
+    fi
+  done
+  sleep 2
+done

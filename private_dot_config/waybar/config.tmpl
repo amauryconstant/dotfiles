@@ -67,6 +67,7 @@
 {{ end }}
     "pulseaudio",           // Volume control
     "mpris",               // Media control (Spotify, VLC, etc.)
+    "custom/kanata-layer",   // Active Kanata keyboard layer (hidden when kanata not running)
     "custom/idle-indicator", // Idle-lock disabled indicator (hidden when active)
     "custom/voxtype",      // Voice dictation state (hidden when idle/stopped)
     "custom/swaync"        // Notification bell
@@ -281,6 +282,21 @@
     // "show-passive-items": false,  // Hide passive tray items
     // "reverse-direction": false,   // Reverse icon order
     // "on-click-middle": "none"     // Middle-click action
+  },
+
+  // --------------------------------------------------------------------------
+  // Kanata Layer Indicator
+  // --------------------------------------------------------------------------
+  // Shows the active Kanata keyboard layer. Hidden when kanata is not running.
+  // Connects to kanata TCP server (--port 5829) for event-driven updates.
+  // Kanata sends current layer on connect; no polling needed.
+  "custom/kanata-layer": {
+    "exec": "~/.local/lib/scripts/desktop/kanata-layer",
+    "exec-persistent": true,
+    "exec-if": "systemctl --user is-active --quiet kanata",
+    "return-type": "json",
+    "format": "󰌌 {}",
+    "tooltip": true
   },
 
   // --------------------------------------------------------------------------

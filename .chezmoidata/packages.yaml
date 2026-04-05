@@ -153,6 +153,7 @@ packages:
         - xh # User-friendly curl alternative
         - jaq # Fast jq alternative in Rust
         - jq # JSON processor (compatibility)
+        - openbsd-netcat # Netcat (nc) for TCP/UDP connections
         - go-yq # YAML processor (jq for YAML)
         - rsync # Incremental file transfer
         - tlrc # Community-driven simplified manpages
