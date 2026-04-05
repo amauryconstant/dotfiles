@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+# Toggles Kanata layer between workman and base via TCP.
+# Kanata's TCP server accepts {"ChangeLayer":{"new":"..."}} commands.
+
+PORT=5829
+
+# Get current layer (kanata sends state immediately on connect)
+current=$(nc localhost "$PORT" </dev/null 2>/dev/null | head -1 \
+  | jq -r '.LayerChange.new // empty' 2>/dev/null)
+
+case "$current" in
+  workman) next="base" ;;
+  base)    next="workman" ;;
+  *)       exit 1 ;;
+esac
+
+printf '{"ChangeLayer":{"new":"%s"}}' "$next" | nc localhost "$PORT" >/dev/null 2>&1
