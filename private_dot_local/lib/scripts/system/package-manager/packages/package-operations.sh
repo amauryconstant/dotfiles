@@ -191,8 +191,19 @@ _remove_package() {
                 if paru -R --noconfirm "$package"; then
                     ui_success "Removed $package"
                 else
-                    ui_error "Failed to remove $package"
-                    return 1
+                    local actual_name
+                    actual_name=$(pacman -Q "$package" 2>/dev/null | awk '{print $1}')
+                    if [[ -z "$actual_name" ]]; then
+                        # Package not in local database (removed externally or db inconsistency)
+                        ui_warning "Package '$package' not in local database, cleaning state..."
+                    elif [[ "$actual_name" != "$package" ]]; then
+                        # Package is provided by a differently-named package (renamed/replaced)
+                        # The providing package is tracked separately; just clean up stale state entry
+                        ui_warning "Package '$package' is provided by '$actual_name' (renamed), cleaning stale state..."
+                    else
+                        ui_error "Failed to remove $package"
+                        return 1
+                    fi
                 fi
                 ;;
             "flatpak")
