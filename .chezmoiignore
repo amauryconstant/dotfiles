@@ -8,6 +8,7 @@
 .markdownlint-cli2.jsonc
 .markdownlint.jsonc
 .prettierignore
+tests/
 
 # Archive directory for storing old configurations
 archives/
