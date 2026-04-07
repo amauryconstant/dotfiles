@@ -78,13 +78,15 @@ else
     fi
 
     # Moonshine (secondary English engine, lower VRAM)
+    # voxtype 0.6.x has no CLI flag for Moonshine download — requires interactive TUI
     {{ includeTemplate "log_step" "Checking for Moonshine model..." }}
     if find "$VOXTYPE_DATA/models" -name "*.onnx" -maxdepth 2 2>/dev/null | grep -qi moonshine; then
         {{ includeTemplate "log_skip" "Moonshine model already downloaded" }}
     else
-        {{ includeTemplate "log_step" "Downloading Moonshine base model (~237 MB)..." }}
-        voxtype setup --download --model moonshine-base --no-post-install
-        {{ includeTemplate "log_success" "Moonshine model downloaded" }}
+        {{ includeTemplate "log_info" "Moonshine requires interactive setup (no automated download in voxtype 0.6.x)" }}
+        {{ includeTemplate "log_info" "Select a Moonshine model in the TUI that follows, then press Enter to continue" }}
+        voxtype setup model
+        {{ includeTemplate "log_success" "Moonshine setup complete" }}
     fi
 
     # Whisper large-v3-turbo (multilingual fallback)
