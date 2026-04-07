@@ -23,28 +23,38 @@ _zellij_project_session() {
 autoload -Uz add-zsh-hook
 add-zsh-hook chpwd _zellij_project_session
 
-# Attach or create a session: uses project name when inside ~/Projects/*, else 'Work'
-zj() {
-  local projects_dir="{{ .globals.paths.projects }}"
-  local name="Work"
-  if [[ $PWD == ${projects_dir}/* ]]; then
-    local rel="${PWD#${projects_dir}/}"
-    name="${${rel%%/*}//./_}"
-  fi
-  zellij attach "$name" 2>/dev/null || zellij -s "$name"
-}
-
 # Internal: derive session name from a directory path
+# Usage: _zdl_session_name <dir> [default-name]
+#   default-name: returned when dir is outside projects_dir (default: basename of dir)
 _zdl_session_name() {
-  local dir="$1"
+  local dir="$1" default="${2:-}"
   local projects_dir="{{ .globals.paths.projects }}"
-  local name
-  name="$(basename "$dir")"
+  local name="${default:-$(basename "$dir")}"
   if [[ $dir == ${projects_dir}/* ]]; then
     local rel="${dir#${projects_dir}/}"
     name="${${rel%%/*}//./_}"
   fi
   echo "$name"
+}
+
+# Internal: attach to a named session if it exists, else create it
+# Usage: _zdl_attach_or_create <session-name> [layout-file]
+_zdl_attach_or_create() {
+  local session_name="$1" layout="${2:-}"
+  if zellij list-sessions 2>/dev/null | grep -qE "^${session_name}[[:space:]\[]"; then
+    zellij attach "$session_name"
+  elif [[ -n $layout ]]; then
+    zellij --new-session-with-layout "$layout" -s "$session_name"
+  else
+    zellij -s "$session_name"
+  fi
+}
+
+# Attach or create a session: uses project name when inside ~/Projects/*, else 'Work'
+zj() {
+  local name
+  name="$(_zdl_session_name "$PWD" "Work")"
+  _zdl_attach_or_create "$name"
 }
 
 # Internal: emit the inner pane block (no layout {} wrapper)
@@ -57,18 +67,23 @@ _zdl_pane_content() {
     cat <<EOF
   pane split_direction="vertical" {
     pane size="70%" split_direction="horizontal" {
-      pane size="85%" focus=true cwd "$dir" {
+      pane size="85%" focus=true {
+        cwd "$dir"
         command "$editor"
         args "."
       }
-      pane size="15%" cwd "$dir" {}
+      pane size="15%" {
+        cwd "$dir"
+      }
     }
-    pane size="30%" cwd "$dir" split_direction="vertical" {
+    pane size="30%" split_direction="vertical" {
       pane {
+        cwd "$dir"
         command "sh"
         args "-c" "$ai"
       }
       pane {
+        cwd "$dir"
         command "sh"
         args "-c" "$ai2"
       }
@@ -79,13 +94,17 @@ EOF
     cat <<EOF
   pane split_direction="vertical" {
     pane size="70%" split_direction="horizontal" {
-      pane size="85%" focus=true cwd "$dir" {
+      pane size="85%" focus=true {
+        cwd "$dir"
         command "$editor"
         args "."
       }
-      pane size="15%" cwd "$dir" {}
+      pane size="15%" {
+        cwd "$dir"
+      }
     }
-    pane size="30%" cwd "$dir" {
+    pane size="30%" {
+      cwd "$dir"
       command "sh"
       args "-c" "$ai"
     }
@@ -100,7 +119,7 @@ _zdl_layout_file() {
   local dir="$1" ai="$2" ai2="$3"
   local tmp
   tmp="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
-  { echo "layout {"; _zdl_pane_content "$dir" "$ai" "$ai2"; echo "}"; } > "$tmp"
+  { echo "layout {"; _zdl_pane_content "$dir" "$ai" "$ai2"; echo "}"; } >| "$tmp"
   echo "$tmp"
 }
 
@@ -120,7 +139,9 @@ zdl() {
   if [[ -n $ZELLIJ ]]; then
     zellij action new-tab --layout "$tmp_layout" --tab-name "$tab_name"
   else
-    zellij --layout "$tmp_layout" -s "$(_zdl_session_name "$dir")"
+    local session_name
+    session_name="$(_zdl_session_name "$dir")"
+    _zdl_attach_or_create "$session_name" "$tmp_layout"
   fi
   rm -f "$tmp_layout"
 }
@@ -148,7 +169,7 @@ zdlm() {
     # Build a single multi-tab layout file
     local tmp_multi
     tmp_multi="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
-    echo "layout {" > "$tmp_multi"
+    echo "layout {" >| "$tmp_multi"
     for dir in "$base_dir"/*/; do
       [[ -d $dir ]] || continue
       local dirpath="${dir%/}"
@@ -159,7 +180,9 @@ zdlm() {
       echo "  }" >> "$tmp_multi"
     done
     echo "}" >> "$tmp_multi"
-    zellij --layout "$tmp_multi" -s "$(_zdl_session_name "$base_dir")"
+    local session_name
+    session_name="$(_zdl_session_name "$base_dir")"
+    _zdl_attach_or_create "$session_name" "$tmp_multi"
     rm -f "$tmp_multi"
   fi
 }
@@ -200,8 +223,10 @@ zsl() {
       done
       echo "  }"
       echo "}"
-    } > "$tmp_layout"
-    zellij --layout "$tmp_layout" -s "$(_zdl_session_name "$dir")"
+    } >| "$tmp_layout"
+    local session_name
+    session_name="$(_zdl_session_name "$dir")"
+    _zdl_attach_or_create "$session_name" "$tmp_layout"
     rm -f "$tmp_layout"
   fi
 }
