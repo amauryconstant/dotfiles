@@ -17,6 +17,17 @@ return {
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
   },
+  -- Disable aerial treesitter backend for markdown.
+  -- aerial.nvim uses iter_matches with { all = false }, but nvim 0.12.1 changed
+  -- iter_matches to always return captures as lists, breaking node:type() calls.
+  -- Remove this override once aerial.nvim releases a fix for nvim 0.12+ compatibility.
+  -- Tracked at: https://github.com/stevearc/aerial.nvim/issues
+  {
+    "stevearc/aerial.nvim",
+    opts = {
+      ignore = { filetypes = { "markdown" } },
+    },
+  },
   -- mise version manager integration (ensures go/python/node from mise are available)
   {
     "https://tangled.org/ejri.dev/mise.nvim",
