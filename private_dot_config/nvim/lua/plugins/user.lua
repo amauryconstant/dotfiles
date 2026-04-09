@@ -13,9 +13,18 @@ return {
     end,
   },
   -- Pin to master branch: AstroNvim v4 uses nvim-treesitter.configs which was removed in the main branch rewrite
+  -- Also ensure markdown parsers are installed (not in AstroNvim defaults)
   {
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
+    opts = function(_, opts)
+      if opts.ensure_installed ~= "all" then
+        opts.ensure_installed = require("astrocore").list_insert_unique(
+          opts.ensure_installed,
+          { "markdown", "markdown_inline" }
+        )
+      end
+    end,
   },
   -- Disable aerial treesitter backend for markdown.
   -- aerial.nvim uses iter_matches with { all = false }, but nvim 0.12.1 changed

@@ -7,4 +7,6 @@ return {
   { import = "astrocommunity.pack.typescript" },
   -- Diagnostics
   { import = "astrocommunity.diagnostics.trouble-nvim" },
+  -- Markdown rendering (visual headers, bold/italic, tables, code blocks)
+  { import = "astrocommunity.markdown-and-latex.render-markdown-nvim" },
 }
