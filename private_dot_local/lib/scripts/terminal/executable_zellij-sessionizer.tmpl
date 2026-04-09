@@ -7,14 +7,26 @@
 PROJECTS="{{ .globals.paths.projects }}"
 WORKTREES="{{ .globals.paths.worktrees }}"
 
+# Capture active sessions once for use in preview
+_ZELLIJ_SESSIONS=$(zellij list-sessions 2>/dev/null || true)
+export _ZELLIJ_SESSIONS
+
 selected=$(find "$PROJECTS" "$WORKTREES" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
-    | fzf --prompt="Session: " --height=40% --reverse)
+    | fzf --prompt="Session: " --height=40% --reverse \
+          --preview='name=$(basename {} | tr "." "_")
+if printf "%s" "$_ZELLIJ_SESSIONS" | grep -q "^${name}"; then
+  printf "● ACTIVE\n\n"
+else
+  printf "○ No session\n\n"
+fi
+ls {}' \
+          --preview-window=right:25%)
 
 [ -z "$selected" ] && exit 0
 
 name=$(basename "$selected" | tr '.' '_')
 session_exists=false
-if zellij list-sessions 2>/dev/null | grep -q "^${name}[[:space:]\[]"; then
+if printf "%s" "$_ZELLIJ_SESSIONS" | grep -q "^${name}[[:space:]\[]"; then
     session_exists=true
 fi
 

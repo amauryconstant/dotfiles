@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 # Script: theme-apply-zellij
-# Purpose: Signal running zellij sessions to reload config after theme change
+# Purpose: Symlink Zellij theme from current theme to zellij themes dir
 
-if pgrep -x zellij >/dev/null 2>&1; then
-    touch "$HOME/.config/zellij/config.kdl" 2>/dev/null
-fi
+mkdir -p "$HOME/.config/zellij/themes"
+ln -sf "$HOME/.config/themes/current/zellij.kdl" "$HOME/.config/zellij/themes/default.kdl"

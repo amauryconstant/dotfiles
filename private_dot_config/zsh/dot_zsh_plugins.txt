@@ -23,6 +23,7 @@ mattmc3/zephyr path:plugins/zfunctions
 # Completions
 mattmc3/ez-compinit
 zsh-users/zsh-completions kind:fpath path:src
+lkalir/zellij-zsh-completions
 aloxaf/fzf-tab
 ohmyzsh/ohmyzsh path:plugins/extract
 ohmyzsh/ohmyzsh path:plugins/eza

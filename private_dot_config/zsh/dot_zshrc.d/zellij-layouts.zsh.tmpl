@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 #
-# zellij-layouts.zsh - Zellij AI/dev workflow layout helpers
+# zellij-layouts.zsh - Zellij session and layout helpers
 #
 
 # Auto-session: when navigating anywhere inside a project dir, rename current
@@ -25,7 +25,6 @@ add-zsh-hook chpwd _zellij_project_session
 
 # Internal: derive session name from a directory path
 # Usage: _zdl_session_name <dir> [default-name]
-#   default-name: returned when dir is outside projects_dir (default: basename of dir)
 _zdl_session_name() {
   local dir="$1" default="${2:-}"
   local projects_dir="{{ .globals.paths.projects }}"
@@ -57,134 +56,40 @@ zj() {
   _zdl_attach_or_create "$name"
 }
 
-# Internal: emit the inner pane block (no layout {} wrapper)
-# Usage: _zdl_pane_content <dir> <ai> [ai2]
-_zdl_pane_content() {
-  local dir="$1" ai="$2" ai2="$3"
-  local editor="${EDITOR:-nvim}"
-
-  if [[ -n $ai2 ]]; then
-    cat <<EOF
-  pane split_direction="vertical" {
-    pane size="70%" split_direction="horizontal" {
-      pane size="85%" focus=true {
-        cwd "$dir"
-        command "$editor"
-        args "."
-      }
-      pane size="15%" {
-        cwd "$dir"
-      }
-    }
-    pane size="30%" split_direction="vertical" {
-      pane {
-        cwd "$dir"
-        command "sh"
-        args "-c" "$ai"
-      }
-      pane {
-        cwd "$dir"
-        command "sh"
-        args "-c" "$ai2"
-      }
-    }
-  }
-EOF
-  else
-    cat <<EOF
-  pane split_direction="vertical" {
-    pane size="70%" split_direction="horizontal" {
-      pane size="85%" focus=true {
-        cwd "$dir"
-        command "$editor"
-        args "."
-      }
-      pane size="15%" {
-        cwd "$dir"
-      }
-    }
-    pane size="30%" {
-      cwd "$dir"
-      command "sh"
-      args "-c" "$ai"
-    }
-  }
-EOF
-  fi
-}
-
-# Internal: write a single-tab KDL layout file, print its path
-# Usage: _zdl_layout_file <dir> <ai> [ai2]
-_zdl_layout_file() {
-  local dir="$1" ai="$2" ai2="$3"
-  local tmp
-  tmp="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
-  { echo "layout {"; _zdl_pane_content "$dir" "$ai" "$ai2"; echo "}"; } >| "$tmp"
-  echo "$tmp"
-}
-
-# Dev layout: editor (70%) + terminal strip (15%) + AI pane (30%)
-# Usage: zdl <ai-command> [second-ai-command]
+# Coding layout: editor + terminal strip + AI pane (see layouts/coding.kdl)
+# Usage: zdl [ai-cmd]  — optional command runs in the right 30% pane
 zdl() {
-  [[ -z $1 ]] && { echo "Usage: zdl <ai-command> [second-ai-command]"; return 1; }
+  local ai_cmd="${*:-}"
+  local layout tab_name
+  tab_name="$(basename "$PWD")"
+  local layout_src="${XDG_CONFIG_HOME:-$HOME/.config}/zellij/layouts/coding.kdl"
 
-  local ai="$1" ai2="$2"
-  local dir="$PWD"
-  local tab_name
-  tab_name="$(basename "$dir")"
-
-  local tmp_layout
-  tmp_layout="$(_zdl_layout_file "$dir" "$ai" "$ai2")"
+  if [[ -n $ai_cmd ]]; then
+    local tmp_layout
+    tmp_layout="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
+    awk -v cmd="$ai_cmd" '
+      /pane size="30%" command="zsh"$/ {
+        print "      pane size=\"30%\" command=\"zsh\" {"
+        print "        args \"-c\" \"" cmd "\""
+        print "      }"
+        next
+      }
+      { print }
+    ' "$layout_src" >| "$tmp_layout"
+    layout="$tmp_layout"
+  else
+    layout="coding"
+  fi
 
   if [[ -n $ZELLIJ ]]; then
-    zellij action new-tab --layout "$tmp_layout" --tab-name "$tab_name"
+    zellij action new-tab --layout "$layout" --tab-name "$tab_name"
   else
     local session_name
-    session_name="$(_zdl_session_name "$dir")"
-    _zdl_attach_or_create "$session_name" "$tmp_layout"
+    session_name="$(_zdl_session_name "$PWD")"
+    _zdl_attach_or_create "$session_name" "$layout"
   fi
-  rm -f "$tmp_layout"
-}
 
-# Multi-project dev layout: one zdl tab per subdirectory
-# Usage: zdlm <ai-command> [second-ai-command]
-zdlm() {
-  [[ -z $1 ]] && { echo "Usage: zdlm <ai-command> [second-ai-command]"; return 1; }
-
-  local ai="$1" ai2="$2"
-  local base_dir="$PWD"
-
-  if [[ -n $ZELLIJ ]]; then
-    for dir in "$base_dir"/*/; do
-      [[ -d $dir ]] || continue
-      local dirpath="${dir%/}"
-      local tab_name
-      tab_name="$(basename "$dirpath")"
-      local tmp_layout
-      tmp_layout="$(_zdl_layout_file "$dirpath" "$ai" "$ai2")"
-      zellij action new-tab --layout "$tmp_layout" --tab-name "$tab_name"
-      rm -f "$tmp_layout"
-    done
-  else
-    # Build a single multi-tab layout file
-    local tmp_multi
-    tmp_multi="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
-    echo "layout {" >| "$tmp_multi"
-    for dir in "$base_dir"/*/; do
-      [[ -d $dir ]] || continue
-      local dirpath="${dir%/}"
-      local tab_name
-      tab_name="$(basename "$dirpath")"
-      echo "  tab name=\"$tab_name\" {" >> "$tmp_multi"
-      _zdl_pane_content "$dirpath" "$ai" "$ai2" >> "$tmp_multi"
-      echo "  }" >> "$tmp_multi"
-    done
-    echo "}" >> "$tmp_multi"
-    local session_name
-    session_name="$(_zdl_session_name "$base_dir")"
-    _zdl_attach_or_create "$session_name" "$tmp_multi"
-    rm -f "$tmp_multi"
-  fi
+  [[ $layout != "coding" ]] && rm -f "$layout"
 }
 
 # Swarm layout: N panes all running the same command
@@ -196,16 +101,12 @@ zsl() {
   local dir="$PWD"
 
   if [[ -n $ZELLIJ ]]; then
-    # Send command to current (first) pane
-    zellij action write-chars "${cmd}"
-    zellij action write 10  # Enter key (LF)
+    zellij action send-keys "${cmd}" Enter
 
-    # Create remaining panes — each receives focus on creation
     local i
     for ((i = 1; i < count; i++)); do
       zellij action new-pane --cwd "$dir"
-      zellij action write-chars "${cmd}"
-      zellij action write 10
+      zellij action send-keys "${cmd}" Enter
     done
   else
     # Build a layout with N panes all running the command
@@ -216,8 +117,7 @@ zsl() {
       echo "  pane split_direction=\"horizontal\" {"
       local i
       for ((i = 0; i < count; i++)); do
-        echo "    pane cwd \"$dir\" {"
-        echo "      command \"sh\""
+        echo "    pane cwd=\"$dir\" command=\"sh\" {"
         echo "      args \"-c\" \"$cmd\""
         echo "    }"
       done

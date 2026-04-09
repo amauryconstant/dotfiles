@@ -1,0 +1,28 @@
+// Monitoring layout: btop (60%) + journalctl + spare shell (40%)
+// Launch via: Layout Manager (Ctrl-o l)
+
+layout {
+  default_tab_template {
+    pane size=1 borderless=true {
+      plugin location="zellij:tab-bar"
+    }
+    children
+    pane size=2 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+  tab name="monitor" {
+    pane split_direction="vertical" {
+      pane size="60%" {
+        command "btop"
+      }
+      pane size="40%" split_direction="horizontal" {
+        pane {
+          command "sh"
+          args "-c" "journalctl -f"
+        }
+        pane {}
+      }
+    }
+  }
+}
