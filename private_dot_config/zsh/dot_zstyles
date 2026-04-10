@@ -19,8 +19,8 @@ zstyle ':zephyr:plugin:completion' use-cache yes
 zstyle ':zephyr:plugin:environment' use-xdg-basedirs yes
 
 # Environment variables (migrated from shell/login)
-zstyle ':zephyr:plugin:environment' EDITOR 'nvim'
-zstyle ':zephyr:plugin:environment' VISUAL 'code'
+zstyle ':zephyr:plugin:environment' EDITOR 'nano'
+zstyle ':zephyr:plugin:environment' VISUAL 'nvim'
 zstyle ':zephyr:plugin:environment' BROWSER 'firefox'
 
 # Custom PATH additions (Zephyr handles deduplication)

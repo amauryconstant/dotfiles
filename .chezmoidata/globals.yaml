@@ -9,8 +9,8 @@ globals:
     # Default applications for various tasks
     # These are used by both shell environment ($EDITOR, $VISUAL, $BROWSER)
     # and XDG MIME type associations (mimeapps.list)
-    editor: nvim           # Command-line text editor ($EDITOR)
-    visual: code           # Visual/GUI editor ($VISUAL)
+    editor: nano           # Command-line text editor ($EDITOR)
+    visual: nvim           # Visual/GUI editor ($VISUAL)
     browser: firefox       # Web browser ($BROWSER)
     file_manager: org.xfce.thunar  # File manager (GUI)
     terminal: ghostty      # Terminal emulator
