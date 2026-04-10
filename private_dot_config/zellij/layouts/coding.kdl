@@ -1,4 +1,4 @@
-// Coding layout: editor (70%) + terminal strip (15%) + AI pane (30%)
+// Coding layout: editor (70%) + AI pane (30%)
 // Launch via: zdl, or Layout Manager (Ctrl-o l)
 
 layout {
@@ -13,11 +13,8 @@ layout {
   }
   tab name="code" {
     pane split_direction="vertical" {
-      pane size="70%" split_direction="horizontal" {
-        pane size="85%" focus=true command="nvim" {
-          args "."
-        }
-        pane size="15%" command="zsh"
+      pane size="70%" focus=true command="nvim" {
+        args "."
       }
       pane size="30%" command="zsh"
     }
