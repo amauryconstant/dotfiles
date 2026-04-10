@@ -1,17 +1,5 @@
 ---@type LazySpec
 return {
-  -- Auto-open Neo-tree file explorer on startup
-  {
-    "nvim-neo-tree/neo-tree.nvim",
-    init = function()
-      vim.api.nvim_create_autocmd("VimEnter", {
-        once = true,
-        callback = function()
-          vim.defer_fn(function() vim.cmd "Neotree show" end, 0)
-        end,
-      })
-    end,
-  },
   -- Open aerial symbol outline as a right sidebar automatically
   {
     "stevearc/aerial.nvim",
