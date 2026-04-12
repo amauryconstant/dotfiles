@@ -1,5 +1,27 @@
 ---@type LazySpec
 return {
+  -- Show hidden (dot-prefixed) files in Neo-tree
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    opts = {
+      filesystem = {
+        filtered_items = {
+          visible = true,
+        },
+      },
+    },
+  },
+  -- Show hidden files in snacks.nvim file picker
+  {
+    "folke/snacks.nvim",
+    opts = {
+      picker = {
+        sources = {
+          files = { hidden = true },
+        },
+      },
+    },
+  },
   -- Open aerial symbol outline as a right sidebar automatically
   {
     "stevearc/aerial.nvim",
