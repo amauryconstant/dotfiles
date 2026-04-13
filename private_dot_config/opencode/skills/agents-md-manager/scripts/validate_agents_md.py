@@ -18,10 +18,8 @@ class AGENTSValidator:
         self.lines = self.content.split("\n")
         self.issues: List[Tuple[str, str, int]] = []
 
-```python
     def validate(self) -> bool:
         """Run all validation checks. Returns True if no errors."""
-```
 
         self.check_length()
         self.estimate_tokens()
@@ -267,7 +265,6 @@ def main():
         print("  <path> can be a AGENTS.md file or directory to search")
         sys.exit(1)
 
-```python
     path = Path(sys.argv[1])
 
     if not path.exists():
@@ -279,7 +276,6 @@ def main():
         files_to_validate = [path]
     else:
         files_to_validate = find_agents_md_files(path)
-```
 
     if not files_to_validate:
         print(f"No AGENTS.md files found in {path}")
