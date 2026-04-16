@@ -1,5 +1,35 @@
 ---@type LazySpec
 return {
+  -- Inline image rendering (Kitty graphics protocol — works with Ghostty and Kitty)
+  {
+    "3rd/image.nvim",
+    lazy = false,
+    opts = {
+      backend = "kitty",
+      integrations = {},
+      max_width_window_percentage = 50,
+      window_overlap_clear_enabled = true,
+    },
+  },
+  -- Mermaid diagram inline rendering in markdown code blocks
+  {
+    "3rd/diagram.nvim",
+    ft = { "markdown" },
+    dependencies = { "3rd/image.nvim" },
+    config = function()
+      require("diagram").setup({
+        integrations = {
+          require("diagram.integrations.markdown"),
+        },
+        renderer_options = {
+          mermaid = {
+            theme = nil, -- uses mmdc default
+            scale = 1,
+          },
+        },
+      })
+    end,
+  },
   -- Show hidden (dot-prefixed) files in Neo-tree
   {
     "nvim-neo-tree/neo-tree.nvim",

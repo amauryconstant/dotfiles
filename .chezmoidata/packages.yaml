@@ -245,6 +245,7 @@ packages:
         - posting # Modern API client (Postman alternative)
         - mkcert # Local HTTPS development certificates
         - ghgrab-bin # GitHub release asset downloader
+        - mmdr-bin # Mermaid diagram renderer in Rust (drop-in mmdc replacement, AUR)
 
     ai_tools:
       enabled: true
