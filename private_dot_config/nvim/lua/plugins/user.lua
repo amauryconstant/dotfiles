@@ -55,7 +55,7 @@ return {
   {
     "stevearc/aerial.nvim",
     opts = {
-      open_automatic = true,
+      open_automatic = false,
       layout = { default_direction = "right" },
     },
   },
