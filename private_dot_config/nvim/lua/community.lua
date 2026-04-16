@@ -11,8 +11,6 @@ return {
   { import = "astrocommunity.markdown-and-latex.render-markdown-nvim" },
   -- Git UI (VS Code Source Control panel equivalent)
   { import = "astrocommunity.git.neogit" },
-  -- Debugger UI (VS Code debug panel equivalent — works with Go/Python DAP from language packs)
-  { import = "astrocommunity.debugging.nvim-dap-ui" },
-  -- VS Code-style snippet collection (friendly-snippets via LuaSnip)
-  { import = "astrocommunity.snippet.luasnip" },
+  -- Debugger UI (nvim-dap-ui was replaced by nvim-dap-view in astrocommunity)
+  { import = "astrocommunity.debugging.nvim-dap-view" },
 }
