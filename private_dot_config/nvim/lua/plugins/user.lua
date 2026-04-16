@@ -23,7 +23,7 @@ return {
         },
         renderer_options = {
           mermaid = {
-            -- theme/scale/background left nil: mmdr doesn't support -t/-s/-b flags
+            scale = 1,
           },
         },
       })
