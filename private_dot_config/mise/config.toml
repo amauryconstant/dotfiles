@@ -32,5 +32,10 @@ prettier = "latest"
 "pipx:claude-monitor" = "latest"
 "npm:ccusage"  = "latest"
 
+# Development CLIs
+"pipx:posting" = "latest"
+awscli = "latest"
+"github:abhixdd/ghgrab" = "latest"
+
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"

@@ -221,6 +221,7 @@ packages:
         - docker # Container runtime platform
         - docker-buildx # Docker extended build capabilities
         - docker-compose # Docker Compose plugin
+        - podman # Daemonless container engine
         - go # Go programming language
         - python # Python runtime
         - rust # Rust compiler and cargo
@@ -236,15 +237,12 @@ packages:
         - meson # hyprpm dependency
         - cpio # hyprpm dependency
         # Development CLIs
-        - aws-cli-v2 # AWS command line interface
         - git-delta # Syntax-highlighting git diff pager
         - mergiraf # 3-way merge tool with better conflicts
         - jujutsu # Git-compatible VCS (experimental)
         - lazygit # Terminal UI for git commands
         - lazydocker # Terminal UI for docker management
-        - posting # Modern API client (Postman alternative)
         - mkcert # Local HTTPS development certificates
-        - ghgrab-bin # GitHub release asset downloader
         - strace # System call tracer for debugging
         - mmdr-bin # Mermaid diagram renderer in Rust (drop-in mmdc replacement, AUR)
 
