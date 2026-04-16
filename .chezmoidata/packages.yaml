@@ -245,6 +245,7 @@ packages:
         - posting # Modern API client (Postman alternative)
         - mkcert # Local HTTPS development certificates
         - ghgrab-bin # GitHub release asset downloader
+        - strace # System call tracer for debugging
         - mmdr-bin # Mermaid diagram renderer in Rust (drop-in mmdc replacement, AUR)
 
     ai_tools:
@@ -338,6 +339,7 @@ packages:
         - flatpak:com.slack.Slack # Team communication (Flatpak)
         - flatpak:com.github.xournalpp.xournalpp # PDF annotation (Flatpak)
         - flatpak:org.qbittorrent.qBittorrent # BitTorrent client (Flatpak)
+        - flatpak:com.github.wwmm.easyeffects # Audio effects for PipeWire (Flatpak)
 
     audio_system:
       enabled: true
