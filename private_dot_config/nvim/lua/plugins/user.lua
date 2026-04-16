@@ -23,8 +23,7 @@ return {
         },
         renderer_options = {
           mermaid = {
-            theme = nil, -- uses mmdc default
-            scale = 1,
+            -- theme/scale/background left nil: mmdr doesn't support -t/-s/-b flags
           },
         },
       })
