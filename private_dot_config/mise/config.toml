@@ -16,9 +16,8 @@ node = [
     {version = "24"},
     {version="latest"}
 ]
-pnpm = "latest"
 
-# Tools
+# Development Tools
 prettier = "latest"
 "npm:playwright" = {version = "latest", postinstall = "playwright install"}
 
@@ -31,11 +30,14 @@ prettier = "latest"
 "github:arimxyer/models" = "latest"
 "pipx:claude-monitor" = "latest"
 "npm:ccusage"  = "latest"
+"ollama" = "latest"
 
-# Development CLIs
+# CLIs
+"github:1jehuang/mermaid-rs-renderer" = "latest"
 "pipx:posting" = "latest"
 awscli = "latest"
 "github:abhixdd/ghgrab" = "latest"
+
 
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"
