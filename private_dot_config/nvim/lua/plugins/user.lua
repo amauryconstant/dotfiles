@@ -29,6 +29,13 @@ return {
       })
     end,
   },
+  -- Wire neogit to use diffview for diffs
+  {
+    "NeogitOrg/neogit",
+    opts = {
+      integrations = { diffview = true },
+    },
+  },
   -- Show hidden (dot-prefixed) files in Neo-tree
   {
     "nvim-neo-tree/neo-tree.nvim",

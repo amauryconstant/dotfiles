@@ -16,6 +16,8 @@ return {
   { import = "astrocommunity.markdown-and-latex.render-markdown-nvim" },
   -- Git UI (VS Code Source Control panel equivalent)
   { import = "astrocommunity.git.neogit" },
+  -- Side-by-side diff viewer (neogit auto-integrates when present)
+  { import = "astrocommunity.git.diffview-nvim" },
   -- Debugger UI (nvim-dap-ui was replaced by nvim-dap-view in astrocommunity)
   { import = "astrocommunity.debugging.nvim-dap-view" },
 }
