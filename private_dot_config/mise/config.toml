@@ -24,7 +24,6 @@ prettier = "latest"
 # AI Tools
 "claude-code" = "latest"
 "npm:opencode-ai" = "latest"
-"pipx:oraios/serena" = "latest"
 "npm:@fission-ai/openspec" = "latest"
 "github:AlexsJones/llmfit" = "latest"
 "github:arimxyer/models" = "latest"
