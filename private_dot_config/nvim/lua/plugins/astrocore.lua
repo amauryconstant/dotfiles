@@ -3,6 +3,10 @@ return {
   "AstroNvim/astrocore",
   ---@type AstroCoreOpts
   opts = {
+    mason = {
+      -- bash pack auto-installs this but it's not needed without bash debugging
+      ["bash-debug-adapter"] = false,
+    },
     options = {
       opt = {
         relativenumber = true,
