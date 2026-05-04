@@ -56,14 +56,27 @@ zj() {
   _zdl_attach_or_create "$name"
 }
 
-# Coding layout: editor + terminal strip + AI pane (see layouts/coding.kdl)
-# Usage: zdl [ai-cmd]  — optional command runs in the right 30% pane
+# Coding layout: editor + secondary pane (see layouts/coding*.kdl)
+# Usage: zdl [-a] [cmd]
+#   -a        agentic layout (editor left, AI pane right; default: horizontal)
+#   [cmd]     command to run in the secondary pane instead of plain zsh
 zdl() {
-  local ai_cmd="${*:-}"
-  local layout tab_name
-  tab_name="$(basename "$PWD")"
-  local layout_src="${XDG_CONFIG_HOME:-$HOME/.config}/zellij/layouts/coding.kdl"
+  local agentic=false
+  local ai_cmd=""
 
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -a|--agentic) agentic=true; shift ;;
+      *) ai_cmd="${ai_cmd:+$ai_cmd }$1"; shift ;;
+    esac
+  done
+
+  local layout_name tab_name layout_src
+  tab_name="$(basename "$PWD")"
+  layout_name=$( $agentic && echo "agentic-coding" || echo "coding" )
+  layout_src="${XDG_CONFIG_HOME:-$HOME/.config}/zellij/layouts/${layout_name}.kdl"
+
+  local layout
   if [[ -n $ai_cmd ]]; then
     local tmp_layout
     tmp_layout="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
@@ -78,7 +91,7 @@ zdl() {
     ' "$layout_src" >| "$tmp_layout"
     layout="$tmp_layout"
   else
-    layout="coding"
+    layout="$layout_name"
   fi
 
   if [[ -n $ZELLIJ ]]; then
@@ -89,7 +102,7 @@ zdl() {
     _zdl_attach_or_create "$session_name" "$layout"
   fi
 
-  [[ $layout != "coding" ]] && rm -f "$layout"
+  [[ $layout != "$layout_name" ]] && rm -f "$layout"
 }
 
 # Swarm layout: N panes all running the same command

@@ -1,5 +1,5 @@
-// Coding layout: editor (70%) on top + terminal (30%) on bottom
-// Launch via: zdl, or Layout Manager (Ctrl-g → l)
+// Agentic Coding layout: editor (70%) + AI pane (30%) side-by-side
+// Launch via: zdl -a, or Layout Manager (Ctrl-g → l)
 
 layout {
   default_tab_template {
@@ -12,7 +12,7 @@ layout {
     }
   }
   tab name="code" {
-    pane split_direction="horizontal" {
+    pane split_direction="vertical" {
       pane size="70%" focus=true command="nvim"
       pane size="30%" command="zsh"
     }

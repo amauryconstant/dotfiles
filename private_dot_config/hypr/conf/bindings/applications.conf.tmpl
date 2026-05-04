@@ -20,9 +20,9 @@ bindd = SUPER, E, File manager, exec, ~/.local/lib/scripts/desktop/launch-or-foc
 # Web browser: Super + W
 bindd = SUPER, W, Web browser, exec, firefox
 
-# Visual editor: Super + O
-# Uses launch-or-focus for single-instance behavior
-bindd = SUPER, O, Visual editor, exec, ~/.local/lib/scripts/desktop/launch-or-focus code
+# Neovim session picker: Super + O
+# Fuzzy-find a project and open/attach its Zellij coding session
+bindd = SUPER, O, Neovim session picker, exec, ghostty -e ~/.local/lib/scripts/terminal/zellij-sessionizer
 
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard

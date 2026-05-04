@@ -11,4 +11,20 @@ options {
   default_shell "zsh"
   on_force_close "detach"
   theme "default"
+  // Start locked so all keys pass through to the focused app (Neovim).
+  // Press Ctrl+g to unlock and issue Zellij commands, then Ctrl+g to re-lock.
+  default_mode "locked"
+  // v0.43: drag pane borders to resize, Ctrl+scroll to resize, Alt+Click to open file paths in editor
+  advanced_mouse_actions true
+}
+
+keybinds {
+  locked {
+    // Ctrl+g: enter normal mode to issue Zellij commands
+    bind "Ctrl g" { SwitchToMode "Normal"; }
+  }
+  normal {
+    // Ctrl+g: return to locked (keys pass through to app again)
+    bind "Ctrl g" { SwitchToMode "Locked"; }
+  }
 }

@@ -1,5 +1,19 @@
 ---@type LazySpec
 return {
+  -- Seamless navigation between Neovim splits and Zellij panes (Ctrl+h/j/k/l)
+  -- At Neovim's edge, automatically crosses into the adjacent Zellij pane
+  {
+    "swaits/zellij-nav.nvim",
+    lazy = true,
+    event = "VeryLazy",
+    keys = {
+      { "<c-h>", "<cmd>ZellijNavigateLeft<cr>", silent = true, desc = "Navigate left (Nvim/Zellij)" },
+      { "<c-j>", "<cmd>ZellijNavigateDown<cr>", silent = true, desc = "Navigate down (Nvim/Zellij)" },
+      { "<c-k>", "<cmd>ZellijNavigateUp<cr>", silent = true, desc = "Navigate up (Nvim/Zellij)" },
+      { "<c-l>", "<cmd>ZellijNavigateRight<cr>", silent = true, desc = "Navigate right (Nvim/Zellij)" },
+    },
+    opts = {},
+  },
   -- Inline image rendering (Kitty graphics protocol — works with Ghostty and Kitty)
   {
     "3rd/image.nvim",
