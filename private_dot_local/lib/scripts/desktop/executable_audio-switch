@@ -40,8 +40,9 @@ next_index=$(( (current_index + 1) % sink_count ))
 # Get the next sink name
 next_sink=$(echo "$available_sinks" | sed -n "$((next_index + 1))p")
 
-# Switch to next sink
-pactl set-default-sink "$next_sink"
+# Switch to next sink (wpctl persists through WirePlumber; pactl does not survive logout)
+wpctl_id=$(echo "$sinks" | jaq -r ".[] | select(.name == \"$next_sink\") | .index")
+wpctl set-default "$wpctl_id"
 
 # Move all existing streams to the new sink
 pactl list short sink-inputs | while read -r stream; do

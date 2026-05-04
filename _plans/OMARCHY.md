@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-05-04 (through v3.6.0).
+Last updated: 2026-05-04 (through v3.6.0). Batch 1 implemented 2026-05-04.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
@@ -9,39 +9,7 @@ Last updated: 2026-05-04 (through v3.6.0).
 
 ## P1 — High Priority
 
-### Hyprland tiling group keybindings (v3.1.0)
-**What**: Full tiling group management: toggle group, move in/out, navigate within group with arrows/TAB. Omarchy uses `Super+G` for group toggle; we use it for gap toggle.
-**Target files**: `private_dot_config/hypr/conf/bindings/focus-navigation.conf`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
-**Effort**: Medium
-**Conflict**: `SUPER+G` currently bound to gap toggle in `desktop-utilities.conf`. `SUPER+ALT+Arrows` currently bound to monitor focus in `workspace-management.conf`. `SUPER+ALT+TAB` currently bound to empty workspace. Must resolve before adding group bindings.
-
-- [ ] Decide: remap gap toggle to a different binding (e.g., `SUPER+SHIFT+G`) or use a different group toggle key
-- [ ] Decide: resolve `SUPER+ALT+Arrows` conflict (monitor focus vs group navigation) — consider `SUPER+CTRL+Arrows` for group navigation (currently used for window resize, also conflict)
-- [ ] Add group toggle, move-out, and navigate bindings to `focus-navigation.conf`
-- [ ] Add `Super+Alt+Mouse scroll` for group window cycling (v3.1.2, no conflict)
-
----
-
-### `Super+L` conflict — layout toggle vs lock screen (v3.4.1)
-**What**: v3.4.1 adds `Super+L` to toggle between Hyprland's scrolling layout and dwindle. We already bind `Super+L` to lock screen (`hyprlock`). These conflict.
-**Target files**: `private_dot_config/hypr/conf/bindings/system-control.conf`
-**Effort**: Low
-**Conflict**: `SUPER+L` is our lock screen binding. Cannot add layout toggle without remapping one.
-
-- [ ] Decide: remap lock screen to `SUPER+SHIFT+L` (or another free binding) and use `SUPER+L` for layout toggle — or skip layout toggle entirely
-- [ ] If adopted: add `bindd = SUPER, L, Toggle scrolling/dwindle layout, exec, <dispatch>` to layout-relevant conf
-- [ ] Update lock screen binding reference if remapped
-
----
-
-### `Super+/` conflict — keybinding help vs display resolution cycling (v3.4.1)
-**What**: v3.4.1 maps `Super+/` to cycle display resolutions. We bind `Super+/` to the keybinding cheatsheet script.
-**Target files**: `private_dot_config/hypr/conf/bindings/system-control.conf`
-**Effort**: Low
-**Conflict**: `SUPER+slash` is our keybinding help script.
-
-- [ ] Decide: remap keybinding help to another key (e.g., `SUPER+F1`) and free `SUPER+/` for resolution cycling — or keep current and skip resolution cycling
-- [ ] If resolution cycling adopted: implement or script the resolution cycling logic (Omarchy uses `omarchy-cmd-display-resolution`)
+*(All P1 items resolved — moved to Skipped section)*
 
 ---
 
@@ -52,8 +20,8 @@ Last updated: 2026-05-04 (through v3.6.0).
 **Target files**: `private_dot_config/hypr/conf/monitor.conf.tmpl`
 **Effort**: Low
 
-- [ ] Confirm no `vrr,1` in our `monitor.conf.tmpl` entries (explicit per-monitor lines don't use the catch-all default anyway)
-- [ ] If any catch-all `monitor=,...,vrr,1` line exists, remove `vrr,1`
+- [x] Confirm no `vrr,1` in our `monitor.conf.tmpl` entries (explicit per-monitor lines don't use the catch-all default anyway)
+- [x] If any catch-all `monitor=,...,vrr,1` line exists, remove `vrr,1`
 
 ---
 
@@ -141,7 +109,7 @@ Last updated: 2026-05-04 (through v3.6.0).
 **Target files**: `private_dot_local/lib/scripts/desktop/executable_audio-switch`
 **Effort**: Low
 
-- [ ] Replace `pactl set-default-sink "$next_sink"` with `wpctl set-default "$(wpctl status | grep "$next_sink" | awk '{print $1}' | tr -d '.')"` or equivalent wpctl lookup
+- [x] Replace `pactl set-default-sink "$next_sink"` with `wpctl set-default` using PipeWire object ID from pactl JSON `.index` field *(done 2026-05-04)*
 - [ ] Test: switch audio device, close session, reopen — sink should persist
 
 ---
@@ -257,7 +225,7 @@ Last updated: 2026-05-04 (through v3.6.0).
 
 - [x] Implemented as `battery-status` script using `upower` output
 - [x] Added `Super+Ctrl+Alt+B` binding to `desktop-utilities.conf`
-- [ ] Verify minutes-unit case: test `upower -i $(upower -e | grep BAT)` on battery showing minutes vs hours — confirm `$4 $5` prints correctly (e.g., "45.0 minutes" not just "45.0")
+- [x] Verified: `awk '/time to empty/ {print $4, $5}'` prints both value and unit — handles both "1.5 hours" and "45.0 minutes" correctly *(confirmed 2026-05-04)*
 
 ---
 
@@ -292,8 +260,7 @@ Last updated: 2026-05-04 (through v3.6.0).
 **Effort**: Low
 **Adapt from**: `default/bash/aliases` (`sff` function)
 
-- [ ] Implement `sff` as zsh function: `sff() { local f; f=$(fzf) && scp "$f" "$1"; }`
-- [ ] Add to `aliases.zsh` or a dedicated `functions.zsh`
+- [x] Implemented `sff` as zsh function in `aliases.zsh` *(done 2026-05-04)*
 
 ---
 
@@ -337,14 +304,17 @@ Last updated: 2026-05-04 (through v3.6.0).
 **Target files**: `~/.config/voxtype/config.toml` (not currently managed by chezmoi)
 **Effort**: Low
 
-- [ ] Check if `~/.config/voxtype/config.toml` is already managed or user-created
-- [ ] If not managed: consider adding it as a chezmoi-managed file with `pause_media = true` under `[audio]`
+- [x] Added `pause_media = true` to `[audio]` section; file now chezmoi-managed at `private_dot_config/voxtype/config.toml` *(done 2026-05-04)*
 - [ ] Note: `voxtype setup systemd` may overwrite parts of the config; verify approach
 
 ---
 
 ## Completed
 
+- [x] **Audio switch `wpctl` persistence fix** (v3.6.0) — replaced `pactl set-default-sink` with `wpctl set-default` using PipeWire object ID from pactl JSON *(done 2026-05-04)*
+- [x] **`sff` shell function** (v3.5.0) — `sff() { local f; f=$(fzf) && scp "$f" "$1"; }` added to `aliases.zsh` *(done 2026-05-04)*
+- [x] **Battery status minutes-unit handling** (v3.5.0) — confirmed `awk '/time to empty/ {print $4, $5}'` handles both hours and minutes correctly *(confirmed 2026-05-04)*
+- [x] **VRR removal confirmed** (v3.6.0) — no `vrr,1` in `monitor.conf.tmpl`; explicit per-monitor lines unaffected *(confirmed 2026-05-04)*
 - [x] **Scratchpad keybindings** (v3.1.4) — `Super+S` toggle scratchpad, `Super+Shift+S` move to scratchpad already implemented in `window-management.conf` *(confirmed 2026-02-21)*
 - [x] **Smart screenshot selection** (v3.1.0) — `Print` smart screenshot, `Shift+Print` clipboard screenshot already implemented in `screenshots.conf` *(confirmed 2026-02-21)*
 - [x] **`Super+Ctrl+T` Activity / `Super+Ctrl+B` Bluetooth** (v3.1.2, v3.3.0) — Both already implemented in `desktop-utilities.conf` *(confirmed 2026-02-21)*
@@ -411,6 +381,15 @@ Last updated: 2026-05-04 (through v3.6.0).
 - [SKIPPED] **Omarchy Chromium fork** (v2.0.0) — uses upstream Chromium
 - [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0, v3.4.0) — Omarchy-specific extension point
 - [SKIPPED] **`colors.toml` generation (immediate adoption)** — monitor as the pattern stabilizes; tracked under P2 for future evaluation
+- [SKIPPED] **Hyprland tiling group keybindings** (v3.1.0) — `Super+G` stays as gap toggle; group navigate already covered by `Super+Ctrl+H/L`; no new keybindings preference
+- [SKIPPED] **`Super+L` layout toggle** (v3.4.1) — lock screen binding takes priority; layout toggle not needed
+- [SKIPPED] **`Super+/` display resolution cycling** (v3.4.1) — keybinding help takes priority; resolution cycling not needed
+- [SKIPPED] **Monitor focus cycling `Ctrl+Alt+Tab`** (v3.6.0) — no new keybindings preference; mouse sufficient for monitor focus
+- [SKIPPED] **Window pinned floating overlay `Super+O`** (v3.1.5) — no new keybindings preference
+- [SKIPPED] **Toggle menu `Super+Ctrl+O`** (v3.4.1) — no new keybindings preference
+- [SKIPPED] **Monitor scaling cycle keybinding** (v3.4.0, v3.6.0) — no new keybindings preference
+- [SKIPPED] **`ga`/`gd` git worktree helpers** (v3.4.2) — user does not use git worktrees via CLI
+- [SKIPPED] **`ff` alias kitty icat preview** (v3.5.0) — Kitty is backup terminal only; Ghostty doesn't support icat
 - [SKIPPED] **Voxtype dictation features** — out of scope per permanent skip list
 - [SKIPPED] **Asus/Slimbook/Tuxedo/Surface hardware drivers** (v3.4.0, v3.5.0) — hardware-specific, not applicable
 - [SKIPPED] **NVIDIA GeForce Now installer** (v3.4.0) — out of scope

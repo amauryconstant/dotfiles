@@ -40,6 +40,9 @@ alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 # Fuzzy-find and open in editor
 alias eff='$EDITOR "$(ff)"'
 
+# Fuzzy-find and send file over scp
+sff() { local f; f=$(fzf) && scp "$f" "$1"; }
+
 # Openspec
 alias osc='openspec'
 alias osx='openspec-extended'
