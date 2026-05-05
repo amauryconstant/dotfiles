@@ -8,7 +8,7 @@
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options
-OPTIONS="󰁍 Back|󰏗 Install Package|󰚩 AI Models (Ollama)|󰙵 Development Tools|󰘐 Code Editors"
+OPTIONS="󰁍 Back|󰏗 Install Package|󰚩 AI Models (llama.cpp)|󰙵 Development Tools|󰘐 Code Editors"
 
 CHOICE=$(show_menu "Install" "$OPTIONS")
 
@@ -30,40 +30,43 @@ case "$CHOICE" in
             fi
         fi
         ;;
-    "󰚩 AI Models (Ollama)")
-        # Ollama model management
-        if command -v ollama >/dev/null 2>&1; then
-            MODEL_OPTIONS="󰁍 Back|󰇚 Pull Model|󰉖 List Models|󰆴 Remove Model"
-            MODEL_CHOICE=$(show_menu "Ollama" "$MODEL_OPTIONS")
+    "󰚩 AI Models (llama.cpp)")
+        # llama.cpp model management
+        MODELS_DIR="{{ .chezmoi.homeDir }}/.local/share/models"
+
+        if command -v llama-server >/dev/null 2>&1; then
+            MODEL_OPTIONS="󰁍 Back|󰉖 List Models|󰋛 Server Status"
+            MODEL_CHOICE=$(show_menu "llama.cpp" "$MODEL_OPTIONS")
 
             case "$MODEL_CHOICE" in
                 "󰁍 Back")
                     "$SCRIPTS_DIR/user-interface/menu-install.sh"
                     ;;
-                "󰇚 Pull Model")
-                    MODEL_NAME=$(echo "" | wofi --dmenu --prompt "Model name (e.g., llama3, codellama)")
-                    if [ -n "$MODEL_NAME" ]; then
-                        {{ .globals.applications.terminal }} -e sh -c "ollama pull $MODEL_NAME; read -p 'Press Enter to continue...'"
-                    fi
-                    ;;
                 "󰉖 List Models")
-                    {{ .globals.applications.terminal }} -e sh -c "ollama list; read -p 'Press Enter to continue...'"
-                    ;;
-                "󰆴 Remove Model")
-                    INSTALLED_MODELS=$(ollama list | tail -n +2 | awk '{print $1}')
-                    if [ -n "$INSTALLED_MODELS" ]; then
-                        MODEL_TO_REMOVE=$(echo "$INSTALLED_MODELS" | wofi --dmenu --prompt "Remove model")
-                        if [ -n "$MODEL_TO_REMOVE" ] && confirm "Remove model: $MODEL_TO_REMOVE?"; then
-                            ollama rm "$MODEL_TO_REMOVE"
-                            notify "󰚩 Ollama" "Removed model: $MODEL_TO_REMOVE"
+                    if [ -d "$MODELS_DIR" ]; then
+                        GGUF_FILES=$(find "$MODELS_DIR" -maxdepth 1 -name "*.gguf" -type f 2>/dev/null | wc -l)
+                        if [ "$GGUF_FILES" -gt 0 ]; then
+                            {{ .globals.applications.terminal }} -e sh -c "ls -lh $MODELS_DIR/*.gguf 2>/dev/null; read -p 'Press Enter to continue...'"
+                        else
+                            notify "󰚩 llama.cpp" "No GGUF files in $MODELS_DIR"
                         fi
                     else
-                        notify "󰚩 Ollama" "No models installed"
+                        notify "󰚩 llama.cpp" "Models directory not found"
                     fi
+                    ;;
+                "󰋛 Server Status")
+                    if systemctl --user is-active --quiet llama-server.service; then
+                        STATUS="Running on 127.0.0.1:8080"
+                    elif [ -f "{{ .chezmoi.homeDir }}/.config/llama-server/env" ]; then
+                        STATUS="Configured (not running)"
+                    else
+                        STATUS="Not configured - no ~/.config/llama-server/env"
+                    fi
+                    notify "󰋛 llama-server" "$STATUS"
                     ;;
             esac
         else
-            notify "󰚩 Ollama" "Ollama not installed\nInstall with: paru -S ollama"
+            notify "󰚩 llama.cpp" "llama-server not installed\nInstall with: paru -S llama-cpp-cuda"
         fi
         ;;
     "󰙵 Development Tools")

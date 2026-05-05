@@ -1,0 +1,18 @@
+[Unit]
+Description=llama.cpp inference server
+After=network-online.target
+ConditionPathExists=%h/.config/llama-server/env
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/llama-server/env
+ExecStart=/usr/bin/llama-server \
+  --model %h/.local/share/models/${MODEL_FILE} \
+  --host 127.0.0.1 \
+  --port 8080 \
+  --n-gpu-layers ${N_GPU_LAYERS:-99}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -246,6 +246,18 @@ packages:
         - mkcert # Local HTTPS development certificates
 
     # ============================================================
+    # AI / LLM
+    # ============================================================
+
+    ai:
+      enabled: true
+      description: "Local AI inference (llama.cpp CUDA backend)"
+      conflicts: []
+      post_install_hook: ""
+      packages:
+        - llama-cpp-cuda # llama.cpp with NVIDIA CUDA acceleration
+
+    # ============================================================
     # DESKTOP ENVIRONMENT
     # ============================================================
 

@@ -1,4 +1,11 @@
 ai:
-  models:
-  - qwen2.5-coder:1.5b
-  - nomic-embed-text:latest
+  server:
+    port: 8080
+    host: "127.0.0.1"
+    n_gpu_layers: 99
+  models_dir: "~/.local/share/models"
+  models: []
+  # Future GGUF model format:
+  # - name: qwen2.5-coder-1.5b
+  #   file: qwen2.5-coder-1.5b-q4_k_m.gguf
+  #   url: https://huggingface.co/Qwen/...

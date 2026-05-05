@@ -21,10 +21,10 @@ services:
     # User-level systemd services to enable
     - name: darkman.service
       enabled: true
-    - name: ollama.service
+    - name: llama-server.service
       enabled: true
-      start: true
-      requires_command: ollama
+      start: false
+      requires_command: llama-server
 
   user_timers:
     # User-level systemd timers to enable

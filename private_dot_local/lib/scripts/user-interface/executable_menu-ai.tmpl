@@ -6,7 +6,7 @@
 
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
-OPTIONS="󰁍 Back|󱚣 opencode|󱙺 claude-code|󰋼 Ollama Status"
+OPTIONS="󰁍 Back|󱚣 opencode|󱙺 claude-code|󰋼 llama-server Status"
 
 CHOICE=$(show_menu "AI" "$OPTIONS")
 
@@ -20,7 +20,7 @@ case "$CHOICE" in
     "󱙺 claude-code")
         {{ .globals.applications.terminal }} --class ai-scratchpad -e claude
         ;;
-    "󰋼 Ollama Status")
-        {{ .globals.applications.terminal }} --class ai-scratchpad -e sh -c "ollama list; echo ''; read -p 'Press Enter to continue...'"
+    "󰋼 llama-server Status")
+        {{ .globals.applications.terminal }} --class ai-scratchpad -e sh -c "systemctl --user status llama-server.service; echo ''; read -p 'Press Enter to continue...'"
         ;;
 esac

@@ -29,7 +29,6 @@ prettier = "latest"
 "github:arimxyer/models" = "latest"
 "pipx:claude-monitor" = "latest"
 "npm:ccusage"  = "latest"
-"ollama" = "latest"
 
 # CLIs
 "github:1jehuang/mermaid-rs-renderer" = "latest"

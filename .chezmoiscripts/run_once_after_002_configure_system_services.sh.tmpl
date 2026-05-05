@@ -56,16 +56,6 @@ fi
 {{ end }}
 {{ end }}
 
-# Migrate ollama from system service to user service (one-time cleanup)
-if systemctl is-enabled ollama.service 2>/dev/null | grep -q "enabled"; then
-    {{ includeTemplate "log_step" "Migrating ollama from system service to user service..." }}
-    sudo systemctl stop ollama.service 2>/dev/null || true
-    sudo systemctl disable ollama.service 2>/dev/null || true
-    sudo rm -f /etc/systemd/system/ollama.service
-    sudo systemctl daemon-reload
-    {{ includeTemplate "log_success" "Legacy ollama system service removed" }}
-fi
-
 {{ includeTemplate "log_step" "Enabling user services..." }}
 
 {{ range .services.user_services }}

@@ -1,42 +1,48 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_onchange_after_install_ai_models.sh.tmpl
-# Purpose: Install AI models for Arch Linux work environment
-# Requirements: Arch Linux, ollama
+# Purpose: Set up llama.cpp models directory and configuration
+# Requirements: Arch Linux, llama-cpp-cuda
 
 # Hash: {{ .ai.models | toJson | sha256sum }}
 
-{{ includeTemplate "log_start" "Installing AI models..." }}
+{{ includeTemplate "log_start" "Setting up llama.cpp models..." }}
 
-# Set strict error handling
 set -euo pipefail
 
-# Check if ollama is installed and running
-if ! command -v ollama >/dev/null 2>&1; then
-    {{ includeTemplate "log_step" "Ollama not found, skipping AI model installation" }}
+MODELS_DIR="{{ .chezmoi.homeDir }}/.local/share/models"
+
+# Create models directory if it doesn't exist
+{{ includeTemplate "log_step" "Creating models directory..." }}
+mkdir -p "$MODELS_DIR"
+{{ includeTemplate "log_success" "Models directory ready: $MODELS_DIR" }}
+
+# Check if llama-server is available
+if ! command -v llama-server >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "llama-server not found" }}
+    {{ includeTemplate "log_info" "Install with: paru -S llama-cpp-cuda" }}
     exit 0
 fi
 
-# Check if ollama service is running
-if ! systemctl is-active ollama >/dev/null 2>&1; then
-    {{ includeTemplate "log_step" "Starting ollama service..." }}
-    sudo systemctl start ollama
-    sleep 5
-fi
+{{ includeTemplate "log_step" "llama-server is installed" }}
 
-{{ includeTemplate "log_step" "Installing AI models..." }}
+# Current configuration
+{{ includeTemplate "log_info" "Server configuration:" }}
+{{ includeTemplate "log_info" "  Host: {{ .ai.server.host }}" }}
+{{ includeTemplate "log_info" "  Port: {{ .ai.server.port }}" }}
+{{ includeTemplate "log_info" "  GPU layers: {{ .ai.server.n_gpu_layers }}" }}
 
-# Install each model from the external AI configuration
-FAILED_MODELS=""
+# Check if models are configured
+{{- if .ai.models }}
+{{ includeTemplate "log_info" "Configured models:" }}
 {{- range .ai.models }}
-if ! ollama pull {{ . }} >/dev/null 2>&1; then
-    FAILED_MODELS="${FAILED_MODELS}{{ . }}, "
-fi
+{{ includeTemplate "log_info" "  - {{ .name }}" }}
+{{- end }}
+{{- else }}
+{{ includeTemplate "log_info" "No models configured yet" }}
+{{ includeTemplate "log_info" "To add a model, create: ~/.config/llama-server/env" }}
+{{ includeTemplate "log_info" "  MODEL_FILE=your-model.gguf" }}
+{{ includeTemplate "log_info" "  N_GPU_LAYERS=99" }}
 {{- end }}
 
-if [ -n "$FAILED_MODELS" ]; then
-    {{ includeTemplate "log_warning" "Some models failed: $FAILED_MODELS" }}
-    {{ includeTemplate "log_warning" "Continuing with partial installation..." }}
-fi
-
-{{ includeTemplate "log_complete" "AI model installation finished" }}
+{{ includeTemplate "log_complete" "llama.cpp setup complete" }}
