@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+# {{ .globals.timeshift | toJson | sha256sum }}
 
-# Script: run_once_after_008_configure_timeshift_retention.sh.tmpl
+# Script: run_onchange_after_configure_timeshift_retention.sh.tmpl
 # Purpose: Configure Timeshift automatic snapshot retention policy
 # Requirements: Arch Linux, Timeshift (optional), yq
 
@@ -26,11 +27,11 @@ fi
 
 TIMESHIFT_CONFIG="/etc/timeshift/timeshift.json"
 
-if [ ! -f "$TIMESHIFT_CONFIG" ]; then
+if [[ ! -f "$TIMESHIFT_CONFIG" ]]; then
     {{ includeTemplate "log_info" "Timeshift configuration not found - first run setup required" }}
     
     # Check if we're in a graphical session
-    if [ -z "${DISPLAY:-}" ] || [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    if [[ -z "${DISPLAY:-}" ]] || [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
         {{ includeTemplate "log_error" "Graphical session not detected" }}
         {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to create initial configuration" }}
         {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
@@ -58,21 +59,21 @@ if [ ! -f "$TIMESHIFT_CONFIG" ]; then
     TIMEOUT=300
     ELAPSED=0
     
-    while [ $ELAPSED -lt $TIMEOUT ]; do
-        if [ -f "$TIMESHIFT_CONFIG" ]; then
+    while [[ "$ELAPSED" -lt "$TIMEOUT" ]]; do
+        if [[ -f "$TIMESHIFT_CONFIG" ]]; then
             {{ includeTemplate "log_success" "Configuration file created successfully" }}
             break
         fi
         
         # Check if launcher process is still running
-        if ! kill -0 $LAUNCHER_PID 2>/dev/null; then
+        if ! kill -0 "$LAUNCHER_PID" 2>/dev/null; then
             {{ includeTemplate "log_error" "Timeshift GUI was closed without creating configuration" }}
             {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
             exit 1
         fi
         
         # Progress indicator every 10 seconds
-        if [ $((ELAPSED % 10)) -eq 0 ] && [ $ELAPSED -gt 0 ]; then
+        if [[ $((ELAPSED % 10)) -eq 0 ]] && [[ "$ELAPSED" -gt 0 ]]; then
             {{ includeTemplate "log_info" "Still waiting for setup... (${ELAPSED}/${TIMEOUT} seconds)" }}
         fi
         
@@ -81,13 +82,13 @@ if [ ! -f "$TIMESHIFT_CONFIG" ]; then
     done
     
     # Clean up launcher process if still running
-    if kill -0 $LAUNCHER_PID 2>/dev/null; then
-        kill $LAUNCHER_PID 2>/dev/null || true
-        wait $LAUNCHER_PID 2>/dev/null || true
+    if kill -0 "$LAUNCHER_PID" 2>/dev/null; then
+        kill "$LAUNCHER_PID" 2>/dev/null || true
+        wait "$LAUNCHER_PID" 2>/dev/null || true
     fi
     
     # Check if we timed out
-    if [ $ELAPSED -ge $TIMEOUT ]; then
+    if [[ "$ELAPSED" -ge "$TIMEOUT" ]]; then
         {{ includeTemplate "log_error" "Setup timed out after ${TIMEOUT} seconds" }}
         {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to complete setup" }}
         {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
@@ -95,7 +96,7 @@ if [ ! -f "$TIMESHIFT_CONFIG" ]; then
     fi
     
     # Final validation
-    if [ ! -f "$TIMESHIFT_CONFIG" ]; then
+    if [[ ! -f "$TIMESHIFT_CONFIG" ]]; then
         {{ includeTemplate "log_error" "Configuration file still not found after setup" }}
         {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
         exit 1
@@ -155,25 +156,25 @@ DESIRED_SCHEDULE_HOURLY="{{ $schedule_hourly }}"
 
 # Check if retention counts match
 RETENTION_MATCHES=true
-if [ "$CURRENT_DAILY" != "$DESIRED_DAILY" ] || \
-   [ "$CURRENT_WEEKLY" != "$DESIRED_WEEKLY" ] || \
-   [ "$CURRENT_MONTHLY" != "$DESIRED_MONTHLY" ] || \
-   [ "$CURRENT_BOOT" != "$DESIRED_BOOT" ]; then
+if [[ "$CURRENT_DAILY" != "$DESIRED_DAILY" ]] || \
+   [[ "$CURRENT_WEEKLY" != "$DESIRED_WEEKLY" ]] || \
+   [[ "$CURRENT_MONTHLY" != "$DESIRED_MONTHLY" ]] || \
+   [[ "$CURRENT_BOOT" != "$DESIRED_BOOT" ]]; then
     RETENTION_MATCHES=false
 fi
 
 # Check if schedule flags match
 SCHEDULE_MATCHES=true
-if [ "$CURRENT_SCHEDULE_DAILY" != "$DESIRED_SCHEDULE_DAILY" ] || \
-   [ "$CURRENT_SCHEDULE_WEEKLY" != "$DESIRED_SCHEDULE_WEEKLY" ] || \
-   [ "$CURRENT_SCHEDULE_MONTHLY" != "$DESIRED_SCHEDULE_MONTHLY" ] || \
-   [ "$CURRENT_SCHEDULE_BOOT" != "$DESIRED_SCHEDULE_BOOT" ] || \
-   [ "$CURRENT_SCHEDULE_HOURLY" != "$DESIRED_SCHEDULE_HOURLY" ]; then
+if [[ "$CURRENT_SCHEDULE_DAILY" != "$DESIRED_SCHEDULE_DAILY" ]] || \
+   [[ "$CURRENT_SCHEDULE_WEEKLY" != "$DESIRED_SCHEDULE_WEEKLY" ]] || \
+   [[ "$CURRENT_SCHEDULE_MONTHLY" != "$DESIRED_SCHEDULE_MONTHLY" ]] || \
+   [[ "$CURRENT_SCHEDULE_BOOT" != "$DESIRED_SCHEDULE_BOOT" ]] || \
+   [[ "$CURRENT_SCHEDULE_HOURLY" != "$DESIRED_SCHEDULE_HOURLY" ]]; then
     SCHEDULE_MATCHES=false
 fi
 
 # Exit early only if both retention and schedule are correct
-if [ "$RETENTION_MATCHES" = true ] && [ "$SCHEDULE_MATCHES" = true ]; then
+if [[ "$RETENTION_MATCHES" = true ]] && [[ "$SCHEDULE_MATCHES" = true ]]; then
     {{ includeTemplate "log_success" "Retention policy and schedule already configured correctly" }}
     {{ includeTemplate "log_complete" "Timeshift retention configuration complete" }}
     exit 0
@@ -189,7 +190,7 @@ fi
 
 BACKUP_FILE="${TIMESHIFT_CONFIG}.backup"
 
-if [ ! -f "$BACKUP_FILE" ]; then
+if [[ ! -f "$BACKUP_FILE" ]]; then
     sudo cp "$TIMESHIFT_CONFIG" "$BACKUP_FILE"
     {{ includeTemplate "log_success" "Backup created: $BACKUP_FILE" }}
 else
@@ -264,28 +265,28 @@ VERIFY_BOOT=$(sudo yq eval '.count_boot' "$TIMESHIFT_CONFIG" | tr -d '"')
 # Validate retention counts
 VALIDATION_FAILED=false
 
-if [ "$VERIFY_DAILY" != "$DESIRED_DAILY" ]; then
+if [[ "$VERIFY_DAILY" != "$DESIRED_DAILY" ]]; then
     {{ includeTemplate "log_error" "Daily retention validation failed: expected $DESIRED_DAILY, got $VERIFY_DAILY" }}
     VALIDATION_FAILED=true
 fi
 
-if [ "$VERIFY_WEEKLY" != "$DESIRED_WEEKLY" ]; then
+if [[ "$VERIFY_WEEKLY" != "$DESIRED_WEEKLY" ]]; then
     {{ includeTemplate "log_error" "Weekly retention validation failed: expected $DESIRED_WEEKLY, got $VERIFY_WEEKLY" }}
     VALIDATION_FAILED=true
 fi
 
-if [ "$VERIFY_MONTHLY" != "$DESIRED_MONTHLY" ]; then
+if [[ "$VERIFY_MONTHLY" != "$DESIRED_MONTHLY" ]]; then
     {{ includeTemplate "log_error" "Monthly retention validation failed: expected $DESIRED_MONTHLY, got $VERIFY_MONTHLY" }}
     VALIDATION_FAILED=true
 fi
 
-if [ "$VERIFY_BOOT" != "$DESIRED_BOOT" ]; then
+if [[ "$VERIFY_BOOT" != "$DESIRED_BOOT" ]]; then
     {{ includeTemplate "log_error" "Boot retention validation failed: expected $DESIRED_BOOT, got $VERIFY_BOOT" }}
     VALIDATION_FAILED=true
 fi
 
 # If validation failed, restore backup
-if [ "$VALIDATION_FAILED" = true ]; then
+if [[ "$VALIDATION_FAILED" = true ]]; then
     {{ includeTemplate "log_error" "Configuration validation failed - restoring backup" }}
     sudo cp "$BACKUP_FILE" "$TIMESHIFT_CONFIG"
     {{ includeTemplate "log_info" "Backup restored from $BACKUP_FILE" }}
@@ -310,7 +311,7 @@ SNAPSHOT_COUNT=${SNAPSHOT_COUNT:-0}
 # Calculate total retention limit
 TOTAL_RETENTION=$((DESIRED_DAILY + DESIRED_WEEKLY + DESIRED_MONTHLY + DESIRED_BOOT))
 
-if [ "$SNAPSHOT_COUNT" -gt "$TOTAL_RETENTION" ]; then
+if [[ "$SNAPSHOT_COUNT" -gt "$TOTAL_RETENTION" ]]; then
     EXCESS_COUNT=$((SNAPSHOT_COUNT - TOTAL_RETENTION))
     {{ includeTemplate "log_warning" "Snapshots exceed retention limit by $EXCESS_COUNT" }}
     {{ includeTemplate "log_info" "Timeshift will auto-delete oldest snapshots on next snapshot creation" }}
@@ -435,7 +436,11 @@ else
     exit 1
 fi
 {{- else }}
-{{ includeTemplate "log_skip" "No schedules enabled in globals.yaml - skipping hourly timer" }}
+{{ includeTemplate "log_skip" "No schedules enabled in globals.yaml - disabling timers if active" }}
+if sudo systemctl is-active --quiet timeshift-hourly.timer 2>/dev/null; then
+    sudo systemctl disable --now timeshift-hourly.timer
+    {{ includeTemplate "log_success" "timeshift-hourly.timer disabled" }}
+fi
 {{- end }}
 
 # Configure boot timer (if enabled)
@@ -474,5 +479,32 @@ fi
 {{ includeTemplate "log_info" "  Check status:  systemctl status timeshift-hourly.timer" }}
 {{ includeTemplate "log_info" "  View logs:     journalctl -u timeshift-hourly.service" }}
 {{ includeTemplate "log_info" "  Manual run:    sudo systemctl start timeshift-hourly.service" }}
+
+# ============================================================================
+# SECTION 10: PRUNE ON-DEMAND SNAPSHOTS
+# ============================================================================
+
+{{ includeTemplate "log_step" "Pruning excess on-demand snapshots..." }}
+
+DESIRED_ON_DEMAND="{{ .globals.timeshift.retention.on_demand }}"
+ON_DEMAND_LIST=$(sudo timeshift --list --scripted 2>/dev/null | awk '/^>/ && $3 == "O" {print $2}')
+ON_DEMAND_COUNT=$(printf '%s\n' "$ON_DEMAND_LIST" | grep -c '[^[:space:]]' || true)
+ON_DEMAND_COUNT=${ON_DEMAND_COUNT:-0}
+
+{{ includeTemplate "log_info" "On-demand snapshots: $ON_DEMAND_COUNT (limit: $DESIRED_ON_DEMAND)" }}
+
+if [[ "$ON_DEMAND_COUNT" -gt "$DESIRED_ON_DEMAND" ]]; then
+    EXCESS=$((ON_DEMAND_COUNT - DESIRED_ON_DEMAND))
+    {{ includeTemplate "log_step" "Deleting $EXCESS oldest on-demand snapshot(s)..." }}
+    printf '%s\n' "$ON_DEMAND_LIST" | head -n "$EXCESS" | while IFS= read -r snap; do
+        if sudo timeshift --delete --snapshot "$snap" --scripted; then
+            {{ includeTemplate "log_success" "Deleted: $snap" }}
+        else
+            {{ includeTemplate "log_warning" "Failed to delete: $snap" }}
+        fi
+    done
+else
+    {{ includeTemplate "log_success" "On-demand snapshots within limit ($ON_DEMAND_COUNT/$DESIRED_ON_DEMAND)" }}
+fi
 
 {{ includeTemplate "log_complete" "Timeshift retention policy and timer configuration complete" }}

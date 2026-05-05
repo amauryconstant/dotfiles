@@ -34,19 +34,19 @@
 3. **File application**
    - Chezmoi applies configs
 
-4. **`run_once_after_*`** (001-011, 999)
-   - 001-011: Configuration tasks
+4. **`run_once_after_*`** (001-007, 009-011, 999)
+   - 001-007, 009-011: Configuration tasks
    - 007: **Hyprland config validation** (post-install safety check)
    - 999: SSH remote switch
 
 5. **`run_onchange_after_*`** (hash-based, any order)
-   - Extensions, AI models, bat cache, plymouth theme
+   - Extensions, AI models, bat cache, plymouth theme, Timeshift retention
 
 **Trust execution order**: Previous scripts succeeded (chezmoi stops on failure). Don't add redundant checks.
 
 ---
 
-## Current Scripts (26 total)
+## Current Scripts (27 total)
 
 ### run_once_before_* (9)
 
@@ -70,7 +70,7 @@
 
 **Timing**: Runs BEFORE file application (ensures packages exist for config scripts)
 
-### run_once_after_* (12)
+### run_once_after_* (11)
 
 | Number | Script | Purpose |
 |--------|--------|---------|
@@ -81,16 +81,16 @@
 | 005 | configure_boot_system | Boot system (Plymouth, GRUB) |
 | 006 | setup_darkman | Darkman solar auto-theme service |
 | 007 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
-| 008 | configure_timeshift_retention | Timeshift retention policy |
 | 009 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |
 | 010 | setup_optional_services | Voxtype STT + Restic home backup init (skips if not installed) |
 | 011 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
 | 999 | switch_to_ssh_remote | SSH remote switch |
 
-### run_onchange_after_* (4)
+### run_onchange_after_* (5)
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
+| configure_timeshift_retention | Timeshift retention + timer config | `globals.timeshift` changes |
 | install_extensions | VSCode extensions | `extensions.code` changes |
 | install_ai_models | Ollama models | `ai.models` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |

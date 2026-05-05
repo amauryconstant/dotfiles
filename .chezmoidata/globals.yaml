@@ -71,6 +71,7 @@ globals:
       - Projects
       - Worktrees
       - Pictures
+      - .gnupg
       - .config
       - .local/share
     excludes:
@@ -93,6 +94,7 @@ globals:
       weekly: 4     # Keep last 4 weekly snapshots (1 month)
       monthly: 6    # Keep last 6 monthly snapshots (6 months)
       boot: 3       # Keep last 3 boot snapshots
+      on_demand: 5  # Max on-demand (O-tagged) snapshots from package-manager
 
     # Automatic snapshot schedule (systemd timers)
     # Note: Manual snapshots (via package-manager) are NOT affected by schedule

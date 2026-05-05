@@ -19,17 +19,25 @@ fi
 
 REPO="${RESTIC_REPOSITORY:-$HOME/.local/share/backups/home-backup}"
 PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-$HOME/.local/share/backups/.restic-password}"
+GLOBALS_FILE="$HOME/.local/share/chezmoi/.chezmoidata/globals.yaml"
 
-INCLUDES=(
-    "$HOME/Pictures"
-    "$HOME/Documents"
-    "$HOME/.local/share/keyrings"
-    "$HOME/.gnupg"
-)
-
-EXCLUDES=(
-    "*.log"
-)
+# Load includes/excludes from globals.yaml; fall back to hardcoded defaults
+INCLUDES=()
+EXCLUDES=()
+if [[ -f "$GLOBALS_FILE" ]] && command -v yq >/dev/null 2>&1; then
+    while IFS= read -r dir; do
+        [[ -n "$dir" ]] && INCLUDES+=("$HOME/$dir")
+    done < <(yq eval '.globals.backup.includes[]' "$GLOBALS_FILE" 2>/dev/null || true)
+    while IFS= read -r pattern; do
+        [[ -n "$pattern" ]] && EXCLUDES+=("$pattern")
+    done < <(yq eval '.globals.backup.excludes[]' "$GLOBALS_FILE" 2>/dev/null || true)
+fi
+if [[ ${#INCLUDES[@]} -eq 0 ]]; then
+    INCLUDES=("$HOME/Pictures" "$HOME/Documents" "$HOME/.local/share/keyrings" "$HOME/.gnupg")
+fi
+if [[ ${#EXCLUDES[@]} -eq 0 ]]; then
+    EXCLUDES=("*.log")
+fi
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -110,7 +118,7 @@ cmd_init() {
     password=$(ui_input "Backup password (leave empty to generate random)")
 
     if [[ -z "$password" ]]; then
-        password=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
+        password=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32 || true)
         ui_info "Generated password: $password"
         ui_warning "Save this password somewhere safe — you cannot recover backups without it!"
     fi
@@ -149,8 +157,9 @@ cmd_backup() {
     fi
 
     # Build exclude args
-    local exclude_args
-    IFS=' ' read -r -a exclude_args <<< "$(_build_exclude_args)"
+    local exclude_args exclude_args_str
+    exclude_args_str=$(_build_exclude_args)
+    IFS=' ' read -r -a exclude_args <<< "$exclude_args_str"
 
     if [[ "$non_interactive" != "--non-interactive" ]]; then
         ui_step "Creating restic snapshot..."
@@ -212,9 +221,10 @@ cmd_restore() {
     snapshot_id=$(ui_input "Enter snapshot ID to restore (or 'latest')")
     [[ -z "$snapshot_id" ]] && snapshot_id="latest"
 
-    local target
-    target=$(ui_input "Restore target directory (default: $HOME/restore-$(date +%Y%m%d))")
-    [[ -z "$target" ]] && target="$HOME/restore-$(date +%Y%m%d)"
+    local target default_target
+    default_target="$HOME/restore-$(date +%Y%m%d)"
+    target=$(ui_input "Restore target directory (default: $default_target)")
+    [[ -z "$target" ]] && target="$default_target"
 
     mkdir -p "$target"
     ui_step "Restoring snapshot $snapshot_id to $target..."
@@ -251,11 +261,22 @@ cmd_prune() {
     _restic_env
     ui_title "󰁢 Home Backup — Prune"
 
-    ui_step "Applying retention policy (daily: 7, weekly: 4, monthly: 6)..."
+    local keep_daily=7 keep_weekly=4 keep_monthly=6
+    if [[ -f "$GLOBALS_FILE" ]] && command -v yq >/dev/null 2>&1; then
+        local d w m
+        d=$(yq eval '.globals.backup.retention.daily // 7' "$GLOBALS_FILE" 2>/dev/null || true)
+        w=$(yq eval '.globals.backup.retention.weekly // 4' "$GLOBALS_FILE" 2>/dev/null || true)
+        m=$(yq eval '.globals.backup.retention.monthly // 6' "$GLOBALS_FILE" 2>/dev/null || true)
+        [[ -n "$d" && "$d" != "null" ]] && keep_daily="$d"
+        [[ -n "$w" && "$w" != "null" ]] && keep_weekly="$w"
+        [[ -n "$m" && "$m" != "null" ]] && keep_monthly="$m"
+    fi
+
+    ui_step "Applying retention policy (daily: $keep_daily, weekly: $keep_weekly, monthly: $keep_monthly)..."
     if restic forget \
-        --keep-daily 7 \
-        --keep-weekly 4 \
-        --keep-monthly 6 \
+        --keep-daily "$keep_daily" \
+        --keep-weekly "$keep_weekly" \
+        --keep-monthly "$keep_monthly" \
         --prune; then
         ui_success "Prune completed"
     else

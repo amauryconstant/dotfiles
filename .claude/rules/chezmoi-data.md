@@ -102,6 +102,7 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 | `packages.yaml` | `run_onchange_before_sync_packages.sh.tmpl` | BEFORE file application |
 | `extensions.code` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
 | `ai.models` | `run_onchange_after_install_ai_models.sh.tmpl` | AFTER file application |
+| `globals.timeshift` | `run_onchange_after_configure_timeshift_retention.sh.tmpl` | AFTER file application |
 
 **Hash detection**: Scripts include `{{ .packages | toJson | sha256sum }}` comment. When data changes, hash changes, script re-runs.
 

@@ -5,6 +5,52 @@
 # Requirements: timeshift or snapper (optional)
 
 # =============================================================================
+# ON-DEMAND SNAPSHOT PRUNING
+# =============================================================================
+
+# Prune oldest on-demand (O-tagged) Timeshift snapshots exceeding configured max.
+# Reads on_demand max from globals.yaml; defaults to 5.
+_prune_on_demand_snapshots() {
+    local globals_file="$HOME/.local/share/chezmoi/.chezmoidata/globals.yaml"
+    local max_count=5
+    if [[ -f "$globals_file" ]]; then
+        local parsed
+        parsed=$(yq eval '.globals.timeshift.retention.on_demand // 5' "$globals_file" 2>/dev/null)
+        [[ -n "$parsed" && "$parsed" != "null" ]] && max_count="$parsed"
+    fi
+
+    local all_snapshots
+    all_snapshots=$(sudo timeshift --list --scripted 2>/dev/null \
+        | awk '/^>/ && $3 == "O" {print $2}' || true)
+
+    local count=0
+    if [[ -n "$all_snapshots" ]]; then
+        count=$(printf '%s\n' "$all_snapshots" | grep -c '[^[:space:]]' || true)
+    fi
+    count=${count:-0}
+
+    if [[ "$count" -le "$max_count" ]]; then
+        [[ "${VERBOSE:-false}" == "true" ]] && \
+            ui_info "On-demand snapshots: $count/$max_count (within limit)"
+        return 0
+    fi
+
+    local excess=$(( count - max_count ))
+    ui_step "Pruning $excess excess on-demand snapshot(s) (keeping $max_count)..."
+
+    local to_delete
+    to_delete=$(printf '%s\n' "$all_snapshots" | head -n "$excess" || true)
+
+    while IFS= read -r snapshot; do
+        if sudo timeshift --delete --snapshot "$snapshot" --scripted >/dev/null 2>&1; then
+            ui_success "Deleted: $snapshot"
+        else
+            ui_warning "Failed to delete: $snapshot"
+        fi
+    done <<< "$to_delete"
+}
+
+# =============================================================================
 # BACKUP TOOL DETECTION
 # =============================================================================
 
@@ -71,6 +117,7 @@ _create_backup() {
                 # Direct call (sudo needs TTY access)
                 if sudo timeshift --create --comments "$comment" --scripted; then
                     ui_success "Timeshift backup created successfully"
+                    _prune_on_demand_snapshots
                     return 0
                 else
                     ui_warning "Timeshift backup failed (continuing anyway)"
