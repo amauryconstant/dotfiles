@@ -301,7 +301,7 @@ _sync_execute() {
     ui_step "Loading package version cache..."
     ui_info "Querying pacman database..." >&2
     if _load_pacman_version_cache; then
-        declare -n installed_versions_map=_PACMAN_VERSION_CACHE  # nameref to existing cache
+        declare -n installed_versions_map=$(_cache_get_ref pacman_versions)  # nameref to existing cache
         local cached_count
         cached_count=${#installed_versions_map[@]}
         ui_success "Loaded ${cached_count} package versions"
