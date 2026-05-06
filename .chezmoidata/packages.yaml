@@ -255,7 +255,7 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - llama-cpp-cuda # llama.cpp with NVIDIA CUDA acceleration
+        - llama.cpp-bin # llama.cpp with NVIDIA CUDA acceleration
 
     # ============================================================
     # DESKTOP ENVIRONMENT

@@ -28,9 +28,9 @@ fi
 
 # Current configuration
 {{ includeTemplate "log_info" "Server configuration:" }}
-{{ includeTemplate "log_info" "  Host: {{ .ai.server.host }}" }}
-{{ includeTemplate "log_info" "  Port: {{ .ai.server.port }}" }}
-{{ includeTemplate "log_info" "  GPU layers: {{ .ai.server.n_gpu_layers }}" }}
+{{ includeTemplate "log_info" (printf "  Host: %v" .ai.server.host) }}
+{{ includeTemplate "log_info" (printf "  Port: %v" .ai.server.port) }}
+{{ includeTemplate "log_info" (printf "  GPU layers: %v" .ai.server.n_gpu_layers) }}
 
 # Check if models are configured
 {{- if .ai.models }}
