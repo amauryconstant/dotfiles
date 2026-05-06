@@ -43,14 +43,12 @@ return {
       })
     end,
   },
-  -- Wire neogit to use diffview for diffs
   {
     "NeogitOrg/neogit",
     opts = {
       integrations = { diffview = true },
     },
   },
-  -- Show hidden (dot-prefixed) files in Neo-tree
   {
     "nvim-neo-tree/neo-tree.nvim",
     opts = {
@@ -61,7 +59,6 @@ return {
       },
     },
   },
-  -- Show hidden files in snacks.nvim file picker
   {
     "folke/snacks.nvim",
     opts = {
@@ -72,7 +69,7 @@ return {
       },
     },
   },
-  -- Open aerial symbol outline as a right sidebar automatically
+  -- aerial: layout only — auto-open logic is in polish.lua (files > 100 lines)
   {
     "stevearc/aerial.nvim",
     opts = {

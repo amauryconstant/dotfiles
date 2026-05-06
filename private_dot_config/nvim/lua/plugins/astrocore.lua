@@ -21,5 +21,10 @@ return {
         undolevels = 10000,  -- large undo history (VS Code-like)
       },
     },
+    mappings = {
+      n = {
+        ["<Leader>qR"] = { ":restart<CR>", desc = "Restart Neovim" },
+      },
+    },
   },
 }

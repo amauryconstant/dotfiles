@@ -1,6 +1,9 @@
 -- Post-load customizations
 
--- Lazydocker float (<leader>td)
+-- Enable built-in undotree (Neovim 0.12+)
+vim.cmd("packadd! undotree")
+vim.keymap.set("n", "<Leader>uu", vim.cmd.UndotreeToggle, { desc = "Undo tree" })
+
 if vim.fn.executable "lazydocker" == 1 then
   vim.keymap.set("n", "<Leader>td", function()
     require("astrocore").toggle_term_cmd { cmd = "lazydocker", direction = "float" }
