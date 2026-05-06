@@ -68,8 +68,6 @@ globals:
     repository: "$HOME/.local/share/backups/home-backup"
     includes:
       - Documents
-      - Projects
-      - Worktrees
       - Pictures
       - .gnupg
       - .config
@@ -78,8 +76,6 @@ globals:
       - .cache
       - .local/share/Steam
       - .local/share/flatpak
-      - node_modules
-      - .git/objects
       - "*.log"
     retention:
       daily: 7      # Keep last 7 daily snapshots
