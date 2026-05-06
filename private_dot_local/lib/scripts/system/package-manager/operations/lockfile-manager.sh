@@ -25,7 +25,7 @@ _read_lockfile() {
         ver="${ver//\"/}"  # Strip quotes
         ver="${ver// #*/}"  # Strip comments
         # shellcheck disable=SC2034  # Global array used in sourced command files
-        [[ -n "$ver" ]] && lockfile_versions[$pkg]="$ver"
+        [[ -n "$ver" ]] && lockfile_versions["$pkg"]="$ver"
     done < <(yq eval '.packages | to_entries[] | .value | to_entries[] | "\(.key): \(.value)"' "$LOCKFILE" 2>/dev/null)
 
     return 0

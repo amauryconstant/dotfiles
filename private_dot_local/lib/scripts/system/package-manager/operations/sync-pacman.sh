@@ -40,8 +40,8 @@ _sync_execute_pacman() {
         # Use cached name if available (optimization from build_plan)
         [[ -n "$cached_name" ]] && name="$cached_name"
 
-        local installed_version="${versions_map[$name]:-}"
-        local locked_version="${lockfile_versions[$name]:-}"
+        local installed_version="${versions_map["$name"]:-}"
+        local locked_version="${lockfile_versions["$name"]:-}"
 
         # Fast-path: lockfile match
         if [[ "$USE_LOCKFILE_FASTPATH" == "true" ]] && [[ -n "$locked_version" ]] &&

@@ -94,19 +94,19 @@ _cache_get() {
 
     case "$cache_name" in
         flatpak_apps)
-            echo "${_CACHE_FLATPAK_APPS[$key]:-$default}"
+            echo "${_CACHE_FLATPAK_APPS["$key"]:-$default}"
             ;;
         flatpak_versions)
-            echo "${_CACHE_FLATPAK_VERSIONS[$key]:-$default}"
+            echo "${_CACHE_FLATPAK_VERSIONS["$key"]:-$default}"
             ;;
         pacman_versions)
-            echo "${_CACHE_PACMAN_VERSIONS[$key]:-$default}"
+            echo "${_CACHE_PACMAN_VERSIONS["$key"]:-$default}"
             ;;
         modules)
-            echo "${_CACHE_MODULES[$key]:-$default}"
+            echo "${_CACHE_MODULES["$key"]:-$default}"
             ;;
         constraints)
-            echo "${_CACHE_CONSTRAINTS[$key]:-$default}"
+            echo "${_CACHE_CONSTRAINTS["$key"]:-$default}"
             ;;
         *)
             return 1
@@ -123,19 +123,19 @@ _cache_set() {
 
     case "$cache_name" in
         flatpak_apps)
-            _CACHE_FLATPAK_APPS[$key]="$value"
+            _CACHE_FLATPAK_APPS["$key"]="$value"
             ;;
         flatpak_versions)
-            _CACHE_FLATPAK_VERSIONS[$key]="$value"
+            _CACHE_FLATPAK_VERSIONS["$key"]="$value"
             ;;
         pacman_versions)
-            _CACHE_PACMAN_VERSIONS[$key]="$value"
+            _CACHE_PACMAN_VERSIONS["$key"]="$value"
             ;;
         modules)
-            _CACHE_MODULES[$key]="$value"
+            _CACHE_MODULES["$key"]="$value"
             ;;
         constraints)
-            _CACHE_CONSTRAINTS[$key]="$value"
+            _CACHE_CONSTRAINTS["$key"]="$value"
             ;;
         *)
             return 1
@@ -152,19 +152,19 @@ _cache_has() {
 
     case "$cache_name" in
         flatpak_apps)
-            [[ -n "${_CACHE_FLATPAK_APPS[$key]+x}" ]]
+            [[ -n "${_CACHE_FLATPAK_APPS["$key"]+x}" ]]
             ;;
         flatpak_versions)
-            [[ -n "${_CACHE_FLATPAK_VERSIONS[$key]+x}" ]]
+            [[ -n "${_CACHE_FLATPAK_VERSIONS["$key"]+x}" ]]
             ;;
         pacman_versions)
-            [[ -n "${_CACHE_PACMAN_VERSIONS[$key]+x}" ]]
+            [[ -n "${_CACHE_PACMAN_VERSIONS["$key"]+x}" ]]
             ;;
         modules)
-            [[ -n "${_CACHE_MODULES[$key]+x}" ]]
+            [[ -n "${_CACHE_MODULES["$key"]+x}" ]]
             ;;
         constraints)
-            [[ -n "${_CACHE_CONSTRAINTS[$key]+x}" ]]
+            [[ -n "${_CACHE_CONSTRAINTS["$key"]+x}" ]]
             ;;
         *)
             return 1
