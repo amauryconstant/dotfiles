@@ -69,13 +69,17 @@ globals:
     includes:
       - Documents
       - Pictures
+      - Downloads
       - .gnupg
       - .config
-      - .local/share
+      - .keys
+      - .ssh
+      - .claude
+      - .local/share/keyrings
+      - .local/share/mkcert
+      - .local/share/rbw
+      - .local/share/zoxide
     excludes:
-      - .cache
-      - .local/share/Steam
-      - .local/share/flatpak
       - "*.log"
     retention:
       daily: 7      # Keep last 7 daily snapshots
