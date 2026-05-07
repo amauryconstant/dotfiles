@@ -21,7 +21,7 @@ _prune_on_demand_snapshots() {
 
     local all_snapshots
     all_snapshots=$(sudo timeshift --list --scripted 2>/dev/null \
-        | awk '/^>/ && $3 == "O" {print $2}' || true)
+        | awk '$2 == ">" && $4 == "O" {print $3}' || true)
 
     local count=0
     if [[ -n "$all_snapshots" ]]; then

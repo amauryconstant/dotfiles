@@ -173,14 +173,11 @@ if [[ "$CURRENT_SCHEDULE_DAILY" != "$DESIRED_SCHEDULE_DAILY" ]] || \
     SCHEDULE_MATCHES=false
 fi
 
-# Exit early only if both retention and schedule are correct
+# Skip config update if already correct; on-demand prune always runs below
 if [[ "$RETENTION_MATCHES" = true ]] && [[ "$SCHEDULE_MATCHES" = true ]]; then
     {{ includeTemplate "log_success" "Retention policy and schedule already configured correctly" }}
-    {{ includeTemplate "log_complete" "Timeshift retention configuration complete" }}
-    exit 0
-fi
-
-{{ includeTemplate "log_info" "Configuration update required" }}
+else
+    {{ includeTemplate "log_info" "Configuration update required" }}
 
 # ============================================================================
 # SECTION 4: BACKUP CURRENT CONFIGURATION
@@ -302,7 +299,7 @@ fi
 {{ includeTemplate "log_step" "Check current snapshot count..." }}
 
 # Count current snapshots
-SNAPSHOT_COUNT=$(sudo timeshift --list --scripted 2>/dev/null | grep -c "^>" || true)
+SNAPSHOT_COUNT=$(sudo timeshift --list --scripted 2>/dev/null | awk '$2 == ">" {count++} END {print count+0}' || true)
 # grep -c returns 0 if no matches, so ensure we have a valid number
 SNAPSHOT_COUNT=${SNAPSHOT_COUNT:-0}
 
@@ -378,6 +375,8 @@ fi
 {{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
 {{ includeTemplate "log_info" "" }}
 
+fi # end: config update needed
+
 # ============================================================================
 # SECTION 9: CONFIGURE SYSTEMD TIMERS (OPTIONAL)
 # ============================================================================
@@ -390,9 +389,7 @@ if ! systemctl list-unit-files timeshift-hourly.timer >/dev/null 2>&1; then
     {{ includeTemplate "log_info" "  1. Add 'timeshift-systemd-timer' to packages.yaml" }}
     {{ includeTemplate "log_info" "  2. Run: package-manager sync" }}
     {{ includeTemplate "log_info" "  3. Re-run: chezmoi apply" }}
-    {{ includeTemplate "log_complete" "Timeshift retention policy configured successfully" }}
-    exit 0
-fi
+else
 
 {{ includeTemplate "log_success" "timeshift-systemd-timer package detected" }}
 
@@ -480,6 +477,8 @@ fi
 {{ includeTemplate "log_info" "  View logs:     journalctl -u timeshift-hourly.service" }}
 {{ includeTemplate "log_info" "  Manual run:    sudo systemctl start timeshift-hourly.service" }}
 
+fi # end: timeshift-systemd-timer installed
+
 # ============================================================================
 # SECTION 10: PRUNE ON-DEMAND SNAPSHOTS
 # ============================================================================
@@ -487,7 +486,7 @@ fi
 {{ includeTemplate "log_step" "Pruning excess on-demand snapshots..." }}
 
 DESIRED_ON_DEMAND="{{ .globals.timeshift.retention.on_demand }}"
-ON_DEMAND_LIST=$(sudo timeshift --list --scripted 2>/dev/null | awk '/^>/ && $3 == "O" {print $2}')
+ON_DEMAND_LIST=$(sudo timeshift --list --scripted 2>/dev/null | awk '$2 == ">" && $4 == "O" {print $3}')
 ON_DEMAND_COUNT=$(printf '%s\n' "$ON_DEMAND_LIST" | grep -c '[^[:space:]]' || true)
 ON_DEMAND_COUNT=${ON_DEMAND_COUNT:-0}
 
