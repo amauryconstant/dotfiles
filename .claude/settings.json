@@ -12,6 +12,7 @@
       "WebFetch(domain:wiki.hyprland.org)",
       "WebFetch(domain:docs.astronvim.com)",
       "WebFetch(domain:mise.jdx.dev)",
+      "WebFetch(domain:wiki.archlinux.org)",
 
       "Bash(git status:*)",
       "Bash(git diff:*)",
@@ -46,6 +47,8 @@
       "Bash(chezmoi apply --dry-run:*)",
       "Bash(chezmoi source-path:*)",
       "Bash(chezmoi target-path:*)",
+      "Bash(chezmoi merge:*)",
+      "Bash(chezmoi merge-all:*)",
       "Bash(chezmoi_modify_manager --help-syntax:*)",
 
       "Bash(ls:*)",
@@ -80,10 +83,12 @@
 
       "Bash(shellcheck:*)",
       "Bash(bash -n:*)",
+      "Bash(zsh -n:*)",
       "Bash(jaq:*)",
       "Bash(yq:*)",
       "Bash(jq:*)",
-      "Bash(mise run lint:*)",
+      "Bash(mise run:*)",
+      "Bash(mise tasks:*)",
 
       "Bash(hyprctl:*)",
       "Bash(journalctl:*)",
@@ -97,6 +102,7 @@
       "Bash(paru -Si:*)",
       "Bash(paru -Ss:*)",
       "Bash(pacman -Q:*)",
+      "Bash(pacman -Qdt:*)",
       "Bash(pacman -Si:*)",
       "Bash(pacman -Ss:*)",
       "Bash(flatpak list:*)",
@@ -138,6 +144,20 @@
       "Bash(hyprpm:*)",
       "Bash(rage:*)",
       "Bash(age:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.sh$ && ! \"$f\" =~ \\.tmpl$ ]] && bash -n \"$f\" && shellcheck --severity=warning \"$f\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
