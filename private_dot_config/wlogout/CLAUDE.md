@@ -61,90 +61,11 @@ Each button gets distinct semantic accent for instant recognition:
 
 **Visual hierarchy**: Red shutdown most prominent, blue suspend comfortable default.
 
-## Implementation Pattern
+## Contrast Rule
 
-### Button Styling
+Buttons use `@bg-secondary` (elevated surface) → must use `@fg-primary` for text (NOT `@fg-secondary`). See `themes/CLAUDE.md` contrast guidelines.
 
-```css
-/* Default button state */
-button {
-    background-color: @bg-secondary;     /* Elevated */
-    color: @fg-primary;                  /* Readable */
-    border: 2px solid @bg-tertiary;      /* Defined edge */
-    margin: 10px;
-}
-
-/* Hover state - button gets accent color */
-button:hover {
-    color: @fg-contrast;                 /* High contrast text */
-}
-
-/* Individual button hover colors */
-button#lock:hover {
-    background-color: @accent-tertiary;  /* Orange */
-    color: @fg-contrast;
-}
-
-button#logout:hover {
-    background-color: @accent-warning;   /* Yellow */
-    color: @fg-contrast;
-}
-
-button#suspend:hover {
-    background-color: @accent-primary;   /* Blue */
-    color: @fg-contrast;
-}
-
-button#hibernate:hover {
-    background-color: @accent-highlight; /* Violet */
-    color: @fg-contrast;
-}
-
-button#reboot:hover {
-    background-color: @accent-info;      /* Cyan */
-    color: @fg-contrast;
-}
-
-button#shutdown:hover {
-    background-color: @accent-error;     /* Red */
-    color: @fg-contrast;
-}
-
-/* Focus state (keyboard navigation) */
-button:focus {
-    background-color: @accent-highlight; /* Or per-button accent */
-    color: @fg-contrast;
-    border-color: @accent-primary;       /* Visible focus ring */
-}
-```
-
-### Alternative: Colored by Default
-
-Some themes show colors without hover:
-```css
-button#lock {
-    background-color: @accent-tertiary;
-    color: @fg-contrast;
-}
-
-button#lock:hover {
-    /* Brighten or add border */
-    filter: brightness(1.2);
-}
-```
-
-### Contrast Best Practice
-
-Wlogout correctly implements the elevated surface contrast pattern:
-
-```css
-button {
-  background-color: @bg-secondary;  /* Elevated button surface */
-  color: @fg-primary;                /* Primary text (NOT fg-secondary) */
-}
-```
-
-**Rationale**: Buttons use elevated backgrounds (`@bg-secondary`) but must have primary text (`@fg-primary`) for accessibility. Using `@fg-secondary` would fail WCAG AA contrast requirements.
+**See** `style.css.tmpl` directly for full CSS implementation.
 
 ## Theme Integration
 

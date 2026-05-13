@@ -19,39 +19,21 @@
 
 | File | Purpose | Source timing | POSIX? |
 |------|---------|---------------|--------|
-| `env` | Environment variables (minimal, XDG sourcing) | Login shells | ✅ Yes |
-| `env_functions` | Environment setup functions | Sourced by env | ✅ Yes |
+| `env` | Minimal env bootstrap (ENV, BASH_ENV, SCRIPTS_DIR, UI_LIB, CLAUDE_CONFIG_DIR, umask) | Login shells | ✅ Yes |
 | `login.tmpl` | Login shell config (reduced, most → Zephyr) | Login shells | ✅ Yes |
 | `interactive` | Interactive shell config | Interactive shells | ✅ Yes |
 | `logout` | Cleanup on logout | Logout | ✅ Yes |
 
 **Load order**:
-1. `env` → Sets up XDG, sources env_functions
+1. `env` → Sets ENV + BASH_ENV pointers, exports SCRIPTS_DIR + UI_LIB
 2. `login.tmpl` → Minimal PATH additions (most → Zephyr)
 3. `interactive` → Aliases, prompt, interactive features
 
 ## File Details
 
-### env (4 lines)
+### env (9 lines)
 
-**Purpose**: Minimal environment setup, XDG sourcing
-
-**Pattern**:
-```sh
-# XDG Base Directory minimal setup
-export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-
-# Source environment functions
-. "$XDG_CONFIG_HOME/shell/env_functions"
-```
-
-**Why minimal**: Most environment setup moved to Zephyr (zstyles)
-
-### env_functions
-
-**Purpose**: Helper functions for environment setup
-
-**Functions**: (details from file)
+**Contents**: Sets `$ENV` (sh interactive shells), `$BASH_ENV` (bash non-interactive), `SCRIPTS_DIR`, `UI_LIB`, `CLAUDE_CONFIG_DIR`, `umask 0077`. No XDG setup (moved to Zephyr).
 
 ### login.tmpl (16 lines)
 

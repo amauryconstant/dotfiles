@@ -63,7 +63,7 @@ fi
 
 ---
 
-## Available Hook Points (6)
+## Available Hook Points (9)
 
 | Hook | Trigger Script | Arguments | Use Case |
 |------|----------------|-----------|----------|
@@ -294,8 +294,6 @@ echo $?  # Should be 0
 - Hooks run synchronously (after operation completes)
 - Check argument passing
 - Verify timing (some hooks run before, some after)
-
----
 
 ---
 

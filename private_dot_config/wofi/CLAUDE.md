@@ -31,79 +31,11 @@
 | `@accent-highlight` | (Optional) alternative highlight | Special emphasis |
 | `@accent-modification` | **Search match highlight (Phase 3)** | **Matched search terms** |
 
-## Element Mappings
+## Contrast Rule
 
-### Core Elements
+`#input` uses `@bg-secondary` (elevated) → must use `@fg-primary` for text (NOT `@fg-secondary`). `@bg-secondary` + `@fg-primary` achieves 7.0:1+ across all themes; `@fg-secondary` fails WCAG AA. See `themes/CLAUDE.md` contrast guidelines.
 
-```css
-/* Main window */
-window {
-    background-color: @bg-primary;
-    color: @fg-primary;
-    border: 1px solid @bg-secondary;    /* Subtle border */
-}
-
-/* Search input */
-#input {
-    background-color: @bg-secondary;    /* Elevated */
-    color: @fg-primary;
-    border: 1px solid @bg-tertiary;     /* Defined border */
-}
-
-/* Results containers */
-#inner-box, #outer-box {
-    background-color: @bg-primary;      /* Match window */
-    color: @fg-primary;
-}
-
-/* Scrollbar */
-#scroll {
-    background-color: @bg-secondary;    /* Elevated track */
-}
-
-/* Individual result text */
-#text {
-    color: @fg-primary;
-}
-
-/* Selected result */
-#entry:selected {
-    background-color: @accent-primary;  /* Prominent selection */
-    color: @fg-contrast;                /* High contrast text */
-}
-```
-
-### State Handling
-
-Wofi supports CSS states for interactive elements:
-
-```css
-/* Hover state (optional) */
-#entry:hover {
-    background-color: @bg-secondary;    /* Subtle hover */
-}
-
-/* Selected + hover (if different from selected) */
-#entry:selected:hover {
-    background-color: @accent-primary;  /* Keep selection prominent */
-    color: @fg-contrast;
-}
-```
-
-### Contrast Best Practice
-
-Wofi correctly implements the elevated surface contrast pattern:
-
-```css
-#input {
-  background-color: @bg-secondary;  /* Elevated input field */
-  color: @fg-primary;                /* Primary text (NOT fg-secondary) */
-}
-```
-
-**Rationale**: `@bg-secondary` + `@fg-primary` achieves 7.0:1+ contrast across all themes, passing WCAG AA. Using `@fg-secondary` would create insufficient contrast (4.0-4.5:1) that fails accessibility standards.
-
-**This pattern must be followed by all applications using `@bg-secondary`.**
+**See** `style.css.tmpl` directly for full CSS implementation.
 
 ## Theme Integration
 
@@ -163,17 +95,6 @@ Search term highlighting enabled with modification semantic:
 ```
 
 **Rationale**: `@accent-modification` semantically represents "changes/highlights" - perfect for search matching.
-
-### Alternative Selection Style
-
-Some themes use border instead of background:
-```css
-#entry:selected {
-    background-color: @bg-secondary;    /* Subtle bg */
-    border-left: 3px solid @accent-primary;  /* Accent indicator */
-    color: @fg-primary;
-}
-```
 
 ## Configuration Details
 

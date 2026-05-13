@@ -25,12 +25,21 @@
 | `Nextcloud/` | Nextcloud client | ✅ Yes |
 | `git/` | Git config | ✅ Yes |
 | `themes/` | Theme system | ✅ Yes |
-| `bat/` | Syntax highlighting (themed) | ❌ No |
-| `broot/` | File tree (themed) | ❌ No |
-| `btop/` | System monitor (themed) | ❌ No |
-| `lazygit/` | Git TUI (themed) | ❌ No |
-| `yazi/` | File manager (themed) | ❌ No |
-| `ghostty/` | Terminal config | ❌ No |
+| `waybar/` | Status bar | ✅ Yes |
+| `wofi/` | Application launcher | ✅ Yes |
+| `wlogout/` | Power menu | ✅ Yes |
+| `swaync/` | Notification daemon | ✅ Yes |
+| `btop/` | System monitor (themed) | ✅ Yes |
+| `hyprdynamicmonitors/` | Monitor profile manager | ✅ Yes |
+| `hyprwhenthen/` | Event-driven window automation | ✅ Yes |
+| `jj/` | Jujutsu VCS config | ✅ Yes |
+| `dotfiles/` | Hook system + extra bindings | ✅ Yes |
+| `opencode/` | opencode TUI config (theme-managed) | ✅ Yes |
+| `bat/` | Syntax highlighting (symlink-only, themed) | ❌ No |
+| `broot/` | File tree (conf.hjson + verbs.hjson + theme symlink) | ❌ No |
+| `lazygit/` | Git TUI (symlink-only, themed) | ❌ No |
+| `yazi/` | File manager (symlink-only, themed) | ❌ No |
+| `ghostty/` | Terminal config (6-line template) | ❌ No |
 | `starship.toml` | Prompt (themed via symlink) | ❌ No |
 | `topgrade.toml.tmpl` | Update tool | ❌ No |
 
@@ -115,14 +124,6 @@
 **User services** (`systemd/user/`):
 - Wallpaper cycle timer (30 min)
 - Other user services
-
-## Themes
-
-**Theme system** (`themes/`):
-- 8 variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
-- 13 themed apps: 7 desktop + 6 CLI tools
-- Wallpapers: Theme-integrated collections (`themes/{variant}/wallpapers/`)
-- See: `themes/CLAUDE.md` for architecture and integration details
 
 ## Subdirectories with CLAUDE.md
 

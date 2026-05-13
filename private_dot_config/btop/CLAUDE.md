@@ -30,82 +30,16 @@ Switching themes via `theme switch <name>` updates the `current` symlink; btop p
 
 ---
 
-## 37-Property → Semantic Variable Mapping
+## Semantic Variable Mapping (Summary)
 
 Cross-reference hex values against the variant's `waybar.css` `@define-color` declarations.
 
-| btop property | Semantic variable | Notes |
-|---------------|-------------------|-------|
-| `main_bg` | `@bg-primary` | Exact hex of bg-primary |
-| `main_fg` | `@fg-primary` | Main text |
-| `title` | `@fg-primary` | Box title text |
-| `hi_fg` | `@accent-primary` | Keyboard shortcut highlights |
-| `selected_bg` | `@bg-tertiary` | Selected row background |
-| `selected_fg` | `@accent-primary` | Selected row text |
-| `inactive_fg` | `@fg-muted` | Disabled/unfocused text |
-| `graph_text` | `@accent-tertiary` | Overlay labels on graphs |
-| `meter_bg` | `@bg-tertiary` | Percentage bar background |
-| `proc_misc` | `@accent-tertiary` | Process misc status text |
-| `cpu_box` | `@accent-highlight` | CPU box outline |
-| `mem_box` | `@accent-success` | Memory box outline |
-| `net_box` | `@accent-error` | Network box outline |
-| `proc_box` | `@accent-primary` | Process box outline |
-| `div_line` | `@fg-muted` (dimmer) | Internal divider lines |
-| `temp_start` | `@accent-success` | Temperature gradient: cool |
-| `temp_mid` | `@accent-warning` | Temperature gradient: warm |
-| `temp_end` | `@accent-error` | Temperature gradient: hot |
-| `cpu_start` | `@accent-info` | CPU gradient: low usage |
-| `cpu_mid` | `@accent-secondary` | CPU gradient: mid usage |
-| `cpu_end` | `@accent-primary` | CPU gradient: high usage |
-| `free_start` | `@accent-highlight` | Free meter start |
-| `free_mid` | `@accent-secondary` | Free meter mid |
-| `free_end` | `@accent-primary` | Free meter end |
-| `cached_start` | `@accent-secondary` | Cached meter start |
-| `cached_mid` | `@accent-primary` | Cached meter mid |
-| `cached_end` | `@accent-secondary` | Cached meter end |
-| `available_start` | `@accent-tertiary` | Available meter start |
-| `available_mid` | `@accent-error` (lighter) | Available meter mid |
-| `available_end` | `@accent-error` | Available meter end |
-| `used_start` | `@accent-success` | Used meter start |
-| `used_mid` | `@accent-info` | Used meter mid |
-| `used_end` | `@accent-secondary` | Used meter end |
-| `download_start` | `@accent-tertiary` | Download graph start |
-| `download_mid` | `@accent-error` (lighter) | Download graph mid |
-| `download_end` | `@accent-error` | Download graph end |
-| `upload_start` | `@accent-success` | Upload graph start |
-| `upload_mid` | `@accent-info` | Upload graph mid |
-| `upload_end` | `@accent-secondary` | Upload graph end |
-| `process_start` | `@accent-secondary` | Process gradient start |
-| `process_mid` | `@accent-secondary` (lighter) | Process gradient mid |
-| `process_end` | `@accent-highlight` | Process gradient end |
+**Key mappings**: `main_bg` → `@bg-primary`, `main_fg` → `@fg-primary`, `inactive_fg` → `@fg-muted`, box outlines (cpu/mem/net/proc) → distinct accent colors, gradient triplets → semantic gradient (success→warning→error for temp; info→secondary→primary for CPU).
 
----
-
-## Gradient Design Guide
-
-### Temperature: green → yellow → red
-
-Conveys thermal state intuitively. Maps to:
-- `temp_start` = `accent-success` (safe/cool)
-- `temp_mid` = `accent-warning` (warm, attention)
-- `temp_end` = `accent-error` (hot, critical)
-
-### CPU: cool → warm
-
-Uses the cooler accents of the theme palette progressing toward the primary accent.
-- Dark themes: teal/sapphire → lavender/blue
-- Light themes: teal/sapphire → iris/blue
-
-### Memory: semantic tiers
-
-- **used**: success (green) → info (teal/sky) — healthy consumption
-- **available**: peach → maroon/red — resource pressure indicator
-- **free**: highlight (mauve/purple) → primary (blue) — available capacity
-
-### Network: mirrored with upload/download
-
-- **download**: peach → red (intake / consumption)
-- **upload**: green → sky (output / share)
+**Cross-reference command**:
+```bash
+grep "@define-color" ~/.config/themes/{variant}/waybar.css
+```
 
 ---
 

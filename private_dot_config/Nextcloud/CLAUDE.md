@@ -63,20 +63,6 @@ add:hide "Auth" "token"
 add:remove "User" "Name"
 ```
 
-## Directive Reference
-
-| Directive | Purpose | Example |
-|-----------|---------|---------|
-| `source auto` | Auto-find .src.ini | `source auto` |
-| `ignore` | Filter specific keys | `ignore "General" "ColorSchemeHash"` |
-| `ignore section` | Filter entire sections | `ignore section "Cache"` |
-| `ignore regex` | Pattern-based filtering | `ignore regex "General" "clientVersion\|lastSync"` |
-| `set` | Force specific values | `set "User" "Name" "{{ .fullname }}"` |
-| `add:remove` | Remove from source on re-add | `add:remove "User" "Name"` |
-| `add:hide` | Hide sensitive values | `add:hide "Accounts" "0\\password"` |
-| `ignore_order` | Ignore list sort order | `ignore_order "Plugins" "LoadOrder"` |
-| `self_update` | Enable auto-updates | `self_update enable` |
-
 ## Nextcloud Example
 
 **File**: `modify_nextcloud.cfg.tmpl`

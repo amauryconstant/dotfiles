@@ -27,18 +27,20 @@
 
 ```
 ~/.local/
-├── bin/                    # 2 special wrappers (in PATH)
+├── bin/                    # 3 special wrappers (in PATH)
 │   ├── executable_package-manager    # Complex setup wrapper
+│   ├── executable_ts                 # Tailscale subcommand router
 │   └── executable_unzip              # Compatibility wrapper (unzip → unar)
-└── lib/scripts/            # 46+ scripts directly in PATH (10 categories)
-    ├── core/               # Foundation libraries (gum-ui.sh, menu-helpers.sh)
-    ├── desktop/            # Hyprland utilities (no .sh extension)
-    ├── media/              # Wallpaper, screenshots (no .sh extension)
-    ├── system/             # Maintenance, health, SSH (no .sh extension)
-    ├── terminal/           # Terminal utilities (no .sh extension)
-    ├── user-interface/     # Menu system, hooks (no .sh extension)
-    ├── utils/              # Utilities (no .sh extension)
-    └── [3 more categories]
+└── lib/scripts/            # 68 scripts directly in PATH (9 categories)
+    ├── core/               # 3 files — gum-ui.sh, hook-runner, state-manager.sh
+    ├── desktop/            # 20 scripts — Hyprland utilities, theme-apply-*
+    ├── media/              # 5 scripts — screenshot, wallpaper, clipboard-store
+    ├── network/            # 5 scripts — tailscale, vpn-toggle, wifi-switch
+    ├── system/             # 8 scripts — maintenance, health, backup, rotate-key
+    ├── terminal/           # 3 scripts — regen-zsh-plugins, terminal-cwd, zellij-sessionizer
+    ├── user-interface/     # 19 scripts — system-menu, menu-*, hook tools
+    ├── utils/              # 4 scripts — dotfiles-debug, firefox-debug-trace, reorder-json, unzip
+    └── git/                # 1 script — prune-branch
 ```
 
 ## Direct Execution Architecture
@@ -125,6 +127,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | Command | Wrapper | Reason |
 |---------|---------|--------|
 | `package-manager` | `bin/executable_package-manager` | Complex setup (module sourcing, state initialization) |
+| `ts` | `bin/executable_ts` | Tailscale helper with subcommand routing to `network/tailscale` |
 | `unzip` | `bin/executable_unzip` | Compatibility wrapper (unzip → unar) |
 
 **All other commands**: Call scripts directly (no wrappers needed)

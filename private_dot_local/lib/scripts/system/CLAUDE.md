@@ -284,25 +284,11 @@ sudo pacman-lock-cleanup --force  # No confirmation
 
 **Sudoers config**: Can be configured in sudoers for passwordless sudo (optional)
 
-## CLI Wrappers
+## Direct Execution
 
-**Wrapper pattern** (`~/.local/bin/`):
-```bash
-#!/usr/bin/env bash
-SCRIPT="$SCRIPTS_DIR/system/script-name.sh"
-
-# Source UI library
-. "$UI_LIB"
-
-# Execute script
-"$SCRIPT" "$@"
-```
-
-**Available wrappers**:
-- `system-health` → `system-health.sh`
-- `system-maintenance` → `system-maintenance.sh`
-- `system-troubleshoot` → `troubleshoot.sh`
-- `package-manager` → `package-manager.sh`
+System scripts are directly in PATH (no wrappers). Call them as:
+- `system-health`, `system-maintenance`, `system-troubleshoot` — direct executables in `system/`
+- `package-manager` — still a wrapper (`bin/executable_package-manager`) due to complex module sourcing
 
 ## Integration Points
 

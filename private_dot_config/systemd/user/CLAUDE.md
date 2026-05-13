@@ -37,54 +37,8 @@
 
 **Setup**: `.chezmoiscripts/run_once_after_006_setup_wallpaper_timer.sh.tmpl`
 
-### Service Configuration
-
-**Timer** (`wallpaper-cycle.timer`):
-- **Interval**: 30 minutes with 2-minute random delay
-- **Boot delay**: 5 minutes after boot
-- **Purpose**: Prevents timing conflicts, distributes load
-
-**Service** (`wallpaper-cycle.service`):
-- **Type**: oneshot (completes and exits)
-- **Command**: `/home/%u/.local/bin/random-wallpaper`
-- **Restart**: on-failure with 30s backoff
-- **Logging**: systemd journal
-
+**Script**: `~/.local/lib/scripts/media/random-wallpaper` (lock file protection + dependency checks — see script source)
 **Setup**: `.chezmoiscripts/run_once_after_004_enable_user_timers.sh.tmpl`
-
-### Script Integration
-
-**Script**: `~/.local/bin/random-wallpaper` → `~/.local/lib/scripts/media/random-wallpaper.sh`
-
-**Lock file protection**:
-```bash
-LOCK_FILE="$XDG_RUNTIME_DIR/random-wallpaper.lock"
-
-# Check for existing lock
-if [ -f "$LOCK_FILE" ]; then
-    # Cleanup stale locks (>2 minutes old)
-    if [ $(($(date +%s) - $(stat -c %Y "$LOCK_FILE"))) -gt 120 ]; then
-        rm "$LOCK_FILE"
-    else
-        exit 0  # Another instance running
-    fi
-fi
-
-# Create lock
-touch "$LOCK_FILE"
-trap "rm -f $LOCK_FILE" EXIT
-```
-
-**Dependency checks**:
-```bash
-# Validate required tools
-for cmd in swww find shuf; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        echo "Error: $cmd not found" >&2
-        exit 1
-    fi
-done
-```
 
 ## Timer Management
 

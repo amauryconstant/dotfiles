@@ -254,47 +254,9 @@ All 12 lazygit theme fields and their semantic mappings:
 
 ## Shell Script Integration (CLI Tools)
 
-System CLI tools source `colors.sh` from the active theme via gum-ui library.
+8 system CLI tools source `~/.config/themes/current/colors.sh` via gum-ui library. Variables: `BG_PRIMARY`, `FG_PRIMARY`, `ACCENT_SUCCESS`, etc. (24 total, mirroring CSS names in uppercase+underscore format).
 
-**Implementation**: Shell-sourceable `colors.sh` files in each theme
-
-### colors.sh Format
-
-```bash
-#!/usr/bin/env sh
-# Theme colors for shell scripts
-# Auto-generated from waybar.css
-
-# Background Hierarchy (4)
-readonly BG_PRIMARY="#hex"      # Main background
-readonly BG_SECONDARY="#hex"    # Elevated surfaces
-readonly BG_TERTIARY="#hex"     # Popovers
-readonly BG_OVERLAY="#hex"      # Modal overlays
-
-# Foreground Hierarchy (4)
-readonly FG_PRIMARY="#hex"      # Primary text
-readonly FG_SECONDARY="#hex"    # Secondary text
-readonly FG_MUTED="#hex"        # Disabled/inactive
-readonly FG_CONTRAST="#hex"     # High contrast
-
-# Core Accents (8)
-readonly ACCENT_PRIMARY="#hex"  # Primary actions
-# ... (full 24 variables)
-
-# Export all for subshells
-export BG_PRIMARY BG_SECONDARY ...
-```
-
-### Usage in Scripts
-
-**Automatic loading** (via gum-ui):
-```bash
-#!/usr/bin/env bash
-. "$UI_LIB"  # Sources theme colors automatically
-
-ui_success "Task complete"  # Uses ACCENT_SUCCESS
-ui_error "Failed"            # Uses ACCENT_ERROR
-```
+**Loading**: `gum-ui.sh` sources `colors.sh` automatically — scripts using `$UI_LIB` get theme colors.
 
 **Direct sourcing**:
 ```bash
@@ -302,35 +264,7 @@ ui_error "Failed"            # Uses ACCENT_ERROR
 echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 ```
 
-### Consumer Scripts
-
-**8 system CLI tools** use theme colors via gum-ui:
-1. package-manager
-2. system-health
-3. system-maintenance
-4. system-health-dashboard
-5. troubleshoot
-6. regenerate-ssh-key
-7. tailscale (network helper)
-8. organize-wallpapers-by-color
-
-### Theme Reload Behavior
-
-**New shells only** - CLI tools pick up active theme on startup
-- Theme switch updates symlink → new shells source new colors
-- Running shells keep old colors (acceptable - CLI tools are quick-run)
-- No live reload needed (theme changes infrequent)
-
-### Generation
-
-**Automated** via `generate-theme-shell-colors.sh`:
-- Reads `waybar.css` for each theme
-- Extracts `@define-color` variables
-- Converts CSS to shell format
-- Validates shell syntax
-- Creates all 8 theme color files
-
-**One-time use** - color files committed to repo
+**Reload**: New shells only — running shells keep old colors (acceptable for CLI tools).
 
 ---
 
@@ -390,60 +324,4 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 **See**: `dotfiles/CLAUDE.md` for hook system documentation
 
----
-
-## SwayNC Semantic Mapping
-
-**Based on**: Official catppuccin/swaync + rose-pine/swaync themes
-
-### Widget Coverage (10 widgets)
-
-| Widget | Purpose | Key Semantic Variables |
-|--------|---------|------------------------|
-| `.notification-background` | Popup notifications | `bg-overlay`, `fg-primary`, `accent-border`, `accent-error` |
-| `.control-center` | Main panel | `bg-primary`, `fg-primary`, `accent-border` |
-| `.widget-title` | Header + Clear All | `fg-primary`, `bg-secondary`, `accent-error` (active) |
-| `.widget-dnd` | Do Not Disturb toggle | `bg-secondary`, `accent-primary` (checked) |
-| `.widget-mpris-player` | Media player controls | `bg-secondary`, `fg-primary`, `accent-media` |
-| `.widget-volume` | Volume slider | `accent-info` (label + highlight) |
-| `.widget-backlight` | Brightness slider | `accent-warning` (label + highlight) |
-| `.widget-label` | Custom labels | `fg-primary` |
-| `.widget-buttons-grid` | Button grid | `fg-primary` |
-| `.widget-menubar` | Menu buttons | `accent-error` (last child / power) |
-
-### Semantic Variable Usage
-
-**Background hierarchy**:
-- `.notification-background` → `@bg-overlay` (mantle/surface)
-- `.control-center` → `@bg-primary` (base)
-- `.notification-action`, `.widget-mpris-player` → `@bg-secondary` (surface0)
-- Action hover → `@bg-tertiary` (surface1)
-
-**Foreground hierarchy**:
-- `.notification-content .summary` → `@fg-primary`
-- `.notification-content .body` → `@fg-secondary`
-- `.notification-content .time` → `@fg-secondary`
-- Close button text on error bg → `@fg-contrast`
-
-**Accent usage**:
-- Active states / DND on → `@accent-primary`
-- Critical notifications → `@accent-error` (border + progress)
-- Close button bg → `@accent-error`, hover → `@accent-modification`
-- Action button active → `@accent-primary`
-- Volume slider → `@accent-info`
-- Backlight slider → `@accent-warning`
-- Media controls → `@accent-media`
-- Borders → `@accent-border`
-
-### Design Decisions
-
-**From official themes**:
-- `* { all: unset; }` global reset
-- `rem` units for accessibility
-- `border: 1px solid` instead of `box-shadow: inset` (cleaner)
-- Progress bars for notification timeout
-- Full widget coverage (volume, backlight, MPRIS, buttons grid)
-
-**Theme-specific**:
-- Catppuccin: Uses `bg-overlay` (mantle) for notification popups
-- Rose Pine: Uses `bg-primary` (base) for notification popups, `fg-muted` for borders
+**See**: `swaync/CLAUDE.md` for SwayNC semantic variable mapping.

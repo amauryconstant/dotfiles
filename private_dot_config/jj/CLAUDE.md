@@ -165,46 +165,6 @@ git config --list --show-origin | grep delta
 # Should show: file:/home/amaury/.config/git/config
 ```
 
-## Design Rationale
-
-### Why NOT Duplicate Delta Settings?
-
-**Rejected approach**:
-```toml
-[ui]
-pager = ["sh", "-c", "delta --navigate --side-by-side"]
-```
-
-**Problems**:
-- Violates DRY principle
-- Two places to maintain
-- Inconsistency risk
-- Shell wrapper overhead
-
-**Chosen approach**:
-```toml
-[ui]
-pager = "delta"
-```
-
-**Benefits**:
-- Single source of truth (git config)
-- Automatic consistency
-- Simpler maintenance
-- Standard delta behavior
-
-### Why These Aliases?
-
-**Community validated** (jj-vcs/jj discussions):
-- `st`: Most common git alias (muscle memory)
-- `l`: Daily log viewing (ancestors of current commit)
-- `sync`: Multi-remote workflow helper
-
-**Omitted git aliases**:
-- `co` (checkout): Not applicable (jj uses `jj edit`)
-- `br` (branch): JJ uses bookmarks (`jj bookmark`)
-- `cm` (commit): JJ workflow different (auto-commits working copy)
-
 ## Cross-References
 
 - **Git config**: `../git/config.tmpl` (delta settings source of truth)

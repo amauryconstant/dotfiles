@@ -50,22 +50,6 @@
 
 ---
 
-## Safe Merge Workflow
-
-1. **Run checks**: `chezmoi diff` and `chezmoi status`
-2. **Merge operations**: `chezmoi merge <file>` or `chezmoi merge-all`
-3. **Validation**: Template syntax automatically preserved
-4. **Emergency restore**: `git checkout HEAD -- <file>`
-
-## Manual Resolution
-
-1. **Detect conflicts**: `chezmoi status` (look for "M" status)
-2. **Resolve conflicts**: `chezmoi merge <file>` or `chezmoi merge-all`
-3. **Validate results**: Protection ensures `{{ .variable }}` preserved
-4. **Special cases**: Encrypted files (`.age`) require manual workflow
-
-**See**: `.scripts/CLAUDE.md` for merge driver implementation details
-
 ## Git Configuration
 
 **File**: `config.tmpl`
@@ -133,22 +117,7 @@ chezmoi status
 
 **Special cases**: Encrypted files (`.age`) require manual workflow
 
-## Template Merge Driver
-
-**Location**: `.scripts/template-merge-driver.sh`
-
-**Purpose**: Preserve template syntax during merges
-
-**Algorithm**:
-1. Check if ancestor has templates
-2. Check if current has templates
-3. Check if other has templates
-4. Prioritize version with templates
-5. Fall back to standard merge
-
-**Exit codes**:
-- 0: Success (no conflict)
-- 1: Conflict (manual resolution needed)
+**See**: `.scripts/CLAUDE.md` for merge driver algorithm and exit codes.
 
 ## Integration Points
 
