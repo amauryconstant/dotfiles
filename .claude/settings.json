@@ -13,7 +13,6 @@
       "WebFetch(domain:docs.astronvim.com)",
       "WebFetch(domain:mise.jdx.dev)",
       "WebFetch(domain:wiki.archlinux.org)",
-
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -35,7 +34,6 @@
       "Bash(git switch:*)",
       "Bash(git restore:*)",
       "Bash(git -C:*)",
-
       "Bash(chezmoi diff:*)",
       "Bash(chezmoi status:*)",
       "Bash(chezmoi data:*)",
@@ -50,7 +48,6 @@
       "Bash(chezmoi merge:*)",
       "Bash(chezmoi merge-all:*)",
       "Bash(chezmoi_modify_manager --help-syntax:*)",
-
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(tree:*)",
@@ -80,7 +77,6 @@
       "Bash(printf:*)",
       "Bash(test:*)",
       "Bash([:*)",
-
       "Bash(shellcheck:*)",
       "Bash(bash -n:*)",
       "Bash(zsh -n:*)",
@@ -89,7 +85,6 @@
       "Bash(jq:*)",
       "Bash(mise run:*)",
       "Bash(mise tasks:*)",
-
       "Bash(hyprctl:*)",
       "Bash(journalctl:*)",
       "Bash(systemctl status:*)",
@@ -107,17 +102,13 @@
       "Bash(pacman -Ss:*)",
       "Bash(flatpak list:*)",
       "Bash(flatpak info:*)",
-
       "Bash(bat:*)",
       "Bash(fd:*)",
       "Bash(rg:*)",
       "Bash(fzf:*)",
-
       "Bash(swww query:*)",
       "Bash(darkman get:*)",
-
       "Bash(code:*)",
-
       "mcp__plugin_context7_context7__resolve-library-id",
       "mcp__plugin_context7_context7__query-docs"
     ],
@@ -147,6 +138,18 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && ( \"$f\" =~ private_dot_keys || \"$f\" =~ \\.age$ ) ]] && { echo \"Blocked: encrypted path — use chezmoi add --encrypt or chezmoi edit instead\" >&2; exit 2; } || exit 0",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
@@ -155,9 +158,18 @@
             "type": "command",
             "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.sh$ && ! \"$f\" =~ \\.tmpl$ ]] && bash -n \"$f\" && shellcheck --severity=warning \"$f\" 2>/dev/null || true",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.tmpl$ && ! \"$f\" =~ \\.chezmoitemplates ]] && { chezmoi execute-template < \"$f\" > /dev/null && echo \"✓ Template OK\" || { echo \"✗ Template syntax error:\" >&2; chezmoi execute-template < \"$f\" 2>&1 | head -5 >&2; }; } || true",
+            "timeout": 10
           }
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "remember@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
   }
 }
