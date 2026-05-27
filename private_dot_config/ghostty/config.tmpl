@@ -1,5 +1,5 @@
 font-family = {{ .globals.terminalFont | quote }}
-font-size = 14
+font-size = {{ if eq .chassisType "desktop" }}14{{ else }}12{{ end }}
 theme = current
 window-theme = ghostty
 gtk-single-instance = false
