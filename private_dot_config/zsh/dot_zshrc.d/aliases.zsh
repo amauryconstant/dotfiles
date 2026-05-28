@@ -27,6 +27,7 @@ alias opc='opencode'
 # Shortcuts
 alias lgit='lazygit'
 alias ldck='lazydocker'
+alias zj='zellij'
 
 # Symlink
 alias lns='ln -sfn'
