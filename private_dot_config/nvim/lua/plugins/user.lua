@@ -79,7 +79,7 @@ return {
   },
   -- mise version manager integration (ensures go/python/node from mise are available)
   {
-    "https://tangled.org/ejri.dev/mise.nvim",
+    "https://plugins.ejri.dev/mise.nvim",
     lazy = false,
     opts = {},
   },
