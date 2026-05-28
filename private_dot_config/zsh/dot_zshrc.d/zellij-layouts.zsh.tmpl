@@ -49,12 +49,7 @@ _zdl_attach_or_create() {
   fi
 }
 
-# Attach or create a session: uses project name when inside ~/Projects/*, else 'Work'
-zj() {
-  local name
-  name="$(_zdl_session_name "$PWD" "Work")"
-  _zdl_attach_or_create "$name"
-}
+alias zj='zellij'
 
 # Coding layout: editor + secondary pane (see layouts/coding*.kdl)
 # Usage: zdl [-a] [cmd]
@@ -103,43 +98,4 @@ zdl() {
   fi
 
   [[ $layout != "$layout_name" ]] && rm -f "$layout"
-}
-
-# Swarm layout: N panes all running the same command
-# Usage: zsl <pane-count> <command>
-zsl() {
-  [[ -z $1 || -z $2 ]] && { echo "Usage: zsl <pane-count> <command>"; return 1; }
-
-  local count="$1" cmd="$2"
-  local dir="$PWD"
-
-  if [[ -n $ZELLIJ ]]; then
-    zellij action send-keys "${cmd}" Enter
-
-    local i
-    for ((i = 1; i < count; i++)); do
-      zellij action new-pane --cwd "$dir"
-      zellij action send-keys "${cmd}" Enter
-    done
-  else
-    # Build a layout with N panes all running the command
-    local tmp_layout
-    tmp_layout="$(mktemp /tmp/zellij-layout-XXXXXX.kdl)"
-    {
-      echo "layout {"
-      echo "  pane split_direction=\"horizontal\" {"
-      local i
-      for ((i = 0; i < count; i++)); do
-        echo "    pane cwd=\"$dir\" command=\"sh\" {"
-        echo "      args \"-c\" \"$cmd\""
-        echo "    }"
-      done
-      echo "  }"
-      echo "}"
-    } >| "$tmp_layout"
-    local session_name
-    session_name="$(_zdl_session_name "$dir")"
-    _zdl_attach_or_create "$session_name" "$tmp_layout"
-    rm -f "$tmp_layout"
-  fi
 }
