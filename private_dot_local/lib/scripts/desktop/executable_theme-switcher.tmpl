@@ -137,9 +137,6 @@ switch_theme() {
     reload_applications
 
     # Apply theme to additional applications
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-vscode" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-vscode" 2>/dev/null || true
-    fi
     if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" ]; then
         "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" 2>/dev/null || true
     fi

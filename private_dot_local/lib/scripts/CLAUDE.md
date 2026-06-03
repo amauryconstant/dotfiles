@@ -109,12 +109,6 @@ fi
   - Calls theme-apply scripts for extended app coverage
   - Triggers theme-change hook for user customization
 
-- `theme-apply-vscode.sh` - VSCode theme synchronization
-  - Maps dotfiles theme to VSCode theme extension
-  - Updates settings.json via jaq (JSON processing)
-  - Silent failure if VSCode not installed
-  - Mappings: catppuccin-latte → "Catppuccin Latte", etc.
-
 - `theme-apply-firefox.sh` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`
   - Finds Firefox profile dynamically
@@ -522,7 +516,7 @@ Trust previous scripts succeeded (chezmoi stops if they fail). Don't add redunda
 
 ### How It Works
 
-1. **Editor validation** (VSCode):
+1. **Editor validation**:
    - Real-time shellcheck on `.sh` files
    - Template files (`.tmpl`) excluded (validated at commit)
    - Quick-fix suggestions enabled

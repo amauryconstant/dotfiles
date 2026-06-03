@@ -1,36 +1,12 @@
 #!/usr/bin/env sh
 
 # Script: run_onchange_after_install_extensions.sh.tmpl
-# Purpose: Install VSCode extensions and Firefox policies for Arch Linux work environment
-# Requirements: Arch Linux, code (VSCode), firefox
+# Purpose: Install Firefox policies for Arch Linux work environment
+# Requirements: Arch Linux, firefox
 
-# Hash: {{ .extensions.code | toJson | sha256sum }}
 # Hash: {{ .firefox_policies | toJson | sha256sum }}
 
-{{ includeTemplate "log_start" "Installing extensions for Arch Linux..." }}
-
-# Check if VSCode is installed
-if ! command -v code >/dev/null 2>&1; then
-    {{ includeTemplate "log_skip" "VSCode not found, skipping extension installation" }}
-    exit 0
-fi
-
-{{ includeTemplate "log_step" "Installing VSCode extensions..." }}
-
-# Install each extension (work destination behavior: always install extensions)
-FAILED_EXTENSIONS=""
-{{- range .extensions.code }}
-if ! code --install-extension {{ . }} >/dev/null 2>&1; then
-    FAILED_EXTENSIONS="${FAILED_EXTENSIONS}{{ . }}, "
-fi
-{{- end }}
-
-if [ -n "$FAILED_EXTENSIONS" ]; then
-    {{ includeTemplate "log_warning" "Some extensions failed: $FAILED_EXTENSIONS" }}
-    {{ includeTemplate "log_warning" "Continuing with partial installation..." }}
-fi
-
-{{ includeTemplate "log_success" "VSCode extension installation finished" }}
+{{ includeTemplate "log_start" "Installing Firefox policies..." }}
 
 # Install Firefox policies
 {{ includeTemplate "log_step" "Installing Firefox policies..." }}
@@ -41,4 +17,4 @@ FIREFOX_POLICIES_EOF
 sudo chmod 644 /usr/lib/firefox/distribution/policies.json
 {{ includeTemplate "log_success" "Firefox policies installed" }}
 
-{{ includeTemplate "log_complete" "Extension installation completed" }}
+{{ includeTemplate "log_complete" "Firefox policy installation completed" }}

@@ -15,7 +15,6 @@
 |------|---------|-----------------|
 | `packages.yaml` | Package management (Arch + Flatpak) | `{{ .packages.* }}` |
 | `ai.yaml` | AI model configuration | `{{ .ai.* }}` |
-| `extensions.yaml` | VSCode extensions | `{{ .extensions.* }}` |
 | `globals.yaml` | Global env vars (XDG, apps, boot, timeshift) | `{{ .globals.* }}` |
 | `services.yaml` | Service enablement (system services, user services, timers) | `{{ .services.* }}` |
 | `features.yaml` | Optional feature toggles (voxtype, restic) | `{{ .features.* }}` |
@@ -50,7 +49,6 @@
 
 ```go
 .packages.install.arch     # Package lists with strategies
-.extensions.code          # VSCode extension arrays
 .globals.applications.*   # Default apps (EDITOR, VISUAL, BROWSER)
 .globals.xdg.*           # XDG Base Directory paths
 .services.user_timers     # List of user timers with name/enabled/start fields
@@ -70,7 +68,7 @@
 {{ .packages.install.arch }}
 
 # Range iteration
-{{ range .extensions.code }}
+{{ range .packages.install.arch }}
   {{ . }}
 {{ end }}
 
@@ -100,7 +98,7 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 | Data File | Trigger Script | Timing |
 |-----------|----------------|--------|
 | `packages.yaml` | `run_onchange_before_sync_packages.sh.tmpl` | BEFORE file application |
-| `extensions.code` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
+| `firefox_policies` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
 | `ai.models` | `run_onchange_after_install_ai_models.sh.tmpl` | AFTER file application |
 | `globals.timeshift` | `run_onchange_after_configure_timeshift_retention.sh.tmpl` | AFTER file application |
 

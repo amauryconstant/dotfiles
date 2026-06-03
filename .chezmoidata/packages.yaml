@@ -320,7 +320,6 @@ packages:
         - firefox # Privacy-focused web browser
         - chromium # Open-source Chrome base
         # Development
-        - code # Visual Studio Code editor
         # Backup
         - nextcloud-client # Nextcloud desktop sync client
         # File management (GUI)

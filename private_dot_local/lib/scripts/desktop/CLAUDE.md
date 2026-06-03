@@ -40,32 +40,6 @@
 
 ---
 
-### VSCode Theme Integration
-
-**Script**: `theme-apply-vscode.sh`
-**Method**: Direct JSON settings modification
-**Status**: ✅ Script working, extensions installed via extensions.yaml
-
-**Requirements**:
-- VSCode theme extensions (automatic via `.chezmoidata/extensions.yaml`)
-- Extensions: catppuccin.catppuccin-vsc, mvllow.rose-pine, jdinhlife.gruvbox, ginfuru.ginfuru-better-solarized-dark-theme
-
-**How it works**:
-- Script updates `~/.config/Code/User/settings.json`
-- Modifies `workbench.colorTheme` property via jaq (JSON processor)
-- Theme mapping:
-  - catppuccin-latte → "Catppuccin Latte"
-  - catppuccin-mocha → "Catppuccin Mocha"
-  - rose-pine-dawn → "Rosé Pine Dawn"
-  - rose-pine-moon → "Rosé Pine Moon"
-  - gruvbox-light → "Gruvbox Light Hard"
-  - gruvbox-dark → "Gruvbox Dark Hard"
-  - solarized-light → "Solarized Light"
-  - solarized-dark → "Solarized Dark"
-- Changes apply immediately (no restart needed)
-
----
-
 ### Spotify Theme Integration
 
 **Script**: `theme-apply-spotify.sh`
@@ -177,8 +151,6 @@
 - Running instances keep old theme (CLI limitation)
 - User restarts claude-code to see new theme
 
-**Note**: claude-code VSCode extension uses VSCode integrated terminal colors (already themed via Ghostty)
-
 ---
 
 ## Theme Switcher
@@ -189,7 +161,7 @@
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
 2. Reloads core apps (Hyprland, Waybar, Dunst, Ghostty)
-3. Calls theme-apply scripts (VSCode, Firefox, Spotify, opencode, claude-code)
+3. Calls theme-apply scripts (Firefox, Spotify, opencode, claude-code)
 4. Triggers `theme-change` user hook
 5. Updates wallpaper randomly from theme collection
 6. Sends desktop notification

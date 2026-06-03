@@ -91,7 +91,7 @@
 | Script | Purpose | Trigger |
 |--------|---------|---------|
 | configure_timeshift_retention | Timeshift retention + timer config | `globals.timeshift` changes |
-| install_extensions | VSCode extensions | `extensions.code` changes |
+| install_extensions | Firefox policies | `firefox_policies` changes |
 | install_ai_models | Ollama models | `ai.models` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |

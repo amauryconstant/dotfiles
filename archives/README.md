@@ -62,6 +62,7 @@ To restore archived files:
 | Date | Technology | Reason | Files Archived |
 |------|-----------|--------|----------------|
 | 2025-10-09 | KDE Plasma | Migration to Hyprland | kdeglobals, kwinrc, color schemes |
+| 2026-06-03 | VS Code | No longer used; terminal-first workflow | modify_settings.json, theme-apply-vscode, .vscode/ workspace config |
 
 ## Notes
 

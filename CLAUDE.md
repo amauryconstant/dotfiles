@@ -190,7 +190,7 @@ chezmoi status
 - `dunst/` - Notifications
 - `wofi/` - Launcher
 - `wlogout/` - Power menu
-- `themes/` - Theme system (8 variants, semantic variables, VSCode/Firefox/Spotify integration)
+- `themes/` - Theme system (8 variants, semantic variables, Firefox/Spotify integration)
 - `dotfiles/` - **Hook system** (6 hook points, user extensibility)
 - `hyprdynamicmonitors/` - Monitor profile manager (port-agnostic matching)
 - `hyprwhenthen/` - Event-driven window automation (OAuth popups, etc.)
