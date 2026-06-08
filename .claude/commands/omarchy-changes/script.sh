@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Constants
-OMARCHY_REPO="$HOME/Projects/omarchy"
+OMARCHY_REPO="$HOME/Projects/_external/omarchy"
 STATE_DIR="$HOME/.local/state/omarchy-tracker"
 STATE_FILE="$STATE_DIR/last-tag"
 GITHUB_API="https://api.github.com/repos/basecamp/omarchy/releases/tags"
@@ -38,12 +38,12 @@ migrate_state() {
 
         # Find corresponding tag
         local tag
-        tag=$(git -C "$OMARCHY_REPO" describe --tags --exact-match "$last_commit" 2>/dev/null \
-              || git -C "$OMARCHY_REPO" describe --tags --abbrev=0 "$last_commit" 2>/dev/null \
-              || echo "")
+        tag=$(git -C "$OMARCHY_REPO" describe --tags --exact-match "$last_commit" 2>/dev/null ||
+            git -C "$OMARCHY_REPO" describe --tags --abbrev=0 "$last_commit" 2>/dev/null ||
+            echo "")
 
         if [ -n "$tag" ]; then
-            echo "$tag" > "$STATE_FILE"
+            echo "$tag" >"$STATE_FILE"
             echo "Migrated to tag: $tag"
             mv "$old_file" "$old_file.backup"
         else
@@ -56,9 +56,9 @@ migrate_state() {
 
 # Get latest version tag from repository
 get_latest_tag() {
-    git -C "$OMARCHY_REPO" tag --list --sort=-version:refname \
-      | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-      | head -1
+    git -C "$OMARCHY_REPO" tag --list --sort=-version:refname |
+        grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+        head -1
 }
 
 # Initialize state tracking on first run
@@ -77,7 +77,7 @@ initialize_state() {
         fi
 
         # Create state file
-        echo "$latest_tag" > "$STATE_FILE"
+        echo "$latest_tag" >"$STATE_FILE"
 
         echo "State initialized at version $latest_tag"
         echo "Run this command again to see new releases."
@@ -138,9 +138,9 @@ get_new_tags() {
     local last_tag="$1"
     local latest_tag="$2"
 
-    git -C "$OMARCHY_REPO" tag --list --sort=version:refname \
-      | awk "/^${last_tag}$/,/^${latest_tag}$/" \
-      | grep -v "^${last_tag}$"
+    git -C "$OMARCHY_REPO" tag --list --sort=version:refname |
+        awk "/^${last_tag}$/,/^${latest_tag}$/" |
+        grep -v "^${last_tag}$"
 }
 
 # Process a single release
@@ -231,7 +231,7 @@ check_releases() {
     while IFS= read -r tag; do
         process_release "$prev_tag" "$tag"
         prev_tag="$tag"
-    done <<< "$new_tags"
+    done <<<"$new_tags"
 
     # Offer to update state
     update_state "$latest_tag"
@@ -243,7 +243,7 @@ update_state() {
 
     # Auto-update if flag set OR non-interactive terminal
     if [[ "${OMARCHY_AUTO_UPDATE}" == "true" ]] || [[ ! -t 0 ]]; then
-        echo "$latest_tag" > "$STATE_FILE"
+        echo "$latest_tag" >"$STATE_FILE"
         echo "State updated to $latest_tag"
         return 0
     fi
@@ -254,7 +254,7 @@ update_state() {
     echo
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "$latest_tag" > "$STATE_FILE"
+        echo "$latest_tag" >"$STATE_FILE"
         echo "State updated to $latest_tag"
     else
         echo "State not updated - next run will show the same releases"
@@ -266,8 +266,8 @@ main() {
     # Parse flags
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --help|-h)
-                cat <<EOF
+        --help | -h)
+            cat <<EOF
 Usage: script.sh [--help]
 
 Checks for new omarchy releases since last tracked version.
@@ -279,13 +279,13 @@ Environment variables:
 Options:
   --help, -h          Show this help message
 EOF
-                exit 0
-                ;;
-            *)
-                echo "Error: Unknown option '$1'" >&2
-                echo "Use --help for usage information" >&2
-                exit 1
-                ;;
+            exit 0
+            ;;
+        *)
+            echo "Error: Unknown option '$1'" >&2
+            echo "Use --help for usage information" >&2
+            exit 1
+            ;;
         esac
     done
 

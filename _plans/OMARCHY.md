@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-05-13 (through v3.8.0). Batch 1 implemented 2026-05-04.
+Last updated: 2026-06-08 (through v3.8.2). Batch 1 implemented 2026-05-04.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
@@ -536,3 +536,5 @@ Last updated: 2026-05-13 (through v3.8.0). Batch 1 implemented 2026-05-04.
 | v3.7.0 | `_research/omarchy/OMARCHY_v3.7.0.md` | 2026-05-13 |
 | v3.7.1 | `_research/omarchy/OMARCHY_v3.7.1.md` | 2026-05-13 |
 | v3.8.0 | `_research/omarchy/OMARCHY_v3.8.0.md` | 2026-05-13 |
+| v3.8.1 | `_research/omarchy/OMARCHY_v3.8.1.md` | 2026-06-08 |
+| v3.8.2 | `_research/omarchy/OMARCHY_v3.8.2.md` | 2026-06-08 |
