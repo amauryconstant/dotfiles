@@ -127,7 +127,17 @@ get_launch_command() {
             ;;
 
         # Default: Use class name as command (lowercase)
+        # Some Flatpak apps report their full app ID as WM class (e.g., com.slack.Slack).
         *)
+            if echo "$class" | grep -qE '\.' && [ -n "$_flatpak_apps" ]; then
+                canonical_id=$(printf '%s\n' "$_flatpak_apps" | \
+                    grep -oE '[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*){2,}' | \
+                    grep -i "^${class}$" | head -1)
+                if [ -n "$canonical_id" ]; then
+                    echo "flatpak run $canonical_id"
+                    return
+                fi
+            fi
             echo "$class_lower"
             ;;
     esac
