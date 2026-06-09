@@ -14,12 +14,13 @@ return {
     },
     opts = {},
   },
-  -- Inline image rendering (Kitty graphics protocol — works with Ghostty and Kitty)
+  -- Inline image rendering. Kitty graphics protocol outside Zellij; sixel
+  -- inside Zellij (awaiting Ghostty 1.4+ sixel support for full rendering).
   {
     "3rd/image.nvim",
     lazy = false,
     opts = {
-      backend = "kitty",
+      backend = vim.env.ZELLIJ ~= nil and "sixel" or "kitty",
       integrations = {},
       max_width_window_percentage = 50,
       window_overlap_clear_enabled = true,

@@ -25,7 +25,13 @@ if [ -z "$input" ] || [ -z "$output" ]; then
     exit 1
 fi
 
-args=(-i "$input" -o "$output")
+case "$output" in
+    *.png) format="png" ;;
+    *.svg) format="svg" ;;
+    *)     format="png" ;;
+esac
+
+args=(-i "$input" -o "$output" -e "$format")
 [ -n "$width" ]  && args+=(--width "$width")
 [ -n "$height" ] && args+=(--height "$height")
 
