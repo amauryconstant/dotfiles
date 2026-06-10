@@ -20,6 +20,7 @@
 | `wallpaper-cycle.{service,timer}` | timer | Random wallpaper every 30min | after_004 |
 | `system-health-check.{service,timer}` | timer | System health monitoring every 15min | after_004 |
 | `home-backup.{service,timer}` | timer | Restic home backup daily at 9am | after_010 |
+| `session-autosave.{service,timer}` | timer | Hyprland session auto-save every 15min → `autosave` slot | after_004 |
 | `hyprdynamicmonitors.service` | service | Monitor profile manager daemon | before_008 |
 | `hyprdynamicmonitors-prepare.service` | service | Pre-Hyprland monitor prep | before_008 |
 | `hyprwhenthen.service` | service | Event-driven window automation | before_008 |
@@ -137,6 +138,18 @@ systemctl --user status home-backup.timer
 systemctl --user start home-backup.service   # Manual run
 journalctl --user -u home-backup.service -n 20
 ```
+
+**session-autosave** (every 15min):
+```bash
+systemctl --user status session-autosave.timer
+systemctl --user start session-autosave.service   # Manual run
+hypr-session list                                  # See "autosave" slot
+```
+- Runs `session-save autosave` with `DOTFILES_SESSION_QUIET=1` (no notifications).
+- Writes only to the `autosave` slot — never clobbers manual `default`/named slots.
+- Requires `HYPRLAND_INSTANCE_SIGNATURE` in the systemd user env (imported via
+  `dbus-update-activation-environment` in `hypr/conf/autostart.conf`) so `hyprctl`
+  can reach the compositor; the service gates on it via `ExecCondition`.
 
 ## Autostart Drop-ins
 

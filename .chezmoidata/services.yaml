@@ -38,3 +38,6 @@ services:
     - name: home-backup
       enabled: true
       start: false    # enable only — needs restic repo init first
+    - name: session-autosave
+      enabled: true
+      start: true

@@ -22,6 +22,18 @@ log_info() {
     logger -t hypr-session "[INFO] $*"
 }
 
+# Quiet mode: suppress non-critical desktop notifications (set by autosave timer).
+# Critical-error notifications are intentionally left unconditional. Logger output
+# (via log_info/log_debug) is always emitted regardless of quiet mode.
+QUIET="${DOTFILES_SESSION_QUIET:-0}"
+
+notify_user() {
+    [ "$QUIET" = "1" ] && return 0
+    _msg="$1"
+    shift
+    timeout 1 notify-send "Session Manager" "$_msg" "$@" 2>/dev/null || true
+}
+
 # Validate slot name (alphanumeric, dash, underscore only)
 if ! echo "$SLOT" | grep -qE '^[a-zA-Z0-9_-]+$'; then
     timeout 1 notify-send "Session Manager" "❌ Invalid slot name: $SLOT" -u critical -t 3000 2>/dev/null || true
@@ -47,13 +59,14 @@ load_browsers() {
     if [ -f "$BROWSERS_FILE" ]; then
         grep -v '^#' "$BROWSERS_FILE" | grep -v '^$'
     else
-        printf "firefox\nchromium\nbrave\nvivaldi\nopera\n"
+        printf "firefox\nfirefox-esr\nchromium\nbrave\nvivaldi\nopera\n"
     fi
 }
 
 # Map window class to proper launch command
 get_launch_command() {
     class="$1"
+    pid="${2:-}"
 
     # Case-insensitive class matching
     class_lower=$(echo "$class" | tr '[:upper:]' '[:lower:]')
@@ -138,6 +151,19 @@ get_launch_command() {
                     return
                 fi
             fi
+            # Fallback: derive the real command from /proc/<pid>/cmdline (argv[0]).
+            # More reliable than guessing from the window class for arbitrary apps.
+            # Only used when it resolves to a command actually present on PATH.
+            if [ -n "$pid" ] && [ -r "/proc/$pid/cmdline" ]; then
+                proc_cmd=$(tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | head -n 1)
+                if [ -n "$proc_cmd" ]; then
+                    proc_base=$(basename "$proc_cmd" 2>/dev/null || echo "")
+                    if [ -n "$proc_base" ] && command -v "$proc_base" >/dev/null 2>&1; then
+                        echo "$proc_base"
+                        return
+                    fi
+                fi
+            fi
             echo "$class_lower"
             ;;
     esac
@@ -180,7 +206,7 @@ wait_for_hyprland || exit 1
 
 # Main save logic
 save_session() {
-    timeout 1 notify-send "Session Manager" "Saving Hyprland session to slot: $SLOT..." -t 2000 2>/dev/null || true
+    notify_user "Saving Hyprland session to slot: $SLOT..." -t 2000
     log_info "session-save: started slot=$SLOT"
 
     # Phase 1: Capture session from Hyprland (source of truth)
@@ -264,9 +290,9 @@ save_session() {
     _flatpak_apps=$(flatpak list --app 2>/dev/null || echo "")
     temp_launch=$(mktemp)
 
-    echo "$windows_json" | jaq -r '.[] | "\(.address)|\(.class)"' | while IFS='|' read -r address class; do
-        launch_cmd=$(get_launch_command "$class")
-        log_debug "session-save: launch_cmd class=$class addr=$address cmd='$launch_cmd'"
+    echo "$windows_json" | jaq -r '.[] | "\(.address)|\(.class)|\(.pid)"' | while IFS='|' read -r address class pid; do
+        launch_cmd=$(get_launch_command "$class" "$pid")
+        log_debug "session-save: launch_cmd class=$class pid=$pid addr=$address cmd='$launch_cmd'"
         jaq -n --arg addr "$address" --arg cmd "$launch_cmd" \
             '{($addr): $cmd}' >> "$temp_launch"
     done
@@ -365,7 +391,7 @@ save_session() {
     ln -sf "$enrichment_file" "$SESSION_DIR/hyprland-session.json"
 
     window_count=$(echo "$filtered_session" | jaq '.clients | length')
-    timeout 1 notify-send "Session Manager" "✅ Saved $window_count windows to slot: $SLOT" -t 3000 2>/dev/null || true
+    notify_user "✅ Saved $window_count windows to slot: $SLOT" -t 3000
     log_info "session-save: completed windows=$window_count slot=$SLOT"
 }
 

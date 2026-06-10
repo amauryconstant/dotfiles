@@ -1,0 +1,24 @@
+[Unit]
+Description=Hyprland session auto-save (crash recovery, dedicated "autosave" slot)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+# Only run inside a live Hyprland Wayland session. The second condition also
+# ensures the Hyprland env (imported via dbus-update-activation-environment in
+# autostart.conf) is present, so hyprctl can reach the compositor.
+ExecCondition=/bin/sh -c 'systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY="'
+ExecCondition=/bin/sh -c 'systemctl --user show-environment | grep -q "^HYPRLAND_INSTANCE_SIGNATURE="'
+# Writes only to the "autosave" slot — never touches manual default/named slots.
+# Quiet mode suppresses desktop notifications; logger output is retained.
+ExecStart=%h/.local/lib/scripts/desktop/session-save autosave
+Restart=no
+TimeoutSec=60s
+Environment=DOTFILES_SESSION_QUIET=1
+Environment=PATH=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/var/lib/flatpak/exports/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=HOME=%h
+
+[Install]
+WantedBy=default.target

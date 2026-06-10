@@ -220,6 +220,36 @@ All use `notify-send` for user feedback.
 
 ---
 
+## Session Management
+
+**Scripts**: `session-save`, `session-restore`, `session-prompt`, `hypr-session` (CLI wrapper)
+**State**: `~/.local/state/dotfiles/hyprland-session-<slot>.json` (+ `hyprdrover` index)
+
+**Save** (`session-save`): captures `hyprctl clients`, enriches each window with a
+launch command, terminal CWD (`/proc/<pid>/cwd`), and monitor name. Launch command
+resolution order: explicit class map → Flatpak app-ID → `/proc/<pid>/cmdline` argv[0]
+(on PATH) → lowercased class. Browser classes are deduped to one window (the app
+restores the rest). The full `hyprctl` object is kept, so `initialClass`/`initialTitle`
+are persisted for matching.
+
+**Restore** (`session-restore`): launches saved apps, then places each window via the
+Hyprland `socket2` event stream (`nc -U`, openbsd-netcat) — correlating each
+`openwindow` event to a pending slot (exact `initialTitle` match, else class FIFO by
+workspace) and moving it immediately. `post_restore_workspace_fix()` is a **fallback**,
+run only for windows the event stream didn't place (or when socket2 is unavailable);
+it is pre-seeded with already-placed addresses so it never disturbs correct windows.
+
+**Env vars**: `DOTFILES_SESSION_QUIET=1` (suppress notifications — used by the
+autosave timer), `DOTFILES_SESSION_CORR_TIMEOUT` (socket2 correlation budget, default
+8s), `DOTFILES_SESSION_LAUNCH_DELAY`, `DOTFILES_SESSION_SETTLE_DELAY`.
+
+**Auto-save**: `session-autosave.timer` (15min) → `autosave` slot. See
+`systemd/user/CLAUDE.md`. Config: `~/.config/dotfiles/session-{denylist,browsers,single-instance-apps}.conf`.
+
+**Debug**: `journalctl --user -t hypr-session -f` (both scripts log richly via `logger`).
+
+---
+
 ## UI Pattern
 
 **All desktop scripts** use `notify-send` for user feedback (not gum-ui library).

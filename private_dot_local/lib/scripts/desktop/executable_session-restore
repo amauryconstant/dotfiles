@@ -111,7 +111,7 @@ load_single_instance_apps() {
         grep -v '^#' "$SINGLE_INSTANCE_FILE" | grep -v '^$'
     else
         # Default single-instance apps
-        printf "firefox\nchromium\nbrave\ncode\ncode-oss\nvscodium\n"
+        printf "firefox\nfirefox-esr\nchromium\nbrave\ncode\ncode-oss\nvscodium\n"
     fi
 }
 
@@ -206,11 +206,18 @@ launch_app() {
 # Uses title-based matching so Code windows land on the correct workspace.
 post_restore_workspace_fix() {
     local session_data="$1"
+    local preseed="${2:-}"
     local current_clients temp_matched temp_plan
 
     current_clients=$(hyprctl clients -j 2>/dev/null || echo "[]")
     temp_matched=$(mktemp)
     temp_plan=$(mktemp)
+
+    # Pre-seed with addresses already placed by the socket2 correlation pass so the
+    # heuristic neither reassigns those slots nor moves correctly-placed windows.
+    if [ -n "$preseed" ] && [ -f "$preseed" ]; then
+        cp "$preseed" "$temp_matched"
+    fi
 
     # Process every class present in the saved session
     echo "$session_data" | jaq -r '[.clients[].class] | unique | .[]' | while read -r class; do
@@ -345,6 +352,62 @@ post_restore_workspace_fix() {
     done
 }
 
+# Pick the next unmatched pending slot for a class. Prefers an exact initialTitle
+# match; otherwise the first unmatched slot of that class (workspace-ordered).
+# Echoes: idx<TAB>targetWs<TAB>targetMonitor  (empty if none available).
+pick_pending() {
+    _class="$1"
+    _title="$2"
+    _matched_list=$(tr '\n' ' ' < "$matched_idx_file" 2>/dev/null)
+    awk -F'\t' -v c="$_class" -v t="$_title" -v matched=" $_matched_list " '
+        {
+            idx=$1; cls=$2; ws=$3; mon=$4; it=$5
+            if (cls != c) next
+            if (index(matched, " " idx " ")) next
+            if (it == t && !done) { print idx "\t" ws "\t" mon; done=1; exit }
+            if (fb == "") fb = idx "\t" ws "\t" mon
+        }
+        END { if (!done && fb != "") print fb }
+    ' "$pending_file"
+}
+
+# Correlate one socket2 openwindow event to a pending slot and place the window
+# on its saved workspace/monitor immediately. Event format:
+#   openwindow>>ADDRESS,WORKSPACENAME,CLASS,TITLE   (ADDRESS lacks the 0x prefix;
+#   TITLE may contain commas, so it absorbs everything after the 3rd comma).
+correlate() {
+    _line="$1"
+    _data=${_line#openwindow>>}
+    _addr=${_data%%,*}; _rest=${_data#*,}
+    _ws=${_rest%%,*}; _rest=${_rest#*,}
+    _eclass=${_rest%%,*}; _etitle=${_rest#*,}
+    _faddr="0x$_addr"
+
+    # Skip addresses we've already placed.
+    grep -qxF "$_faddr" "$matched_addr_file" 2>/dev/null && return
+
+    _pick=$(pick_pending "$_eclass" "$_etitle")
+    if [ -z "$_pick" ]; then
+        log_debug "session-restore: socket2 no pending slot for class=$_eclass title=\"$_etitle\" addr=$_faddr"
+        return
+    fi
+
+    _idx=$(printf '%s' "$_pick" | cut -f1)
+    _tws=$(printf '%s' "$_pick" | cut -f2)
+    _tmon=$(printf '%s' "$_pick" | cut -f3)
+
+    echo "$_idx" >> "$matched_idx_file"
+    echo "$_faddr" >> "$matched_addr_file"
+
+    if [ "$_ws" != "$_tws" ]; then
+        hyprctl dispatch movetoworkspacesilent "$_tws,address:$_faddr" >/dev/null 2>&1
+    fi
+    if [ -n "$_tmon" ]; then
+        hyprctl dispatch moveworkspacetomonitor "$_tws $_tmon" >/dev/null 2>&1
+    fi
+    log_debug "session-restore: socket2 placed class=$_eclass addr=$_faddr title=\"$_etitle\" ws=$_ws→$_tws monitor=$_tmon"
+}
+
 # Main restore logic
 restore_session() {
     timeout 1 notify-send "Session Manager" "Restoring session from slot: $SLOT\n(${SETTLE_DELAY}s settle time)" -t 2000 2>/dev/null || true
@@ -372,7 +435,40 @@ restore_session() {
     # Build launch list with smart grouping
     temp_apps=$(mktemp)
     temp_seen=$(mktemp)
-    trap 'rm -f "$temp_apps" "$temp_seen"' EXIT
+
+    # Event-driven placement state (socket2 correlation)
+    pending_file=$(mktemp)        # expected windows: idx<TAB>class<TAB>ws<TAB>monitor<TAB>initialTitle
+    matched_idx_file=$(mktemp)    # pending indices already satisfied
+    matched_addr_file=$(mktemp)   # window addresses already placed (0x-prefixed)
+    event_file=$(mktemp)          # raw socket2 event stream
+
+    # Start a Hyprland socket2 reader BEFORE launching so we can place each window as
+    # it opens, in the real order windows appear (deterministic), instead of relying
+    # on the post-hoc heuristic. nc -U is provided by openbsd-netcat. If the socket or
+    # nc is unavailable we fall back to post_restore_workspace_fix() — no regression.
+    reader_pid=""
+    socket2="${XDG_RUNTIME_DIR}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}/.socket2.sock"
+    if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ] && [ -S "$socket2" ] && command -v nc >/dev/null 2>&1; then
+        nc -U "$socket2" >> "$event_file" 2>/dev/null &
+        reader_pid=$!
+        log_debug "session-restore: socket2 reader started pid=$reader_pid sock=$socket2"
+    else
+        log_debug "session-restore: socket2 unavailable (sock=$socket2) — using post-fix fallback only"
+    fi
+
+    trap 'rm -f "$temp_apps" "$temp_seen" "$pending_file" "$matched_idx_file" "$matched_addr_file" "$event_file"; [ -n "$reader_pid" ] && kill "$reader_pid" 2>/dev/null' EXIT
+
+    # Build the pending-window map: every window we expect to reappear (NOT deduped —
+    # a single-instance app that self-restores several windows occupies several slots),
+    # ordered by class then workspace so FIFO fallback matching is deterministic.
+    echo "$session_data" | jaq -r '
+        [.clients[] | select(.launchCommand != null)] |
+        sort_by(.class, .workspace.id) |
+        to_entries[] |
+        [(.key | tostring), .value.class, (.value.workspace.id | tostring), (.value.monitor // ""), (.value.initialTitle // .value.title // "")] |
+        join("\t")
+    ' > "$pending_file"
+    log_debug "session-restore: pending windows=$(wc -l < "$pending_file")"
 
     echo "$session_data" | jaq -r '
         [.clients[] | select(.launchCommand != null)] |
@@ -408,7 +504,6 @@ restore_session() {
     initial_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
     log_debug "session-restore: initial windows=$initial_count"
     expected_count=0
-    launch_success=0
 
     # Launch each app
     while IFS='|' read -r launch_cmd workspace_id cwd monitor_name; do
@@ -468,11 +563,39 @@ restore_session() {
 
     rm -f "$temp_apps" "$temp_seen"
 
-    # Wait for windows to appear and settle
-    log_debug "session-restore: waiting ${SETTLE_DELAY}s for settle"
-    sleep "$SETTLE_DELAY"
+    # Event-driven placement: drain socket2 openwindow events, placing each window on
+    # its saved workspace/monitor as it appears. Bounded so a failed launch can't hang
+    # restore. Anything still unmatched afterwards goes through the heuristic fallback.
+    if [ -n "$reader_pid" ]; then
+        corr_timeout="${DOTFILES_SESSION_CORR_TIMEOUT:-8}"
+        corr_iters=$((corr_timeout * 10 / 3))   # ~corr_timeout seconds in 0.3s steps
+        event_cursor=0
+        elapsed=0
+        pending_total=$(wc -l < "$pending_file" 2>/dev/null || echo 0)
+        log_debug "session-restore: socket2 correlation start pending=$pending_total timeout=${corr_timeout}s"
+        while [ "$elapsed" -lt "$corr_iters" ]; do
+            total=$(wc -l < "$event_file" 2>/dev/null || echo 0)
+            while [ "$event_cursor" -lt "$total" ]; do
+                event_cursor=$((event_cursor + 1))
+                line=$(sed -n "${event_cursor}p" "$event_file")
+                case "$line" in
+                    'openwindow>>'*) correlate "$line" ;;
+                esac
+            done
+            matched_total=$(wc -l < "$matched_idx_file" 2>/dev/null || echo 0)
+            [ "$matched_total" -ge "$pending_total" ] && break
+            sleep 0.3
+            elapsed=$((elapsed + 1))
+        done
+        matched_total=$(wc -l < "$matched_idx_file" 2>/dev/null || echo 0)
+        log_debug "session-restore: socket2 correlation done matched=$matched_total/$pending_total (waited ~$((elapsed * 3 / 10))s)"
+    else
+        # No event stream: original behaviour — wait a fixed settle period.
+        log_debug "session-restore: waiting ${SETTLE_DELAY}s for settle (no socket2)"
+        sleep "$SETTLE_DELAY"
+    fi
 
-    # Snapshot all clients before post-fix to see exact workspace placement
+    # Snapshot all clients before fallback to see exact workspace placement
     log_debug "session-restore: client snapshot before post-fix (sorted by ws):"
     hyprctl clients -j 2>/dev/null | jaq -r \
         'sort_by(.workspace.id) | .[] |
@@ -481,8 +604,18 @@ restore_session() {
         log_debug "session-restore:$line"
     done
 
-    # Fix workspace placement for apps that ignore dispatch rules (e.g. VS Code, Electron apps)
-    post_restore_workspace_fix "$session_data"
+    # Heuristic fallback for any window the event stream did not place (apps that
+    # ignore dispatch rules, or when socket2 was unavailable). Pre-seeded with the
+    # addresses already placed so it won't disturb correctly-placed windows. Skipped
+    # entirely when socket2 placed everything — the common case.
+    matched_total=$(wc -l < "$matched_idx_file" 2>/dev/null || echo 0)
+    pending_total=$(wc -l < "$pending_file" 2>/dev/null || echo 0)
+    if [ -z "$reader_pid" ] || [ "$matched_total" -lt "$pending_total" ]; then
+        log_debug "session-restore: running post-fix fallback (matched=$matched_total/$pending_total)"
+        post_restore_workspace_fix "$session_data" "$matched_addr_file"
+    else
+        log_debug "session-restore: all windows placed via socket2 — skipping post-fix"
+    fi
 
     # Count windows after restore and calculate restored count
     final_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "0")
