@@ -75,6 +75,15 @@ _install_package() {
         ui_step "$ICON_PACKAGE Installing $name${version:+ ($constraint_type $version)}"
     fi
 
+    # Supply-chain tripwire: block changed/unapproved AUR PKGBUILDs before building
+    if declare -F _tripwire_check >/dev/null 2>&1 && _pkg_is_aur "$name"; then
+        if ! _tripwire_check "$name"; then
+            ui_error "'$name' held by supply-chain tripwire (PKGBUILD changed or unapproved)"
+            ui_info "Review + approve: package-manager approve $name"
+            return 1
+        fi
+    fi
+
     # Execute installation
     local -a install_cmd=(paru -S --noconfirm --needed)
 

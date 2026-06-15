@@ -37,6 +37,37 @@ _install_packages_batch() {
         fi
     done
 
+    # Supply-chain tripwire: hold AUR packages with changed/unapproved PKGBUILDs.
+    # Official packages in the same batch proceed normally.
+    if declare -F _tripwire_scan >/dev/null 2>&1; then
+        local blocked
+        blocked=$(_tripwire_scan "${pkg_names[@]}") || true
+        if [[ -n "$blocked" ]]; then
+            ui_warning "Tripwire held AUR packages (review: package-manager approve <pkg>):"
+            local -A is_blocked=()
+            while IFS= read -r b; do
+                [[ -n "$b" ]] && is_blocked["$b"]=1 && ui_warning "  • $b"
+            done <<< "$blocked"
+
+            local -a kept_names=() kept_specs=() kept_modules=()
+            for idx in "${!pkg_names[@]}"; do
+                if [[ -z "${is_blocked[${pkg_names[$idx]}]:-}" ]]; then
+                    kept_names+=("${pkg_names[$idx]}")
+                    kept_specs+=("${pkg_specs[$idx]}")
+                    kept_modules+=("${pkg_modules[$idx]}")
+                fi
+            done
+            pkg_names=("${kept_names[@]}")
+            pkg_specs=("${kept_specs[@]}")
+            pkg_modules=("${kept_modules[@]}")
+
+            if [[ ${#pkg_specs[@]} -eq 0 ]]; then
+                ui_warning "All packages held by tripwire — nothing to install"
+                return 1
+            fi
+        fi
+    fi
+
     ui_step "$ICON_PACKAGE Batch $batch_type: ${#pkg_specs[@]} packages"
 
     # Try batch install

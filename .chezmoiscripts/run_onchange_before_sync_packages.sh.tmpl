@@ -128,6 +128,62 @@ gpg --recv-keys E79F5BAF8CD51A806AA27DBB7DA2709247D75BC6 2>/dev/null || \
 {{ end }}
 
 # ============================================================
+# Supply-chain tripwire: verify AUR PKGBUILDs against approved hashes
+# ============================================================
+# Self-contained (no lib/scripts dependency — this script runs before file
+# application). Shares the on-disk hash DB with 'package-manager approve'.
+# Trust model: skip packages in any pacman sync repo (official + chaotic-aur
+# signed binaries); gate only true AUR packages whose PKGBUILD executes locally.
+# First install / no DB entry = trust-on-first-use (seed via 'approve --seed').
+
+{{ includeTemplate "log_step" "Checking AUR PKGBUILDs against approved hashes..." }}
+
+TRIPWIRE_DB="$HOME/.local/state/package-manager/pkgbuild-hashes.yaml"
+TRIPWIRE_BLOCKED=""
+EMPTY_HASH=$(printf '' | sha256sum | awk '{print $1}')
+
+if command -v paru >/dev/null 2>&1; then
+    for pkg in $ARCH_PACKAGES; do
+        # Skip packages available in a pacman sync repo (official or chaotic-aur)
+        if pacman -Si "$pkg" >/dev/null 2>&1; then
+            continue
+        fi
+
+        # AUR package: fetch current PKGBUILD and hash it
+        current_hash=$(timeout 30 paru -Gp "$pkg" 2>/dev/null | sha256sum | awk '{print $1}') || true
+
+        # Empty/failed fetch: skip (paru -S fetches the same source at build time)
+        if [ -z "$current_hash" ] || [ "$current_hash" = "$EMPTY_HASH" ]; then
+            continue
+        fi
+
+        approved_hash=""
+        if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
+            approved_hash=$(NAME="$pkg" yq eval '.approved[env(NAME)].hash // ""' "$TRIPWIRE_DB" 2>/dev/null) || true
+        fi
+
+        # No approved hash yet → trust-on-first-use
+        if [ -z "$approved_hash" ] || [ "$approved_hash" = "null" ]; then
+            continue
+        fi
+
+        if [ "$current_hash" != "$approved_hash" ]; then
+            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
+        fi
+    done
+fi
+
+if [ -n "$TRIPWIRE_BLOCKED" ]; then
+    {{ includeTemplate "log_error" "AUR PKGBUILD changed since approval — install blocked:" }}
+    for b in $TRIPWIRE_BLOCKED; do
+        {{ includeTemplate "log_error" "  • $b" }}
+    done
+    {{ includeTemplate "log_warning" "Review and approve, then re-apply:" }}
+    {{ includeTemplate "log_warning" "  package-manager approve$TRIPWIRE_BLOCKED" }}
+    exit 1
+fi
+
+# ============================================================
 # Install Arch/AUR packages
 # ============================================================
 

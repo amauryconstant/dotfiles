@@ -6,6 +6,14 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
+**Status (2026-06-15)**: PKGBUILD-diff **tripwire MVP implemented** — runtime tier detection +
+hash gate wired into both pipelines (`package-manager` CLI: update/sync/install, and the
+self-contained chezmoi sync script) + `package-manager approve [--seed|--all|<pkg>]`. This closes
+**P1.2** and supplies the review gate that **P0.3** (and the AUR portion of P0.1/P0.2) needed,
+via *detection* rather than mandatory interactive review — so topgrade stays unattended in steady
+state. Module: `operations/pkgbuild-tripwire.sh`; docs: `package-manager/CLAUDE.md`. Remaining items
+below are still open.
+
 **Core problem**: the package pipeline is fully unattended (`--noconfirm` everywhere), so any
 hijacked AUR/`-git`/Chaotic-AUR package builds and runs arbitrary code — as the build user, with
 sudo available — on the next `sync`/`update`, with no diff shown and no detection layer. Goal:
@@ -86,10 +94,13 @@ slip through silently.
 `~/.local/state/` (hash DB)
 **Effort**: Medium–High
 
-- [ ] Fetch/inspect PKGBUILD before build (paru exposes the build dir; or `paru -Gp`)
-- [ ] Maintain a per-package hash DB (PKGBUILD + `.install` + sources block)
-- [ ] On change: block + show diff + require explicit ack before building
-- [ ] Seed the DB from current known-good state on first run
+- [x] Fetch/inspect PKGBUILD before build (`paru -Gp <name>`)
+- [x] Maintain a per-package hash DB (`~/.local/state/package-manager/pkgbuild-hashes.yaml`)
+      — **PKGBUILD only**; `.install` + sources block still TODO (see limits below)
+- [x] On change: block + show diff + require explicit ack (`package-manager approve`) before building
+- [x] Seed the DB from current known-good state (`package-manager approve --seed`)
+- [ ] Hash `.install` hook + sources block too (MVP hashes PKGBUILD only)
+- [ ] Fail-closed option for `paru -Gp` fetch failures (MVP fails open)
 
 ### P1.3 — Managed `pacman.conf` with explicit `SigLevel`
 **What**: No `pacman.conf` template in repo → signature policy is host-default, not

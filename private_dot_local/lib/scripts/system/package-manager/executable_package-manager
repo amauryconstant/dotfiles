@@ -75,6 +75,7 @@ mkdir -p "$STATE_DIR"
 . "$SCRIPT_DIR/operations/lockfile-manager.sh"
 . "$SCRIPT_DIR/operations/sync-lock.sh"
 . "$SCRIPT_DIR/operations/sync-orchestrator.sh"
+. "$SCRIPT_DIR/operations/pkgbuild-tripwire.sh"
 
 # Source package modules
 . "$SCRIPT_DIR/packages/manager-interface.sh"
@@ -97,6 +98,7 @@ mkdir -p "$STATE_DIR"
 . "$SCRIPT_DIR/commands/cmd-validate.sh"
 . "$SCRIPT_DIR/commands/cmd-find.sh"
 . "$SCRIPT_DIR/commands/cmd-search.sh"
+. "$SCRIPT_DIR/commands/cmd-approve.sh"
 
 # =============================================================================
 # MODULE LOADING COMPLETE
@@ -204,11 +206,17 @@ VALIDATION
     validate --check-packages        Check package availability
     validate --check-lockfile        Validate lockfile
 
+SUPPLY-CHAIN TRIPWIRE
+    approve <package>...             Review + approve changed/new AUR PKGBUILD(s)
+    approve --all                    Review all currently-blocked AUR packages
+    approve --seed                   Trust current PKGBUILDs of installed AUR pkgs
+
 EXAMPLES
     package-manager module enable shell desktop
     package-manager pin firefox 120.0
     package-manager sync
     package-manager merge --dry-run
+    package-manager approve --seed
 
 FILES
     ~/.local/share/chezmoi/.chezmoidata/packages.yaml
@@ -267,6 +275,18 @@ VALIDATION
     status                           Show package status with lockfile analysis
     validate [--check-packages]      Validate packages.yaml structure
     validate --check-lockfile        Validate lockfile (staleness, syntax)
+
+SUPPLY-CHAIN TRIPWIRE
+    approve <package>...             Review + approve changed/new AUR PKGBUILD(s)
+    approve --all                    Review every currently-blocked AUR package
+    approve --seed                   Record (trust) current PKGBUILDs of all
+                                     installed AUR packages, no prompt — run once
+                                     after first deploy to bootstrap the hash DB
+
+    The tripwire gates AUR builds (sync/install/update): an AUR package whose
+    PKGBUILD changed since approval (or is new) is HELD and must be reviewed via
+    'approve'. Official + chaotic-aur (signed binary repos) are never gated.
+    DB: ~/.local/state/package-manager/pkgbuild-hashes.yaml
 
 VERSION CONSTRAINT SYNTAX
     Exact version:     { name: "firefox", version: "120.0" }
@@ -571,6 +591,9 @@ package-manager() {
             ;;
         "search")
             cmd_search "$@"
+            ;;
+        "approve")
+            cmd_approve "$@"
             ;;
         "health")
             check_health

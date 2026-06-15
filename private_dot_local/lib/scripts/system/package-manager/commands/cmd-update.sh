@@ -53,10 +53,32 @@ cmd_update() {
         return 1
     fi
 
-    # Direct call (paru needs TTY for sudo prompts and progress display)
-    if ! $aur_helper -Syu --noconfirm; then
-        ui_error "Arch/AUR update failed"
-        return 1
+    # Supply-chain tripwire: scan AUR packages with pending updates for PKGBUILD changes
+    local -a aur_updates=()
+    mapfile -t aur_updates < <(paru -Qua 2>/dev/null | awk '{print $1}')
+    local blocked=""
+    if [[ ${#aur_updates[@]} -gt 0 ]]; then
+        blocked=$(_tripwire_scan "${aur_updates[@]}") || true
+    fi
+
+    if [[ -n "$blocked" ]]; then
+        ui_warning "Tripwire held AUR upgrades (PKGBUILD changed or unapproved):"
+        while IFS= read -r b; do
+            [[ -n "$b" ]] && ui_warning "  • $b"
+        done <<< "$blocked"
+        ui_info "Review + approve: package-manager approve $(echo "$blocked" | tr '\n' ' ')"
+        ui_step "Upgrading official repositories only (AUR held)..."
+        if ! sudo pacman -Syu --noconfirm; then
+            ui_error "Official update failed"
+            return 1
+        fi
+        ui_warning "AUR upgrades skipped — approve held packages, then re-run 'package-manager update'"
+    else
+        # Direct call (paru needs TTY for sudo prompts and progress display)
+        if ! $aur_helper -Syu --noconfirm; then
+            ui_error "Arch/AUR update failed"
+            return 1
+        fi
     fi
     ui_success "Arch/AUR packages updated"
     ui_spacer

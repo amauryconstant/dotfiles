@@ -34,6 +34,11 @@ package-manager lock              # Generate lockfile
 package-manager status
 package-manager validate
 package-manager outdated
+
+# Supply-chain tripwire (AUR PKGBUILD gate)
+package-manager approve --seed     # Bootstrap hash DB (run once after deploy)
+package-manager approve <pkg>...   # Review + approve changed/new AUR PKGBUILD
+package-manager approve --all      # Review every currently-blocked AUR package
 ```
 
 ---
@@ -56,14 +61,15 @@ package-manager/ (31 files)
 │   ├── sync-flatpak.sh      # Flatpak sync (user-scope only)
 │   ├── sync-lock.sh         # Flock-based concurrent sync protection
 │   ├── backup-manager.sh    # Timeshift/Snapper integration
-│   └── lockfile-manager.sh  # Lockfile I/O, staleness detection
+│   ├── lockfile-manager.sh  # Lockfile I/O, staleness detection
+│   └── pkgbuild-tripwire.sh # AUR PKGBUILD hash gate (tier detect + scan + record)
 ├── packages/           # Logic
 │   ├── manager-interface.sh # Package manager abstraction (pacman/flatpak)
 │   ├── version-manager.sh   # Constraint parsing + vercmp comparison
 │   ├── batch-operations.sh  # Batch installs (5-10x faster)
 │   ├── package-operations.sh # Individual ops + state tracking
 │   └── flatpak-manager.sh   # Flatpak operations (user-scope)
-└── commands/           # CLI (13 files: cmd-sync, cmd-lock, cmd-status, ...)
+└── commands/           # CLI (14 files: cmd-sync, cmd-lock, cmd-status, cmd-approve, ...)
 ```
 
 **Dependency rule**: Commands → Operations → Packages → Core (never reverse)
@@ -190,6 +196,39 @@ packages:
 - `~/.local/state/package-manager/locked-versions.yaml` — lockfile
 - `~/.local/state/package-manager/constraint-cache.yaml` — 1h TTL
 - `~/.cache/package-manager/aur-packages/` — AUR validation cache, 24h TTL
+- `~/.local/state/package-manager/pkgbuild-hashes.yaml` — tripwire approved-hash DB
+- `~/.local/state/package-manager/pkgbuilds/<name>.PKGBUILD` — tripwire snapshots (for diffs)
+
+---
+
+## Supply-Chain Tripwire
+
+**Why**: pipeline was fully unattended (`--noconfirm`) — a hijacked AUR/`-git` PKGBUILD would build
++ execute arbitrary code (build user, sudo available) on next sync/update with no review. See
+`_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (Atomic Arch / CHAOS RAT). Roadmap:
+`_plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md`.
+
+**Mechanism**: hash gate between `packages.yaml` and the AUR build.
+- **Tier detection** (`_pkg_is_aur`): AUR-built iff NOT in any pacman sync repo (`pacman -Si` fails)
+  but resolvable via `paru -Si --aur`. Official + **chaotic-aur** (signed binary sync repos) are
+  never gated — only true AUR (PKGBUILD runs locally).
+- **Hash**: `paru -Gp <name> | sha256sum` (PKGBUILD, no build). Compared to approved hash in
+  `pkgbuild-hashes.yaml`. Unchanged → builds unattended (`--noconfirm` kept). New/changed → **held**,
+  diff shown, requires `package-manager approve`.
+- **Module**: `operations/pkgbuild-tripwire.sh` (`_pkg_is_aur`, `_tripwire_check`, `_tripwire_scan`,
+  `_tripwire_record`, `_tripwire_seed`). Command: `commands/cmd-approve.sh`.
+
+**Wired into** (both pipelines): `cmd-update.sh` Phase 2 (scans `paru -Qua`; if any held → official
+`pacman -Syu` only, AUR held); `batch-operations.sh` + `package-operations.sh` (drop held AUR from
+the build); and the self-contained `run_onchange_before_sync_packages.sh.tmpl` (inline gate sharing
+the same DB — it cannot source lib/, runs before file application).
+
+**Bootstrap**: empty DB = trust-on-first-use (first install never blocks). Run
+`package-manager approve --seed` **once after deploy** to record current PKGBUILDs of installed AUR
+packages (`pacman -Qmq`, excl. `*-debug`).
+
+**Known limits (MVP)**: `.install` hooks (run as root) not hashed; TOCTOU (paru -S re-fetches);
+transient `paru -Gp` failure fails **open** (paru -S would fetch same source). Tracked in roadmap.
 
 ---
 
