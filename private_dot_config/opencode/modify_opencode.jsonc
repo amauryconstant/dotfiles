@@ -5,34 +5,26 @@
 {{- $_ := set $config "$schema" "https://opencode.ai/config.json" -}}
 
 {{- /* Provider Configuration */ -}}
+{{- $minimaxKey := joinPath .chezmoi.sourceDir "private_dot_keys" "encrypted_private_minimax-key.txt.age" | include | decrypt | trim -}}
+{{- $minimaxM3Cost := dict "input" 3e-7 "output" 1.2e-6 "cache_read" 6e-8 -}}
+{{- $minimaxM3Limit := dict "context" 512000 "output" 64000 -}}
+{{- $minimaxM3Modalities := dict "input" (list "text" "image") "output" (list "text") -}}
+{{- $minimaxM3 := dict "name" "MiniMax-M3 (cache fixed)" "limit" $minimaxM3Limit "reasoning" true "tool_call" true "options" (dict "reasoning_split" true) "cost" $minimaxM3Cost "modalities" $minimaxM3Modalities -}}
 {{- $provider := dict -}}
 {{- $_ := set $provider "zhipuai" (dict "api" "https://api.z.ai/api/coding/paas/v4") -}}
-{{- $_ := set $config "provider" $provider -}}
+{{- $_ = set $provider "minimax" (dict "npm" "@ai-sdk/openai-compatible" "name" "MiniMax" "options" (dict "baseURL" "https://api.minimax.io/v1" "apiKey" $minimaxKey) "models" (dict "MiniMax-M3" $minimaxM3)) -}}
+{{- $_ = set $config "provider" $provider -}}
 
 {{- /* MCP Servers */ -}}
 {{- $mcp := dict -}}
-{{- $_ := set $mcp "context7" (dict
-  "type" "local"
-  "command" (list "bunx" "-y" "@upstash/context7-mcp")
-) -}}
-{{- $_ := set $mcp "sequential-thinking" (dict
-  "type" "local"
-  "command" (list "bunx" "-y" "@modelcontextprotocol/server-sequential-thinking")
-) -}}
 {{- $_ := set $mcp "fetch" (dict
   "type" "local"
   "command" (list "docker" "run" "-i" "--rm" "mcp/fetch")
-) -}}
-{{- $_ := set $mcp "mermaid" (dict
-  "type" "local"
-  "command" (list "bunx" "-y" "mcp-mermaid")
 ) -}}
 {{- $_ := set $config "mcp" $mcp -}}
 
 {{- /* Tool Toggles */ -}}
 {{- $tools := dict -}}
-{{- $_ := set $tools "context7" true -}}
-{{- $_ := set $tools "sequential-thinking" true -}}
 {{- $_ := set $tools "fetch" true -}}
 {{- $_ := set $config "tools" $tools -}}
 
