@@ -6,13 +6,18 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
-**Status (2026-06-15)**: PKGBUILD-diff **tripwire MVP implemented** — runtime tier detection +
-hash gate wired into both pipelines (`package-manager` CLI: update/sync/install, and the
-self-contained chezmoi sync script) + `package-manager approve [--seed|--all|<pkg>]`. This closes
-**P1.2** and supplies the review gate that **P0.3** (and the AUR portion of P0.1/P0.2) needed,
-via *detection* rather than mandatory interactive review — so topgrade stays unattended in steady
-state. Module: `operations/pkgbuild-tripwire.sh`; docs: `package-manager/CLAUDE.md`. Remaining items
-below are still open.
+**Status (2026-06-15)**: PKGBUILD-diff **tripwire MVP implemented & committed** (`af3d47a`) —
+runtime tier detection + hash gate wired into both pipelines (`package-manager` CLI:
+update/sync/install, and the self-contained chezmoi sync script) +
+`package-manager approve [--seed|--all|<pkg>]`. Deployed; DB seeded with 17 installed AUR packages.
+This closes **P1.2** and supplies the review gate that **P0.3** (and the AUR portion of P0.1/P0.2)
+needed, via *detection* rather than mandatory interactive review — so topgrade stays unattended in
+steady state. Module: `operations/pkgbuild-tripwire.sh`; docs: `package-manager/CLAUDE.md`.
+
+Also committed (`cf170a9`): `~/.config/pacman/makepkg.conf` now sets `OPTIONS+=('!debug')` to
+suppress `*-debug` split packages from AUR builds — removes the `-debug` seed/scan noise the
+tripwire had to skip (`pacman -Qmq` no longer accrues new `-debug` foreign packages). Build-hygiene
+side-effect; see P2.1 note below. Remaining items below are still open.
 
 **Core problem**: the package pipeline is fully unattended (`--noconfirm` everywhere), so any
 hijacked AUR/`-git`/Chaotic-AUR package builds and runs arbitrary code — as the build user, with
@@ -128,6 +133,9 @@ available in official repos.
 - [ ] Re-check each AUR package against official repos (`pacman -Si`); migrate where possible
 - [ ] Drop non-essential AUR packages
 - [ ] Flag remaining Chaotic-AUR (third-party prebuilt binary trust) for extra scrutiny
+- [x] Disable `*-debug` split packages from AUR builds (`makepkg.conf` `OPTIONS+=('!debug')`,
+      commit `cf170a9`) — fewer build artifacts; keeps `pacman -Qmq` (tripwire seed/scan source)
+      free of non-independent `-debug` entries
 
 ### P2.2 — Flatpak hygiene
 **What**: Sandbox is the only Flatpak defense layer; recent CVEs (≤ 1.16.4) show it's not absolute.
