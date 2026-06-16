@@ -6,7 +6,8 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
-**Status (2026-06-16)**: Second increment landed — **P1.2 gaps closed, P1.1 done, P1.3 done**.
+**Status (2026-06-16)**: Second increment landed (`38d78fa` P1.2 tripwire, `8bc2248` P1.3 SigLevel,
+`ace8ee2` docs/findings) — **P1.2 gaps closed, P1.1 done, P1.3 done**.
 - **P1.2**: tripwire now hashes **PKGBUILD + `.install` hooks** (cloned via `paru -G`; `.install`
   runs as root via `pacman -U`), is **fail-CLOSED** (failed fetch blocks), and gates the previously
   unprotected **AUR downgrade** path (`sync-pacman.sh`). Handles split packages (pkgbase-named clone
@@ -125,7 +126,8 @@ slip through silently.
 - [x] On change: block + show diff + require explicit ack (`package-manager approve`) before building
 - [x] Seed the DB from current known-good state (`package-manager approve --seed`)
 - [x] Hash `.install` hook too (clone via `paru -G`; blob = PKGBUILD + sorted `*.install`).
-      Upstream `source=()` block stays out of scope (TOCTOU; `-git` covered by P1.1 pinning)
+      Upstream `source=()` block stays out of scope (TOCTOU; the two `-git` packages are chaotic-aur
+      signed prebuilt binaries — not local builds — so they aren't tripwire blind spots, see P1.1)
 - [x] Fail-closed: failed clone/fetch now **blocks** the build everywhere (lib + inline)
 - [x] Gate the AUR **downgrade** path (`sync-pacman.sh` `_sync_handle_downgrade`) — was unprotected
 
@@ -156,8 +158,9 @@ available in official repos.
 
 - [x] Re-check each AUR package against official repos (`pacman -Si`) — audited all 17 foreign pkgs
       (2026-06-16): **none** available in official repos, so nothing to migrate
-- [x] Drop non-essential AUR packages — none: all are AUR-by-nature (samsung drivers, hypr* tooling,
-      voxtype/kanata input, etc.). `wayfreeze-git` removed from the list (pinned out-of-band, P1.1)
+- [x] Drop non-essential AUR packages — none dropped: all are AUR-by-nature (samsung drivers, hypr*
+      tooling, voxtype/kanata input, etc.). `wayfreeze-git` remains listed normally — it's a
+      chaotic-aur signed prebuilt binary (see P1.1), not a local build, so no pin/removal applies
 - [ ] Flag remaining Chaotic-AUR (third-party prebuilt binary trust) for extra scrutiny
 - [x] Disable `*-debug` split packages from AUR builds (`makepkg.conf` `OPTIONS+=('!debug')`,
       commit `cf170a9`) — fewer build artifacts; keeps `pacman -Qmq` (tripwire seed/scan source)
