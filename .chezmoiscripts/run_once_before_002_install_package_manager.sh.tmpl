@@ -29,6 +29,34 @@ else
     exit 1
 fi
 
+# ============================================================
+# Enforce an explicit, version-controlled package signature policy
+# ============================================================
+# pacman's SigLevel is otherwise host-default and untracked. Pin it so packages must
+# be signed (Required) while unsigned repo DBs stay allowed (DatabaseOptional — matches
+# Arch defaults; official DBs aren't signed). Scoped to the [options] section so any
+# per-repo SigLevel override is left untouched. Idempotent: detects + repairs drift
+# (e.g. a host weakened to SigLevel = Never).
+#
+# Deliberately NOT setting LocalFileSigLevel = Required or DatabaseRequired: the
+# Chaotic-AUR bootstrap below installs its keyring/mirrorlist via `pacman -U` before
+# its key is trusted, and official DBs are unsigned — stricter values break setup.
+
+{{ includeTemplate "log_step" "Enforcing explicit pacman SigLevel policy..." }}
+
+CURRENT_SIGLEVEL=$(awk '/^\[options\]/{f=1; next} /^\[/{f=0} f && /^[[:space:]]*SigLevel[[:space:]]*=/{sub(/^[[:space:]]*SigLevel[[:space:]]*=[[:space:]]*/,""); print; exit}' /etc/pacman.conf)
+
+if [ "$CURRENT_SIGLEVEL" = "Required DatabaseOptional" ]; then
+    {{ includeTemplate "log_info" "pacman SigLevel already pinned (Required DatabaseOptional)" }}
+elif [ -n "$CURRENT_SIGLEVEL" ]; then
+    {{ includeTemplate "log_warning" (printf "pacman [options] SigLevel is '%s' — repairing to policy" "$CURRENT_SIGLEVEL") }}
+    sudo sed -i -E '/^\[options\]/,/^\[[^]]/ s|^[[:space:]]*SigLevel[[:space:]]*=.*|SigLevel = Required DatabaseOptional|' /etc/pacman.conf
+    {{ includeTemplate "log_success" "pacman SigLevel repaired to Required DatabaseOptional" }}
+else
+    sudo sed -i -E '/^\[options\]/a SigLevel = Required DatabaseOptional' /etc/pacman.conf
+    {{ includeTemplate "log_success" "pacman SigLevel = Required DatabaseOptional added under [options]" }}
+fi
+
 # Enable multilib repository for 32-bit support
 # Handle three cases: already enabled, commented out, or missing entirely
 if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
