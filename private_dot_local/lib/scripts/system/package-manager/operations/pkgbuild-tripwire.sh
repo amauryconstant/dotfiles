@@ -11,12 +11,14 @@
 #
 # On-disk contract (shared with the self-contained chezmoi sync script):
 #   $STATE_DIR/pkgbuild-hashes.yaml   approved.<name>.hash (sha256) + approved.<name>.at (ISO ts)
-#   $STATE_DIR/pkgbuilds/<name>.PKGBUILD   last-approved PKGBUILD text (for diffing on change)
+#   $STATE_DIR/pkgbuilds/<name>.snapshot   last-approved build-file blob (for diffing on change)
 #
-# Known MVP limitations (tracked in _plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md):
-#   - `.install` hooks (run as root by pacman -U) are not captured by `paru -Gp`
-#   - TOCTOU: paru -S re-fetches at build time; AUR HEAD could change between check and build
-#   - Transient fetch failures fail OPEN (paru -S would fetch the same source anyway)
+# Coverage (tracked in _plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md):
+#   - Hashes PKGBUILD + every `.install` hook (the latter run as root via pacman -U),
+#     cloned together via `paru -G` — `paru -Gp` would only give the PKGBUILD.
+#   - Fail-CLOSED: a failed clone/fetch BLOCKS the build (no silent allow).
+#   Residual: TOCTOU — paru -S re-fetches upstream source=() at build time, so a tarball/
+#     git HEAD could change between check and build. `-git` packages are pinned out-of-band.
 
 # =============================================================================
 # PATHS
@@ -50,10 +52,40 @@ _pkg_is_aur() {
 # HASHING
 # =============================================================================
 
-# Print the merged PKGBUILD for an AUR package (no build). Empty on failure.
+# Print the canonical build-file blob for an AUR package (no build): the PKGBUILD
+# followed by each *.install hook (sorted by name). Empty on failure.
+#
+# `.install` hooks run as root via pacman -U, so they must be hashed too; `paru -Gp`
+# only emits the PKGBUILD, hence the full `paru -G` clone here.
+#
+# IMPORTANT: this recipe (PKGBUILD then sorted *.install, raw concatenation) is mirrored
+# verbatim in the self-contained chezmoi sync script (run_onchange_before_sync_packages.sh.tmpl,
+# which cannot source lib/). Keep them byte-identical or hashes diverge and every AUR package
+# falsely reads as "changed".
 _tripwire_fetch() {
     local name="$1"
-    timeout 30 paru -Gp "$name" 2>/dev/null
+    local tmp clone_dir d f
+    tmp=$(mktemp -d) || return 0
+    if ! ( cd "$tmp" && timeout 60 paru -G "$name" >/dev/null 2>&1 ); then
+        rm -rf "$tmp"
+        return 0
+    fi
+    # paru -G clones into a dir named after the pkgbase, which differs from $name for
+    # split packages (e.g. samsung-unified-driver-common → samsung-unified-driver/). The
+    # fresh temp dir holds exactly one cloned repo, so take the sole subdirectory.
+    clone_dir=""
+    for d in "$tmp"/*/; do
+        [[ -d "$d" ]] && { clone_dir="${d%/}"; break; }
+    done
+    if [[ -z "$clone_dir" || ! -f "$clone_dir/PKGBUILD" ]]; then
+        rm -rf "$tmp"
+        return 0
+    fi
+    cat "$clone_dir/PKGBUILD"
+    while IFS= read -r f; do
+        [[ -n "$f" ]] && cat "$f"
+    done < <(find "$clone_dir" -maxdepth 1 -type f -name '*.install' | LC_ALL=C sort)
+    rm -rf "$tmp"
 }
 
 # Hash stdin (PKGBUILD text) → sha256 hex.
@@ -88,7 +120,7 @@ _tripwire_record() {
     ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
     mkdir -p "$TRIPWIRE_SNAP_DIR"
-    printf '%s\n' "$text" > "$TRIPWIRE_SNAP_DIR/$name.PKGBUILD"
+    printf '%s\n' "$text" > "$TRIPWIRE_SNAP_DIR/$name.snapshot"
 
     [[ -f "$TRIPWIRE_DB" ]] || echo "approved: {}" > "$TRIPWIRE_DB"
     NAME="$name" HASH="$hash" TS="$ts" yq eval -i \
@@ -108,9 +140,9 @@ _tripwire_check() {
     local current_text current_hash db_hash
     current_text=$(_tripwire_fetch "$name")
     if [[ -z "$current_text" ]]; then
-        # Fail open: paru -S would fetch the same source at build time anyway.
-        ui_warning "Tripwire: could not fetch PKGBUILD for '$name' (network?) — allowing" >&2
-        return 0
+        # Fail closed: cannot verify build files → block rather than allow silently.
+        ui_warning "$ICON_WARNING Tripwire: could not fetch build files for '$name' — BLOCKING (fail-closed)" >&2
+        return 1
     fi
     current_hash=$(printf '%s' "$current_text" | _tripwire_hash)
 
@@ -123,9 +155,9 @@ _tripwire_check() {
         return 0
     fi
 
-    ui_warning "$ICON_WARNING Tripwire: PKGBUILD for '$name' CHANGED since approval" >&2
-    if [[ -f "$TRIPWIRE_SNAP_DIR/$name.PKGBUILD" ]]; then
-        diff -u "$TRIPWIRE_SNAP_DIR/$name.PKGBUILD" <(printf '%s\n' "$current_text") >&2 || true
+    ui_warning "$ICON_WARNING Tripwire: build files (PKGBUILD/.install) for '$name' CHANGED since approval" >&2
+    if [[ -f "$TRIPWIRE_SNAP_DIR/$name.snapshot" ]]; then
+        diff -u "$TRIPWIRE_SNAP_DIR/$name.snapshot" <(printf '%s\n' "$current_text") >&2 || true
     fi
     return 1
 }

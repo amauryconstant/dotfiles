@@ -128,19 +128,45 @@ gpg --recv-keys E79F5BAF8CD51A806AA27DBB7DA2709247D75BC6 2>/dev/null || \
 {{ end }}
 
 # ============================================================
-# Supply-chain tripwire: verify AUR PKGBUILDs against approved hashes
+# Supply-chain tripwire: verify AUR build files against approved hashes
 # ============================================================
 # Self-contained (no lib/scripts dependency — this script runs before file
 # application). Shares the on-disk hash DB with 'package-manager approve'.
 # Trust model: skip packages in any pacman sync repo (official + chaotic-aur
 # signed binaries); gate only true AUR packages whose PKGBUILD executes locally.
 # First install / no DB entry = trust-on-first-use (seed via 'approve --seed').
+# Fail-CLOSED: if build files can't be fetched, the package is blocked.
 
-{{ includeTemplate "log_step" "Checking AUR PKGBUILDs against approved hashes..." }}
+{{ includeTemplate "log_step" "Checking AUR build files against approved hashes..." }}
 
 TRIPWIRE_DB="$HOME/.local/state/package-manager/pkgbuild-hashes.yaml"
 TRIPWIRE_BLOCKED=""
-EMPTY_HASH=$(printf '' | sha256sum | awk '{print $1}')
+
+# Emit the canonical build-file blob (PKGBUILD + sorted *.install), empty on failure.
+# MUST stay byte-identical to operations/pkgbuild-tripwire.sh:_tripwire_fetch — both sides
+# capture this into a var (command substitution strips trailing newlines) then hash via
+# `printf '%s' "$blob" | sha256sum`, so the hashed bytes match. Any drift = false blocks.
+_tripwire_blob() {
+    name="$1"
+    tmp=$(mktemp -d) || return 0
+    if ! ( cd "$tmp" && timeout 60 paru -G "$name" >/dev/null 2>&1 ); then
+        rm -rf "$tmp"; return 0
+    fi
+    # paru -G clones into a pkgbase-named dir (differs from $name for split packages,
+    # e.g. samsung-unified-driver-common → samsung-unified-driver/). Take the sole subdir.
+    clone_dir=""
+    for d in "$tmp"/*/; do
+        [ -d "$d" ] && { clone_dir="${d%/}"; break; }
+    done
+    if [ -z "$clone_dir" ] || [ ! -f "$clone_dir/PKGBUILD" ]; then
+        rm -rf "$tmp"; return 0
+    fi
+    cat "$clone_dir/PKGBUILD"
+    while IFS= read -r f; do
+        [ -n "$f" ] && cat "$f"
+    done < <(find "$clone_dir" -maxdepth 1 -type f -name '*.install' | LC_ALL=C sort)
+    rm -rf "$tmp"
+}
 
 if command -v paru >/dev/null 2>&1; then
     for pkg in $ARCH_PACKAGES; do
@@ -149,20 +175,23 @@ if command -v paru >/dev/null 2>&1; then
             continue
         fi
 
-        # AUR package: fetch current PKGBUILD and hash it
-        current_hash=$(timeout 30 paru -Gp "$pkg" 2>/dev/null | sha256sum | awk '{print $1}') || true
+        # AUR package: materialize PKGBUILD + .install hooks and hash them
+        blob=$(_tripwire_blob "$pkg")
 
-        # Empty/failed fetch: skip (paru -S fetches the same source at build time)
-        if [ -z "$current_hash" ] || [ "$current_hash" = "$EMPTY_HASH" ]; then
+        # Fail-closed: cannot fetch build files → block (cannot verify)
+        if [ -z "$blob" ]; then
+            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
             continue
         fi
+
+        current_hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
 
         approved_hash=""
         if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
             approved_hash=$(NAME="$pkg" yq eval '.approved[env(NAME)].hash // ""' "$TRIPWIRE_DB" 2>/dev/null) || true
         fi
 
-        # No approved hash yet → trust-on-first-use
+        # No approved hash yet → trust-on-first-use (fetch succeeded, new package)
         if [ -z "$approved_hash" ] || [ "$approved_hash" = "null" ]; then
             continue
         fi
@@ -174,7 +203,7 @@ if command -v paru >/dev/null 2>&1; then
 fi
 
 if [ -n "$TRIPWIRE_BLOCKED" ]; then
-    {{ includeTemplate "log_error" "AUR PKGBUILD changed since approval — install blocked:" }}
+    {{ includeTemplate "log_error" "AUR build files changed/unverifiable since approval — install blocked:" }}
     for b in $TRIPWIRE_BLOCKED; do
         {{ includeTemplate "log_error" "  • $b" }}
     done

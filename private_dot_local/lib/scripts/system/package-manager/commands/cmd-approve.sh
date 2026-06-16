@@ -16,21 +16,21 @@ _approve_one() {
     local current_text
     current_text=$(_tripwire_fetch "$name")
     if [[ -z "$current_text" ]]; then
-        ui_error "Could not fetch PKGBUILD for '$name'"
+        ui_error "Could not fetch build files for '$name'"
         return 1
     fi
 
-    ui_title "Review PKGBUILD: $name"
-    if [[ -f "$TRIPWIRE_SNAP_DIR/$name.PKGBUILD" ]]; then
+    ui_title "Review build files: $name"
+    if [[ -f "$TRIPWIRE_SNAP_DIR/$name.snapshot" ]]; then
         ui_info "Diff since last approval (- approved / + current):"
-        diff -u "$TRIPWIRE_SNAP_DIR/$name.PKGBUILD" <(printf '%s\n' "$current_text") || true
+        diff -u "$TRIPWIRE_SNAP_DIR/$name.snapshot" <(printf '%s\n' "$current_text") || true
     else
-        ui_info "New package — full PKGBUILD:"
+        ui_info "New package — full build files (PKGBUILD + .install hooks):"
         printf '%s\n' "$current_text"
     fi
     ui_spacer
 
-    if ui_confirm "Approve this PKGBUILD for '$name'?"; then
+    if ui_confirm "Approve these build files for '$name'?"; then
         if _tripwire_record "$name" "$current_text"; then
             ui_success "Approved $name"
         else

@@ -197,7 +197,7 @@ packages:
 - `~/.local/state/package-manager/constraint-cache.yaml` — 1h TTL
 - `~/.cache/package-manager/aur-packages/` — AUR validation cache, 24h TTL
 - `~/.local/state/package-manager/pkgbuild-hashes.yaml` — tripwire approved-hash DB
-- `~/.local/state/package-manager/pkgbuilds/<name>.PKGBUILD` — tripwire snapshots (for diffs)
+- `~/.local/state/package-manager/pkgbuilds/<name>.snapshot` — tripwire snapshots (PKGBUILD + .install, for diffs)
 
 ---
 
@@ -212,23 +212,36 @@ packages:
 - **Tier detection** (`_pkg_is_aur`): AUR-built iff NOT in any pacman sync repo (`pacman -Si` fails)
   but resolvable via `paru -Si --aur`. Official + **chaotic-aur** (signed binary sync repos) are
   never gated — only true AUR (PKGBUILD runs locally).
-- **Hash**: `paru -Gp <name> | sha256sum` (PKGBUILD, no build). Compared to approved hash in
+- **Hash**: `paru -G` clones the AUR repo to a temp dir; the blob = `PKGBUILD` + every `*.install`
+  hook (sorted), `sha256sum`'d. `.install` hooks run as **root** via `pacman -U`, so they must be
+  covered — `paru -Gp` (PKGBUILD only) would miss them. Compared to the approved hash in
   `pkgbuild-hashes.yaml`. Unchanged → builds unattended (`--noconfirm` kept). New/changed → **held**,
-  diff shown, requires `package-manager approve`.
-- **Module**: `operations/pkgbuild-tripwire.sh` (`_pkg_is_aur`, `_tripwire_check`, `_tripwire_scan`,
-  `_tripwire_record`, `_tripwire_seed`). Command: `commands/cmd-approve.sh`.
+  diff shown, requires `package-manager approve`. `paru -G` clones into a **pkgbase**-named dir
+  (≠ pkgname for split packages, e.g. samsung-unified-driver-common); the code takes the sole subdir.
+- **Fail-CLOSED**: if the clone/fetch fails, the package is **blocked** (cannot verify), not allowed.
+- **Module**: `operations/pkgbuild-tripwire.sh` (`_pkg_is_aur`, `_tripwire_fetch`, `_tripwire_check`,
+  `_tripwire_scan`, `_tripwire_record`, `_tripwire_seed`). Command: `commands/cmd-approve.sh`.
 
 **Wired into** (both pipelines): `cmd-update.sh` Phase 2 (scans `paru -Qua`; if any held → official
 `pacman -Syu` only, AUR held); `batch-operations.sh` + `package-operations.sh` (drop held AUR from
-the build); and the self-contained `run_onchange_before_sync_packages.sh.tmpl` (inline gate sharing
-the same DB — it cannot source lib/, runs before file application).
+the build); `sync-pacman.sh` `_sync_handle_downgrade` (gate AUR downgrades); and the self-contained
+`run_onchange_before_sync_packages.sh.tmpl` (inline gate sharing the same DB — it cannot source lib/,
+runs before file application). **The inline blob recipe must stay byte-identical to
+`_tripwire_fetch`** or hashes diverge and every AUR package falsely reads as "changed".
 
 **Bootstrap**: empty DB = trust-on-first-use (first install never blocks). Run
-`package-manager approve --seed` **once after deploy** to record current PKGBUILDs of installed AUR
-packages (`pacman -Qmq`, excl. `*-debug`).
+`package-manager approve --seed` **once after deploy** to record current build files of installed AUR
+packages (`pacman -Qmq`, excl. `*-debug`). **Re-seed after any change to the hash recipe** (e.g. the
+`.install` coverage change) — old hashes become stale otherwise.
 
-**Known limits (MVP)**: `.install` hooks (run as root) not hashed; TOCTOU (paru -S re-fetches);
-transient `paru -Gp` failure fails **open** (paru -S would fetch same source). Tracked in roadmap.
+**`-git` note**: a *locally-built* `-git` AUR package would be a blind spot — its PKGBUILD hash is
+stable while upstream HEAD (the built code) moves. There are currently **none**: both `-git` packages
+(`wayfreeze-git`, `gpu-screen-recorder-git`) are served by **chaotic-aur as signed prebuilt binaries**
+(not local builds), so `_pkg_is_aur` treats them as trusted (same as official). If a true local-build
+`-git` package is ever added, pin it to a reviewed commit out-of-band (vendored `#commit=` PKGBUILD).
+
+**Residual limits**: TOCTOU — `paru -S` re-fetches upstream `source=()` at build time, so a tarball/
+git HEAD could change between check and build (out of scope).
 
 ---
 

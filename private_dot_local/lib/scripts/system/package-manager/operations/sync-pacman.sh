@@ -159,6 +159,14 @@ _sync_handle_downgrade() {
         return 1
     fi
 
+    # Supply-chain tripwire: gate AUR downgrades (official downgrades pass through —
+    # no PKGBUILD executes for binary repos). Mirrors the install/update gates.
+    if _pkg_is_aur "$name" && ! _tripwire_check "$name"; then
+        ui_warning "$ICON_WARNING Downgrade of '$name' held — build files changed or unapproved"
+        ui_info "Review + approve: package-manager approve $name"
+        return 1
+    fi
+
     ui_step "$ICON_PACKAGE $name: Downgrading $installed → $selected_version"
 
     # Direct call (paru needs TTY for sudo prompts and progress display)
