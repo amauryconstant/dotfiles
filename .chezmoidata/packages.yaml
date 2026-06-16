@@ -294,8 +294,8 @@ packages:
         - grim # Wayland screenshot utility
         - slurp # Select screen region for screenshots
         - satty # Screenshot annotation tool
-        - wayfreeze-git # Freeze screen for clean recording
-        - gpu-screen-recorder-git # Hardware-accelerated screen recording (chaotic-aur)
+        - wayfreeze-git # Freeze screen for clean recording (chaotic-aur prebuilt, signed)
+        - gpu-screen-recorder-git # Hardware-accelerated screen recording (chaotic-aur prebuilt, signed)
         - swayosd # OSD overlay for volume/brightness
         - xkeyboard-config # Keyboard layout definitions
         - hyprpicker # Wayland color picker

@@ -6,6 +6,24 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
+**Status (2026-06-16)**: Second increment landed — **P1.2 gaps closed, P1.1 done, P1.3 done**.
+- **P1.2**: tripwire now hashes **PKGBUILD + `.install` hooks** (cloned via `paru -G`; `.install`
+  runs as root via `pacman -U`), is **fail-CLOSED** (failed fetch blocks), and gates the previously
+  unprotected **AUR downgrade** path (`sync-pacman.sh`). Handles split packages (pkgbase-named clone
+  dir). Inline chezmoi recipe mirrored byte-for-byte. **Requires `approve --seed` re-baseline** (hash
+  recipe changed).
+- **P1.1**: investigated and found **no action needed** — there are **no locally-built `-git`
+  packages**. Both `-git` packages (`wayfreeze-git`, `gpu-screen-recorder-git`) are served by
+  **chaotic-aur as signed prebuilt binaries** (`Validated By: Signature`), not built from upstream
+  HEAD on this machine, so the tripwire's `_pkg_is_aur` correctly treats them as trusted (same as
+  official). A pin would have *replaced a signed binary with a local build* — strictly worse. (An
+  initial attempt to pin `wayfreeze-git` was reverted once its chaotic-aur provenance was confirmed.)
+- **P1.3**: `run_once_before_002` now **idempotently pins `SigLevel = Required DatabaseOptional`** in
+  `/etc/pacman.conf` `[options]` (detects/repairs drift; scoped so per-repo overrides untouched).
+  `LocalFileSigLevel`/`DatabaseRequired` deliberately left default (would break chaotic bootstrap).
+- **P2.1**: audit run — **no** AUR package is currently available in official repos (nothing to
+  migrate); all 17 are AUR-by-nature (drivers, hypr* tooling, input tools). `!debug` already done.
+
 **Status (2026-06-15)**: PKGBUILD-diff **tripwire MVP implemented & committed** (`af3d47a`) —
 runtime tier detection + hash gate wired into both pipelines (`package-manager` CLI:
 update/sync/install, and the self-contained chezmoi sync script) +
@@ -85,11 +103,13 @@ next build). Pin to reviewed commits, or migrate to trusted `-bin`/official wher
 **Target files**: `.chezmoidata/packages.yaml`, install path
 **Effort**: Medium
 
-- [ ] Inventory `-git` packages: `wayfreeze-git`, `gpu-screen-recorder-git` (chaotic), and any
-      others
-- [ ] For each: pin a commit (custom PKGBUILD / `#commit=` source), move to `-bin`/official, or
-      accept-and-document the risk
-- [ ] Record chosen commit/version so first install is reproducible
+- [x] Inventory `-git` packages: `wayfreeze-git` + `gpu-screen-recorder-git`. **Both are chaotic-aur
+      signed prebuilt binaries** (`pacman -Si` → `Repository: chaotic-aur`, `Validated By: Signature`),
+      NOT built locally from HEAD → not tripwire blind spots, no pin needed.
+- [SKIPPED] Pin a commit — would replace a signed chaotic-aur binary with a local build (worse). No
+      true-AUR local-build `-git` package exists to pin.
+- [x] Reproducibility: chaotic-aur ships a fixed versioned binary (`0.2.0.r0.g8f813ab-1`); upstream
+      HEAD changes don't auto-flow to this machine without a chaotic-aur rebuild.
 
 ### P1.2 — PKGBUILD hash/diff tripwire
 **What**: No detection when an AUR package's PKGBUILD changes. Store a hash of each AUR
@@ -104,8 +124,10 @@ slip through silently.
       — **PKGBUILD only**; `.install` + sources block still TODO (see limits below)
 - [x] On change: block + show diff + require explicit ack (`package-manager approve`) before building
 - [x] Seed the DB from current known-good state (`package-manager approve --seed`)
-- [ ] Hash `.install` hook + sources block too (MVP hashes PKGBUILD only)
-- [ ] Fail-closed option for `paru -Gp` fetch failures (MVP fails open)
+- [x] Hash `.install` hook too (clone via `paru -G`; blob = PKGBUILD + sorted `*.install`).
+      Upstream `source=()` block stays out of scope (TOCTOU; `-git` covered by P1.1 pinning)
+- [x] Fail-closed: failed clone/fetch now **blocks** the build everywhere (lib + inline)
+- [x] Gate the AUR **downgrade** path (`sync-pacman.sh` `_sync_handle_downgrade`) — was unprotected
 
 ### P1.3 — Managed `pacman.conf` with explicit `SigLevel`
 **What**: No `pacman.conf` template in repo → signature policy is host-default, not
@@ -114,11 +136,13 @@ version-controlled. Manage it with explicit `SigLevel`/`LocalFileSigLevel`.
 `/etc/pacman.conf`), `run_once_before_002_install_package_manager.sh.tmpl` (repo append logic)
 **Effort**: Medium
 
-- [ ] Decide management approach (chezmoi-managed system file vs modify_manager merge — `/etc`
-      needs root; check existing patterns)
-- [ ] Set explicit `SigLevel = Required DatabaseOptional` (or stricter) and pin `[multilib]` +
-      `[chaotic-aur]` repo definitions
-- [ ] Reconcile with the script-002 `sudo tee` append flow so they don't fight
+- [x] Management approach decided: user-scoped chezmoi can't own `/etc` cleanly → **idempotent
+      enforcement in `run_once_before_002`** (matches the existing multilib/chaotic `sudo` edits)
+- [x] Set explicit `SigLevel = Required DatabaseOptional` in `[options]` (awk-detect + sed-repair,
+      scoped to `[options]` so per-repo overrides are untouched; detects/repairs drift)
+- [SKIPPED] Stricter `LocalFileSigLevel`/`DatabaseRequired` — would break the Chaotic-AUR `pacman -U`
+      bootstrap (key not yet trusted) and unsigned official DBs. Documented inline.
+- [x] Reconciled with the script-002 `sudo tee` flow (same script, runs before the repo appends)
 
 ---
 
@@ -130,8 +154,10 @@ available in official repos.
 **Target files**: `.chezmoidata/packages.yaml`
 **Effort**: Low–Medium
 
-- [ ] Re-check each AUR package against official repos (`pacman -Si`); migrate where possible
-- [ ] Drop non-essential AUR packages
+- [x] Re-check each AUR package against official repos (`pacman -Si`) — audited all 17 foreign pkgs
+      (2026-06-16): **none** available in official repos, so nothing to migrate
+- [x] Drop non-essential AUR packages — none: all are AUR-by-nature (samsung drivers, hypr* tooling,
+      voxtype/kanata input, etc.). `wayfreeze-git` removed from the list (pinned out-of-band, P1.1)
 - [ ] Flag remaining Chaotic-AUR (third-party prebuilt binary trust) for extra scrutiny
 - [x] Disable `*-debug` split packages from AUR builds (`makepkg.conf` `OPTIONS+=('!debug')`,
       commit `cf170a9`) — fewer build artifacts; keeps `pacman -Qmq` (tripwire seed/scan source)
