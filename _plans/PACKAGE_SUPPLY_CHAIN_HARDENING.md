@@ -6,6 +6,17 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
+**Status (2026-06-16, P0 increment)**: **P0 complete in tripwire-centric form** — P0.1/P0.2/P0.3
+done. Install pipeline now splits by trust tier (official/chaotic → `pacman -S`, true AUR → paru),
+deriving tier at runtime via `_pkg_is_aur` (no `packages.yaml` tagging). The **TOFU gap is closed**:
+a *bootstrap-aware* gate allows trust-on-first-use only while the hash DB is unseeded (fresh
+machine), and **blocks new/unknown AUR packages once seeded** — same heuristic in lib
+`_tripwire_check` (`_tripwire_is_bootstrap`) and the self-contained inline sync recipe. `--noconfirm`
+was deliberately **kept** (interactive paru review rejected — would break unattended topgrade); the
+tripwire block + `package-manager approve` is the review. No re-seed needed (hash recipe unchanged).
+Files: `operations/pkgbuild-tripwire.sh`, `packages/batch-operations.sh`,
+`run_onchange_before_sync_packages.sh.tmpl`. P0.3 was already satisfied by P1.2 (`cmd-update.sh`).
+
 **Status (2026-06-16)**: Second increment landed (`38d78fa` P1.2 tripwire, `8bc2248` P1.3 SigLevel,
 `ace8ee2` docs/findings) — **P1.2 gaps closed, P1.1 done, P1.3 done**.
 - **P1.2**: tripwire now hashes **PKGBUILD + `.install` hooks** (cloned via `paru -G`; `.install`
@@ -59,14 +70,18 @@ single `paru -S --needed --noconfirm` over a flat list treats all sources identi
 `.chezmoidata/packages.yaml` (source tagging)
 **Effort**: Medium–High
 
-- [ ] Tag each package's source in `packages.yaml` (official / aur / chaotic) — or derive it
-      (`paru -Si`/`pacman -Si` repo field) so the list need not be hand-maintained
-- [ ] Install official-repo packages with `pacman -S --needed --noconfirm` (no PKGBUILD risk)
-- [ ] Install AUR/`-git` packages **without** `--noconfirm` so paru shows the PKGBUILD/`.install`
-      diff (or a dedicated reviewed pass — see P0.2)
-- [ ] Decide provisioning behavior: first-install is necessarily less interactive — gate behind an
-      explicit "I reviewed these" acknowledgement, or pin (P1.1) so first install is reproducible
-- [ ] Verify Chaotic-AUR prebuilt `.pkg.tar.zst` path still works under the split
+- [SKIPPED] Tag each package's source in `packages.yaml` — superseded by **runtime derivation**
+      via the existing `_pkg_is_aur()` (`pacman -Si` vs `paru -Si --aur`); no hand-maintained tags.
+- [x] Install official-repo packages with `pacman -S --needed --noconfirm` (no PKGBUILD risk) —
+      inline recipe + `batch-operations.sh` now partition by tier and route official → pacman.
+- [x] Install AUR packages via paru, **tripwire-gated** (kept `--noconfirm` per the tripwire-centric
+      decision — review happens via the tripwire block + `package-manager approve`, not a paru diff
+      prompt, so topgrade stays unattended; see P0.2).
+- [x] Provisioning behavior decided: **bootstrap-aware gate** — unseeded DB (fresh machine) =
+      trust-on-first-use so install isn't bricked; seeded DB = new AUR packages are BLOCKED until
+      approved. Same heuristic in lib `_tripwire_check` and the inline recipe.
+- [x] Chaotic-AUR prebuilt path verified: chaotic-aur is a pacman sync repo, so `pacman -Si` hits →
+      lands in the official bucket (`pacman -S`), unchanged behavior.
 
 ### P0.2 — Stop blanket `--noconfirm` on AUR builds
 **What**: `--noconfirm` overrides paru's `SkipReview = false`, so the review prompt never fires.
@@ -77,11 +92,14 @@ Remove `--noconfirm` from AUR build call sites (keep for official/removals where
 `executable_package-manager:435`
 **Effort**: Medium
 
-- [ ] Audit each `--noconfirm` site; classify official vs AUR (depends on P0.1 tagging)
-- [ ] Drop `--noconfirm` for AUR `paru -S` builds; keep paru's diff review on
-- [ ] Confirm `paru.conf` `SkipReview = false` + diff viewing actually engages once `--noconfirm`
-      is gone
-- [ ] Keep non-interactive behavior for removals (`-R`) and official upgrades where no PKGBUILD runs
+- [x] Audited each `--noconfirm` site; classified official vs AUR via runtime `_pkg_is_aur`.
+- [SKIPPED] Drop `--noconfirm` for AUR `paru -S` (interactive paru diff) — **intentionally not
+      adopted**: it would reintroduce prompts and break unattended topgrade (`assume_yes`). The P1.2
+      tripwire supplies the review gate instead (block + `package-manager approve`), so AUR builds
+      keep `--noconfirm` but cannot build a changed/new PKGBUILD unreviewed.
+- [SKIPPED] paru `SkipReview`/diff engagement — moot under the tripwire-centric model (gate is the
+      tripwire, not paru's prompt).
+- [x] Non-interactive behavior kept for removals (`-Rns`) and official installs/upgrades (pacman).
 
 ### P0.3 — Gate `update` on PKGBUILD diffs
 **What**: `package-manager update` / topgrade run `paru -Syu --noconfirm` — unattended AUR
@@ -90,9 +108,11 @@ upgrades execute updated (possibly hijacked) build scripts. Make AUR upgrades sh
 `private_dot_config/topgrade.toml.tmpl` (`assume_yes`, pre-command)
 **Effort**: Medium
 
-- [ ] Route AUR upgrade through a reviewed path (paru diff review, or the P1.2 tripwire as a gate)
-- [ ] Keep official `-Syu` unattended
-- [ ] Reconcile with topgrade `assume_yes = true` — ensure AUR step isn't silently auto-confirmed
+- [x] AUR upgrades routed through the P1.2 tripwire gate (`cmd-update.sh:56-83`: scans `paru -Qua`,
+      holds changed/unapproved AUR, prints `approve` hint).
+- [x] Official `-Syu` kept unattended (runs `sudo pacman -Syu` when AUR is held).
+- [x] Reconciled with topgrade `assume_yes` — topgrade only invokes `package-manager update`, which
+      self-gates; `assume_yes` does not bypass the tripwire (held AUR is skipped, not auto-confirmed).
 
 ---
 

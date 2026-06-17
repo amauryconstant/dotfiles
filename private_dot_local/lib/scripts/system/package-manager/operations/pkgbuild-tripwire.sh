@@ -132,6 +132,17 @@ _tripwire_record() {
 # GATE
 # =============================================================================
 
+# Bootstrap mode = no approved-hash DB yet (fresh machine, pre-seed). In bootstrap we
+# trust-on-first-use so initial provisioning isn't bricked; once seeded (established),
+# an AUR package absent from the DB is genuinely NEW and gets blocked.
+# Returns 0 (true) when bootstrapping: DB file absent or `.approved` has zero entries.
+_tripwire_is_bootstrap() {
+    [[ -f "$TRIPWIRE_DB" ]] || return 0
+    local n
+    n=$(yq eval '.approved | length' "$TRIPWIRE_DB" 2>/dev/null)
+    [[ -z "$n" || "$n" == "null" || "$n" -eq 0 ]]
+}
+
 # Check one AUR package. Returns 0 if clean, 1 if blocked (new or changed).
 # On block, prints reason + diff to stderr. Caller must have confirmed AUR tier.
 _tripwire_check() {
@@ -147,7 +158,14 @@ _tripwire_check() {
     current_hash=$(printf '%s' "$current_text" | _tripwire_hash)
 
     if ! db_hash=$(_tripwire_db_hash "$name"); then
-        ui_warning "$ICON_WARNING Tripwire: '$name' is a NEW AUR package (not yet approved)" >&2
+        # New package. Bootstrap (unseeded DB) → allow so first provisioning works; do NOT
+        # record here (would make the DB non-empty mid-run and flip later packages to
+        # established → blocked). Established (seeded) DB → genuinely new → block.
+        if _tripwire_is_bootstrap; then
+            ui_warning "$ICON_WARNING Tripwire: '$name' new but DB not yet seeded (bootstrap) — allowing; run 'package-manager approve --seed' to enable gating" >&2
+            return 0
+        fi
+        ui_warning "$ICON_WARNING Tripwire: '$name' is a NEW unapproved AUR package — BLOCKING (run 'package-manager approve $name')" >&2
         return 1
     fi
 

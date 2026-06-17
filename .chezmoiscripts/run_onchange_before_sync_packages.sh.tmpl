@@ -132,9 +132,12 @@ gpg --recv-keys E79F5BAF8CD51A806AA27DBB7DA2709247D75BC6 2>/dev/null || \
 # ============================================================
 # Self-contained (no lib/scripts dependency — this script runs before file
 # application). Shares the on-disk hash DB with 'package-manager approve'.
-# Trust model: skip packages in any pacman sync repo (official + chaotic-aur
-# signed binaries); gate only true AUR packages whose PKGBUILD executes locally.
-# First install / no DB entry = trust-on-first-use (seed via 'approve --seed').
+# Trust model: classify packages in any pacman sync repo (official + chaotic-aur
+# signed binaries) as OFFICIAL; gate only true AUR packages whose PKGBUILD runs locally.
+# New-package gate (mirrors lib _tripwire_check):
+#   bootstrap (DB absent or .approved empty) = trust-on-first-use, fresh provisioning works;
+#   established (DB seeded) = an AUR package absent from the DB is genuinely NEW → BLOCKED.
+# Seed once after deploy via 'package-manager approve --seed'.
 # Fail-CLOSED: if build files can't be fetched, the package is blocked.
 
 {{ includeTemplate "log_step" "Checking AUR build files against approved hashes..." }}
@@ -168,42 +171,66 @@ _tripwire_blob() {
     rm -rf "$tmp"
 }
 
-if command -v paru >/dev/null 2>&1; then
-    for pkg in $ARCH_PACKAGES; do
-        # Skip packages available in a pacman sync repo (official or chaotic-aur)
-        if pacman -Si "$pkg" >/dev/null 2>&1; then
-            continue
-        fi
+# Trust-tier buckets (filled below): official/chaotic → pacman, true AUR → paru.
+OFFICIAL_PKGS=""
+AUR_PKGS=""
 
-        # AUR package: materialize PKGBUILD + .install hooks and hash them
-        blob=$(_tripwire_blob "$pkg")
-
-        # Fail-closed: cannot fetch build files → block (cannot verify)
-        if [ -z "$blob" ]; then
-            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
-            continue
-        fi
-
-        current_hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
-
-        approved_hash=""
-        if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
-            approved_hash=$(NAME="$pkg" yq eval '.approved[env(NAME)].hash // ""' "$TRIPWIRE_DB" 2>/dev/null) || true
-        fi
-
-        # No approved hash yet → trust-on-first-use (fetch succeeded, new package)
-        if [ -z "$approved_hash" ] || [ "$approved_hash" = "null" ]; then
-            continue
-        fi
-
-        if [ "$current_hash" != "$approved_hash" ]; then
-            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
-        fi
-    done
+# Determine bootstrap state ONCE for the whole run: unseeded DB → trust-on-first-use for
+# every package; seeded DB → a new (unknown) AUR package is blocked. Computed up front so
+# it can't flip mid-loop.
+TRIPWIRE_BOOTSTRAP=1
+if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
+    approved_count=$(yq eval '.approved | length' "$TRIPWIRE_DB" 2>/dev/null || echo 0)
+    case "$approved_count" in
+        ''|null|0) TRIPWIRE_BOOTSTRAP=1 ;;
+        *) TRIPWIRE_BOOTSTRAP=0 ;;
+    esac
 fi
 
+for pkg in $ARCH_PACKAGES; do
+    # Official / chaotic-aur (signed binary sync repos) → no local PKGBUILD → install via pacman
+    if pacman -Si "$pkg" >/dev/null 2>&1; then
+        OFFICIAL_PKGS="$OFFICIAL_PKGS $pkg"
+        continue
+    fi
+
+    # True AUR package: gate before the paru build
+    AUR_PKGS="$AUR_PKGS $pkg"
+
+    # Materialize PKGBUILD + .install hooks and hash them (needs paru)
+    blob=""
+    if command -v paru >/dev/null 2>&1; then
+        blob=$(_tripwire_blob "$pkg")
+    fi
+
+    # Fail-closed: cannot fetch build files → block (cannot verify)
+    if [ -z "$blob" ]; then
+        TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
+        continue
+    fi
+
+    current_hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
+
+    approved_hash=""
+    if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
+        approved_hash=$(NAME="$pkg" yq eval '.approved[env(NAME)].hash // ""' "$TRIPWIRE_DB" 2>/dev/null) || true
+    fi
+
+    # No approved hash yet → new package. Bootstrap allows (TOFU); established blocks.
+    if [ -z "$approved_hash" ] || [ "$approved_hash" = "null" ]; then
+        if [ "$TRIPWIRE_BOOTSTRAP" -eq 0 ]; then
+            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
+        fi
+        continue
+    fi
+
+    if [ "$current_hash" != "$approved_hash" ]; then
+        TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
+    fi
+done
+
 if [ -n "$TRIPWIRE_BLOCKED" ]; then
-    {{ includeTemplate "log_error" "AUR build files changed/unverifiable since approval — install blocked:" }}
+    {{ includeTemplate "log_error" "AUR build files new/changed/unverifiable since approval — install blocked:" }}
     for b in $TRIPWIRE_BLOCKED; do
         {{ includeTemplate "log_error" "  • $b" }}
     done
@@ -217,16 +244,27 @@ fi
 # ============================================================
 
 if [ "$ARCH_COUNT" -gt 0 ]; then
-    {{ includeTemplate "log_step" "Installing $ARCH_COUNT Arch/AUR packages with paru..." }}
+    # Trust-tier split: official/chaotic packages carry no local-PKGBUILD risk → pacman;
+    # tripwire-approved AUR packages → paru. Both stay --noconfirm (unattended). --needed
+    # skips packages already at target version. -r: skip the call if the bucket is empty.
+    if [ -n "$OFFICIAL_PKGS" ]; then
+        {{ includeTemplate "log_step" "Installing official-repo packages with pacman..." }}
+        if echo "$OFFICIAL_PKGS" | xargs -r sudo pacman -S --needed --noconfirm; then
+            {{ includeTemplate "log_success" "Official packages installed" }}
+        else
+            {{ includeTemplate "log_error" "Some official packages failed to install" }}
+            exit 1
+        fi
+    fi
 
-    # Install all packages in single paru call
-    # --needed: Skip already installed packages at target version
-    # --noconfirm: Non-interactive mode
-    if echo "$ARCH_PACKAGES" | xargs paru -S --needed --noconfirm; then
-        {{ includeTemplate "log_success" "Arch/AUR packages installed successfully" }}
-    else
-        {{ includeTemplate "log_error" "Some Arch/AUR packages failed to install" }}
-        exit 1
+    if [ -n "$AUR_PKGS" ]; then
+        {{ includeTemplate "log_step" "Installing AUR packages with paru (tripwire-approved)..." }}
+        if echo "$AUR_PKGS" | xargs -r paru -S --needed --noconfirm; then
+            {{ includeTemplate "log_success" "AUR packages installed" }}
+        else
+            {{ includeTemplate "log_error" "Some AUR packages failed to install" }}
+            exit 1
+        fi
     fi
 else
     {{ includeTemplate "log_skip" "No Arch/AUR packages to install" }}

@@ -229,10 +229,21 @@ the build); `sync-pacman.sh` `_sync_handle_downgrade` (gate AUR downgrades); and
 runs before file application). **The inline blob recipe must stay byte-identical to
 `_tripwire_fetch`** or hashes diverge and every AUR package falsely reads as "changed".
 
-**Bootstrap**: empty DB = trust-on-first-use (first install never blocks). Run
-`package-manager approve --seed` **once after deploy** to record current build files of installed AUR
-packages (`pacman -Qmq`, excl. `*-debug`). **Re-seed after any change to the hash recipe** (e.g. the
-`.install` coverage change) — old hashes become stale otherwise.
+**New-package gate (bootstrap-aware)**: `_tripwire_is_bootstrap` distinguishes two states.
+- **Bootstrap** = DB file absent OR `.approved` empty → trust-on-first-use (fresh-machine
+  provisioning isn't bricked). New AUR packages build, no record written mid-run.
+- **Established** = DB seeded (non-empty) → an AUR package absent from the DB is genuinely NEW and is
+  **BLOCKED** until `package-manager approve <pkg>` (same UX as a changed PKGBUILD). This closes the
+  "add a package to `packages.yaml` → builds unreviewed" hole on any provisioned machine.
+Run `package-manager approve --seed` **once after deploy** to record current build files of installed
+AUR packages (`pacman -Qmq`, excl. `*-debug`) — this is also what flips the host from bootstrap to
+established. **Re-seed after any change to the hash recipe** (`_tripwire_fetch`) — old hashes go stale.
+
+**Trust-tier install split**: official/chaotic packages (`pacman -Si` hit) install via
+`pacman -S --needed --noconfirm` (no local PKGBUILD); only true AUR builds through paru
+(tripwire-gated). Applied in `batch-operations.sh` and the inline sync recipe. `--noconfirm` kept on
+both — review is the tripwire block + `approve`, not an interactive paru diff (keeps topgrade
+unattended). The bootstrap-aware new-package rule is mirrored byte-consistently in the inline recipe.
 
 **`-git` note**: a *locally-built* `-git` AUR package would be a blind spot — its PKGBUILD hash is
 stable while upstream HEAD (the built code) moves. There are currently **none**: both `-git` packages

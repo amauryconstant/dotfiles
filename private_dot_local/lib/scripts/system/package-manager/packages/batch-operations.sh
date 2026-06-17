@@ -68,12 +68,36 @@ _install_packages_batch() {
         fi
     fi
 
-    ui_step "$ICON_PACKAGE Batch $batch_type: ${#pkg_specs[@]} packages"
+    # Trust-tier split: official/chaotic packages carry no local-PKGBUILD risk → pacman;
+    # true AUR (already tripwire-filtered above) → paru. Keeps official installs out of
+    # paru's AUR build path. If tier detection is unavailable, treat all as AUR (paru
+    # handles official too) to preserve prior behavior.
+    local -a official_specs=() aur_specs=()
+    if declare -F _pkg_is_aur >/dev/null 2>&1; then
+        for idx in "${!pkg_names[@]}"; do
+            if _pkg_is_aur "${pkg_names[$idx]}"; then
+                aur_specs+=("${pkg_specs[$idx]}")
+            else
+                official_specs+=("${pkg_specs[$idx]}")
+            fi
+        done
+    else
+        aur_specs=("${pkg_specs[@]}")
+    fi
+
+    ui_step "$ICON_PACKAGE Batch $batch_type: ${#official_specs[@]} official + ${#aur_specs[@]} AUR"
 
     # Try batch install
     if [[ "$BATCH_INSTALLS" == "true" ]]; then
-        # Direct call (paru needs TTY for sudo prompts and progress display)
-        if paru -S --noconfirm --needed "${pkg_specs[@]}"; then
+        # Direct calls (need TTY for sudo prompts and progress display)
+        local batch_ok=true
+        if [[ ${#official_specs[@]} -gt 0 ]]; then
+            sudo pacman -S --noconfirm --needed "${official_specs[@]}" || batch_ok=false
+        fi
+        if [[ ${#aur_specs[@]} -gt 0 ]]; then
+            paru -S --noconfirm --needed "${aur_specs[@]}" || batch_ok=false
+        fi
+        if [[ "$batch_ok" == true ]]; then
             ui_success "Batch install complete (${#pkg_specs[@]} packages)"
 
             # Update state for all packages
