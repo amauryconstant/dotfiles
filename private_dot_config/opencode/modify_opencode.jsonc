@@ -38,7 +38,6 @@
 {{- $plugins := list "secret-cloak" -}}
 {{- $_ := set $config "plugin" $plugins -}}
 
-
 {{- /* Runtime-managed: "theme" - managed by theme-apply-opencode.sh */ -}}
 {{- /* Do NOT set "theme" key here - it's runtime state */ -}}
 
