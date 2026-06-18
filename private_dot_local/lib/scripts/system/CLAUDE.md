@@ -422,6 +422,43 @@ chezmoi apply
 
 ---
 
+## Package Security Policy
+
+The package pipeline is the repo's most automated path — this is its written policy. The repo's
+"Security-first" constraint covers *both* age encryption (at rest) **and** supply-chain (below).
+
+**See**: `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` (user runbook),
+`package-manager/CLAUDE.md` (tripwire mechanism), `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
+(threat model), `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap).
+
+**Trust tiers** (derived at runtime by `_pkg_is_aur`, not hand-tagged):
+
+| Tier | Source | Trust | Gate |
+|------|--------|-------|------|
+| Official | `[core]/[extra]/[multilib]` | maintainer-reviewed + signed | none — `pacman -S --noconfirm` |
+| chaotic-aur | prebuilt **signed** binaries | third-party, signature-validated | none (treated as official); flagged for scrutiny |
+| true AUR | PKGBUILD built locally | unvetted build script | **tripwire** (hash gate + `approve`) |
+| Flatpak | Flathub (user scope) | sandbox + tightened overrides | prefer *verified* apps |
+
+**Review requirement**: new or changed AUR build files (PKGBUILD + `.install`) are **blocked** until
+`package-manager approve <pkg>`. Bootstrap-aware: trust-on-first-use only while the hash DB is
+unseeded. Updates self-gate (held AUR skipped; official `-Syu` still runs).
+
+**Signature policy**: `SigLevel = Required DatabaseOptional` enforced idempotently by
+`run_once_before_002` (per-repo overrides untouched; stricter `LocalFileSigLevel` would break the
+chaotic-aur bootstrap).
+
+**Pinning**: no local-build `-git` packages exist to pin (both `-git` are chaotic-aur signed
+binaries). If a true local-build `-git` is ever added, vendor a reviewed `#commit=` in the PKGBUILD.
+
+**Flatpak hardening**: broad permissions are tightened via **chezmoi-managed override files**
+(`private_dot_local/share/flatpak/overrides/<app-id>`, authoritative) — `host`/`home` narrowed to
+`xdg-download`/`xdg-documents`, `devices=all` dropped (camera via portal). Flatseal
+(`com.github.tchx84.Flatseal`) is for inspection; re-capture any GUI change with `chezmoi add`.
+Keep Flatpak ≥ 1.16.4 (sandbox-escape CVEs). Prefer *verified* Flathub apps.
+
+---
+
 ## Backup System
 
 **Tool**: Timeshift (preferred) for system snapshots

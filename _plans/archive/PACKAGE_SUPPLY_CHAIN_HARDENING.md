@@ -6,6 +6,28 @@ Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
+**Status (2026-06-18, P2 close-out — ROADMAP COMPLETE)**: All of P2 landed.
+- **P2.1**: `bluetui`/`quickshell` confirmed migrated to official `extra` (comments fixed);
+  chaotic-aur trust set documented for scrutiny.
+- **P2.2**: 4 broad-permission Flatpaks tightened via **chezmoi-managed override files**
+  (`private_dot_local/share/flatpak/overrides/`); Flatseal added; verified-Flathub preference
+  documented. **One open verification**: Slack/Teams webcam test (camera portal) — revert + document
+  as exception if a video call breaks.
+- **P2.3**: policy written across `system/CLAUDE.md`, `package-manager/CLAUDE.md`, root `CLAUDE.md`,
+  and new `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`; "Security-first" contradiction closed.
+With P0+P1 already done, the supply-chain roadmap is now fully closed.
+
+**Status (2026-06-18, threat re-validation)**: Re-checked the Atomic Arch landscape against our
+remediation. **Wave 2 confirmed** (June 12: total >1,500 pkgs; new `js-digest` **bun** variant, ELF
+`7883BD…`, `temp.sh`/Tor exfil, `Restart=always` systemd persistence) — Arch **froze AUR signups**
+June 15. **Our tripwire (P0/P1) correctly counters the model**: the payload rides a *rewritten
+PKGBUILD* (adds malicious npm deps at build time), which we hash → `_tripwire_check` blocks
+changed/new AUR build files and shows the diff. Residual TOCTOU limit (upstream `source=()`) does
+**not** apply — Atomic Arch's deps are in the PKGBUILD, not upstream sources. **P2.4 IoC sweep run —
+CLEAN**; `pacman.log` shows no AUR builds in the June 9–12 window. **P2.2 Flatpak ≥ 1.16.4 closed**
+(`1:1.18.0-1`). Research doc threat table updated with wave-2 indicators. Remaining open: P2.1
+(chaotic-aur scrutiny note), P2.2 (verified-Flathub pref, Flatseal review), P2.3 (policy docs).
+
 **Status (2026-06-16, P0 increment)**: **P0 complete in tripwire-centric form** — P0.1/P0.2/P0.3
 done. Install pipeline now splits by trust tier (official/chaotic → `pacman -S`, true AUR → paru),
 deriving tier at runtime via `_pkg_is_aur` (no `packages.yaml` tagging). The **TOFU gap is closed**:
@@ -181,7 +203,12 @@ available in official repos.
 - [x] Drop non-essential AUR packages — none dropped: all are AUR-by-nature (samsung drivers, hypr*
       tooling, voxtype/kanata input, etc.). `wayfreeze-git` remains listed normally — it's a
       chaotic-aur signed prebuilt binary (see P1.1), not a local build, so no pin/removal applies
-- [ ] Flag remaining Chaotic-AUR (third-party prebuilt binary trust) for extra scrutiny
+- [x] Re-checked 2026-06-18: **`bluetui` and `quickshell` are now in official `extra`** (already
+      installed from there; `_pkg_is_aur` routes them via `pacman -S`). Corrected their stale
+      `packages.yaml` comments — no functional change (auto-migrated, no pin needed).
+- [x] Flag remaining Chaotic-AUR (third-party prebuilt binary trust) for extra scrutiny —
+      documented as the known chaotic-aur trust set (`wayfreeze-git`, `gpu-screen-recorder-git`) in
+      `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` + both CLAUDE.md policy sections (P2.3)
 - [x] Disable `*-debug` split packages from AUR builds (`makepkg.conf` `OPTIONS+=('!debug')`,
       commit `cf170a9`) — fewer build artifacts; keeps `pacman -Qmq` (tripwire seed/scan source)
       free of non-independent `-debug` entries
@@ -191,9 +218,16 @@ available in official repos.
 **Target files**: package data / docs
 **Effort**: Low
 
-- [ ] Ensure Flatpak ≥ 1.16.4 (CVE-2025-4870)
-- [ ] Prefer *verified* Flathub apps; document the preference
-- [ ] Review broad permissions (`--filesystem=host` etc.) for installed apps (Flatseal)
+- [x] Ensure Flatpak ≥ 1.16.4 (CVE-2025-4870) — host runs `1:1.18.0-1` (verified `pacman.log`
+      2026-06-10 upgrade), patched
+- [x] Prefer *verified* Flathub apps; document the preference — documented in the policy section
+      (`system/CLAUDE.md`) + guide (how to check the flathub.org verified badge)
+- [x] Review broad permissions (`--filesystem=host` etc.) for installed apps (Flatseal) — 4 apps
+      tightened via **chezmoi-managed override files** (`private_dot_local/share/flatpak/overrides/`):
+      qBittorrent + Xournal++ `host`→`xdg-download`/`xdg-documents`; Slack `devices=all`→none;
+      Teams `devices=all`+`home`→`xdg-download`. Flatseal added to `packages.yaml` for inspection.
+      **Pending functional test**: Slack/Teams webcam in a video call (camera portal) — revert that
+      app's override + document as exception if broken.
 
 ### P2.3 — Document package supply-chain security policy
 **What**: Repo's "Security-first" claim covers only age encryption; the package pipeline — its
@@ -202,20 +236,34 @@ riskiest path — has no documented policy. Contradiction worth closing.
 `private_dot_local/lib/scripts/system/package-manager/CLAUDE.md`
 **Effort**: Low
 
-- [ ] Document trust tiers, review requirements, pinning policy, SigLevel
-- [ ] Cross-reference `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
+- [x] Document trust tiers, review requirements, pinning policy, SigLevel — new "Package Security
+      Policy" section in `system/CLAUDE.md`; `### Policy` subsection in `package-manager/CLAUDE.md`;
+      root `CLAUDE.md` "Security-first" line extended to cover supply-chain (closes the
+      encryption-only contradiction); new user runbook `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`
+- [x] Cross-reference `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` — linked from all four docs above
 
 ### P2.4 — IoC hygiene check (one-time, time-sensitive)
-**What**: June 2026 Atomic Arch / July 2025 CHAOS RAT window. If AUR was updated recently, scan for
-known indicators.
+**What**: June 2026 Atomic Arch (wave 1 + wave 2) / July 2025 CHAOS RAT window. If AUR was updated
+recently, scan for known indicators.
 **Target files**: n/a (operational, run manually)
 **Effort**: Low
 
-- [ ] Check `/sys/fs/bpf/hidden_*` (eBPF rootkit pinned maps)
-- [ ] Check installed npm pkgs `atomic-lockfile` / `js-digest` / `lockfile-js`
-- [ ] Check `/tmp/systemd-initd` (CHAOS RAT artifact)
-- [ ] If any found: rotate all credentials (SSH keys, GitHub/npm/Vault tokens, browser sessions),
-      reinstall — removal alone is insufficient
+**Ran 2026-06-18 — CLEAN** (no indicators). `pacman.log` June 9–12 shows only official/chaotic
+`pacman` upgrades; **no AUR builds ran in the incident window**, so exposure path was never taken.
+
+Atomic Arch indicators (wave 1 + wave 2):
+- [x] `/sys/fs/bpf/hidden_*` (eBPF rootkit pinned maps) — absent
+- [x] npm pkgs `atomic-lockfile` / `js-digest` / `lockfile-js` (incl. **bun** cache — wave-2 `js-digest`
+      variant) in `~/.npm` `~/.cache/npm` `~/.bun` `~/.cache/bun` `/usr/lib/node_modules` — absent
+- [x] **`Restart=always` systemd persistence** (wave-2) injected via PKGBUILD/`.install`, root or user
+      scope — none beyond legit `ollama.service`
+- [x] Exfil indicators: `temp.sh` / Tor onion C2 (wave-2) — n/a (no payload present)
+
+CHAOS RAT indicator (July 2025):
+- [x] `/tmp/systemd-initd` (RAT artifact) — absent
+
+- [x] If any found: rotate all credentials (SSH keys, GitHub/npm/Vault tokens, browser sessions),
+      reinstall — removal alone is insufficient. **Not triggered** (clean).
 
 ---
 

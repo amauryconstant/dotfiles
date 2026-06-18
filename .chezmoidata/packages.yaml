@@ -289,7 +289,7 @@ packages:
         - brightnessctl # Screen brightness controller
         - playerctl # MPRIS media player controller
         - blueman # GTK Bluetooth manager GUI
-        - bluetui # Bluetooth TUI manager (AUR)
+        - bluetui # Bluetooth TUI manager (now official extra; was AUR)
         - swaync # Notification daemon with persistent history panel (Super+Shift+N)
         - grim # Wayland screenshot utility
         - slurp # Select screen region for screenshots
@@ -308,7 +308,7 @@ packages:
         - hyprdrover # Rust-based session management for Hyprland
         - wtype # Wayland keyboard simulation (voxtype dependency)
         - voxtype-bin # Speech-to-text dictation (AUR)
-        - quickshell # QML shell — drives voxtype waveform OSD overlay
+        - quickshell # QML shell — drives voxtype waveform OSD overlay (official extra)
         - kanata-bin # Software keyboard remapper — Workman layout on laptop (AUR)
 
     desktop_gui_apps:
@@ -340,6 +340,7 @@ packages:
         - flatpak:com.github.xournalpp.xournalpp # PDF annotation (Flatpak)
         - flatpak:org.qbittorrent.qBittorrent # BitTorrent client (Flatpak)
         - flatpak:com.github.wwmm.easyeffects # Audio effects for PipeWire (Flatpak)
+        - flatpak:com.github.tchx84.Flatseal # Flatpak permission manager (inspect managed overrides)
 
     audio_system:
       enabled: true

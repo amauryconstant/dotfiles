@@ -13,7 +13,7 @@
 #   $STATE_DIR/pkgbuild-hashes.yaml   approved.<name>.hash (sha256) + approved.<name>.at (ISO ts)
 #   $STATE_DIR/pkgbuilds/<name>.snapshot   last-approved build-file blob (for diffing on change)
 #
-# Coverage (tracked in _plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md):
+# Coverage (tracked in _plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md):
 #   - Hashes PKGBUILD + every `.install` hook (the latter run as root via pacman -U),
 #     cloned together via `paru -G` — `paru -Gp` would only give the PKGBUILD.
 #   - Fail-CLOSED: a failed clone/fetch BLOCKS the build (no silent allow).

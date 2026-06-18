@@ -29,7 +29,7 @@ Chaotic-AUR packages**, each an independent trust root with zero review gate.
 
 | Incident | Date | Vector | Payload | Relevance to us |
 |---|---|---|---|---|
-| **"Atomic Arch"** mass AUR hijack | Jun 2026 | Attackers **adopted orphaned AUR packages** and rewrote PKGBUILDs to pull malicious npm deps (`atomic-lockfile`, `js-digest`, `lockfile-js`) executing via npm `preinstall` hooks. ~1,500 packages. | Infostealer (SSH keys, GitHub/npm/Vault tokens, browser cookies) **+ root eBPF rootkit** hiding PIDs/files (pinned BPF maps `/sys/fs/bpf/hidden_*`), Tor C2. Removal insufficient — required credential rotation + reinstall. | **Headline risk.** Orphan adoption silently flips a trusted package name to malicious; our unattended `paru -Syu --noconfirm` would build it. Official `[core]/[extra]/[multilib]` NOT affected. |
+| **"Atomic Arch"** mass AUR hijack (**2 waves**) | Jun 2026 | Attackers **adopted orphaned AUR packages** and rewrote PKGBUILDs to pull malicious npm deps (`atomic-lockfile`, `js-digest`, `lockfile-js`) executing via npm `preinstall` hooks. **Wave 1 (Jun 11): 408 pkgs** (Rust ELF `6144D4…`). **Wave 2 (Jun 12): total >1,500 pkgs** — new `js-digest` **bun** variant (ELF `7883BD…`). Arch **froze AUR signups Jun 15**. | Infostealer (SSH keys, GitHub/npm/Vault/Discord/Slack/M365 tokens, browser cookies) **+ root eBPF rootkit** hiding PIDs/files (pinned BPF maps `/sys/fs/bpf/hidden_*`), `temp.sh`/Tor C2 exfil, wave-2 `Restart=always` systemd persistence. Removal insufficient — required credential rotation + reinstall. | **Headline risk.** Orphan adoption silently flips a trusted package name to malicious; our unattended `paru -Syu --noconfirm` would build it. **Now mitigated**: payload rides the *rewritten PKGBUILD*, which our P1.2 tripwire hashes → blocks changed/new AUR build files + shows diff. Official `[core]/[extra]/[multilib]` NOT affected. |
 | **CHAOS RAT** fake browsers | Jul 2025 | New typosquat AUR pkgs (`firefox-patch-bin`, `librewolf-fix-bin`, `zen-browser-patched-bin`); PKGBUILD `source=` pointed at attacker GitHub, ran at build. ~48h exposure. | Linux RAT — reverse shell, full remote control. Dropped `systemd-initd` in `/tmp`. C2 `130.162.225.47:8080`. | Shows the `-bin`/patched-name lure. We install several `-bin` packages by bare name. |
 | **acroread / xeactor** | 2018 | Orphan adoption → PKGBUILD `curl`-runs remote script. | Recon + systemd persistence (~360s timer). | Establishes the orphan-adoption pattern reused in 2026. |
 | **XZ Utils backdoor** (CVE-2024-3094, CVSS 10) | Mar 2024 | 2-year maintainer social-engineering ("Jia Tan") → backdoor in `liblzma` 5.6.0/5.6.1 in **official repos**. | Pre-auth sshd RCE. | Arch shipped it but wasn't exploitable (Arch sshd doesn't link liblzma). Proves even **official, signed repos** aren't immune to *upstream* compromise. |
@@ -52,6 +52,11 @@ framing.
 - Atomic Arch: Sonatype "Atomic Arch npm campaign" (Sonatype-2026-003775, CVSS 8.7);
   BleepingComputer "Over 400 Arch Linux packages compromised…"; archlinux.org news
   "Active AUR malicious packages incident" (2026-06-12); The Hacker News; StepSecurity; Phoronix.
+- Atomic Arch (waves + signup freeze, added 2026-06-18): SecurityWeek "Atomic Arch Supply Chain
+  Attack Hits 1,500 AUR Packages"; The Register "Arch Linux locks down AUR signups amid wave of
+  malicious commits" (2026-06-15); StepSecurity "400+ AUR Packages Hijacked";
+  community IoC tooling `github.com/lenucksi/aur-malware-check` (wave-2 `js-digest` bun variant,
+  `Restart=always` persistence, `temp.sh`/Tor exfil, ELF `7883BD…`).
 - acroread/xeactor: BleepingComputer (2018); LWN art. 759461.
 - XZ: Datadog Security Labs; Qualys (CVE-2024-3094).
 - Flatpak: stack.watch Flatpak CVEs; Flatpak 1.16.4 release notes.
@@ -134,8 +139,10 @@ framing.
    `private_dot_local/lib/scripts/system/CLAUDE.md` — current "Security-first" claim is contradicted
    by the unattended pipeline.
 9. **IoC hygiene** (June 2026 Atomic Arch window): if AUR was updated recently, check for
-   `/sys/fs/bpf/hidden_*`, npm pkgs `atomic-lockfile`/`js-digest`/`lockfile-js`, and
+   `/sys/fs/bpf/hidden_*`, npm pkgs `atomic-lockfile`/`js-digest`/`lockfile-js` (incl. **bun** cache —
+   wave-2 variant), wave-2 `Restart=always` systemd persistence, `temp.sh`/Tor exfil, and
    `/tmp/systemd-initd` (CHAOS RAT). If found: rotate all credentials, reinstall.
+   **Ran 2026-06-18 on this host — CLEAN; no AUR builds in the Jun 9–12 window per `pacman.log`.**
 
 ---
 

@@ -206,7 +206,7 @@ packages:
 **Why**: pipeline was fully unattended (`--noconfirm`) — a hijacked AUR/`-git` PKGBUILD would build
 + execute arbitrary code (build user, sudo available) on next sync/update with no review. See
 `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (Atomic Arch / CHAOS RAT). Roadmap:
-`_plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md`.
+`_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md`.
 
 **Mechanism**: hash gate between `packages.yaml` and the AUR build.
 - **Tier detection** (`_pkg_is_aur`): AUR-built iff NOT in any pacman sync repo (`pacman -Si` fails)
@@ -253,6 +253,27 @@ stable while upstream HEAD (the built code) moves. There are currently **none**:
 
 **Residual limits**: TOCTOU — `paru -S` re-fetches upstream `source=()` at build time, so a tarball/
 git HEAD could change between check and build (out of scope).
+
+### Policy (the human contract)
+
+The above is the *mechanism*; this is the *policy* a human follows. Full user runbook:
+`_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`. Trust-tier overview: `../CLAUDE.md` → "Package
+Security Policy".
+
+- **Review**: when the tripwire blocks (changed/new AUR build files), read the printed diff, then
+  `package-manager approve <pkg>` only if the change is legitimate. A blocked build is never
+  auto-confirmed — `--noconfirm` does not bypass the gate.
+- **SigLevel**: `Required DatabaseOptional` is enforced idempotently by `run_once_before_002`
+  (P1.3). Don't add stricter `LocalFileSigLevel`/`DatabaseRequired` — breaks the chaotic-aur
+  `pacman -U` bootstrap and unsigned official DBs.
+- **Pinning**: no local-build `-git` exists to pin (both are chaotic-aur signed binaries). Add a
+  reviewed `#commit=` only if a true local-build `-git` is ever introduced.
+- **chaotic-aur scrutiny**: `wayfreeze-git`, `gpu-screen-recorder-git` are the third-party
+  prebuilt-binary trust set — signature-validated, not locally built, so untripwired by design.
+
+**See**: `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (threat model),
+`_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap, P0–P2 complete),
+`_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` (runbook + IoC response).
 
 ---
 

@@ -13,7 +13,7 @@ Technical guidance for Claude Code when developing in this repository.
 - **Desktop**: Hyprland + Waybar + Wofi
 - **Terminal**: Ghostty (primary), Kitty (baseline)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
-- **Constraint**: Security-first, manual encryption only
+- **Constraint**: Security-first — manual encryption at rest + package supply-chain policy (see `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy")
 - **Monitor automation**: HyprDynamicMonitors (profiles), hyprwhenthen (events)
 - **Docs**: README.md for user-facing, CLAUDE.md for dev patterns
 
