@@ -69,7 +69,7 @@
     "mpris",               // Media control (Spotify, VLC, etc.)
     "custom/kanata-layer",   // Active Kanata keyboard layer (hidden when kanata not running)
     "custom/idle-indicator", // Idle-lock disabled indicator (hidden when active)
-    "custom/voxtype",      // Voice dictation state (hidden when idle/stopped)
+    "custom/voxtype",      // Voice dictation state (mic-off when daemon stopped)
     "custom/swaync"        // Notification bell
   ],
 
@@ -316,9 +316,9 @@
   // --------------------------------------------------------------------------
   // Voxtype Voice Dictation Status
   // --------------------------------------------------------------------------
-  // States: idle | recording | transcribing | stopped
+  // States: idle | recording | streaming | transcribing | stopped
   // Uses --follow for event-driven updates (no polling)
-  // Icons: md-microphone_outline / md-record_rec / md-transcribe
+  // stopped = daemon down → mic-off glyph (visible so failures aren't silent); click restarts
   "custom/voxtype": {
     "exec": "voxtype status --follow --format json",
     "exec-persistent": true,
@@ -327,8 +327,9 @@
     "format-icons": {
       "idle":         "",
       "recording":    "󰑋",
+      "streaming":    "󱜠",
       "transcribing": "󰔮",
-      "stopped":      ""
+      "stopped":      "󰍭"
     },
     "tooltip": true,
     "on-click": "systemctl --user restart voxtype"

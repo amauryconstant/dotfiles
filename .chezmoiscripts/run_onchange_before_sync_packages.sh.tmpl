@@ -117,17 +117,6 @@ DELETE_COUNT=$(echo "$DELETE_PACKAGES" | grep -c '^' || echo 0)
 {{ includeTemplate "log_success" "Found $ARCH_COUNT Arch/AUR packages, $FLATPAK_COUNT Flatpak packages, $DELETE_COUNT packages to remove" }}
 
 # ============================================================
-# Import required GPG keys for AUR signature verification
-# ============================================================
-
-{{ if .features.voxtype.enabled }}
-{{ includeTemplate "log_step" "Refreshing voxtype maintainer GPG key (picks up new subkeys)..." }}
-gpg --recv-keys E79F5BAF8CD51A806AA27DBB7DA2709247D75BC6 2>/dev/null || \
-    gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys E79F5BAF8CD51A806AA27DBB7DA2709247D75BC6
-{{ includeTemplate "log_success" "Voxtype GPG key refreshed" }}
-{{ end }}
-
-# ============================================================
 # Supply-chain tripwire: verify AUR build files against approved hashes
 # ============================================================
 # Self-contained (no lib/scripts dependency — this script runs before file

@@ -1,135 +1,35 @@
 #!/usr/bin/env bash
 
 # Script: run_once_after_010_setup_optional_services.sh.tmpl
-# Purpose: Consolidated optional services setup (Voxtype STT, Home Backup, Kanata)
-# Requirements: Arch Linux, optional packages (voxtype-bin, restic, kanata-bin)
+# Purpose: Consolidated optional services setup (Home Backup, Kanata)
+# Requirements: Arch Linux, optional packages (restic, kanata-bin)
 # Execution: Runs AFTER file application to configure optional services
 #
 # This script consolidates:
-# - Voxtype speech-to-text with Parakeet + CUDA
 # - Restic home backup repository initialization
 # - Kanata keyboard remapper (laptop only — Workman layout)
+#
+# NOTE: Voxtype STT moved to run_onchange_after_configure_voxtype.sh.tmpl so it
+# re-runs on package upgrades (the 0.7.x binary-variant reset breaks run_once setup).
 #
 # Benefits of consolidation:
 # - Single pass for optional service configuration
 # - Consistent pattern: check package → configure → enable service
 # - Graceful handling of missing packages (skip vs error)
 
-{{ includeTemplate "log_start" "Setting up optional services (Voxtype, Home Backup, Kanata)..." }}
+{{ includeTemplate "log_start" "Setting up optional services (Home Backup, Kanata)..." }}
 
 set -euo pipefail
 
 SERVICES_CONFIGURED=false
 
 # ============================================================================
-# SECTION 1: VOXTYPE SPEECH-TO-TEXT
+# SECTION 1: RESTIC HOME BACKUP
 # ============================================================================
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 1: Voxtype Speech-to-Text"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-VOXTYPE_CONFIGURED=false
-
-{{ if .features.voxtype.enabled }}
-if ! command -v voxtype >/dev/null 2>&1; then
-    {{ includeTemplate "log_skip" "Voxtype not installed" }}
-else
-    # Input group (required for built-in hotkey)
-    {{- $username := .chezmoi.username }}
-    {{ includeTemplate "log_step" "Checking input group membership..." }}
-
-    if id -nG {{ $username }} | grep -qw input; then
-        {{ includeTemplate "log_skip" "User already in input group" }}
-    else
-        sudo usermod -aG input {{ $username }}
-        {{ includeTemplate "log_success" "User added to input group" }}
-        {{ includeTemplate "log_warning" "Logout/login required for group change" }}
-    fi
-
-    # Enable ONNX Engine (auto-selects CUDA when available)
-    {{ includeTemplate "log_step" "Enabling ONNX engine..." }}
-
-    CURRENT_SYMLINK=$(readlink /usr/bin/voxtype)
-
-    case "$CURRENT_SYMLINK" in
-        */voxtype-onnx-cuda|*/voxtype-onnx-rocm|*/voxtype-onnx-avx2|*/voxtype-onnx-avx512)
-            {{ includeTemplate "log_skip" "ONNX engine already enabled" }}
-            ;;
-        *)
-            sudo voxtype setup onnx --enable
-            {{ includeTemplate "log_success" "ONNX engine enabled" }}
-            ;;
-    esac
-
-    # Download STT Models
-    VOXTYPE_DATA="$HOME/.local/share/voxtype"
-
-    # Parakeet (primary — fast English, ONNX CUDA)
-    {{ includeTemplate "log_step" "Checking for Parakeet model..." }}
-    if find "$VOXTYPE_DATA/models" -name "*.onnx" -maxdepth 2 2>/dev/null | grep -qi parakeet; then
-        {{ includeTemplate "log_skip" "Parakeet model already downloaded" }}
-    else
-        {{ includeTemplate "log_step" "Downloading Parakeet model (~600 MB)..." }}
-        voxtype setup --download --model parakeet-tdt-0.6b-v3 --no-post-install
-        {{ includeTemplate "log_success" "Parakeet model downloaded" }}
-    fi
-
-    # Moonshine (secondary English engine, lower VRAM)
-    # voxtype 0.6.x has no CLI flag for Moonshine download — requires interactive TUI
-    {{ includeTemplate "log_step" "Checking for Moonshine model..." }}
-    if find "$VOXTYPE_DATA/models" -name "*.onnx" -maxdepth 2 2>/dev/null | grep -qi moonshine; then
-        {{ includeTemplate "log_skip" "Moonshine model already downloaded" }}
-    else
-        {{ includeTemplate "log_info" "Moonshine requires interactive setup (no automated download in voxtype 0.6.x)" }}
-        {{ includeTemplate "log_info" "Select a Moonshine model in the TUI that follows, then press Enter to continue" }}
-        voxtype setup model
-        {{ includeTemplate "log_success" "Moonshine setup complete" }}
-    fi
-
-    # Whisper large-v3-turbo (multilingual fallback)
-    {{ includeTemplate "log_step" "Checking for Whisper large-v3-turbo model..." }}
-    if find "$VOXTYPE_DATA/models" -name "ggml-large-v3-turbo.bin" -maxdepth 1 2>/dev/null | grep -q .; then
-        {{ includeTemplate "log_skip" "Whisper large-v3-turbo already downloaded" }}
-    else
-        {{ includeTemplate "log_step" "Downloading Whisper large-v3-turbo model (~1.5 GB)..." }}
-        voxtype setup --download --model large-v3-turbo --no-post-install
-        {{ includeTemplate "log_success" "Whisper large-v3-turbo downloaded" }}
-    fi
-
-    # Enable Systemd User Service
-    {{ includeTemplate "log_step" "Enabling voxtype systemd service..." }}
-
-    if systemctl --user is-enabled --quiet voxtype; then
-        {{ includeTemplate "log_skip" "Service already enabled" }}
-    else
-        systemctl --user enable --now voxtype
-        {{ includeTemplate "log_success" "Voxtype service enabled" }}
-    fi
-
-    if systemctl --user is-active --quiet voxtype; then
-        {{ includeTemplate "log_success" "Voxtype service running" }}
-    else
-        {{ includeTemplate "log_warning" "Voxtype service not active" }}
-        {{ includeTemplate "log_info" "Check status: systemctl --user status voxtype" }}
-    fi
-
-    VOXTYPE_CONFIGURED=true
-    SERVICES_CONFIGURED=true
-fi
-{{ else }}
-{{ includeTemplate "log_skip" "Voxtype setup disabled in features.yaml" }}
-{{ end }}
-
-# ============================================================================
-# SECTION 2: RESTIC HOME BACKUP
-# ============================================================================
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 2: Home Backup Repository"
+echo "  SECTION 1: Home Backup Repository"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
@@ -173,12 +73,12 @@ fi
 {{ end }}
 
 # ============================================================================
-# SECTION 3: KANATA KEYBOARD REMAPPER (laptop only)
+# SECTION 2: KANATA KEYBOARD REMAPPER (laptop only)
 # ============================================================================
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 3: Kanata Keyboard Remapper"
+echo "  SECTION 2: Kanata Keyboard Remapper"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
@@ -272,16 +172,6 @@ echo "════════════════════════�
 echo "  Optional Services Setup Complete"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-
-if [ "$VOXTYPE_CONFIGURED" = true ]; then
-    echo "  Voxtype Speech-to-Text:"
-    echo "    SUPER+T       → Parakeet  (fast English, ONNX CUDA)"
-    echo "    SUPER+SHIFT+T → Moonshine (alternate English)"
-    echo "    SUPER+CTRL+T  → Whisper   (multilingual)"
-    echo "    Text appears in clipboard - paste with Ctrl+V"
-    echo "    Engine binary: $(readlink /usr/bin/voxtype 2>/dev/null || echo 'unknown')"
-    echo ""
-fi
 
 if [ "$BACKUP_CONFIGURED" = true ]; then
     echo "  Home Backup:"

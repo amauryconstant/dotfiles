@@ -40,7 +40,7 @@ packages:
         - nvidia-settings # NVIDIA driver configuration GUI
         - lib32-nvidia-utils # 32-bit NVIDIA utilities (for gaming)
         - libva-nvidia-driver # VA-API support for NVIDIA (hardware video decode)
-        - cuda # CUDA toolkit for Parakeet STT (voxtype)
+        - cuda # CUDA toolkit (llama.cpp GPU inference; voxtype ONNX GPU needs AVX-512, unused on this CPU)
 
     graphics_drivers_legacy:
       enabled: false
@@ -308,6 +308,7 @@ packages:
         - hyprdrover # Rust-based session management for Hyprland
         - wtype # Wayland keyboard simulation (voxtype dependency)
         - voxtype-bin # Speech-to-text dictation (AUR)
+        - quickshell # QML shell — drives voxtype waveform OSD overlay
         - kanata-bin # Software keyboard remapper — Workman layout on laptop (AUR)
 
     desktop_gui_apps:

@@ -1,130 +1,89 @@
 # Voice STT Implementation Plan
 
-**Last revised**: 2026-04-04
-**Status**: ✅ Phase 1 Complete (via voxtype) — see below
+**Last revised**: 2026-06-17
+**Status**: ✅ Operational on voxtype 0.7.x (repaired + upgraded)
 
 ---
 
 ## Architecture Decision (April 2026)
 
-**Original plan**: Build a custom Python `voice-stt` tool backed by Moonshine, hosted on GitLab, managed as a chezmoi external.
+**Original plan**: custom Python `voice-stt` tool backed by Moonshine, hosted on GitLab as a chezmoi external.
 
-**Revised decision**: Use **voxtype** (`voxtype-bin`, AUR) instead.
-
-Voxtype shipped everything Phase 1 planned, and more:
-
-| Phase 1 requirement | voxtype capability |
-|---------------------|--------------------|
-| Push-to-talk (SUPER+T) | ✅ `bindd`/`binddr` in `voice.conf` |
-| Hyprland compositor hooks | ✅ `voxtype-submap.conf`, pre/post commands |
-| Clipboard output | ✅ `mode = "clipboard"` |
-| Dunst notifications | ✅ `[output.notification]` |
-| Waybar status widget | ✅ `custom/voxtype` with `--follow` |
-| VAD | ✅ `voxtype setup vad` (Silero) |
-| Multiple STT engines | ✅ 7 engines: Whisper, Parakeet, Moonshine, SenseVoice, Paraformer, Dolphin, Omnilingual |
-| GPU acceleration | ✅ Vulkan (all GPUs) + ONNX CUDA/ROCm |
-| Meeting transcription | ✅ `voxtype meeting` mode (Pro feature) |
-
-No Python code, no GitLab repo, no maintenance burden. The chezmoi external approach is dropped entirely.
+**Decision**: use **voxtype** (`voxtype-bin`, AUR). It ships everything Phase 1 planned and more — no Python, no GitLab repo, no maintenance burden. The chezmoi-external approach is dropped entirely.
 
 ---
 
-## Current State (April 2026)
+## 0.7.x Repair + Upgrade (June 2026)
 
-### What's done
+### The breakage
 
-- `voxtype-bin` installed and running as systemd user service
-- SUPER+T push-to-talk bindings in `conf/bindings/voice.conf`
-- Compositor submaps in `conf.d/voxtype-submap.conf` (sourced via `hyprland.conf.tmpl`)
-- Waybar `custom/voxtype` module with nerd-font icons + CSS animation
-- Config at `private_dot_config/voxtype/config.toml.tmpl`
-- Audio feedback, spoken punctuation, clipboard output
+voxtype-bin auto-upgraded to **0.7.5**. v0.7.0 renamed/split every binary and reset the active `/usr/bin/voxtype` symlink to the CPU default (`voxtype-avx2`, no Parakeet). With `engine = "parakeet"` configured, the daemon crashed on every start (`Parakeet engine requested but voxtype was not compiled with --features parakeet`); `voxtype status` returned `stopped`; the Waybar module — which hid `stopped` with `opacity:0` — vanished.
 
-### Engine status
+**Root flaw**: engine/GPU selection lived in `run_once_after_010`, which ran once at install and never recovered from a package upgrade.
 
-| Engine | Status | Binary |
-|--------|--------|--------|
-| Whisper small.en | ✅ Downloaded | `voxtype-vulkan` (current) |
-| Whisper large-v3-turbo | ✅ Downloaded | available |
-| Parakeet ONNX CUDA | ⏳ Pending model download | `voxtype-onnx-cuda` available |
-| Moonshine | ⏳ Pending model download | `voxtype-onnx-cuda` (same binary) |
+### The fix (self-healing)
+
+- Engine/GPU/model/OSD setup extracted into **`run_onchange_after_configure_voxtype.sh.tmpl`**. Its hash embeds the installed voxtype version (`output` template func), so it **re-runs on every upgrade** and re-selects the correct ONNX variant.
+- Variant selection uses the 0.7.x surface: `sudo voxtype setup onnx --enable`, then `sudo voxtype setup gpu --enable` **only when the CPU has AVX-512 + an NVIDIA GPU**. Idempotent via `readlink -f /usr/bin/voxtype`.
+
+> **Hardware note (this host = i9-13900K):** the ONNX *GPU* binaries (`voxtype-onnx-cuda-*`, `-migraphx`) are built with **AVX-512**, which Intel 12th–14th gen consumer CPUs lack. So this box runs **`voxtype-onnx-avx2` (CPU)** — all chosen ONNX engines (Parakeet, Cohere, Moonshine, streaming, ML diarization) work on the CPU; only ONNX *GPU* accel is unavailable. The 13900K keeps Parakeet dictation snappy. (Whisper+Vulkan would use the GPU but loses every ONNX engine — not worth it here.)
+- Service is **restarted** (not just enabled) so variant/config changes take effect.
+- Waybar `stopped` now renders a dim mic-off glyph (`󰍭`) instead of hiding — a dead daemon stays visible; click restarts.
 
 ---
 
-## Next Steps
+## Current State (June 2026)
 
-### 1. Switch to ONNX engine + Parakeet (immediate)
+### Engine map (Hyprland bindings — `conf/bindings/voice.conf`)
+
+| Binding | Engine | Mode | Notes |
+|---------|--------|------|-------|
+| `SUPER+T` | Parakeet | push-to-talk | fast English, ONNX (CPU on this host) — daily |
+| `SUPER+ALT+T` | Parakeet | streaming toggle | live incremental text (v0.7.2) |
+| `SUPER+SHIFT+T` | Moonshine | push-to-talk | alternate English, low VRAM |
+| `SUPER+CTRL+T` | Cohere | push-to-talk | multilingual, #1 Open ASR (v0.7.0) |
+| `SUPER+ALT+M` | — | meeting toggle | `voice-meeting` CLI + Ollama summaries |
+
+### Features enabled
+
+- **OSD overlay**: `[osd] frontend = "quickshell"` — waveform + engine status (`quickshell` pkg + `voxtype setup quickshell`).
+- **Streaming**: `[parakeet] streaming_chunk_secs / streaming_left_context_secs / streaming_right_context_secs`; toggle binding has a matching stop entry inside `voxtype_recording` submap.
+- **Cohere multilingual**: `[cohere] model = "cohere-transcribe-q4f16"` (download is interactive-only via `voxtype setup model`).
+- **Meeting mode**: `[meeting]` + `[meeting.diarization] backend = "ml"` (ECAPA-TDNN) + `[meeting.summary] backend = "ollama"`.
+- **Filler-word filtering**: `[text] filter_filler_words = true`.
+- **Modifier-release guard**: `[output] wait_for_modifier_release`, `modifier_release_timeout_ms = 750`.
+
+### Models present (`~/.local/share/voxtype/models/`)
+
+parakeet-tdt-0.6b-v3, moonshine-base, ggml-large-v3-turbo, ggml-small.en.
+Streaming auto-uses `parakeet-unified-en-0.6b` on first toggle; Cohere needs an interactive download.
+
+---
+
+## Key files
+
+- `.chezmoiscripts/run_onchange_after_configure_voxtype.sh.tmpl` — self-healing setup
+- `private_dot_config/voxtype/config.toml.tmpl` — all engine/feature config
+- `private_dot_config/hypr/conf/bindings/voice.conf` + `conf.d/voxtype-submap.conf` — bindings
+- `private_dot_config/waybar/{config,style.css}.tmpl` — status module
+- `private_dot_local/lib/scripts/desktop/executable_voice-meeting` — meeting helper
+- `.chezmoidata/{features,packages}.yaml` — toggle + `quickshell`/`voxtype-bin`/`wtype`/`cuda`
+
+---
+
+## Verifying / troubleshooting
 
 ```bash
-sudo voxtype setup onnx --enable     # switches to voxtype-onnx-cuda
-voxtype setup model                  # interactive: select Parakeet model
+voxtype info variants                 # active: voxtype-onnx-avx2 (AVX2 host) / -cuda-13 (AVX-512 host)
+systemctl --user is-active voxtype    # active
+voxtype status                        # idle (not stopped)
+journalctl --user -u voxtype -n 30    # daemon errors
 ```
 
-Update `config.toml.tmpl`:
-```toml
-engine = "parakeet"
-```
-
-### 2. Add Moonshine as secondary model (optional)
-
-Moonshine is an encoder-decoder ONNX model optimized for edge/low-memory. Useful as secondary with a modifier key for French or quick dictation.
-
-```bash
-voxtype setup model                  # interactive: also download Moonshine
-```
-
-Config addition:
-```toml
-secondary_model = "moonshine-tiny"   # hold Shift during SUPER+T
-```
-paired with `--model-modifier LEFTSHIFT` in the systemd service or config.
-
-### 3. Enable VAD (optional)
-
-Silero VAD filters silence before transcription — reduces false starts.
-
-```bash
-voxtype setup vad
-```
-
-Add to config:
-```toml
-[vad]
-enabled = true
-threshold = 0.5
-```
-
-### 4. Update setup script for ONNX path
-
-`run_once_after_010` needs to call `voxtype setup onnx --enable` instead of
-the current Vulkan-only path. See the script for the GPU detection block to update.
+If the icon disappears again after an upgrade: `chezmoi apply` re-runs the configure script (version hash changed) and re-selects the ONNX variant. Manual one-liner (sudo only for the /usr/bin symlink swap; drop the `gpu` step on AVX2-only CPUs): `sudo voxtype setup onnx --enable && systemctl --user restart voxtype`.
 
 ---
 
-## What's No Longer Needed
+## Out of scope
 
-These were planned in the original implementation plan and are now obsolete:
-
-- ❌ Private GitLab repository `voice-stt`
-- ❌ Python implementation (moonshine.py, audio/capture.py, etc.)
-- ❌ chezmoi external git-repo integration
-- ❌ `private_dot_config/voice-stt/config.yaml.tmpl`
-- ❌ Rich terminal UI / CLI framework
-- ❌ `lib/scripts/` STT integration
-- ❌ Custom GPU detection/model selection logic
-
----
-
-## Future Phases (revised)
-
-All future STT work is voxtype configuration, not custom development.
-
-| Phase | Goal | Mechanism |
-|-------|------|-----------|
-| Engine tuning | Benchmark Parakeet vs Moonshine for daily use | `voxtype --engine` CLI flag |
-| French support | Evaluate Moonshine French model vs Whisper multilingual | `language = "auto"` + secondary model |
-| Meeting mode | Structured long-form transcription | `voxtype meeting` |
-| TTS | Text-to-speech responses | Separate tool — see TTS_ENGINES_RESEARCH.md |
-| LLM | Voice → LLM → voice pipeline | Separate integration, not STT scope |
-
-**See**: `VOICE_STT_FUTURE_PHASES.md` is archived — content superseded by voxtype's native feature set.
+TTS and voice→LLM→voice pipelines remain separate efforts (see `TTS_ENGINES_RESEARCH.md`). `VOICE_STT_FUTURE_PHASES.md` is archived — superseded by voxtype's native feature set.

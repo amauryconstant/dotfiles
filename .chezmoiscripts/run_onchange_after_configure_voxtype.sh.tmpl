@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_voxtype.sh.tmpl
+# Purpose: Configure Voxtype speech-to-text (engine/GPU variant, models, OSD, service)
+# Requirements: Arch Linux, voxtype-bin (optional), NVIDIA driver for CUDA
+#
+# WHY run_onchange (not run_once): Voxtype ships its binary as a swappable variant
+# behind /usr/bin/voxtype. A voxtype-bin package upgrade can reset that symlink to the
+# CPU default, which crashes the daemon when a GPU/ONNX engine (Parakeet/Cohere) is
+# configured. A run_once script ran only at first install and never recovered from this.
+# The hash below embeds the *installed voxtype version*, so this script re-runs on every
+# upgrade and re-selects the correct ONNX/CUDA variant — self-healing across upgrades.
+#
+# Hash: {{ printf "voxtype=%s features=%s engine=cohere+parakeet" (output "sh" "-c" "{ command -v voxtype >/dev/null 2>&1 && voxtype --version || echo none; } | tr -d '\\n'") (.features.voxtype | toJson) }}
+
+{{ includeTemplate "log_start" "Configuring Voxtype speech-to-text..." }}
+
+set -euo pipefail
+
+{{ if .features.voxtype.enabled }}
+if ! command -v voxtype >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Voxtype not installed — skipping configuration" }}
+else
+    VOXTYPE_DATA="$HOME/.local/share/voxtype"
+
+    # ------------------------------------------------------------------------
+    # Input group (required for evdev hotkeys / device access)
+    # ------------------------------------------------------------------------
+    {{- $username := .chezmoi.username }}
+    {{ includeTemplate "log_step" "Checking input group membership..." }}
+    if id -nG {{ $username }} | grep -qw input; then
+        {{ includeTemplate "log_skip" "User already in input group" }}
+    else
+        sudo usermod -aG input {{ $username }}
+        {{ includeTemplate "log_success" "User added to input group" }}
+        {{ includeTemplate "log_warning" "Logout/login required for group change" }}
+    fi
+
+    # ------------------------------------------------------------------------
+    # Engine + GPU variant selection (idempotent, version- and CPU-aware)
+    #
+    # voxtype 0.7.x binaries: CPU Whisper (voxtype-avx2), ONNX CPU (voxtype-onnx-avx2),
+    # ONNX GPU (voxtype-onnx-cuda-12/-13, voxtype-onnx-migraphx). Parakeet/Cohere/Moonshine
+    # all need an ONNX binary.
+    #
+    # IMPORTANT: the ONNX *GPU* binaries are built with AVX-512. CPUs without it (Intel
+    # 12th–14th gen consumer, e.g. i9-13900K) can only run ONNX on the CPU (voxtype-onnx-avx2)
+    # — `setup gpu --enable` fails on them. So only attempt GPU when AVX-512 + NVIDIA exist.
+    #
+    # sudo is required for the swap: the CLI rewrites the root-owned /usr/bin/voxtype
+    # symlink directly (only `voxtype configure`'s TUI uses pkexec). The swap touches only
+    # /usr/bin; model downloads + service control below stay non-sudo (land in user dirs).
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Checking active voxtype binary variant..." }}
+    ACTIVE="$(readlink -f /usr/bin/voxtype 2>/dev/null || echo none)"
+    if grep -qw avx512f /proc/cpuinfo; then HAS_AVX512=yes; else HAS_AVX512=no; fi
+    if command -v nvidia-smi >/dev/null 2>&1; then HAS_NVIDIA=yes; else HAS_NVIDIA=no; fi
+    want_gpu() { [ "$HAS_AVX512" = yes ] && [ "$HAS_NVIDIA" = yes ]; }
+
+    case "$ACTIVE" in
+        *onnx-cuda*|*onnx-migraphx*)
+            {{ includeTemplate "log_skip" "GPU ONNX engine already active ($ACTIVE)" }}
+            ;;
+        *onnx-avx2*|*onnx-avx512*)
+            if want_gpu; then
+                {{ includeTemplate "log_step" "Upgrading ONNX CPU → GPU (requires sudo)..." }}
+                sudo voxtype setup gpu --enable
+                {{ includeTemplate "log_success" "GPU ONNX enabled ($(readlink -f /usr/bin/voxtype))" }}
+            else
+                {{ includeTemplate "log_skip" "ONNX CPU engine active ($ACTIVE) — GPU ONNX needs AVX-512" }}
+            fi
+            ;;
+        *)
+            {{ includeTemplate "log_step" "Switching to ONNX engine (requires sudo)..." }}
+            sudo voxtype setup onnx --enable
+            if want_gpu; then
+                sudo voxtype setup gpu --enable || {{ includeTemplate "log_warning" "GPU enable failed — staying on ONNX CPU" }}
+            else
+                {{ includeTemplate "log_info" "CPU lacks AVX-512 (or no NVIDIA) → ONNX runs on CPU; Parakeet/Cohere are CPU-only here" }}
+            fi
+            {{ includeTemplate "log_success" "ONNX engine enabled ($(readlink -f /usr/bin/voxtype))" }}
+            ;;
+    esac
+
+    # ------------------------------------------------------------------------
+    # Silero VAD model (filters silence before transcription)
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Checking Silero VAD model..." }}
+    if voxtype setup vad --status 2>/dev/null | grep -qiE 'installed|present|found'; then
+        {{ includeTemplate "log_skip" "VAD model already present" }}
+    else
+        voxtype setup vad || {{ includeTemplate "log_warning" "VAD model download failed (non-fatal)" }}
+    fi
+
+    # ------------------------------------------------------------------------
+    # Models
+    #   Cohere   (default, SUPER+T) — interactive only (no --model flag)
+    #   Parakeet (fast English + streaming) — non-interactive download
+    #   Whisper — left as-is if already present (GPU sound-bite fallback)
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Checking Parakeet model..." }}
+    if find "$VOXTYPE_DATA/models" -maxdepth 2 -iname '*.onnx' 2>/dev/null | grep -qi parakeet; then
+        {{ includeTemplate "log_skip" "Parakeet model already downloaded" }}
+    else
+        {{ includeTemplate "log_step" "Downloading Parakeet model (~600 MB)..." }}
+        voxtype setup --download --model parakeet-tdt-0.6b-v3 --no-post-install
+        {{ includeTemplate "log_success" "Parakeet model downloaded" }}
+    fi
+
+    {{ includeTemplate "log_step" "Checking Cohere Transcribe model..." }}
+    if find "$VOXTYPE_DATA/models" -maxdepth 2 -iname '*cohere*' 2>/dev/null | grep -q .; then
+        {{ includeTemplate "log_skip" "Cohere model already downloaded" }}
+    else
+        {{ includeTemplate "log_info" "Cohere has no non-interactive download (--model accepts Whisper names only)." }}
+        {{ includeTemplate "log_info" "Select 'cohere-transcribe-q4f16' in the TUI that follows, then exit to continue." }}
+        voxtype setup model || {{ includeTemplate "log_warning" "Cohere setup skipped — SUPER+CTRL+T will fail until downloaded" }}
+    fi
+
+    # ------------------------------------------------------------------------
+    # Quickshell OSD (waveform overlay) — requires the quickshell package
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Checking Quickshell OSD tree..." }}
+    if ! command -v quickshell >/dev/null 2>&1; then
+        {{ includeTemplate "log_skip" "quickshell not installed — OSD tree skipped" }}
+    elif [ -d "$VOXTYPE_DATA/quickshell" ] || [ -d "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/voxtype" ]; then
+        {{ includeTemplate "log_skip" "Quickshell OSD tree already installed" }}
+    else
+        voxtype setup quickshell || {{ includeTemplate "log_warning" "Quickshell OSD install failed (non-fatal)" }}
+        {{ includeTemplate "log_success" "Quickshell OSD tree installed" }}
+    fi
+
+    # ------------------------------------------------------------------------
+    # Service — restart (not just enable) so config/variant changes take effect
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Enabling and (re)starting voxtype service..." }}
+    systemctl --user enable voxtype >/dev/null 2>&1 || true
+    systemctl --user restart voxtype
+
+    if systemctl --user is-active --quiet voxtype; then
+        {{ includeTemplate "log_success" "Voxtype service running" }}
+    else
+        {{ includeTemplate "log_error" "Voxtype service failed to start" }}
+        {{ includeTemplate "log_info" "Inspect: journalctl --user -u voxtype -n 30" }}
+    fi
+
+    echo ""
+    echo "  Voxtype Speech-to-Text:"
+    echo "    SUPER+T        → Cohere    (default, multilingual, push-to-talk)"
+    echo "    SUPER+ALT+T    → Parakeet  (live streaming dictation, toggle)"
+    echo "    SUPER+CTRL+T   → Parakeet  (fast English, push-to-talk)"
+    echo "    SUPER+ALT+M    → Meeting   (voice-meeting toggle)"
+    echo "    Active binary: $(readlink -f /usr/bin/voxtype 2>/dev/null || echo unknown)"
+    echo ""
+fi
+{{ else }}
+{{ includeTemplate "log_skip" "Voxtype setup disabled in features.yaml" }}
+{{ end }}
+
+{{ includeTemplate "log_complete" "Voxtype configuration complete" }}

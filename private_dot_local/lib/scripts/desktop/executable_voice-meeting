@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Script: voice-meeting
+# Purpose: Wrapper around `voxtype meeting` for Hyprland keybinding + terminal use.
+#          `toggle` starts/stops with desktop-notification feedback (SUPER+ALT+M);
+#          all other subcommands pass through to `voxtype meeting`.
+# Requirements: voxtype (meeting mode), notify-send
+
+ICON="󰗋"  # md-account_voice
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 && notify-send "$ICON Meeting" "$1"
+}
+
+if ! command -v voxtype >/dev/null 2>&1; then
+    notify "voxtype not installed"
+    echo "voice-meeting: voxtype not installed" >&2
+    exit 1
+fi
+
+# A meeting is idle when status reports the "no meeting" sentinel.
+meeting_idle() {
+    voxtype meeting status 2>/dev/null | grep -qi 'no meeting currently in progress'
+}
+
+cmd="${1:-toggle}"
+
+case "$cmd" in
+    toggle)
+        if meeting_idle; then
+            voxtype meeting start && notify "Recording started"
+        else
+            voxtype meeting stop && notify "Stopped — summarise with: voice-meeting summarize latest"
+        fi
+        ;;
+    start|stop|pause|resume|status|list|export|show|delete|label|summarize)
+        exec voxtype meeting "$@"
+        ;;
+    -h|--help|help)
+        cat <<'EOF'
+voice-meeting — voxtype meeting-mode helper
+
+Usage:
+  voice-meeting toggle               Start, or stop if a meeting is running (keybinding)
+  voice-meeting start|stop|pause|resume
+  voice-meeting status|list
+  voice-meeting export <id> [opts]   (id or "latest"; --format markdown|text|json)
+  voice-meeting summarize <id>       AI summary via local Ollama
+  voice-meeting label <id> <SPEAKER_NN> <name>
+EOF
+        ;;
+    *)
+        echo "voice-meeting: unknown command '$cmd' (try: voice-meeting help)" >&2
+        exit 1
+        ;;
+esac

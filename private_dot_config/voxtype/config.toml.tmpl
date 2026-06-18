@@ -1,19 +1,27 @@
 # Voxtype Configuration
 # Managed by chezmoi - do not edit directly
-# See: https://github.com/peteonrails/voxtype for full options
+# See: https://voxtype.io  and  https://github.com/peteonrails/voxtype
+#
+# Engine map (Hyprland bindings in hypr/conf/bindings/voice.conf):
+#   SUPER+T        → Cohere    push-to-talk (DEFAULT — #1 Open ASR, multilingual incl. FR)
+#   SUPER+ALT+T    → Parakeet  streaming toggle (live incremental text, English)
+#   SUPER+CTRL+T   → Parakeet  push-to-talk (fast English-only alternative)
+#   SUPER+ALT+M    → Meeting   mode (voice-meeting CLI)
+#
+# Cohere benched ~1.45s for 11s audio on the i9-13900K (CPU) — ~7x realtime, only
+# marginally slower than Parakeet, so it's the everyday default. Streaming stays on
+# Parakeet (Cohere is encoder-decoder, not cache-aware-streaming capable).
 
-engine = "parakeet"  # ONNX CUDA engine (fast English)
-# Override per-recording via: voxtype record start --engine <name>
-# Engines: parakeet (SUPER+T), moonshine (SUPER+SHIFT+T), whisper (SUPER+CTRL+T)
+engine = "cohere"  # default engine; per-recording override via --engine <name>
 
 [hotkey]
-enabled = false  # Use Hyprland bindings (Super+T) instead
+enabled = false  # Hyprland bindings drive recording, not the built-in evdev hotkey
 
 [audio]
 device = "default"
 sample_rate = 16000
 max_duration_secs = 60
-pause_media = true  # Pause MPRIS players while dictating
+pause_media = true  # Pause MPRIS players (Spotify, Firefox, VLC) while dictating
 
 [audio.feedback]
 enabled = true
@@ -21,35 +29,62 @@ theme = "default"
 volume = 0.7
 
 [whisper]
-model = "large-v3-turbo"  # Multilingual fallback (SUPER+CTRL+T)
+model = "large-v3-turbo"  # retained fallback; multilingual slot now uses Cohere
 language = "auto"
 translate = false
-on_demand_loading = true  # Load model only when recording starts
+on_demand_loading = true  # load model only when recording starts
 
 [parakeet]
-model = "parakeet-tdt-0.6b-v3"  # Primary engine (SUPER+T)
+model = "parakeet-tdt-0.6b-v3"  # primary engine (SUPER+T)
+# Cache-aware streaming (SUPER+ALT+T toggle). Streaming auto-uses the unified
+# streaming model (parakeet-unified-en-0.6b) when toggled.
+streaming_chunk_secs = 0.5
+streaming_left_context_secs = 2.0
+streaming_right_context_secs = 0.5
 
-[moonshine]
-model = "base"          # Secondary English engine (SUPER+SHIFT+T)
-quantized = true        # Use INT8 quantized variant when available
+[cohere]
+model = "cohere-transcribe-q4f16"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
 
 [output]
 mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"
-
-# Compositor integration hooks (modifier key fix)
+fallback_to_clipboard = true
+type_delay_ms = 0
+auto_submit = false  # don't send Enter after transcription
+# Modifier-release guard (v0.7.2): stop held modifiers corrupting typed output
+wait_for_modifier_release = true
+modifier_release_timeout_ms = 750
+# Compositor integration hooks (modifier key fix — see voxtype-submap.conf)
 pre_recording_command = "hyprctl dispatch submap voxtype_recording"
 pre_output_command = "hyprctl dispatch submap voxtype_suppress"
 post_output_command = "hyprctl dispatch submap reset"
-fallback_to_clipboard = true
-type_delay_ms = 0
-auto_submit = false  # Don't send Enter after transcription
 
 [output.notification]
 on_recording_start = false
 on_transcription = true
 
 [text]
-spoken_punctuation = true  # "period" → "."
+spoken_punctuation = true     # "period" → "."
+filter_filler_words = true    # strip "um", "uh", "like", "you know" (v0.7.0)
 
 [status]
-   icon_theme = "nerd-font"
+icon_theme = "nerd-font"
+
+# On-screen display: floating waveform overlay + engine status while dictating (v0.7.0+)
+[osd]
+enabled = true
+frontend = "quickshell"  # QML-native OSD (v0.7.5); requires `quickshell` + `voxtype setup quickshell`
+top_margin = 0.85        # swayosd-aligned fractional position
+
+# Meeting mode (SUPER+ALT+M): continuous transcription + Ollama summaries (v0.6.0+)
+[meeting]
+enabled = true
+chunk_duration_secs = 30
+
+[meeting.diarization]
+enabled = true
+backend = "ml"  # ONNX speaker-embedding clustering (ECAPA-TDNN); "simple" = mic-vs-loopback
+
+[meeting.summary]
+backend = "ollama"  # local AI summaries via Ollama service
+ollama_url = "http://localhost:11434"
+ollama_model = "llama3.2"

@@ -1,29 +1,38 @@
 # STT Models Research
-**Created**: February 2026 | **Updated**: April 2026
+**Created**: February 2026 | **Updated**: June 2026 (voxtype 0.7.x)
 **Focus**: Speech-to-text engines for local voice dictation
 
 ---
 
-## Status Update (April 2026)
+## Status Update (June 2026 — voxtype 0.7.x)
 
-**Tool in use**: **voxtype** — ships 7 engines via two runtime backends (whisper.cpp and ONNX Runtime). No custom implementation needed.
+**Tool in use**: **voxtype 0.7.5** — now ships **9 engines** via whisper.cpp + ONNX Runtime (+ Soniox cloud). GPU binaries split into `voxtype-onnx-cuda-12` (driver 525+) and `voxtype-onnx-cuda-13` (driver 580+); AMD uses `voxtype-onnx-migraphx` (ROCm 7.x). **Caveat:** ONNX GPU binaries require an **AVX-512** CPU. This host (i9-13900K, AVX2-only) therefore runs **`voxtype-onnx-avx2` on CPU** — full ONNX engine set, no GPU ONNX accel.
 
-**Current engine**: Whisper small.en (Vulkan) → **migrating to Parakeet ONNX CUDA**
+**Active config**: Parakeet (English daily) + Cohere (multilingual) + Moonshine (alt). Streaming, Quickshell OSD, and meeting mode enabled. See `_plans/VOICE_STT_IMPLEMENTATION_PLAN.md`.
 
 **Voxtype engine matrix**:
 
 | Engine | Backend | Languages | Best For | Status |
 |--------|---------|-----------|----------|--------|
-| **Whisper** | whisper.cpp | 99+ | General multilingual | ✅ Active (default) |
-| **Parakeet** | ONNX CUDA | English | Fast English dictation | ⏳ Migrate to |
-| **Moonshine** | ONNX | English | Low-memory edge | ⏳ Secondary model |
-| **SenseVoice** | ONNX | zh/en/ja/ko/yue | Asian languages | Future |
-| **Paraformer** | ONNX | zh+en bilingual | Chinese-English | Future |
-| **Dolphin** | ONNX | 40 langs (no English) | Eastern languages | Not relevant |
-| **Omnilingual** | ONNX | 1600+ langs | Rare languages | Not relevant |
+| **Parakeet** | ONNX (CPU/avx2 here) | English | Fast English dictation + streaming | ✅ Active (SUPER+T) |
+| **Cohere Transcribe** | ONNX (CPU/avx2 here) | multilingual (1.6B) | Multilingual, #1 Open ASR | ✅ Active (SUPER+CTRL+T) |
+| **Moonshine** | ONNX (CPU) | English | Low-memory edge | ✅ Active (SUPER+SHIFT+T) |
+| **Whisper** | whisper.cpp | 99+ | Mature multilingual fallback | ◻ Retained, unbound |
+| **SenseVoice** | ONNX | zh/en/ja/ko/yue | Asian languages | Available |
+| **Paraformer** | ONNX | zh+en | Chinese-English | Available |
+| **Dolphin** | ONNX | 40 langs | Eastern languages | Available |
+| **Omnilingual** | ONNX | 1600+ langs | Rare languages | Available |
+| **Soniox** | cloud (WebSocket) | multilingual | Low-latency cloud streaming | Not used (privacy) |
 
-**Switching**: `sudo voxtype setup onnx --enable` → `voxtype-onnx-cuda` binary
-**Engine selection**: `engine = "parakeet"` in `config.toml` (top-level key)
+**Variant selection**: `sudo voxtype setup onnx --enable && sudo voxtype setup gpu --enable` (auto-detects CUDA 13). Re-run automatically by `run_onchange_after_configure_voxtype.sh.tmpl` on every upgrade.
+**Engine selection**: `engine = "parakeet"` (top-level) + per-binding `--engine`.
+
+### Notable 0.7.x capabilities now in use
+
+- **Streaming dictation** (v0.7.2): cache-aware Parakeet, live incremental text; toggle-activated. Config: `[parakeet] streaming_chunk_secs/left_context_secs/right_context_secs`; auto-uses `parakeet-unified-en-0.6b`.
+- **On-screen display** (v0.7.0/0.7.5): waveform overlay; `[osd] frontend = "quickshell"`.
+- **Meeting mode** (v0.6.0): chunked transcription, ECAPA-TDNN diarization, exports (md/srt/vtt), Ollama summaries (`[meeting.summary] backend = "ollama"`).
+- **Filler-word filtering** (v0.7.0): `[text] filter_filler_words = true`.
 
 ---
 

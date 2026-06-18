@@ -349,14 +349,19 @@ window#waybar {
   animation: voxtype-pulse 1s ease-in-out infinite;
 }
 
+#custom-voxtype.streaming {
+  color: @accent-info;
+  animation: voxtype-pulse 1.5s ease-in-out infinite;
+}
+
 #custom-voxtype.transcribing {
   color: @accent-warning;
 }
 
+/* Daemon down: dim error glyph (not hidden) so failures stay visible — click to restart */
 #custom-voxtype.stopped {
-  opacity: 0;
-  min-width: 0;
-  padding: 0;
+  color: @accent-error;
+  opacity: 0.55;
 }
 
 @keyframes voxtype-pulse {
