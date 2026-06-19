@@ -428,7 +428,7 @@ The package pipeline is the repo's most automated path — this is its written p
 "Security-first" constraint covers *both* age encryption (at rest) **and** supply-chain (below).
 
 **See**: `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` (user runbook),
-`package-manager/CLAUDE.md` (tripwire mechanism), `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
+`package-manager/CLAUDE.md` (tripwire mechanism), `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
 (threat model), `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap).
 
 **Trust tiers** (derived at runtime by `_pkg_is_aur`, not hand-tagged):

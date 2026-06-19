@@ -4,7 +4,7 @@
 # Purpose: Supply-chain tripwire — detect changed/unapproved AUR PKGBUILDs before build
 # Requirements: pacman, paru, yq, sha256sum
 #
-# Trust model (see _research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md):
+# Trust model (see _research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md):
 #   official [core]/[extra]/[multilib] + chaotic-aur (signed binary sync repos) → trusted, NOT gated
 #   true AUR (PKGBUILD executes locally at build time)                          → gated by this tripwire
 # A package is "AUR-built" iff it is NOT in any pacman sync repo but IS resolvable via paru AUR.

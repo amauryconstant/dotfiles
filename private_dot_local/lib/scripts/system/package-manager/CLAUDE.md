@@ -205,7 +205,7 @@ packages:
 
 **Why**: pipeline was fully unattended (`--noconfirm`) — a hijacked AUR/`-git` PKGBUILD would build
 + execute arbitrary code (build user, sudo available) on next sync/update with no review. See
-`_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (Atomic Arch / CHAOS RAT). Roadmap:
+`_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (Atomic Arch / CHAOS RAT). Roadmap:
 `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md`.
 
 **Mechanism**: hash gate between `packages.yaml` and the AUR build.
@@ -271,7 +271,7 @@ Security Policy".
 - **chaotic-aur scrutiny**: `wayfreeze-git`, `gpu-screen-recorder-git` are the third-party
   prebuilt-binary trust set — signature-validated, not locally built, so untripwired by design.
 
-**See**: `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (threat model),
+**See**: `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (threat model),
 `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap, P0–P2 complete),
 `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` (runbook + IoC response).
 

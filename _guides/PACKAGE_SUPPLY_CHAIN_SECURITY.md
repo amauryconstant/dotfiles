@@ -4,8 +4,8 @@ User runbook for the package pipeline's trust model, review gates, and incident 
 
 - **Mechanism**: `private_dot_local/lib/scripts/system/package-manager/CLAUDE.md` → "Supply-Chain Tripwire"
 - **Policy summary**: `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy"
-- **Threat model**: `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
-- **Roadmap (P0–P2 complete)**: `_plans/PACKAGE_SUPPLY_CHAIN_HARDENING.md`
+- **Threat model**: `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
+- **Roadmap (P0–P2 complete)**: `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md`
 
 ## Why this exists
 

@@ -1,7 +1,7 @@
 # Package Supply-Chain Hardening Roadmap
 
 Remediation backlog for the exposure documented in
-`_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`.
+`_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`.
 Created: 2026-06-15.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
@@ -240,7 +240,7 @@ riskiest path — has no documented policy. Contradiction worth closing.
       Policy" section in `system/CLAUDE.md`; `### Policy` subsection in `package-manager/CLAUDE.md`;
       root `CLAUDE.md` "Security-first" line extended to cover supply-chain (closes the
       encryption-only contradiction); new user runbook `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`
-- [x] Cross-reference `_research/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` — linked from all four docs above
+- [x] Cross-reference `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` — linked from all four docs above
 
 ### P2.4 — IoC hygiene check (one-time, time-sensitive)
 **What**: June 2026 Atomic Arch (wave 1 + wave 2) / July 2025 CHAOS RAT window. If AUR was updated
