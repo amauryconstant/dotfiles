@@ -20,7 +20,10 @@ enabled = false  # Hyprland bindings drive recording, not the built-in evdev hot
 [audio]
 device = "default"
 sample_rate = 16000
-max_duration_secs = 60
+# Safety backstop shared by ALL recording modes (push-to-talk + streaming toggle —
+# voxtype has no per-mode duration setting). Push-to-talk is already bounded by
+# key-release in practice, so 180s mainly gives streaming dictation headroom.
+max_duration_secs = 180
 pause_media = true  # Pause MPRIS players (Spotify, Firefox, VLC) while dictating
 
 [audio.feedback]
