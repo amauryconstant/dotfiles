@@ -1,0 +1,59 @@
+-- ============================================================================
+-- Monitor Configuration
+-- ============================================================================
+-- Syntax: hl.monitor({ output = "NAME", mode = "RESOLUTION", position = "POSITION", scale = SCALE })
+--
+-- output      : Monitor identifier (use 'hyprctl monitors' to see names)
+--               Use "" (empty) as wildcard to apply to all monitors
+-- mode        : "WIDTHxHEIGHT@REFRESH" or "preferred" for native resolution
+-- position    : "XxY" coordinates (e.g., "0x0", "1920x0") or "auto" for automatic
+-- scale       : Scaling factor (1 = 100%, 1.5 = 150%, 2 = 200%) or "auto"
+-- transform   : Optional rotation (1 = 90° clockwise)
+--
+-- COMMON EXAMPLES:
+-- - Single 4K monitor with 150% scaling:
+--     hl.monitor({ output = "", mode = "3840x2160", position = "auto", scale = 1.5 })
+-- - Laptop HiDPI display:
+--     hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 2 })
+-- - Disable a monitor:
+--     hl.monitor({ output = "HDMI-A-1", disabled = true })
+--
+-- To identify your monitors, run: hyprctl monitors
+-- ============================================================================
+
+{{ if eq .chassisType "desktop" }}
+-- ============================================================================
+-- Desktop Multi-Monitor Configuration
+-- ============================================================================
+-- Primary Monitor: DP-1 (4K @ 144Hz with 1.25x scaling)
+-- - Resolution: 3840x2160 @ 144Hz
+-- - Position: 0x0 (left monitor)
+-- - Scale: 1.25
+-- - Effective size: 3072x1728
+hl.monitor({ output = "DP-1", mode = "3840x2160@144", position = "0x0", scale = 1.25 })
+
+-- Secondary Monitor: HDMI-A-1 (1440p @ 60Hz, Portrait)
+-- - Resolution: 2560x1440 @ 60Hz (rotated 90°)
+-- - Position: 3072x144 (to the right of primary, vertically centered)
+-- - Scale: 1.0 (native resolution)
+-- - Transform: 1 (90° clockwise rotation)
+-- - Physical size after rotation: 1440x2560
+hl.monitor({ output = "HDMI-A-1", mode = "2560x1440@60", position = "3072x144", scale = 1, transform = 1 })
+{{ else }}
+-- ============================================================================
+-- Laptop Configuration with Docking Station Support
+-- ============================================================================
+-- Built-in display: Auto-detect native resolution and scaling
+-- When docked: External monitors will be auto-positioned
+-- - Use 'hyprctl monitors' to see connected displays
+-- - Uncomment specific configurations below if auto-detection doesn't work
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+
+-- Docking Station Override Examples (uncomment if needed):
+-- Primary: Built-in laptop display
+-- hl.monitor({ output = "eDP-1", mode = "preferred", position = "auto", scale = 2 })
+
+-- External monitor when docked (auto-positioned to the right)
+-- hl.monitor({ output = "DP-1", mode = "preferred", position = "auto", scale = 1 })
+-- hl.monitor({ output = "HDMI-A-1", mode = "preferred", position = "auto", scale = 1 })
+{{ end }}
