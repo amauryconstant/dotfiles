@@ -1,16 +1,57 @@
 # LLM Backends Research - February 2026
-**Focus**: Local LLM solutions for future two-way conversation
+**Focus**: Local LLM solutions for two-way conversation and coding/CLI assistance
 **Phase**: Future (Phase 3)
+
+> **Status update (2026-06-24)**: Backend decided and implemented — see
+> "Decision & Implementation Status" below. Ollama has been **dropped**; the
+> repo standardizes on **llama.cpp (`llama-server`)**. The comparison research
+> below is retained as the rationale behind that choice.
+
+---
+
+## Decision & Implementation Status (2026-06-24)
+
+**Chosen backend**: **llama.cpp** via `llama-server`.
+
+**Why llama.cpp over the February recommendation of Ollama**:
+- Single-user, local use case (coding assistant + shell/CLI helpers) — no need
+  for Ollama's curated model management or multi-tenant features.
+- Best VRAM efficiency and most control over quantization (GGUF).
+- No background daemon telemetry; fully self-hosted via a user systemd unit.
+
+**Ollama removed**: stale references stripped from
+`run_once_after_002_configure_system_services.sh.tmpl`.
+
+**Implementation details** (committed `4b3d802`):
+- **Config source of truth**: `.chezmoidata/ai.yaml` (`{{ .ai.* }}`).
+- **Server**: `llama-server.service.tmpl` (user unit), host/port templated from
+  `ai.yaml` — fixes prior 8100/8080 drift; canonical port is **8080**.
+- **Models**: GGUF, stored in `~/.local/share/models`, declared in
+  `ai.models` as `{ name, file, url }` entries (empty list = no-op).
+- **Setup script**: `run_onchange_after_install_ai_models.sh.tmpl` — resumable
+  `wget -c`, skip-existing, generates `~/.config/llama-server/env` from the
+  first configured model (`MODEL_FILE`, `N_GPU_LAYERS`).
+- **GPU offload**: `ai.server.n_gpu_layers` (default 99).
+
+**See**: `.claude/rules/chezmoi-data.md` (`ai.yaml`),
+`.claude/rules/chezmoi-scripts.md` (`install_ai_models` trigger).
 
 ---
 
 ## Executive Summary
 
-**Recommendation for Phase 3**: **Ollama** for simplicity, **llama.cpp** for maximum performance
+**Original February recommendation**: Ollama for simplicity, llama.cpp for
+maximum performance.
+
+**Final decision (June 2026)**: **llama.cpp (`llama-server`)** — the
+performance/efficiency option won for this single-user, local coding-assistant
+use case. Ollama dropped. See "Decision & Implementation Status" above.
 
 **Rationale**:
-- Ollama: Easiest setup, OpenAI-compatible API, automatic model management
-- llama.cpp: Best VRAM efficiency, fastest inference, flexible quantization
+- llama.cpp: Best VRAM efficiency, fastest inference, flexible quantization,
+  no daemon telemetry, OpenAI-compatible server (`llama-server`).
+- Ollama (not adopted): easier setup but unnecessary model-management overhead
+  and less control for a single-user setup.
 
 ---
 
@@ -685,17 +726,19 @@ completion = client.chat.completions(
 
 ## Summary
 
-**Phase 3 Recommendation**: **Ollama** (primary) + **llama.cpp** (performance option)
+**Decision (June 2026)**: **llama.cpp** (`llama-server`) — implemented. Ollama
+dropped. See "Decision & Implementation Status" at the top of this document.
 
 **Why**:
-- Ollama: Simplest setup, OpenAI API compatibility, automatic model management
-- llama.cpp: Best VRAM efficiency, fastest inference, most control
-- Both support streaming for real-time conversation
-- Both integrate with Pipecat for voice assistant
-- Both work with Moonshine STT
+- llama.cpp: Best VRAM efficiency, fastest inference, most control, no daemon
+  telemetry — ideal for a single-user local coding/CLI assistant
+- OpenAI-compatible server (`llama-server`) on port 8080
+- Data-driven config via `ai.yaml`; GGUF models in `~/.local/share/models`
+- Supports streaming for real-time conversation; integrates with Pipecat and
+  Moonshine STT for any future voice work
 
-**Hardware-Specific Recommendations**:
-- **RTX 4090**: vLLM for multi-user, Ollama for simplicity
+**Hardware-Specific Recommendations** (research, for reference):
+- **RTX 4090**: vLLM for multi-user, llama.cpp for single-user
 - **RTX 1650**: llama.cpp for VRAM optimization, Phi-4-mini for speed
 
 ---
