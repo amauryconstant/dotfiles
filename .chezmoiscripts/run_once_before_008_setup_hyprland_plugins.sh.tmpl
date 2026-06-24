@@ -10,59 +10,29 @@
 set -euo pipefail
 
 # ============================================================================
-# HYPRSPLIT PLUGIN SETUP (via hyprpm)
+# HYPRSPLIT LUA LIBRARY SETUP (require("hyprsplit"))
 # ============================================================================
+# The C++ hyprpm plugin is deprecated. hyprsplit is now a Lua library loaded
+# via require("hyprsplit"); the Hyprland Lua entry point adds
+# ~/.config/hypr/?/init.lua to package.path, so the repo must live at
+# ~/.config/hypr/hyprsplit (init.lua at its root).
 
-{{ includeTemplate "log_step" "Checking hyprpm availability..." }}
-
-if ! command -v hyprpm &> /dev/null; then
-    {{ includeTemplate "log_error" "hyprpm not found - Hyprland may not be installed" }}
-    {{ includeTemplate "log_info" "Fix: Install Hyprland and ensure hyprpm is available" }}
-    exit 1
-fi
-
-{{ includeTemplate "log_success" "hyprpm available" }}
-
-# Update hyprpm headers to ensure compatibility
-{{ includeTemplate "log_step" "Updating hyprpm headers..." }}
-if hyprpm update >/dev/null 2>&1; then
-    {{ includeTemplate "log_success" "hyprpm headers updated" }}
-else
-    {{ includeTemplate "log_warning" "hyprpm update failed (continuing)" }}
-fi
-
-# Check if hyprsplit plugin is already installed
-{{ includeTemplate "log_step" "Checking for hyprsplit plugin..." }}
-
-if hyprpm list | grep -q "hyprsplit"; then
-    {{ includeTemplate "log_info" "hyprsplit plugin already installed" }}
-else
-    {{ includeTemplate "log_info" "hyprsplit not found, installing..." }}
-
-    {{ includeTemplate "log_step" "Adding hyprsplit plugin from GitHub..." }}
-    if echo "Y" | hyprpm add https://github.com/shezdy/hyprsplit >/dev/null 2>&1; then
-        {{ includeTemplate "log_success" "hyprsplit plugin added successfully" }}
+{{ includeTemplate "log_step" "Installing hyprsplit Lua library..." }}
+HYPRSPLIT_DIR="$HOME/.config/hypr/hyprsplit"
+if [ -d "$HYPRSPLIT_DIR/.git" ]; then
+    if git -C "$HYPRSPLIT_DIR" pull --ff-only >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "hyprsplit updated" }}
     else
-        {{ includeTemplate "log_error" "Failed to add hyprsplit plugin" }}
-        {{ includeTemplate "log_info" "Fix: Check internet connectivity and run: hyprpm add https://github.com/shezdy/hyprsplit" }}
+        {{ includeTemplate "log_warning" "hyprsplit update skipped" }}
+    fi
+else
+    if git clone --depth 1 https://github.com/shezdy/hyprsplit "$HYPRSPLIT_DIR" >/dev/null 2>&1; then
+        {{ includeTemplate "log_success" "hyprsplit Lua library cloned" }}
+    else
+        {{ includeTemplate "log_error" "Failed to clone hyprsplit" }}
+        {{ includeTemplate "log_info" "Fix: Check internet connectivity and run: git clone https://github.com/shezdy/hyprsplit ~/.config/hypr/hyprsplit" }}
         exit 1
     fi
-fi
-
-# Enable hyprsplit plugin
-{{ includeTemplate "log_step" "Enabling hyprsplit plugin..." }}
-if hyprpm enable shezdy/hyprsplit >/dev/null 2>&1; then
-    {{ includeTemplate "log_success" "hyprsplit plugin enabled" }}
-else
-    {{ includeTemplate "log_warning" "Failed to enable hyprsplit (may already be enabled)" }}
-fi
-
-# Reload hyprpm to load plugins
-{{ includeTemplate "log_step" "Reloading hyprpm to load plugins..." }}
-if hyprpm reload >/dev/null 2>&1; then
-    {{ includeTemplate "log_success" "hyprpm reloaded successfully" }}
-else
-    {{ includeTemplate "log_warning" "hyprpm reload failed (Hyprland may not be running - will reload on startup)" }}
 fi
 
 # ============================================================================
@@ -176,8 +146,8 @@ echo "════════════════════════�
 echo "  Setup Summary"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-echo "  Plugins:"
-echo "    ✓ hyprsplit - Per-monitor workspaces (shezdy/hyprsplit)"
+echo "  Lua libraries:"
+echo "    ✓ hyprsplit - Per-monitor workspaces (require(\"hyprsplit\"))"
 echo ""
 echo "  Services:"
 echo "    ✓ hyprdynamicmonitors-prepare.service (runs before Hyprland)"
@@ -188,7 +158,7 @@ fi
 echo ""
 echo "  Next steps:"
 echo "    1. Restart Hyprland session or run: hyprctl reload"
-echo "    2. Verify plugins: hyprpm list"
+echo "    2. Verify library: ls ~/.config/hypr/hyprsplit/init.lua"
 echo "    3. Verify config: hyprctl configerrors"
 echo "    4. Check services: systemctl --user status hyprdynamicmonitors"
 echo ""
