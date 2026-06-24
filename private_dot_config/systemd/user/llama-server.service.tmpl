@@ -8,8 +8,8 @@ Type=simple
 EnvironmentFile=%h/.config/llama-server/env
 ExecStart=/usr/bin/llama-server \
   --model %h/.local/share/models/${MODEL_FILE} \
-  --host 127.0.0.1 \
-  --port 8080 \
+  --host {{ .ai.server.host }} \
+  --port {{ .ai.server.port }} \
   --n-gpu-layers ${N_GPU_LAYERS:-99}
 Restart=on-failure
 RestartSec=5

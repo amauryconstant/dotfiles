@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 
 # Script: run_once_after_002_configure_system_services.sh.tmpl
-# Purpose: Consolidated system services configuration (Docker, Bluetooth, Ollama, Tailscale, NetworkManager)
+# Purpose: Consolidated system services configuration (Docker, Bluetooth, Tailscale, NetworkManager)
 # Requirements: Arch Linux, systemd
 # Execution: Runs AFTER file application to configure all system services
 #
-# This script consolidates four previously separate scripts:
+# This script consolidates three previously separate scripts:
 # - Docker and Bluetooth services
-# - Ollama AI service
 # - Tailscale VPN service
 # - NetworkManager with iwd backend
 #
 # Benefits of consolidation:
-# - Single systemctl daemon-reload (instead of 4×)
+# - Single systemctl daemon-reload (instead of 3×)
 # - Consistent service verification
 # - Easier to add/remove services
 
-{{ includeTemplate "log_start" "Configure system services (Docker, Bluetooth, Network, AI, VPN)" }}
+{{ includeTemplate "log_start" "Configure system services (Docker, Bluetooth, Network, VPN)" }}
 
 # Set strict error handling
 set -euo pipefail
