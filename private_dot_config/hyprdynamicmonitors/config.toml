@@ -3,14 +3,14 @@ enable_power_events = false
 enable_lid_events = false
 enable_notifications = false
 hot_reload_debounce = "1s"
-destination = "$HOME/.config/hypr/monitors.conf"
+destination = "$HOME/.config/hypr/monitors.lua"
 
 [scoring]
 name_match = 10
 description_match = 5
 
 [profiles.desktop_dual]
-config_file = "hyprconfigs/desktop-dual.conf"
+config_file = "hyprconfigs/desktop-dual.lua"
 config_file_type = "static"
 
 [[profiles.desktop_dual.conditions.required_monitors]]

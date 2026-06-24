@@ -1,0 +1,5 @@
+-- Desktop Dual Monitor Configuration (HyprDynamicMonitors static profile)
+-- Primary: Gigabyte M32U (4K @ 144Hz, 1.25x scale)
+hl.monitor({ output = "", mode = "3840x2160@144", position = "0x0", scale = 1.25 })
+-- Secondary: BenQ GW2765 (1440p @ 60Hz, portrait, transform 1)
+hl.monitor({ output = "", mode = "2560x1440@60", position = "3072x144", scale = 1, transform = 1 })
