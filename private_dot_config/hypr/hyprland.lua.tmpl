@@ -1,0 +1,49 @@
+-- ============================================================================
+-- Hyprland Configuration — Main Entry Point (Lua)
+-- Migrated from hyprland.conf. Modular: each concern is a require() in conf/.
+-- ============================================================================
+
+local home   = os.getenv("HOME")
+local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
+
+-- Resolve require() for conf modules, hyprsplit, themes, and dotfiles extension.
+package.path = table.concat({
+  config .. "/hypr/?.lua",
+  config .. "/hypr/?/init.lua",
+  config .. "/?.lua",
+  package.path,
+}, ";")
+
+local require_all = require("conf.require_all")
+require("conf.helpers")        -- defines global o.*
+
+-- Monitors
+{{ if eq .chassisType "desktop" }}
+require_all.if_exists(config .. "/hypr/monitors.lua", "monitors")  -- HyprDynamicMonitors output (~/.config/hypr/monitors.lua)
+{{ end }}
+require("conf.monitor")        -- laptop fallback / auto-detect
+
+-- Core
+require("conf.environment")
+require("conf.plugins")        -- hyprsplit hs.config
+require("conf.input")
+require("conf.general")        -- structural general/dwindle (border colors via theme)
+require("conf.decoration")
+require("conf.animations")
+require("conf.autostart")
+
+-- Theme border-color override (must load after conf.general)
+require_all.if_exists(config .. "/themes/current/hyprland.lua", "themes.current.hyprland")
+
+-- Keybindings (find+sort, all 11 files)
+require_all.files(config .. "/hypr/conf/bindings", "conf.bindings")
+
+-- Window rules
+require("conf.windowrules")
+
+-- conf.d overrides (literal dot in dir name → add to package.path, load bare names)
+package.path = config .. "/hypr/conf.d/?.lua;" .. package.path
+require_all.files(config .. "/hypr/conf.d", nil)
+
+-- User extension point (empty by default)
+require_all.if_exists(config .. "/dotfiles/extra-bindings.lua", "dotfiles.extra-bindings")
