@@ -1,0 +1,3 @@
+-- User-defined extra Hyprland keybindings (empty by default, chezmoi-managed)
+-- Edit: dotfiles-bindings-edit  |  Reload: Super+Shift+R
+-- Example: o.bind("SUPER + Period", "Emoji picker", "emote")

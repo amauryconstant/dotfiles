@@ -4,11 +4,11 @@
 # Purpose: Edit extra Hyprland keybindings and auto-reload config
 # Requirements: Arch Linux, Hyprland, $EDITOR
 
-BINDINGS_FILE="$HOME/.config/dotfiles/extra-bindings.conf"
+BINDINGS_FILE="$HOME/.config/dotfiles/extra-bindings.lua"
 
 # Ensure file exists (should always be present via chezmoi)
 if [[ ! -f "$BINDINGS_FILE" ]]; then
-    notify-send "󰌌 Bindings" "extra-bindings.conf not found — run: chezmoi apply"
+    notify-send "󰌌 Bindings" "extra-bindings.lua not found — run: chezmoi apply"
     exit 1
 fi
 
