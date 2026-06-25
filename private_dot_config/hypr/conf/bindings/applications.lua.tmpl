@@ -1,0 +1,27 @@
+-- ============================================================================
+-- Application Launchers
+-- ============================================================================
+-- Quick access to frequently used applications.
+-- Some use launch-or-focus pattern for single-instance behavior.
+-- ============================================================================
+
+-- Terminal: Super + Return (opens in current working directory)
+o.bind("SUPER + Return", "Launch terminal in CWD", "{{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)")
+
+-- Application launcher: Super + D (wofi drun)
+o.bind("SUPER + D", "Application launcher", "wofi --show drun")
+
+-- File manager: Super + E (launch-or-focus for single-instance)
+o.bind("SUPER + E", "File manager", "~/.local/lib/scripts/desktop/launch-or-focus thunar")
+
+-- Web browser: Super + W
+o.bind("SUPER + W", "Web browser", "firefox")
+
+-- Neovim/Zellij session picker: Super + O
+o.bind("SUPER + O", "Neovim session picker", "ghostty -e ~/.local/lib/scripts/terminal/zellij-sessionizer")
+
+-- Clipboard history: Super + C (select to copy back)
+o.bind("SUPER + C", "Clipboard history", "cliphist list | wofi --dmenu | cliphist decode | wl-copy")
+
+-- Delete from clipboard history: Super + Shift + C
+o.bind("SUPER + SHIFT + C", "Delete from clipboard history", "cliphist list | wofi --dmenu | cliphist delete")
