@@ -13,8 +13,8 @@ layout {
   }
   tab name="code" {
     pane split_direction="horizontal" {
-      pane size="70%" focus=true command="nvim"
-      pane size="30%" command="zsh"
+      pane size="60%" focus=true command="nvim ."
+      pane size="40%" command="zsh"
     }
   }
 }
