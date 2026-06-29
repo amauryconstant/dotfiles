@@ -1,14 +1,31 @@
 [tools]
 shellcheck = "latest"
-pre-commit = {version = "latest", postinstall = "pre-commit install"}
+shfmt = "latest"
+pre-commit = { version = "latest", postinstall = "pre-commit install" }
 markdownlint-cli2 = "latest"
 prettier = "latest"
 yamllint = "latest"
 stylua = "latest"
 lua-language-server = "latest"
 
+[tasks.lint]
+description = "Run all linters"
+depends = ["lint:sh", "lint:yaml", "lint:lua", "lint:md"]
+
+[tasks.format]
+description = "Run all formatters"
+depends = ["format:sh", "format:yaml", "format:lua", "format:md"]
+
+[tasks.verify]
+description = "Run all linters and formatters"
+run = [{ task = "format" }, { task = "lint" }]
+
+[tasks."format:sh"]
+description = "Format shell scripts"
+run = "find . \\( -name '*.sh' -o -name '*.bash' \\) -not -path './.git/*' -not -path './private_dot_keys/*' | xargs shfmt --write"
+
 [tasks."lint:md"]
-description = "Lint and fix Markdown files"
+description = "Lint Markdown files"
 run = "markdownlint-cli2 '**/opencode/**/*.{md,markdown}'"
 
 [tasks."format:md"]
@@ -19,6 +36,10 @@ run = "prettier --write '**/opencode/**/*.{md,markdown}' --log-level warn"
 description = "Lint YAML data files"
 run = "find .chezmoidata -name '*.yaml' | xargs yamllint -c .yamllint.yaml"
 
+[tasks."format:yaml"]
+description = "Format YAML data files"
+run = "prettier --write '.chezmoidata/**/*.yaml' --log-level warn"
+
 [tasks."lint:lua"]
 description = "Check Lua formatting"
 run = "stylua --check $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
@@ -26,3 +47,4 @@ run = "stylua --check $(find private_dot_config/hypr -name '*.lua' 2>/dev/null |
 [tasks."format:lua"]
 description = "Format Lua files"
 run = "stylua $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
+
