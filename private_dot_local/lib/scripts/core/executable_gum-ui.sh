@@ -7,35 +7,35 @@
 
 # Load theme colors with fallback
 if [ -f "$HOME/.config/themes/current/colors.sh" ]; then
-    . "$HOME/.config/themes/current/colors.sh"
+	. "$HOME/.config/themes/current/colors.sh"
 else
-    # Fallback to Rose Pine Dawn defaults (used variables only)
-    readonly FG_SECONDARY="#797593"
-    readonly FG_MUTED="#9893a5"
-    readonly ACCENT_PRIMARY="#907aa9"
-    readonly ACCENT_SUCCESS="#286983"
-    readonly ACCENT_ERROR="#b4637a"
-    readonly ACCENT_WARNING="#ea9d34"
+	# Fallback to Rose Pine Dawn defaults (used variables only)
+	readonly FG_SECONDARY="#797593"
+	readonly FG_MUTED="#9893a5"
+	readonly ACCENT_PRIMARY="#907aa9"
+	readonly ACCENT_SUCCESS="#286983"
+	readonly ACCENT_ERROR="#b4637a"
+	readonly ACCENT_WARNING="#ea9d34"
 
-    echo "⚠️  Warning: Theme colors not found, using fallback" >&2
+	echo "⚠️  Warning: Theme colors not found, using fallback" >&2
 fi
 
 # Check gum availability and warn once if missing
 _check_gum() {
-    # Disable gum in non-interactive mode (no stdin) to prevent hanging
-    if [[ ! -t 0 ]]; then
-        return 1
-    fi
+	# Disable gum in non-interactive mode (no stdin) to prevent hanging
+	if [[ ! -t 0 ]]; then
+		return 1
+	fi
 
-    if ! command -v gum >/dev/null 2>&1; then
-        if [ -z "$GUM_WARNING_SHOWN" ]; then
-            echo "⚠️  Warning: gum not found - UI functions will use basic fallbacks" >&2
-            echo "   Install with: pacman -S gum" >&2
-            export GUM_WARNING_SHOWN=1
-        fi
-        return 1
-    fi
-    return 0
+	if ! command -v gum >/dev/null 2>&1; then
+		if [ -z "$GUM_WARNING_SHOWN" ]; then
+			echo "⚠️  Warning: gum not found - UI functions will use basic fallbacks" >&2
+			echo "   Install with: pacman -S gum" >&2
+			export GUM_WARNING_SHOWN=1
+		fi
+		return 1
+	fi
+	return 0
 }
 
 # =============================================================================
@@ -44,124 +44,124 @@ _check_gum() {
 
 # Parse universal parameters - used by all UI functions
 _parse_ui_params() {
-    before=0
-    after=0
-    indent=0
-    newline=false
-    
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --newline|--nl) 
-                newline=true
-                shift 
-                ;;
-            --indent) 
-                if [[ -n "$2" && "$2" != --* ]]; then
-                    indent="$2"
-                    shift 2
-                else
-                    shift
-                fi
-                ;;
-            --before) 
-                if [[ -n "$2" && "$2" != --* ]]; then
-                    before="$2"
-                    shift 2
-                else
-                    shift
-                fi
-                ;;
-            --after) 
-                if [[ -n "$2" && "$2" != --* ]]; then
-                    after="$2"
-                    shift 2
-                else
-                    shift
-                fi
-                ;;
-            *) 
-                shift 
-                ;;
-        esac
-    done
+	before=0
+	after=0
+	indent=0
+	newline=false
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--newline | --nl)
+			newline=true
+			shift
+			;;
+		--indent)
+			if [[ -n "$2" && "$2" != --* ]]; then
+				indent="$2"
+				shift 2
+			else
+				shift
+			fi
+			;;
+		--before)
+			if [[ -n "$2" && "$2" != --* ]]; then
+				before="$2"
+				shift 2
+			else
+				shift
+			fi
+			;;
+		--after)
+			if [[ -n "$2" && "$2" != --* ]]; then
+				after="$2"
+				shift 2
+			else
+				shift
+			fi
+			;;
+		*)
+			shift
+			;;
+		esac
+	done
 }
 
 # Apply spacing based on parsed parameters
 _apply_spacing() {
-    local timing="$1" # "before" or "after"
+	local timing="$1" # "before" or "after"
 
-    if [[ "$timing" == "before" ]]; then
-        if [ "$before" -gt 0 ]; then
-            printf '\n%.0s' $(seq 1 "$before")
-        fi
-    elif [[ "$timing" == "after" ]]; then
-        if [ "$newline" = true ]; then
-            echo
-        fi
-        if [ "$after" -gt 0 ]; then
-            printf '\n%.0s' $(seq 1 "$after")
-        fi
-    fi
+	if [[ "$timing" == "before" ]]; then
+		if [ "$before" -gt 0 ]; then
+			printf '\n%.0s' $(seq 1 "$before")
+		fi
+	elif [[ "$timing" == "after" ]]; then
+		if [ "$newline" = true ]; then
+			echo
+		fi
+		if [ "$after" -gt 0 ]; then
+			printf '\n%.0s' $(seq 1 "$after")
+		fi
+	fi
 }
 
 # Central rendering function with flexible parameter support
 _ui_render() {
-    local message="$1"
-    local icon="$2"
-    local color="$3"
-    shift 3
-    
-    # Parse universal parameters
-    _parse_ui_params "$@"
-    
-    # Apply before spacing
-    _apply_spacing "before"
-    
-    # Build indented message
-    local prefix=""
-    [ "$indent" -gt 0 ] && printf -v prefix "%*s" "$indent" ""
-    local full_message="${prefix}${icon}${message}"
-    
-    # Render with gum or fallback
-    if _check_gum; then
-        gum style --foreground "$color" "$full_message"
-    else
-        echo "$full_message"
-    fi
-    
-    # Apply after spacing
-    _apply_spacing "after"
+	local message="$1"
+	local icon="$2"
+	local color="$3"
+	shift 3
+
+	# Parse universal parameters
+	_parse_ui_params "$@"
+
+	# Apply before spacing
+	_apply_spacing "before"
+
+	# Build indented message
+	local prefix=""
+	[ "$indent" -gt 0 ] && printf -v prefix "%*s" "$indent" ""
+	local full_message="${prefix}${icon}${message}"
+
+	# Render with gum or fallback
+	if _check_gum; then
+		gum style --foreground "$color" "$full_message"
+	else
+		echo "$full_message"
+	fi
+
+	# Apply after spacing
+	_apply_spacing "after"
 }
 
 # Helper function for subtitle rendering
 _ui_render_subtitle() {
-    local message="$1"
-    if _check_gum; then
-        gum style --foreground "$ACCENT_PRIMARY" --border rounded --padding "0 2" "$message"
-    else
-        echo
-        echo "--- $message ---"
-    fi
+	local message="$1"
+	if _check_gum; then
+		gum style --foreground "$ACCENT_PRIMARY" --border rounded --padding "0 2" "$message"
+	else
+		echo
+		echo "--- $message ---"
+	fi
 }
 
 # Helper function for box rendering
 _ui_render_box() {
-    local content="$1"
-    local border_color="$2"
-    
-    if _check_gum; then
-        if [ -n "$border_color" ]; then
-            gum style --border rounded --border-foreground "$border_color" --padding "1 2" --margin "1 0" "$content"
-        else
-            gum style --border rounded --padding "1 2" --margin "1 0" "$content"
-        fi
-    else
-        echo
-        echo "┌─────────────────────────────────────────────────────────────┐"
-        echo "│ $content"
-        echo "└─────────────────────────────────────────────────────────────┘"
-        echo
-    fi
+	local content="$1"
+	local border_color="$2"
+
+	if _check_gum; then
+		if [ -n "$border_color" ]; then
+			gum style --border rounded --border-foreground "$border_color" --padding "1 2" --margin "1 0" "$content"
+		else
+			gum style --border rounded --padding "1 2" --margin "1 0" "$content"
+		fi
+	else
+		echo
+		echo "┌─────────────────────────────────────────────────────────────┐"
+		echo "│ $content"
+		echo "└─────────────────────────────────────────────────────────────┘"
+		echo
+	fi
 }
 
 # =============================================================================
@@ -202,23 +202,23 @@ ui_text() { _ui_render "$1" "" "$FG_SECONDARY" "${@:2}"; }
 # Send notification to focused monitor (multi-monitor aware)
 # Usage: ui_notify_focused "title" "message" [urgency]
 ui_notify_focused() {
-    local title="$1"
-    local message="$2"
-    local urgency="${3:-normal}"
+	local title="$1"
+	local message="$2"
+	local urgency="${3:-normal}"
 
-    # Detect focused monitor via hyprctl
-    local focused_monitor
-    focused_monitor="$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true).name' 2>/dev/null)"
+	# Detect focused monitor via hyprctl
+	local focused_monitor
+	focused_monitor="$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true).name' 2>/dev/null)"
 
-    # Send notification with monitor hint if available
-    if [ -n "$focused_monitor" ]; then
-        notify-send --urgency="$urgency" \
-                    --hint=string:x-canonical-monitor:"$focused_monitor" \
-                    "$title" "$message"
-    else
-        # Fallback to standard notify-send (single monitor or hyprctl unavailable)
-        notify-send --urgency="$urgency" "$title" "$message"
-    fi
+	# Send notification with monitor hint if available
+	if [ -n "$focused_monitor" ]; then
+		notify-send --urgency="$urgency" \
+			--hint=string:x-canonical-monitor:"$focused_monitor" \
+			"$title" "$message"
+	else
+		# Fallback to standard notify-send (single monitor or hyprctl unavailable)
+		notify-send --urgency="$urgency" "$title" "$message"
+	fi
 }
 
 # =============================================================================
@@ -227,91 +227,91 @@ ui_notify_focused() {
 
 # Display section title with double border
 ui_title() {
-    if _check_gum; then
-        gum style --foreground "$ACCENT_PRIMARY" --bold --border double --padding "1 2" --margin "1 0" "$1"
-    else
-        echo
-        echo "=== $1 ==="
-        echo
-    fi
+	if _check_gum; then
+		gum style --foreground "$ACCENT_PRIMARY" --bold --border double --padding "1 2" --margin "1 0" "$1"
+	else
+		echo
+		echo "=== $1 ==="
+		echo
+	fi
 }
 
 # Display subtitle with single border
 ui_subtitle() {
-    local message="$1"
-    shift
-    
-    # Parse universal parameters
-    _parse_ui_params "$@"
-    
-    # Apply before spacing
-    _apply_spacing "before"
-    
-    # Render subtitle
-    _ui_render_subtitle "$message"
-    
-    # Apply after spacing
-    _apply_spacing "after"
+	local message="$1"
+	shift
+
+	# Parse universal parameters
+	_parse_ui_params "$@"
+
+	# Apply before spacing
+	_apply_spacing "before"
+
+	# Render subtitle
+	_ui_render_subtitle "$message"
+
+	# Apply after spacing
+	_apply_spacing "after"
 }
 
 # Display content in a bordered box
 ui_box() {
-    local content="$1"
-    shift
-    local border_color="$FG_SECONDARY"
-    
-    # Parse border color parameter first
-    if [[ $# -gt 0 && "$1" != --* ]]; then
-        border_color="$1"
-        shift
-    fi
-    
-    # Parse universal parameters
-    _parse_ui_params "$@"
-    
-    # Apply before spacing
-    _apply_spacing "before"
-    
-    # Render box
-    _ui_render_box "$content" "$border_color"
-    
-    # Apply after spacing
-    _apply_spacing "after"
+	local content="$1"
+	shift
+	local border_color="$FG_SECONDARY"
+
+	# Parse border color parameter first
+	if [[ $# -gt 0 && "$1" != --* ]]; then
+		border_color="$1"
+		shift
+	fi
+
+	# Parse universal parameters
+	_parse_ui_params "$@"
+
+	# Apply before spacing
+	_apply_spacing "before"
+
+	# Render box
+	_ui_render_box "$content" "$border_color"
+
+	# Apply after spacing
+	_apply_spacing "after"
 }
 
 # Display visual separator
 ui_separator() {
-    if _check_gum; then
-        gum style --foreground "$FG_MUTED" "────────────────────────────────────────────────────────"
-    else
-        echo "────────────────────────────────────────────────────────"
-    fi
+	if _check_gum; then
+		gum style --foreground "$FG_MUTED" "────────────────────────────────────────────────────────"
+	else
+		echo "────────────────────────────────────────────────────────"
+	fi
 }
 
 # Add consistent spacing with optional count
 ui_spacer() {
-    local count="${1:-1}"
-    printf '\n%.0s' $(seq 1 "$count")
+	local count="${1:-1}"
+	printf '\n%.0s' $(seq 1 "$count")
 }
 
 # Display raw data output with parameter support
 ui_output() {
-    local message="$1"
-    shift
-    
-    # Parse universal parameters
-    _parse_ui_params "$@"
-    
-    # Apply before spacing
-    _apply_spacing "before"
-    
-    # Apply indentation and output message
-    local prefix=""
-    [ "$indent" -gt 0 ] && printf -v prefix "%*s" "$indent" ""
-    echo "${prefix}${message}"
-    
-    # Apply after spacing
-    _apply_spacing "after"
+	local message="$1"
+	shift
+
+	# Parse universal parameters
+	_parse_ui_params "$@"
+
+	# Apply before spacing
+	_apply_spacing "before"
+
+	# Apply indentation and output message
+	local prefix=""
+	[ "$indent" -gt 0 ] && printf -v prefix "%*s" "$indent" ""
+	echo "${prefix}${message}"
+
+	# Apply after spacing
+	_apply_spacing "after"
 }
 
 # =============================================================================
@@ -320,121 +320,121 @@ ui_output() {
 
 # Display confirmation prompt
 ui_confirm() {
-    local question="$1"
-    local default="${2:-}"
-    
-    if _check_gum; then
-        if [ -n "$default" ]; then
-            gum confirm --default="$default" "$question"
-        else
-            gum confirm "$question"
-        fi
-    else
-        printf "%s [y/N]: " "$question"
-        read -r answer
-        case "$answer" in
-            [Yy]|[Yy][Ee][Ss]) return 0 ;;
-            *) return 1 ;;
-        esac
-    fi
+	local question="$1"
+	local default="${2:-}"
+
+	if _check_gum; then
+		if [ -n "$default" ]; then
+			gum confirm --default="$default" "$question"
+		else
+			gum confirm "$question"
+		fi
+	else
+		printf "%s [y/N]: " "$question"
+		read -r answer
+		case "$answer" in
+		[Yy] | [Yy][Ee][Ss]) return 0 ;;
+		*) return 1 ;;
+		esac
+	fi
 }
 
 # Display selection menu
 ui_choose() {
-    local header="$1"
-    shift
-    
-    if _check_gum; then
-        if [ -n "$header" ]; then
-            gum choose --header "$header" "$@"
-        else
-            gum choose "$@"
-        fi
-    else
-        echo "$header"
-        select choice in "$@"; do
-            if [ -n "$choice" ]; then
-                echo "$choice"
-                break
-            fi
-        done
-    fi
+	local header="$1"
+	shift
+
+	if _check_gum; then
+		if [ -n "$header" ]; then
+			gum choose --header "$header" "$@"
+		else
+			gum choose "$@"
+		fi
+	else
+		echo "$header"
+		select choice in "$@"; do
+			if [ -n "$choice" ]; then
+				echo "$choice"
+				break
+			fi
+		done
+	fi
 }
 
 # Display multi-selection menu
 ui_choose_multi() {
-    local header="$1"
-    local limit="${2:-0}"
-    shift 2
-    
-    if _check_gum; then
-        if [ "$limit" -gt 0 ]; then
-            gum choose --header "$header" --limit "$limit" "$@"
-        else
-            gum choose --header "$header" --no-limit "$@"
-        fi
-    else
-        echo "$header (enter numbers separated by spaces, e.g., '1 3 5'):"
-        local i=1
-        for option in "$@"; do
-            echo "$i) $option"
-            i=$((i + 1))
-        done
-        printf "Selection: "
-        read -r selection
-        # Simple fallback - would need more complex parsing for full functionality
-        echo "$selection"
-    fi
+	local header="$1"
+	local limit="${2:-0}"
+	shift 2
+
+	if _check_gum; then
+		if [ "$limit" -gt 0 ]; then
+			gum choose --header "$header" --limit "$limit" "$@"
+		else
+			gum choose --header "$header" --no-limit "$@"
+		fi
+	else
+		echo "$header (enter numbers separated by spaces, e.g., '1 3 5'):"
+		local i=1
+		for option in "$@"; do
+			echo "$i) $option"
+			i=$((i + 1))
+		done
+		printf "Selection: "
+		read -r selection
+		# Simple fallback - would need more complex parsing for full functionality
+		echo "$selection"
+	fi
 }
 
 # Display text input prompt
 ui_input() {
-    local prompt="$1"
-    local placeholder="${2:-}"
-    local default="${3:-}"
-    
-    if _check_gum; then
-        local args=""
-        [ -n "$placeholder" ] && args="$args --placeholder '$placeholder'"
-        [ -n "$default" ] && args="$args --value '$default'"
-        eval "gum input --prompt '$prompt: ' $args"
-    else
-        if [ -n "$default" ]; then
-            printf "%s [%s]: " "$prompt" "$default"
-        else
-            printf "%s: " "$prompt"
-        fi
-        read -r input
-        echo "${input:-$default}"
-    fi
+	local prompt="$1"
+	local placeholder="${2:-}"
+	local default="${3:-}"
+
+	if _check_gum; then
+		local args=""
+		[ -n "$placeholder" ] && args="$args --placeholder '$placeholder'"
+		[ -n "$default" ] && args="$args --value '$default'"
+		eval "gum input --prompt '$prompt: ' $args"
+	else
+		if [ -n "$default" ]; then
+			printf "%s [%s]: " "$prompt" "$default"
+		else
+			printf "%s: " "$prompt"
+		fi
+		read -r input
+		echo "${input:-$default}"
+	fi
 }
 
 # Display password input prompt
 ui_password() {
-    local prompt="$1"
-    
-    if _check_gum; then
-        gum input --password --prompt "$prompt: "
-    else
-        printf "%s: " "$prompt"
-        stty -echo
-        read -r password
-        stty echo
-        echo
-        echo "$password"
-    fi
+	local prompt="$1"
+
+	if _check_gum; then
+		gum input --password --prompt "$prompt: "
+	else
+		printf "%s: " "$prompt"
+		stty -echo
+		read -r password
+		stty echo
+		echo
+		echo "$password"
+	fi
 }
 
 # Display filter/search input
 ui_filter() {
-    local placeholder="${1:-Search...}"
-    
-    if _check_gum; then
-        gum filter --placeholder "$placeholder"
-    else
-        echo "Filter functionality requires gum" >&2
-        return 1
-    fi
+	local placeholder="${1:-Search...}"
+
+	if _check_gum; then
+		gum filter --placeholder "$placeholder"
+	else
+		echo "Filter functionality requires gum" >&2
+		return 1
+	fi
 }
 
 # =============================================================================
@@ -443,52 +443,52 @@ ui_filter() {
 
 # Verbose spinner - shows all output (for long-running non-interactive tasks)
 ui_spin_verbose() {
-    local title="$1"
-    local command="$2"
+	local title="$1"
+	local command="$2"
 
-    if _check_gum; then
-        gum spin --spinner dot --title "$title" --show-output -- sh -c "$command"
-    else
-        echo "🔄 $title"
-        eval "$command"
-    fi
+	if _check_gum; then
+		gum spin --spinner dot --title "$title" --show-output -- sh -c "$command"
+	else
+		echo "🔄 $title"
+		eval "$command"
+	fi
 }
 
 # Error-safe spinner - shows output only on failure
 ui_spin_on_error() {
-    local title="$1"
-    local command="$2"
+	local title="$1"
+	local command="$2"
 
-    if _check_gum; then
-        gum spin --spinner dot --title "$title" --show-stderr -- sh -c "$command"
-    else
-        eval "$command"
-    fi
+	if _check_gum; then
+		gum spin --spinner dot --title "$title" --show-stderr -- sh -c "$command"
+	else
+		eval "$command"
+	fi
 }
 
 # Silent spinner - hides all output (background operations, queries)
 ui_spin_silent() {
-    local title="$1"
-    local command="$2"
+	local title="$1"
+	local command="$2"
 
-    if _check_gum; then
-        gum spin --spinner dot --title "$title" -- sh -c "$command"
-    else
-        echo "🔄 $title"
-        eval "$command" >/dev/null 2>&1
-    fi
+	if _check_gum; then
+		gum spin --spinner dot --title "$title" -- sh -c "$command"
+	else
+		echo "🔄 $title"
+		eval "$command" >/dev/null 2>&1
+	fi
 }
 
 # Display operation start message
 ui_progress_start() {
-    local operation="$1"
-    ui_action "Starting: $operation"
+	local operation="$1"
+	ui_action "Starting: $operation"
 }
 
 # Display operation completion message
 ui_progress_complete() {
-    local result="$1"
-    ui_complete "$result"
+	local result="$1"
+	ui_complete "$result"
 }
 
 # =============================================================================
@@ -497,46 +497,46 @@ ui_progress_complete() {
 
 # Display formatted table
 ui_table() {
-    if _check_gum; then
-        gum table
-    else
-        column -t -s $'\t'
-    fi
+	if _check_gum; then
+		gum table
+	else
+		column -t -s $'\t'
+	fi
 }
 
 # Display formatted list
 ui_list() {
-    local title="$1"
-    shift
-    
-    if [ -n "$title" ]; then
-        ui_subtitle "$title"
-    fi
-    
-    for item in "$@"; do
-        if _check_gum; then
-            gum style --foreground "$FG_SECONDARY" "  • $item"
-        else
-            echo "  • $item"
-        fi
-    done
+	local title="$1"
+	shift
+
+	if [ -n "$title" ]; then
+		ui_subtitle "$title"
+	fi
+
+	for item in "$@"; do
+		if _check_gum; then
+			gum style --foreground "$FG_SECONDARY" "  • $item"
+		else
+			echo "  • $item"
+		fi
+	done
 }
 
 # Display key-value pairs
 ui_key_value() {
-    local key="$1"
-    local value="$2"
-    local separator="${3:-:}"
-    
-    if _check_gum; then
-        local key_styled
-        local value_styled
-        key_styled=$(gum style --foreground "$ACCENT_PRIMARY" "$key$separator")
-        value_styled=$(gum style --foreground "$FG_SECONDARY" "$value")
-        echo "$key_styled $value_styled"
-    else
-        printf "%-20s %s %s\n" "$key$separator" "" "$value"
-    fi
+	local key="$1"
+	local value="$2"
+	local separator="${3:-:}"
+
+	if _check_gum; then
+		local key_styled
+		local value_styled
+		key_styled=$(gum style --foreground "$ACCENT_PRIMARY" "$key$separator")
+		value_styled=$(gum style --foreground "$FG_SECONDARY" "$value")
+		echo "$key_styled $value_styled"
+	else
+		printf "%-20s %s %s\n" "$key$separator" "" "$value"
+	fi
 }
 
 # =============================================================================
@@ -545,91 +545,91 @@ ui_key_value() {
 
 # Test all UI functions (for development/testing)
 ui_test() {
-    ui_title "Gum UI Library Test"
-    
-    ui_spacer
-    ui_subtitle "Status Functions"
-    ui_success "This is a success message"
-    ui_error "This is an error message" 
-    ui_warning "This is a warning message"
-    ui_info "This is an info message"
-    ui_step "This is a step message"
-    ui_status "This is a status message"
-    ui_action "This is an action message"
-    ui_complete "This is a completion message"
-    
-    ui_spacer
-    ui_subtitle "Layout Functions"
-    ui_box "This content is in a bordered box"
-    ui_separator
-    
-    ui_spacer
-    ui_subtitle "Data Display"
-    ui_list "Sample List" "First item" "Second item" "Third item"
-    ui_key_value "Key" "Value"
-    ui_key_value "Another Key" "Another Value" " =>"
-    
-    ui_spacer
-    ui_complete "UI Library test completed!"
+	ui_title "Gum UI Library Test"
+
+	ui_spacer
+	ui_subtitle "Status Functions"
+	ui_success "This is a success message"
+	ui_error "This is an error message"
+	ui_warning "This is a warning message"
+	ui_info "This is an info message"
+	ui_step "This is a step message"
+	ui_status "This is a status message"
+	ui_action "This is an action message"
+	ui_complete "This is a completion message"
+
+	ui_spacer
+	ui_subtitle "Layout Functions"
+	ui_box "This content is in a bordered box"
+	ui_separator
+
+	ui_spacer
+	ui_subtitle "Data Display"
+	ui_list "Sample List" "First item" "Second item" "Third item"
+	ui_key_value "Key" "Value"
+	ui_key_value "Another Key" "Another Value" " =>"
+
+	ui_spacer
+	ui_complete "UI Library test completed!"
 }
 
 # Show library version and available functions
 ui_help() {
-    ui_title "Gum UI Library"
-    ui_info "Standardized UI functions for consistent shell script formatting"
-    ui_spacer
-    
-    ui_subtitle "Status Functions"
-    ui_list "" \
-        "ui_success 'message'" \
-        "ui_error 'message'" \
-        "ui_warning 'message'" \
-        "ui_info 'message'" \
-        "ui_step 'message'" \
-        "ui_status 'message'" \
-        "ui_action 'message'" \
-        "ui_complete 'message'"
-    
-    ui_spacer
-    ui_subtitle "Interactive Functions" 
-    ui_list "" \
-        "ui_confirm 'question' [default]" \
-        "ui_choose 'header' opt1 opt2 opt3" \
-        "ui_choose_multi 'header' [limit] opt1 opt2 opt3" \
-        "ui_input 'prompt' [placeholder] [default]" \
-        "ui_password 'prompt'" \
-        "ui_filter [placeholder]"
-    
-    ui_spacer
-    ui_subtitle "Progress Functions"
-    ui_list "" \
-        "ui_spin 'title' 'command'" \
-        "ui_progress_start 'operation'" \
-        "ui_progress_complete 'result'"
-    
-    ui_spacer
-    ui_subtitle "Layout Functions"
-    ui_list "" \
-        "ui_title 'title'" \
-        "ui_subtitle 'subtitle'" \
-        "ui_box 'content' [border_color]" \
-        "ui_separator" \
-        "ui_spacer"
-    
-    ui_spacer
-    ui_subtitle "Data Display Functions"
-    ui_list "" \
-        "ui_table < data.csv" \
-        "ui_list 'title' item1 item2 item3" \
-        "ui_key_value 'key' 'value' [separator]"
-    
-    ui_spacer
-    ui_subtitle "Utility Functions"
-    ui_list "" \
-        "ui_test - Test all UI functions" \
-        "ui_help - Show this help"
-    
-    ui_spacer
-    ui_info "Colors are loaded from $SCRIPTS_DIR/core/colors.sh (oksolar theme)"
-    ui_info "Gum is $(command -v gum >/dev/null 2>&1 && echo "available" || echo "not available - using fallbacks")"
+	ui_title "Gum UI Library"
+	ui_info "Standardized UI functions for consistent shell script formatting"
+	ui_spacer
+
+	ui_subtitle "Status Functions"
+	ui_list "" \
+		"ui_success 'message'" \
+		"ui_error 'message'" \
+		"ui_warning 'message'" \
+		"ui_info 'message'" \
+		"ui_step 'message'" \
+		"ui_status 'message'" \
+		"ui_action 'message'" \
+		"ui_complete 'message'"
+
+	ui_spacer
+	ui_subtitle "Interactive Functions"
+	ui_list "" \
+		"ui_confirm 'question' [default]" \
+		"ui_choose 'header' opt1 opt2 opt3" \
+		"ui_choose_multi 'header' [limit] opt1 opt2 opt3" \
+		"ui_input 'prompt' [placeholder] [default]" \
+		"ui_password 'prompt'" \
+		"ui_filter [placeholder]"
+
+	ui_spacer
+	ui_subtitle "Progress Functions"
+	ui_list "" \
+		"ui_spin 'title' 'command'" \
+		"ui_progress_start 'operation'" \
+		"ui_progress_complete 'result'"
+
+	ui_spacer
+	ui_subtitle "Layout Functions"
+	ui_list "" \
+		"ui_title 'title'" \
+		"ui_subtitle 'subtitle'" \
+		"ui_box 'content' [border_color]" \
+		"ui_separator" \
+		"ui_spacer"
+
+	ui_spacer
+	ui_subtitle "Data Display Functions"
+	ui_list "" \
+		"ui_table < data.csv" \
+		"ui_list 'title' item1 item2 item3" \
+		"ui_key_value 'key' 'value' [separator]"
+
+	ui_spacer
+	ui_subtitle "Utility Functions"
+	ui_list "" \
+		"ui_test - Test all UI functions" \
+		"ui_help - Show this help"
+
+	ui_spacer
+	ui_info "Colors are loaded from $SCRIPTS_DIR/core/colors.sh (oksolar theme)"
+	ui_info "Gum is $(command -v gum >/dev/null 2>&1 && echo "available" || echo "not available - using fallbacks")"
 }

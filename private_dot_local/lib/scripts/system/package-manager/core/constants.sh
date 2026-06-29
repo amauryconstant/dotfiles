@@ -58,15 +58,15 @@ readonly BACKUP_TOOL_SNAPPER="snapper"
 # Validate package type (used in state operations)
 # Returns: 0 if valid, 1 if invalid
 _validate_package_type() {
-    local type="$1"
-    case "$type" in
-        "$PACKAGE_TYPE_PACMAN"|"$PACKAGE_TYPE_FLATPAK")
-            return 0
-            ;;
-        *)
-            ui_error "CRITICAL: Invalid package type '$type'"
-            ui_error "Valid types: $PACKAGE_TYPE_PACMAN, $PACKAGE_TYPE_FLATPAK"
-            return 1
-            ;;
-    esac
+	local type="$1"
+	case "$type" in
+	"$PACKAGE_TYPE_PACMAN" | "$PACKAGE_TYPE_FLATPAK")
+		return 0
+		;;
+	*)
+		ui_error "CRITICAL: Invalid package type '$type'"
+		ui_error "Valid types: $PACKAGE_TYPE_PACMAN, $PACKAGE_TYPE_FLATPAK"
+		return 1
+		;;
+	esac
 }

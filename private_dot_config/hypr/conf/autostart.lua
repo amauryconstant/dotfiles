@@ -14,7 +14,9 @@ o.exec_on_start("waybar")
 o.exec_on_start("awww-daemon")
 
 -- D-Bus activation environment update (Wayland integration + screen sharing)
-o.exec_on_start("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE")
+o.exec_on_start(
+	"dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE"
+)
 
 -- Nextcloud - Cloud sync client (background, no window at startup)
 o.exec_on_start("nextcloud --background")

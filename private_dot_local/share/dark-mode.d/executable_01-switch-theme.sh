@@ -8,35 +8,35 @@ CURRENT_LINK="$THEMES_DIR/current"
 
 # Get current theme name
 if [ -L "$CURRENT_LINK" ]; then
-    CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
+	CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
 
-    # Map light variants to their dark counterparts
-    case "$CURRENT_THEME" in
-        *-light)
-            # Standard naming: gruvbox-light, solarized-light
-            DARK_THEME=$(echo "$CURRENT_THEME" | sed 's/-light$/-dark/')
-            ;;
-        catppuccin-latte)
-            DARK_THEME="catppuccin-mocha"
-            ;;
-        rose-pine-dawn)
-            DARK_THEME="rose-pine-moon"
-            ;;
-        *)
-            # Already dark or unknown, no change needed
-            exit 0
-            ;;
-    esac
+	# Map light variants to their dark counterparts
+	case "$CURRENT_THEME" in
+	*-light)
+		# Standard naming: gruvbox-light, solarized-light
+		DARK_THEME=$(echo "$CURRENT_THEME" | sed 's/-light$/-dark/')
+		;;
+	catppuccin-latte)
+		DARK_THEME="catppuccin-mocha"
+		;;
+	rose-pine-dawn)
+		DARK_THEME="rose-pine-moon"
+		;;
+	*)
+		# Already dark or unknown, no change needed
+		exit 0
+		;;
+	esac
 
-    # Only switch if we're not already on the dark variant
-    if [ "$CURRENT_THEME" != "$DARK_THEME" ]; then
-        if [ -d "$THEMES_DIR/$DARK_THEME" ]; then
-            ~/.local/lib/scripts/desktop/theme-switcher switch "$DARK_THEME"
+	# Only switch if we're not already on the dark variant
+	if [ "$CURRENT_THEME" != "$DARK_THEME" ]; then
+		if [ -d "$THEMES_DIR/$DARK_THEME" ]; then
+			~/.local/lib/scripts/desktop/theme-switcher switch "$DARK_THEME"
 
-            # Call user hook
-            if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
-                "$HOME/.local/lib/scripts/core/hook-runner" dark-mode-change "dark" 2>/dev/null || true
-            fi
-        fi
-    fi
+			# Call user hook
+			if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
+				"$HOME/.local/lib/scripts/core/hook-runner" dark-mode-change "dark" 2>/dev/null || true
+			fi
+		fi
+	fi
 fi

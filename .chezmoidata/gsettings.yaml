@@ -8,4 +8,4 @@ gsettings:
     gui: 11
     mono: 11
     document: 12
-  extra_settings: []  # Future: [{schema: "...", key: "...", value: "..."}]
+  extra_settings: [] # Future: [{schema: "...", key: "...", value: "..."}]

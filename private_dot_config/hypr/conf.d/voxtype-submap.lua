@@ -13,14 +13,14 @@
 -- ============================================================================
 
 hl.define_submap("voxtype_recording", function()
-    -- F12 cancels recording/transcription and returns to the default submap
-    hl.bind("F12", hl.dsp.exec_cmd("voxtype record cancel"))
-    hl.bind("F12", hl.dsp.submap("reset"))
+	-- F12 cancels recording/transcription and returns to the default submap
+	hl.bind("F12", hl.dsp.exec_cmd("voxtype record cancel"))
+	hl.bind("F12", hl.dsp.submap("reset"))
 
-    -- Stop push-to-talk on key release (mirrors voice.lua)
-    hl.bind("SUPER + T",        hl.dsp.exec_cmd("voxtype record stop"), { release = true })
-    hl.bind("SUPER + CTRL + T", hl.dsp.exec_cmd("voxtype record stop"), { release = true })
+	-- Stop push-to-talk on key release (mirrors voice.lua)
+	hl.bind("SUPER + T", hl.dsp.exec_cmd("voxtype record stop"), { release = true })
+	hl.bind("SUPER + CTRL + T", hl.dsp.exec_cmd("voxtype record stop"), { release = true })
 
-    -- Streaming toggle: start lives in the default submap; this stops it from inside
-    hl.bind("SUPER + ALT + T",  hl.dsp.exec_cmd("voxtype record toggle"))
+	-- Streaming toggle: start lives in the default submap; this stops it from inside
+	hl.bind("SUPER + ALT + T", hl.dsp.exec_cmd("voxtype record toggle"))
 end)

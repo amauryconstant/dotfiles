@@ -4,8 +4,8 @@
 
 boot:
   gpu:
-    kms: true               # Enable kernel modesetting (add nvidia_drm.modeset=1 to GRUB)
-    power_management: true  # Enable NVIDIA power management services (suspend/resume/hibernate)
+    kms: true # Enable kernel modesetting (add nvidia_drm.modeset=1 to GRUB)
+    power_management: true # Enable NVIDIA power management services (suspend/resume/hibernate)
   hibernation:
     enabled: true
-    filesystem: btrfs       # btrfs requires special swap configuration
+    filesystem: btrfs # btrfs requires special swap configuration

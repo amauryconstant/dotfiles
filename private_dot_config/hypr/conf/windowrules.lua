@@ -12,10 +12,10 @@
 -- ============================================================================
 
 -- System dialogs (should float) ----------------------------------------------
-o.window("pavucontrol",      { float = true })                       -- PulseAudio volume control
-o.window("hyprpolkitagent",  { float = true })                       -- Polkit auth dialog
-o.window("blueman-manager",  { float = true })                       -- Bluetooth manager
-o.window("com.gabm.satty",   { float = true, stay_focused = true })  -- Screenshot annotation editor
+o.window("pavucontrol", { float = true }) -- PulseAudio volume control
+o.window("hyprpolkitagent", { float = true }) -- Polkit auth dialog
+o.window("blueman-manager", { float = true }) -- Bluetooth manager
+o.window("com.gabm.satty", { float = true, stay_focused = true }) -- Screenshot annotation editor
 
 -- AI scratchpad terminals (menu-ai: opencode, claude-code, ollama) -----------
 o.window("ai-scratchpad", { float = true, center = true, size = { "55%", "65%" } })
@@ -30,7 +30,10 @@ o.window({ title = "Picture-in-Picture" }, { float = true, pin = true })
 -- Main window: opacity, tiles by default
 o.window("thunar", { opacity = "0.9 0.8" })
 -- File operation progress dialogs: float + center
-o.window({ class = "thunar", title = "(Copying|Moving|Deleting)" }, { float = true, size = { 500, 200 }, center = true })
+o.window(
+	{ class = "thunar", title = "(Copying|Moving|Deleting)" },
+	{ float = true, size = { 500, 200 }, center = true }
+)
 -- File picker dialogs: float + center
 o.window({ class = "thunar", title = "(Open|Save)" }, { float = true, size = { 800, 600 }, center = true })
 

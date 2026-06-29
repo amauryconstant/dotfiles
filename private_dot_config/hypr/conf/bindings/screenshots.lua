@@ -20,4 +20,8 @@ o.bind("SUPER + SHIFT + Print", "Fullscreen screenshot", "~/.local/lib/scripts/m
 o.bind("ALT + SHIFT + Print", "Screen recording with audio", "~/.local/lib/scripts/desktop/screenrecord --with-audio")
 
 -- Fullscreen recording with audio (toggle)
-o.bind("CTRL + ALT + SHIFT + Print", "Fullscreen recording with audio", "~/.local/lib/scripts/desktop/screenrecord --with-audio")
+o.bind(
+	"CTRL + ALT + SHIFT + Print",
+	"Fullscreen recording with audio",
+	"~/.local/lib/scripts/desktop/screenrecord --with-audio"
+)

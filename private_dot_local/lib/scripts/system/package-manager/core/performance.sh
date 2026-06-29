@@ -11,53 +11,53 @@
 # Global state eliminated - use _state_* and _cache_* functions
 
 _load_flatpak_cache() {
-    if [[ "$(_state_get flatpak_cache_loaded)" == "true" ]]; then
-        return 0
-    fi
+	if [[ "$(_state_get flatpak_cache_loaded)" == "true" ]]; then
+		return 0
+	fi
 
-    if ! command -v flatpak >/dev/null 2>&1; then
-        _state_set flatpak_cache_loaded "true"
-        return 1
-    fi
+	if ! command -v flatpak >/dev/null 2>&1; then
+		_state_set flatpak_cache_loaded "true"
+		return 1
+	fi
 
-    while IFS=$'\t' read -r app version; do
-        [[ -n "$app" ]] && _cache_set flatpak_apps "$app" "1"
-        [[ -n "$app" && -n "$version" ]] && _cache_set flatpak_versions "$app" "$version"
-    done < <(flatpak list --app --columns=application,version 2>/dev/null)
+	while IFS=$'\t' read -r app version; do
+		[[ -n "$app" ]] && _cache_set flatpak_apps "$app" "1"
+		[[ -n "$app" && -n "$version" ]] && _cache_set flatpak_versions "$app" "$version"
+	done < <(flatpak list --app --columns=application,version 2>/dev/null)
 
-    _state_set flatpak_cache_loaded "true"
-    return 0
+	_state_set flatpak_cache_loaded "true"
+	return 0
 }
 
 _is_flatpak_installed() {
-    local flatpak_id="$1"
-    _load_flatpak_cache
-    _cache_has flatpak_apps "$flatpak_id"
+	local flatpak_id="$1"
+	_load_flatpak_cache
+	_cache_has flatpak_apps "$flatpak_id"
 }
 
 _get_flatpak_version() {
-    local flatpak_id="$1"
-    _load_flatpak_cache
-    _cache_get flatpak_versions "$flatpak_id"
+	local flatpak_id="$1"
+	_load_flatpak_cache
+	_cache_get flatpak_versions "$flatpak_id"
 }
 
 _load_pacman_version_cache() {
-    if [[ "$(_state_get pacman_cache_loaded)" == "true" ]]; then
-        return 0
-    fi
+	if [[ "$(_state_get pacman_cache_loaded)" == "true" ]]; then
+		return 0
+	fi
 
-    while IFS=' ' read -r pkg ver; do
-        [[ -n "$pkg" && -n "$ver" ]] && _cache_set pacman_versions "$pkg" "$ver"
-    done < <(pacman -Q 2>/dev/null)
+	while IFS=' ' read -r pkg ver; do
+		[[ -n "$pkg" && -n "$ver" ]] && _cache_set pacman_versions "$pkg" "$ver"
+	done < <(pacman -Q 2>/dev/null)
 
-    _state_set pacman_cache_loaded "true"
-    return 0
+	_state_set pacman_cache_loaded "true"
+	return 0
 }
 
 _get_cached_package_version() {
-    local pkg="$1"
-    _load_pacman_version_cache
-    _cache_get pacman_versions "$pkg"
+	local pkg="$1"
+	_load_pacman_version_cache
+	_cache_get pacman_versions "$pkg"
 }
 
 # =============================================================================
@@ -73,5 +73,5 @@ _get_cached_package_version() {
 
 # Legacy function (for debugging or force refresh)
 _invalidate_caches() {
-    _invalidate_all_caches
+	_invalidate_all_caches
 }

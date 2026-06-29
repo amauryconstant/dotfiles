@@ -5,12 +5,12 @@
 # Requirements: paru, yq
 
 cmd_remove() {
-    if [[ $# -eq 0 ]]; then
-        ui_error "Usage: package-manager remove <package>"
-        return 1
-    fi
+	if [[ $# -eq 0 ]]; then
+		ui_error "Usage: package-manager remove <package>"
+		return 1
+	fi
 
-    local package="$1"
+	local package="$1"
 
-    _remove_package "$package"
+	_remove_package "$package"
 }
