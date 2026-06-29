@@ -109,6 +109,9 @@
       "Bash(swww query:*)",
       "Bash(darkman get:*)",
       "Bash(code:*)",
+      "Bash(yamllint:*)",
+      "Bash(stylua:*)",
+      "Bash(lua-language-server:*)",
       "mcp__plugin_context7_context7__resolve-library-id",
       "mcp__plugin_context7_context7__query-docs"
     ],
@@ -161,13 +164,24 @@
           },
           {
             "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.sh\\.tmpl$ ]] && { tmp=$(mktemp --suffix=.sh); chezmoi execute-template < \"$f\" > \"$tmp\" 2>/dev/null && shellcheck --severity=warning \"$tmp\" 2>/dev/null && echo \"✓ Shell OK (rendered .sh.tmpl)\"; rm -f \"$tmp\"; } || true",
+            "timeout": 15
+          },
+          {
+            "type": "command",
             "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.tmpl$ && ! \"$f\" =~ \\.chezmoitemplates ]] && { chezmoi execute-template < \"$f\" > /dev/null && echo \"✓ Template OK\" || { echo \"✗ Template syntax error:\" >&2; chezmoi execute-template < \"$f\" 2>&1 | head -5 >&2; }; } || true",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.yaml$ && ! \"$f\" =~ \\.tmpl$ ]] && command -v yamllint > /dev/null && yamllint -c .yamllint.yaml \"$f\" && echo \"✓ YAML OK\" || true",
             "timeout": 10
           }
         ]
       }
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "remember@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true
