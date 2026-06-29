@@ -8,25 +8,24 @@
 
 ## Quick Reference
 
-- **Purpose**: Foundation libraries for all scripts
-- **Files**: gum-ui.sh (572 lines), hook-runner, state-manager.sh
-- **Usage**: System scripts source `$UI_LIB` (see adoption note below)
-- **Dependencies**: gum (optional - fallbacks provided)
+Three foundation files (sourced, not on PATH for execution):
+- `gum-ui.sh` — terminal UI library (`ui_*`), sourced via `$UI_LIB` by system/ scripts.
+- `hook-runner` — user-hook dispatcher (documented in `dotfiles/CLAUDE.md`).
+- `state-manager.sh` — unified state tracking for toggle utilities (state dir `~/.local/state/dotfiles`); used by `*-toggle` scripts. (Package-manager has its own separate state-manager under `system/package-manager/core/`.)
 
 ## Gum UI Library - Primary Reference
 
 **Purpose**: Standardized UI framework for system CLI tools
-**Location**: `gum-ui.sh` (572 lines)
-**Adopted by**: system/ scripts (7 files)
+**Adopted by**: system/ scripts
 **Not used by**: desktop/ (use notify-send), menu/ (use menu-helpers.sh)
 
 **Dependencies**:
 - `gum` (optional - provides fallbacks)
-- `colors.sh` (oksolar theme)
+- `~/.config/themes/current/colors.sh` — theme colors, sourced automatically by gum-ui.sh (not bundled in core/; comes from the active theme)
 
 ### Function Categories
 
-**Status Functions** (8):
+**Status Functions**:
 - `ui_success` - ✅ Green checkmark
 - `ui_error` - ❌ Red X
 - `ui_warning` - ⚠️  Yellow triangle
@@ -36,7 +35,7 @@
 - `ui_action` - 🚀 Action indicator
 - `ui_complete` - 🎉 Completion indicator
 
-**Interactive Functions** (9):
+**Interactive Functions**:
 - `ui_confirm` - Yes/No prompts
 - `ui_choose` - Single selection menu
 - `ui_choose_multi` - Multi-selection menu
@@ -47,7 +46,7 @@
 - `ui_spin_on_error` - Error-only spinner (shows stderr only)
 - `ui_spin_silent` - Silent spinner (hides all output)
 
-**Layout Functions** (6):
+**Layout Functions**:
 - `ui_title` - Double border title
 - `ui_subtitle` - Single border subtitle
 - `ui_box` - Bordered content box
@@ -55,7 +54,7 @@
 - `ui_spacer` - Consistent spacing
 - `ui_output` - Raw data display
 
-**Data Display Functions** (3):
+**Data Display Functions**:
 - `ui_table` - Formatted tables
 - `ui_list` - Bulleted lists
 - `ui_key_value` - Key-value pairs
@@ -178,43 +177,13 @@ updates=$(ui_spin_silent "Checking updates" "checkupdates 2>/dev/null")
 - Text output instead of styled output
 - `ui_filter` requires gum (no fallback)
 
-### Example Usage
-
-**Status output**:
-```bash
-ui_step "Installing packages"
-# ... installation logic ...
-ui_success "Packages installed"
-```
-
-**Interactive menu**:
-```bash
-options=("Option 1" "Option 2" "Option 3")
-choice=$(ui_choose "Select option" "${options[@]}")
-```
-
-**Confirm dialog**:
-```bash
-if ui_confirm "Delete file?"; then
-    rm "$file"
-    ui_success "File deleted"
-fi
-```
-
-**Data display**:
-```bash
-ui_table "Name|Status|Count" "Pkg1|Active|42" "Pkg2|Inactive|7"
-ui_list "Item 1" "Item 2" "Item 3"
-ui_key_value "Version" "1.2.3" "Author" "Name"
-```
-
 ## Color Library
 
 **Source**: Theme system (`~/.config/themes/current/colors.sh`)
 
 **Purpose**: Theme-aware color definitions for CLI tools
 
-**Variables**: 24 semantic variables (ACCENT_*, BG_*, FG_*)
+**Variables**: semantic variables (ACCENT_*, BG_*, FG_*)
 
 **Usage**:
 ```bash

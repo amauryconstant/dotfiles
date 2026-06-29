@@ -9,52 +9,51 @@
 ## Quick Reference
 
 - **Purpose**: Lazy-loaded script implementations for CLI wrappers
-- **Target**: `~/.local/lib/scripts/` (51 total scripts)
-- **Categories**: 11 logical groupings
+- **Target**: `~/.local/lib/scripts/`
+- **Categories**: logical groupings by domain
 - **Integration**: Sourced by `~/.local/bin/executable_*` wrappers
 - **Template safety**: Only lib/ scripts can be templates (bin/ static)
 
 ## Directory Structure
 
 ```
-~/.local/lib/scripts/   # 51 total scripts
-├── core/               # 3 files - Foundation
-│   ├── gum-ui.sh       # 572-line UI library
+~/.local/lib/scripts/
+├── core/               # Foundation
+│   ├── gum-ui.sh       # UI library
 │   ├── hook-runner     # User hook execution engine
 │   └── state-manager.sh # State management library
-├── desktop/            # 22 files - Hyprland utilities
-├── media/              # 3 files - Wallpaper, screenshots
-├── system/             # 6 files - Maintenance, health
-├── terminal/           # 1 file - CWD preservation
-├── network/            # 1 file - Tailscale
-├── git/                # 1 file - Branch cleanup
-├── user-interface/     # 13 files - Menu system
-├── utils/              # 1 file - JSON reorder
-└── development/        # [empty - future expansion]
+├── desktop/            # Hyprland utilities
+├── media/              # Wallpaper, screenshots
+├── system/             # Maintenance, health
+├── terminal/           # CWD preservation
+├── network/            # Tailscale
+├── git/                # Branch cleanup
+├── user-interface/     # Menu system
+└── utils/              # JSON reorder
 ```
 
 ## Category Details
 
-### Core Foundation (3 scripts)
+### Core Foundation
 **Purpose**: Foundation libraries and hook system
 **Dependencies**: None (self-contained)
 
 **Hook System**:
-- `hook-runner.sh` - User-extensible hook execution engine
+- `hook-runner` - User-extensible hook execution engine
   - Pattern: Silent execution (`2>/dev/null || true`)
   - Location: `~/.config/dotfiles/hooks/`
   - Purpose: Execute user hooks without modifying core scripts
-  - Usage: `hook-runner.sh <hook-name> [args...]`
+  - Usage: `hook-runner <hook-name> [args...]`
 
 **Hook execution pattern**:
 ```bash
 # In core scripts
-if [ -f "$HOME/.local/lib/scripts/core/hook-runner.sh" ]; then
-    "$HOME/.local/lib/scripts/core/hook-runner.sh" theme-change "$theme_name" 2>/dev/null || true
+if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
+    "$HOME/.local/lib/scripts/core/hook-runner" theme-change "$theme_name" 2>/dev/null || true
 fi
 ```
 
-**Available hook points** (9 total):
+**Available hook points**:
 | Hook | Triggered By | Arguments | Use Case |
 |------|--------------|-----------|----------|
 | `theme-change` | theme-switcher.sh | `$theme_name` | Custom app theming |
@@ -76,9 +75,11 @@ fi
 
 **UI Library**: See `core/CLAUDE.md` for gum-ui.sh reference
 
-### Desktop Utilities (20 scripts)
+### Desktop Utilities
 **Purpose**: Hyprland desktop utilities
 **Dependencies**: hyprctl, notify-send, jaq (JSON)
+
+**Naming**: scripts are extensionless and directly executable (the `.sh` suffixes below are illustrative — actual files have none, e.g. `launch-or-focus`, not `launch-or-focus.sh`).
 
 **UI Pattern**:
 - **All desktop utilities** use `notify-send` for user feedback (keybinding-triggered, minimal overhead)
@@ -104,10 +105,12 @@ fi
 - `idle-toggle.sh` - Idle management (uses `notify-send`)
 
 **Theme System**:
-- `theme-switcher.sh` - Theme selection menu (uses `notify-send`)
-  - Calls reload_applications() for terminal, waybar, dunst, wofi
-  - Calls theme-apply scripts for extended app coverage
-  - Triggers theme-change hook for user customization
+- `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
+  - Reloads terminal, waybar, swaync, wofi
+  - Calls the `theme-apply-*` scripts (below) for extended app coverage
+  - Triggers the `theme-change` hook for user customization
+
+**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-zellij`. Details for a few:
 
 - `theme-apply-firefox.sh` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`
@@ -122,11 +125,11 @@ fi
   - Mappings: catppuccin, rosepine, gruvbox, solarized
 
 - `theme-apply-opencode.sh` - opencode TUI theme integration
-  - Creates custom JSON theme files (8 variants)
+  - Creates custom JSON theme files (one per theme)
   - Symlinks current theme to `~/.config/opencode/themes/current.json`
   - Updates opencode.jsonc via jaq: Sets `"theme": "current"`
   - Silent failure if opencode not installed
-  - Mappings: 24 semantic variables → 62 opencode properties
+  - Mappings: semantic variables → opencode properties
 
 - `theme-apply-claude-code.sh` - claude-code CLI theme integration
   - Maps light/dark themes to claude-code theme setting
@@ -134,13 +137,23 @@ fi
   - Silent failure if claude-code not installed
   - Mappings: Light themes (latte, dawn, gruvbox-light, solarized-light) → "light", Dark themes → "dark"
 
-**Other Utilities**:
-- `audio-switch.sh` - Audio device switching (uses `notify-send`)
-- `screenrecord.sh` - Screen recording (uses `notify-send`)
-- `system-settings.sh` - Launch system settings (uses `notify-send`)
-- `wlogout.sh` - Logout menu launcher
+**Session management**: `session-save`, `session-restore`, `session-prompt`, `recover-workspaces` — Hyprland window/workspace snapshotting (also driven by `session-autosave.timer`; see `systemd/user/CLAUDE.md`). `hypr-session` is the user-facing CLI over these.
 
-### Media Scripts (3 scripts)
+**Input / keyboard**: `kanata-layer`, `kanata-layer-toggle` — query/switch Kanata layers (laptop, via the kanata daemon on port 5829).
+
+**Other Utilities**:
+- `audio-switch` - Audio device switching
+- `battery-status` - Battery/power status (Waybar custom module / notify)
+- `idle-indicator`, `idle-toggle` - idle/inhibit state
+- `immediate-lock` - lock screen now
+- `screenrecord` - Screen recording
+- `system-settings` - Launch system settings
+- `voice-meeting` - meeting voice helper
+- `window-pop` - toggle a window to a floating "pop" state
+- `zoom-cursor` - cursor magnifier
+- `wlogout` - Logout menu launcher
+
+### Media Scripts
 **Purpose**: Media capture and wallpaper management
 **Tools**: grim, slurp, satty, swww
 **Integration**: Hyprland bindings, systemd timer
@@ -156,7 +169,7 @@ fi
 - `random-wallpaper.tmpl` - Random wallpaper from collection (uses log templates)
 - `set-wallpaper.tmpl` - Set specific wallpaper via swww (uses log templates)
 
-### User Interface Menus (12 scripts)
+### User Interface Menus
 **Purpose**: Omarchy-inspired hierarchical menu system
 **Entry point**: `Super+Space` → `system-menu.sh`
 **Integration**: Wofi (dmenu mode), menu-helpers.sh library
@@ -178,40 +191,41 @@ fi
 | 󰋼 | About | `menu-about.sh` | System information |
 | 󰐥 | System | `menu-system.sh` | Power management |
 
+**Submenus** (not top-level): `menu-ai` (AI actions), `utilities-menu` (utility launcher), reached from the categories above.
+
+**Hook tooling** (also in `user-interface/`): `hook-create`, `hook-edit`, `hook-list`, `hook-test` (exposed as `dotfiles-hook-*`), `dotfiles-bindings-edit` — see `dotfiles/CLAUDE.md`.
+
 **Shared utilities**: `menu-helpers.sh` (common functions)
 - Provides `notify()` wrapper around `notify-send` for consistent notifications
 - Provides `show_menu()` function for wofi integration
-- All menu-*.sh scripts source this library
+- All menu-* scripts source this library
 
-### System Scripts (7 scripts)
+### System Scripts
 **Purpose**: System maintenance, health monitoring, SSH key management
 **Tools**: pacman, paru, systemctl, ssh-keygen
 **Integration**: CLI wrappers, scheduled tasks
 
 **UI Pattern**: All system scripts use gum-ui library (`ui_*` functions) for consistent terminal UI
 
-**Scripts**:
-- `package-manager.sh` - Module-based package installation (pacman/paru)
-- `system-health.sh` - System health monitoring and diagnostics
-- `system-maintenance.sh` - Automated maintenance tasks
-- `troubleshoot.sh` - System troubleshooting wizard
-- `rotate-ssh-key` - SSH key rotation + chezmoi reimport
-  - Features: ED25519 keys, automatic backup, encryption, chezmoi integration
-  - Usage: `rotate-ssh-key <keyname>` (e.g., github, gitlab, ovh-server)
-  - Backup: Timestamped to `~/.ssh/backup-{YYYY-MM-DD-HHMMSS}/`
-  - Encryption: Automatic via `chezmoi add --encrypt`
-- `system-health-dashboard.sh` - Real-time system monitoring dashboard
-- `pacman-lock-cleanup.sh` - Clean stale pacman locks
+**Scripts** (extensionless, directly executable; `package-manager` lives in `system/package-manager/` — see its CLAUDE.md):
+- `package-manager` - Module-based package installation (pacman/paru)
+- `system-health`, `system-health-dashboard` - health monitoring + live dashboard
+- `system-maintenance` - automated maintenance tasks
+- `troubleshoot` - troubleshooting wizard
+- `pacman-lock-cleanup` - clean stale pacman locks
+- `home-backup` - Restic home backup runner (driven by `home-backup.timer`)
+- `rotate-ssh-key` - SSH key rotation + chezmoi reimport (ED25519, timestamped backup to `~/.ssh/backup-*`, re-encrypt via `chezmoi add --encrypt`). Usage: `rotate-ssh-key <keyname>`.
+- `rotate-age-key` - rotate the age master encryption key
 
 ### Other Categories
 
-| Category | Purpose | Script Count | Key Scripts |
-|----------|---------|--------------|-------------|
-| `core/` | Foundation libraries | 2 | gum-ui.sh, colors.sh.tmpl |
-| `terminal/` | Terminal utilities | 1 | terminal-cwd.sh |
-| `network/` | Network tools | 1 | tailscale.sh |
-| `git/` | Git utilities | 1 | prune-branch.sh |
-| `utils/` | General utilities | 1 | reorder-json.sh |
+| Category | Purpose | Scripts |
+|----------|---------|---------|
+| `core/` | Foundation libraries | `gum-ui.sh`, `hook-runner`, `state-manager.sh` |
+| `terminal/` | Terminal utilities | `regen-zsh-plugins`, `terminal-cwd`, `zellij-sessionizer.tmpl` |
+| `network/` | Network tools | `tailscale.sh`, `network-info`, `vpn-toggle`, `vpn-switch`, `wifi-switch` |
+| `git/` | Git utilities | `prune-branch` |
+| `utils/` | General utilities | `dotfiles-debug`, `firefox-debug-trace`, `reorder-json`, `unzip` |
 
 ## Organization Rationale
 
@@ -428,7 +442,7 @@ ui_info "Processing..."
 - **Zephyr config**: `.zstyles` (PATH, SCRIPTS_DIR, UI_LIB)
 - **Hyprland bindings**: `private_dot_config/hypr/conf/bindings/*.conf`
 - **Menu system**: `user-interface/` scripts
-- **Core UI**: `core/gum-ui.sh` (572-line library)
+- **Core UI**: `core/gum-ui.sh` (library)
 
 ---
 
@@ -561,4 +575,3 @@ git commit --no-verify
 | SC2148 | Shebang in rendered output | Templates expand shebang |
 
 **For shellcheck-specific issues**: fix the code, or add `# shellcheck disable=SC####` inline, or add to `.shellcheckrc` for repo-wide suppression. Template false positives are expected — templates are excluded from editor validation and only validated at commit time after rendering.
-```

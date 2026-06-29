@@ -10,7 +10,7 @@
 
 - **Version**: 3.0.0
 - **Purpose**: Module-based declarative package management with NixOS-style version pinning
-- **Architecture**: 4-layer modular design (31 files)
+- **Architecture**: 4-layer modular design
 - **Key features**: Version constraints, lockfile, hybrid update, Timeshift backup integration
 
 ## Quick Commands
@@ -46,8 +46,8 @@ package-manager approve --all      # Review every currently-blocked AUR package
 ## Architecture Overview
 
 ```
-package-manager/ (31 files)
-├── executable_package-manager.sh  # Entry point (521 lines)
+package-manager/
+├── executable_package-manager      # Entry point (CLI dispatch)
 ├── core/               # Foundation
 │   ├── state-manager.sh     # Centralized state/cache (5 assoc. arrays)
 │   ├── constants.sh         # Type-safe constants (PACKAGE_TYPE_*, etc.)
@@ -69,7 +69,7 @@ package-manager/ (31 files)
 │   ├── batch-operations.sh  # Batch installs (5-10x faster)
 │   ├── package-operations.sh # Individual ops + state tracking
 │   └── flatpak-manager.sh   # Flatpak operations (user-scope)
-└── commands/           # CLI (14 files: cmd-sync, cmd-lock, cmd-status, cmd-approve, ...)
+└── commands/           # CLI (cmd-sync, cmd-lock, cmd-status, cmd-approve, ...)
 ```
 
 **Dependency rule**: Commands → Operations → Packages → Core (never reverse)

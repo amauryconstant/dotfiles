@@ -8,8 +8,8 @@
 
 ## Quick Reference
 
-- **Purpose**: System maintenance and monitoring tools (8 scripts)
-- **CLI wrappers**: `system-health`, `system-maintenance`, `system-troubleshoot`, `package-manager`, `home-backup`, `rotate-key`
+- **Purpose**: System maintenance and monitoring tools
+- **Commands** (extensionless, directly executable): `system-health`, `system-maintenance`, `troubleshoot`, `package-manager`, `home-backup`, `rotate-age-key`, `rotate-ssh-key`
 - **Integration**: topgrade, sudoers
 
 ## Tool Overview
@@ -17,29 +17,18 @@
 | Tool | Purpose | Mode |
 |------|---------|------|
 | `system-health` | Health monitoring | `--check` (silent alerts) or interactive |
-| `system-health-dashboard.sh` | Interactive dashboard | TUI with gum |
-| `system-maintenance.sh` | Maintenance tasks | `--update`, `--cleanup` modes |
-| `troubleshoot.sh` | Diagnostic tool | Interactive troubleshooting |
-| `package-manager.sh` v3.0 | Module-based pkg management | NixOS-style version pinning, modularized architecture (521 lines) |
-| `pacman-lock-cleanup.sh` | Clean stale pacman locks | Sudo required (configured in sudoers) |
-| `home-backup` | Incremental encrypted backup | `init/backup/restore/status/prune` subcommands |
-| `rotate-key` | Key rotation tool | `list/api/dotfiles/restic` subcommands |
+| `system-health-dashboard` | Interactive dashboard | TUI with gum |
+| `system-maintenance` | Maintenance tasks | `--update`, `--cleanup` modes |
+| `troubleshoot` | Diagnostic tool | Interactive troubleshooting |
+| `package-manager` | Module-based pkg management | NixOS-style version pinning; modularized (`operations/`, `commands/`, `packages/`, `core/`) — see its CLAUDE.md |
+| `pacman-lock-cleanup` | Clean stale pacman locks | Sudo required (configured in sudoers) |
+| `home-backup` | Incremental encrypted backup (Restic) | `init/backup/restore/status/prune` subcommands |
+| `rotate-age-key` | Rotate API keys / dotfiles master age keypair / restic password | `list/api/dotfiles/restic` subcommands |
+| `rotate-ssh-key` | Rotate an SSH keypair + chezmoi reimport | `rotate-ssh-key <keyname>` |
 
-**Recent changes**:
+**Security invariant (package-manager)**: all `yq` calls use `env()` substitution (yq v4 style), never string-interpolated values — this patched a yq injection / state-corruption vector. Preserve that pattern in any yq edits; scripts run `set -euo pipefail`. See `package-manager/CLAUDE.md`.
 
-**v3.0.0 (comprehensive refactoring)**:
-- **Modularized architecture**: Extracted to operations/, commands/, packages/, core/ modules
-- **Performance optimizations**: Module caching, constraint memoization, single-pass iteration
-- **Error recovery**: State backup/restore, concurrent sync protection
-- **Code quality**: Deprecated legacy commands, reduced main file by 24.4%
-
-**v2.2.1 (security fix)**:
-- **yq injection vulnerability patched**: 16+ vulnerable lines converted to use `env()` substitution (yq v4 style)
-- **State file corruption risk eliminated**: Safe variable substitution in all yq operations
-- **Input validation improved**: Module and package names now properly escaped
-- **Strict mode added**: `set -euo pipefail` prevents partial state corruption
-
-## system-health.sh
+## system-health
 
 **Purpose**: Non-interactive health monitoring
 
@@ -60,7 +49,7 @@ system-health --json  # JSON output for scripts
 
 **Integration**: Called by manual maintenance, monitoring scripts
 
-## system-health-dashboard.sh
+## system-health-dashboard
 
 **Purpose**: Interactive TUI dashboard
 
@@ -77,7 +66,7 @@ system-health-dashboard
 
 **Dependencies**: gum (required), jaq (JSON parsing)
 
-## system-maintenance.sh
+## system-maintenance
 
 **Purpose**: System maintenance tasks
 
@@ -107,7 +96,7 @@ system-maintenance  # Interactive
 
 **Integration**: Can be called from topgrade custom commands (manual execution only)
 
-## troubleshoot.sh
+## troubleshoot
 
 **Purpose**: Interactive diagnostic tool
 
@@ -121,66 +110,25 @@ system-maintenance  # Interactive
 
 **Usage**:
 ```bash
-system-troubleshoot
+troubleshoot
 ```
 
 **Output**: Guided diagnostics with fixes
 
-## package-manager.sh v3.0
+## package-manager
 
-**Purpose**: Module-based declarative package management with NixOS-style version pinning and hybrid update mode
-
-**Version**: 3.0.0 (comprehensive refactoring: modularized architecture, 31 files, 4-layer design)
-
-**Architecture**: See `package-manager/CLAUDE.md` for complete documentation
-
-**Key features**:
-- 4-layer modular design: Core/Operations/Packages/Commands (31 files)
-- NixOS-style version constraints (exact, >=, <)
-- Lockfile generation for reproducibility
-- Hybrid update mode: sync + update all packages
-- Backup integration (Timeshift/Snapper)
-- Performance optimizations: 5-100x faster operations
-- State management with atomic mutations
-- Concurrent sync protection
-- Batch AUR validation (24x faster)
+Module-based declarative package management with NixOS-style version pinning (exact/`>=`/`<`), lockfile generation, and a hybrid sync+update mode. 4-layer modular design (Core/Operations/Packages/Commands) with atomic state mutations and concurrent-sync protection. **Full architecture: `package-manager/CLAUDE.md`.**
 
 ### Quick Commands
 
 ```bash
-# Module management
-package-manager module list
-package-manager module enable base shell
-
-# Version pinning
-package-manager pin firefox 120.0
+package-manager module enable base shell   # module management
+package-manager pin firefox 120.0           # version pinning
 package-manager lock
-
-# Package operations
-package-manager install firefox
-package-manager sync
-package-manager sync --prune
+package-manager sync --prune                # apply packages.yaml (the run_onchange uses this)
 package-manager update
-
-# Status & validation
-package-manager status
-package-manager validate
-package-manager outdated
+package-manager status / validate / outdated
 ```
-
-### Documentation
-
-**Complete reference**: `package-manager/CLAUDE.md`
-
-**Topics covered**:
-- Architecture overview (4-layer design)
-- Module reference (31 files)
-- Performance optimizations
-- State management
-- Data flow
-- Development guide
-- Troubleshooting
-- Migration notes (v1.0 → v2.x → v3.0)
 
 ### Integration Points
 
@@ -228,11 +176,11 @@ home-backup status     # Check snapshots
 systemctl --user list-timers home-backup.timer  # Verify schedule
 ```
 
-## rotate-key
+## rotate-age-key
 
 **Purpose**: Unified key rotation tool for all secret categories
-**Location**: `system/executable_rotate-key`
-**CLI**: `rotate-key <subcommand>`
+**Location**: `system/executable_rotate-age-key`
+**CLI**: `rotate-age-key <subcommand>`
 
 **Subcommands**:
 
@@ -257,13 +205,13 @@ systemctl --user list-timers home-backup.timer  # Verify schedule
 
 **Usage**:
 ```bash
-rotate-key list
-rotate-key api anthropic-key
-rotate-key dotfiles
-rotate-key restic
+rotate-age-key list
+rotate-age-key api anthropic-key
+rotate-age-key dotfiles
+rotate-age-key restic
 ```
 
-## pacman-lock-cleanup.sh
+## pacman-lock-cleanup
 
 **Purpose**: Clean stale pacman lock file
 
@@ -287,7 +235,7 @@ sudo pacman-lock-cleanup --force  # No confirmation
 ## Direct Execution
 
 System scripts are directly in PATH (no wrappers). Call them as:
-- `system-health`, `system-maintenance`, `system-troubleshoot` — direct executables in `system/`
+- `system-health`, `system-maintenance`, `troubleshoot` — direct executables in `system/`
 - `package-manager` — still a wrapper (`bin/executable_package-manager`) due to complex module sourcing
 
 ## Integration Points
@@ -329,7 +277,7 @@ system-health --json > post-update.json
 
 **Troubleshooting**:
 ```bash
-system-troubleshoot  # Interactive guided diagnostics
+troubleshoot  # Interactive guided diagnostics
 ```
 
 **Clean system**:

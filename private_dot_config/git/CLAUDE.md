@@ -1,127 +1,29 @@
-# Git Configuration - Claude Code Reference
+# Git Configuration
 
-**Location**: `/home/amaury/.local/share/chezmoi/private_dot_config/git/`
+**Location**: `private_dot_config/git/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
 
-**CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
+## Files
 
-## Quick Reference
+- `config.tmpl` → `~/.config/git/config`. Sections: `core`, `user`, `alias`, `delta`, `fetch`, `init`, `interactive`, `log`, `merge`, `push`, `pull`.
+  - Identity uses **`.workEmail`** + `.fullname` (this is the default-identity machine; per-repo overrides handle personal work).
+  - `[delta]` is configured here and **inherited by jj** via git config — see `jj/CLAUDE.md`.
+  - `[merge "mergiraf"]` registers the syntax-aware merge driver for source-code files (`.go`/`.rs`/`.yaml`/…), wired through the deployed `~/.gitattributes` (`dot_gitattributes`).
+- `dot_gitattributes` → `~/.gitattributes`: global mergiraf rules for source files.
 
-- **Purpose**: Git configuration and merge protection
-- **Files**: config.tmpl, attributes
-- **Feature**: Template variable protection during merges
-- **Setup**: `.chezmoiscripts/run_once_after_005_configure_git_tools.sh.tmpl`
+## Template merge driver (chezmoi `.tmpl` files)
 
-## Template Variable Protection
+This repo's own `*.tmpl` files use a separate `chezmoi-template` merge driver so merges don't render `{{ .var }}` into literal values. It is **not** defined in `config.tmpl` — it's registered into the chezmoi source repo's local git config by `.chezmoiscripts/run_once_after_001_configure_developer_tools.sh.tmpl`, and matched via the repo-root `.gitattributes` rule `*.tmpl merge=chezmoi-template`.
 
-**Problem**: Git merges render template variables
+**See `.scripts/CLAUDE.md`** for the driver algorithm, args, and the mergiraf-vs-chezmoi-template distinction.
 
-**Example**:
-- Before merge: `{{ .firstname }}`
-- After merge: `John` (rendered, breaks template)
+## Merge conflict workflow
 
-**Solution**: Custom merge driver preserves `{{ .variable }}`
-
-### Components
-
-**Git Attributes** (`.gitattributes`):
-```
-*.tmpl merge=chezmoi-template
-```
-
-**Custom Merge Driver** (`.scripts/template-merge-driver.sh`):
-- Prioritizes versions with template syntax
-- Preserves `{{ .variable }}` format
-- Falls back to standard merge when both have templates
-
-**Auto-Configuration** (`run_once_after_005_configure_git_tools.sh.tmpl`):
-- Installs merge driver
-- Configures git config
-- Sets up execution permissions
-
-### How It Works
-
-1. Git detects `.tmpl` files during merge
-2. Custom merge driver invoked
-3. Driver prioritizes versions with template syntax
-4. Template variables preserved as `{{ .variable }}`
-5. Falls back to standard merge if both have templates
-
----
-
-## Git Configuration
-
-**File**: `config.tmpl`
-
-**Template variables**:
-```ini
-[user]
-    name = {{ .fullname }}
-    email = {{ .personalEmail }}
-
-[core]
-    editor = {{ .globals.applications.editor }}
-
-[merge "chezmoi-template"]
-    name = Chezmoi template merge driver
-    driver = ~/.scripts/template-merge-driver.sh %O %A %B %L
-```
-
-**Sections**:
-- User identity (name, email)
-- Core settings (editor, pager)
-- Merge driver (template protection)
-- Aliases (shortcuts)
-- UI colors (diff, status)
-
-## Safe Merge Workflow
-
-**Check status**:
 ```bash
-chezmoi diff
-chezmoi status
+chezmoi status              # "M" marks a file with merge conflicts
+chezmoi merge <file>        # resolve one (opens merge tool)
+chezmoi merge-all           # resolve all
 ```
 
-**Merge operations**:
-```bash
-chezmoi merge <file>        # Targeted
-chezmoi merge-all          # All conflicts
-```
-
-**Validation**: Template syntax automatically preserved
-
-**Emergency restore**:
-```bash
-git checkout HEAD -- <file>
-```
-
-## Manual Resolution
-
-**Detect conflicts**:
-```bash
-chezmoi status  # Look for "M" status
-```
-
-**Resolve conflicts**:
-```bash
-chezmoi merge <file>        # Single file
-chezmoi merge-all          # All files
-```
-
-**Validate results**:
-```bash
-chezmoi diff
-chezmoi status
-```
-
-**Special cases**: Encrypted files (`.age`) require manual workflow
-
-**See**: `.scripts/CLAUDE.md` for merge driver algorithm and exit codes.
-
-## Integration Points
-
-- **Gitattributes**: `.gitattributes` (merge=chezmoi-template)
-- **Setup script**: `.chezmoiscripts/run_once_after_005_configure_git_tools.sh.tmpl`
-- **Template vars**: `.chezmoi.yaml.tmpl` (fullname, email)
-- **Merge driver**: `.scripts/template-merge-driver.sh`
+`.age` files are `binary` in `.gitattributes` — never auto-merged; resolve encrypted files manually per the root CLAUDE.md safety protocol.

@@ -31,7 +31,7 @@ Routes `Super+Space` → Wofi dmenu → category script.
 | 󰋼 | About | menu-about | System information |
 | 󰐥 | System | menu-system | Power management |
 
-**Note**: Remove category (`menu-remove`) is commented out in system-menu.
+**Note**: Remove category (`menu-remove`) is commented out in system-menu. `utilities-menu` is a secondary launcher (reached from the Trigger/Setup categories, not a top-level entry).
 
 **menu-extend hook**: Unknown choices from system-menu are delegated to `~/.config/dotfiles/hooks/menu-extend` (see `dotfiles/CLAUDE.md`).
 

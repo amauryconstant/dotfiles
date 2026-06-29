@@ -41,9 +41,12 @@
 
 ```go
 .fullname, .firstname, .workEmail, .personalEmail
-.privateServer, .chassisType  # laptop/desktop
-.terminalFont                  # FiraCode Nerd Font (default), Iosevka Nerd Font, Geist Mono Nerd Font
+.privateServer, .chassisType        # laptop/desktop
+.nvidiaDriverType                    # modern|legacy — auto-detected from GPU at init (override: NVIDIA_DRIVER_OVERRIDE env)
+.nvidiaGpuDetected                   # detected GPU name string
 ```
+
+`.nvidiaDriverType`/`.nvidiaGpuDetected` are computed in `.chezmoi.yaml.tmpl` (not stored in `.chezmoidata/`) and consumed by `run_once_before_001_preflight...` and `run_onchange_before_sync_packages` to pick the right driver package.
 
 ### Data files (`.chezmoidata/`)
 
@@ -51,6 +54,8 @@
 .packages.install.arch     # Package lists with strategies
 .globals.applications.*   # Default apps (EDITOR, VISUAL, BROWSER)
 .globals.xdg.*           # XDG Base Directory paths
+.globals.guiFont          # "Inter" — GTK/Qt/Waybar/Wofi/Hyprlock
+.globals.terminalFont     # "GeistMono Nerd Font" — terminal/code/fontconfig
 .services.user_timers     # List of user timers with name/enabled/start fields
 .features.voxtype.enabled # Boolean toggle for Voxtype setup
 .boot.gpu.kms             # Boolean: enable NVIDIA KMS modeset
@@ -61,33 +66,7 @@
 .developer.mise.enabled   # Boolean: enable mise setup
 ```
 
-### Common Patterns
-
-```go
-# Direct access
-{{ .packages.install.arch }}
-
-# Range iteration
-{{ range .packages.install.arch }}
-  {{ . }}
-{{ end }}
-
-# Nested access
-{{ .globals.applications.terminal }}
-
-# Conditional
-{{ if eq .chezmoi.os "linux" }}
-
-# Filters
-{{ .firstname | lower }}
-{{ .privateServer | replace "www" "nextcloud" }}
-
-# Defaults
-{{ $var := .value | default "fallback" }}
-
-# Whitespace control
-{{- includeTemplate "log_step" "message" -}}
-```
+Fonts are referenced as `.globals.terminalFont`/`.globals.guiFont` (not top-level `.terminalFont`).
 
 ---
 
@@ -106,33 +85,6 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 
 ---
 
-## Validation Commands
+## Inspecting Data
 
-```bash
-# View all template data
-chezmoi data
-
-# View specific key
-chezmoi data | jaq -r '.packages.install.arch'
-
-# Test template variable access
-chezmoi execute-template < template.tmpl
-```
-
----
-
-## Common Data Queries
-
-```bash
-# Check NVIDIA driver detection
-chezmoi data | jaq -r '.nvidiaDriverType'
-
-# View terminal font
-chezmoi data | jaq -r '.terminalFont'
-
-# List all packages
-chezmoi data | jaq -r '.packages.install.arch[]'
-
-# View globals
-chezmoi data | jaq '.globals'
-```
+`chezmoi data` dumps the full merged data tree (built-in + `.chezmoi.yaml.tmpl` + `.chezmoidata/`). Pipe to `jaq` to check a resolved value, e.g. `chezmoi data | jaq -r '.nvidiaDriverType'` or `chezmoi data | jaq -r '.globals.terminalFont'`.

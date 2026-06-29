@@ -8,7 +8,6 @@
 
 ## Quick Reference
 
-- **Count**: 5 scripts
 - **UI pattern**: screenshot uses notify-send; wallpaper templates use log templates; clipboard-store is silent
 
 ## Scripts
@@ -41,7 +40,7 @@
 
 Both are chezmoi templates (use `{{ includeTemplate "log_*" }}` for output, not notify-send).
 
-**set-wallpaper triggers hook**: `hook-runner.sh wallpaper-change "$wallpaper_path"` after setting.
+**set-wallpaper triggers hook**: `hook-runner wallpaper-change "$wallpaper_path"` after setting.
 
 **swww must be running**: Daemon started by `hypr/conf/autostart.conf`. Both scripts require swww active.
 

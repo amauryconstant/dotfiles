@@ -8,11 +8,11 @@
 
 ## Quick Reference
 
-- **Theme system**: Semantic variable abstraction (24 variables)
-- **8 variants**: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
+- **Theme system**: Semantic variable abstraction
+- **Variants**: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - **Switching**: `theme switch <name>`, darkman (solar), Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 - **Location**: `~/.config/themes/current` → symlink to active theme
-- **Apps**: Desktop (7), CLI tools (7), Shell scripts (8 via gum-ui)
+- **Apps**: Desktop, CLI tools, Shell scripts (via gum-ui)
 - **Style guides**: Each theme has `STYLE-GUIDE.md` with color selection methodology
 
 ---
@@ -21,10 +21,13 @@
 
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
-**Per-theme files**:
-- **Desktop**: `waybar.css`, `swaync.css`, `dunst.conf` (deprecated), `ghostty.conf`, `hyprland.conf`, `hyprlock.conf`, `wlogout.css`, `wofi.css`
-- **CLI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`
+**Per-theme files** (each theme dir is a complete set):
+- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`, `dunst.conf` (vestigial — no dunst installed; safe to ignore)
+- **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `zellij.kdl`, `opencode.json`
+- **Shell**: `colors.sh` (uppercase var mirror, sourced by gum-ui — see Shell Script Integration below)
 - **Docs**: `STYLE-GUIDE.md`
+
+`swaync.css.tmpl` is the **only templated file** (injects `.globals.*` fonts); `hyprland.lua` is the Lua-config counterpart to `hyprland.conf` (see `.claude/rules/hyprland-lua.md`). All others are static — add the new file to every theme dir when introducing one.
 
 **Integration**:
 - **Desktop apps**: Import via `@import`, `!include`, or `source` directives
@@ -34,9 +37,9 @@
 
 ## Semantic Variable Schema
 
-**24 variables** organized into 3 categories:
+**Variables** organized into categories:
 
-### Background Hierarchy (4)
+### Background Hierarchy
 
 | Variable | Role | Usage | **Required Text Color** |
 |----------|------|-------|-------------------------|
@@ -45,7 +48,7 @@
 | `@bg-tertiary` | Popovers | Notifications, tertiary elevation | `@fg-primary` |
 | `@bg-overlay` | Modal overlays | Dialogs, semi-transparent | `@fg-primary` |
 
-### Foreground/Text Hierarchy (4)
+### Foreground/Text Hierarchy
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -54,9 +57,9 @@
 | `@fg-muted` | Disabled/inactive | Unfocused, low contrast |
 | `@fg-contrast` | High contrast | Text on colored backgrounds |
 
-### Accent Colors (16 semantic roles - Phase 1+2+3)
+### Accent Colors (semantic roles, Phase 1+2+3)
 
-**Core Accents (8)**:
+**Core Accents**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -69,7 +72,7 @@
 | `@accent-secondary` | Tertiary actions | Alternative interactive elements |
 | `@accent-tertiary` | Quaternary | Lock, logout buttons |
 
-**Extended Accents (8)**:
+**Extended Accents**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -82,7 +85,7 @@
 | `@accent-special` | Special states | Custom modules, rare indicators |
 | `@accent-urgent-secondary` | Moderate urgency | Battery 20-30%, moderate warnings |
 
-**Hover Variants (4)**:
+**Hover Variants**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -173,7 +176,7 @@ Elevated surfaces (`@bg-secondary`, `@bg-tertiary`) MUST use `@fg-primary` for A
 **Solar auto**: darkman service (sunrise/sunset transitions)
 **Keybindings**: Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 
-**Process**: Updates symlink → reloads Waybar/Dunst/Hyprland → updates wallpaper
+**Process**: Updates symlink → reloads Waybar/Swaync/Hyprland → updates wallpaper
 
 ---
 
@@ -254,7 +257,7 @@ All 12 lazygit theme fields and their semantic mappings:
 
 ## Shell Script Integration (CLI Tools)
 
-8 system CLI tools source `~/.config/themes/current/colors.sh` via gum-ui library. Variables: `BG_PRIMARY`, `FG_PRIMARY`, `ACCENT_SUCCESS`, etc. (24 total, mirroring CSS names in uppercase+underscore format).
+System CLI tools source `~/.config/themes/current/colors.sh` via gum-ui library. Variables: `BG_PRIMARY`, `FG_PRIMARY`, `ACCENT_SUCCESS`, etc. (mirroring CSS names in uppercase+underscore format).
 
 **Loading**: `gum-ui.sh` sources `colors.sh` automatically — scripts using `$UI_LIB` get theme colors.
 
@@ -270,56 +273,13 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 
 ## Enhanced Theme Switching
 
-**Extended app coverage** beyond core apps (terminal, waybar, dunst, wofi):
-
-### VSCode Integration
-
-**Script**: `theme-apply-vscode.sh`
-
-**Features**:
-- Maps dotfiles theme to VSCode theme extension
-- Updates settings.json via jaq
-- Silent failure if VSCode not installed
-
-**Integration**: Called by `theme-switcher.sh` after reload_applications()
-
-### Firefox Integration
-
-**Script**: `theme-apply-firefox.sh`
-
-**Features**:
-- Symlinks userChrome.css from `~/.config/themes/{variant}/`
-- Creates chrome/ directory if needed
-- Requires `toolkit.legacyUserProfileCustomizations.stylesheets = true`
-
-**Firefox themes**: 8 userChrome.css files in `~/.config/themes/{variant}/`
-- catppuccin-latte, catppuccin-mocha
-- rose-pine-dawn, rose-pine-moon
-- gruvbox-light, gruvbox-dark
-- solarized-light, solarized-dark
-
-**Integration**: Called by `theme-switcher.sh` after reload_applications()
-
-### Spotify Integration
-
-**Script**: `theme-apply-spotify.sh`
-
-**Features**:
-- Maps to spicetify color schemes
-- Optional (skips if spicetify-cli not installed)
-
-**Integration**: Called by `theme-switcher.sh` after reload_applications()
-
-### Application Integration Sequence
-
-**Theme switcher workflow**:
+`theme-switcher` (in `lib/scripts/desktop/`) drives the full switch:
 1. Update `~/.config/themes/current` symlink
-2. Reload core apps (Hyprland, Waybar, Dunst, etc.)
-3. Call extended app scripts:
-   - `theme-apply-vscode.sh`
-   - `theme-apply-firefox.sh`
-   - `theme-apply-spotify.sh`
-4. Trigger hook: `hook-runner.sh theme-change $theme_name`
+2. Reload core apps (Hyprland, Waybar, Swaync, terminal, wofi)
+3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim, zellij (each silently skips if its app is absent)
+4. Trigger the `theme-change` user hook: `hook-runner theme-change $theme_name`
+
+Per-script behavior (e.g. Firefox needs `toolkit.legacyUserProfileCustomizations.stylesheets = true`) is documented in `lib/scripts/desktop/CLAUDE.md`.
 
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 **See**: `dotfiles/CLAUDE.md` for hook system documentation

@@ -8,8 +8,7 @@
 
 ## Quick Reference
 
-- **Purpose**: Notification daemon with persistent control center panel
-- **Replaces**: dunst (retained in `../dunst/` as historical reference)
+- **Purpose**: Notification daemon with persistent control center panel (the repo's only notification daemon — no dunst)
 - **Toggle**: `Super+Shift+N` → `swaync-client --toggle-panel`
 - **Reload CSS**: `swaync-client --reload-css` (hot-reload stylesheet without restart)
 - **Reload Config**: `swaync-client --reload-config` (reload JSON config only)
@@ -21,9 +20,9 @@
 |------|---------|
 | `config.json` | Static daemon config (position, timeouts, widgets) |
 | `style.css` | `@import url("theme.css");` |
-| `symlink_theme.css` | Chezmoi symlink → `../themes/current/swaync.css` |
+| `symlink_theme.css` | Chezmoi symlink → `~/.config/themes/current/swaync.css` |
 
-**Symlink resolution**: `~/.config/swaync/theme.css` → `~/.config/themes/current/swaync.css`
+**Theme source is templated**: per-theme file is `../themes/{variant}/swaync.css.tmpl` — the **only templated theme file**. It renders to `swaync.css` in the deployed theme dir, and the symlink above resolves to that. It must be a template because it injects the configured fonts (`{{ .globals.terminalFont }}` / `guiFont`); the other theme files are static CSS/conf. Edit the `.tmpl`, not the rendered output.
 
 ## Config Overview
 
@@ -41,7 +40,7 @@
 
 **Semantic variables used** per theme (from `waybar.css`):
 
-### Background Hierarchy (5 variables)
+### Background Hierarchy
 
 | Variable | Role | CSS Target |
 |----------|------|-----------|
@@ -51,7 +50,7 @@
 | `bg-elevated` | Highest elevation | Special elevated elements |
 | `bg-overlay` | Modal overlays | `.notification-background` |
 
-### Foreground Hierarchy (4 variables)
+### Foreground Hierarchy
 
 | Variable | Role | CSS Target |
 |----------|------|-----------|
@@ -71,31 +70,7 @@
 | `accent-warning` | Warnings | Backlight slider highlight |
 | `accent-media` | Media controls | MPRIS player |
 
-**Per-theme files**: `../themes/{variant}/swaync.css` (8 files, semantic CSS variables)
-
-**Theme switching**: `theme-switcher.tmpl` calls `swaync-client --reload-css` after updating the symlink.
-
-## Management
-
-```bash
-# Toggle control center
-swaync-client --toggle-panel
-
-# Toggle DND
-swaync-client --toggle-dnd
-
-# Hot-reload CSS (after theme switch)
-swaync-client --reload-css
-
-# Reload JSON config (position, timeouts)
-swaync-client --reload-config
-
-# View logs
-journalctl --user -u swaync
-
-# Restart daemon
-pkill swaync; swaync &
-```
+**Theme switching**: `theme-switcher.tmpl` calls `swaync-client --reload-css` after updating the symlink (hot-reload, no restart).
 
 ## Integration Points
 
@@ -103,4 +78,4 @@ pkill swaync; swaync &
 - **Keybinding**: `bindings/system-control.conf` (Super+Shift+N)
 - **Theme switcher**: `executable_theme-switcher.tmpl` (reload on theme change)
 - **Session denylist**: `dotfiles/session-denylist.conf` (not saved/restored)
-- **Theme CSS**: `themes/*/swaync.css` (8 per-theme files)
+- **Theme CSS**: `themes/*/swaync.css.tmpl`

@@ -2,7 +2,7 @@
 
 **Location**: `/home/amaury/.local/share/chezmoi/private_dot_config/zsh/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
-**Shell config**: See `../shell/CLAUDE.md` for POSIX layer + Zephyr framework
+**Shell config**: See `../shell/CLAUDE.md` for the shared POSIX layer (Zephyr/zstyles live here in `dot_zstyles`)
 **Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
@@ -55,9 +55,12 @@ Auto-sourced in `dot_zshrc` (alphabetical order, ignores `~*` files):
 
 | File                    | Purpose                                                                               |
 | ----------------------- | ------------------------------------------------------------------------------------- |
-| `aliases.zsh`           | Tool aliases (xh, fd, eza, jaq, pnpm, etc.)                                           |
-| `chezmoi-aliases.zsh`   | Chezmoi shortcuts (cmapply, cmedit, cmadd, etc.)                                      |
-| `dot-expansion-fix.zsh` | Compatibility shim for Zephyr dot-expansion ZLE widget                                |
+| `aliases.zsh`             | Tool aliases (xh, fd, eza, jaq, pnpm, etc.)             |
+| `chezmoi-aliases.zsh`     | Chezmoi shortcuts (cmapply, cmedit, cmadd, etc.)        |
+| `dot-expansion-fix.zsh`   | Compatibility shim for Zephyr dot-expansion ZLE widget  |
+| `ssh-port-forwarding.zsh` | SSH port-forward helpers                                |
+| `zellij-completions.zsh`  | Zellij completion wiring                                |
+| `zellij-layouts.zsh.tmpl` | Zellij layout helpers (templated)                       |
 
 **Adding snippets**: Drop `*.zsh` file in `dot_zshrc.d/` — auto-sourced next shell.
 
@@ -72,14 +75,15 @@ Autoloaded via Zephyr `zfunctions` plugin:
 | `ccp`               | Launch Claude Code with merged settings profiles (`ccp glm -- -p`)            |
 | `commands`          | List all custom CLI tools with descriptions                                    |
 | `debug-zsh-startup` | Startup time profiling utility                                                 |
+| `rm-empty-dirs`     | Remove empty directories under a path                                          |
 | `theme`             | Wrapper for `theme-switcher` with tab completion                               |
 | `theme-list`        | Display available themes with current indicator                                |
 
 ## Custom Completions (`dot_zcompletions/`)
 
-| File     | Completes |
-| -------- | --------- |
-| _(none)_ | —         |
+| File       | Completes |
+| ---------- | --------- |
+| `_openspec` | `openspec` CLI |
 
 **Adding completions**: Drop `_commandname` file (fpath completion format).
 
@@ -96,5 +100,5 @@ Autoloaded via Zephyr `zfunctions` plugin:
 - **POSIX shell**: `shell/env`, `shell/interactive`, `shell/login` (ZDOTDIR delegation)
 - **Zephyr PATH**: `dot_zstyles` prepath adds all `~/.local/lib/scripts/` categories
 - **Theme system**: `theme` / `theme-list` functions wrap `theme-switcher` script
-- **Script library**: PATH includes all 10 script categories (directly executable)
+- **Script library**: PATH includes all script categories (directly executable)
 - **Starship prompt**: Configured via `~/.config/starship.toml` (theme symlink)

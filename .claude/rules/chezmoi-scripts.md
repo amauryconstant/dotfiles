@@ -42,13 +42,13 @@
 5. **`run_onchange_after_*`** (hash-based, any order)
    - Extensions, AI models, bat cache, plymouth theme, Timeshift retention
 
-**Trust execution order**: Previous scripts succeeded (chezmoi stops on failure). Don't add redundant checks.
+**Trust execution order**: chezmoi runs scripts in order and aborts on the first failure, so a later script can assume earlier ones succeeded — e.g. `002_install_package_manager` provisions paru/yq/gum, so `003+` and all `run_onchange_before` package work assume those binaries exist. Don't re-check prerequisites a numerically-earlier script already guarantees.
 
 ---
 
-## Current Scripts (27 total)
+## Current Scripts
 
-### run_once_before_* (9)
+### run_once_before_*
 
 | Number | Script | Purpose |
 |--------|--------|---------|
@@ -62,7 +62,7 @@
 | 007 | setup_default_theme | Theme directory structure + symlinks (must run before file application) |
 | 008 | setup_hyprland_plugins | hyprsplit via hyprpm + HyprDynamicMonitors/hyprwhenthen services |
 
-### run_onchange_before_* (1)
+### run_onchange_before_*
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
@@ -70,7 +70,7 @@
 
 **Timing**: Runs BEFORE file application (ensures packages exist for config scripts)
 
-### run_once_after_* (11)
+### run_once_after_*
 
 | Number | Script | Purpose |
 |--------|--------|---------|
@@ -86,11 +86,13 @@
 | 011 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
 | 999 | switch_to_ssh_remote | SSH remote switch |
 
-### run_onchange_after_* (5)
+### run_onchange_after_*
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
 | configure_timeshift_retention | Timeshift retention + timer config | `globals.timeshift` changes |
+| configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
+| configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | install_ai_models | Ollama models | `ai.models` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
@@ -141,19 +143,11 @@
 
 ## Hash-Based Change Detection
 
-**Pattern** in `run_onchange_*` scripts:
+`run_onchange_*` scripts re-run only when their rendered content changes. Embed the watched data in a hash comment so editing that data re-triggers the script:
 
 ```bash
 #!/usr/bin/env sh
 # Hash: {{ .packages | toJson | sha256sum }}
-
-{{ includeTemplate "log_start" "Syncing packages..." }}
-# Script implementation
-{{ includeTemplate "log_complete" "Package sync complete" }}
 ```
 
-**How it works**:
-1. Chezmoi calculates hash of data
-2. Hash stored in script metadata
-3. Data changes → hash changes → script re-runs
-4. No data changes → hash same → script skipped
+The hashed expression must cover exactly the data the script depends on — too narrow and changes are missed, too broad and the script re-runs needlessly. See the table above for which data each script watches.

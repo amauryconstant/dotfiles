@@ -1,40 +1,15 @@
-# Waybar - Claude Code Reference
+# Waybar
 
-**Location**: `/home/amaury/.local/share/chezmoi/private_dot_config/waybar/`
-**Parent**: See `../CLAUDE.md` for desktop environment overview
-**Theme system**: See `../themes/CLAUDE.md` for semantic variables reference
+**Location**: `private_dot_config/waybar/`
+**Theme system**: See `../themes/CLAUDE.md` for the semantic variable schema.
 
-**CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
+- `style.css.tmpl` → GTK CSS, `@import "../themes/current/waybar.css"`.
+- `config.tmpl` → JSON5 module definitions.
+- Reload after edits: `killall -SIGUSR2 waybar`.
 
-## Quick Reference
+**`waybar.css` is the canonical theme color file**: it holds each variant's `@define-color` hex declarations, which `swaync` (`swaync.css.tmpl`) and `btop` (`btop.theme`) cross-reference. Edit a theme's colors there first.
 
-- **File**: `style.css.tmpl` (GTK CSS with semantic variables)
-- **Config**: `config.tmpl` (JSON with module definitions)
-- **Theme integration**: `@import "../themes/current/waybar.css"`
-- **Variables used**: 20 semantic variables (13 core + 3 extended + 4 hover variants)
-- **Format**: GTK CSS with `@variable` references
-
-## Semantic Variable Usage
-
-### 20 of 28 Variables Used (Phase 3)
-
-Waybar uses expanded semantic schema including Phase 3 additions. Variables imported from `themes/current/waybar.css`.
-
-**Active variables**: 13 core accents, 3 extended (performance, urgent-secondary, modification via wofi), 4 hover variants
-
-**Quick lookup**:
-```css
-/* Imported from theme file */
-@import "../themes/current/waybar.css";
-
-/* Then used throughout */
-window#waybar {
-    background-color: @bg-primary;
-    color: @fg-primary;
-}
-```
-
-### Module Color Assignments
+## Module → semantic color assignments
 
 | Module | Default State | Alternative States | Rationale |
 |--------|---------------|-------------------|-----------|
@@ -65,176 +40,8 @@ window#waybar {
 | **Active workspace** | `@accent-primary` | `@fg-contrast` | High contrast on color |
 | **Urgent workspace** | `@accent-error` | `@fg-contrast` | Critical visibility |
 
-## Implementation Patterns
+Convention for new modules: informational → `@accent-info`, success → `@accent-success`, warning → `@accent-warning`, critical → `@accent-error`, interactive → `@accent-highlight`, primary focus → `@accent-primary`; disabled → `@fg-muted`; hover bg → `@bg-secondary` (or the per-accent `*-hover` variant). Battery uses graded states incl. `@accent-urgent-secondary` for the 20–30% band.
 
-### Standard Module Styling
+## Modules (`config.tmpl`)
 
-```css
-/* Example: Network module */
-#network {
-    color: @accent-info;          /* Connected state */
-}
-
-#network.disconnected {
-    color: @fg-muted;             /* Disabled/inactive state */
-}
-```
-
-### State-Based Colors
-
-```css
-/* Example: Battery with multiple states (Phase 3 - refined warnings) */
-#battery {
-    color: @accent-success;       /* Normal (>30%) */
-}
-
-#battery.warning:not(.charging):not(.critical) {
-    color: @accent-urgent-secondary;  /* Moderate warning (20-30%) - Phase 3 */
-}
-
-#battery.low:not(.charging) {
-    color: @accent-warning;       /* Low warning (<20%) */
-}
-
-#battery.critical:not(.charging) {
-    color: @accent-error;         /* Critical (<10%) */
-    animation: critical-blink 1s ease infinite;
-}
-
-#battery.charging {
-    color: @accent-info;          /* Charging state */
-}
-
-#battery.plugged {
-    color: @accent-primary;       /* Plugged/full */
-}
-```
-
-### Phase 3 Additions
-
-**Hover variants** (explicit 10% opacity):
-```css
-#network:hover { background-color: @accent-info-hover; }
-#pulseaudio:hover { background-color: @accent-highlight-hover; }
-#backlight:hover { background-color: @accent-warning-hover; }
-#battery:hover { background-color: @accent-success-hover; }
-```
-
-**Disk module** (performance metric):
-```css
-#disk {
-    color: @accent-performance;   /* Normal disk usage */
-}
-
-#disk.warning {
-    color: @accent-warning;       /* Disk space low */
-}
-
-#disk.critical {
-    color: @accent-error;         /* Disk space critical */
-}
-```
-
-**Battery warning refinement** (moderate urgency):
-- Uses `@accent-urgent-secondary` for 20-30% battery range
-- Provides visual distinction between moderate and severe battery warnings
-
-### Animation with Semantic Colors
-
-```css
-@keyframes critical-blink {
-    0% {
-        background: transparent;
-        color: @accent-error;
-    }
-    50% {
-        background: @accent-error;
-        color: @fg-contrast;      /* High contrast text on colored bg */
-    }
-    100% {
-        background: transparent;
-        color: @accent-error;
-    }
-}
-```
-
-## Module Configuration Reference
-
-See `config.tmpl` for module definitions. Key modules:
-
-- `hyprland/workspaces`: Workspace switcher (uses urgency hints)
-- `hyprland/window`: Window title display
-- `clock`: Date/time display (format: `%H:%M  %a %d %b`)
-- `network`: Network connectivity
-- `pulseaudio`: Audio control
-- `battery`: Battery status (4 states)
-- `bluetooth`: Bluetooth status (3 states)
-- `backlight`: Screen brightness
-- `custom/swaync`: Notification center toggle (bell icon + unread count badge)
-- `tray`: System tray icons
-
-## Testing Procedures
-
-After theme changes:
-
-1. **Reload Waybar**: `killall waybar && waybar &`
-2. **Test all states**:
-   - Connect/disconnect network
-   - Toggle audio mute
-   - Drain battery to test warning/critical (or simulate)
-   - Hover over workspaces
-   - Create urgent window (`hyprctl dispatch togglespecialworkspace`)
-3. **Verify contrast**: Text readable on all backgrounds
-4. **Check animations**: Battery critical blink visible
-
-## Common Patterns
-
-### Adding New Module
-
-1. Define module in `config.tmpl`
-2. Style in `style.css.tmpl` using semantic variables
-3. Choose semantic color based on module purpose:
-   - Informational → `@accent-info`
-   - Success/positive → `@accent-success`
-   - Warning/caution → `@accent-warning`
-   - Error/critical → `@accent-error`
-   - Interactive/special → `@accent-highlight`
-   - Primary focus → `@accent-primary`
-
-### Disabled/Inactive States
-
-Always use `@fg-muted` for disabled:
-```css
-#module.disabled {
-    color: @fg-muted;
-}
-```
-
-### Hover Effects
-
-Use `@bg-secondary` for hover backgrounds:
-```css
-#module:hover {
-    background-color: @bg-secondary;
-}
-```
-
-## Theme System Integration
-
-**How it works**:
-1. Theme file (`themes/current/waybar.css`) defines semantic variables with hex values
-2. Waybar template (`style.css.tmpl`) imports theme and uses semantic names
-3. Theme switch updates symlink → Waybar reloads → new colors applied
-
-**See**: `../themes/CLAUDE.md` for:
-- Complete semantic variable definitions
-- Theme-to-semantic mappings (all 8 themes)
-- Theme switching methods
-- Style guide philosophy
-
-## File References
-
-- **Style implementation**: `style.css.tmpl` (this directory)
-- **Module config**: `config.tmpl` (this directory)
-- **Theme definitions**: `../themes/current/waybar.css` (symlink)
-- **Theme mappings**: `../themes/CLAUDE.md#theme-to-semantic-mappings`
+`hyprland/workspaces` (urgency hints), `hyprland/window`, `clock`, `network`, `pulseaudio`, `battery`, `bluetooth`, `backlight`, `disk`, `custom/swaync` (bell + unread badge), `tray`.

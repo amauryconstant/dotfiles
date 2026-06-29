@@ -67,13 +67,13 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .chezmoitemplates/      # Reusable includes (log_*)
 ├── .scripts/               # Repository utilities (merge-driver)
 ├── private_dot_config/     # XDG config (hypr, waybar, wofi, zsh, etc.)
-│   ├── dotfiles/           # Hook system (6 hook points)
-│   └── themes/             # Theme system (8 variants)
+│   ├── dotfiles/           # Hook system
+│   └── themes/             # Theme system
 ├── private_dot_keys/       # 🔐 Encrypted secrets
 ├── private_dot_ssh/        # SSH + encrypted keys
 └── private_dot_local/
-    ├── bin/                # CLI wrappers (14 executables)
-    └── lib/scripts/        # Script library (49 scripts in 10 categories)
+    ├── bin/                # CLI wrappers
+    └── lib/scripts/        # Script library (per-domain categories)
 ```
 
 **See**: Documentation Location Map (below) for detailed references
@@ -82,75 +82,15 @@ chezmoi add --encrypt path/to/file      # Encrypt
 
 ## Quality Standards (MANDATORY)
 
-### Pre-Change Validation
+**Never run `chezmoi apply` without first reviewing `chezmoi diff`.** Templates and `modify_*` scripts render before they apply — validate rendered output, not source:
 
 ```bash
-# 1. Check current state
-chezmoi diff
-
-# 2. Check for merge conflicts
-chezmoi status
-
-# 3. Dry-run validation
-chezmoi apply --dry-run
-
-# 4. Template syntax validation
-chezmoi execute-template < template.tmpl
-
-# 5. Script syntax validation
-bash -n script.sh.tmpl
-
-# 6. chezmoi_modify_manager validation
-chezmoi_modify_manager --help-syntax
-chezmoi execute-template < modify_script.tmpl
-chezmoi cat path/to/target/file
+chezmoi execute-template < file.tmpl     # render a template (catches Go-template errors)
+chezmoi cat path/to/target               # preview final applied output (templates + modify_manager merge)
+chezmoi_modify_manager --help-syntax     # modify_manager directives are non-obvious; never assume syntax
 ```
 
-### Never Skip
-
-❌ Run `chezmoi apply` without `chezmoi diff`
-❌ Modify templates without syntax validation
-❌ Change scripts without testing
-❌ Modify chezmoi_modify_manager without validating syntax
-❌ Assume chezmoi_modify_manager syntax
-
----
-
-## Emergency Procedures
-
-### If Something Goes Wrong
-
-```bash
-# Immediate response
-git checkout HEAD~1
-chezmoi apply
-
-# Assessment
-chezmoi diff
-chezmoi status
-
-# Recovery
-chezmoi apply specific/file
-chezmoi verify
-```
-
-### If Merge Conflicts Occur
-
-```bash
-# Detection
-chezmoi status
-
-# Resolution
-chezmoi merge <file>        # Targeted
-chezmoi merge-all          # All conflicts
-
-# Validation
-chezmoi diff
-chezmoi status
-```
-
-**See**: `private_dot_config/git/CLAUDE.md` for merge conflict resolution
-**See**: `.scripts/CLAUDE.md` for template merge driver
+Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed state. For merge conflicts see `private_dot_config/git/CLAUDE.md`; for the template merge driver see `.scripts/CLAUDE.md`.
 
 ---
 
@@ -187,11 +127,11 @@ chezmoi status
 **Desktop environment**:
 - `hypr/` - Hyprland compositor config
 - `waybar/` - Status bar
-- `dunst/` - Notifications
 - `wofi/` - Launcher
 - `wlogout/` - Power menu
-- `themes/` - Theme system (8 variants, semantic variables, Firefox/Spotify integration)
-- `dotfiles/` - **Hook system** (6 hook points, user extensibility)
+- `swaync/` - Notification center (themed via `.tmpl`)
+- `themes/` - Theme system (semantic variables, Firefox/Spotify integration)
+- `dotfiles/` - **Hook system** (user extensibility)
 - `hyprdynamicmonitors/` - Monitor profile manager (port-agnostic matching)
 - `hyprwhenthen/` - Event-driven window automation (OAuth popups, etc.)
 
@@ -211,7 +151,7 @@ chezmoi status
 | `CLAUDE.md` | CLI architecture, lazy-loading pattern |
 | `bin/` | CLI wrapper patterns |
 | `lib/scripts/` | **Script standards (MANDATORY)**, shellcheck integration, UI patterns |
-| `lib/scripts/core/` | Gum UI library (35 functions) |
+| `lib/scripts/core/` | Gum UI library |
 | `lib/scripts/system/` | **Package management**, backup (Timeshift), GPU drivers, DKMS troubleshooting |
 | `lib/scripts/desktop/` | Hyprland utilities |
 
@@ -235,7 +175,7 @@ chezmoi status
 → `private_dot_config/themes/CLAUDE.md` (semantic variables, app integration)
 
 **Working on hooks?**
-→ `private_dot_config/dotfiles/CLAUDE.md` (hook system, 6 hook points)
+→ `private_dot_config/dotfiles/CLAUDE.md` (hook system)
 
 **Working on merge conflicts?**
 → `private_dot_config/git/CLAUDE.md` (merge workflow)

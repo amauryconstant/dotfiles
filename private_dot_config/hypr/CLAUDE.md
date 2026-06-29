@@ -9,62 +9,49 @@
 ## Quick Reference
 
 - **Purpose**: Hyprland compositor configuration
-- **Main entry**: `hyprland.conf` (sources all modular configs)
-- **Modular structure**: 9 conf/ files
-- **Templates**: Only `bindings.conf.tmpl`, `monitor.conf.tmpl`
+- **Main entry**: `hyprland.conf` (sources modular configs + theme + user extras)
+- **Active format**: **`.conf`** files. Parallel `.lua` files exist (staged migration) but are **not** loaded — `hyprland.conf` sources `.conf`, and sourcing `.conf` blocks the `.lua` path. See `.claude/rules/hyprland-lua.md`.
 - **Reload**: `Super+Shift+R` or `hyprctl reload`
 
 ## Modular Structure
 
-**8 base configuration files** (`conf/`):
+`hyprland.conf` also pulls `conf.d/*.conf` (drop-ins), `monitors.conf` (HyprDynamicMonitors output), and `~/.config/themes/current/hyprland.conf` (theme borders).
+
+**Base config files** (`conf/`, each `.conf` shadowed by an inactive `.lua`):
 
 | File | Purpose | Template? |
 |------|---------|-----------|
 | `monitor.conf.tmpl` | Display settings (resolution, scaling, position) | ✅ Yes |
+| `plugins.conf` | hyprsplit / plugin config | ❌ No |
 | `environment.conf` | Env vars (NVIDIA, Qt/GTK, XDG) | ❌ No |
 | `input.conf` | Keyboard, mouse, touchpad | ❌ No |
 | `general.conf` | Layout, gaps, borders, colors | ❌ No |
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
 | `animations.conf` | Animation curves, timing | ❌ No |
 | `windowrules.conf` | Per-app window behavior | ❌ No |
-| `autostart.conf` | Startup apps (waybar, dunst, nextcloud) | ❌ No |
+| `autostart.conf` | Startup apps (waybar, swaync, nextcloud) | ❌ No |
 
-**11 modular keybinding files** (`conf/bindings/`):
+`helpers.lua`, `require_all.lua` are Lua-layer infrastructure (inactive).
 
-| File | Purpose | Bindings | Template? |
-|------|---------|----------|-----------|
-| `applications.conf.tmpl` | App launchers (terminal, browser, editor) | 6 | ✅ Yes |
-| `window-management.conf` | Window operations (close, float, fullscreen) | 6 | ❌ No |
-| `focus-navigation.conf` | Focus + move (arrows, vim keys) | 12 | ❌ No |
-| `workspace-navigation.conf` | Switch workspaces (1-10, Tab, mouse) | 15 | ❌ No |
-| `workspace-management.conf` | Move windows to workspaces | 10 | ❌ No |
-| `window-resizing.conf` | Resize + mouse bindings | 6 | ❌ No |
-| `media-keys.conf` | Volume, brightness, playback | 10 | ❌ No |
-| `screenshots.conf` | Screenshot tools (Satty) | 4 | ❌ No |
-| `desktop-utilities.conf` | Utilities (audio, gaps, waybar, nightlight) | 10 | ❌ No |
-| `theme-session.conf` | Theme switching, dark mode | 2 | ❌ No |
-| `system-control.conf` | Lock, power, help, menu | 4 | ❌ No |
+**Keybinding files** (`conf/bindings/`, sourced by `hyprland.conf`):
 
-**Total keybindings**: 80 (reduced from 102, removed 22 rarely-used bindings)
+| File | Purpose | Template? |
+|------|---------|-----------|
+| `applications.conf.tmpl` | App launchers (terminal, browser, editor) | ✅ Yes |
+| `window-management.conf` | Window operations (close, float, fullscreen) | ❌ No |
+| `focus-navigation.conf` | Focus + move (arrows, vim keys) | ❌ No |
+| `workspace-management.conf` | Switch + move windows across workspaces | ❌ No |
+| `window-resizing.conf` | Resize + mouse bindings | ❌ No |
+| `media-keys.conf` | Volume, brightness, playback | ❌ No |
+| `screenshots.conf` | Screenshot tools (Satty) | ❌ No |
+| `voice.conf` | Voice dictation (Voxtype) | ❌ No |
+| `desktop-utilities.conf` | Utilities (audio, gaps, waybar, nightlight) | ❌ No |
+| `theme-session.conf` | Theme switching, dark mode | ❌ No |
+| `system-control.conf` | Lock, power, help, menu | ❌ No |
 
-**Keybinding features**:
-- **Self-documenting**: All bindings use `bindd` syntax with descriptions
-- **Conflict-free**: Vim navigation (h/j/k/l) works without uppercase conflicts
-- **Hierarchical modifiers**: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system)
-- **Organized**: 11 logical categories vs 1 monolithic file
+Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system).
 
-**Main entry** (`hyprland.conf`):
-```
-source = ~/.config/hypr/conf/monitor.conf
-source = ~/.config/hypr/conf/environment.conf
-# ... base configs ...
-source = ~/.config/hypr/conf/bindings/applications.conf
-source = ~/.config/hypr/conf/bindings/desktop-utilities.conf
-# ... all 11 binding files (alphabetical) ...
-source = ~/.config/hypr/conf/windowrules.conf
-# User extension (sourced last)
-source = ~/.config/dotfiles/extra-bindings.conf
-```
+**User extras** (`~/.config/dotfiles/extra-bindings.conf`):
 
 **User extra bindings**: `~/.config/dotfiles/extra-bindings.conf`
 - Sourced last — personal bindings without modifying core config
@@ -74,36 +61,9 @@ source = ~/.config/dotfiles/extra-bindings.conf
 
 ## Template Decisions
 
-**Only 2 templates**:
-1. **`monitor.conf.tmpl`**: Display-specific settings (laptop vs desktop)
-2. **`bindings/applications.conf.tmpl`**: Terminal preference (ghostty vs kitty)
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.). Their `.lua.tmpl` twins exist but are inactive. Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
-**Why most are static**:
-- Hyprland config syntax rarely needs dynamic values
-- Reduces template processing overhead
-- Easier to read and maintain
-- Manual editing preferred for compositor settings
-
-## Current Applications
-
-**File Manager**: Thunar (GTK-based, lightweight)
-**Polkit Agent**: hyprpolkitagent (native Hyprland integration)
-**Terminal**: Ghostty (configured via bindings.conf.tmpl)
-
-**Template examples**:
-```go
-# bindings.conf.tmpl
-bind = $mod, Return, exec, {{ .globals.applications.terminal }}
-
-# monitor.conf.tmpl
-{{ if eq .chassisType "laptop" }}
-monitor=eDP-1,1920x1080@60,0x0,1
-{{ else }}
-monitor=DP-1,2560x1440@144,0x0,1
-{{ end }}
-```
-
-## Theme System Integration (Phase 2+3)
+## Theme System Integration
 
 **Static theme files**: Unlike GTK apps (Waybar, Wofi, Wlogout), Hyprland uses static theme files per theme variant.
 
@@ -123,35 +83,13 @@ $inactiveBorder = rgba(6e6a86aa)  # muted (fg-muted semantic)
 
 **Border migration** (Phase 2): Borders migrated from `accent-primary` to dedicated `accent-border` for semantic clarity
 
-## Testing & Reload
+## Reload
 
-**Preview config**:
-```bash
-chezmoi cat ~/.config/hypr/hyprland.conf
-chezmoi cat ~/.config/hypr/conf/bindings.conf
-```
-
-**Validate template**:
-```bash
-chezmoi execute-template < private_dot_config/hypr/conf/bindings.conf.tmpl
-```
-
-**Reload Hyprland**:
-- `Super+Shift+R` (keybinding)
-- `hyprctl reload` (CLI)
-
-**Test specific config**:
-```bash
-hyprctl keyword general:gaps_in 5
-hyprctl keyword general:border_size 2
-```
-
-**See**: `conf/` files directly for syntax reference (monitor, environment, input, general, decoration, animations, windowrules, autostart).
+`Super+Shift+R` or `hyprctl reload`. `post_install` script `run_once_after_007_validate_hyprland_config` validates config after apply. Live-test a value without reloading via `hyprctl keyword general:gaps_in 5`.
 
 ## Integration Points
 
-- **Waybar**: Status bar styling from `~/.config/themes/current/`
-- **Wofi**: Launcher styling from `~/.config/themes/current/`
-- **Terminal**: Ghostty theme from `~/.config/themes/current/`
-- **Desktop scripts**: `~/.local/lib/scripts/desktop/` (16 utilities)
+- **Theme borders**: `~/.config/themes/current/hyprland.conf` (sourced)
+- **Desktop scripts**: `~/.local/lib/scripts/desktop/`
 - **Menu system**: `~/.local/lib/scripts/user-interface/` (Super+Space)
+- **Monitor automation**: `monitors.conf` from `hyprdynamicmonitors/` (see its CLAUDE.md)

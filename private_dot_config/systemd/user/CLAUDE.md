@@ -1,164 +1,40 @@
-# Systemd User Services - Claude Code Reference
+# Systemd User Services
 
-**Location**: `/home/amaury/.local/share/chezmoi/private_dot_config/systemd/user/`
+**Location**: `private_dot_config/systemd/user/` → `~/.config/systemd/user/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
-**Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
+**Control**: `systemctl --user` / `journalctl --user -u <unit>` (standard)
 
-**CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
+## Units & how they get enabled
 
-## Quick Reference
+| Unit | Type | Purpose | Enabled by |
+|------|------|---------|-----------|
+| `wallpaper-cycle.{service,timer}` | timer | Random wallpaper every 30 min | `after_004_enable_user_timers` |
+| `system-health-check.{service,timer}` | timer | Health monitoring every 15 min | `after_004` |
+| `session-autosave.{service,timer}` | timer | Hyprland session autosave every 15 min | `after_004` |
+| `home-backup.{service,timer}` | timer | Restic home backup daily 9am | `after_010` (Restic feature) |
+| `hyprdynamicmonitors.service` + `-prepare.service` | service | Monitor profile daemon + pre-Hyprland prep | `before_008` |
+| `hyprwhenthen.service` | service | Event-driven window automation | `before_008` |
+| `darkman.service` | service | Solar auto theme switching | `after_006` |
+| `llama-server.service.tmpl` | service | llama.cpp local inference server | `services.yaml` user_services → `after_002` (gated on `llama-server` present) |
+| `kanata.service` | service | Kanata keyboard remapper (port 5829, `~/.config/kanata/kanata.kbd`) | `after_010`, gated on `features.kanata.enabled` + **laptop** chassis + `uinput` module |
+| `voxtype.service.d/` | drop-in | Voxtype GPU config override | `after_010` |
+| `app-blueman@autostart.service.d/`, `app-nm-applet@autostart.service.d/` | drop-in | Suppress tray icons on **desktop** chassis | static (`{{ if eq .chassisType "desktop" }}`) |
 
-- **Purpose**: User-level systemd services and timers
-- **Location**: `~/.config/systemd/user/`
-- **Control**: `systemctl --user`
-- **Setup**: `run_once_after_004_enable_user_timers.sh.tmpl`
+Timer schedules/enable logic are driven by `.chezmoidata/services.yaml` (`user_timers`, `user_services`) — add new timers there, not by hand-editing the setup scripts.
 
-## Services & Timers
+## Non-obvious details
 
-| Unit | Type | Purpose | Setup Script |
-|------|------|---------|-------------|
-| `wallpaper-cycle.{service,timer}` | timer | Random wallpaper every 30min | after_004 |
-| `system-health-check.{service,timer}` | timer | System health monitoring every 15min | after_004 |
-| `home-backup.{service,timer}` | timer | Restic home backup daily at 9am | after_010 |
-| `session-autosave.{service,timer}` | timer | Hyprland session auto-save every 15min → `autosave` slot | after_004 |
-| `hyprdynamicmonitors.service` | service | Monitor profile manager daemon | before_008 |
-| `hyprdynamicmonitors-prepare.service` | service | Pre-Hyprland monitor prep | before_008 |
-| `hyprwhenthen.service` | service | Event-driven window automation | before_008 |
-| `darkman.service` | service | Solar-based auto theme switching | after_006 |
-| `wallpaper-cycle.service` | oneshot | Wallpaper rotation execution | after_004 |
-| `voxtype.service.d/` | drop-in | Voxtype GPU config override | after_010 |
-| `app-blueman@autostart.service.d/` | drop-in | Suppress blueman tray on desktop | static |
-| `app-nm-applet@autostart.service.d/` | drop-in | Suppress nm-applet tray on desktop | static |
+**session-autosave** (the only unit with subtle wiring):
+- Runs `session-save autosave` with `DOTFILES_SESSION_QUIET=1`; writes **only** the `autosave` slot, never manual `default`/named slots (`hypr-session list` shows it).
+- Requires `HYPRLAND_INSTANCE_SIGNATURE` in the systemd user env (imported via `dbus-update-activation-environment` in `hypr/conf/autostart.conf`) so `hyprctl` can reach the compositor — the service gates on it via `ExecCondition`. Without that import the service silently no-ops.
 
-## Wallpaper Cycle Service
+**Autostart drop-ins** override GNOME-style `app-*@autostart` services Hyprland doesn't need; chassis-gated so laptops keep their tray applets.
 
-**Units**:
-- `wallpaper-cycle.timer` - Timer (30 min intervals)
-- `wallpaper-cycle.service` - Service execution
-
-**Setup**: `.chezmoiscripts/run_once_after_006_setup_wallpaper_timer.sh.tmpl`
-
-**Script**: `~/.local/lib/scripts/media/random-wallpaper` (lock file protection + dependency checks — see script source)
-**Setup**: `.chezmoiscripts/run_once_after_004_enable_user_timers.sh.tmpl`
-
-## Timer Management
-
-**Enable timer**:
-```bash
-systemctl --user enable --now wallpaper-cycle.timer
-```
-
-**Disable timer**:
-```bash
-systemctl --user disable --now wallpaper-cycle.timer
-```
-
-**Status**:
-```bash
-systemctl --user status wallpaper-cycle.timer
-systemctl --user status wallpaper-cycle.service
-```
-
-**List next run**:
-```bash
-systemctl --user list-timers wallpaper-cycle.timer
-```
-
-**Manual trigger**:
-```bash
-systemctl --user start wallpaper-cycle.service
-```
-
-## Service Logs
-
-**View logs**:
-```bash
-journalctl --user -u wallpaper-cycle.service
-```
-
-**Follow logs**:
-```bash
-journalctl --user -u wallpaper-cycle.service -f
-```
-
-**Recent errors**:
-```bash
-journalctl --user -u wallpaper-cycle.service -p err -n 20
-```
-
-**Filter by date**:
-```bash
-journalctl --user -u wallpaper-cycle.service --since today
-journalctl --user -u wallpaper-cycle.service --since "2024-01-01"
-```
-
-## Setup Script
-
-**File**: `.chezmoiscripts/run_once_after_004_enable_user_timers.sh.tmpl`
-
-**Actions**:
-1. Copy units to `~/.config/systemd/user/`
-2. Reload systemd daemon (`systemctl --user daemon-reload`)
-3. Enable timer (`systemctl --user enable wallpaper-cycle.timer`)
-4. Start timer (`systemctl --user start wallpaper-cycle.timer`)
-
-**Validation**:
-- Check units exist
-- Verify service executable
-- Test dependency availability
-
-## Troubleshooting
-
-**Timer issues**:
-```bash
-systemctl --user status wallpaper-cycle.timer
-systemctl --user enable --now wallpaper-cycle.timer
-```
-
-**Service failures**:
-```bash
-journalctl --user -u wallpaper-cycle.service -n 50
-which swww find shuf
-~/.local/bin/random-wallpaper
-```
-
-**Lock file**: Remove stale lock at `$XDG_RUNTIME_DIR/random-wallpaper.lock`
-
-## Other Timers
-
-**system-health-check** (every 15min):
-```bash
-systemctl --user status system-health-check.timer
-journalctl --user -u system-health-check.service -n 20
-```
-
-**home-backup** (daily 9am):
-```bash
-systemctl --user status home-backup.timer
-systemctl --user start home-backup.service   # Manual run
-journalctl --user -u home-backup.service -n 20
-```
-
-**session-autosave** (every 15min):
-```bash
-systemctl --user status session-autosave.timer
-systemctl --user start session-autosave.service   # Manual run
-hypr-session list                                  # See "autosave" slot
-```
-- Runs `session-save autosave` with `DOTFILES_SESSION_QUIET=1` (no notifications).
-- Writes only to the `autosave` slot — never clobbers manual `default`/named slots.
-- Requires `HYPRLAND_INSTANCE_SIGNATURE` in the systemd user env (imported via
-  `dbus-update-activation-environment` in `hypr/conf/autostart.conf`) so `hyprctl`
-  can reach the compositor; the service gates on it via `ExecCondition`.
-
-## Autostart Drop-ins
-
-`app-blueman@autostart.service.d/` and `app-nm-applet@autostart.service.d/` suppress tray icons on desktop chassis (`{{ if eq .chassisType "desktop" }}`). These override GNOME autostart services that Hyprland doesn't need.
+**random-wallpaper** (wallpaper-cycle target): `~/.local/lib/scripts/media/random-wallpaper`, lock at `$XDG_RUNTIME_DIR/random-wallpaper.lock` — remove a stale lock if cycling stalls.
 
 ## Integration Points
 
 - **Scripts**: `~/.local/lib/scripts/media/` (random-wallpaper, set-wallpaper)
-- **Wallpapers**: `~/.config/wallpapers/` (theme-organized image source)
-- **SWWW**: Wallpaper daemon (smooth transitions)
-- **Themes**: `~/.config/themes/current/` (color system)
-- **Restic**: Home backup target (`~/.local/share/restic-home/`)
+- **Wallpapers**: `~/.config/wallpapers/` (theme-organized)
+- **Themes**: `~/.config/themes/current/`
+- **Restic**: home backup target `~/.local/share/restic-home/`

@@ -13,16 +13,17 @@
 - All script directories added to PATH
 - Direct execution: `prune-branch`, `screenshot`, `system-health`, `hypr-session`
 
-**Remaining wrappers** (3 total):
+**Remaining wrappers**:
 - `executable_package-manager` - Complex setup wrapper (module sourcing, state initialization)
 - `executable_ts` - Tailscale helper with subcommand routing
 - `executable_unzip` - Compatibility wrapper (unzip → unar)
+- `executable_mmdc` - Mermaid CLI shim (`mmdc` flags → `mmdr`)
 
 **For new scripts**: Don't create wrappers — add directly to `lib/scripts/` without .sh extension
 
 ## Quick Reference
 
-- **Purpose**: Special-case executable wrappers (3 files)
+- **Purpose**: Special-case executable wrappers
 - **Pattern**: Complex setup, subcommand routing, or compatibility needs only
 - **Naming**: `executable_*` (chezmoi convention)
 - **Templates**: NO templates in bin/ (static only)
@@ -73,13 +74,14 @@ fi
 - Simple wrapper code
 - All complexity in lib/ (where templates allowed)
 
-## Available Wrappers (3 total)
+## Available Wrappers
 
 | Executable | Purpose | Reason for wrapper |
 |------------|---------|-------------------|
 | `executable_package-manager` | Package management CLI | Complex module sourcing + state initialization |
 | `executable_ts` | Tailscale helper (`ts up`, `ts down`, `ts status`) | Subcommand routing to `network/tailscale` |
 | `executable_unzip` | `unzip` → `unar` compatibility shim | Some tools expect `unzip`; maps args to `unar` equivalents |
+| `executable_mmdc` | Mermaid CLI shim | Translates `mmdc` flags to `mmdr`-compatible flags |
 
 **unzip mapping**: `-q` → `-q`, `-d DIR` → `-o DIR`, `-o` → `-f`
 

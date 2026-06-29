@@ -9,9 +9,9 @@
 ## Quick Reference
 
 - **Purpose**: Hyprland desktop utilities
-- **Count**: 20 scripts
 - **UI Pattern**: notify-send for user feedback (keybinding-triggered)
 - **Integration**: Hyprland bindings, theme system
+- **Naming**: files are extensionless (`.sh` below is illustrative; actual scripts have no extension, e.g. `theme-apply-firefox`)
 
 ## Theme Application Scripts
 
@@ -29,13 +29,13 @@
 5. Restart Firefox
 
 **How it works**:
-- Theme files: `~/.config/themes/{variant}/firefox-userChrome.css` (8 variants)
+- Theme files: `~/.config/themes/{variant}/firefox-userChrome.css` (one per theme)
 - Script creates symlink: `~/.mozilla/firefox/{profile}/chrome/userChrome.css` → `~/.config/themes/current/firefox-userChrome.css`
 - Firefox restart required to see theme changes
-- All 8 theme CSS files exist (Catppuccin, Rose Pine, Gruvbox, Solarized)
+- All theme CSS files exist (Catppuccin, Rose Pine, Gruvbox, Solarized)
 
 **CSS Structure** (per theme ~30 lines):
-- 24 semantic CSS variables (--bg-primary, --fg-primary, --accent-primary, etc.)
+- Semantic CSS variables (--bg-primary, --fg-primary, --accent-primary, etc.)
 - Styles: Tab bar, URL bar, navigation bar, sidebar
 
 ---
@@ -104,19 +104,11 @@
 - Updates `opencode.jsonc` via jaq: Sets `"theme": "current"`
 - Silent failure if opencode not installed
 
-**Theme files** (8 variants):
-- `~/.config/themes/catppuccin-latte/opencode.json`
-- `~/.config/themes/catppuccin-mocha/opencode.json`
-- `~/.config/themes/rose-pine-dawn/opencode.json`
-- `~/.config/themes/rose-pine-moon/opencode.json`
-- `~/.config/themes/gruvbox-light/opencode.json`
-- `~/.config/themes/gruvbox-dark/opencode.json`
-- `~/.config/themes/solarized-light/opencode.json`
-- `~/.config/themes/solarized-dark/opencode.json`
+**Theme files**: `~/.config/themes/{variant}/opencode.json` (one per theme).
 
 **JSON structure**:
-- **defs**: 24 semantic color variables (bg-primary, fg-primary, accent-*, etc.)
-- **theme**: 62 opencode properties mapped to semantic variables
+- **defs**: semantic color variables (bg-primary, fg-primary, accent-*, etc.)
+- **theme**: opencode properties mapped to those semantic variables
 - Supports both light and dark variants via "light"/"dark" keys
 
 **Reload behavior**:
@@ -153,6 +145,16 @@
 
 ---
 
+### Other theme-apply scripts
+
+Same pattern (read `current` symlink → map → apply; silent skip if app absent):
+- `theme-apply-gtk` — GTK theme/color-scheme
+- `theme-apply-qt` — Qt (qt5ct/qt6ct)
+- `theme-apply-neovim` — Neovim colorscheme
+- `theme-apply-zellij` — Zellij theme (`~/.config/themes/{variant}/zellij.kdl`)
+
+---
+
 ## Theme Switcher
 
 **Script**: `theme-switcher.tmpl`
@@ -160,8 +162,8 @@
 
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
-2. Reloads core apps (Hyprland, Waybar, Dunst, Ghostty)
-3. Calls theme-apply scripts (Firefox, Spotify, opencode, claude-code)
+2. Reloads core apps (Hyprland, Waybar, Swaync, Ghostty)
+3. Calls theme-apply scripts (Firefox, Spotify, opencode, claude-code, gtk, qt, neovim, zellij)
 4. Triggers `theme-change` user hook
 5. Updates wallpaper randomly from theme collection
 6. Sends desktop notification
@@ -213,10 +215,19 @@ All use `notify-send` for user feedback.
 
 ## Other Utilities
 
-**audio-switch.sh**: Audio device switching
-**screenrecord.sh**: Screen recording
-**system-settings.sh**: Launch system settings
-**wlogout.sh**: Logout menu launcher
+**audio-switch**: Audio device switching
+**battery-status**: Battery/power status output
+**screenrecord**: Screen recording
+**system-settings**: Launch system settings
+**wlogout**: Logout menu launcher
+**window-pop**: toggle a window to/from a floating "pop" state
+**zoom-cursor**: cursor magnifier
+**voice-meeting**: meeting voice helper
+**immediate-lock**: lock screen immediately
+**idle-indicator**, **idle-toggle**: idle/inhibit state + toggle
+**recover-workspaces**: re-assign orphaned windows to workspaces
+
+**Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).
 
 ---
 

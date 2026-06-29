@@ -34,34 +34,34 @@
 | `hyprwhenthen/` | Event-driven window automation | ✅ Yes |
 | `jj/` | Jujutsu VCS config | ✅ Yes |
 | `dotfiles/` | Hook system + extra bindings | ✅ Yes |
-| `opencode/` | opencode TUI config (theme-managed) | ✅ Yes |
+| `opencode/` | opencode TUI config (theme-managed, `modify_opencode.jsonc`) | ❌ No |
 | `bat/` | Syntax highlighting (symlink-only, themed) | ❌ No |
 | `broot/` | File tree (conf.hjson + verbs.hjson + theme symlink) | ❌ No |
 | `lazygit/` | Git TUI (symlink-only, themed) | ❌ No |
 | `yazi/` | File manager (symlink-only, themed) | ❌ No |
-| `ghostty/` | Terminal config (6-line template) | ❌ No |
+| `ghostty/` | Terminal config (template) | ❌ No |
 | `starship.toml` | Prompt (themed via symlink) | ❌ No |
 | `topgrade.toml.tmpl` | Update tool | ❌ No |
 
 ## Desktop Environment
 
 ### Hyprland Compositor (`hypr/`)
-- Modular config (9 files in `conf/`)
-- Templates: Only `bindings.conf.tmpl`, `monitor.conf.tmpl`
+- Modular config in `conf/` (each `.conf` now has a parallel `.lua` — Lua migration in progress)
+- Templates: `hyprland.{conf,lua}.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`
 - Theme integration via `source ~/.config/themes/current/hyprland.conf`
 
 ### Desktop Components (Consolidated)
 
 **Theme system** (`themes/`):
-- 8 variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
-- 24 semantic variables (backgrounds, foregrounds, accents)
+- Variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
+- Semantic variables (backgrounds, foregrounds, accents)
 - Desktop apps: Waybar, Swaync, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock
 - CLI tools: bat, broot, btop, lazygit, starship, yazi
 - Switching: `theme switch <name>`, darkman (solar auto), keybindings
 - See: `themes/CLAUDE.md`
 
 **Waybar status bar**:
-- 15 modules (workspaces, clock, CPU, memory, network, etc.)
+- Modules (workspaces, clock, CPU, memory, network, etc.)
 - Theme integration via `@import "themes/current/waybar.css"`
 - Files: `config.tmpl` (JSON5), `style.css.tmpl` (CSS)
 - Reload: `killall -SIGUSR2 waybar`
@@ -81,7 +81,7 @@
 
 **Common shell** (`shell/`):
 - POSIX-compliant layered config
-- Files: env, env_functions, login.tmpl, interactive, logout
+- Files: env, login.tmpl, interactive, logout
 - Shared between Zsh and Bash
 
 ## Application Configs
@@ -125,38 +125,7 @@
 - Wallpaper cycle timer (30 min)
 - Other user services
 
-## Subdirectories with CLAUDE.md
-
-**Detailed documentation**:
-1. `hypr/` - Hyprland compositor config
-2. `systemd/user/` - User services
-3. `shell/` - POSIX shell layer (env, interactive, login)
-4. `zsh/` - Zsh config (antidote plugins, zfunctions, zshrc.d)
-5. `Nextcloud/` - Nextcloud client (modify_manager)
-6. `git/` - Git config
-7. `themes/` - Theme system (semantic variables, CLI integration)
-
-**See individual CLAUDE.md files for detailed references**
-
-## Template Usage
-
-**Common patterns**:
-```go
-# Application defaults
-{{ .globals.applications.terminal }}
-
-# User-specific
-{{ .firstname | lower }}
-
-# Conditional
-{{ if eq .chassisType "laptop" }}
-```
-
-**Validation**:
-```bash
-chezmoi execute-template < file.tmpl
-chezmoi cat path/to/file
-```
+(Per-subdirectory docs are listed in the "Has CLAUDE.md?" column above; see those files for detail. Template syntax/data: `.claude/rules/chezmoi-templates.md` and `chezmoi-data.md`.)
 
 ## Integration Points
 

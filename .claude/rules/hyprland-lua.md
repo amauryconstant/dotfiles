@@ -1,7 +1,7 @@
 # Hyprland Lua Configuration Reference
 
 **Location**: `private_dot_config/hypr/`
-**Lua files**: 40 files — themes, module configs, HyprDynamicMonitors profiles
+**Lua files**: themes, module configs, binding modules, HyprDynamicMonitors profiles
 **LSP config**: `private_dot_config/hypr/dot_luarc.json` (LuaJIT + Hyprland stubs)
 
 **See**: Root `CLAUDE.md` for core standards
@@ -73,34 +73,16 @@ return {
 
 ---
 
-## Validation Commands
+## Validation
+
+Lint and format are wired into mise (`.mise/config.toml`), scoped to `private_dot_config/hypr`:
 
 ```bash
-# Check Lua syntax
-lua -e "dofile('file.lua')" 2>&1
-
-# Format Lua files (stylua)
-stylua --check private_dot_config/hypr/**/*.lua
-
-# Apply formatting
-stylua private_dot_config/hypr/**/*.lua
-
-# Lint with lua-language-server
-lua-language-server --check private_dot_config/hypr/
+mise run lint:lua      # stylua --check
+mise run format:lua    # stylua (apply)
 ```
 
----
-
-## Stylua Config
-
-If `.stylua.toml` doesn't exist, stylua uses defaults (2-space indent, 120 char line width).
-Create `.stylua.toml` if custom formatting is needed:
-
-```toml
-indent_type = "Spaces"
-indent_width = 2
-column_width = 120
-```
+No `.stylua.toml` exists, so stylua uses defaults (2-space indent, 120-col). Match that when hand-editing.
 
 ---
 

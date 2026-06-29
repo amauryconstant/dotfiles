@@ -27,20 +27,21 @@
 
 ```
 ~/.local/
-├── bin/                    # 3 special wrappers (in PATH)
+├── bin/                    # special wrappers (in PATH)
 │   ├── executable_package-manager    # Complex setup wrapper
 │   ├── executable_ts                 # Tailscale subcommand router
-│   └── executable_unzip              # Compatibility wrapper (unzip → unar)
-└── lib/scripts/            # 68 scripts directly in PATH (9 categories)
-    ├── core/               # 3 files — gum-ui.sh, hook-runner, state-manager.sh
-    ├── desktop/            # 20 scripts — Hyprland utilities, theme-apply-*
-    ├── media/              # 5 scripts — screenshot, wallpaper, clipboard-store
-    ├── network/            # 5 scripts — tailscale, vpn-toggle, wifi-switch
-    ├── system/             # 8 scripts — maintenance, health, backup, rotate-key
-    ├── terminal/           # 3 scripts — regen-zsh-plugins, terminal-cwd, zellij-sessionizer
-    ├── user-interface/     # 19 scripts — system-menu, menu-*, hook tools
-    ├── utils/              # 4 scripts — dotfiles-debug, firefox-debug-trace, reorder-json, unzip
-    └── git/                # 1 script — prune-branch
+│   ├── executable_unzip              # Compatibility wrapper (unzip → unar)
+│   └── executable_mmdc               # Mermaid CLI shim (mmdc → mmdr)
+└── lib/scripts/            # scripts directly in PATH, by category
+    ├── core/               # gum-ui.sh, hook-runner, state-manager.sh
+    ├── desktop/            # Hyprland utilities, theme-apply-*
+    ├── media/              # screenshot, wallpaper, clipboard-store
+    ├── network/            # tailscale, vpn-toggle, wifi-switch
+    ├── system/             # maintenance, health, backup, rotate-age-key, rotate-ssh-key
+    ├── terminal/           # regen-zsh-plugins, terminal-cwd, zellij-sessionizer
+    ├── user-interface/     # system-menu, menu-*, hook tools
+    ├── utils/              # dotfiles-debug, firefox-debug-trace, reorder-json, unzip
+    └── git/                # prune-branch
 ```
 
 ## Direct Execution Architecture
@@ -103,10 +104,7 @@ ui_info "Checking system status..."
 3. Script executes with UI functions available
 4. No wrapper overhead
 
-**Why not source at startup**:
-- Shell startup: ~50ms faster
-- Memory: ~5MB saved per shell
-- Only load what's needed
+**Why not source at startup**: keeps shell init free of library loading — each script pulls `gum-ui.sh` only when run.
 
 ## Environment Variables
 
@@ -120,7 +118,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 - Scripts for UI library location
 - Scripts for SCRIPTS_DIR references
 
-## Special Wrappers (2 total)
+## Special Wrappers
 
 **Kept for specific reasons**:
 
@@ -129,6 +127,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `package-manager` | `bin/executable_package-manager` | Complex setup (module sourcing, state initialization) |
 | `ts` | `bin/executable_ts` | Tailscale helper with subcommand routing to `network/tailscale` |
 | `unzip` | `bin/executable_unzip` | Compatibility wrapper (unzip → unar) |
+| `mmdc` | `bin/executable_mmdc` | Mermaid CLI shim (translates `mmdc` flags to `mmdr`) |
 
 **All other commands**: Call scripts directly (no wrappers needed)
 
@@ -145,8 +144,8 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `dotfiles-hook-create` | `user-interface/hook-create` | Create hook template |
 | `dotfiles-hook-list` | `user-interface/hook-list` | List hooks |
 | `regen-zsh-plugins` | `terminal/regen-zsh-plugins` | Zsh plugin bundle |
-| `rotate-ssh-key` | `system/rotate-ssh-key` | SSH key rotation |
-| `rotate-key` | `system/rotate-key` | Key rotation (API, dotfiles, restic) |
+| `rotate-ssh-key` | `system/rotate-ssh-key` | SSH key pair rotation |
+| `rotate-age-key` | `system/rotate-age-key` | age master encryption key rotation |
 | `screenshot` | `media/screenshot` | Screenshot with Satty |
 | `random-wallpaper` | `media/random-wallpaper` | Random wallpaper |
 | `set-wallpaper` | `media/set-wallpaper` | Set specific wallpaper |
@@ -170,6 +169,6 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 ## Integration Points
 
 - **Zephyr**: `~/.config/zsh/dot_zstyles` (environment vars)
-- **Hyprland**: `~/.config/hypr/conf/bindings.conf.tmpl` (keybindings)
+- **Hyprland**: `~/.config/hypr/conf/bindings/*.conf` (keybindings invoke these scripts)
 - **Menu system**: `lib/scripts/user-interface/` (calls other scripts)
 - **PATH**: `~/.local/bin` in PATH via Zephyr

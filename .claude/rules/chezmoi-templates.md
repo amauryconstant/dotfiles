@@ -24,7 +24,7 @@
 
 ## Available Template Includes
 
-**Log Templates (11)** - Located in `.chezmoitemplates/`:
+**Log Templates** - Located in `.chezmoitemplates/`:
 
 | Template | Output | Use Case |
 |----------|--------|----------|
@@ -118,7 +118,7 @@ set -euo pipefail
 
 ```go
 {{ $server := .privateServer | default "localhost" }}
-{{ $font := .terminalFont | default "FiraCode Nerd Font" }}
+{{ $font := .globals.terminalFont | default "GeistMono Nerd Font" }}
 ```
 
 ### Conditional Blocks
@@ -135,94 +135,14 @@ set -euo pipefail
 
 ---
 
-## Common Template Functions
+## Validation
 
-### String Operations
-
-```go
-{{ .firstname | lower }}           # Lowercase
-{{ .firstname | upper }}           # Uppercase
-{{ .firstname | title }}           # Title case
-{{ .privateServer | replace "www" "nextcloud" }}  # Replace
-```
-
-### Conditionals
-
-```go
-{{ if eq .chezmoi.os "linux" }}    # Equal
-{{ if ne .value "test" }}          # Not equal
-{{ if and .condition1 .condition2 }} # Logical AND
-{{ if or .condition1 .condition2 }}  # Logical OR
-```
-
-### Iteration
-
-```go
-{{ range .extensions.code }}
-  {{ . }}  # Current item
-{{ end }}
-```
-
-### Variables
-
-```go
-{{ $var := .value }}               # Assign
-{{ $var := .value | default "x" }} # With default
-{{ $var }}                         # Use
-```
-
----
-
-## Validation Workflow
+Templates render with full Sprig support (string functions, defaults, conditionals) — consult Sprig docs for function reference. The repo-specific validation chain is:
 
 ```bash
-# 1. Check template syntax (Go templates)
-chezmoi execute-template < script.sh.tmpl
-
-# 2. Check shell syntax (rendered output)
-bash -n script.sh.tmpl
-
-# 3. Check with shellcheck (rendered)
-chezmoi execute-template < script.sh.tmpl | shellcheck -
-
-# 4. Preview final output
-chezmoi cat path/to/target/file
-
-# 5. Check available data
-chezmoi data | jaq '.key.subkey'
+chezmoi execute-template < file.tmpl              # render; shows exact Go-template errors
+chezmoi execute-template < script.sh.tmpl | shellcheck -   # lint rendered shell (templates render to shell)
+chezmoi cat path/to/target                        # final applied output (templates + modify_manager)
 ```
 
----
-
-## Common Issues
-
-### Issue: Template rendering failed
-
-**Cause**: Syntax error or missing variable
-
-**Fix**:
-```bash
-chezmoi execute-template < file.tmpl  # Shows exact error
-chezmoi data                          # Check variable exists
-```
-
-### Issue: Whitespace issues in output
-
-**Cause**: Template delimiters add newlines
-
-**Fix**: Use whitespace control
-```go
-{{- if .condition -}}
-  content
-{{- end -}}
-```
-
-### Issue: Shell syntax error in rendered output
-
-**Cause**: Template produces invalid shell
-
-**Fix**:
-```bash
-chezmoi execute-template < file.tmpl  # View output
-bash -n <(chezmoi execute-template < file.tmpl)  # Test syntax
-```
+A `.sh.tmpl` whose source passes `bash -n` can still render invalid shell — always validate the rendered output, not the source.

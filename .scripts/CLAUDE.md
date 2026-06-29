@@ -1,110 +1,29 @@
-# Helper Scripts - Claude Code Reference
+# Repository Helper Scripts
 
-**Location**: `/home/amaury/.local/share/chezmoi/.scripts/`
+**Location**: `.scripts/` (repo utilities — never applied to the system)
 **Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
 
-**CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
+Two scripts live here:
 
-## Quick Reference
+| Script | Role |
+|--------|------|
+| `template-merge-driver.sh` | Git merge driver that preserves `{{ }}` template syntax in `*.tmpl` files |
+| `install-password-manager-and-encryption.sh` | chezmoi init bootstrap — invoked by `.chezmoi.yaml.tmpl` (`scriptEnv`/prompt) to install the password manager + age tooling before first apply |
 
-- **Purpose**: Repository-level helper scripts
-- **Key script**: template-merge-driver.sh
-- **Setup**: `.chezmoiscripts/run_once_after_005_configure_git_tools.sh.tmpl`
-- **Target**: Not applied to system (repo utilities only)
+---
 
 ## Template Merge Driver
 
-**File**: `template-merge-driver.sh`
+**Why**: a normal Git merge of a `.tmpl` file can resolve to the *rendered* value (`{{ .firstname }}` → `John`), silently corrupting the template. This driver keeps the side that still contains template syntax.
 
-**Purpose**: Preserve template syntax during Git merges
+**Algorithm** (`template-merge-driver.sh`): detect `{{ }}` (via `grep -q '{{.*}}'`) in base/ours/theirs; prefer the version that retains templates; fall back to a standard merge when both sides are templated. Exit `0` = merged, `1` = conflict needing manual resolution.
 
-**Problem**: Git merges render template variables
-- Before: `{{ .firstname }}`
-- After: `John` (breaks template)
+**Wiring** (two halves, both required):
+- **`.gitattributes`** (repo root): `*.tmpl merge=chezmoi-template` (and `*.age binary` — encrypted files are never merged).
+- **Driver registration**: `.chezmoiscripts/run_once_after_001_configure_developer_tools.sh.tmpl` runs `git config merge.chezmoi-template.driver "<sourceDir>/.scripts/template-merge-driver.sh %O %A %B %L %P"` in the **chezmoi source repo's local git config**. It is *not* defined in `private_dot_config/git/config.tmpl` (that file only registers the unrelated `mergiraf` driver for source-code files). The driver runs in place from the source dir — it is not copied to `~/.scripts/`.
 
-**Solution**: Custom merge driver prioritizes template syntax
+Driver args: `%O` base, `%A` ours, `%B` theirs, `%L` conflict-marker size, `%P` real pathname.
 
-### Algorithm
+**Don't confuse** `chezmoi-template` (this repo's `.tmpl` files) with `mergiraf` (syntax-aware merge for `.go`/`.rs`/`.yaml`/… deployed via `~/.gitattributes`). They are independent.
 
-**Merge strategy**:
-1. Check ancestor file for templates (`{{ }}`)
-2. Check current file for templates
-3. Check other file for templates
-4. Prioritize version with templates
-5. Fall back to standard merge if both have templates
-
-**Exit codes**:
-- 0: Success (no conflict)
-- 1: Conflict (manual resolution needed)
-
-**Template detection**:
-```bash
-grep -q '{{.*}}' "$file"
-```
-
-### Git Integration
-
-**Git config** (`.config/git/config.tmpl`):
-```ini
-[merge "chezmoi-template"]
-    name = Chezmoi template merge driver
-    driver = ~/.scripts/template-merge-driver.sh %O %A %B %L
-```
-
-**Git attributes** (`.gitattributes`):
-```
-*.tmpl merge=chezmoi-template
-```
-
-**Parameters**:
-- `%O` - Ancestor file (base)
-- `%A` - Current file (ours)
-- `%B` - Other file (theirs)
-- `%L` - Conflict marker size
-
-### Setup Script
-
-**File**: `.chezmoiscripts/run_once_after_005_configure_git_tools.sh.tmpl`
-
-**Actions**:
-1. Copy merge driver to `~/.scripts/`
-2. Make executable (`chmod +x`)
-3. Configure git merge driver
-4. Validate configuration
-
-**Validation**:
-```bash
-# Check merge driver configured
-git config merge.chezmoi-template.driver
-
-# Check gitattributes
-cat .gitattributes | grep "merge=chezmoi-template"
-```
-
-## Usage
-
-**Automatic** (on merge):
-```bash
-git merge feature-branch
-# Template protection automatic for *.tmpl files
-```
-
-**Manual resolution** (if conflicts):
-```bash
-chezmoi merge <file>        # Single file
-chezmoi merge-all          # All conflicts
-```
-
-**Verification**:
-```bash
-chezmoi diff
-chezmoi status
-```
-
-## Integration Points
-
-- **Git config**: `.config/git/config.tmpl` (merge driver definition)
-- **Git attributes**: `.gitattributes` (*.tmpl rule)
-- **Setup script**: `.chezmoiscripts/run_once_after_005_configure_git_tools.sh.tmpl`
-- **Target**: `~/.scripts/template-merge-driver.sh` (installed location)
-
+See `private_dot_config/git/CLAUDE.md` for the merge-conflict resolution workflow.
