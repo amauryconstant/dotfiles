@@ -166,7 +166,7 @@ _get_repo_version() {
 	pacman -Si "$pkg" 2>/dev/null | grep "^Version" | awk '{print $3}' || true
 }
 
-# NOTE: _get_flatpak_version() is defined in core/performance.sh with caching
+# NOTE: _get_flatpak_version() is defined in core/state-manager.sh with caching
 # Do not redefine here to avoid overriding the cached implementation
 
 # =============================================================================

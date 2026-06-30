@@ -3,14 +3,7 @@
 # Script: config.sh
 # Purpose: Configuration and packages.yaml access helpers
 # Requirements: yq
-
-# =============================================================================
-# ICON CONSTANTS
-# =============================================================================
-
-# Source icon library (Material Design Nerd Fonts)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-. "$SCRIPT_DIR/core/icons.sh"
+# Note: Icon constants now live in core/constants.sh (sourced earlier in entrypoint)
 
 # =============================================================================
 # GLOBAL CONFIGURATION

@@ -5,6 +5,30 @@
 # Requirements: None
 
 # =============================================================================
+# ICONS (Material Design Nerd Fonts)
+# =============================================================================
+
+# shellcheck disable=SC2034  # Icons sourced by other modules
+
+# Status indicators
+readonly ICON_CHECK="󰗠"
+readonly ICON_ERROR="󰅙"
+readonly ICON_WARNING="󰀦"
+readonly ICON_UNKNOWN="󰮥"
+
+# Package operations
+readonly ICON_PACKAGE="󰏓"
+readonly ICON_TRASH="󰩹"
+readonly ICON_LOCK="󰌾"
+
+# Utility icons
+readonly ICON_SEARCH="󰡦"
+readonly ICON_CHART="󱕍"
+
+# Text markers
+readonly ICON_BULLET="∙"
+
+# =============================================================================
 # PACKAGE TYPES
 # =============================================================================
 

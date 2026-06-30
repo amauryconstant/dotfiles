@@ -67,7 +67,6 @@ mkdir -p "$STATE_DIR"
 . "$SCRIPT_DIR/core/state-manager.sh"
 . "$SCRIPT_DIR/core/config.sh"
 . "$SCRIPT_DIR/core/state.sh"
-. "$SCRIPT_DIR/core/performance.sh"
 . "$SCRIPT_DIR/core/validation.sh"
 
 # Source operations modules (NEW in v3.0)
@@ -78,7 +77,6 @@ mkdir -p "$STATE_DIR"
 . "$SCRIPT_DIR/operations/pkgbuild-tripwire.sh"
 
 # Source package modules
-. "$SCRIPT_DIR/packages/manager-interface.sh"
 . "$SCRIPT_DIR/packages/version-manager.sh"
 . "$SCRIPT_DIR/packages/batch-operations.sh"
 . "$SCRIPT_DIR/packages/package-operations.sh"
@@ -106,7 +104,7 @@ mkdir -p "$STATE_DIR"
 
 # State file I/O functions now in core/state.sh
 
-# Performance cache functions now in core/performance.sh
+# Performance cache functions now in core/state-manager.sh
 
 # Package type detection and version utilities now in packages/version-manager.sh
 
@@ -354,123 +352,6 @@ show_version() {
 }
 
 # =============================================================================
-# LEGACY FUNCTIONS (PRESERVED FOR COMPATIBILITY)
-# =============================================================================
-
-check_health() {
-    # DEPRECATED in v3.0.0 - Use 'package-manager validate --check-packages' instead
-    ui_warning "DEPRECATED: 'health' command is deprecated in v3.0.0"
-    ui_info "Use: package-manager validate --check-packages"
-    ui_info "This command will be removed in v4.0.0"
-    echo ""
-
-    if [[ "$BRIEF" != "true" ]]; then
-        ui_title "$ICON_HEALTH Package System Health Check"
-    fi
-
-    local issues=0
-
-    # Check essential dependencies
-    if command -v yq >/dev/null 2>&1; then
-        [[ "$BRIEF" != "true" ]] && ui_success "yq: Available"
-    else
-        ui_error "yq: Missing (required for package management)"
-        ((issues++))
-    fi
-
-    if command -v pacman >/dev/null 2>&1; then
-        [[ "$BRIEF" != "true" ]] && ui_success "pacman: Available"
-    else
-        ui_error "pacman: Missing"
-        ((issues++))
-    fi
-
-    local aur_helper=$(_get_aur_helper)
-    if [[ -n "$aur_helper" ]]; then
-        [[ "$BRIEF" != "true" ]] && ui_success "$aur_helper: Available"
-    else
-        [[ "$BRIEF" != "true" ]] && ui_warning "No AUR helper (paru): AUR packages unavailable"
-    fi
-
-    # Check packages file
-    if [[ -f "$PACKAGES_FILE" ]]; then
-        [[ "$BRIEF" != "true" ]] && ui_success "packages.yaml: Found"
-
-        # Validate YAML syntax
-        if command -v yq >/dev/null 2>&1 && yq eval '.' "$PACKAGES_FILE" >/dev/null 2>&1; then
-            [[ "$BRIEF" != "true" ]] && ui_success "packages.yaml: Valid syntax"
-        else
-            ui_error "packages.yaml: Invalid syntax"
-            ((issues++))
-        fi
-    else
-        ui_error "packages.yaml: Not found at $PACKAGES_FILE"
-        ((issues++))
-    fi
-
-    # Summary
-    if [[ "$BRIEF" == "true" ]]; then
-        if [[ $issues -eq 0 ]]; then
-            ui_success "Package system health: OK"
-            return 0
-        else
-            ui_error "Package system health: $issues issues found"
-            return 1
-        fi
-    else
-        if [[ $issues -eq 0 ]]; then
-            ui_success "Essential dependencies available" --before 1
-            return 0
-        else
-            ui_error "Missing essential dependencies" --before 1
-            return 1
-        fi
-    fi
-}
-
-update_strategy() {
-    # DEPRECATED in v3.0.0 - Use 'package-manager update' instead
-    ui_warning "DEPRECATED: 'update-strategy' command is deprecated in v3.0.0"
-    ui_info "Use: package-manager update"
-    ui_info "This command will be removed in v4.0.0"
-    echo ""
-
-    if [[ "$BRIEF" != "true" ]]; then
-        ui_title "$ICON_REFRESH Package Update"
-        ui_info "This command updates system packages using paru"
-        ui_spacer
-    fi
-
-    _check_yq_dependency || return 1
-
-    local aur_helper=$(_get_aur_helper)
-
-    if [[ -z "$aur_helper" ]]; then
-        ui_error "No AUR helper found. Install paru: paru -S paru-bin"
-        return 1
-    fi
-
-    # Run standard updates
-    _log_verbose "Running package updates..."
-    _execute_or_dry_run "Running $aur_helper update" "$aur_helper -Syu --noconfirm" || {
-        ui_error "Package update failed"
-        return 1
-    }
-
-    # Validate health
-    _log_verbose "Validating package system health..."
-
-    if check_health; then
-        [[ "$BRIEF" != "true" ]] && ui_success "Update completed successfully"
-        return 0
-    else
-        ui_warning "Update completed but validation found issues"
-        return 1
-    fi
-}
-
-
-# =============================================================================
 # MAIN FUNCTION AND ARGUMENT PARSING
 # =============================================================================
 
@@ -594,12 +475,6 @@ package-manager() {
             ;;
         "approve")
             cmd_approve "$@"
-            ;;
-        "health")
-            check_health
-            ;;
-        "update-strategy")
-            update_strategy
             ;;
         "help"|"-h"|"--help")
             if [[ "$1" == "--full" ]]; then

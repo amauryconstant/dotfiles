@@ -49,11 +49,10 @@ package-manager approve --all      # Review every currently-blocked AUR package
 package-manager/
 ├── executable_package-manager      # Entry point (CLI dispatch)
 ├── core/               # Foundation
-│   ├── state-manager.sh     # Centralized state/cache (5 assoc. arrays)
-│   ├── constants.sh         # Type-safe constants (PACKAGE_TYPE_*, etc.)
+│   ├── state-manager.sh     # Centralized state/cache (5 assoc. arrays) + lazy pacman/flatpak caches
+│   ├── constants.sh         # Type-safe constants (PACKAGE_TYPE_*, ICON_*, etc.)
 │   ├── config.sh            # Module access with caching (16 yq → 1)
 │   ├── state.sh             # State file I/O, atomic mutations, backups
-│   ├── performance.sh       # Lazy-loading caches (Flatpak + Pacman)
 │   └── validation.sh        # Batch AUR validation (24x faster)
 ├── operations/         # Workflows
 │   ├── sync-orchestrator.sh # 5-phase sync workflow
@@ -64,7 +63,6 @@ package-manager/
 │   ├── lockfile-manager.sh  # Lockfile I/O, staleness detection
 │   └── pkgbuild-tripwire.sh # AUR PKGBUILD hash gate (tier detect + scan + record)
 ├── packages/           # Logic
-│   ├── manager-interface.sh # Package manager abstraction (pacman/flatpak)
 │   ├── version-manager.sh   # Constraint parsing + vercmp comparison
 │   ├── batch-operations.sh  # Batch installs (5-10x faster)
 │   ├── package-operations.sh # Individual ops + state tracking
@@ -84,7 +82,7 @@ package-manager/
 1. Define SCRIPT_DIR (line 26)
 2. Define global config: PACKAGES_FILE, STATE_DIR, STATE_FILE, LOCKFILE, feature flags (lines 28-52)
 3. mkdir -p "$STATE_DIR"
-4. Source core modules: constants → state-manager → config → state → performance → validation
+4. Source core modules: constants → state-manager → config → state → validation
 ```
 
 **Why this matters**: `state-manager.sh` uses `CONSTRAINT_CACHE_FILE="${STATE_DIR:-.}/.constraint-cache"` — if `STATE_DIR` is undefined at load time, cache files are created in the CWD instead. This caused a real bug (v3.0.1) where `.constraint-cache` appeared in `~/.local/share/chezmoi/`. If you see stale files there: `rm ~/.local/share/chezmoi/.constraint-cache`
@@ -95,11 +93,10 @@ package-manager/
 
 | Module | What it does |
 |--------|-------------|
-| `state-manager.sh` | 5 assoc. array caches (flatpak_apps, flatpak_versions, pacman_versions, modules, constraints); `_state_*` + `_cache_*` API |
-| `constants.sh` | PACKAGE_TYPE_PACMAN/FLATPAK, CONSTRAINT_TYPE_*, scope constants; sourced first (no deps) |
+| `state-manager.sh` | 5 assoc. array caches (flatpak_apps, flatpak_versions, pacman_versions, modules, constraints); `_state_*` + `_cache_*` API; plus lazy `pacman -Q` / `flatpak list` loaders (`_get_cached_package_version`, `_is_flatpak_installed`, `_get_flatpak_version`) |
+| `constants.sh` | PACKAGE_TYPE_PACMAN/FLATPAK, CONSTRAINT_TYPE_*, scope constants, ICON_* glyphs; sourced first (no deps) |
 | `config.sh` | Single yq query loads all enabled modules into cache; subsequent calls from memory |
 | `state.sh` | Atomic state mutations (temp file + mv); auto-backup before sync; keep last 10 backups |
-| `performance.sh` | Lazy caches for `pacman -Q` and `flatpak list`; populated on first access |
 | `validation.sh` | Batch AUR check (single paru query, 15s timeout, 24h disk cache) — 24x faster than sequential |
 
 ---
