@@ -2,8 +2,10 @@
 set -euo pipefail
 
 # Get all staged shell scripts (both .sh and .sh.tmpl)
+# Exclude _ai/ — vendored upstream subtrees are not ours to lint.
 staged_scripts=$(git diff --cached --name-only --diff-filter=ACM |
-	grep -E '\.(sh|bash|sh\.tmpl|bash\.tmpl)$' || true)
+	grep -E '\.(sh|bash|sh\.tmpl|bash\.tmpl)$' |
+	grep -v '^_ai/' || true)
 
 if [ -z "$staged_scripts" ]; then
 	exit 0

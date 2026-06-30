@@ -63,6 +63,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── _guides/                # Operational procedures and setup guides
 ├── _research/              # Technology investigation and decision records
 ├── _plans/                 # Feature roadmaps and phased implementation plans
+├── _ai/                    # Vendored upstream sources (git subtree) — API reference, not our code
 ├── .chezmoiscripts/        # Lifecycle scripts (run_once_*, run_onchange_*)
 ├── .chezmoitemplates/      # Reusable includes (log_*)
 ├── .scripts/               # Repository utilities (merge-driver)
@@ -105,6 +106,9 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 | `_guides/` | Operational procedures and reference guides | `MULTI_DEVICE_BTRFS_SETUP.md` |
 | `_research/` | Technology investigation and decision records | `LLM_BACKENDS_RESEARCH.md` |
 | `_plans/` | Feature roadmaps and phased implementation plans | `VOICE_STT_ROADMAP.md` |
+| `_ai/` | Vendored upstream sources via `git subtree` — read-only API/code reference (see `_guides/VENDORED_SUBTREES.md`) | `_ai/quickshell/` |
+
+**`_ai/` is vendored, not ours**: ignored by chezmoi, linters, and formatters; marked `linguist-vendored`. Never hand-edit, lint, or reformat it — update via `git subtree pull`. See `_guides/VENDORED_SUBTREES.md` for per-subtree remotes + update commands.
 
 ### Cross-Cutting Topics (.claude/rules/)
 

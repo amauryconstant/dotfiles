@@ -5,3 +5,8 @@
 
 # Encrypted files should not be merged (require manual resolution)
 *.age binary
+
+# Vendored upstream sources (git subtree) — exclude from GitHub language
+# stats and collapse diffs. Not our code; do not lint/format/review.
+_ai/** linguist-vendored
+_ai/** linguist-generated

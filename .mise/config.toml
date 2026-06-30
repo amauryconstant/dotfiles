@@ -22,7 +22,7 @@ run = [{ task = "format" }, { task = "lint" }]
 
 [tasks."format:sh"]
 description = "Format shell scripts"
-run = "find . \\( -name '*.sh' -o -name '*.bash' \\) -not -path './.git/*' -not -path './private_dot_keys/*' | xargs shfmt --write"
+run = "find . \\( -name '*.sh' -o -name '*.bash' \\) -not -path './.git/*' -not -path './private_dot_keys/*' -not -path './_ai/*' | xargs shfmt --write"
 
 [tasks."lint:md"]
 description = "Lint Markdown files"

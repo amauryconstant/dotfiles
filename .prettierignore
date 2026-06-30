@@ -1,2 +1,5 @@
 **/*.json
 **/*.jsonc
+
+# Vendored upstream sources (git subtree) — never reformat
+_ai/
