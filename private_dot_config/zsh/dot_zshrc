@@ -21,24 +21,13 @@ fpath=($ZFUNCDIR $fpath)
 # Set any zstyles you might use for configuration.
 [[ ! -f ${ZDOTDIR:-$HOME}/.zstyles ]] || source ${ZDOTDIR:-$HOME}/.zstyles
 
-# Create an amazing Zsh config using antidote plugins.
+# Load antidote plugins. `antidote load` auto-bundles the static cache
+# (.zsh_plugins.zsh) when missing or older than .zsh_plugins.txt, then sources it.
 if [[ -f /usr/share/zsh-antidote/antidote.zsh ]]; then
   source /usr/share/zsh-antidote/antidote.zsh
-
-  # Try to load plugins, but handle offline/initial setup gracefully
-  if ! antidote load 2>/dev/null; then
-    echo "⚠️  antidote plugins not initialized. Attempting to bundle..."
-    # Try to bundle plugins if online, otherwise skip
-    if antidote bundle <${ZDOTDIR:-$HOME}/.zsh_plugins.txt >${ZDOTDIR:-$HOME}/.zsh_plugins.zsh 2>/dev/null; then
-      echo "✓ Plugins bundled successfully"
-      source ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
-    else
-      echo "⚠️  Unable to download plugins (offline?). Using fallback configuration."
-      echo "   Run 'antidote bundle <~/.config/zsh/.zsh_plugins.txt >~/.config/zsh/.zsh_plugins.zsh' when online."
-    fi
-  fi
+  antidote load
 else
-  echo "⚠️  zsh-antidote not found. Run: paru -S zsh-antidote"
+  print -u2 "zsh-antidote not found. Run: paru -S zsh-antidote"
 fi
 
 # Source anything in .zshrc.d.
