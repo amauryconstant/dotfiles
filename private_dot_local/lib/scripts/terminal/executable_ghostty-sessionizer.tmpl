@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+# Script: ghostty-sessionizer
+# Purpose: Fuzzy-find a project dir and open it as a plain Neovim workspace
+# Requirements: fzf, nvim
+#
+# Ghostty-native counterpart to zellij-sessionizer (both coexist during trial).
+# No multiplexer: the shell/AI pane lives inside Neovim (toggleterm/snacks), and
+# the workspace is rebuilt from scratch each launch (no session to attach).
+# Meant to be launched in its own window: ghostty -e ghostty-sessionizer
+
+PROJECTS="{{ .globals.paths.projects }}"
+WORKTREES="{{ .globals.paths.worktrees }}"
+
+selected=$(find "$PROJECTS" "$WORKTREES" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+    | fzf --prompt="Workspace: " --height=40% --reverse \
+          --preview='ls {}' \
+          --preview-window=right:25%)
+
+[ -z "$selected" ] && exit 0
+
+# Replace this fzf shell with Neovim in the selected dir (same window).
+cd "$selected" || exit 1
+exec nvim .

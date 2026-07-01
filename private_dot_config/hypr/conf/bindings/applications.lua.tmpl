@@ -20,6 +20,9 @@ o.bind("SUPER + W", "Web browser", "firefox")
 -- Neovim/Zellij session picker: Super + O
 o.bind("SUPER + O", "Neovim session picker", "ghostty -e ~/.local/lib/scripts/terminal/zellij-sessionizer")
 
+-- Neovim workspace picker (Ghostty-native, zellij-free trial): Super + Shift + O
+o.bind("SUPER + SHIFT + O", "Neovim workspace picker (Ghostty)", "ghostty -e ~/.local/lib/scripts/terminal/ghostty-sessionizer")
+
 -- Clipboard history: Super + C (select to copy back)
 o.bind("SUPER + C", "Clipboard history", "cliphist list | wofi --dmenu | cliphist decode | wl-copy")
 

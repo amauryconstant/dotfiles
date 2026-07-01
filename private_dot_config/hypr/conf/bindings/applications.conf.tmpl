@@ -24,6 +24,10 @@ bindd = SUPER, W, Web browser, exec, firefox
 # Fuzzy-find a project and open/attach its Zellij coding session
 bindd = SUPER, O, Neovim session picker, exec, ghostty -e ~/.local/lib/scripts/terminal/zellij-sessionizer
 
+# Neovim workspace picker (Ghostty-native, zellij-free trial): Super + Shift + O
+# Same project picker, but opens a plain Neovim window (splits live in nvim)
+bindd = SUPER SHIFT, O, Neovim workspace picker (Ghostty), exec, ghostty -e ~/.local/lib/scripts/terminal/ghostty-sessionizer
+
 # Clipboard history: Super + C
 # Shows clipboard history via wofi, select to copy back to clipboard
 bindd = SUPER, C, Clipboard history, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy
