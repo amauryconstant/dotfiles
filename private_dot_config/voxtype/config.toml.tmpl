@@ -12,7 +12,7 @@
 # marginally slower than Parakeet, so it's the everyday default. Streaming stays on
 # Parakeet (Cohere is encoder-decoder, not cache-aware-streaming capable).
 
-engine = "cohere"  # default engine; per-recording override via --engine <name>
+engine = "cohere"  # default engine; per-recording override via --model <name> (voxtype 0.7.5 has no --engine flag)
 
 [hotkey]
 enabled = false  # Hyprland bindings drive recording, not the built-in evdev hotkey
@@ -46,7 +46,7 @@ streaming_left_context_secs = 2.0
 streaming_right_context_secs = 0.5
 
 [cohere]
-model = "cohere-transcribe-q4f16"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
+model = "cohere-transcribe-fp16"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
 
 [output]
 mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"

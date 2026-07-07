@@ -22,7 +22,7 @@ o.bind("SUPER + T", "Stop voice dictation (Cohere)", "voxtype record stop", { re
 o.bind("SUPER + ALT + T", "Toggle streaming dictation (Parakeet)", "voxtype record toggle")
 
 -- Parakeet — fast English-only push-to-talk
-o.bind("SUPER + CTRL + T", "Start voice dictation (Parakeet)", "voxtype record start --engine parakeet")
+o.bind("SUPER + CTRL + T", "Start voice dictation (Parakeet)", "voxtype record start --model parakeet-tdt-0.6b-v3")
 o.bind("SUPER + CTRL + T", "Stop voice dictation (Parakeet)", "voxtype record stop", { release = true })
 
 -- Meeting mode — continuous transcription with speaker diarization + AI summary
