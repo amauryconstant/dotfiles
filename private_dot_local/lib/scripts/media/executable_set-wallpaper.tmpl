@@ -33,8 +33,21 @@ fi
 if ! pgrep -x awww-daemon > /dev/null; then
     {{ includeTemplate "log_step" "Starting awww daemon" }}
     awww-daemon 2>/dev/null &
-    sleep 1
 fi
+
+# Wait for daemon to finish discovering outputs. On session/compositor
+# restart, awww-daemon (whether started here or via Hyprland autostart)
+# can be running before it has enumerated outputs, so "awww img" fails
+# with "none of the requested outputs are valid" if called too early.
+READY_ATTEMPTS=10
+until awww query 2>/dev/null | grep -q .; do
+    READY_ATTEMPTS=$((READY_ATTEMPTS - 1))
+    if [ "$READY_ATTEMPTS" -le 0 ]; then
+        {{ includeTemplate "log_error" "awww daemon did not report any outputs in time" }}
+        exit 1
+    fi
+    sleep 0.5
+done
 
 {{ includeTemplate "log_step" "Setting wallpaper with awww" }}
 awww img "$WALLPAPER_PATH" \
