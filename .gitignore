@@ -1,0 +1,31 @@
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+
+# State files (already ignored by arch-config)
+state/
+
+# Binaries
+dcli
+dcli-legacy
+
+# Documentation files
+PERFORMANCE.md
+README-RUST.md
+RUST-IMPLEMENTATION-STATUS.md
+RUST-QUICKSTART.md
+RUST-SUMMARY.md
+UPDATE-MERGE-IMPLEMENTATION.md
+PROGRESS-*.md
+VISUAL-EXAMPLES.md
+MULTI-PROGRESS-SUSPEND.md
+MODULE_SHARING_PLAN.md
+DOTFILES-TESTING.md
+
+# Examples
+examples/
+AUR-UPDATE-GUIDE.md
+vendor/
+*.src.rpm
+*.tar.gz

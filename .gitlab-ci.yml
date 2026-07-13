@@ -1,0 +1,91 @@
+stages:
+  - build
+  - release
+
+variables:
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  RUSTFLAGS: "-C link-arg=-fuse-ld=bfd"
+
+# Cache cargo dependencies between builds
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .cargo/
+    - target/
+
+build-linux-x86_64:
+  stage: build
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y binutils lua5.4 liblua5.4-dev
+    - rustup target add x86_64-unknown-linux-gnu
+  script:
+    - cargo build --release --locked --target x86_64-unknown-linux-gnu
+    - strip target/x86_64-unknown-linux-gnu/release/dcli
+    - mv target/x86_64-unknown-linux-gnu/release/dcli dcli-linux-x86_64
+  artifacts:
+    name: "dcli-linux-x86_64-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - dcli-linux-x86_64
+    expire_in: 30 days
+
+build-linux-aarch64:
+  stage: build
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y binutils gcc-aarch64-linux-gnu lua5.4 liblua5.4-dev
+    - rustup target add aarch64-unknown-linux-gnu
+  script:
+    - export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+    - cargo build --release --locked --target aarch64-unknown-linux-gnu
+    - aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/dcli || true
+    - mv target/aarch64-unknown-linux-gnu/release/dcli dcli-linux-aarch64
+  artifacts:
+    name: "dcli-linux-aarch64-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - dcli-linux-aarch64
+    expire_in: 30 days
+  allow_failure: true  # aarch64 cross-compile may have issues
+
+# Create release on tags
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - build-linux-x86_64
+    - job: build-linux-aarch64
+      optional: true
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "Creating release for ${CI_COMMIT_TAG}"
+  release:
+    tag_name: "${CI_COMMIT_TAG}"
+    name: "Release ${CI_COMMIT_TAG}"
+    description: "Release ${CI_COMMIT_TAG}"
+    assets:
+      links:
+        - name: "dcli-linux-x86_64"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/dcli-linux-x86_64"
+        - name: "dcli-linux-aarch64"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/raw/dcli-linux-aarch64"
+
+# Also upload artifacts for every commit on main (for -git package)
+upload-latest:
+  stage: release
+  image: alpine:latest
+  needs:
+    - build-linux-x86_64
+    - job: build-linux-aarch64
+      optional: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - echo "Artifacts available for commit ${CI_COMMIT_SHORT_SHA}"
+    - ls -la dcli-*
+  artifacts:
+    name: "dcli-latest"
+    paths:
+      - dcli-linux-x86_64
+      - dcli-linux-aarch64
+    expire_in: 90 days
