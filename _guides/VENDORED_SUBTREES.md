@@ -26,6 +26,7 @@ re-pulling from upstream. Treat `_ai/` as a read-only reference.
 | Prefix | Upstream | Branch | Purpose |
 |--------|----------|--------|---------|
 | `_ai/quickshell` | https://git.outfoxxed.me/quickshell/quickshell | `master` | Quickshell (QtQuick/QML shell framework) source — API reference for `_research/QUICKSHELL_DESKTOP_RESEARCH.md` |
+| `_ai/dcli` | https://gitlab.com/theblackdon/dcli | `main` | dcli (declarative Arch package manager, NixOS-inspired) source — reference for `system/package-manager` (which cites it as inspiration) |
 
 ## Managing Subtrees
 
