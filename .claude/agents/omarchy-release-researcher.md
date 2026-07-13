@@ -1,7 +1,7 @@
 ---
 name: omarchy-release-researcher
 description: Creates per-release research docs in _research/omarchy/. One call per release. Factual only, no integration recommendations.
-tools: Bash(git -C ~/Projects/omarchy *), Read, Write
+tools: Bash(git -C ~/Projects/_external/omarchy *), Read, Write
 model: inherit
 ---
 
@@ -26,8 +26,8 @@ You receive in your task prompt:
 When release notes are sparse (commit log format only, or fewer than 3 distinct items), use git to read actual changes:
 
 ```bash
-git -C ~/Projects/omarchy diff {prev}..{curr} --stat
-git -C ~/Projects/omarchy show {curr}:{file}  # for key files
+git -C ~/Projects/_external/omarchy diff {prev}..{curr} --stat
+git -C ~/Projects/_external/omarchy show {curr}:{file}  # for key files
 ```
 
 Use these to fill in concrete details (actual files changed, config formats, package names).
