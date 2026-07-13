@@ -1,0 +1,23 @@
+pkgbase = dcli
+	pkgdesc = A declarative package management CLI tool for Arch Linux, inspired by NixOS
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://gitlab.com/theblackdon/dcli
+	arch = x86_64
+	arch = aarch64
+	license = 0BSD
+	makedepends = cargo
+	makedepends = git
+	depends = gcc-libs
+	depends = glibc
+	depends = lua54
+	optdepends = paru: AUR helper (recommended)
+	optdepends = yay: Alternative AUR helper
+	optdepends = fzf: Fuzzy finder for search and TUI features
+	optdepends = timeshift: System backup tool
+	optdepends = snapper: Alternative system backup tool (btrfs)
+	optdepends = flatpak: Flatpak package support
+	source = dcli-0.1.0.tar.gz::https://gitlab.com/theblackdon/dcli/-/archive/v0.1.0/dcli-v0.1.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = dcli

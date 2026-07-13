@@ -1,0 +1,92 @@
+#compdef dcli
+
+_dcli() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C \
+    '1: :->command' \
+    '*::arg:->args'
+
+  case $state in
+    command)
+      local -a commands
+      commands=(
+        'init:Initialize arch-config directory structure'
+        'update:Update system (respects version constraints)'
+        'install:Install package with pacman'
+        'remove:Remove package with pacman'
+        'sync:Install packages to match configuration'
+        'status:Show current configuration and sync status'
+        'module:Manage modules (list, enable, disable)'
+        'lock:Generate lockfile with current package versions'
+        'pin:Pin package to specific version'
+        'unpin:Remove version constraint from package'
+        'versions:Show version information for a package'
+        'outdated:Show packages that don'\''t match version constraints'
+        'backup:Create or list snapshots'
+        'restore:Restore snapshot interactively'
+        'repo:Repository management (init, clone, push, pull, status)'
+        'self-update:Update dcli from git repository'
+        'help:Show help message'
+      )
+      _describe -t commands 'dcli commands' commands
+      ;;
+    args)
+      case $words[1] in
+        init)
+          _arguments '-bd[Bootstrap from BlackDon'\''s config]'
+          ;;
+        update)
+          _arguments \
+            '--no-backup[Skip automatic backup (timeshift/snapper)]'
+          ;;
+        sync)
+          _arguments \
+            '(-d --dry-run)'{-d,--dry-run}'[Preview changes without applying]' \
+            '--prune[Remove packages not in configuration]' \
+            '--force[Skip confirmation prompts]' \
+            '--no-backup[Skip automatic backup (timeshift/snapper)]'
+          ;;
+        module)
+          local -a module_commands
+          module_commands=(
+            'list:Show all available modules and their status'
+            'enable:Enable a module'
+            'disable:Disable a module'
+          )
+          _describe -t commands 'module commands' module_commands
+          ;;
+        backup)
+          _arguments \
+            'list[List snapshots]'
+          ;;
+        repo)
+          local -a repo_commands
+          repo_commands=(
+            'init:Set up git for arch-config'
+            'clone:Clone existing arch-config'
+            'push:Commit and push changes'
+            'pull:Pull updates from other machines'
+            'status:Show git status'
+          )
+          _describe -t commands 'repo commands' repo_commands
+          ;;
+        pin|unpin|versions)
+          # Complete with installed packages
+          _arguments '*:package:_pacman_completions_installed_packages'
+          ;;
+        install)
+          # Complete with available packages
+          _arguments '*:package:_pacman_completions_all_packages'
+          ;;
+        remove)
+          # Complete with installed packages
+          _arguments '*:package:_pacman_completions_installed_packages'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_dcli "$@"

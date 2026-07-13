@@ -1,0 +1,38 @@
+# Example dcli configuration with services management
+# This demonstrates the new services feature
+
+host: example-host
+description: Example configuration with system services
+
+# Enable these modules
+enabled_modules:
+  - base
+
+# Host-specific packages
+packages:
+  - firefox
+  - kitty
+
+# System services configuration
+services:
+  # Services to enable and start on boot
+  enabled:
+    - bluetooth      # Enable Bluetooth service
+    - sshd           # Enable SSH daemon
+    # - docker       # Enable Docker daemon (commented out)
+
+  # Services to disable and stop
+  disabled:
+    - cups           # Disable CUPS printing service
+    # - NetworkManager-wait-online  # Disable NetworkManager wait (use with caution on remote systems)
+
+# Backup configuration
+backup_tool: timeshift
+
+# Automatic pruning
+auto_prune: false
+
+# Configuration backups
+config_backups:
+  enabled: true
+  max_backups: 5
