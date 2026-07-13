@@ -341,6 +341,7 @@ packages:
         - flatpak:org.qbittorrent.qBittorrent # BitTorrent client (Flatpak)
         - flatpak:com.github.wwmm.easyeffects # Audio effects for PipeWire (Flatpak)
         - flatpak:com.github.tchx84.Flatseal # Flatpak permission manager (inspect managed overrides)
+        - flatpak:md.obsidian.Obsidian # Markdown knowledge base / note-taking (Flatpak)
 
     audio_system:
       enabled: true
