@@ -39,6 +39,22 @@ if [[ ${#EXCLUDES[@]} -eq 0 ]]; then
     EXCLUDES=("*.log")
 fi
 
+# Filter includes to paths that exist on this machine. The include list is
+# shared across machines (globals.yaml), so some dirs legitimately won't exist
+# here. Passing a missing path makes restic exit 3 ("does not exist, skipping")
+# and fail the whole run even though the snapshot is fine. MISSING_INCLUDES is
+# reported after the backup.
+MISSING_INCLUDES=()
+_existing=()
+for _inc in "${INCLUDES[@]}"; do
+    if [[ -e "$_inc" ]]; then
+        _existing+=("$_inc")
+    else
+        MISSING_INCLUDES+=("$_inc")
+    fi
+done
+INCLUDES=("${_existing[@]}")
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 _restic_env() {
@@ -161,20 +177,41 @@ cmd_backup() {
     exclude_args_str=$(_build_exclude_args)
     IFS=' ' read -r -a exclude_args <<< "$exclude_args_str"
 
-    if [[ "$non_interactive" != "--non-interactive" ]]; then
-        ui_step "Creating restic snapshot..."
+    if [[ ${#INCLUDES[@]} -eq 0 ]]; then
+        if [[ "$non_interactive" != "--non-interactive" ]]; then
+            ui_error "No configured backup paths exist — nothing to back up"
+        else
+            notify-send -u critical "󰁢 Backup" "No backup paths exist — check config" 2>/dev/null || true
+        fi
+        exit 1
     fi
 
-    if restic backup \
+    if [[ "$non_interactive" != "--non-interactive" ]]; then
+        ui_step "Creating restic snapshot..."
+        if [[ ${#MISSING_INCLUDES[@]} -gt 0 ]]; then
+            ui_warning "Skipping missing paths: ${MISSING_INCLUDES[*]}"
+        fi
+    fi
+
+    # restic exit codes: 0 = success, 3 = snapshot created but some source
+    # files could not be read (still a valid snapshot), other = fatal failure.
+    local rc=0
+    restic backup \
         "${INCLUDES[@]}" \
         "${exclude_args[@]}" \
         --exclude-caches \
-        --one-file-system; then
+        --one-file-system || rc=$?
+
+    if [[ $rc -eq 0 || $rc -eq 3 ]]; then
+        local warn_msg=""
+        if [[ $rc -eq 3 ]]; then
+            warn_msg=" (some files were skipped — could not be read)"
+        fi
 
         if [[ "$non_interactive" != "--non-interactive" ]]; then
-            ui_success "Backup completed successfully"
+            ui_success "Backup completed successfully${warn_msg}"
         else
-            notify-send "󰁢 Backup" "Home backup completed successfully" 2>/dev/null || true
+            notify-send "󰁢 Backup" "Home backup completed successfully${warn_msg}" 2>/dev/null || true
         fi
 
         # Fire post-maintenance hook
@@ -183,7 +220,7 @@ cmd_backup() {
         fi
     else
         if [[ "$non_interactive" != "--non-interactive" ]]; then
-            ui_error "Backup failed"
+            ui_error "Backup failed (restic exit $rc)"
         else
             notify-send -u critical "󰁢 Backup" "Home backup failed — check journalctl" 2>/dev/null || true
         fi
