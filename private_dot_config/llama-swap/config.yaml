@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mostlygeek/llama-swap/refs/heads/main/config-schema.json
+#
+# llama-swap roster + tuning — the local LLM backend's model configuration.
+# Deployed to ~/.config/llama-swap/config.yaml (chezmoi-managed; edit here or `chezmoi edit`).
+#
+# The backend/architecture (unit, package, host/port) lives at chezmoi's level
+# (.chezmoidata/ai.yaml, systemd unit). This file is user territory: which GGUFs,
+# per-role flags, groups. Models below are PLACEHOLDER defaults — final picks deferred
+# (see _research/LOCAL_LLM_MODELS.md).
+#
+# Downloads: `llama-models pull` reads each model's `# url:` comment + its --model filename.
+# llama-swap has no url field, so the URL rides as a comment (parsed by the CLI, ignored here).
+#
+# ⚠ Schema note: group/macro keys drift across llama-swap versions. This is pinned to the
+# current documented schema (members: lists, ${env.HOME}, healthCheckTimeout). Re-validate
+# against the installed llama-swap-bin before relying on it (`llama-swap --config … ` parses on start).
+
+healthCheckTimeout: 120
+
+macros:
+  # Chat roles share these tuned flags: jinja tool-calling, flash-attn, q8_0 KV cache, metrics.
+  llama: >-
+    /usr/bin/llama-server --host 127.0.0.1 --port ${PORT}
+    --n-gpu-layers 99 --jinja -fa
+    --cache-type-k q8_0 --cache-type-v q8_0 --metrics
+  models_dir: "${env.HOME}/.local/share/models"
+
+models:
+  # Agentic coder — swaps into the ~20 GB left after the resident group.
+  coder:
+    # url: https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF/resolve/main/GLM-4.7-Flash-UD-Q4_K_XL.gguf
+    cmd: "${llama} --model ${models_dir}/GLM-4.7-Flash-UD-Q4_K_XL.gguf --ctx-size 65536"
+    ttl: 900
+
+  # Fast helper — small, always resident (~4 GB with embed).
+  helper:
+    # url: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q5_K_M.gguf
+    cmd: "${llama} --model ${models_dir}/Qwen3-4B-Instruct-2507-Q5_K_M.gguf --ctx-size 8192"
+
+  # Embeddings — NO --jinja; adds --embedding --pooling. File/url unset by default;
+  # RAG sub-project (C) populates it. Left unpulled until then (placeholder url).
+  embed:
+    # url: <verify at pull time>
+    cmd: "/usr/bin/llama-server --host 127.0.0.1 --port ${PORT} --n-gpu-layers 99 --embedding --pooling mean --model ${models_dir}/embed.gguf"
+
+groups:
+  # helper + embed load together and are never evicted (~4 GB always-on).
+  resident:
+    swap: false # both stay loaded together (don't evict each other)
+    exclusive: false # loading them does not unload the coder
+    persistent: true # never unloaded when the coder swaps in
+    members:
+      - helper
+      - embed
+  # coder swaps in/out of the remaining VRAM; ttl unloads it after 15 min idle.
+  heavy:
+    swap: true # one heavy model at a time (future-proof for more)
+    exclusive: false # swaps into free VRAM without touching the resident group
+    members:
+      - coder

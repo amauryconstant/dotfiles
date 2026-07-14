@@ -40,7 +40,7 @@
    - 999: SSH remote switch
 
 5. **`run_onchange_after_*`** (hash-based, any order)
-   - Extensions, AI models, bat cache, plymouth theme, Timeshift retention
+   - Extensions, bat cache, plymouth theme, Timeshift retention
 
 **Trust execution order**: chezmoi runs scripts in order and aborts on the first failure, so a later script can assume earlier ones succeeded — e.g. `002_install_package_manager` provisions paru/yq/gum, so `003+` and all `run_onchange_before` package work assume those binaries exist. Don't re-check prerequisites a numerically-earlier script already guarantees.
 
@@ -94,7 +94,6 @@
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
-| install_ai_models | Ollama models | `ai.models` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |
 

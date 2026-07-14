@@ -21,8 +21,12 @@ services:
     # User-level systemd services to enable
     - name: darkman.service
       enabled: true
-    - name: llama-server.service
+    - name: llama-swap.service
       enabled: true
+      start: false
+      requires_command: llama-swap
+    - name: llama-server.service # Phase-0 fallback (single static model); superseded by llama-swap
+      enabled: false
       start: false
       requires_command: llama-server
 

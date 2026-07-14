@@ -251,11 +251,12 @@ packages:
 
     ai:
       enabled: true
-      description: "Local AI inference (llama.cpp CUDA backend)"
+      description: "Local AI inference (llama.cpp CUDA backend + llama-swap proxy)"
       conflicts: []
       post_install_hook: ""
       packages:
         - llama.cpp-bin # llama.cpp with NVIDIA CUDA acceleration
+        - llama-swap-bin # on-demand multi-model proxy (AUR, binary)
 
     # ============================================================
     # DESKTOP ENVIRONMENT

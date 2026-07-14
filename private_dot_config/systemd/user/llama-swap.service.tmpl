@@ -1,0 +1,29 @@
+[Unit]
+Description=llama-swap on-demand LLM model proxy
+After=network-online.target
+Wants=network-online.target
+# Restart throttle (StartLimit* are [Unit] directives)
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/llama-swap \
+  --config %h/.config/llama-swap/config.yaml \
+  --listen {{ .ai.server.host }}:{{ .ai.server.port }}
+# Readiness gate: llama-swap serves /health ("OK") once the proxy is up — no model needed.
+# `start` succeeds only when the proxy answers (poll up to ~60 s).
+ExecStartPost=/bin/sh -c 'for i in $(seq 1 60); do curl -sf http://{{ .ai.server.host }}:{{ .ai.server.port }}/health >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1'
+Restart=on-failure
+RestartSec=5
+
+# Light sandboxing that preserves CUDA/GPU access.
+# NOTE: do NOT set Type=notify/WatchdogSec (binary lacks sd_notify) or PrivateDevices=true
+# (hides /dev/nvidia*, breaks CUDA).
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=%h/.local/share/models
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -28,6 +28,7 @@ zstyle ':zephyr:plugin:environment' BROWSER 'firefox'
 zstyle ':zephyr:plugin:environment' prepath \
     ~/.local/bin \
     ~/.local/sbin \
+    ~/.local/lib/scripts/ai \
     ~/.local/lib/scripts/core \
     ~/.local/lib/scripts/desktop \
     ~/.local/lib/scripts/git \

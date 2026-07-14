@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+
+# llama-models - Local LLM model management
+# Purpose: On-demand GGUF downloads + roster/status for the llama-swap backend
+# Requirements: Arch Linux, wget, gum (UI library); parses ~/.config/llama-swap/config.yaml
+
+# Source the UI library (supports direct execution)
+if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
+	# shellcheck source=/dev/null
+	. "$UI_LIB"
+elif [ -f "$HOME/.local/lib/scripts/core/gum-ui.sh" ]; then
+	# shellcheck source=/dev/null
+	. "$HOME/.local/lib/scripts/core/gum-ui.sh"
+else
+	echo "Error: UI library not found" >&2
+	exit 1
+fi
+
+CONFIG="${LLAMA_SWAP_CONFIG:-$HOME/.config/llama-swap/config.yaml}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/.local/share/models}"
+SWAP_ADDR="${LLAMA_SWAP_HOST:-127.0.0.1}:${LLAMA_SWAP_PORT:-8080}"
+
+show_help() {
+	ui_title "llama-models - Local LLM model management"
+	ui_spacer
+	ui_info "Usage: llama-models [command]"
+	ui_spacer
+	ui_info "Commands:"
+	ui_info "  pull        - Download GGUFs referenced by config.yaml but missing"
+	ui_info "  list        - Show the roster + which models are present on disk"
+	ui_info "  status      - llama-swap unit + /health + running models"
+	ui_info "  --help, -h  - Show this help message"
+	ui_spacer
+	ui_info "Config: $CONFIG"
+	ui_info "Models: $MODELS_DIR"
+}
+
+# Ensure the config exists (and is valid YAML if yq is available).
+check_config() {
+	if [ ! -f "$CONFIG" ]; then
+		ui_error "Config not found: $CONFIG"
+		ui_info "Deploy it with: chezmoi apply"
+		return 1
+	fi
+	if command -v yq >/dev/null 2>&1 && ! yq -e '.' "$CONFIG" >/dev/null 2>&1; then
+		ui_error "Config is not valid YAML: $CONFIG"
+		return 1
+	fi
+	return 0
+}
+
+# Parse the roster from config.yaml.
+# Emits TAB-separated: <name> <filename> <url>
+# - filename: basename of each model's `--model <path>`
+# - url: the adjacent `# url:` comment (empty if unset/placeholder starting with '<')
+# llama-swap has no url field, so the URL rides as a comment the CLI reads.
+parse_roster() {
+	awk '
+		# Top-level key (no indent, not a comment): are we entering models:?
+		/^[^[:space:]#]/ { in_models = ($0 ~ /^models:/) ? 1 : 0; next }
+		# Model key: two-space indent, name, colon, end of line
+		in_models && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
+			if (name != "") print name "\t" file "\t" url
+			name = $1; sub(/:.*/, "", name)
+			file = ""; url = ""
+			next
+		}
+		in_models && /#[[:space:]]*url:/ {
+			u = $0; sub(/.*#[[:space:]]*url:[[:space:]]*/, "", u); url = u; next
+		}
+		in_models && /--model[[:space:]]/ {
+			m = $0; sub(/.*--model[[:space:]]+/, "", m); sub(/[[:space:]].*/, "", m)
+			n = split(m, parts, "/"); file = parts[n]
+			sub(/["\047]$/, "", file)  # strip trailing quote when --model is the last cmd token
+			next
+		}
+		END { if (name != "") print name "\t" file "\t" url }
+	' "$CONFIG"
+}
+
+# A url is "real" (pullable) when set and not a placeholder like <verify at pull time>.
+url_is_real() {
+	[ -n "$1" ] && [ "${1#<}" = "$1" ]
+}
+
+llama_list() {
+	check_config || return 1
+	ui_title "󰇚 Model roster"
+	ui_spacer
+	local name file url present
+	while IFS=$'\t' read -r name file url; do
+		[ -z "$name" ] && continue
+		if [ -n "$file" ] && [ -f "$MODELS_DIR/$file" ]; then
+			present="present"
+		elif url_is_real "$url"; then
+			present="missing (pull)"
+		else
+			present="no url set"
+		fi
+		ui_info "$(printf '%-10s %-14s %s' "$name" "$present" "${file:-<none>}")"
+	done <<EOF
+$(parse_roster)
+EOF
+}
+
+llama_pull() {
+	check_config || return 1
+	mkdir -p "$MODELS_DIR"
+	ui_title "󰇚 Pulling missing models"
+
+	local name file url dest pulled=0 skipped=0 failed=0
+	while IFS=$'\t' read -r name file url; do
+		[ -z "$name" ] && continue
+
+		if [ -z "$file" ]; then
+			ui_warning "$name: no --model filename in config — skipping"
+			skipped=$((skipped + 1))
+			continue
+		fi
+		dest="$MODELS_DIR/$file"
+
+		if [ -f "$dest" ]; then
+			ui_info "$name: $file already present"
+			skipped=$((skipped + 1))
+			continue
+		fi
+		if ! url_is_real "$url"; then
+			ui_warning "$name: no url set (populated by a later sub-project) — skipping"
+			skipped=$((skipped + 1))
+			continue
+		fi
+
+		ui_step "$name: downloading $file ..."
+		# Resumable: fetch to .part, then atomic rename so a final-named file is always complete.
+		if wget -c --show-progress "$url" -O "${dest}.part" && mv "${dest}.part" "$dest"; then
+			ui_success "$name: downloaded $file"
+			pulled=$((pulled + 1))
+		else
+			ui_error "$name: download failed"
+			failed=$((failed + 1))
+		fi
+	done <<EOF
+$(parse_roster)
+EOF
+
+	ui_spacer
+	ui_info "Pulled: $pulled  Skipped: $skipped  Failed: $failed"
+	[ "$failed" -eq 0 ]
+}
+
+llama_status() {
+	ui_title "󰒋 llama-swap status"
+	ui_spacer
+
+	if systemctl --user is-active llama-swap.service >/dev/null 2>&1; then
+		ui_success "Unit active: llama-swap.service"
+	else
+		ui_warning "Unit not active — start with: systemctl --user start llama-swap"
+	fi
+
+	if curl -sf "http://$SWAP_ADDR/health" >/dev/null 2>&1; then
+		ui_success "Endpoint healthy: http://$SWAP_ADDR/health"
+	else
+		ui_error "Endpoint not responding: http://$SWAP_ADDR/health"
+		return 1
+	fi
+
+	ui_spacer
+	ui_subtitle "Running models:"
+	if command -v jaq >/dev/null 2>&1; then
+		curl -sf "http://$SWAP_ADDR/running" 2>/dev/null | jaq -r '.running[]?.model' 2>/dev/null || ui_info "(none)"
+	else
+		curl -sf "http://$SWAP_ADDR/running" 2>/dev/null || ui_info "(none)"
+	fi
+}
+
+main() {
+	if [[ "$1" == "--help" || "$1" == "-h" || -z "$1" ]]; then
+		show_help
+		return 0
+	fi
+
+	local command="$1"
+	shift
+	case "$command" in
+	pull) llama_pull ;;
+	list) llama_list ;;
+	status) llama_status ;;
+	*)
+		ui_error "Unknown command: $command"
+		show_help
+		return 1
+		;;
+	esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+	main "$@"
+fi

@@ -14,7 +14,7 @@
 | File | Purpose | Template Access |
 |------|---------|-----------------|
 | `packages.yaml` | Package management (Arch + Flatpak) | `{{ .packages.* }}` |
-| `ai.yaml` | AI model configuration | `{{ .ai.* }}` |
+| `ai.yaml` | AI server host/port (llama-swap `--listen`) | `{{ .ai.server.* }}` |
 | `globals.yaml` | Global env vars (XDG, apps, boot, timeshift) | `{{ .globals.* }}` |
 | `services.yaml` | Service enablement (system services, user services, timers) | `{{ .services.* }}` |
 | `features.yaml` | Optional feature toggles (voxtype, restic) | `{{ .features.* }}` |
@@ -24,7 +24,7 @@
 | `firefox_policies.json` | Firefox policy config (extensions, settings) | `{{ .firefox_policies.* }}` |
 
 **Note**: All color theming uses theme system from `~/.config/themes/current/`
-**Note**: User service files live in `private_dot_config/systemd/user/` (e.g. `ollama.service`, `darkman.service`)
+**Note**: User service files live in `private_dot_config/systemd/user/` (e.g. `llama-swap.service`, `darkman.service`)
 
 ---
 
@@ -78,7 +78,6 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 |-----------|----------------|--------|
 | `packages.yaml` | `run_onchange_before_sync_packages.sh.tmpl` | BEFORE file application |
 | `firefox_policies` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
-| `ai.models` | `run_onchange_after_install_ai_models.sh.tmpl` | AFTER file application |
 | `globals.timeshift` | `run_onchange_after_configure_timeshift_retention.sh.tmpl` | AFTER file application |
 
 **Hash detection**: Scripts include `{{ .packages | toJson | sha256sum }}` comment. When data changes, hash changes, script re-runs.
