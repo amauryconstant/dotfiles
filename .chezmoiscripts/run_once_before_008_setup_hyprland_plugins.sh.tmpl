@@ -26,11 +26,11 @@ if [ -d "$HYPRSPLIT_DIR/.git" ]; then
         {{ includeTemplate "log_warning" "hyprsplit update skipped" }}
     fi
 else
-    if git clone --depth 1 https://github.com/shezdy/hyprsplit "$HYPRSPLIT_DIR" >/dev/null 2>&1; then
+    if git clone --depth 1 https://github.com/cryeprecision/hyprsplit "$HYPRSPLIT_DIR" >/dev/null 2>&1; then
         {{ includeTemplate "log_success" "hyprsplit Lua library cloned" }}
     else
         {{ includeTemplate "log_error" "Failed to clone hyprsplit" }}
-        {{ includeTemplate "log_info" "Fix: Check internet connectivity and run: git clone https://github.com/shezdy/hyprsplit ~/.config/hypr/hyprsplit" }}
+        {{ includeTemplate "log_info" "Fix: Check internet connectivity and run: git clone https://github.com/cryeprecision/hyprsplit ~/.config/hypr/hyprsplit" }}
         exit 1
     fi
 fi
