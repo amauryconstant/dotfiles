@@ -143,6 +143,14 @@ else
         {{ includeTemplate "log_info" "Inspect: journalctl --user -u voxtype -n 30" }}
     fi
 
+    # ------------------------------------------------------------------------
+    # Idle-unload timer — stops the daemon after 30 min idle to release the
+    # model's RAM; voxtype-record (bound in voice.conf) restarts it on demand
+    # ------------------------------------------------------------------------
+    {{ includeTemplate "log_step" "Enabling voxtype-idle-unload.timer..." }}
+    systemctl --user enable --now voxtype-idle-unload.timer >/dev/null 2>&1 || \
+        {{ includeTemplate "log_warning" "Failed to enable voxtype-idle-unload.timer" }}
+
     echo ""
     echo "  Voxtype Speech-to-Text:"
     echo "    SUPER+T        → Cohere    (default, multilingual, push-to-talk)"

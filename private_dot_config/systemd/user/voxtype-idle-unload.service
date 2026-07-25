@@ -1,0 +1,11 @@
+[Unit]
+Description=Stop VoxType daemon if idle for 30+ minutes
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/lib/scripts/desktop/voxtype-idle-unload
+
+[Install]
+WantedBy=default.target

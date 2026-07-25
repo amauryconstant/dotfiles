@@ -1,0 +1,12 @@
+[Unit]
+Description=Stop idle VoxType daemon to release model memory
+Documentation=man:systemd.timer(5)
+
+[Timer]
+# Check every 5 minutes whether voxtype has been idle 30+ minutes
+OnBootSec=10min
+OnUnitActiveSec=5min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

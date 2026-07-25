@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+# Script: voxtype-idle-unload
+# Purpose: Stop the voxtype daemon after 30 min idle to release its model
+#          memory. Triggered by voxtype-idle-unload.timer every 5 min.
+# Requirements: voxtype, systemctl --user
+
+IDLE_THRESHOLD_SECS=1800
+STATE_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype/state"
+ICON="󰍭"  # md-microphone_off
+
+systemctl --user is-active --quiet voxtype.service || exit 0
+
+[ -f "$STATE_FILE" ] || exit 0
+[ "$(cat "$STATE_FILE" 2>/dev/null)" = "idle" ] || exit 0
+
+MTIME=$(stat -c %Y "$STATE_FILE" 2>/dev/null) || exit 0
+NOW=$(date +%s)
+[ $((NOW - MTIME)) -ge "$IDLE_THRESHOLD_SECS" ] || exit 0
+
+systemctl --user stop voxtype.service
+command -v notify-send >/dev/null 2>&1 && notify-send -u low "$ICON Voxtype" "Model unloaded after 30 min idle"

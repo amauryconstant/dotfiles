@@ -19,6 +19,7 @@
 | `llama-server.service.tmpl` | service | **Phase-0 fallback** (single static model), `enabled: false` — superseded by `llama-swap` | `services.yaml` (disabled; flip to re-enable) |
 | `kanata.service` | service | Kanata keyboard remapper (port 5829, `~/.config/kanata/kanata.kbd`) | `after_010`, gated on `features.kanata.enabled` + **laptop** chassis + `uinput` module |
 | `voxtype.service.d/` | drop-in | Voxtype GPU config override | `after_010` |
+| `voxtype-idle-unload.{service,timer}` | timer | Stops `voxtype.service` after 30 min idle (state-file mtime check) to release its model's RAM; `voxtype-record` (bound in `hypr/conf/bindings/voice.conf`) restarts it on next dictation | `run_onchange_after_configure_voxtype`, gated on `features.voxtype.enabled` |
 | `app-blueman@autostart.service.d/`, `app-nm-applet@autostart.service.d/` | drop-in | Suppress tray icons on **desktop** chassis | static (`{{ if eq .chassisType "desktop" }}`) |
 
 Timer schedules/enable logic are driven by `.chezmoidata/services.yaml` (`user_timers`, `user_services`) — add new timers there, not by hand-editing the setup scripts.
