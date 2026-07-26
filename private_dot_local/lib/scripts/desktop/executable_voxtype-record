@@ -3,20 +3,29 @@
 # Script: voxtype-record
 # Purpose: Wrapper around `voxtype record` for Hyprland keybindings. Restarts
 #          the daemon transparently if voxtype-idle-unload.timer stopped it,
-#          waiting for its socket before forwarding the record command.
+#          waiting for its socket before forwarding the record command. Also
+#          writes a "loading" marker so voxtype-waybar-status can show
+#          startup feedback (voxtype has no native loading state).
 # Requirements: voxtype, systemctl --user
 
-SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype/audio.sock"
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
+SOCK="$RUNTIME_DIR/audio.sock"
+LOADING_MARKER="$RUNTIME_DIR/loading"
 
 if ! systemctl --user is-active --quiet voxtype.service; then
+    mkdir -p "$RUNTIME_DIR" 2>/dev/null
+    touch "$LOADING_MARKER"
     systemctl --user start voxtype.service
 
+    # Cohere model load has been observed taking ~12s on CPU; give it margin
     i=0
-    while [ "$i" -lt 50 ]; do
+    while [ "$i" -lt 200 ]; do
         [ -S "$SOCK" ] && break
         sleep 0.1
         i=$((i + 1))
     done
+
+    rm -f "$LOADING_MARKER"
 fi
 
 exec voxtype record "$@"

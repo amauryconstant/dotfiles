@@ -358,6 +358,11 @@ window#waybar {
   color: @accent-warning;
 }
 
+#custom-voxtype.loading {
+  color: @accent-info;
+  animation: voxtype-pulse 0.6s ease-in-out infinite;
+}
+
 /* Daemon down: dim error glyph (not hidden) so failures stay visible — click to restart */
 #custom-voxtype.stopped {
   color: @accent-error;

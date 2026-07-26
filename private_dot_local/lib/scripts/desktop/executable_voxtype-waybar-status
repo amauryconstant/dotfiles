@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+
+# Script: voxtype-waybar-status
+# Purpose: Waybar custom/voxtype exec-persistent source. Runs voxtype's own
+#          `status --follow` stream unmodified, plus a watcher that emits a
+#          synthetic "loading" line while voxtype-record's marker file
+#          exists — voxtype has no native state for "model still loading"
+#          (its daemon only reports idle/recording/transcribing; confirmed
+#          via `strings /usr/bin/voxtype`).
+# Requirements: voxtype, systemctl --user
+
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype"
+LOADING_MARKER="$RUNTIME_DIR/loading"
+LOADING_MAX_AGE=30  # stale-marker safety net, in case voxtype-record dies mid-poll
+
+voxtype status --follow --format json &
+FOLLOW_PID=$!
+trap 'kill "$FOLLOW_PID" 2>/dev/null' EXIT
+
+while true; do
+    if [ -f "$LOADING_MARKER" ]; then
+        mtime=$(stat -c %Y "$LOADING_MARKER" 2>/dev/null) || mtime=0
+        age=$(($(date +%s) - mtime))
+        if [ "$age" -lt "$LOADING_MAX_AGE" ]; then
+            printf '{"text":"","alt":"loading","class":"loading","tooltip":"Voxtype starting..."}\n'
+        fi
+    fi
+    sleep 0.3
+done

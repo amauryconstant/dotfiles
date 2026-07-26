@@ -30,6 +30,7 @@
 | **Backlight** | `@accent-warning` | - | Visual indicator |
 | **Notification center** | `@fg-primary` | `@accent-error` bg (dnd), `@accent-warning` (unread) | Alert state |
 | **Tray** | `@fg-primary` | `@accent-error` bg (needs-attention) | Neutral default |
+| **Voxtype** | `@fg-muted` (idle) | `@accent-error` (recording), `@accent-info` (streaming/loading), `@accent-warning` (transcribing), `@accent-error` dimmed (stopped) | Mic activity + daemon lifecycle (see `systemd/user/CLAUDE.md`) |
 
 ### Background & Foreground Usage
 
