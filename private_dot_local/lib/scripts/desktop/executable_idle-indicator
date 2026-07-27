@@ -4,8 +4,13 @@
 # Purpose: Waybar custom module showing idle-lock disabled state
 # Returns: JSON for Waybar (only visible when idle-lock is OFF)
 
-if pgrep -x hypridle >/dev/null; then
-    # hypridle running = idle-lock enabled = nothing to show
+NOLOCK_CONF="$HOME/.config/hypr/hypridle-nolock.conf"
+
+if pgrep -af hypridle | grep -q -- "-c $NOLOCK_CONF"; then
+    # hypridle running with no-lock config = display still powers off, lock disabled
+    echo '{"text": "󰍹", "tooltip": "Idle lock disabled (display still powers off)", "class": "nolock"}'
+elif pgrep -x hypridle >/dev/null; then
+    # hypridle running with default config = idle-lock fully enabled = nothing to show
     echo '{"text": ""}'
 else
     # hypridle not running = idle-lock disabled = show indicator

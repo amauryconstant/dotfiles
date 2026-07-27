@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+# Script: idle-toggle-nolock
+# Purpose: Toggle "no-lock" idle mode — display still powers off for energy
+#          saving, but hyprlock never triggers
+# Requirements: Arch Linux, hypridle
+
+NOLOCK_CONF="$HOME/.config/hypr/hypridle-nolock.conf"
+
+if pgrep -af hypridle | grep -q -- "-c $NOLOCK_CONF"; then
+    # No-lock mode active -> disable entirely
+    pkill -x hypridle
+    notify-send "⏸️ Idle Lock" "No-lock power saving disabled" -t 2000
+else
+    # Either off or in full-lock mode -> switch to no-lock mode
+    pkill -x hypridle 2>/dev/null
+    hypridle -c "$NOLOCK_CONF" &
+    notify-send "🔅 Idle Lock" "Lock disabled, display still powers off" -t 2000
+fi
+
+# Refresh Waybar idle indicator
+pkill -RTMIN+9 waybar 2>/dev/null || true

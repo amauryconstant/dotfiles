@@ -303,14 +303,16 @@
   // --------------------------------------------------------------------------
   // Idle-lock Disabled Indicator
   // --------------------------------------------------------------------------
-  // Only visible when hypridle is NOT running (idle-lock disabled)
-  // Toggle with Super+I; signal 9 triggers refresh
+  // Hidden when idle-lock is fully enabled (default state)
+  // Left-click Super+I toggles full lock; right-click Super+Shift+I toggles
+  // no-lock mode (display still powers off, hyprlock suppressed); signal 9 triggers refresh
   "custom/idle-indicator": {
     "exec": "~/.local/lib/scripts/desktop/idle-indicator",
     "interval": "once",
     "signal": 9,
     "return-type": "json",
-    "on-click": "~/.local/lib/scripts/desktop/idle-toggle"
+    "on-click": "~/.local/lib/scripts/desktop/idle-toggle",
+    "on-click-right": "~/.local/lib/scripts/desktop/idle-toggle-nolock"
   },
 
   // --------------------------------------------------------------------------
