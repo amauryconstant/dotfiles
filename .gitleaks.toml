@@ -1,0 +1,24 @@
+# gitleaks config for the chezmoi source repository.
+#
+# Used by .mise/tasks/lint/chezmoi-sources.sh as a pre-commit backstop against
+# a decrypted secret being written into a tracked source file — the failure mode
+# that occurred when `chezmoi merge-all` overwrote modify_opencode.jsonc with its
+# rendered output, inlining a plaintext API key.
+#
+# SCOPE WARNING: default rules catch sk-*/token-shaped credentials. They will
+# NOT catch an application-obfuscated secret in an INI file (e.g. a QSettings
+# password written by the Nextcloud client). This is a targeted backstop, not
+# general credential coverage.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Repository-specific false positives"
+
+paths = [
+  # Age-encrypted blobs are high-entropy by construction — that is the point.
+  '''.*\.age$''',
+  # Vendored upstream subtrees: not our code, updated via git subtree.
+  '''^_ai/''',
+]

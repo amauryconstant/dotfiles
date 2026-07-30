@@ -55,16 +55,18 @@ diff:
   command: "delta"
   args: ["--paging=never"]
 
+# Guard wrapper, not mergiraf directly: .Source is the raw source-state file,
+# so for modify_ / *.tmpl entries it is the generator, not a prior revision of
+# the target. Merging those overwrites the generator with rendered data (and the
+# old `-o <Source>` argument made that certain).
+# The guard refuses generators and delegates plain files to mergiraf.
+# Argument order MUST stay Source, Destination, Target — the guard asserts it.
 merge:
-  command: "mergiraf"
+  command: {{ printf "%q" (joinPath .chezmoi.sourceDir ".scripts" "chezmoi-merge-guard.sh") }}
   args:
-  - "merge"
-  - "-v"
   - {{ printf "%q" "{{ .Source }}" }}
   - {{ printf "%q" "{{ .Destination }}" }}
   - {{ printf "%q" "{{ .Target }}" }}
-  - "-o"
-  - {{ printf "%q" "{{ .Source }}" }}
 
 hooks:
     read-source-state:

@@ -3,6 +3,14 @@
 # Template files require special merge handling to preserve template syntax
 *.tmpl merge=chezmoi-template
 
+# modify_ generators need the same protection. Not all carry a .tmpl suffix —
+# modify_opencode.jsonc is a native modify-template and modify_private_kwinrc is
+# a chezmoi_modify_manager script, so both would otherwise get git's default
+# text driver and could be resolved to their own rendered output.
+# NOTE: never add a .tmpl suffix to a native modify-template — it suppresses
+# .chezmoi.stdin (chezmoi issue #2563, closed not-planned).
+modify_* merge=chezmoi-template
+
 # Encrypted files should not be merged (require manual resolution)
 *.age binary
 

@@ -1,25 +1,30 @@
 #!/usr/bin/env chezmoi_modify_manager
 source auto
 
-ignore regex "General" "clientVersion|desktopEnterpriseChannel|isVfsEnabled"
+ignore regex "General" "clientVersion|desktopEnterpriseChannel|isVfsEnabled|lastSelectedAccount"
 
-ignore regex "Accounts" ".*version|.*journalPath|.*server.*|.*networkProxy.*|.encryptionCertificateSha256Fingerprint"
+ignore regex "Accounts" ".*version|.*journalPath|.*server.*|.*networkProxy.*|.*encryptionCertificate.*"
 
 ignore section "Settings"
 
-set "Accounts" "0\\Folders\\1\\localPath" "/home/{{ .firstname | lower }}/Synchronized/"
+# separator="=" on every `set`: the directive defaults to " = ", but the
+# Nextcloud client (QSettings) writes "key=value". Without it the script emits
+# a format the client rewrites on its next flush, so the file never converges
+# and reappears in `chezmoi status` forever. There is no global default — it
+# must be repeated on each `set`.
+set "Accounts" "0\\Folders\\1\\localPath" "/home/{{ .firstname | lower }}/Synchronized/" separator="="
 add:remove "Accounts" "0\\Folders\\1\\localPath"
 
-set "Accounts" "0\\dav_user" "{{ .firstname | lower }}"
+set "Accounts" "0\\dav_user" "{{ .firstname | lower }}" separator="="
 add:remove "Accounts"  "0\\dav_user"
 
-set "Accounts" "0\\displayName" "{{ .firstname }}"
+set "Accounts" "0\\displayName" "{{ .firstname }}" separator="="
 add:remove "Accounts"  "0\\displayName"
 
-set "Accounts" "0\\webflow_user" "{{ .firstname | lower }}"
+set "Accounts" "0\\webflow_user" "{{ .firstname | lower }}" separator="="
 add:remove "Accounts" "0\\webflow_user"
 
 {{ $nextcloudServer := .privateServer | replace "www" "nextcloud" }}
 
-set "Accounts" "0\\url" "{{ $nextcloudServer }}"
+set "Accounts" "0\\url" "{{ $nextcloudServer }}" separator="="
 add:remove "Accounts" "0\\url"

@@ -20,10 +20,12 @@ You are a dotfiles reviewer specialized in this chezmoi repository (Arch Linux /
   `# Hash: {{ .relevantData | toJson | sha256sum }}`
 - Hash must reference the actual data that should trigger the re-run
 
-### chezmoi_modify_manager Directives
-- Only in `modify_*.tmpl` files
-- Validate syntax: `chezmoi_modify_manager --help-syntax`
-- Preview output: `chezmoi cat <target-path>`
+### modify_ entries — TWO unrelated kinds
+- `chezmoi_modify_manager` script: `#!/usr/bin/env chezmoi_modify_manager` line 1 (e.g. `modify_nextcloud.cfg.tmpl`)
+- native modify-template: contains `chezmoi:modify-template`, is a Go template over `.chezmoi.stdin` (e.g. `modify_opencode.jsonc` — **no** `.tmpl` suffix, and adding one would break it)
+- **Validation is `chezmoi cat <target-path>`** — it executes the generator and parses directives. `--help-syntax` is documentation only; there is no directive linter. Do not use `chezmoi execute-template` (passes on rendered-output corruption, fails always on modify-templates)
+- Flag any `modify_*` file that has lost its marker — that is what an overwritten generator looks like
+- See `.claude/rules/chezmoi-modify-entries.md`
 
 ### Shell Scripts (.sh.tmpl)
 - Rendered shell must pass `bash -n` (syntax check)

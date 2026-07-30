@@ -17,9 +17,23 @@ pathname="$5" # %P - pathname being merged
 
 echo "🔧 Processing template file merge: $pathname"
 
-# Check if current version has template syntax
-current_has_templates=$(grep -c '{{.*}}' "$current" 2>/dev/null || echo "0")
-other_has_templates=$(grep -c '{{.*}}' "$other" 2>/dev/null || echo "0")
+# Check if a version still looks like a generator rather than rendered output.
+#
+# Three markers, not just template syntax: a chezmoi_modify_manager script or a
+# native modify-template can legitimately contain zero {{ }} (e.g.
+# archives/kde/.../modify_private_kwinrc), and merging one against its own
+# rendered output is what destroys it.
+has_generator_syntax() {
+	grep -q '{{.*}}' "$1" 2>/dev/null && return 0
+	head -n 1 "$1" 2>/dev/null | grep -q '^#!/usr/bin/env chezmoi_modify_manager' && return 0
+	grep -q 'chezmoi:modify-template' "$1" 2>/dev/null && return 0
+	return 1
+}
+
+current_has_templates=0
+other_has_templates=0
+has_generator_syntax "$current" && current_has_templates=1
+has_generator_syntax "$other" && other_has_templates=1
 
 # Strategy 1: If current has templates but other doesn't, preserve current
 if [ "$current_has_templates" -gt 0 ] && [ "$other_has_templates" -eq 0 ]; then

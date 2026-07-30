@@ -13,3 +13,9 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
+  - id: chezmoi-sources
+    name: Validate staged chezmoi sources (generators, renders, secrets)
+    entry: mise run lint:chezmoi-sources
+    language: system
+    pass_filenames: false
+    always_run: true

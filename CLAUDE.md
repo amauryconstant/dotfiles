@@ -91,7 +91,9 @@ chezmoi cat path/to/target               # preview final applied output (templat
 chezmoi_modify_manager --help-syntax     # modify_manager directives are non-obvious; never assume syntax
 ```
 
-Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed state. For merge conflicts see `private_dot_config/git/CLAUDE.md`; for the template merge driver see `.scripts/CLAUDE.md`.
+**Never run `chezmoi merge` / `merge-all` on a `modify_*` or `*.tmpl` entry.** `.Source` is the *generator*, not a prior revision of the target, so merging overwrites it with rendered data — this has destroyed files here, once silently, and once leaking a decrypted API key into a tracked file. `.scripts/chezmoi-merge-guard.sh` now refuses these via `merge.command`, but it cannot repair an already-corrupt source. Use `chezmoi_modify_manager --smart-add` (modify_manager) or hand-edit after `chezmoi diff` (templates). See `.claude/rules/chezmoi-modify-entries.md`.
+
+Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed state. For a clobbered generator: `git checkout HEAD -- <path>`. For merge conflicts see `private_dot_config/git/CLAUDE.md`; for the template merge driver see `.scripts/CLAUDE.md`.
 
 ---
 
@@ -119,6 +121,7 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 | `chezmoi-data.md` | Data files (packages.yaml, ai.yaml, etc.), template variables, hash triggers |
 | `chezmoi-scripts.md` | Lifecycle scripts (run_once_*, run_onchange_*), execution order, script types |
 | `chezmoi-templates.md` | Template system, log templates, Go template syntax, validation |
+| `chezmoi-modify-entries.md` | `modify_*` entries — the two kinds (modify_manager vs native modify-template), merge safety, directive/validation reference |
 
 ### Repository Utilities
 
