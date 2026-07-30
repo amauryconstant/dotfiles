@@ -1,0 +1,25 @@
+#!/usr/bin/env chezmoi_modify_manager
+source auto
+
+# qt5ct.conf mixes chezmoi-managed settings with values written at runtime by
+# other tooling. As a plain template this file fought the theme system: chezmoi
+# rewrote `style`/`icon_theme` on every apply, theme-apply-qt sed-wrote them back
+# on every theme switch, and the entry never converged — which kept it in
+# `chezmoi merge-all`'s worklist, where merging destroyed it.
+#
+# See: .claude/rules/chezmoi-modify-entries.md
+
+# Owned by ~/.local/lib/scripts/desktop/theme-apply-qt, which sed-writes exactly
+# these two keys on every theme switch. `ignore` keeps the live value, so the
+# theme system wins and chezmoi stops overwriting it.
+ignore "Appearance" "style"
+ignore "Appearance" "icon_theme"
+
+# Window geometry — pure UI state, rewritten whenever the settings dialog moves.
+ignore section "SettingsWindow"
+
+# Fonts stay chezmoi-managed so .globals changes propagate.
+# Values are quoted in the INI (fixed="Some Font"), hence the escaped quotes.
+# separator="=" because qt5ct writes key=value; the directive defaults to " = ".
+set "Fonts" "fixed" "\"{{ .globals.terminalFont }}\"" separator="="
+set "Fonts" "general" "\"{{ .globals.guiFont }}\"" separator="="
