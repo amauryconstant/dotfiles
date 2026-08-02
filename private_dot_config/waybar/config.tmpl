@@ -303,12 +303,16 @@
   // --------------------------------------------------------------------------
   // Idle-lock Disabled Indicator
   // --------------------------------------------------------------------------
-  // Hidden when idle-lock is fully enabled (default state)
-  // Left-click Super+I toggles full lock; right-click Super+Shift+I toggles
-  // no-lock mode (display still powers off, hyprlock suppressed); signal 9 triggers refresh
+  // Hidden when idle-lock is armed (the default); shows why it is relaxed otherwise
+  // Left-click / Super+I toggles presentation mode (idle inhibitor, all timers
+  // paused); right-click / Super+Shift+I toggles no-lock mode (display still
+  // powers off, hyprlock suppressed). Independent switches — see
+  // lib/scripts/desktop/CLAUDE.md → Idle & Lock
+  // Signal 9 refreshes on toggle; the interval is a safety net so a crashed or
+  // externally-stopped hypridle can't leave the bar asserting a stale state
   "custom/idle-indicator": {
     "exec": "~/.local/lib/scripts/desktop/idle-indicator",
-    "interval": "once",
+    "interval": 30,
     "signal": 9,
     "return-type": "json",
     "on-click": "~/.local/lib/scripts/desktop/idle-toggle",

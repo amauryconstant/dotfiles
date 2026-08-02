@@ -15,6 +15,7 @@
 | `hyprdynamicmonitors.service` + `-prepare.service` | service | Monitor profile daemon + pre-Hyprland prep | `before_008` |
 | `hyprwhenthen.service` | service | Event-driven window automation | `before_008` |
 | `darkman.service` | service | Solar auto theme switching | `after_006` |
+| `hypridle.service` | service | Idle/lock daemon. `ExecStart` reads `HYPRIDLE_CONF`, defaulted via `Environment=` and overridden by the optional `EnvironmentFile=-%t/hypridle-mode.env` that `idle-toggle-nolock` writes (later directive wins). See `lib/scripts/desktop/CLAUDE.md` → Idle & Lock | `services.yaml` user_services → `after_002` |
 | `llama-swap.service.tmpl` | service | llama-swap on-demand multi-model LLM proxy (`:8080`, parents `llama-server` subprocesses) | `services.yaml` user_services → `after_002` (gated on `llama-swap` present) |
 | `llama-server.service.tmpl` | service | **Phase-0 fallback** (single static model), `enabled: false` — superseded by `llama-swap` | `services.yaml` (disabled; flip to re-enable) |
 | `kanata.service` | service | Kanata keyboard remapper (port 5829, `~/.config/kanata/kanata.kbd`) | `after_010`, gated on `features.kanata.enabled` + **laptop** chassis + `uinput` module |

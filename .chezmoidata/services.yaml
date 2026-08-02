@@ -21,6 +21,10 @@ services:
     # User-level systemd services to enable
     - name: darkman.service
       enabled: true
+    - name: hypridle.service # idle/lock daemon; no-lock mode swaps its config at runtime
+      enabled: true
+      start: true
+      requires_command: hypridle
     - name: llama-swap.service
       enabled: true
       start: false

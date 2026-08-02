@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+# Script: idle-sleep
+# Purpose: Sleep the system, preferring hibernation when logind supports it
+# Requirements: Arch Linux, systemd-logind
+#
+# suspend-then-hibernate FAILS OUTRIGHT when hibernation is unavailable — and a
+# failed sleep command leaves the laptop awake and draining, which is worse than
+# a plain suspend. So ask logind first.
+#
+# Today this machine answers "na" (0B swap, LUKS root — run_once_after_005 skips
+# swapfile creation on device-mapper roots), so we take the suspend path. If swap
+# is ever configured, this upgrades itself with no config change.
+
+CAN_STH=$(busctl call org.freedesktop.login1 /org/freedesktop/login1 \
+    org.freedesktop.login1.Manager CanSuspendThenHibernate 2>/dev/null)
+
+if [ "$CAN_STH" = 's "yes"' ]; then
+    exec systemctl suspend-then-hibernate
+fi
+
+exec systemctl suspend

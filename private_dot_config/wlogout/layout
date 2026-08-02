@@ -1,6 +1,6 @@
 {
     "label" : "lock",
-    "action" : "hyprlock",
+    "action" : "~/.local/lib/scripts/desktop/immediate-lock",
     "text" : "󰌾 Lock",
     "keybind" : "l"
 }

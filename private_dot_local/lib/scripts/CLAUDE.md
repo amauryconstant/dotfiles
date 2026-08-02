@@ -63,7 +63,8 @@ fi
 | `pre-maintenance` | system-maintenance.sh | none | Backup preparation |
 | `post-maintenance` | system-maintenance.sh | `success/failure` | Validation, cleanup |
 | `menu-extend` | system-menu | `options`/`handle <choice>` | Super+Space custom entries |
-| `idle-change` | hypridle listener 1 | `timeout`/`resume` | Lock/unlock boundary events |
+| `idle-change` | hypridle listener 1 | `timeout`/`resume` | Idle threshold reached / activity resumed. **`resume` fires on any input, BEFORE authentication** — not an unlock signal |
+| `lock-change` | hypridle `on_lock_cmd`/`on_unlock_cmd` | `lock`/`unlock` | True session lock/unlock (authenticated) |
 | `session-start` | autostart.conf | none | Hyprland session startup |
 
 **Hook discovery**:
@@ -102,7 +103,7 @@ fi
 - `waybar-toggle.sh`, `waybar-style.sh` - Waybar controls (use `notify-send`)
 - `nightlight-toggle.sh`, `nightlight-config.sh` - Blue light filter (use `notify-send`)
 - `workspace-gaps-toggle.sh`, `workspace-gaps-reset.sh` - Gap controls (use `notify-send`)
-- `idle-toggle.sh` - Idle management (uses `notify-send`)
+- `idle-toggle`, `idle-toggle-nolock` - Idle management (use `notify-send`; see `desktop/CLAUDE.md` → Idle & Lock)
 
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
@@ -144,8 +145,9 @@ fi
 **Other Utilities**:
 - `audio-switch` - Audio device switching
 - `battery-status` - Battery/power status (Waybar custom module / notify)
-- `idle-indicator`, `idle-toggle` - idle/inhibit state
-- `immediate-lock` - lock screen now
+- `idle-indicator`, `idle-toggle`, `idle-toggle-nolock` - idle mode state + toggles
+- `idle-sleep` - sleep the system, hibernating when logind reports it available
+- `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`)
 - `screenrecord` - Screen recording
 - `system-settings` - Launch system settings
 - `voice-meeting` - meeting voice helper

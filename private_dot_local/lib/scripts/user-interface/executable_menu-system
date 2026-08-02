@@ -19,7 +19,7 @@ case "$CHOICE" in
         "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰌾 Lock")
-        hyprlock
+        "$SCRIPTS_DIR/desktop/immediate-lock"
         ;;
     "󰤄 Suspend")
         if confirm "Suspend system?"; then

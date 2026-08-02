@@ -207,7 +207,7 @@ theme-menu                        # Interactive menu (Wofi)
 **Waybar**: waybar-toggle.sh, waybar-style.sh
 **Night light**: nightlight-toggle.sh, nightlight-config.sh
 **Workspace gaps**: workspace-gaps-toggle.sh, workspace-gaps-reset.sh
-**Idle management**: idle-toggle.sh
+**Idle management**: idle-toggle, idle-toggle-nolock (see "Idle & Lock" below)
 
 All use `notify-send` for user feedback.
 
@@ -225,11 +225,56 @@ All use `notify-send` for user feedback.
 **voice-meeting**: meeting voice helper
 **voxtype-record**: wraps `voxtype record` for Hyprland bindings — restarts the daemon (writing a loading marker) if `voxtype-idle-unload.timer` stopped it, waits for its socket before forwarding
 **voxtype-waybar-status**: `custom/voxtype` waybar exec-persistent source — wraps `voxtype status --follow` and layers a synthetic "loading" state from voxtype-record's marker (voxtype has no native loading state)
-**immediate-lock**: lock screen immediately
-**idle-indicator**, **idle-toggle**: idle/inhibit state + toggle
 **recover-workspaces**: re-assign orphaned windows to workspaces
 
 **Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).
+
+---
+
+## Idle & Lock
+
+**Daemon**: `hypridle.service` (systemd user unit, `graphical-session.target`) — *not* `exec-once`.
+Timeouts live in `.chezmoidata/globals.yaml` (`globals.idle.*`), shared by both configs.
+
+**Three relaxations, composed from two independent switches** — they are not one
+three-way mode, and both can be on at once:
+
+| State | Trigger | Mechanism |
+|-------|---------|-----------|
+| Armed (default) | — | `hypridle.conf` — lock, DPMS off, sleep |
+| Presentation | `Super+I` → `idle-toggle` | `systemd-inhibit --what=idle` held by a backgrounded `sleep infinity`, pidfile in `$XDG_RUNTIME_DIR` |
+| No-lock | `Super+Shift+I` → `idle-toggle-nolock` | writes `HYPRIDLE_CONF` into `$XDG_RUNTIME_DIR/hypridle-mode.env` (the unit's optional `EnvironmentFile`) → restart |
+
+Because they are independent, clearing one does not necessarily re-arm idle locking;
+the toggles say so in their notification text, and the indicator shows presentation
+first (it is the stronger relaxation).
+
+**Why two mechanisms**: an idle inhibitor pauses *every* listener, so it cannot express
+"displays still power off, but no lock" — that needs a different config. Both mechanisms
+live in `$XDG_RUNTIME_DIR` (tmpfs), so neither survives a logout: a fresh session is
+always fully armed.
+
+**Never stop the daemon to disable locking.** hypridle holds the logind delay-inhibitor
+and answers the `Lock` signal — killing it silently disables lock-before-suspend, so a
+lid close suspends the machine unlocked. The inhibitor leaves `before_sleep_cmd` armed.
+
+**`immediate-lock`** is the single lock entry point (`Super+L`, wlogout, system menu, and
+hypridle's `lock_cmd`). `grace` is a hyprlock **CLI flag** since 0.9.6, not a config key.
+
+**`idle-sleep`** asks logind `CanSuspendThenHibernate` at runtime rather than trusting
+`boot.hibernation.enabled` — `suspend-then-hibernate` fails outright where hibernation is
+unavailable, leaving the laptop awake and draining. This machine currently answers `"na"`
+(no swap, LUKS root), so it takes the suspend path and upgrades itself automatically if
+swap is ever configured.
+
+**Hooks**: `lock-change` (`lock`/`unlock`) fires from `on_lock_cmd`/`on_unlock_cmd` — true
+authenticated events, in both configs. `idle-change` (`timeout`/`resume`) fires from
+listener 1, which only exists in `hypridle.conf` — it goes silent in no-lock mode. And
+`resume` fires on *any* input, before authentication; don't treat it as an unlock.
+
+**Waybar**: `custom/idle-indicator` — blank when armed, 󱫖 presentation, 󰍹 no-lock,
+󰒲 (`.error`) when the daemon is down. Refreshed by `pkill -RTMIN+9 waybar` on toggle,
+plus a 30s interval so an externally-stopped daemon can't leave a stale glyph.
 
 ---
 

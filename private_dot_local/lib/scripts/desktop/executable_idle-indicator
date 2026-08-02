@@ -1,18 +1,30 @@
 #!/usr/bin/env sh
 
 # Script: idle-indicator
-# Purpose: Waybar custom module showing idle-lock disabled state
-# Returns: JSON for Waybar (only visible when idle-lock is OFF)
+# Purpose: Waybar custom module showing idle-lock state
+# Returns: JSON for Waybar (empty text when idle-lock is healthy and armed)
+#
+# Four states — "hypridle is down" and "idle is deliberately relaxed" are
+# different conditions, and the former is the one worth surfacing loudly.
+# Precedence: daemon down > presentation mode > no-lock mode > armed.
 
-NOLOCK_CONF="$HOME/.config/hypr/hypridle-nolock.conf"
+PIDFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/idle-inhibit.pid"
+MODE_ENV="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypridle-mode.env"
 
-if pgrep -af hypridle | grep -q -- "-c $NOLOCK_CONF"; then
-    # hypridle running with no-lock config = display still powers off, lock disabled
+inhibitor_held() {
+    [ -f "$PIDFILE" ] || return 1
+    read -r pid < "$PIDFILE" 2>/dev/null || return 1
+    [ -n "$pid" ] || return 1
+    [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = "systemd-inhibit" ]
+}
+
+if ! systemctl --user is-active --quiet hypridle.service; then
+    # Daemon down — auto-lock is off and nobody asked for it
+    echo '{"text": "󰒲", "tooltip": "hypridle not running — auto-lock inactive", "class": "error"}'
+elif inhibitor_held; then
+    echo '{"text": "󱫖", "tooltip": "Idle lock disabled (presentation mode)", "class": "active"}'
+elif [ -f "$MODE_ENV" ]; then
     echo '{"text": "󰍹", "tooltip": "Idle lock disabled (display still powers off)", "class": "nolock"}'
-elif pgrep -x hypridle >/dev/null; then
-    # hypridle running with default config = idle-lock fully enabled = nothing to show
-    echo '{"text": ""}'
 else
-    # hypridle not running = idle-lock disabled = show indicator
-    echo '{"text": "󱫖", "tooltip": "Idle lock disabled", "class": "active"}'
+    echo '{"text": ""}'
 fi

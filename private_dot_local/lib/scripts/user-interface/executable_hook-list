@@ -51,9 +51,14 @@ cat <<EOF
                                  called with 'handle <choice>' to route them
                        Use case: Custom launcher shortcuts, project menus
 
-  idle-change          On hypridle lock/unlock boundary (listener 1)
+  idle-change          On hypridle idle timeout/resume (listener 1)
                        Args: \$1=event (timeout/resume)
-                       Use case: Pause apps on lock, resume on unlock
+                       Note: resume fires on ANY activity, BEFORE auth
+                       Use case: Pause apps when idle, prep on activity
+
+  lock-change          On true session lock/unlock (authenticated)
+                       Args: \$1=event (lock/unlock)
+                       Use case: Mute mic on lock, resume syncs on unlock
 
   session-start        On Hyprland session startup (after 5s delay)
                        Args: none

@@ -1,0 +1,19 @@
+# Shared by both hypridle configs (hypridle.conf, hypridle-nolock.conf) so the
+# two modes cannot drift apart on the safety-critical settings.
+#
+# before_sleep_cmd is why presentation mode holds a systemd idle inhibitor
+# rather than stopping the daemon: an inhibitor pauses the listeners while
+# leaving these armed, so closing the lid still locks. Killing hypridle
+# disarmed lock-on-suspend entirely.
+general {
+    lock_cmd = ~/.local/lib/scripts/desktop/immediate-lock  # Single lock entry point (re-entrancy guarded)
+    before_sleep_cmd = loginctl lock-session                # Lock before suspend
+    after_sleep_cmd = hyprctl dispatch dpms on              # Turn on display after resume
+
+    # True session lock/unlock events. Unlike a listener's on-resume (which fires
+    # the instant the mouse moves, BEFORE authentication), on_unlock_cmd only
+    # fires once the user has actually authenticated.
+    # NOTE: setting inhibit_sleep = 3 would disable both of these — leave default.
+    on_lock_cmd = ~/.local/lib/scripts/core/hook-runner lock-change lock
+    on_unlock_cmd = ~/.local/lib/scripts/core/hook-runner lock-change unlock
+}

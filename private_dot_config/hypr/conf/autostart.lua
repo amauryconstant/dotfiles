@@ -31,8 +31,9 @@ o.exec_on_start("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
 -- Clipboard History Manager - watch clipboard, store items in history db
 o.exec_on_start("wl-paste --watch ~/.local/lib/scripts/media/clipboard-store")
 
--- Idle Management Daemon - screen lock + power management
-o.exec_on_start("hypridle")
+-- NOTE: hypridle is a systemd user service (hypridle.service), not exec-once.
+-- Reload after config changes: systemctl --user restart hypridle
+-- o.exec_on_start("hypridle")
 
 -- Session restore prompt (5s delay ensures Hyprland is fully initialized)
 o.exec_on_start("sleep 5 && ~/.local/lib/scripts/desktop/session-prompt")

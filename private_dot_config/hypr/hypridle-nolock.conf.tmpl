@@ -1,0 +1,30 @@
+# ============================================================================
+# hypridle Configuration — No-Lock Mode
+# ============================================================================
+# Power saving without the lock screen: displays still power off and the laptop
+# still sleeps, but hyprlock never triggers on idle — e.g. watching a video.
+# Lock-before-suspend still applies (see the shared general block).
+#
+# Selected by idle-toggle-nolock (Super+Shift+I), which writes
+# $XDG_RUNTIME_DIR/hypridle-mode.env to point the unit's HYPRIDLE_CONF here and
+# restarts hypridle.service. That file is tmpfs, so no-lock mode cannot survive
+# a logout — a fresh session always comes back fully locking.
+#
+# Timeouts come from .chezmoidata/globals.yaml (globals.idle.*).
+# ============================================================================
+
+{{ includeTemplate "hypridle_general" . }}
+# Turn off displays after inactivity (no lock)
+listener {
+    timeout = {{ .globals.idle.dpms }}
+    on-timeout = hyprctl dispatch dpms off       # Turn off displays
+    on-resume = hyprctl dispatch dpms on         # Turn on displays on activity
+}
+{{- if eq .chassisType "laptop" }}
+
+# Sleep the system (laptop only)
+listener {
+    timeout = {{ .globals.idle.suspend }}
+    on-timeout = ~/.local/lib/scripts/desktop/idle-sleep   # Hibernate if supported, else suspend
+}
+{{- end }}

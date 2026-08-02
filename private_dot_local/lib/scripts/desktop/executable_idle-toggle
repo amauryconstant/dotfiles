@@ -1,25 +1,48 @@
 #!/usr/bin/env sh
 
-# Script: idle-toggle.sh
+# Script: idle-toggle
 # Purpose: Toggle automatic screen locking (presentation mode)
-# Requirements: Arch Linux, hypridle
-# Adapted from: Omarchy's omarchy-toggle-idle
+# Requirements: Arch Linux, systemd, hypridle
+# Bound to: Super+I / Waybar idle-indicator left-click
+#
+# Holds a systemd idle inhibitor rather than killing hypridle. hypridle honors
+# systemd idle inhibitors (general:ignore_systemd_inhibit defaults to false), so
+# its listeners pause while before_sleep_cmd/after_sleep_cmd keep working —
+# closing the lid still locks the session. Killing the daemon disarmed that.
+#
+# The pidfile lives in $XDG_RUNTIME_DIR (tmpfs), so presentation mode cannot
+# survive a logout.
 
-NOLOCK_CONF="$HOME/.config/hypr/hypridle-nolock.conf"
+PIDFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/idle-inhibit.pid"
+MODE_ENV="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypridle-mode.env"
 
-if pgrep -af hypridle | grep -q -- "-c $NOLOCK_CONF"; then
-    # Currently in no-lock mode -> switch to full lock protection
-    pkill -x hypridle
-    hypridle &
-    notify-send "▶️ Idle Lock" "Auto-lock enabled" -t 2000
-elif pgrep -x hypridle >/dev/null; then
-    # Full lock protection running -> Kill it (disable auto-lock)
-    pkill -x hypridle
-    notify-send "⏸️ Idle Lock" "Auto-lock disabled (presentation mode)" -t 2000
+inhibitor_pid() {
+    [ -f "$PIDFILE" ] || return 1
+    read -r pid < "$PIDFILE" 2>/dev/null || return 1
+    [ -n "$pid" ] || return 1
+    # Guard against PID reuse: a stale pidfile must not kill an unrelated process
+    [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = "systemd-inhibit" ] || return 1
+    echo "$pid"
+}
+
+if pid=$(inhibitor_pid); then
+    kill "$pid" 2>/dev/null
+    rm -f "$PIDFILE"
+    # No-lock mode is an independent switch — releasing the inhibitor does not
+    # re-arm locking if it is still active. Don't claim otherwise.
+    if [ -f "$MODE_ENV" ]; then
+        notify-send "🔅 Idle Lock" "Idle timers resumed — no-lock mode still active" -t 2000
+    else
+        notify-send "▶️ Idle Lock" "Auto-lock enabled" -t 2000
+    fi
 else
-    # hypridle not running -> Start it (enable auto-lock)
-    hypridle &
-    notify-send "▶️ Idle Lock" "Auto-lock enabled" -t 2000
+    rm -f "$PIDFILE"
+    systemd-inhibit --what=idle \
+        --who="presentation" \
+        --why="Presentation mode (Super+I)" \
+        sleep infinity &
+    echo $! > "$PIDFILE"
+    notify-send "⏸️ Idle Lock" "Auto-lock disabled (presentation mode)" -t 2000
 fi
 
 # Refresh Waybar idle indicator

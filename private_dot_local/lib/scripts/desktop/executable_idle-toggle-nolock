@@ -2,19 +2,33 @@
 
 # Script: idle-toggle-nolock
 # Purpose: Toggle "no-lock" idle mode — display still powers off for energy
-#          saving, but hyprlock never triggers
-# Requirements: Arch Linux, hypridle
+#          saving, but hyprlock never triggers on idle
+# Requirements: Arch Linux, systemd, hypridle
+# Bound to: Super+Shift+I / Waybar idle-indicator right-click
+#
+# An idle inhibitor (see idle-toggle) pauses *every* listener, so it cannot
+# express "displays still power off, but no lock". This mode instead swaps which
+# config hypridle.service loads: writing HYPRIDLE_CONF into the unit's optional
+# EnvironmentFile and restarting. That file lives in $XDG_RUNTIME_DIR (tmpfs),
+# so no-lock mode cannot survive a logout.
 
+MODE_ENV="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypridle-mode.env"
+PIDFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/idle-inhibit.pid"
 NOLOCK_CONF="$HOME/.config/hypr/hypridle-nolock.conf"
 
-if pgrep -af hypridle | grep -q -- "-c $NOLOCK_CONF"; then
-    # No-lock mode active -> disable entirely
-    pkill -x hypridle
-    notify-send "⏸️ Idle Lock" "No-lock power saving disabled" -t 2000
+if [ -f "$MODE_ENV" ]; then
+    rm -f "$MODE_ENV"
+    systemctl --user restart hypridle.service
+    # Presentation mode is an independent switch — if it still holds the idle
+    # inhibitor, the lock listener is loaded but paused. Don't claim otherwise.
+    if [ -f "$PIDFILE" ]; then
+        notify-send "⏸️ Idle Lock" "Lock listener restored — presentation mode still active" -t 2000
+    else
+        notify-send "▶️ Idle Lock" "Auto-lock enabled" -t 2000
+    fi
 else
-    # Either off or in full-lock mode -> switch to no-lock mode
-    pkill -x hypridle 2>/dev/null
-    hypridle -c "$NOLOCK_CONF" &
+    printf 'HYPRIDLE_CONF=%s\n' "$NOLOCK_CONF" > "$MODE_ENV"
+    systemctl --user restart hypridle.service
     notify-send "🔅 Idle Lock" "Lock disabled, display still powers off" -t 2000
 fi
 

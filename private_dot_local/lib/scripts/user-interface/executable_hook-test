@@ -22,6 +22,7 @@ default_arg() {
     case "$1" in
         theme-change)         echo "catppuccin-mocha" ;;
         idle-change)          echo "timeout" ;;
+        lock-change)          echo "lock" ;;
         package-sync)         echo "sync" ;;
         post-maintenance)     echo "success" ;;
         menu-extend)          echo "options" ;;

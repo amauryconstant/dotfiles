@@ -47,7 +47,7 @@
 
 ### Hyprland Compositor (`hypr/`)
 - Modular config in `conf/` (each `.conf` now has a parallel `.lua` — Lua migration in progress)
-- Templates: `hyprland.{conf,lua}.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`
+- Templates: `hyprland.{conf,lua}.tmpl`, `hyprlock.conf.tmpl`, `hypridle{,-nolock}.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`
 - Theme integration via `source ~/.config/themes/current/hyprland.conf`
 
 ### Desktop Components (Consolidated)

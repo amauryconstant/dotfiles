@@ -1,8 +1,11 @@
 #!/usr/bin/env sh
 
-# Script: immediate-lock.sh
-# Purpose: Immediately lock the screen
-# Requirements: Arch Linux, Hyprlock
+# Script: immediate-lock
+# Purpose: Lock the screen immediately (single entry point for all lock triggers)
+# Requirements: Arch Linux, hyprlock
+#
+# Used by Super+L, wlogout, the system menu, and hypridle's lock_cmd. Mirrors the
+# re-entrancy guard hypridle used inline so a double-trigger cannot spawn a second
+# client. grace is a CLI flag in hyprlock 0.9.6, no longer a config key.
 
-# Lock screen immediately
-hyprlock
+pidof hyprlock >/dev/null || exec hyprlock --grace 0

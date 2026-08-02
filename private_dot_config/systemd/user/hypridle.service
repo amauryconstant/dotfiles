@@ -1,0 +1,21 @@
+[Unit]
+Description=hypridle - Hyprland idle management daemon
+Documentation=https://wiki.hyprland.org/Hypr-Ecosystem/hypridle/
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+# Config selection for no-lock mode. Defaults to the full config; idle-toggle-nolock
+# writes %t/hypridle-mode.env (tmpfs, so it cannot survive a logout) to override
+# HYPRIDLE_CONF and restarts this unit. Order matters — the later directive wins,
+# so EnvironmentFile= must stay below Environment=. The leading `-` makes the file
+# optional.
+Environment=HYPRIDLE_CONF=%h/.config/hypr/hypridle.conf
+EnvironmentFile=-%t/hypridle-mode.env
+ExecStart=/usr/bin/hypridle -c ${HYPRIDLE_CONF}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

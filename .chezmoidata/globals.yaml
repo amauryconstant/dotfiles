@@ -41,6 +41,13 @@ globals:
     projects: "$HOME/Projects"
     worktrees: "$HOME/Worktrees"
 
+  idle:
+    # hypridle timeouts in seconds — single source of truth for both configs
+    # (hypr/hypridle.conf.tmpl and hypr/hypridle-nolock.conf.tmpl)
+    lock: 300 # 5 min  — loginctl lock-session (default config only)
+    dpms: 600 # 10 min — displays off (both configs)
+    suspend: 900 # 15 min — sleep, laptop only (both configs)
+
   plymouth:
     # Plymouth boot splash configuration
     # Available themes: bgrt (OEM logo), spinner, spinfinity, solar, script

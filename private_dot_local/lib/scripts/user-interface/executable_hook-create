@@ -26,6 +26,7 @@ pre-maintenance
 post-maintenance
 menu-extend
 idle-change
+lock-change
 session-start"
 
 # Prompt for hook name
@@ -107,14 +108,28 @@ case "$HOOK_NAME" in
 esac'
         ;;
     idle-change)
-        HOOK_DESC="On hypridle lock/unlock boundary"
+        HOOK_DESC="On hypridle idle timeout/resume (listener 1)"
         HOOK_ARGS="\$1=event (timeout/resume)"
-        HOOK_EXAMPLE='case "$1" in
+        HOOK_EXAMPLE='# NOTE: resume fires on ANY activity, BEFORE authentication.
+# For true lock/unlock events use the lock-change hook instead.
+case "$1" in
     timeout)
-        # Session locked - pause apps, stop timers
+        # Idle threshold reached - pause apps, stop timers
         ;;
     resume)
-        # Session resumed - restart apps, refresh state
+        # Activity detected (still locked!) - prepare, do not trust as unlocked
+        ;;
+esac'
+        ;;
+    lock-change)
+        HOOK_DESC="On true session lock/unlock (hypridle on_lock_cmd/on_unlock_cmd)"
+        HOOK_ARGS="\$1=event (lock/unlock)"
+        HOOK_EXAMPLE='case "$1" in
+    lock)
+        # Session locked - pause media, mute mic, stop syncs
+        ;;
+    unlock)
+        # Authenticated and unlocked - safe to resume sensitive work
         ;;
 esac'
         ;;
