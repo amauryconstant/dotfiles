@@ -1,6 +1,8 @@
 [Unit]
 Description=HyprDynamicMonitors - Prepare monitor config before Hyprland
-Before=hyprland.service
+# Must write monitors.conf before the compositor reads it. Under uwsm the
+# pre-compositor stage is graphical-session-pre.target.
+Before=graphical-session.target
 
 [Service]
 Type=oneshot
@@ -8,4 +10,4 @@ ExecStart=/usr/bin/hyprdynamicmonitors prepare
 RemainAfterExit=yes
 
 [Install]
-WantedBy=hyprland.service
+WantedBy=graphical-session-pre.target

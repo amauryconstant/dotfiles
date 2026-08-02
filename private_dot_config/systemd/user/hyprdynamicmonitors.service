@@ -2,7 +2,7 @@
 Description=HyprDynamicMonitors - Monitor configuration manager
 After=graphical-session.target
 Wants=graphical-session.target
-PartOf=hyprland-session.target
+PartOf=graphical-session.target
 
 [Service]
 Type=exec
@@ -11,4 +11,4 @@ Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=hyprland-session.target
+WantedBy=graphical-session.target
