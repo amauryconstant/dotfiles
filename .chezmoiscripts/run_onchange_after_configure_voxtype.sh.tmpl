@@ -11,7 +11,7 @@
 # The hash below embeds the *installed voxtype version*, so this script re-runs on every
 # upgrade and re-selects the correct ONNX/CUDA variant — self-healing across upgrades.
 #
-# Hash: {{ printf "voxtype=%s features=%s engine=cohere+parakeet" (output "sh" "-c" "{ command -v voxtype >/dev/null 2>&1 && voxtype --version || echo none; } | tr -d '\\n'") (.features.voxtype | toJson) }}
+# Hash: {{ printf "voxtype=%s features=%s chassis=%s engine=%s" (output "sh" "-c" "{ command -v voxtype >/dev/null 2>&1 && voxtype --version || echo none; } | tr -d '\\n'") (.features.voxtype | toJson) .chassisType ((eq .chassisType "laptop") | ternary "cohere-q4f16-only" "cohere-fp16+parakeet") }}
 
 {{ includeTemplate "log_start" "Configuring Voxtype speech-to-text..." }}
 
@@ -95,9 +95,10 @@ else
     # ------------------------------------------------------------------------
     # Models
     #   Cohere   (default, SUPER+T) — interactive only (no --model flag)
-    #   Parakeet (fast English + streaming) — non-interactive download
-    #   Whisper — left as-is if already present (GPU sound-bite fallback)
+    #   Parakeet (fast English + streaming) — non-interactive download [desktop only]
+    #   Whisper — left as-is if already present (GPU sound-bite fallback) [desktop only]
     # ------------------------------------------------------------------------
+    {{- if ne .chassisType "laptop" }}
     {{ includeTemplate "log_step" "Checking Parakeet model..." }}
     if find "$VOXTYPE_DATA/models" -maxdepth 2 -iname '*.onnx' 2>/dev/null | grep -qi parakeet; then
         {{ includeTemplate "log_skip" "Parakeet model already downloaded" }}
@@ -106,14 +107,21 @@ else
         voxtype setup --download --model parakeet-tdt-0.6b-v3 --no-post-install
         {{ includeTemplate "log_success" "Parakeet model downloaded" }}
     fi
+    {{- else }}
+    {{ includeTemplate "log_skip" "Parakeet model download skipped — laptop is configured for Cohere-only STT" }}
+    {{- end }}
 
     {{ includeTemplate "log_step" "Checking Cohere Transcribe model..." }}
     if find "$VOXTYPE_DATA/models" -maxdepth 2 -iname '*cohere*' 2>/dev/null | grep -q .; then
         {{ includeTemplate "log_skip" "Cohere model already downloaded" }}
     else
         {{ includeTemplate "log_info" "Cohere has no non-interactive download (--model accepts Whisper names only)." }}
+        {{ if eq .chassisType "laptop" -}}
         {{ includeTemplate "log_info" "Select 'cohere-transcribe-q4f16' in the TUI that follows, then exit to continue." }}
-        voxtype setup model || {{ includeTemplate "log_warning" "Cohere setup skipped — SUPER+CTRL+T will fail until downloaded" }}
+        {{- else -}}
+        {{ includeTemplate "log_info" "Select 'cohere-transcribe-fp16' in the TUI that follows, then exit to continue." }}
+        {{- end }}
+        voxtype setup model || {{ includeTemplate "log_warning" "Cohere setup skipped — SUPER+T will fail until downloaded" }}
     fi
 
     # ------------------------------------------------------------------------
@@ -154,8 +162,10 @@ else
     echo ""
     echo "  Voxtype Speech-to-Text:"
     echo "    SUPER+T        → Cohere    (default, multilingual, push-to-talk)"
+    {{- if ne .chassisType "laptop" }}
     echo "    SUPER+ALT+T    → Parakeet  (live streaming dictation, toggle)"
     echo "    SUPER+CTRL+T   → Parakeet  (fast English, push-to-talk)"
+    {{- end }}
     echo "    SUPER+ALT+M    → Meeting   (voice-meeting toggle)"
     echo "    Active binary: $(readlink -f /usr/bin/voxtype 2>/dev/null || echo unknown)"
     echo ""

@@ -4,13 +4,16 @@
 #
 # Engine map (Hyprland bindings in hypr/conf/bindings/voice.conf):
 #   SUPER+T        → Cohere    push-to-talk (DEFAULT — #1 Open ASR, multilingual incl. FR)
-#   SUPER+ALT+T    → Parakeet  streaming toggle (live incremental text, English)
-#   SUPER+CTRL+T   → Parakeet  push-to-talk (fast English-only alternative)
+#   SUPER+ALT+T    → Parakeet  streaming toggle (live incremental text, English) [desktop only]
+#   SUPER+CTRL+T   → Parakeet  push-to-talk (fast English-only alternative) [desktop only]
 #   SUPER+ALT+M    → Meeting   mode (voice-meeting CLI)
 #
 # Cohere benched ~1.45s for 11s audio on the i9-13900K (CPU) — ~7x realtime, only
 # marginally slower than Parakeet, so it's the everyday default. Streaming stays on
 # Parakeet (Cohere is encoder-decoder, not cache-aware-streaming capable).
+#
+# Laptop is RAM-constrained: only Cohere (q4f16) is configured there — Parakeet
+# and Whisper sections below are omitted entirely on laptop.
 
 engine = "cohere"  # default engine; per-recording override via --model <name> (voxtype 0.7.5 has no --engine flag)
 
@@ -31,6 +34,8 @@ enabled = true
 theme = "default"
 volume = 0.7
 
+{{- if ne .chassisType "laptop" }}
+
 [whisper]
 model = "large-v3-turbo"  # retained fallback; multilingual slot now uses Cohere
 language = "auto"
@@ -44,9 +49,11 @@ model = "parakeet-tdt-0.6b-v3"  # primary engine (SUPER+T)
 streaming_chunk_secs = 0.5
 streaming_left_context_secs = 2.0
 streaming_right_context_secs = 0.5
+{{- end }}
 
 [cohere]
-model = "cohere-transcribe-fp16"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
+# q4f16 on laptop (RAM-constrained, Cohere-only STT); fp16 on desktop (unchanged default)
+model = "{{ if eq .chassisType "laptop" }}cohere-transcribe-q4f16{{ else }}cohere-transcribe-fp16{{ end }}"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
 
 [output]
 mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"
