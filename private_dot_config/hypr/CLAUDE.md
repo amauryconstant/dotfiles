@@ -44,7 +44,7 @@
 | `window-resizing.conf` | Resize + mouse bindings | ❌ No |
 | `media-keys.conf` | Volume, brightness, playback | ❌ No |
 | `screenshots.conf` | Screenshot tools (Satty) | ❌ No |
-| `voice.conf` | Voice dictation (Voxtype) | ❌ No |
+| `voice.conf.tmpl` | Voice dictation (Voxtype; Parakeet bindings desktop-only) | ✅ Yes |
 | `desktop-utilities.conf` | Utilities (audio, gaps, waybar, nightlight) | ❌ No |
 | `theme-session.conf` | Theme switching, dark mode | ❌ No |
 | `system-control.conf` | Lock, power, help, menu | ❌ No |
@@ -61,7 +61,7 @@ Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.). Their `.lua.tmpl` twins exist but are inactive. Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`). Their `.lua.tmpl` twins exist but are inactive. Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 
