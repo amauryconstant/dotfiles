@@ -4,18 +4,22 @@
 
 **Goal:** Manage three Firefox profiles (`work`, `leisure`, `ringstone`) declaratively from a single chezmoi data file, targeting Firefox's XDG profile location, with per-profile `user.js`, a generated `profiles.ini`, per-profile theme `userChrome.css`, and per-profile `.desktop` launchers.
 
-**Architecture:** A new `.chezmoidata/firefox.yaml` is the single source of truth. A hash-triggered `run_onchange` chezmoi-template script ranges over that data to create each profile directory under `~/.config/mozilla/firefox/`, write its `user.js`, generate a classic `profiles.ini`, and emit per-profile launchers. The existing `theme-apply-firefox` script is retargeted to XDG and loops over every managed profile. Firefox's new SQLite-backed profile selector (`SelectableProfileService`) is deliberately disabled (`browser.profiles.enabled=false`) so all profile identity lives in the declarative `profiles.ini` — not a browser-owned, version-unstable database. Firefox's *per-install dedicated profile* mechanism is likewise disabled session-wide (`MOZ_LEGACY_PROFILES=1`) so the authored `Default=1` is authoritative. A separate one-time migration helper carries the existing `Work`/`Perso` data into the new `work`/`leisure` directories.
+**Architecture:** A new `.chezmoidata/firefox.yaml` is the single source of truth. A hash-triggered `run_onchange` chezmoi-template script ranges over that data to create each profile directory under `~/.config/mozilla/firefox/`, write its `user.js`, generate a classic `profiles.ini`, and emit per-profile launchers. The existing `theme-apply-firefox` script is retargeted to XDG and loops over every managed profile. Firefox's new SQLite-backed profile selector (`SelectableProfileService`) is deliberately disabled (`browser.profiles.enabled=false`) so all profile identity lives in the declarative `profiles.ini` — not a browser-owned, version-unstable database. Firefox's *per-install dedicated profile* mechanism is likewise disabled session-wide (`MOZ_LEGACY_PROFILES=1`); this is what makes the classic Profile Manager reachable at all (see the constraint below). A separate one-time migration helper carries the existing `Work`/`Perso` data into the new `work`/`leisure` directories.
+
+**Selection model:** `StartWithLastProfile=0`. A plain `firefox` with no arguments shows the classic Profile Manager every time; `Default=1` marks which entry it preselects. Deliberate launches bypass the picker entirely via `firefox -P <id>` or the generated per-profile `.desktop` launchers. The split is: **launchers for intent, picker for "I didn't say."**
 
 **Tech Stack:** chezmoi (Go text/template + Sprig), POSIX sh + Bash, Firefox 147+ (XDG base-dir support), sqlite3 (migration only).
 
 ## Global Constraints
 
 - **XDG target path:** `~/.config/mozilla/firefox/` — both `profiles.ini` **and** the profile directories live here (verified empirically on Firefox 153.0.1; `XDG_DATA_HOME` is *not* used for profiles).
-- **Legacy takes precedence over XDG, and the trigger is `~/.mozilla/firefox` — not `~/.mozilla`.** Verified: an empty `~/.mozilla` still yields XDG; creating `~/.mozilla/firefox` flips Firefox back to legacy. So retiring the `firefox` subdirectory alone is sufficient, and `~/.mozilla/extensions` can be left in place.
-- **`MOZ_LEGACY_PROFILES=1` is mandatory.** Without it Firefox ignores `Default=1` entirely: it applies per-install dedicated profiles, creates its own `*.default-release`, binds it via an `[Install<HASH>]` section, writes `installs.ini`, and leaves the managed profiles unused. Verified both ways on Firefox 153.0.1. With the variable set, Firefox honours `Default=1` and leaves `profiles.ini` byte-identical.
+- **`~/.config/mozilla/firefox/` already exists on this machine** (created Nov 2025, contains only `Crash Reports/` — no `profiles.ini`, no profile dirs). It is benign, but it is the reason `theme-apply-firefox` is currently dead: that script's XDG-first branch already matches today, finds no `*.default-release` underneath, and exits 0. It has been silently doing nothing since November. Any script that picks a Firefox root by directory existence must account for this.
+- **Legacy takes precedence over XDG, and the trigger is `~/.mozilla/firefox` — not `~/.mozilla`.** Verified: an empty `~/.mozilla` still yields XDG; creating `~/.mozilla/firefox` flips Firefox back to legacy. So removing the `firefox` subdirectory alone is sufficient, and `~/.mozilla/extensions` can be left in place.
+- **`MOZ_LEGACY_PROFILES=1` is mandatory — and its purpose is broader than `Default=1`.** Without it Firefox applies per-install dedicated profiles: it *auto-creates* its own `*.default-release`, *auto-binds* it via an `[Install<HASH>]` section, writes `installs.ini`, and leaves the managed profiles unused. That bypasses `Default=1` and the Profile Manager alike — an automatic selection means the picker never appears. The variable is therefore what makes "no automatic selection → show the classic Profile Manager" reachable at all, not merely what makes `Default=1` authoritative. Verified both ways on Firefox 153.0.1.
 - **Classic `profiles.ini` only:** no `[Install…]` section, no `StoreID`. Profile identity is `IsRelative=1` + `Path=<id>`.
-- **Selector disabled:** every profile's `user.js` sets `browser.profiles.enabled=false`. Switching is via `about:profiles`, `firefox -P <id>`, or the generated `.desktop` launchers.
+- **New SQLite selector disabled:** every profile's `user.js` sets `browser.profiles.enabled=false`. This is the in-app avatar switcher, and is unrelated to the classic Profile Manager, which stays enabled. Switching is via the picker, `about:profiles`, `firefox -P <id>`, or the generated `.desktop` launchers.
 - **Migration strictly precedes profile management.** The `run_onchange` script refuses to run while `~/.mozilla/firefox` exists, because creating the XDG target dirs first would make the migration refuse to move real data. Task 3 before Task 4, enforced in code.
+- **Task 5 (theming) depends on Tasks 3 and 4 and must NOT be parallelized with them.** Numeric order already puts it last, but the dependency is otherwise implicit and an agent fanning tasks out concurrently could run it early. If it runs before migration it selects the (existing, profile-less) XDG root, matches nothing, and exits 0 silently — indistinguishable from success. Tasks 1 and 2 may run in parallel; 3 → 4 → 5 is strictly sequential.
 - **Addons stay global:** the existing enterprise policy (`.chezmoidata/firefox_policies.json` → `/usr/lib/firefox/distribution/policies.json`) applies to all profiles (the union). Per-profile addon scoping is explicitly out of scope here (deferred "specifics" work).
 - **Script standards:** `.chezmoiscripts/` output uses log templates (`log_start`, `log_step`, `log_success`, `log_skip`, `log_warning`, `log_complete`) — never bare `echo`. Bash scripts use `set -euo pipefail`. Use `[ ]` not `[[ ]]`: the repo's `.shellcheckrc` enables `require-double-brackets` but pins `severity=warning`, so SC2292 is filtered and every existing script uses `[ ]`.
 - **`chezmoi apply` takes TARGET paths, never source paths.** `chezmoi apply [target]...` — e.g. `chezmoi apply ~/.local/lib/scripts/desktop/theme-apply-firefox`. Entries under `.chezmoiscripts/` have **no target path at all** and cannot be applied selectively; test them by rendering to a file and running it.
@@ -32,12 +36,21 @@
 | `.chezmoidata/firefox.yaml` | Single source of truth: profile list, default, common + per-profile prefs | Create |
 | `private_dot_config/hypr/conf/environment.conf` | Session env var `MOZ_LEGACY_PROFILES=1` (live Hyprland config) | Modify |
 | `private_dot_config/hypr/conf/environment.lua` | Same var in the parallel Lua config (kept in sync with `.conf`) | Modify |
-| `private_dot_local/lib/scripts/utils/executable_firefox-profiles-migrate` | One-time: carry existing `Work`/`Perso` data into `work`/`leisure`, retire `~/.mozilla/firefox`, strip selector prefs | Create |
+| `private_dot_local/lib/scripts/utils/executable_firefox-profiles-migrate` | One-time: reflink-backup, carry existing `Work`/`Perso` data into `work`/`leisure`, delete the stale stub, remove `~/.mozilla/firefox`, strip selector prefs | Create |
 | `.chezmoiscripts/run_onchange_after_manage_firefox_profiles.sh.tmpl` | Materialize profile dirs, `user.js`, `profiles.ini`, `.desktop` launchers from the data file | Create |
 | `private_dot_local/lib/scripts/desktop/executable_theme-apply-firefox` | Symlink theme `userChrome.css` into **every** managed profile; XDG-first | Modify |
 | `.claude/rules/chezmoi-data.md` | Document the new `firefox.yaml` data file | Modify |
 
-**Phasing and ordering:** Task 1 (data) and Task 2 (env var) are inert prerequisites. **Task 3 (migration) must complete before Task 4 (profile management)** — Task 4 enforces this itself via an interlock. Task 5 is theming, Task 6 a human verification gate, Task 7 documentation. The hybrid alternative is described in an appendix, not implemented.
+**Phasing and ordering:** Task 1 (data) and Task 2 (env var) are inert prerequisites and may run in parallel. **Tasks 3 → 4 → 5 are strictly sequential and must not be parallelized.** Task 3 (migration) must complete before Task 4 (profile management) — Task 4 enforces this itself via a runtime interlock. Task 5 (theming) must follow both; its dependency has no runtime interlock and fails *silently* if violated (see Global Constraints). Task 6 is a human verification gate, Task 7 documentation. The hybrid alternative is described in an appendix, not implemented.
+
+**Rollback:** at any point after Task 3, the pre-migration state is restored wholesale by removing the XDG tree and moving the reflink backup back:
+
+```bash
+rm -rf ~/.config/mozilla/firefox
+mv ~/.mozilla/firefox.backup-<ts> ~/.mozilla/firefox
+```
+
+Firefox reverts to the legacy tree the instant `~/.mozilla/firefox` exists again. The backup is a btrfs reflink copy taken before anything is touched, so it includes the stale `1cevmaad.default` stub that Task 3 deletes.
 
 ---
 
@@ -49,7 +62,7 @@
 **Interfaces:**
 - Produces: template data `.firefox` with fields:
   - `.firefox.profile_root` (string, `$HOME`-relative) → `.config/mozilla/firefox`
-  - `.firefox.default` (string) → profile `id` marked `Default=1`
+  - `.firefox.default` (string) → profile `id` marked `Default=1`, i.e. the Profile Manager's preselected entry
   - `.firefox.common_prefs` (list of `{key, value}`) applied to every profile
   - `.firefox.profiles` (list of `{id, name, prefs}`) where `prefs` is a possibly-empty list of `{key, value}`
   - Pref `value` types: `string` values are quoted in `user.js`; `bool`/number values are emitted raw.
@@ -63,16 +76,22 @@
 #
 # Profile identity is managed via a classic profiles.ini (IsRelative=1 + Path=<id>).
 # Requires MOZ_LEGACY_PROFILES=1 in the session environment, otherwise Firefox
-# ignores Default=1 and creates its own per-install dedicated profile.
-# Firefox's new SQLite profile selector is disabled (browser.profiles.enabled=false)
-# so all state stays declarative. Addons remain global via firefox_policies.json.
+# auto-creates and auto-binds a per-install dedicated profile, which suppresses
+# both Default= and the Profile Manager.
+# Firefox's new SQLite avatar selector is disabled (browser.profiles.enabled=false)
+# so all state stays declarative; the classic Profile Manager stays enabled.
+# Addons remain global via firefox_policies.json.
 
 firefox:
   # XDG profile root, relative to $HOME. Firefox uses ~/.config/mozilla/firefox
   # when ~/.mozilla/firefox is absent.
   profile_root: ".config/mozilla/firefox"
 
-  # Which profile id is marked Default=1 in profiles.ini (plain `firefox` launches it).
+  # Marked Default=1 in profiles.ini. With StartWithLastProfile=0 a plain `firefox`
+  # always shows the Profile Manager; this is the entry it preselects, NOT a profile
+  # that launches automatically. (Preselection behaviour is confirmed in Task 6 Step 3;
+  # if Firefox ignores Default= under StartWithLastProfile=0, this field becomes inert
+  # and can be dropped.)
   default: work
 
   # Applied to EVERY profile's user.js. String values are quoted; bool/number raw.
@@ -112,7 +131,7 @@ git commit -m "Add firefox.yaml: declarative multi-profile data source"
 
 ### Task 2: Session environment variable `MOZ_LEGACY_PROFILES=1`
 
-Without this variable the entire declarative approach silently fails — Firefox ignores the authored `Default=1`, creates a `*.default-release` profile of its own, and binds it with an `[Install<HASH>]` section. This must land **before** any `profiles.ini` is authored.
+Without this variable the entire declarative approach silently fails. Firefox applies per-install dedicated profiles: it creates a `*.default-release` profile of its own and binds it with an `[Install<HASH>]` section. Because that constitutes an automatic selection, it suppresses the classic Profile Manager as well as the authored `Default=1` — so under this plan's picker-based model the variable is not an optimization, it is the mechanism. This must land **before** any `profiles.ini` is authored.
 
 `environment.conf` is the live config (`~/.config/hypr/hyprland.conf` sources it); `environment.lua` is the parallel Lua port kept in sync. Both carry `MOZ_ENABLE_WAYLAND`, so both get this too.
 
@@ -185,7 +204,49 @@ Expected: `1`. If empty, log out and back in before continuing to Task 3.
 Run: `mise run lint:lua`
 Expected: stylua reports no diff for `environment.lua`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Pre-verify the picker against a throwaway `$HOME` (no real data at risk)**
+
+Appendix A was recorded under `StartWithLastProfile=1` and does **not** cover the `StartWithLastProfile=0` configuration this plan now ships. Rather than discover the answer mid-migration with 762 MB of real profile data in flight, prove it against a disposable tree first. Firefox derives its profile root from `$HOME`, so overriding `$HOME` fully isolates this.
+
+```bash
+TESTHOME="$(mktemp -d)"
+mkdir -p "$TESTHOME/.config/mozilla/firefox/alpha" "$TESTHOME/.config/mozilla/firefox/beta"
+cat > "$TESTHOME/.config/mozilla/firefox/profiles.ini" <<'EOF'
+[General]
+StartWithLastProfile=0
+Version=2
+
+[Profile0]
+Name=Alpha
+IsRelative=1
+Path=alpha
+Default=1
+
+[Profile1]
+Name=Beta
+IsRelative=1
+Path=beta
+EOF
+env HOME="$TESTHOME" MOZ_LEGACY_PROFILES=1 firefox -no-remote
+```
+
+`-no-remote` is required — without it Firefox hands the launch to the already-running instance and the test silently exercises your real profile instead.
+
+Expected: the classic Profile Manager dialog appears listing exactly `Alpha` and `Beta`, with **`Alpha` preselected**. Close the dialog without launching, then confirm Firefox created nothing of its own:
+
+```bash
+ls -1 "$TESTHOME/.config/mozilla/firefox/"                 # alpha beta profiles.ini — no *.default-release
+grep -c '^\[Install' "$TESTHOME/.config/mozilla/firefox/profiles.ini"   # expect 0
+test ! -e "$TESTHOME/.config/mozilla/firefox/installs.ini" && echo "no installs.ini — OK"
+rm -rf "$TESTHOME"
+```
+
+**Record the outcome, because two later steps branch on it:**
+- Picker appears, `Alpha` preselected → plan is correct as written; proceed.
+- Picker appears but preselection is arbitrary → `Default=1` is inert under `StartWithLastProfile=0`. Drop `default:` from `firefox.yaml` (Task 1), drop the `Default=1` emission from Task 4, and drop the preselection assertion from Task 6 Step 3.
+- No picker, or a stray `*.default-release`/`[Install…]`/`installs.ini` appears → `MOZ_LEGACY_PROFILES=1` is not reaching Firefox. Stop; revisit Step 4 before touching real data.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add private_dot_config/hypr/conf/environment.conf private_dot_config/hypr/conf/environment.lua
@@ -196,20 +257,28 @@ git commit -m "Set MOZ_LEGACY_PROFILES=1 so the managed Firefox profiles.ini is 
 
 ### Task 3: One-time migration of existing Work/Perso data (this machine)
 
-Carries the existing `Work` (`nb2l5vl7.default-release`) and `Perso` (`tPJagWwW.Profile 1`) data — history, logins, cookies — into `~/.config/mozilla/firefox/work` and `.../leisure`, retires `~/.mozilla/firefox` so Firefox switches to XDG, and strips the new-selector prefs for a clean classic break.
+Carries the existing `Work` (`nb2l5vl7.default-release`, 452 MB) and `Perso` (`tPJagWwW.Profile 1`, 310 MB) data — history, cookies, sessions — into `~/.config/mozilla/firefox/work` and `.../leisure`, deletes a stale third profile, removes `~/.mozilla/firefox` so Firefox switches to XDG, and strips the new-selector prefs for a clean classic break.
 
 **This must run before Task 4.** Task 4 creates the XDG target directories; once they exist this script refuses to overwrite them, and the real browsing data would be stranded in the legacy tree.
 
-The script is fail-safe by construction: it only retires the legacy tree if at least one profile actually moved, and it aborts rather than skipping when a target already exists.
+The script is fail-safe by construction: it takes a complete backup before touching anything, only tears down the legacy tree if at least one profile actually moved, and aborts rather than skipping when a target already exists.
 
 **Files:**
 - Create: `private_dot_local/lib/scripts/utils/executable_firefox-profiles-migrate`
 
 **Interfaces:**
 - Consumes: `~/.mozilla/firefox/Profile Groups/<id>.sqlite` (name→dir map), existing profile dirs.
-- Produces: `~/.config/mozilla/firefox/work`, `.../leisure`; a backup tarball; retired `~/.mozilla/firefox.migrated-<ts>`.
+- Produces: `~/.config/mozilla/firefox/work`, `.../leisure`; a reflink backup at `~/.mozilla/firefox.backup-<ts>`; no remaining `~/.mozilla/firefox`.
 
-> **Verified precondition:** on this machine `sqlite3 -readonly "$HOME/.mozilla/firefox/Profile Groups/3bfda0e8.sqlite" "SELECT name,path FROM Profiles;"` returns exactly `Work|nb2l5vl7.default-release` and `Perso|tPJagWwW.Profile 1`.
+> **Verified precondition (re-confirmed on Firefox 153.0.3):** `sqlite3 -readonly "$HOME/.mozilla/firefox/Profile Groups/3bfda0e8.sqlite" "SELECT name,path FROM Profiles;"` returns exactly `Work|nb2l5vl7.default-release` and `Perso|tPJagWwW.Profile 1`. The read succeeds despite a 1.5 MB uncheckpointed `-wal` alongside it.
+
+> **⚠ The SQLite read is a hard single point of failure, and no fallback is possible.** `nb2l5vl7.default-release` (Work, the larger profile) does **not** appear in the legacy `profiles.ini` at all — it exists only on disk and in the group database, because profiles created through the new selector are never written to the INI. There is therefore no INI-based recovery path for discovering which directory is "Work". If the sqlite read fails, the script must `die` rather than guess; a wrong guess silently migrates the wrong 452 MB.
+
+**Backup strategy:** `cp --reflink=always -a`. `$HOME` is btrfs (`/dev/mapper/root[/@home]`), so a copy-on-write clone of 762 MB is instantaneous and consumes essentially no additional space until the trees diverge. `always` rather than `auto` is deliberate — on a filesystem without reflink support the command fails loudly instead of silently degrading into a multi-minute full copy. This replaces the `tar --zstd` archive of earlier drafts: same safety, no CPU cost, no ~500 MB artifact left behind, and restoration is a `mv` rather than an extraction.
+
+**Legacy teardown:** `rm -rf ~/.mozilla/firefox` outright, rather than renaming it to `firefox.migrated-<ts>`. The reflink backup is already a complete snapshot taken before any modification, so a second retained copy adds no recoverability — only two similarly-named stale trees in `~/.mozilla` to confuse a future reader. `~/.mozilla/extensions` is a sibling and is preserved; removing the `firefox` subdirectory alone is what flips Firefox to XDG.
+
+**The stale third profile:** `1cevmaad.default` (4 KB, one file, untouched since Nov 2025, and currently the holder of `Default=1` in the legacy INI) is deleted explicitly. It is absent from the group database, so the name-driven migration would ignore it and it would vanish with the legacy tree anyway — the explicit `rm` makes it a decision rather than an accident. It remains recoverable from the reflink backup, which is taken first.
 
 - [ ] **Step 1: Write the migration script**
 
@@ -218,15 +287,21 @@ The script is fail-safe by construction: it only retires the legacy tree if at l
 
 # Script: firefox-profiles-migrate
 # Purpose: One-time migration of existing Firefox profiles into the XDG classic-declarative
-#          layout (Work -> work, Perso -> leisure). Retires ~/.mozilla/firefox so Firefox
+#          layout (Work -> work, Perso -> leisure). Removes ~/.mozilla/firefox so Firefox
 #          adopts the XDG base dir.
-# Requirements: Firefox closed, sqlite3 (for name mapping), bash
+# Requirements: Firefox closed, sqlite3 (for name mapping), btrfs $HOME (reflink), bash
 
 set -euo pipefail
 
 LEGACY_FF="$HOME/.mozilla/firefox"
 XDG_FF="$HOME/.config/mozilla/firefox"
 TS="$(date +%Y%m%d%H%M%S)"
+BACKUP="$HOME/.mozilla/firefox.backup-$TS"
+
+# Stale profile dirs to delete outright rather than carry forward. Verified empty-ish:
+# 1cevmaad.default is 4 KB / 1 file, untouched since Nov 2025, absent from the group DB.
+# Recoverable from $BACKUP if this turns out to be wrong.
+STALE_DIRS=("1cevmaad.default")
 
 log()  { printf '→ %s\n' "$1"; }
 warn() { printf '⚠️  %s\n' "$1" >&2; }
@@ -240,12 +315,16 @@ fi
 # 2. Anything to migrate?
 [ -d "$LEGACY_FF" ] || { log "No ~/.mozilla/firefox found — nothing to migrate."; exit 0; }
 
-# 3. Full backup before touching anything.
-BACKUP="$HOME/.mozilla-firefox.pre-xdg-$TS.tar.zst"
-log "Backing up ~/.mozilla/firefox -> $BACKUP"
-tar --zstd -cf "$BACKUP" -C "$HOME/.mozilla" firefox
+# 3. Full backup before touching anything. --reflink=always so this fails loudly on a
+#    non-btrfs filesystem rather than silently turning into a multi-minute 762 MB copy.
+[ -e "$BACKUP" ] && die "Backup path '$BACKUP' already exists — refusing to overwrite."
+log "Reflink-backing up ~/.mozilla/firefox -> $BACKUP"
+cp --reflink=always -a "$LEGACY_FF" "$BACKUP" \
+    || die "Reflink backup failed (is \$HOME on btrfs?). Nothing moved."
 
 # 4. Map display names -> profile dirs via the SelectableProfileService sqlite.
+#    This is the ONLY way to identify 'Work': nb2l5vl7.default-release is absent from
+#    profiles.ini entirely. No fallback exists, so every failure below is fatal.
 declare -A NAME_TO_DIR=()
 GROUP_DB="$(find "$LEGACY_FF/Profile Groups" -maxdepth 1 -name '*.sqlite' 2>/dev/null | head -1 || true)"
 if [ -z "$GROUP_DB" ]; then
@@ -293,16 +372,27 @@ move_profile() {  # $1 = legacy display name, $2 = new id
 move_profile Work  work
 move_profile Perso leisure
 
-# 6. Only retire the legacy tree if something actually moved.
+# 6. Only tear down the legacy tree if something actually moved.
 [ "$MOVED" -gt 0 ] || die "No profiles were migrated — leaving ~/.mozilla/firefox untouched. Backup: $BACKUP"
 
-# Renaming the 'firefox' subdir is sufficient: Firefox selects the legacy base on
-# the existence of ~/.mozilla/firefox, not ~/.mozilla. This preserves
-# ~/.mozilla/extensions and any other sibling data.
-mv "$LEGACY_FF" "$HOME/.mozilla/firefox.migrated-$TS"
-log "Retired ~/.mozilla/firefox (Firefox will now use ~/.config/mozilla)."
+# 7. Delete stale profile dirs explicitly, so their removal is a decision on the
+#    record rather than a side effect of the teardown below. Still in $BACKUP.
+for stale in "${STALE_DIRS[@]}"; do
+    if [ -d "$LEGACY_FF/$stale" ]; then
+        rm -rf "${LEGACY_FF:?}/$stale"
+        log "Deleted stale profile '$stale' (recoverable from $BACKUP)."
+    fi
+done
 
-printf '\n✅ Migrated %s profile(s). Next:\n  chezmoi apply\n(to write user.js/profiles.ini, create the ringstone profile, and launchers)\n' "$MOVED"
+# 8. Remove the legacy tree. Firefox selects the legacy base on the existence of
+#    ~/.mozilla/firefox, not ~/.mozilla — so this preserves ~/.mozilla/extensions
+#    and any other sibling data. $BACKUP is a complete pre-migration snapshot, which
+#    is why nothing is retained here under a .migrated-* name.
+rm -rf "${LEGACY_FF:?}"
+log "Removed ~/.mozilla/firefox (Firefox will now use ~/.config/mozilla)."
+
+printf '\n✅ Migrated %s profile(s). Backup: %s\n\nNext:\n  chezmoi apply\n(to write user.js/profiles.ini, create the ringstone profile, and launchers)\n\nRollback:\n  rm -rf %s && mv %s %s\n' \
+    "$MOVED" "$BACKUP" "$XDG_FF" "$BACKUP" "$LEGACY_FF"
 ```
 
 - [ ] **Step 2: Syntax + lint**
@@ -331,23 +421,32 @@ Run: `~/.local/lib/scripts/utils/firefox-profiles-migrate`
 
 Expected output:
 ```
-→ Backing up ~/.mozilla/firefox -> /home/amaury/.mozilla-firefox.pre-xdg-<ts>.tar.zst
+→ Reflink-backing up ~/.mozilla/firefox -> /home/amaury/.mozilla/firefox.backup-<ts>
 → Discovered 2 profile name(s): Work Perso
 → Migrated 'Work' -> work
 → Migrated 'Perso' -> leisure
-→ Retired ~/.mozilla/firefox (Firefox will now use ~/.config/mozilla).
+→ Deleted stale profile '1cevmaad.default' (recoverable from ...).
+→ Removed ~/.mozilla/firefox (Firefox will now use ~/.config/mozilla).
 
-✅ Migrated 2 profile(s). Next:
-  chezmoi apply
+✅ Migrated 2 profile(s). Backup: /home/amaury/.mozilla/firefox.backup-<ts>
+...
 ```
 
 Then verify:
 ```bash
 ls -1 ~/.config/mozilla/firefox/          # work/ leisure/ present, with real data
-ls -1 ~/.mozilla/                         # extensions/ preserved, firefox.migrated-<ts>/
-test ! -e "$HOME/.mozilla/firefox" && echo "legacy retired OK"
+du -sh ~/.config/mozilla/firefox/work ~/.config/mozilla/firefox/leisure  # ~452M / ~310M
+ls -1 ~/.mozilla/                         # extensions/ preserved, firefox.backup-<ts>/
+test ! -e "$HOME/.mozilla/firefox" && echo "legacy removed OK"
 grep -c 'browser.profiles' ~/.config/mozilla/firefox/work/prefs.js   # expect 0
 ```
+
+Confirm the backup is a real reflink clone and cost nothing:
+```bash
+du -sh --apparent-size ~/.mozilla/firefox.backup-*   # ~762M apparent
+btrfs filesystem du -s ~/.mozilla/firefox.backup-*   # 'exclusive' should be ~0
+```
+A large `exclusive` figure means the copy was not reflinked — the data is safe either way, but investigate before relying on the "free rollback" assumption.
 
 If the script aborts with a `❌` message, **nothing was moved and the legacy tree is intact** — read the message, fix the cause, re-run.
 
@@ -371,7 +470,7 @@ The interlock at the top makes the Task 3 → Task 4 ordering self-enforcing rat
 
 **Interfaces:**
 - Consumes: `.firefox.*` from Task 1; `MOZ_LEGACY_PROFILES=1` from Task 2; migrated dirs from Task 3.
-- Produces (on disk): `~/.config/mozilla/firefox/<id>/user.js`, `~/.config/mozilla/firefox/profiles.ini`, `~/.local/share/applications/firefox-<id>.desktop`.
+- Produces (on disk): `~/.config/mozilla/firefox/<id>/user.js`, `~/.config/mozilla/firefox/profiles.ini`, `~/.local/share/applications/firefox-profile-<id>.desktop`.
 
 - [ ] **Step 1: Write the script template**
 
@@ -426,9 +525,11 @@ user_pref("{{ .key }}", {{ if kindIs "string" .value }}"{{ .value }}"{{ else }}{
 USERJS_EOF
 {{ end }}
 # --- Classic profiles.ini (no Install/StoreID) -----------------------------
-# Default=1 is only authoritative under MOZ_LEGACY_PROFILES=1. Without it Firefox
-# uses per-install dedicated profiles: it ignores Default=1, creates its own
-# *.default-release, and binds it via an [Install<HASH>] section.
+# StartWithLastProfile=0 => plain `firefox` always shows the classic Profile Manager
+# instead of silently reopening whatever was used last. Default=1 marks the entry the
+# manager preselects. Both only work under MOZ_LEGACY_PROFILES=1: without it Firefox
+# applies per-install dedicated profiles, which auto-select a profile of its own making
+# and so suppress the picker entirely.
 if [ -f "$PROFILE_ROOT/profiles.ini" ] && grep -q '^\[Install' "$PROFILE_ROOT/profiles.ini"; then
     {{ includeTemplate "log_warning" "profiles.ini has an [Install] section — Firefox ran without MOZ_LEGACY_PROFILES=1. Check the session environment; a stray *.default-release profile may exist." }}
 fi
@@ -436,7 +537,7 @@ fi
 {{ includeTemplate "log_step" "Writing profiles.ini..." }}
 cat > "$PROFILE_ROOT/profiles.ini" <<'PROFILES_EOF'
 [General]
-StartWithLastProfile=1
+StartWithLastProfile=0
 Version=2
 {{ range $i, $p := .firefox.profiles }}
 [Profile{{ $i }}]
@@ -449,11 +550,17 @@ PROFILES_EOF
 
 # --- Per-profile .desktop launchers (pruned + regenerated) -----------------
 # Exec carries MOZ_LEGACY_PROFILES inline so a launcher works even if the session
-# environment is missing it (e.g. launched from a non-Hyprland context).
+# environment is missing it (e.g. launched from a non-Hyprland context). `firefox -P <id>`
+# bypasses the Profile Manager, so launchers go straight to their profile.
+#
+# The prune glob is deliberately namespaced to 'firefox-profile-*': a bare 'firefox-*'
+# would also match hand-written entries like firefox-esr.desktop or firefox-dev.desktop
+# that this script does not own. (None exist today; the system-wide /usr/share
+# firefox.desktop is untouched either way and remains the picker entry point.)
 {{ includeTemplate "log_step" "Generating per-profile launchers..." }}
-rm -f "$APP_DIR"/firefox-*.desktop
+rm -f "$APP_DIR"/firefox-profile-*.desktop
 {{ range .firefox.profiles }}
-cat > "$APP_DIR/firefox-{{ .id }}.desktop" <<'DESKTOP_EOF'
+cat > "$APP_DIR/firefox-profile-{{ .id }}.desktop" <<'DESKTOP_EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -477,7 +584,7 @@ Run:
 chezmoi execute-template < .chezmoiscripts/run_onchange_after_manage_firefox_profiles.sh.tmpl \
   > /tmp/ff-profiles.rendered.sh
 ```
-Expected: exit 0. Confirm in the output that the `user.js` heredoc for `work` contains `user_pref("browser.profiles.enabled", false);` (unquoted `false`) and `user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);`, and that the `profiles.ini` heredoc has three `[ProfileN]` blocks with `Default=1` appearing only under `Path=work`.
+Expected: exit 0. Confirm in the output that the `user.js` heredoc for `work` contains `user_pref("browser.profiles.enabled", false);` (unquoted `false`) and `user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);`, and that the `profiles.ini` heredoc reads `StartWithLastProfile=0` with three `[ProfileN]` blocks, `Default=1` appearing only under `Path=work`.
 
 - [ ] **Step 3: Lint the rendered shell**
 
@@ -500,9 +607,9 @@ Run:
 ls -1 ~/.config/mozilla/firefox/
 cat ~/.config/mozilla/firefox/profiles.ini
 grep browser.profiles.enabled ~/.config/mozilla/firefox/work/user.js
-ls -1 ~/.local/share/applications/firefox-*.desktop
+ls -1 ~/.local/share/applications/firefox-profile-*.desktop
 ```
-Expected: three profile dirs each with `user.js`; `profiles.ini` valid with `Default=1` under `Path=work`; `user_pref("browser.profiles.enabled", false);` present; three launcher files.
+Expected: three profile dirs each with `user.js`; `profiles.ini` valid, `StartWithLastProfile=0`, `Default=1` under `Path=work`; `user_pref("browser.profiles.enabled", false);` present; three launcher files named `firefox-profile-{work,leisure,ringstone}.desktop`.
 
 - [ ] **Step 6: Commit**
 
@@ -515,7 +622,9 @@ git commit -m "Add run_onchange script to manage Firefox profiles declaratively"
 
 ### Task 5: Retarget theme-apply-firefox to XDG + all profiles
 
-The current script targets one `*.default-release` profile in a probe order that no longer matches reality. Rewrite it to prefer the XDG root and symlink `userChrome.css` into **every** managed profile.
+The current script is dead, and has been since November 2025. Its XDG-first branch already matches (`~/.config/mozilla/firefox/` exists, holding only `Crash Reports/`), it then probes for `*.default-release` underneath, finds nothing, and exits 0. The live legacy profile has never been reached from that branch. Rewrite it to prefer the XDG root and symlink `userChrome.css` into **every** managed profile.
+
+> **⚠ Sequencing (no runtime interlock — violation is silent).** This task depends on Tasks 3 and 4 and must not be run concurrently with them. Run it before migration and it selects the same profile-less XDG root, matches nothing, and exits 0 — identical to a clean success. The silent `exit 0` is kept deliberately: `private_dot_local/lib/scripts/CLAUDE.md:114` documents that every `theme-apply-*` script skips silently when its app is absent, and diverging here would be inconsistent with the theme system's contract. Correct ordering is what protects this, not the script.
 
 **Files:**
 - Modify: `private_dot_local/lib/scripts/desktop/executable_theme-apply-firefox`
@@ -617,32 +726,45 @@ Expected: clean shellcheck on all three, clean `sh -n`, `3`.
 - [ ] **Step 2: Confirm Firefox adopts the profiles (Firefox closed)**
 
 Run: `firefox -P` (classic Profile Manager dialog).
-Expected: `Work`, `Perso`, `Ringstone` listed; `Work` is default.
+Expected: `Work`, `Perso`, `Ringstone` listed, and no others.
 
-- [ ] **Step 3: Confirm plain `firefox` lands on `work` and creates nothing**
+- [ ] **Step 3: Confirm plain `firefox` shows the picker and creates nothing**
 
-Run: `firefox` (no arguments), then visit `about:profiles`.
-Expected: the current profile is the one rooted at `~/.config/mozilla/firefox/work`, with your existing history and logins. Then, with Firefox closed again:
+Run: `firefox` (no arguments).
+
+Expected: the classic Profile Manager appears listing `Work`, `Perso`, `Ringstone`, **with `Work` preselected**. This is the real-data confirmation of what Task 2 Step 6 established against a throwaway `$HOME`; if preselection did not work there, expect an arbitrary highlight here and apply the fallback recorded in that step (drop `default:` from `firefox.yaml`, drop `Default=1` from Task 4, drop this assertion).
+
+Choose `Work`, then visit `about:profiles`. Expected: the current profile is rooted at `~/.config/mozilla/firefox/work`, carrying your existing history and sessions.
+
+Then, with Firefox closed again:
 
 ```bash
 ls -1 ~/.config/mozilla/firefox/        # exactly: work leisure ringstone (+ Crash Reports, Pending Pings, profiles.ini)
 grep -c '^\[Install' ~/.config/mozilla/firefox/profiles.ini   # expect 0
+grep StartWithLastProfile ~/.config/mozilla/firefox/profiles.ini   # expect StartWithLastProfile=0
 test ! -e ~/.config/mozilla/firefox/installs.ini && echo "no installs.ini — MOZ_LEGACY_PROFILES is working"
 ```
-Expected: no stray `*.default-release` directory, no `[Install…]` section, no `installs.ini`. Any of those appearing means `MOZ_LEGACY_PROFILES=1` did not reach Firefox — revisit Task 2 step 4.
+Expected: no stray `*.default-release` directory, no `[Install…]` section, no `installs.ini`, and `StartWithLastProfile` still `0` (Firefox rewrites `profiles.ini` on exit — a flip back to `1` means something re-enabled last-profile behaviour). Any of those appearing means `MOZ_LEGACY_PROFILES=1` did not reach Firefox — revisit Task 2 Step 4.
 
-- [ ] **Step 4: Confirm the selector is gone and launchers work**
+- [ ] **Step 4: Confirm the picker is not sticky**
 
-Launch `firefox -P work`. Expected: **no** profile avatar button in the toolbar; `about:config` shows `browser.profiles.enabled` = `false` (user-set).
+Launch `firefox`, choose `Perso`, browse briefly, quit. Launch plain `firefox` again.
+Expected: the Profile Manager appears **again** — it does not skip straight to `Perso`. This is the specific regression `StartWithLastProfile=0` exists to prevent, and the one that silently reappears if Firefox rewrites the flag.
 
-Run: `gtk-launch firefox-leisure` (or pick "Firefox — Perso" in Wofi).
-Expected: Firefox opens the `leisure` profile (confirm via `about:profiles`).
+- [ ] **Step 5: Confirm the avatar selector is gone and launchers bypass the picker**
 
-- [ ] **Step 5: Record the verification**
+Launch `firefox -P work`. Expected: **no** profile avatar button in the toolbar (that is the new SQLite selector, disabled via `user.js`); `about:config` shows `browser.profiles.enabled` = `false` (user-set). Note the classic Profile Manager is unaffected by this pref — the two mechanisms are independent.
+
+Run: `gtk-launch firefox-profile-leisure` (or pick "Firefox — Perso" in Wofi).
+Expected: Firefox opens the `leisure` profile directly, **with no picker** (confirm via `about:profiles`). Wofi will show four Firefox entries — the three managed launchers plus the system-wide `firefox.desktop`, which is the intentional picker entry point.
+
+- [ ] **Step 6: Record the verification**
 
 ```bash
 git commit --allow-empty -m "Verify declarative Firefox profile core end-to-end"
 ```
+
+> **Backup retention.** `~/.mozilla/firefox.backup-<ts>` is a reflink clone consuming almost no space, so there is no pressure to remove it. Keep it until you have used all three profiles across several sessions and are satisfied nothing is missing; then `rm -rf ~/.mozilla/firefox.backup-*`. Note that space is only reclaimed for blocks the migrated profiles have since rewritten — the shared extents stay alive as long as either copy references them.
 
 ---
 
@@ -680,6 +802,10 @@ git commit -m "Document firefox.yaml data file and its hash trigger"
 
 Recorded because several of these contradict the obvious reading of the docs, and the plan's correctness depends on them.
 
+> **⚠ Coverage gap.** Every row below was recorded under `StartWithLastProfile=1`. The plan now ships `StartWithLastProfile=0`, and **nothing here tests that configuration.** The rows remain individually true — they concern the XDG root, the legacy trigger, and the dedicated-profiles mechanism, none of which depend on this flag — but the picker behaviour and `Default=1`-as-preselection are *inferred*, not verified. Task 2 Step 6 closes the gap against a throwaway `$HOME` before any real data moves; Task 6 Step 3 confirms it on the real tree. Do not treat preselection as established until one of those has run.
+
+> Local environment re-confirmed on Firefox **153.0.3** (plan drafted against 153.0.1): sqlite name map unchanged; `[Install4F96D1932A9F858E]` with `Locked=1` present in the legacy `profiles.ini`, overriding the `Default=1` carried by `1cevmaad.default` — a direct in-situ demonstration of the row below.
+
 | Claim | Result |
 |---|---|
 | XDG profile root | Profile dirs **and** `profiles.ini` both under `$XDG_CONFIG_HOME/mozilla/firefox`. `XDG_DATA_HOME` is not used for profiles. |
@@ -687,7 +813,8 @@ Recorded because several of these contradict the obvious reading of the docs, an
 | `Default=1` alone | **Ignored.** Firefox created its own `vrte1071.default-release`, added `[Install4F96D1932A9F858E]` + `installs.ini`, left the managed profiles untouched. |
 | `Default=1` + `MOZ_LEGACY_PROFILES=1` | **Honoured.** Managed profile used, no stray profile, `profiles.ini` left byte-identical. |
 | `[Install<HASH>]` written by hand | Also works, but `HASH` is derived from the installation directory — machine/path specific, and unavailable on a fresh install. Rejected in favour of the env var. |
-| Profile-group SQLite | `Profiles` table is 7 columns (`id, path, name, avatar, themeId, themeFg, themeBg`); `SELECT name,path` yields `Work|nb2l5vl7.default-release`, `Perso|tPJagWwW.Profile 1`. |
+| Profile-group SQLite | `Profiles` table is 7 columns (`id, path, name, avatar, themeId, themeFg, themeBg`); `SELECT name,path` yields `Work|nb2l5vl7.default-release`, `Perso|tPJagWwW.Profile 1`. Readable via `-readonly` despite a 1.5 MB uncheckpointed `-wal`. |
+| Selector-created profiles vs `profiles.ini` | `nb2l5vl7.default-release` (Work) is **absent from `profiles.ini` entirely** — it exists only on disk and in the group DB. Profiles created through the new selector are never written to the INI, so the sqlite map is the only possible discovery path for them. |
 
 ## Appendix B: The "Hybrid" Alternative (not implemented)
 
@@ -720,11 +847,15 @@ If this fallback is ever chosen, it is a separate spec/plan cycle: it changes Ta
 - Context separation (distinct cookies/logins/history) → inherent to separate profile dirs; migration preserves existing data (Task 3). ✅
 - Privacy secondary → `common_prefs` scaffolding + global enterprise policy retained (Global Constraints); per-profile privacy prefs are data-file additions, deferred by user request. ✅
 - XDG target `~/.config/mozilla/firefox` → Global Constraints + Tasks 3/4/5. ✅
-- Classic declarative (selector disabled, `profiles.ini` authored, `Default=1` authoritative) → Task 2 + Task 4 + `browser.profiles.enabled=false`. ✅
+- Classic declarative (avatar selector disabled, `profiles.ini` authored) → Task 2 + Task 4 + `browser.profiles.enabled=false`. ✅
+- Picker-on-every-plain-launch (`StartWithLastProfile=0`, `Default=1` as preselection) → Task 4, pre-verified in Task 2 Step 6, confirmed in Task 6 Steps 3–4. ✅
 - Map existing Work→work, Perso→leisure → Task 3 (sqlite name map + `move_profile`). ✅
 - In-Firefox / launcher switching → Task 4 `.desktop` launchers + `about:profiles`/`firefox -P` (Task 6 verify). ✅
-- Fix the dead profile probe in the theme script → Task 5. ✅
+- Fix the dead profile probe in the theme script → Task 5, with the real cause (pre-existing empty XDG root) recorded rather than the earlier misdiagnosis of probe order. ✅
+- Reflink backup, stale-stub deletion, single-copy teardown, documented rollback → Task 3 + File Structure "Rollback". ✅
 - Mention hybrid alternative → Appendix B. ✅
+
+**Open question carried into execution:** whether `Default=1` preselects under `StartWithLastProfile=0`. It is unverified by Appendix A, cheap to test (Task 2 Step 6, throwaway `$HOME`), and inert if false — the fallback is deleting three lines. This is the plan's only deliberate unknown; everything else asserted here was verified empirically on 153.0.1 or re-confirmed on 153.0.3.
 
 **Placeholder scan:** No `TBD`/`TODO`/"handle edge cases". Empty `prefs: []` is a concrete valid state (deferred specifics), not a placeholder — every step ships runnable content. ✅
 
