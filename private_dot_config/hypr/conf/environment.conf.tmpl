@@ -8,11 +8,13 @@
 # Changes require Hyprland restart (logout/login) to take effect.
 # ============================================================================
 
+{{- if eq .chassisType "desktop" }}
+
 # ----------------------------------------------------------------------------
-# NVIDIA-specific settings (nvidia-open drivers)
+# NVIDIA-specific settings (nvidia-open drivers) — DESKTOP ONLY
 # ----------------------------------------------------------------------------
-# These variables enable proper Wayland support with NVIDIA GPUs.
-# REMOVE/MODIFY these if switching to AMD or Intel GPU.
+# These variables enable proper Wayland support with NVIDIA GPUs on desktop.
+# Desktop has a discrete GPU only; laptop has hybrid GPU and uses auto-detect.
 
 # Hardware video acceleration driver for NVIDIA
 env = LIBVA_DRIVER_NAME,nvidia
@@ -21,23 +23,25 @@ env = LIBVA_DRIVER_NAME,nvidia
 # Enables hardware-accelerated video decoding in browsers and media players
 env = NVD_BACKEND,direct
 
-# Explicitly set session type to Wayland (informs applications)
-env = XDG_SESSION_TYPE,wayland
-
 # Graphics Buffer Manager backend for NVIDIA DRM
 env = GBM_BACKEND,nvidia-drm
 
 # OpenGL vendor library for NVIDIA
 env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 
+# Prevent screen tearing with VSync (NVIDIA-specific)
+env = __GL_SYNC_TO_VBLANK,1
+
+{{- end }}
+
+# Explicitly set session type to Wayland (informs applications)
+env = XDG_SESSION_TYPE,wayland
+
 # Hardware cursor support (test mode for modern NVIDIA drivers 580+)
 # Legacy value: 1 (disabled) - Previous workaround for NVIDIA cursor bugs
 # Modern value: 0 (enabled) - Newer drivers (580+) may have fixed rendering issues
 # If cursor issues occur (invisible cursor, rendering artifacts), revert to 1
 env = WLR_NO_HARDWARE_CURSORS,0
-
-# Prevent screen tearing with VSync (NVIDIA-specific)
-env = __GL_SYNC_TO_VBLANK,1
 
 # ----------------------------------------------------------------------------
 # Qt/GTK Application Theming
