@@ -43,3 +43,8 @@ private_dot_config/broot/launcher/
 # the Lua config (conf/*.lua) is already deployed and live — only this entry
 # point is held back.
 .config/hypr/hyprland.lua
+
+# Steam iGPU-forcing desktop override only makes sense on hybrid-GPU laptops
+{{ if ne .chassisType "laptop" }}
+.local/share/applications/steam.desktop
+{{ end }}
