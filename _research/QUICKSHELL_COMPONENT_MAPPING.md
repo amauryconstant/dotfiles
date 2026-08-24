@@ -1,4 +1,5 @@
 # Quickshell Component Mapping
+
 **Purpose**: Document what each existing desktop component does and how it maps to Quickshell QML capabilities
 **Created**: June 2026
 
@@ -22,6 +23,7 @@
 #### What Waybar does (504 config lines)
 
 **Layout**:
+
 - Single horizontal bar, top edge, 30px height
 - Left: workspaces + active window title
 - Center: clock
@@ -47,11 +49,13 @@
 | `custom/swaync` | Notification bell + unread count | Exec-persistent to `swaync-client -swb`, click toggles panel, right-click DND, middle clears |
 
 **Interaction**:
+
 - Scroll (volume/brightness adjust)
 - Left/right/middle click (mode-dependent per module)
 - Tooltips (hover for details)
 
 **Styling**:
+
 - 625 lines of CSS, imports `themes/current/waybar.css`
 - Semantic colors (backgrounds, foregrounds, accents)
 - Responsive (flexbox layout)
@@ -63,6 +67,7 @@
 **Layout**: `RowLayout` with left/center/right sections.
 
 **Workspace module**:
+
 ```qml
 Repeater {
   model: Hyprland.workspaces
@@ -82,6 +87,7 @@ Repeater {
 **Clock**: `Clock { interval: 60000 }` + `Text { text: currentTime }` (Qt.formatTime).
 
 **Audio**: Bind to `PipeWire.defaultAudioPlayback`:
+
 ```qml
 Rectangle {
   Text { text: volumeIcon(device.volume) + ` ${Math.round(device.volume * 100)}%` }
@@ -93,6 +99,7 @@ Rectangle {
 ```
 
 **Media**: Bind to `Mpris` singleton:
+
 ```qml
 Text {
   text: Mpris.currentPlayer ? `${Mpris.currentPlayer.title} - ${Mpris.currentPlayer.artist}` : "—"
@@ -104,6 +111,7 @@ MouseArea {
 ```
 
 **Battery**: Bind to `UPower.displayDevice`:
+
 ```qml
 Text { text: batteryIcon(device.percentage) + ` ${device.percentage}%` }
 ```
@@ -115,6 +123,7 @@ Text { text: batteryIcon(device.percentage) + ` ${device.percentage}%` }
 **Bluetooth**: Bind to `Bluetooth` singleton.
 
 **Backlight**: Shell out to `light` command (no native Quickshell module):
+
 ```qml
 Slider {
   value: getBacklight()
@@ -123,12 +132,14 @@ Slider {
 ```
 
 **Custom indicators** (kanata, voxtype, idle, swaync):
+
 - Kanata: TCP socket to kanata server (same pattern as Waybar — exec-persistent wrapper)
 - Voxtype: Exec `voxtype status --follow --format json`, parse state
 - Idle: Shell script, poll / signal
 - swaync: Shell script `swaync-client -swb`, parse JSON state
 
 **Challenge**: Quickshell has no native "custom script module" like Waybar. Options:
+
 1. **Shell process wrapper** — spawn a long-lived process, read from stdout/IPC (voxtype, kanata)
 2. **Timer-based polling** — `Timer { interval: 1000; onTriggered: updateIndicator() }` (less efficient)
 3. **D-Bus signals** — listen to system events (swaync already does this for notifications)
@@ -148,6 +159,7 @@ Slider {
 #### What Wofi does (22 lines config)
 
 **Features**:
+
 - Floating window, center of screen, 600×400px
 - Desktop app search (`.desktop` files, icons, exec)
 - Fuzzy matching, case-insensitive
@@ -157,6 +169,7 @@ Slider {
 - No actions/right-click menu
 
 **Styling**:
+
 - 1 CSS import from theme
 - Window bg, input field, item hover, selected item colors
 
@@ -222,6 +235,7 @@ FloatingWindow {
 #### What swaync does (JSON config, 39 lines)
 
 **Components**:
+
 1. **Notification daemon** — listens for Freedesktop notifications (D-Bus)
 2. **Notification popup** — transient window showing latest notification (top-right, 500px wide, auto-timeout 10s)
 3. **Control center panel** — persistent slide-out panel (top-right, 500×600px) showing:
@@ -231,6 +245,7 @@ FloatingWindow {
    - Grouped notifications with action buttons
 
 **Features**:
+
 - Notification grouping by app
 - Persistent history (survives daemon restart if `keepOnReload: true`)
 - Action buttons (reply, dismiss, open)
@@ -239,6 +254,7 @@ FloatingWindow {
 - Markup + hyperlink + image support (config flags)
 
 **Styling**:
+
 - `style.css` imports theme
 - Button colors (accent per action state)
 - Background/foreground hierarchy
@@ -364,6 +380,7 @@ PanelWindow {
 #### What wlogout does (37 lines)
 
 **Features**:
+
 - 6 buttons arranged in grid:
   1. **Lock** (`hyprlock`)
   2. **Logout** (`hyprctl dispatch exit`)
@@ -376,6 +393,7 @@ PanelWindow {
 - Positioned on screen (layout file specifies position, usually center)
 
 **Styling**:
+
 - Each button gets a semantic accent color (warning, error, primary, etc.)
 - GTK CSS import from theme
 - Button size, spacing, rounding
@@ -495,6 +513,7 @@ FloatingWindow {
 ### 1. Custom script execution & IPC (kanata, voxtype, swaync indicator)
 
 Waybar has `exec-persistent` and `exec` directives that continuously read from a subprocess. Quickshell has:
+
 - `QProcess` (C++ / Qt, accessible from QML via custom C++ modules)
 - No built-in persistent-read abstraction
 
@@ -505,6 +524,7 @@ Waybar has `exec-persistent` and `exec` directives that continuously read from a
 Wofi uses GTK's desktop file loader. Quickshell has no native `.desktop` parser.
 
 **Solution**:
+
 - QML wrapper around `gio desktop-entry` or `desktop-file-utils`
 - Or: pre-parse `.desktop` files at startup via shell script, cache JSON
 
@@ -514,9 +534,19 @@ Current: semantic colors in `colors.sh` (Bash vars), consumed by shell scripts.
 Needed: same vars in QML (Colors singleton or JSON).
 
 **Solution**:
+
 - Generate `Colors.qml` from `colors.sh` at theme switch time
 - Or: `colors.json` consumed at app startup
 - Both triggered by `theme switch` (add to theme-switcher)
+
+**Update 2026-08-24**: Omarchy 4.0.0 ships a working implementation of this bridge —
+one semantic colorset per theme, templates rendering 17 per-app outputs, the shell
+watching its own theme file for live reload, and hand-written per-theme files overriding
+generated ones. See `_research/QUICKSHELL_DESKTOP_RESEARCH.md` → "Omarchy 4 as reference
+implementation" and `_research/omarchy/OMARCHY_v4.0.0.md` (§Configuration Changes).
+One wrinkle specific to us: our `colors.sh` is itself generated *from* `waybar.css`, so
+the CSS is currently the source of truth — that needs inverting before a QML consumer
+makes sense.
 
 ### 4. Backlight control (requires `light` command)
 
