@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+# Firefox launcher - NVIDIA egl-wayland2 workaround
+# Purpose: Restore a mapped, GPU-accelerated Firefox window under native Wayland
+# Requirements: Arch Linux, firefox (also serves firefox-esr via symlink)
+#
+# nvidia-utils depends on egl-wayland2, whose 09_nvidia_wayland2.json sorts
+# ahead of 10_nvidia_wayland.json and therefore wins. Firefox's native Wayland
+# EGL path fails against that platform library: it creates the xdg_toplevel and
+# acks the compositor's configure, but never presents a buffer, so the window is
+# never mapped. Firefox looks like it started (processes running, GPU memory
+# allocated, no error output) while no window ever appears.
+#
+# Rebuilding the EGL platform config directory without wayland2 and pointing
+# __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS at it restores normal startup with
+# hardware acceleration intact. Rebuilt on every launch so driver updates are
+# picked up automatically. No-op when egl-wayland2 is absent.
+
+EGL_CONFIG_DIR=/usr/share/egl/egl_external_platform.d
+WAYLAND2_CONFIG="$EGL_CONFIG_DIR/09_nvidia_wayland2.json"
+
+case "${0##*/}" in
+firefox-esr) FIREFOX_BIN=/usr/lib/firefox-esr/firefox-esr ;;
+*) FIREFOX_BIN=/usr/lib/firefox/firefox ;;
+esac
+
+if [[ -e "$WAYLAND2_CONFIG" ]]; then
+    filtered_dir="${XDG_RUNTIME_DIR:-/tmp}/firefox-egl-platforms"
+
+    if mkdir -p "$filtered_dir" 2>/dev/null; then
+        rm -f "$filtered_dir"/*.json
+
+        for config in "$EGL_CONFIG_DIR"/*.json; do
+            [[ -e "$config" ]] || continue
+            case "${config##*/}" in
+            *wayland2*) continue ;;
+            *) ;;
+            esac
+            ln -sf "$config" "$filtered_dir/"
+        done
+
+        export __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS="$filtered_dir"
+    fi
+fi
+
+exec "$FIREFOX_BIN" "$@"

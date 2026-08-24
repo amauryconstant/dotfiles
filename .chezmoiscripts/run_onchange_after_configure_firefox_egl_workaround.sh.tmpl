@@ -1,0 +1,55 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_after_configure_firefox_egl_workaround.sh
+# Purpose: Route Firefox desktop entries through the egl-wayland2 workaround wrapper
+# Requirements: Arch Linux, firefox
+
+# Hash: {{ output "sh" "-c" "pacman -Q firefox firefox-esr egl-wayland2 2>/dev/null || true" | sha256sum }}
+
+{{ includeTemplate "log_start" "Configuring Firefox EGL workaround..." }}
+
+set -eu
+
+APPLICATIONS_DIR="$HOME/.local/share/applications"
+WAYLAND2_CONFIG=/usr/share/egl/egl_external_platform.d/09_nvidia_wayland2.json
+
+# ~/.local/bin/firefox already shadows /usr/bin/firefox on PATH, but desktop
+# entries call /usr/lib/firefox/firefox directly, so launcher- and mimetype-based
+# launches bypass the wrapper. Regenerate local overrides that point at it.
+if [ ! -e "$WAYLAND2_CONFIG" ]; then
+    {{ includeTemplate "log_skip" "egl-wayland2 absent, dropping any stale overrides" }}
+    rm -f "$APPLICATIONS_DIR/firefox.desktop" "$APPLICATIONS_DIR/firefox-esr.desktop"
+    exit 0
+fi
+
+mkdir -p "$APPLICATIONS_DIR"
+entries_changed=0
+
+for entry in firefox firefox-esr; do
+    system_entry="/usr/share/applications/${entry}.desktop"
+    [ -f "$system_entry" ] || continue
+
+    override="${APPLICATIONS_DIR}/${entry}.desktop"
+    candidate="${override}.new"
+
+    # Rewrite every Exec= line (default action plus new-window/private-window/
+    # profile-manager) to the wrapper, which re-execs the real binary.
+    sed "s|^Exec=/usr/lib/${entry}/${entry}|Exec=${HOME}/.local/bin/${entry}|" \
+        "$system_entry" >"$candidate"
+
+    if [ -f "$override" ] && cmp -s "$candidate" "$override"; then
+        rm -f "$candidate"
+        continue
+    fi
+
+    mv "$candidate" "$override"
+    entries_changed=$((entries_changed + 1))
+    echo "  → regenerated ${entry}.desktop"
+done
+
+if [ "$entries_changed" -gt 0 ] && command -v update-desktop-database >/dev/null 2>&1; then
+    {{ includeTemplate "log_step" "Updating desktop database..." }}
+    update-desktop-database "$APPLICATIONS_DIR" >/dev/null 2>&1 || true
+fi
+
+{{ includeTemplate "log_complete" "Firefox EGL workaround configured" }}

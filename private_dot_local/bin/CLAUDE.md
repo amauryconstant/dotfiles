@@ -18,6 +18,7 @@
 - `executable_ts` - Tailscale helper with subcommand routing
 - `executable_unzip` - Compatibility wrapper (unzip → unar)
 - `executable_mmdc` - Mermaid CLI shim (`mmdc` flags → `mmdr`)
+- `executable_firefox` - NVIDIA egl-wayland2 workaround (shadows `/usr/bin/firefox`; `firefox-esr` symlinks to it)
 
 **For new scripts**: Don't create wrappers — add directly to `lib/scripts/` without .sh extension
 
