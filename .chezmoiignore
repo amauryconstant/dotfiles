@@ -29,8 +29,17 @@ __pycache__
 # Broot build artifact (auto-generated marker file)
 private_dot_config/broot/launcher/
 
-# TEMP: run Hyprland in legacy .conf mode until a Waybar release includes
+# TEMP: run Hyprland in legacy .conf mode until a Waybar *release* includes
 # PR #5013 (Lua-IPC workspace clicks). With hyprland.lua absent, Hyprland falls
-# back to hyprland.conf, whose legacy "dispatch workspace N" works with Waybar
-# 0.15.0. Restore Lua mode by deleting these two lines, then `chezmoi apply`.
+# back to hyprland.conf, whose legacy "dispatch workspace N" still works.
+#
+# Checked 2026-08-24:
+#   PR #5013 merged   2026-05-04 into master
+#   latest release    0.15.0 (2026-02-06) — predates the merge
+#   installed         waybar 0.15.0-2
+#
+# So the fix exists upstream but ships in no tagged release yet. Unblocks when
+# Waybar >= 0.16.0 lands: delete this block, then `chezmoi apply`. The rest of
+# the Lua config (conf/*.lua) is already deployed and live — only this entry
+# point is held back.
 .config/hypr/hyprland.lua

@@ -1,332 +1,755 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-06-08 (through v3.8.2). Batch 1 implemented 2026-05-04.
+Last updated: 2026-08-24 (through v4.0.0).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
+
+> **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself is out of scope (we use Waybar + Wofi + hyprlock/hypridle), but three sub-currents are directly relevant to us: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
 
 ---
 
 ## P1 — High Priority
 
-*(All P1 items resolved — moved to Skipped section)*
+### Waybar toggle leaves a stale process (v3.8.4)
+
+**What**: Newer Waybar does not exit on `SIGTERM` in the toggle path, so `pkill waybar` leaves a stale process and the bar never comes back on the second toggle. Omarchy changed `pkill -x waybar` → `pkill -9 -x waybar`. Our `waybar-toggle` carried the same defect plus a bare `pkill` with no `-x`.
+**Target files**: `private_dot_local/lib/scripts/desktop/executable_waybar-toggle`
+**Effort**: Low
+**Conflict**: Our script is a direct port of `omarchy-toggle-waybar` and carried the same defect.
+
+> **Correction (2026-08-24)**: an earlier revision of this item claimed the bare `pkill waybar` could collaterally kill `voxtype-waybar-status`. It could not. `pkill` without `-f` matches `comm`, not the command line, and every `waybar`-named script here runs under `comm=sh` (`#!/usr/bin/env sh`) — verified with `ps -eo comm,args`. The `-9` was the real defect; `-x` is hygiene against a future rename, not a live bug.
+
+- [x] Change `pkill waybar` → `pkill -9 -x waybar`
+- [x] Confirm `pgrep -x waybar` guard still matches after the change
+- [x] Test: four toggle cycles — bar returned each time, ends visible
+- [x] Notifications moved after verification, so they report the state actually reached
+- [x] Confirm `voxtype-waybar-status` respawns with the bar (2 instances, unaffected)
+
+---
+
+### hyprsunset cold-start temperature race (v4.0.0)
+
+**What**: On a hyprsunset cold start the temperature can be dropped silently — the daemon is not ready when the temperature is set, so the filter never applies. Omarchy's fix resends the temperature until it sticks. Our `nightlight-toggle` did exactly the racy thing: `pkill hyprsunset` immediately followed by `hyprsunset -t <temp> &` with no wait and no verification, so a toggle could report success while the screen temperature never changed. It also read current state by parsing the process cmdline, which goes stale the moment temperature is changed any way other than respawning.
+**Target files**: `private_dot_local/lib/scripts/desktop/executable_nightlight-toggle`, `private_dot_local/lib/scripts/desktop/executable_nightlight-config`, `private_dot_local/lib/scripts/user-interface/executable_menu-trigger`
+**Effort**: Low
+**Conflict**: Our script is a port of `omarchy-toggle-nightlight` and predates the fix.
+
+Rather than hardening the kill/respawn, both scripts were moved onto hyprsunset's IPC (`hyprctl hyprsunset`), which was previously unused anywhere in the repo. Measured behaviour of that interface, since none of it is documented:
+
+| Probe | Result |
+|---|---|
+| `hyprctl hyprsunset temperature` (bare) | reads the current Kelvin back — **undocumented getter** |
+| `hyprctl hyprsunset temperature <k>` | prints `ok` |
+| `hyprctl hyprsunset identity` | prints `ok`, but does **not** reset the temperature read-back |
+| invalid command / out-of-range value | **still exits 0** — exit status proves nothing, check the output |
+
+Because `identity` leaves the read-back unchanged, temperature alone cannot distinguish "filter on" from "identity active", so on/off is tracked with a marker in `$XDG_RUNTIME_DIR` (tmpfs — hyprsunset does not survive a logout either, so a persistent marker would claim "on" with no daemon; same reasoning as `idle-toggle:16`).
+
+- [x] Drive the running daemon over IPC instead of kill/respawn; spawn only when absent, then wait for the socket
+- [x] Use `identity` as "off" rather than a second daemon at 6000K
+- [x] Verify by reading the temperature back; notify only after confirmation
+- [x] Replace cmdline parsing with a runtime marker + a persistent Kelvin preference
+- [x] Test: 6 consecutive toggles — daemon PID unchanged, count stayed 1, state matched every notification
+- [x] Test: cold start, stale marker, corrupt preference, out-of-range preference — all recover
+
+**Found while fixing**: `nightlight-config` had never worked. It offered a wofi Kelvin menu and then set `hyprctl keyword decoration:col.shadow 0xee...` per choice, notifying as though the temperature had changed — it never touched hyprsunset at all. It also had **no callers anywhere**, so it was both broken and unreachable.
+
+- [x] Rewrite it onto the same IPC path; the chosen Kelvin is persisted as the warm preference `nightlight-toggle` turns on with
+- [x] Make it reachable — added to the Toggle submenu in `menu-trigger` (menu entry, no new keybinding)
+
+---
+
+### Hyprland Lua config is the forward path (v4.0.0)
+
+**What**: Omarchy converted all Hyprland configuration from `.conf` to Lua for Hyprland 0.56 (`hyprland.lua` sourcing a bootstrap, `hl.monitor{}`, `hl.env()`, `hl.unbind()`, `o.bind()` action tables, `omarchy_default_bindings = false` escape hatches, `.luarc.json` shipped alongside). Our repo has already done this migration.
+**Target files**: `.chezmoiignore`, `private_dot_config/hypr/conf/**`, `private_dot_config/hypr/conf/bindings/**`, `.chezmoiscripts/run_once_after_007_validate_hyprland_config.sh.tmpl`
+**Effort**: Medium
+**Blocked on**: a Waybar release carrying PR #5013 — external, nothing to do here until it lands.
+
+> **Correction (2026-08-24)**: an earlier revision of this item framed the dual `.conf`/`.lua` sources as unmanaged drift risk and asked which entry point is authoritative. That was wrong on both counts. The `.lua` set **is** deployed and live (`~/.config/hypr/conf/*.lua` all present); only the *entry point* is held back, deliberately, by `.chezmoiignore` — which documents why. Hyprland here is already 0.56.2, the version Omarchy converted for.
+
+The real question is only whether Waybar has shipped PR #5013 (`fix(hyprland/workspaces): adapt dispatch commands for Lua IPC protocol`), because our Waybar workspace clicks depend on the legacy text dispatch that Lua mode removes.
+
+Checked 2026-08-24: **merged 2026-05-04** into master; latest release **0.15.0 (2026-02-06)** predates it; installed `waybar 0.15.0-2`. The fix is upstream but in no tagged release. Full state recorded in `.chezmoiignore` so the next check is a version comparison, not a re-investigation.
+
+- [x] Confirm which entry point Hyprland loads today — `hyprland.conf`, by deliberate `.chezmoiignore` exclusion of `hyprland.lua`
+- [x] Establish the actual unblock condition and record it where the hold lives
+- [ ] When Waybar >= 0.16.0 lands: delete the `.chezmoiignore` block, `chezmoi apply`, verify workspace clicks
+- [ ] Diff each `conf/X.conf` against `conf/X.lua` and reconcile any drift (bindings dir has 11 pairs) — both sets are deployed, so divergence is still worth an audit
+- [ ] Gate the retirement of the `.conf` set behind an explicit user go-ahead — keep both until the Lua path is confirmed across a reboot and a `hyprctl reload`
+- [ ] Extend `run_once_after_007_validate_hyprland_config` to validate whichever entry point is authoritative
+- [ ] Review omarchy's helper surface (`hl.unbind`, `hl.monitor{ transform = }`, `hl.env`) against our `conf/helpers.lua` — adopt `unbind` if we ever need to drop an inherited default
+
+**Not doing**: `waybar-git`. It would be the first locally-built `-git` package in the repo and needs a vendored `#commit=<sha>` pin per `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`.
 
 ---
 
 ## P2 — Medium Priority
 
-### VRR removed from default monitor line (v3.6.0)
-**What**: v3.6.0 drops `vrr,1` from the default `monitor=,preferred,auto,auto,vrr,1` line to avoid small input lag. Our `monitor.conf.tmpl` uses `monitor=DP-1,3840x2160@144,0x0,1.25` (explicit config, no VRR flag) so we're not affected by the default line — but worth confirming VRR is not implicitly set.
-**Target files**: `private_dot_config/hypr/conf/monitor.conf.tmpl`
-**Effort**: Low
+### NVIDIA GPU detection via sysfs instead of lspci (v4.0.0)
 
-- [x] Confirm no `vrr,1` in our `monitor.conf.tmpl` entries (explicit per-monitor lines don't use the catch-all default anyway)
-- [x] If any catch-all `monitor=,...,vrr,1` line exists, remove `vrr,1`
+**What**: Omarchy switched NVIDIA detection from `lspci` to sysfs because `lspci` resumes a runtime-suspended discrete GPU out of D3cold, which can exceed Hyprland's 1.5s config-load budget and stall session start. They also classify by PCI device ID so pre-Maxwell cards stay off an incompatible driver and missed Maxwell/Pascal parts are picked up. We compute `.nvidiaDriverType` / `.nvidiaGpuDetected` in `.chezmoi.yaml.tmpl` — worth checking which probe we use and whether the legacy/modern split matches by device ID or by name string.
+**Target files**: `.chezmoi.yaml.tmpl`, `.chezmoiscripts/run_once_before_001_preflight_and_session_validation.sh.tmpl`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-hw-nvidia`, `default/hypr/nvidia.lua`
+
+- [ ] Check whether our detection uses `lspci` — if so, switch to reading `/sys/bus/pci/devices/*/{vendor,device,class}`
+- [ ] Compare our `modern|legacy` classification against omarchy's device-ID table (pre-Maxwell → legacy, Maxwell/Pascal → modern)
+- [ ] Verify `chezmoi data | jaq -r '.nvidiaDriverType'` still resolves correctly after the change
+
+---
+
+### Drop the `kms` hook when proprietary NVIDIA handles early KMS (v4.0.0)
+
+**What**: On NVIDIA-only machines the `kms` mkinitcpio hook pulls nouveau and ~100MB of firmware into every initramfs for no benefit, because the proprietary driver already handles early KMS via its own modules. Omarchy drops the hook on NVIDIA-only systems and rebuilds existing images on upgrade. We build UKIs and already write `/etc/mkinitcpio.conf.d/nvidia.conf`, so we pay this cost on every kernel update.
+**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
+**Effort**: Medium
+**Conflict**: Interacts with `boot.gpu.kms` and the Plymouth hook ordering already handled in script 005.
+
+- [ ] Confirm the machine is NVIDIA-only (no Intel/AMD iGPU in play) before considering the drop
+- [ ] Check whether `kms` is currently in `HOOKS` and measure UKI size before/after
+- [ ] If dropping: ensure `nvidia_drm.modeset=1` and the nvidia modules remain in `MODULES` so Plymouth still gets a mode set early
+- [ ] Rebuild UKIs and reboot-test — Plymouth must still theme the LUKS prompt
+
+---
+
+### Ghostty CSI-u `Shift+Return` encoding (v3.8.3, v4.0.0)
+
+**What**: Omarchy moved all shipped terminals to CSI-u encoding so TUIs can distinguish `Shift+Enter` (`CSI 13;2u`) and `Alt+Shift+Enter` (`CSI 13;4u`) from plain `Enter` / `Alt+Enter`. Our Ghostty config still sends the ambiguous legacy sequence: `keybind = shift+enter=text:\x1b\r`, which is indistinguishable from `Alt+Return`. Claude Code, Codex and other TUIs use `Shift+Enter` for newline-without-submit.
+**Target files**: `private_dot_config/ghostty/config.tmpl`
+**Effort**: Low
+**Conflict**: Existing `shift+enter=text:\x1b\r` binding must be replaced, not appended.
+
+- [ ] Replace `keybind = shift+enter=text:\x1b\r` with `keybind = shift+enter=csi:13;2u`
+- [ ] Add `keybind = alt+shift+enter=csi:13;4u`
+- [ ] Verify Claude Code / opencode still insert a newline on `Shift+Enter` after the change (some TUIs only understand the legacy sequence — roll back if so)
+- [ ] Mirror into `private_dot_config/kitty/` if the baseline terminal is kept in sync (`map shift+enter send_text all \e[13;2u`)
+
+---
+
+### External monitor brightness via DDC/CI (v4.0.0)
+
+**What**: Brightness keys and OSD drive the focused *external* display over DDC/CI; laptop panels keep using the kernel backlight. Our `media-keys` bindings call `brightnessctl set +10%`, which only touches an internal backlight — on the desktop (DP-1, 3840x2160) the brightness keys currently do nothing.
+**Target files**: `private_dot_config/hypr/conf/bindings/media-keys.conf` + `.lua`, `.chezmoidata/packages.yaml`, new `private_dot_local/lib/scripts/desktop/executable_brightness-set`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-brightness-display-ddc`
+
+- [ ] Add `ddcutil` to `packages.yaml` (`desktop_hyprland` or `system_utilities`)
+- [ ] Implement `brightness-set up|down` — use `brightnessctl` when an internal backlight exists, else `ddcutil setvcp 10` against the focused monitor's I2C bus
+- [ ] Cache the bus number (DDC probing is slow, ~200ms+) so key auto-repeat stays responsive
+- [ ] Repoint `XF86MonBrightnessUp/Down` at the new script
+- [ ] Note: DDC/CI requires the `i2c-dev` module and group permissions — add to the `run_once_after` setup if needed
+
+---
+
+### SSH keepalive and reconnect resilience (v4.0.0)
+
+**What**: Dropped SSH connections leave the terminal in a broken state (leftover mouse tracking, alternate screen) and the drop is only noticed whenever TCP eventually gives up. Omarchy adds client keepalives so the drop surfaces in ~45s, plus a reconnect wrapper that resets the terminal. Our `private_dot_ssh/private_config.tmpl` has no `ServerAliveInterval` at all.
+**Target files**: `private_dot_ssh/private_config.tmpl`, `private_dot_config/zsh/dot_zshrc.d/` (new `ssh-reconnect.zsh`)
+**Effort**: Low
+**Adapt from**: `install/config/ssh-keepalive.sh`, `default/bash/fns/ssh-reconnect`
+
+- [ ] Add `ServerAliveInterval 15` + `ServerAliveCountMax 3` under `Host *` in the SSH config
+- [ ] Add a reconnect wrapper that runs `tput rmcup; printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l'` on exit before retrying
+- [ ] Verify it does not fight the existing `fip`/`dip`/`lip` background forwards (those use `-f -N`)
+
+---
+
+### Semantic `colors.toml` + template-rendered app themes (v3.3.0, v3.3.1, v4.0.0)
+
+**What**: v4.0.0 replaced the ANSI-indexed `color0`–`color15` schema with a **24-key semantic colorset** (`mode`, `accent`, `selection`, `muted`, four `*background`, four `*foreground`, named + `bright_*` colors) and renders every app theme from `default/themed/*.tpl` at theme-set time — btop, neovim, VS Code, Helix, Chromium, foot, ghostty, kitty, alacritty, `hyprland.lua`, `shell.toml`. Per-theme `btop.theme` files are dropped entirely. Placeholders are `{{ key }}`, `{{ key_strip }}` (no `#`), `{{ key_rgb }}`, plus `{{ mix background foreground 15% }}` and gradient helpers. User templates at `~/.config/omarchy/themed/*.tpl` render first and suppress the built-in; a hand-written per-theme file still wins over the template.
+This directly parallels our 24-semantic-variable architecture (`colors.sh` with `BG_*`/`FG_*`/`ACCENT_*`), but we still hand-maintain ~20 config files per theme across 8 themes. The v4.0.0 design is now stable enough to evaluate seriously — including the per-theme escape hatch, which is what makes template generation tolerable.
+**Target files**: `private_dot_config/themes/`, `private_dot_config/themes/CLAUDE.md`, theme generation scripts
+**Effort**: High
+
+- [ ] Map our 24 `colors.sh` semantic variables onto omarchy's 24-key colorset — confirm the sets are genuinely isomorphic before committing to the pattern
+- [ ] Prototype template rendering for the two lowest-risk targets first (`btop.theme`, `bat.conf`) and diff generated vs hand-written output byte-for-byte across all 8 themes
+- [ ] Adopt the "hand-written per-theme file wins over the template" precedence rule — several of our themes have deliberate manual tuning that must not be flattened
+- [ ] Decide whether generation runs at chezmoi apply time (template) or theme-switch time (script); the chezmoi route avoids a second templating engine
+- [ ] Keep the existing hand-written files in place until the generated set is validated — do not delete on the same change
+
+---
+
+### Weather in Waybar, with pinnable location (v3.8.0, v4.0.0)
+
+**What**: A `custom/weather` module polls a weather script and shows current conditions in the bar, with a notification binding for the full report. v4.0.0 adds a **forecast panel and a location that can be pinned to a chosen place instead of IP geolocation** — worth building in from the start rather than retrofitting, since IP geolocation is wrong on VPN/Tailscale. The CSS block and config comment are already present in our Waybar files.
+**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`, new `private_dot_local/lib/scripts/desktop/executable_waybar-weather`
+**Effort**: Medium
+**Adapt from**: `default/waybar/weather.sh`, `bin/omarchy-weather-location`, `bin/omarchy-weather-status`
+
+- [ ] Implement weather script using `wttr.in` or `open-meteo.com` (local units, icon + temp output)
+- [ ] Support a pinned location from a config file, falling back to IP geolocation only when unset
+- [ ] Uncomment `"custom/weather"` in `modules-center` in `config.tmpl`
+- [ ] Uncomment `#custom-weather` CSS block in `style.css.tmpl` (already present as comment)
+- [ ] Add `Super+Ctrl+Alt+W` binding to show the full weather notification
+- [ ] Set poll interval to 60 seconds in module config; cache the response so a bar restart does not re-hit the API
 
 ---
 
 ### Persistent Hyprland toggle system (v3.6.0)
-**What**: Named flag configs persisted to `~/.local/state/omarchy/toggles/hypr/` and sourced on every `hyprctl reload`. Survives restarts. Powers touchpad toggle, display toggle, etc.
-**Target files**: `private_dot_config/hypr/hyprland.conf.tmpl` (add source glob), new state directory
-**Effort**: Medium
-**Adapt from**: `bin/omarchy-hyprland-toggle`, `default/hypr/toggles/flags.conf`
 
-- [ ] Add `source = ~/.local/state/dotfiles/toggles/hypr/*.conf` (adapted path, not omarchy) to `hyprland.conf.tmpl`
+**What**: Named flag configs persisted to `~/.local/state/omarchy/toggles/hypr/` and sourced on every `hyprctl reload`. Survives restarts. Powers touchpad toggle, display toggle, etc. v4.0.0 keeps this pattern as `require("default.hypr.toggles")` at the end of the Lua entry point.
+**Target files**: `private_dot_config/hypr/hyprland.lua.tmpl` (add require/glob), new state directory
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-hyprland-toggle`, `default/hypr/toggles/flags.conf`, `default/hypr/toggles.lua`
+
+- [ ] Add a toggles require at the end of `hyprland.lua.tmpl` reading `~/.local/state/dotfiles/toggles/hypr/` (adapted path, not omarchy)
 - [ ] Create `~/.local/state/dotfiles/toggles/hypr/` in the `create_necessary_directories` script
-- [ ] Implement `hypr-toggle` script that copies/removes flag conf files to state dir and runs `hyprctl reload`
-- [ ] Use as foundation for touchpad toggle (see P3 item below)
+- [ ] Implement `hypr-toggle` script that writes/removes flag files in the state dir and runs `hyprctl reload`
+- [ ] Use as foundation for the touchpad toggle (see P3 item below)
+
+---
+
+### Lid / clamshell display handling (v3.6.0, v4.0.0)
+
+**What**: Internal display auto-toggles via Hyprland `bindl` on `switch:on:Lid Switch` / `switch:off:Lid Switch`. v4.0.0 adds idempotent scale recovery on clamshell transitions and a lid-close handler, fixing the case where reopening the lid leaves the internal panel at the wrong scale. Only relevant on laptops (`chassisType == "laptop"`).
+**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf` + `.lua` (or a new `hardware.conf`)
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-hyprland-monitor-clamshell`, `bin/omarchy-hw-clamshell`, `bin/omarchy-system-lid-close`
+
+- [ ] Add `bindl` lid switch handlers conditioned on `chassisType == "laptop"`
+- [ ] Wire to a script that disables/enables the `eDP` output via `hyprctl`
+- [ ] Make the handler idempotent and re-apply scale on reopen (v4.0.0's fix — repeated lid events must converge)
+- [ ] Guard against disabling the only active display
+- [ ] Note: interacts with HyprDynamicMonitors — check that a lid event does not fight a profile switch
 
 ---
 
 ### `mise activate bash --shims` in uwsm/env (v3.4.2)
-**What**: Omarchy changed `~/.config/uwsm/env` to use `mise activate bash --shims` instead of `mise activate bash`. The `--shims` flag ensures mise-managed tools are available in non-interactive Wayland session environments (e.g., for apps launched from Hyprland that don't spawn a login shell).
-**Target files**: `private_dot_config/uwsm/env` (new managed file)
+
+**What**: The `--shims` flag ensures mise-managed tools are available in non-interactive Wayland session environments (e.g. apps launched from Hyprland that don't spawn a login shell).
+**Target files**: `private_dot_config/uwsm/env`
 **Effort**: Low
+**Note**: v4.0.0 moves this to a package-owned `/usr/share/uwsm/env.d/10-omarchy` — not applicable to us; `~/.config/uwsm/env` remains the right home for our copy.
 
 - [x] Create `private_dot_config/uwsm/env` managed by chezmoi
 - [x] Set `mise activate bash --shims` in that file
-- [ ] Verify mise-managed tools (e.g., node, ruby) are visible to Wayland-launched apps
+- [ ] Verify mise-managed tools (e.g. node, ruby) are visible to Wayland-launched apps
 
 ---
 
 ### LocalSend minimum window size rule (v3.4.2)
+
 **What**: LocalSend opens with a small default window. A `windowrulev2` with `minsize` fixes this.
-**Target files**: `private_dot_config/hypr/conf/windowrules.conf`
+**Target files**: `private_dot_config/hypr/conf/windowrules.conf` + `.lua`
 **Effort**: Low
 
 - [x] Add window rule for LocalSend: `windowrule = match:class localsend, minsize 600 400`
 - [ ] Confirm localsend class name: `hyprctl clients | grep -A5 -i localsend`
+- [ ] Mirror the rule into `windowrules.lua` (dual-source drift risk — see P1 Lua item)
 
 ---
 
-### colors.toml theme generation pattern (v3.3.0, v3.3.1)
-**What**: Single `colors.toml` (24 semantic color fields) generates all app configs via templates. Directly parallels our 24-variable semantic architecture. Could reduce per-theme manual maintenance (currently each theme has 13 separate config files).
-**Target files**: `private_dot_config/themes/`
-**Effort**: High
-**Note**: Monitor as Omarchy's implementation stabilizes (v3.3.1 still fixing regressions in the template system). Not a direct copy — adapt the generation pattern to work with our chezmoi template system.
+### Audio switch `wpctl set-default` fix (v3.6.0, v4.0.0)
 
-- [ ] Review final `colors.toml` format in Omarchy (post v3.3.1 stabilization)
-- [ ] Prototype: extend `generate-theme-shell-colors.sh` to output a `colors.toml` alongside existing shell format
-- [ ] Evaluate whether template-driven per-app generation would reduce maintenance burden vs current symlink approach
-
----
-
-### Lid open/close display control (v3.6.0)
-**What**: Internal display auto-toggles via Hyprland `bindl` on `switch:on:Lid Switch` (off) and `switch:off:Lid Switch` (on). Only relevant on laptops (`chassisType == "laptop"`).
-**Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf` (or new `hardware.conf`)
-**Effort**: Low
-
-- [ ] Add `bindl = , switch:on:Lid Switch, exec, <internal-monitor-off>` and `bindl = , switch:off:Lid Switch, exec, <internal-monitor-on>` (conditioned on `chassisType == "laptop"`)
-- [ ] Wire to `hypr-toggle` or a lightweight script to disable/enable `eDP` output via `hyprctl`
-- [ ] Guard against disabling only active display
-
----
-
-### Audio switch `wpctl set-default` fix (v3.6.0)
-**What**: Our `audio-switch` script uses `pactl set-default-sink` which doesn't persist via WirePlumber. Should use `wpctl set-default <wpid>` so the configured sink is actually updated in WirePlumber state.
+**What**: `pactl set-default-sink` doesn't persist via WirePlumber; `wpctl set-default <id>` does. v4.0.0 additionally makes output/source switching **preserve playback** and adds recovery when audio services get stuck.
 **Target files**: `private_dot_local/lib/scripts/desktop/executable_audio-switch`
 **Effort**: Low
+**Adapt from**: `bin/omarchy-restart-audio`, `bin/omarchy-audio-sink-availability`
 
 - [x] Replace `pactl set-default-sink "$next_sink"` with `wpctl set-default` using PipeWire object ID from pactl JSON `.index` field *(done 2026-05-04)*
 - [ ] Test: switch audio device, close session, reopen — sink should persist
-
----
-
-### Live weather in Waybar (v3.8.0)
-**What**: `custom/weather` module polls a weather script every 60 seconds and shows current conditions in the bar. Notification on `Super+Ctrl+Alt+W`. The CSS block and config comment are already present in our Waybar files — just need the weather script and to uncomment the module.
-**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`, new `private_dot_local/lib/scripts/desktop/executable_waybar-weather`
-**Effort**: Medium
-**Adapt from**: `default/waybar/weather.sh` (Omarchy)
-
-- [ ] Implement weather script using `wttr.in` or `open-meteo.com` (local units, icon + temp output)
-- [ ] Uncomment `"custom/weather"` in `modules-center` in `config.tmpl`
-- [ ] Uncomment `#custom-weather` CSS block in `style.css.tmpl` (already present as comment)
-- [ ] Add `Super+Ctrl+Alt+W` binding to show full weather notification
-- [ ] Set poll interval to 60 seconds in module config
+- [ ] Consider moving existing streams to the new sink so playback survives the switch (v4.0.0 behaviour)
 
 ---
 
 ## P3 — Low Priority / Evaluate
 
-### Scratchpad slide-in animation (v3.4.2)
-**What**: Omarchy adds `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` for a smooth vertical slide-in when toggling the scratchpad. We have this line commented out in `animations.conf` with a different curve (`default`).
-**Target files**: `private_dot_config/hypr/conf/animations.conf`
-**Effort**: Low
+### Apps launched in their own systemd scopes with oomd (v4.0.0)
 
-- [x] Enable `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` + `bezier = easeOutQuint, 0.23, 1, 0.32, 1`
-- [ ] Test visually — scratchpad toggle should animate vertically
-
----
-
-### `hyprland-preview-share-picker` default page (v3.4.2)
-**What**: Setting `default_page: outputs` in `~/.config/hyprland-preview-share-picker/config.yaml` makes screen share picker default to display outputs rather than individual windows. More natural for most sharing scenarios.
-**Target files**: `private_dot_config/hyprland-preview-share-picker/config.yaml` (new managed file)
-**Effort**: Low
-
-- [x] Create `private_dot_config/hyprland-preview-share-picker/config.yaml` with `default_page: outputs`
-
----
-
-### Automatic power profile on AC plug/unplug (v3.4.0, v3.5.1)
-**What**: Power profile switches automatically based on AC state. v3.5.1 adds `omarchy-powerprofiles-init` for boot-time profile application (udev rules only fire on state changes, not at boot). Our setup has manual power profile switching in the menu.
-**Target files**: Systemd udev rule or hook
+**What**: Apps launched into per-app systemd scopes rather than the compositor's cgroup, with a `systemd-oomd` drop-in on `app.slice`, so a runaway app gets killed instead of the whole Hyprland session. Genuinely valuable — an OOM today takes the session down with it.
+**Target files**: `private_dot_config/systemd/user/app.slice.d/10-oomd.conf` (new), `.chezmoiscripts/`
 **Effort**: Medium
-**Adapt from**: `bin/omarchy-ac-present`, `bin/omarchy-powerprofiles-init`
+**Adapt from**: `default/systemd/user/app.slice.d/10-oomd.conf`, `etc/systemd/oomd.conf.d/10-omarchy.conf`
 
-- [ ] Review Omarchy's implementation: udev rules for AC plug/unplug + `systemd-run --no-block` for daemon availability
-- [ ] Add a boot-time autostart that applies the correct profile based on current AC state (fixes "stuck on balanced at boot" issue)
-- [ ] Evaluate whether to add automatic switching for plug/unplug events alongside existing manual control
+- [ ] Check whether uwsm already places launched apps in `app.slice` scopes (it largely does — confirm with `systemd-cgls`)
+- [ ] Add an `app.slice.d/10-oomd.conf` user drop-in enabling `ManagedOOMMemoryPressure=kill`
+- [ ] Verify `systemd-oomd` is running and confirm the session survives a deliberate memory hog
 
 ---
 
-### Sticky CWD when opening new terminal (v2.0.0)
-**What**: New terminal windows inherit the current working directory from an existing terminal. Quality-of-life improvement.
-**Target files**: Ghostty config or terminal keybinding exec command
+### zram swap tuning (v4.0.0)
+
+**What**: zram left at kernel defaults makes large machines reach for the hibernation swapfile earlier than necessary. Omarchy ships a `zram-generator.conf.d` drop-in. We configure hibernation (`boot.hibernation.enabled`) but do not tune zram.
+**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
 **Effort**: Medium
+**Adapt from**: `default/systemd/zram-generator.conf.d/90-omarchy.conf`, `etc/tmpfiles.d/omarchy-zswap.conf`
 
-- [ ] Investigate Ghostty's `--working-directory` flag or `HYPRLAND_INSTANCE_SIGNATURE`-based approach
-- [ ] If feasible: update terminal launch binding in `applications.conf.tmpl`
+- [ ] Check current zram size (`zramctl`) and whether `zram-generator` is even installed
+- [ ] If adopting: size zram relative to RAM and confirm it does not conflict with the hibernation resume offset already configured in script 005
 
 ---
 
-### ALT+TAB window cycling (v1.7.0)
-**What**: `Alt+Tab` cycles between windows on active workspace including floating. Currently not bound.
-**Target files**: `private_dot_config/hypr/conf/bindings/focus-navigation.conf`
+### Power profile remembered per power source (v3.4.0, v3.5.1, v3.8.3, v4.0.0)
+
+**What**: Power profile switches automatically on AC plug/unplug, applied at boot too (udev rules only fire on state changes). v3.8.3 fixes the udev rule failing on wakeup by dropping a fixed `--unit=` transient unit name that collided with a still-running unit from a prior trigger. v4.0.0 fixes a plug/unplug race and makes an **explicit** profile choice remembered *per power source* across reboots. Our setup only has manual switching via `menu-setup`.
+**Target files**: Systemd udev rule or hook, `private_dot_local/lib/scripts/user-interface/executable_menu-setup.tmpl`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-ac-present`, `bin/omarchy-powerprofiles-init`, `bin/omarchy-powerprofiles-set`
+
+- [ ] Add a boot-time autostart that applies the correct profile based on current AC state (fixes "stuck on balanced at boot")
+- [ ] If adding udev rules: use `systemd-run --no-block --collect` **without** a fixed `--unit=` name (v3.8.3 fix)
+- [ ] Persist the last explicit choice keyed by power source so a manual override is not clobbered by the next plug event
+- [ ] Mostly a laptop concern — gate on `chassisType`
+
+---
+
+### QR code capture from screen region (v4.0.0)
+
+**What**: Select a screen region and decode any QR inside it straight to the clipboard. The decoded value never touches disk and is marked sensitive so clipboard history skips it. We already have a `clipboard-store` wrapper that filters sensitive content, so the sensitive-marking half is half-built.
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_local/lib/scripts/media/`, `private_dot_config/hypr/conf/bindings/screenshots.conf` + `.lua`
 **Effort**: Low
-**Note**: May conflict with application-level Alt+Tab if Hyprland intercepts it globally.
+**Adapt from**: `bin/omarchy-capture-qr`
 
-- [ ] Evaluate whether global `Alt+Tab` intercept is desirable given application usage
-- [ ] If yes: add `bindd = ALT, Tab, Cycle windows, cyclenext` and `bindd = ALT SHIFT, Tab, Cycle windows backward, cyclenext, prev`
+- [ ] Add `zbar` to `packages.yaml`
+- [ ] Implement `capture-qr`: `slurp` region → `grim -g` to stdout → `zbarimg --quiet --raw` → `wl-copy`
+- [ ] Pipe through the existing `clipboard-store` sensitive-content path so history skips it
+- [ ] Never write the decoded value to a temp file
 
 ---
 
-### Screensaver (hypridle/hyprlock) tuning (v1.10.0)
-**What**: Omarchy tested battery notification persistence at 30 seconds. Our idle timeout values are intentionally more relaxed (5/10/15min vs Omarchy's 2.5/5/5.5min), but the notification duration may differ.
-**Target files**: dunst or swaync config
+### OCR text extraction from screen region (v3.7.0)
+
+**What**: Freeze screen with `hyprpicker`, select region with `slurp`, capture with `grim`, extract text with `tesseract`, copy to clipboard.
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_local/lib/scripts/media/`, `private_dot_config/hypr/conf/bindings/screenshots.conf`
 **Effort**: Low
+**Adapt from**: `bin/omarchy-capture-text-extraction`
 
-- [ ] Review battery notification duration in dunst/swaync config — confirm 30s persistence or adjust to taste
-
----
-
-### Fuller battery status notification — minutes unit fix (v3.4.2, v3.5.0)
-**What**: On-demand notification (`Super+Ctrl+Alt+B`) showing battery percentage, time remaining (charging or discharging), power draw in watts, and battery capacity in Wh. v3.5.0 fixes a parser bug: `upower` can report time in minutes (e.g. `45.0 minutes`) rather than decimal hours — the unit field must be checked. Our `battery-status` script uses `awk '/time to empty/ {print $4, $5}'` which already prints the unit word, so it may handle this already — needs verification.
-**Target files**: `private_dot_local/lib/scripts/desktop/executable_battery-status`
-**Effort**: Low
-
-- [x] Implemented as `battery-status` script using `upower` output
-- [x] Added `Super+Ctrl+Alt+B` binding to `desktop-utilities.conf`
-- [x] Verified: `awk '/time to empty/ {print $4, $5}'` prints both value and unit — handles both "1.5 hours" and "45.0 minutes" correctly *(confirmed 2026-05-04)*
+- [ ] Add `tesseract` and `tesseract-data-eng` to `packages.yaml`
+- [ ] Implement `capture-text-extraction`: `hyprpicker -r -z` to freeze, `slurp` to select, `grim -g` to capture, `tesseract` to extract, `wl-copy` to clipboard
+- [ ] Share the freeze/select plumbing with `capture-qr` above
 
 ---
 
-### Screen recording notification thumbnail + open (v3.4.2, v3.5.0, v3.6.0)
-**What**: After stopping a screen recording, generates a thumbnail via `ffmpeg` and sends a desktop notification. v3.5.0 fixes webcam overlay crop (`crop=iw/2:ih` before scaling). v3.6.0 adds audio normalization: single-pass ffmpeg `loudnorm=I=-14:TP=-1.5:LRA=11` after recording stops (only when audio stream present).
+### Keyboard-driven region picker (v4.0.0)
+
+**What**: In the region-select overlay, `RETURN` captures the highlighted window, `CTRL+RETURN` the whole display, `TAB`/arrows move the selection — no mouse needed. Implemented as **transient Hyprland binds registered on `layer.opened` for the `selection` namespace and removed on `layer.closed`**, which is the genuinely reusable trick here.
+**Target files**: `private_dot_config/hypr/conf/bindings/screenshots.lua`, `private_dot_local/lib/scripts/media/executable_screenshot`
+**Effort**: Medium
+**Adapt from**: `default/hypr/bindings/utilities.lua`, `bin/omarchy-capture-region`
+
+- [ ] Evaluate whether `slurp` can be driven this way at all, or whether it needs replacing
+- [ ] If pursuing: prototype the transient-bind pattern (`layer.opened`/`layer.closed` on the `selection` namespace) — useful well beyond screenshots
+- [ ] Also handles rotated monitors correctly in v4.0.0 (our `screenrecord` region picker may not)
+
+---
+
+### Screen recording notification thumbnail + open (v3.4.2, v3.5.0, v3.6.0, v4.0.0)
+
+**What**: After stopping a recording, generate a thumbnail via `ffmpeg` and send a desktop notification with an open action. v3.5.0 fixes webcam overlay crop (`crop=iw/2:ih` before scaling); v3.6.0 adds single-pass audio normalization (`loudnorm=I=-14:TP=-1.5:LRA=11`, only when an audio stream is present); v4.0.0 fixes the region picker on rotated monitors and restricts webcam enumeration to real video capture devices.
 **Target files**: `private_dot_local/lib/scripts/desktop/executable_screenrecord`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-capture-screenrecording` (renamed from `omarchy-cmd-screenrecord` in v3.7.0)
 
 - [ ] Add thumbnail generation: `ffmpeg -ss 0 -vframes 1 -i "$output_file" "$thumb_file"` after recording stops
-- [ ] Add `notify-send` with thumbnail icon and open action (clicking opens in `mpv`)
-- [ ] Add `Super+Alt+,` open-last-recording binding to `screenshots.conf`
-- [ ] Add audio normalization pass: `ffmpeg -i input -af loudnorm=I=-14:TP=-1.5:LRA=11` (check for audio stream first; rename file)
+- [ ] Add `notify-send` with thumbnail icon and open action (clicking opens in the default video player)
+- [ ] Add audio normalization pass: `ffmpeg -i input -af loudnorm=I=-14:TP=-1.5:LRA=11` (check for an audio stream first; rename file)
+- [ ] Handle rotated monitors in the region picker (v4.0.0)
 
 ---
 
-### `sff` shell function — send file via scp with fzf (v3.5.0)
-**What**: Shell function using fzf to select a file and send it over scp. Usage: `sff <destination>`. Lightweight, uses tools already installed.
-**Target files**: `private_dot_config/zsh/dot_zshrc.d/`
+### Video transcode / GIF utilities (v3.7.0, v3.8.0, v4.0.0)
+
+**What**: v3.7.0 adds a `transcode-video-gif` shell function; v3.8.0 expands to `omarchy-transcode` covering video (mp4, gif), audio and pictures. v4.0.0 ships **Omacut**, a dedicated ffmpeg-based video trimmer — the trim operation is the piece our screen-recording workflow actually lacks.
+**Target files**: `private_dot_local/lib/scripts/media/` or `private_dot_config/zsh/dot_zshrc.d/`
 **Effort**: Low
-**Adapt from**: `default/bash/aliases` (`sff` function)
+**Adapt from**: `bin/omarchy-transcode`
 
-- [x] Implemented `sff` as zsh function in `aliases.zsh` *(done 2026-05-04)*
-
----
-
-### FUSE filesystem hang on suspend fix (v3.5.0)
-**What**: A `system-sleep` hook lazy-unmounts `gvfsd-fuse` filesystems before suspend/hibernate and restarts `gvfs-daemon.service` on wake. Prevents system hangs when suspending with mounted FUSE filesystems.
-**Target files**: `/etc/systemd/system-sleep/` (system-level hook, via a lifecycle script)
-**Effort**: Medium
-**Adapt from**: `default/systemd/system-sleep/unmount-fuse`
-
-- [ ] Evaluate if gvfsd-fuse is relevant to our setup (used by Nautilus/GNOME Keyring)
-- [ ] If yes: create `run_once_after_setup_fuse_suspend_hook.sh.tmpl` to install the sleep hook script
-- [ ] Hook: lazy-unmount `$(pgrep -a gvfsd-fuse | awk '{print $NF}')` before sleep; restart `gvfs-daemon.service` on wake
+- [ ] Implement `video-to-gif` using `ffmpeg` (palette generation + dither for quality GIFs)
+- [ ] Consider a minimal `video-trim START END` helper (`-ss`/`-to` with stream copy) for cutting screen recordings
+- [ ] Skip the full audio/picture transcode menu unless a need appears
 
 ---
 
-### Touchpad toggle with OSD and persistence (v3.6.0)
-**What**: `omarchy-toggle-touchpad` with `on`/`off`/`toggle` subcommands. State persisted to toggle system (see P2 persistent toggle item). Hardware keyboard keys `XF86TouchpadOn/Off/Toggle` plus explicit binding. Useful primarily on laptops.
-**Target files**: `private_dot_config/hypr/conf/bindings/hardware.conf` (new), `private_dot_local/lib/scripts/desktop/`
-**Effort**: Medium
-**Adapt from**: `bin/omarchy-hw-touchpad`
+### `udiskie` automount for removable drives (v4.0.0)
 
-- [ ] Depends on: persistent Hyprland toggle system (P2 item)
-- [ ] Implement `touchpad-toggle` script: `hyprctl keyword device[synps/2 synaptics touchpad].enabled false/true` + `notify-send` OSD
-- [ ] Persist state via toggle conf file (e.g., `~/.local/state/dotfiles/toggles/hypr/touchpad-disabled.conf`)
-- [ ] Add `bindl = , XF86TouchpadToggle, exec, touchpad-toggle toggle` to hardware bindings (laptop only)
-
----
-
-### Voxtype `pause_media` default (v3.6.0)
-**What**: Omarchy's voxtype config now sets `pause_media = true` under `[audio]`, pausing MPRIS players while dictating. Our voxtype setup handles submap and push-to-talk bindings but we don't manage the voxtype `config.toml` directly.
-**Target files**: `~/.config/voxtype/config.toml` (not currently managed by chezmoi)
+**What**: Automounting of removable drives, added as a default in v4.0.0. We have no automount today — USB sticks require manual mounting.
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/hypr/conf/autostart.conf` + `.lua`
 **Effort**: Low
 
-- [x] Added `pause_media = true` to `[audio]` section; file now chezmoi-managed at `private_dot_config/voxtype/config.toml` *(done 2026-05-04)*
-- [ ] Note: `voxtype setup systemd` may overwrite parts of the config; verify approach
+- [ ] Add `udiskie` to `packages.yaml`
+- [ ] Autostart `udiskie --tray --notify` (or `--no-tray`) from Hyprland autostart
+- [ ] Confirm it does not conflict with Thunar's own `gvfs`-based mounting
+
+---
+
+### Bluetooth power state persisted across reboots (v4.0.0)
+
+**What**: Bluetooth power state persisted by making an rfkill soft block the state systemd restores at boot — so Bluetooth-off actually stays off. We use `blueman` + `bluetui`.
+**Target files**: `private_dot_local/lib/scripts/desktop/`, `.chezmoiscripts/`
+**Effort**: Low
+**Adapt from**: `bin/omarchy-bluetooth-power`
+
+- [ ] Check whether Bluetooth currently comes back on after a reboot when turned off
+- [ ] If so: set the state via `rfkill block bluetooth` rather than `bluetoothctl power off` so systemd restores it
+
+---
+
+### Docker multi-arch builds by default (v4.0.0)
+
+**What**: `qemu-user-static-binfmt` plus a `daemon.json` enabling multi-arch builds, so `docker buildx build --platform linux/arm64` works without per-session setup. We have `docker-buildx` already.
+**Target files**: `.chezmoidata/packages.yaml`, `.chezmoiscripts/run_once_after_002_configure_system_services.sh.tmpl`
+**Effort**: Low
+
+- [ ] Add `qemu-user-static-binfmt` to `packages.yaml`
+- [ ] Confirm binfmt handlers register at boot (`ls /proc/sys/fs/binfmt_misc/`)
+- [ ] Only worth doing if cross-arch images are actually built here
+
+---
+
+### Chromium-based browsers pinned to gnome-libsecret (v4.0.0)
+
+**What**: Chromium password-store backend autodetection can silently fail and log you out. Omarchy pins `--password-store=gnome-libsecret`. We have `gnome-keyring` installed; primary browser is Firefox, so this only matters for Chromium usage.
+**Target files**: `private_dot_config/chromium-flags.conf` (new)
+**Effort**: Low
+
+- [ ] Only act if Chromium is in regular use
+- [ ] Add `--password-store=gnome-libsecret` to a managed `chromium-flags.conf`
+
+---
+
+### `paccache` pruning + low-disk-space guard before updates (v4.0.0)
+
+**What**: Omarchy prunes the package cache with `paccache -rk2` as the **first** update step — before the snapshot, so the space is actually reclaimed — keeping one spare version for the offline downgrade path, and warns when disk space is low before updating. Our `system-maintenance` uses `pacman -Sc --noconfirm`, which is blunter: it drops *all* cached versions, removing the downgrade path entirely.
+**Target files**: `private_dot_local/lib/scripts/system/executable_system-maintenance`
+**Effort**: Low
+**Adapt from**: `bin/omarchy-update-pkg-prune`, `bin/omarchy-update-requires-free-space`
+
+- [ ] Replace `sudo pacman -Sc --noconfirm` with `sudo paccache -rk2` (keeps 2 versions; `pacman-contrib` already in packages)
+- [ ] Add `paccache -ruk0` to drop cached versions of uninstalled packages
+- [ ] Add a free-space check before the update step with a clear warning
+- [ ] Order the prune before any Timeshift snapshot so reclaimed space is real
+
+---
+
+### Hyprland reload paused during pacman transactions (v4.0.0)
+
+**What**: ALPM hooks pause Hyprland config reload for the duration of a pacman transaction, avoiding reloads against a half-updated tree (which can leave the session with an error bar or a broken config).
+**Target files**: `.chezmoiscripts/`, `/etc/pacman.d/hooks/` via a lifecycle script
+**Effort**: Medium
+**Adapt from**: `default/libalpm/hooks/10-omarchy-hyprland-reload-pause.hook`, `default/libalpm/hooks/90-omarchy-hyprland-reload-resume.hook`
+
+- [ ] Assess whether we actually trigger Hyprland reloads during pacman transactions (we may not — this could be a non-problem here)
+- [ ] If yes: add PreTransaction/PostTransaction hooks writing/removing a pause flag that our reload path checks
+
+---
+
+### AI crash diagnosis from systemd-coredump (v4.0.0)
+
+**What**: A systemd user service streams the `systemd-coredump` journal, raises a "Process crashed" toast, and clicking it briefs the default coding agent with a `diagnose-crash` skill. Novel and cheap; we already have an AI stack (`llama-swap`, `menu-ai`, Claude Code).
+**Target files**: `private_dot_config/systemd/user/`, `private_dot_local/lib/scripts/ai/`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-crash-watch`, `default/systemd/user/omarchy-crash-watch.service`, `default/agents/skills/diagnose-crash/`
+
+- [ ] Implement a `journalctl -f -u systemd-coredump -o json` follower that emits `notify-send` on new coredumps
+- [ ] Add an action that pipes `coredumpctl info` output into the agent
+- [ ] Keep it opt-in via `features.yaml` — a chatty crash watcher is worse than none
+
+---
+
+### Coding-agent usage widget for Waybar (v4.0.0)
+
+**What**: A bar widget showing Claude Code / Codex / Fireworks usage stats. Directly applicable — we run Waybar and Claude Code.
+**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`, `private_dot_local/lib/scripts/ai/`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-agent-usage-claude`, `bin/omarchy-agent-usage-codex`
+
+- [ ] Check what usage data Claude Code exposes locally (config/state dir) vs requiring an API call
+- [ ] Implement a `custom/agent-usage` module with a sane poll interval (usage data changes slowly — 5 min, not 60s)
+- [ ] Only add if the data source is local; do not poll a paid API from the bar
+
+---
+
+### Tailscale exit-node picker (v4.0.0)
+
+**What**: A Tailscale connection control and exit-node picker with Mullvad nodes grouped by country. We have `tailscale` installed and a `network` script category.
+**Target files**: `private_dot_local/lib/scripts/network/`, `private_dot_config/waybar/`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-install-service-tailscale`
+
+- [ ] Implement a Wofi-driven exit-node picker over `tailscale exit-node list` (or `tailscale status --json`)
+- [ ] Group by country in the picker labels
+- [ ] Optionally surface connection state in Waybar
+
+---
+
+### Text scaling as a single knob (v4.0.0)
+
+**What**: `omarchy display text size` (9–20px) moves the shell font, GTK `text-scaling-factor`, and terminal point size together. We set fonts via `gsettings.yaml` + `globals.guiFont`/`terminalFont` at apply time, with no runtime adjustment.
+**Target files**: `private_dot_local/lib/scripts/desktop/`, `.chezmoidata/gsettings.yaml`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-display-text-size`
+
+- [ ] Evaluate whether runtime text scaling is wanted at all, or whether the apply-time `gsettings.yaml` values are sufficient
+- [ ] If pursuing: note `gsettings.extra_settings` already exists as the extension point for `text-scaling-factor`
+- [ ] Terminal point size would need to be a Ghostty config write + reload, which weakens the "one knob" story
+
+---
+
+### Fine and coarse window resize tiers (v4.0.0)
+
+**What**: Separate fine (±25px) and coarse (±100px) resizing tiers. Our `window-resizing.conf` has a single ±20px step on `SUPER CTRL + arrows`, which is slow for large changes on a 4K display.
+**Target files**: `private_dot_config/hypr/conf/bindings/window-resizing.conf` + `.lua`
+**Effort**: Low
+
+- [ ] Consider raising the base step from 20 to ~50 on the 4K monitor
+- [ ] A coarse tier would need a new modifier combination — weigh against the no-new-keybindings preference
+
+---
+
+### `dua-cli` as a `dust` replacement (v4.0.0)
+
+**What**: Omarchy replaced `dust` with `dua-cli`. We have `dust` in `terminal_tools` and `alias du='dust'`. `dua` adds an interactive TUI mode (`dua i`) with deletion; `dust` is display-only.
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/zsh/dot_zshrc.d/aliases.zsh`
+**Effort**: Low
+
+- [ ] Evaluate `dua i` against the current `dust` workflow — the interactive delete is the only real differentiator
+- [ ] If adopting, keep `dust` alongside rather than swapping the `du` alias out from under muscle memory
+
+---
+
+### `tensaku` as a `satty` replacement (v4.0.0)
+
+**What**: Omarchy replaced Satty with Tensaku for screenshot annotation. Our `screenshot` script uses `satty`.
+**Target files**: `.chezmoidata/packages.yaml`, `private_dot_local/lib/scripts/media/executable_screenshot`
+**Effort**: Low
+
+- [ ] Check whether `tensaku` is packaged outside Omarchy's repo at all — if it is OPR-only, this is a non-starter
+- [ ] Only switch if it offers something Satty lacks; Satty works today
+
+---
+
+### Lighter Nerd Font variant (v4.0.0)
+
+**What**: `ttf-jetbrains-mono-nerd-basic` replaces the full Nerd Font, saving ~200MB. We ship `ttf-firacode-nerd` and use `GeistMono Nerd Font` as `terminalFont`.
+**Target files**: `.chezmoidata/packages.yaml`
+**Effort**: Low
+
+- [ ] Check installed size of our Nerd Font packages and whether a `-basic` variant exists for them
+- [ ] Only act if the saving is real and no glyphs in use are dropped (verify with `fc-list` against the icons in our Waybar/Starship configs)
+
+---
+
+### `imv` trash-on-delete (v4.0.0)
+
+**What**: `imv` deletions go to trash instead of being unlinked, and `Ctrl+E` opens the image in the annotator. We have `imv` installed but no managed config.
+**Target files**: `private_dot_config/imv/config` (new)
+**Effort**: Low
+
+- [ ] Create a managed `imv` config binding delete to `gio trash` rather than `rm`
+- [ ] Add `Ctrl+E` → open in `satty`
+
+---
+
+### Caps Lock toggle via both Shift keys (v4.0.0)
+
+**What**: Pressing both Shift keys together toggles Caps Lock. We already run `kanata` (see `kanata-layer` scripts), which is the natural place for this.
+**Target files**: kanata config
+**Effort**: Low
+
+- [ ] Evaluate against the existing kanata layer setup — this may already be covered or deliberately omitted
+
+---
+
+### LUKS prompt keymap in the initramfs (v3.8.3, v4.0.0)
+
+**What**: `FILES+=(/etc/vconsole.conf)` in the mkinitcpio drop-in so the console keymap is present in the initramfs, fixing a LUKS passphrase prompt that ignores the configured keyboard layout. **Currently a no-op for us**: `kb_layout = us` and the console default is `us`, so the prompt already accepts the right characters. Becomes relevant the moment a non-US layout (e.g. `fr`) is configured.
+**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`
+**Effort**: Low
+
+- [ ] Defer while `kb_layout = us`
+- [ ] If a non-US layout is ever adopted: append `FILES+=(/etc/vconsole.conf)` to the mkinitcpio drop-in and rebuild UKIs, then reboot-test the LUKS prompt before relying on it
+
+---
+
+### Theme-install input hardening (v4.0.0)
+
+**What**: v4.0.0 closed three theme-install code-execution paths: `colors.toml` values reaching GNU `sed`'s `e` flag, an unescaped VS Code theme name, and unvalidated keyboard RGB values. Our themes are repo-owned and chezmoi-managed (low risk today), but `colors.sh` is `source`d by scripts — arbitrary shell in a theme file executes. This matters if theme import from external sources is ever added, or if the template-generation work above lands.
+**Target files**: `private_dot_config/themes/CLAUDE.md`, theme generation/apply scripts
+**Effort**: Low
+
+- [ ] Document the trust boundary in `themes/CLAUDE.md`: theme files are executed, therefore repo-owned only
+- [ ] If template generation lands: validate color values against `^#[0-9a-fA-F]{6}$` before substitution, and never pass theme-derived values through `sed` expressions
+- [ ] Never add an "import theme from URL" feature without this in place
+
+---
+
+### Unified CLI dispatch by metadata header (v4.0.0)
+
+**What**: `bin/omarchy` dispatches ~35 grouped subcommands by **scanning metadata headers in `bin/omarchy-*`** rather than maintaining a dispatch table. We have a lazy-loading CLI architecture in `private_dot_local/bin/` + `lib/scripts/<domain>/` — the header-scan pattern would let subcommand registration follow the files.
+**Target files**: `private_dot_local/bin/CLAUDE.md`, `private_dot_local/lib/scripts/CLAUDE.md`
+**Effort**: Medium
+
+- [ ] Compare against our current lazy-loading dispatch — our per-domain directory layout may already give registration-by-convention for free
+- [ ] Only worth adopting if we hit a real maintenance cost in the current approach
+
+---
+
+### Background cycling with glob characters in filenames (v4.0.0)
+
+**What**: Background cycling broke on filenames containing glob characters. Our `random-wallpaper` and `set-wallpaper` scripts iterate wallpaper files.
+**Target files**: `private_dot_local/lib/scripts/media/executable_random-wallpaper.tmpl`, `executable_set-wallpaper.tmpl`
+**Effort**: Low
+
+- [ ] Audit both scripts for unquoted expansions / `ls` parsing over wallpaper filenames
+- [ ] Test with a wallpaper named e.g. `sunset [2].jpg`
+
+---
+
+### `mup` alias — mise update bypassing the release-age guard (v3.8.3)
+
+**What**: `mup='MISE_MINIMUM_RELEASE_AGE=0 mise up'` — updates mise tools without waiting out the release-age cooldown. We use mise (`developer.mise.enabled`).
+**Target files**: `private_dot_config/zsh/dot_zshrc.d/aliases.zsh`
+**Effort**: Low
+
+- [ ] Confirm we actually set `MISE_MINIMUM_RELEASE_AGE` (if unset, the alias is pointless)
+- [ ] If set: add `alias mup='MISE_MINIMUM_RELEASE_AGE=0 mise up'`
+
+---
+
+### Lazy-load CLI tools via mise instead of npm (v4.0.0)
+
+**What**: Omarchy moved Claude Code and GitHub CLI from npm/pacman to mise-managed lazy-loaded installs, with wrappers keeping them on current releases rather than waiting out the release cooldown. We already manage Node tooling via mise, so this is largely aligned — worth checking Claude Code and `gh` specifically.
+**Target files**: `.chezmoidata/packages.yaml`, mise config
+**Effort**: Low
+
+- [ ] Check how `claude-code` and `github-cli` are currently installed here
+- [ ] If via pacman/npm, evaluate moving to mise for faster release tracking
 
 ---
 
 ### `dosfstools` for FAT filesystem repair (v3.7.0)
-**What**: `dosfstools` provides `fsck.fat` and `mkfs.fat` for /boot FAT partition repair. Useful when /boot is on a FAT partition (EFI system partition). Lightweight, no conflicts.
+
+**What**: Provides `fsck.fat` and `mkfs.fat` for /boot ESP repair. Lightweight, no conflicts.
 **Target files**: `.chezmoidata/packages.yaml`
 **Effort**: Low
 
-- [ ] Add `dosfstools` to an appropriate module in `packages.yaml` (e.g., `system_utilities`)
-
----
-
-### OCR text extraction from screen region (v3.7.0)
-**What**: Freeze screen with `hyprpicker`, select region with `slurp`, capture with `grim`, extract text with `tesseract`, copy to clipboard. `tesseract` and `tesseract-data-eng` need to be installed.
-**Target files**: `.chezmoidata/packages.yaml`, `private_dot_local/lib/scripts/desktop/`, `private_dot_config/hypr/conf/bindings/screenshots.conf`
-**Effort**: Low
-**Adapt from**: `bin/omarchy-capture-text-extraction`
-
-- [ ] Add `tesseract` and `tesseract-data-eng` to `packages.yaml`
-- [ ] Implement `capture-text-extraction` script: `hyprpicker -r -z` to freeze, `slurp` to select, `grim -g` to capture, `tesseract` to extract, `wl-copy` to clipboard
-- [ ] Add binding (e.g. `Super+Ctrl+PrtScr`) to `screenshots.conf`
-
----
-
-### `ic`/`ix`/`icx` tdl alias replacements (v3.7.0)
-**What**: Omarchy replaced `i='tdl c cx'` with three focused aliases: `ic='tdl c'`, `ix='tdl cx'`, `icx='tdl c cx'`. If we use `tdl` (task download/list tool), our aliases should be updated to match this more granular split.
-**Target files**: `private_dot_config/zsh/dot_zshrc.d/aliases.zsh`
-**Effort**: Low
-
-- [ ] Check if `i='tdl c cx'` or `tdl` aliases exist in our `aliases.zsh`
-- [ ] If yes: replace with `ic`, `ix`, `icx` per v3.7.0 pattern
+- [ ] Add `dosfstools` to `system_utilities` in `packages.yaml`
 
 ---
 
 ### Reminder system (v3.8.0)
-**What**: CLI to set one-shot reminders via systemd timers with desktop notifications. Three operations: set (`Super+Ctrl+R`), show all, clear all. Lightweight; only needs systemd (already present) and notify-send.
+
+**What**: CLI to set one-shot reminders via systemd timers with desktop notifications. Set, show all, clear all.
 **Target files**: `private_dot_local/lib/scripts/desktop/`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-reminder`
 
-- [ ] Implement `reminder` script: parse duration input (e.g. "30m", "2h"), create one-shot `systemd-run --user` timer with `notify-send` on fire
-- [ ] Add list and clear subcommands (`systemctl --user list-timers | grep reminder`)
-- [ ] Add bindings: `Super+Ctrl+R` to set, `Super+Ctrl+Alt+R` to list, `Super+Ctrl+Shift+R` to clear all
+- [ ] Implement `reminder` script: parse duration input ("30m", "2h"), create a one-shot `systemd-run --user` timer firing `notify-send`
+- [ ] Add list and clear subcommands
+- [ ] Bindings deferred per the no-new-keybindings preference — reachable via the utilities menu instead
 
 ---
 
-### Video-to-GIF / transcode utilities (v3.7.0, v3.8.0)
-**What**: v3.7.0 adds a `transcode-video-gif` shell function. v3.8.0 expands to `omarchy-transcode` covering video (mp4, gif), audio, and pictures. Useful for sharing screen recordings as GIFs.
-**Target files**: `private_dot_local/lib/scripts/desktop/` or `private_dot_config/zsh/dot_zshrc.d/`
-**Effort**: Low
-**Adapt from**: `bin/omarchy-transcode`
+### Touchpad toggle with OSD and persistence (v3.6.0)
 
-- [ ] Implement `video-to-gif` function/script using `ffmpeg` (palette generation + dither for quality GIFs)
-- [ ] Consider whether full transcode menu (audio, picture) is worth adding or just GIF conversion
+**What**: Touchpad `on`/`off`/`toggle` with state persisted via the toggle system. Hardware keys `XF86TouchpadOn/Off/Toggle`. Laptop-relevant only.
+**Target files**: `private_dot_config/hypr/conf/bindings/`, `private_dot_local/lib/scripts/desktop/`
+**Effort**: Medium
+**Adapt from**: `bin/omarchy-hw-touchpad`
 
----
-
-### Middle-click paste (GTK primary selection) (v3.8.0)
-**What**: `gsettings set org.gnome.desktop.interface gtk-enable-primary-paste true` enables middle-click paste in GTK apps and Chromium. Not currently applied in our setup.
-**Target files**: A lifecycle script or hook
-**Effort**: Low
-
-- [ ] Add `gsettings set org.gnome.desktop.interface gtk-enable-primary-paste true` to an appropriate `run_once_after_*` script or hook
-- [ ] Verify it takes effect in GTK apps (Nautilus, etc.) and Chromium
+- [ ] Depends on: persistent Hyprland toggle system (P2 item)
+- [ ] Implement `touchpad-toggle`: `hyprctl keyword device[...].enabled false/true` + `notify-send` OSD
+- [ ] Persist state via a toggle conf file
+- [ ] Bind `XF86TouchpadToggle` (hardware key, not a new chord — acceptable under the keybindings preference)
 
 ---
 
 ### Idle lock display-off improvement (v3.8.0)
-**What**: `omarchy-system-lock` now powers off display 3 seconds after locking if hyprlock is still running, and `omarchy-system-wake` re-enables display on wake. Improves the lock experience by ensuring display turns off (DPMS) promptly.
-**Target files**: `private_dot_config/hypr/conf/hypridle.conf` or a lock script
+
+**What**: Powers off the display 3 seconds after locking if hyprlock is still running, and re-enables it on wake.
+**Target files**: `private_dot_config/hypr/hypridle.conf.tmpl`, `private_dot_local/lib/scripts/desktop/executable_immediate-lock`
 **Effort**: Low
 **Adapt from**: `bin/omarchy-system-lock`, `bin/omarchy-system-wake`
 
-- [ ] Check current hypridle config for DPMS timeout after lock
-- [ ] If no post-lock display-off: add a 3-second post-lock `hyprctl dispatch dpms off` (e.g. via hypridle `on-lock` event or a wrapper script)
-- [ ] Ensure display wakes correctly on resume
+- [ ] Check the current hypridle config for a DPMS timeout after lock
+- [ ] If absent: add a 3-second post-lock `hyprctl dispatch dpms off`
+- [ ] Ensure the display wakes correctly on resume
+
+---
+
+### Middle-click paste (GTK primary selection) (v3.8.0)
+
+**What**: `gsettings set org.gnome.desktop.interface gtk-enable-primary-paste true` enables middle-click paste in GTK apps and Chromium. Not applied in our setup — and `gsettings.extra_settings` already exists as the extension point.
+**Target files**: `.chezmoidata/gsettings.yaml`
+**Effort**: Low
+
+- [ ] Add to `gsettings.extra_settings`: `{schema: "org.gnome.desktop.interface", key: "gtk-enable-primary-paste", value: "true"}`
+- [ ] Verify `run_onchange_after_configure_gsettings` picks it up and it takes effect in Thunar
+
+---
+
+### FUSE filesystem hang on suspend fix (v3.5.0)
+
+**What**: A `system-sleep` hook lazy-unmounts `gvfsd-fuse` filesystems before suspend/hibernate and restarts `gvfs-daemon.service` on wake.
+**Target files**: `/etc/systemd/system-sleep/` via a lifecycle script
+**Effort**: Medium
+**Adapt from**: `default/systemd/system-sleep/unmount-fuse`
+
+- [ ] Evaluate if gvfsd-fuse is relevant here (used by Thunar/GNOME Keyring)
+- [ ] If yes: create `run_once_after_setup_fuse_suspend_hook.sh.tmpl`
+- [ ] Hook: lazy-unmount gvfsd-fuse mounts before sleep; restart `gvfs-daemon.service` on wake
+
+---
+
+### Voxtype `pause_media` verification (v3.6.0)
+
+**What**: `pause_media = true` under `[audio]` pauses MPRIS players while dictating.
+**Target files**: `private_dot_config/voxtype/config.toml`
+**Effort**: Low
+
+- [x] Added `pause_media = true` to `[audio]`; file chezmoi-managed *(done 2026-05-04)*
+- [ ] `voxtype setup systemd` may overwrite parts of the config — verify the approach survives a re-run
+
+---
+
+### ALT+TAB window cycling (v1.7.0)
+
+**What**: `Alt+Tab` cycles between windows on the active workspace including floating.
+**Target files**: `private_dot_config/hypr/conf/bindings/focus-navigation.conf`
+**Effort**: Low
+**Note**: May conflict with application-level Alt+Tab if Hyprland intercepts it globally. Also sits against the no-new-keybindings preference.
+
+- [ ] Evaluate whether a global `Alt+Tab` intercept is desirable given application usage
+
+---
+
+### Battery notification persistence (v1.10.0)
+
+**What**: Omarchy tested battery notification persistence at 30 seconds. Our idle timeouts are intentionally more relaxed, but notification duration may differ.
+**Target files**: `private_dot_config/swaync/`
+**Effort**: Low
+
+- [ ] Review battery notification duration in swaync config — confirm 30s persistence or adjust to taste
 
 ---
 
 ## Completed
 
+- [x] **Sticky CWD when opening a new terminal** (v2.0.0, v4.0.0) — `SUPER + Return` launches the terminal with `--working-directory=$(terminal-cwd)`; script at `private_dot_local/lib/scripts/terminal/executable_terminal-cwd` *(confirmed 2026-08-24)*
+- [x] **`fip`/`dip`/`lip` zsh parsing** (v3.4.0, v4.0.0) — v4.0.0 fixed omarchy's bash functions misparsing under zsh; our `ssh-port-forwarding.zsh` is a native zsh rewrite using `(( $# ))` and `for port in "$@"`, unaffected *(confirmed 2026-08-24)*
+- [x] **Clipboard sensitive-content exclusion** (v1.3.1, v4.0.0) — `clipboard-store` wrapper filters by window class/title; v4.0.0's native equivalent adds nothing we lack *(confirmed 2026-08-24)*
+- [x] **`quickshell` package** (v4.0.0) — already in `packages.yaml`, driving the voxtype waveform OSD overlay; the full omarchy-shell replacement is out of scope *(confirmed 2026-08-24)*
+- [x] **`networkmanager` as the network stack** (v4.0.0) — already in `packages.yaml` alongside `iwd` as the backend; omarchy's iwd→NM move validates the existing setup *(confirmed 2026-08-24)*
+- [x] **`pacman-contrib`** (v4.0.0) — already in `packages.yaml`; `paccache` available for the update-prune item above *(confirmed 2026-08-24)*
+- [x] **`wtype`** (v4.0.0) — already in `packages.yaml` as a voxtype dependency *(confirmed 2026-08-24)*
+- [x] **`sof-firmware`** (v3.8.0, v3.8.3) — already in `packages.yaml`; v3.8.3 widened omarchy's install guard to all Intel SOF platforms, which does not change our unconditional inclusion *(confirmed 2026-08-24)*
+- [x] **Monitor mirroring** (v3.7.0, v4.0.0) — `monitor-mirror` script already present in `lib/scripts/desktop/`; only omarchy's `Super+Ctrl+Alt+Del` binding was skipped *(confirmed 2026-08-24)*
+- [x] **`tdl` alias split `ic`/`ix`/`icx`** (v3.7.0) — no `tdl` aliases exist in `aliases.zsh`; nothing to migrate *(confirmed 2026-08-24)*
 - [x] **Audio switch `wpctl` persistence fix** (v3.6.0) — replaced `pactl set-default-sink` with `wpctl set-default` using PipeWire object ID from pactl JSON *(done 2026-05-04)*
 - [x] **`sff` shell function** (v3.5.0) — `sff() { local f; f=$(fzf) && scp "$f" "$1"; }` added to `aliases.zsh` *(done 2026-05-04)*
 - [x] **Battery status minutes-unit handling** (v3.5.0) — confirmed `awk '/time to empty/ {print $4, $5}'` handles both hours and minutes correctly *(confirmed 2026-05-04)*
+- [x] **Fuller battery status notification** (v3.4.2, v3.5.0) — `battery-status` script + `Super+Ctrl+Alt+B` binding in `desktop-utilities.conf` *(done 2026-05-04)*
 - [x] **VRR removal confirmed** (v3.6.0) — no `vrr,1` in `monitor.conf.tmpl`; explicit per-monitor lines unaffected *(confirmed 2026-05-04)*
+- [x] **Scratchpad slide-in animation** (v3.4.2) — `animation = specialWorkspace, 1, 4, easeOutQuint, slidevert` + `bezier = easeOutQuint, 0.23, 1, 0.32, 1` enabled *(done 2026-05-04)*
+- [x] **`hyprland-preview-share-picker` default page** (v3.4.2) — `config.yaml` created with `default_page: outputs` *(done 2026-05-04)*
 - [x] **Notification grouping** (v3.8.0) — `"notification-grouping": true` already present in `swaync/config.json` *(confirmed 2026-05-13)*
-- [x] **`sof-firmware`** (v3.8.0) — already in `packages.yaml` as Intel audio DSP firmware *(confirmed 2026-05-13)*
 - [x] **Scratchpad keybindings** (v3.1.4) — `Super+S` toggle scratchpad, `Super+Shift+S` move to scratchpad already implemented in `window-management.conf` *(confirmed 2026-02-21)*
 - [x] **Smart screenshot selection** (v3.1.0) — `Print` smart screenshot, `Shift+Print` clipboard screenshot already implemented in `screenshots.conf` *(confirmed 2026-02-21)*
 - [x] **`Super+Ctrl+T` Activity / `Super+Ctrl+B` Bluetooth** (v3.1.2, v3.3.0) — Both already implemented in `desktop-utilities.conf` *(confirmed 2026-02-21)*
-- [x] **`hyprsunset` night light** (v1.10.0) — `hyprsunset` in packages.yaml; `Super+N` nightlight toggle already implemented in `desktop-utilities.conf` *(confirmed 2026-02-21)*
-- [x] **Hyprland 0.53 windowrule/layerrule syntax** (v3.3.0) — Already resolved; `windowrules.conf` uses new `match:` syntax *(confirmed 2026-02-21)*
+- [x] **`hyprsunset` night light** (v1.10.0) — `hyprsunset` in packages.yaml; `Super+N` nightlight toggle in `desktop-utilities.conf` *(confirmed 2026-02-21)*
+- [x] **Hyprland 0.53 windowrule/layerrule syntax** (v3.3.0) — `windowrules.conf` uses new `match:` syntax *(confirmed 2026-02-21)*
 - [x] **`ghostty` as primary terminal** (v3.2.0) — In packages, used as default terminal *(confirmed 2026-02-21)*
 - [x] **`starship` prompt** (v2.0.0) — In packages, configured *(confirmed 2026-02-21)*
 - [x] **`dust` disk usage TUI** (v2.0.0) — In packages (`terminal_tools` module) *(confirmed 2026-02-21)*
@@ -361,7 +784,7 @@ Last updated: 2026-06-08 (through v3.8.2). Batch 1 implemented 2026-05-04.
 - [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
 - [x] **`eff` + `ff` aliases** (v3.4.0) — Added to `aliases.zsh` *(done 2026-03-05)*
 - [x] **SSH port forwarding `fip`/`dip`/`lip`** (v3.4.0) — Added to `ssh-port-forwarding.zsh` (`dip` = disconnect, not dynamic) *(done 2026-03-05)*
-- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added; `Super+Alt+Return` binding skipped per bindings freeze *(done 2026-03-05)* — **superseded**: replaced by zellij
+- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added *(done 2026-03-05)* — **superseded**: replaced by zellij
 - [x] **Waybar idle-lock indicator** (v3.4.0) — `idle-indicator` script + Waybar module + CSS; DND already covered by `custom/swaync` *(done 2026-03-05)*
 - [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
 
@@ -369,109 +792,146 @@ Last updated: 2026-06-08 (through v3.8.2). Batch 1 implemented 2026-05-04.
 
 ## Skipped / Out of Scope
 
-- [SKIPPED] **Walker launcher** (v1.6.0+) — uses Wofi, not Walker
+### v4.0.0 "Quattro" — architectural rewrite
+
+- [SKIPPED] **Quickshell desktop shell (`omarchy-shell`)** (v4.0.0) — replaces Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg and polkit-gnome with one QML process (175 files). We use Waybar + Wofi + swaync + hyprlock/hypridle deliberately; wholesale replacement is not on the table. `quickshell` itself is already installed for the voxtype OSD. *Workflow patterns* worth noting for our own tooling: the event-driven (non-polling) status model, and the shell reading a single declarative layout file
+- [SKIPPED] **Bar plugin system + `shell.json` / `shell.toml`** (v4.0.0) — Quickshell-specific manifest/plugin registry and layout state. Our Waybar config plus the theme system covers the same ground; the `shell.toml` idea of a machine-level style override merged over the theme is *conceptually* interesting but Waybar CSS already allows it
+- [SKIPPED] **Native launcher, menu, notification daemon, clipboard manager, emoji picker, OSDs, lock screen, polkit agent** (v4.0.0) — all Quickshell plugins; each has an established equivalent here (Wofi, swaync, cliphist, swayosd, hyprlock, polkit-gnome)
+- [SKIPPED] **Control panels (Audio / Bluetooth / Network / Display / Power)** (v4.0.0) — Quickshell panels bound to `Super+Ctrl+A/B/W/D/P`. We cover these via `audio-switch`, `blueman-manager`, `nmtui`, `monitor-switch` and `menu-setup`. Note `Super+Ctrl+B` and `Super+Ctrl+W` already match our bindings by coincidence
+- [SKIPPED] **Omarchy internals shipped as Arch packages (`omarchy` + `omarchy-settings`, `/etc/skel`, `/usr/share/omarchy`)** (v4.0.0) — chezmoi is our distribution mechanism; the `/etc/skel` model explicitly does not update existing users, which is the problem chezmoi exists to solve
+- [SKIPPED] **ALPM update guard blocking `pacman -Syu`** (v4.0.0) — `AbortOnFail` PreTransaction hook forcing updates through `omarchy update`. Hostile to a chezmoi-managed system and to `topgrade`
+- [SKIPPED] **Per-channel pacman configs and mirrorlists (`stable`/`rc`/`edge`)** (v4.0.0) — Omarchy release-channel machinery
+- [SKIPPED] **pkexec/polkit privilege escalation rework** (v4.0.0) — tied to the Quickshell polkit agent
+- [SKIPPED] **Unified `omarchy` CLI subcommand surface** (v4.0.0) — the ~35 grouped subcommands are Omarchy-specific; only the metadata-header dispatch *pattern* is tracked (P3)
+- [SKIPPED] **Menu extensions as JSONC (`omarchy-menu.jsonc`)** (v4.0.0) — replaces the removed `menu.sh`; both are Omarchy menu extension points
+- [SKIPPED] **Deferred first-boot provisioning, LUKS re-keying, factory reset, dual-boot install** (v4.0.0) — installer/ISO scope
+- [SKIPPED] **`foot` as default terminal** (v3.8.0, v4.0.0) — Ghostty is primary, Kitty is the baseline; no third terminal. Alacritty likewise skipped
+- [SKIPPED] **`herdr` multiplexer** (v4.0.0) — we use zellij; `hdl`/`hds`/`hdlm`/`hsl` helpers and its keybindings viewer are herdr-specific
+- [SKIPPED] **tmux pane bindings, window titles, extkeys, tab moves, zoom flag** (v3.8.3, v4.0.0) — using zellij, not tmux
+- [SKIPPED] **Omawrite / Omacalc / Omacut / Tensaku / `ttfx`** (v4.0.0) — Omarchy first-party apps replacing Typora, GNOME Calculator, Satty and terminaltexteffects. Tensaku and the Omacut *trim* concept are tracked separately in P3; the rest are out of scope
+- [SKIPPED] **Chromium extensions (yt-dlp download, WhatsApp slim, Google Meet PiP)** (v4.0.0) — Firefox is the primary browser
+- [SKIPPED] **Moonlight / Sunshine streaming client** (v4.0.0) — gaming scope
+- [SKIPPED] **NordVPN from the Omarchy package repository** (v4.0.0) — uses Tailscale
+- [SKIPPED] **Configurable default coding agent + agent launcher** (v4.0.0) — Omarchy defaults system; we manage AI tooling via `ai.yaml` and `menu-ai`
+- [SKIPPED] **Per-laptop PipeWire speaker tunings** (v4.0.0) — DMI-matched filter chains for Dell XPS 14/16; hardware-specific
+- [SKIPPED] **New themes (Solitude, Last Horizon, Lupine, Pi) and backgrounds** (v4.0.0) — not variants we use
+- [SKIPPED] **T2 Mac suspend/fan/gmux fixes, Broadcom Wi-Fi quirk, Tuxedo/Slimbook backlight, Framework 16 `qmk-hid`, IPU6 webcam, LVDS/DSI panel detection** (v4.0.0) — hardware-specific
+- [SKIPPED] **Hybrid GPU / supergfxd fixes** (v4.0.0) — no hybrid graphics here
+- [SKIPPED] **Snapper snapshot pruning and update-snapshot reporting** (v4.0.0) — we use Timeshift
+- [SKIPPED] **`omarchy-upgrade-to-quattro`** (v4.0.0) — the 3.x→4.x migration path itself
+- [SKIPPED] **fcitx5 service, Noto Arabic font preference, non-login-shell locale** (v4.0.0) — not applicable / already correct here
+- [SKIPPED] **Software cursors on nouveau, cursors excluded from screenshots** (v4.0.0) — nouveau not in use (proprietary NVIDIA)
+- [SKIPPED] **SDDM / Plymouth theming rework, faillock, sudoers drop-ins** (v4.0.0) — not using SDDM; sudoers drop-ins are Omarchy-specific grants
+- [SKIPPED] **`omarchy-branding-*`, About window, screensaver, first-login toast** (v4.0.0) — Omarchy branding
+- [SKIPPED] **Window width save/restore `Super+Alt+Home` / `Super+Home`** (v4.0.0) — no new keybindings preference
+- [SKIPPED] **Alternative media next/previous bindings for play-only keyboards** (v4.0.0) — our keyboard has discrete media keys
+- [SKIPPED] **SSHD setup/removal, disk speed test, LocalSend file-chooser sharing** (v4.0.0) — Omarchy menu features; not gaps here
+- [SKIPPED] **`pre-refresh-pacman.d` hooks** (v4.0.0) — covered by our own hook system at `~/.config/dotfiles/hooks/`
+
+### v3.8.3 / v3.8.4
+
+- [SKIPPED] **CSI-u bindings for Alacritty and Foot** (v3.8.3) — neither terminal is in use; the Ghostty/Kitty half is tracked in P2
+- [SKIPPED] **`cy` alias (`codex -s danger-full-access -a never`)** (v3.8.3) — Codex not in the current AI stack (we use `cc` for Claude Code and `opc` for opencode); also a deliberately unguarded full-access mode
+- [SKIPPED] **Dell XPS 13 (DX13260) text scaling** (v3.8.3) — hardware-specific first-run step
+- [SKIPPED] **`omarchy-hw-intel-sof` detector** (v3.8.3) — Intel SOF platform detection; our `sof-firmware` is installed unconditionally
+- [SKIPPED] **Mesa Vulkan driver backfill (`vulkan-intel`/`vulkan-radeon`/`vulkan-asahi`)** (v3.8.3) — Intel/AMD/Asahi only; NVIDIA ships Vulkan via `nvidia-utils`
+- [SKIPPED] **`libfprint` vs `libfprint-git` pre-removal fix, `omarchy-pkg-drop` provider-name fix** (v3.8.3) — Omarchy package-management internals
+- [SKIPPED] **Power-profile udev `--unit=` collision fix** (v3.8.3) — Omarchy-specific rule; the correct pattern is folded into the P3 power-profile item
+- [SKIPPED] **Hyprland 0.55+ `togglesplit` → `layoutmsg, togglesplit`** (v3.8.3) — we have no `togglesplit` binding; nothing to migrate
+- [SKIPPED] **Neovim theme symlink retarget migration** (v3.8.4) — Omarchy 3.x/4.x state-path migration; our Neovim theming goes through `theme-apply-neovim`
+- [SKIPPED] **RetroArch libretro core removals** (v3.8.4) — gaming scope
+- [SKIPPED] **`nvim` ↔ `neovim` package renames** (v3.8.4, v4.0.0) — Omarchy manifest naming; v4.0.0's `nvim` is an OPR package, not the Arch `neovim`
+- [SKIPPED] **Foot `[text-bindings]` migration hardening** (v3.8.4) — Foot not in use
+
+### Earlier releases
+
+- [SKIPPED] **Walker launcher** (v1.6.0+) — uses Wofi, not Walker. *Workflow pattern* note: Walker's fuzzy/acronym matching and nested command palette (v4.0.0) may be worth exploring for our Wofi menus
 - [SKIPPED] **Aether theme creator** (v3.1.0) — Omarchy-specific app
 - [SKIPPED] **Helium browser** (v3.0.2) — out of scope
 - [SKIPPED] **Voxtype `Super+Ctrl+X`** (v3.3.0) — we use `Super+T` push-to-talk (different UX model)
-- [SKIPPED] **SDDM keyring unlock** (v3.1.0) — uses sddm for login; our setup uses different login flow
+- [SKIPPED] **SDDM keyring unlock** (v3.1.0) — different login flow
 - [SKIPPED] **SDDM styling** (v3.4.0, v3.7.0, v3.8.0) — not using SDDM
 - [SKIPPED] **Windows VM** (v3.1.0+) — out of scope
-- [SKIPPED] **Omarchy ISO/installer** (v2.0.0, v3.0.0, v3.5.1, v3.7.0, v3.8.0) — not applicable (includes encryption-free install, Colemak layout option)
+- [SKIPPED] **Omarchy ISO/installer** (v2.0.0, v3.0.0, v3.5.1, v3.7.0, v3.8.0, v4.0.0) — not applicable
 - [SKIPPED] **OPR (Omarchy Package Repository)** (v2.0.0+) — uses standard Arch + AUR
 - [SKIPPED] **Limine bootloader + Snapper rollback** (v2.0.0) — uses systemd-ukify + Timeshift (Btrfs)
-- [SKIPPED] **Omarchy hooks system** (`~/.config/omarchy/hooks`) (v3.1.0, v3.8.0) — uses our own hooks at `~/.config/dotfiles/hooks/`; v3.8.0 adds `.d/` directory drop-in support and `omarchy-hook-install` — concept is covered by our existing hook system
+- [SKIPPED] **Omarchy hooks system** (v3.1.0, v3.8.0, v4.0.0) — we use our own hooks at `~/.config/dotfiles/hooks/`
 - [SKIPPED] **`omarchy-launch-browser`/`omarchy-launch-webapp`** (v2.0.0) — Omarchy-specific launcher scripts
-- [SKIPPED] **Chaotic-AUR** (v1.6.2) — already in packages.yaml; decision to keep or remove is independent
-- [SKIPPED] **Dictation `Super+Ctrl+X`** (v3.3.0) — uses `Super+T` push-to-talk already
-- [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Walker-specific; *workflow pattern* (system quick-action menu) is partially covered by our Wofi system-menu. v3.6.0 adds `Super+Ctrl+H` hardware toggles menu — concept covered by our `Super+Space` menu system
-- [SKIPPED] **T1/T2 MacBook support** (v3.0.0) — not applicable hardware
+- [SKIPPED] **Chaotic-AUR** (v1.6.2) — already in packages.yaml; keep/remove decision is independent
+- [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Walker-specific; covered by our Wofi system-menu on `Super+Space`
+- [SKIPPED] **T1/T2 MacBook support** (v3.0.0, v4.0.0) — not applicable hardware
 - [SKIPPED] **Omarchy Chromium fork** (v2.0.0) — uses upstream Chromium
 - [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0, v3.4.0) — Omarchy-specific extension point
-- [SKIPPED] **`colors.toml` generation (immediate adoption)** — monitor as the pattern stabilizes; tracked under P2 for future evaluation
-- [SKIPPED] **Hyprland tiling group keybindings** (v3.1.0) — `Super+G` stays as gap toggle; group navigate already covered by `Super+Ctrl+H/L`; no new keybindings preference
-- [SKIPPED] **`Super+L` layout toggle** (v3.4.1) — lock screen binding takes priority; layout toggle not needed
-- [SKIPPED] **`Super+/` display resolution cycling** (v3.4.1) — keybinding help takes priority; resolution cycling not needed
-- [SKIPPED] **Monitor focus cycling `Ctrl+Alt+Tab`** (v3.6.0) — no new keybindings preference; mouse sufficient for monitor focus
+- [SKIPPED] **Hyprland tiling group keybindings** (v3.1.0) — `Super+G` stays as gap toggle; group navigate covered by `Super+Ctrl+H/L`
+- [SKIPPED] **`Super+L` layout toggle** (v3.4.1) — lock screen binding takes priority
+- [SKIPPED] **`Super+/` display resolution cycling** (v3.4.1) — keybinding help takes priority
+- [SKIPPED] **Monitor focus cycling `Ctrl+Alt+Tab`** (v3.6.0) — no new keybindings preference
 - [SKIPPED] **Window pinned floating overlay `Super+O`** (v3.1.5) — no new keybindings preference
-- [SKIPPED] **Toggle menu `Super+Ctrl+O`** (v3.4.1, v3.7.0) — no new keybindings preference; v3.7.0 `Super+Ctrl+O` is now Direct Boot toggle (Limine-specific, not applicable)
+- [SKIPPED] **Toggle menu `Super+Ctrl+O`** (v3.4.1, v3.7.0) — no new keybindings preference; v3.7.0 repurposes it for Limine Direct Boot
 - [SKIPPED] **Monitor scaling cycle keybinding** (v3.4.0, v3.6.0) — no new keybindings preference
 - [SKIPPED] **`ga`/`gd` git worktree helpers** (v3.4.2) — user does not use git worktrees via CLI
 - [SKIPPED] **`ff` alias kitty icat preview** (v3.5.0) — Kitty is backup terminal only; Ghostty doesn't support icat
-- [SKIPPED] **Voxtype dictation features** — out of scope per permanent skip list
-- [SKIPPED] **Asus/Slimbook/Tuxedo/Surface hardware drivers** (v3.4.0, v3.5.0) — hardware-specific, not applicable
+- [SKIPPED] **Voxtype dictation workflow/bindings** — permanent skip; `Super+T` push-to-talk is the established model
+- [SKIPPED] **Asus/Slimbook/Tuxedo/Surface hardware drivers** (v3.4.0, v3.5.0, v3.7.0, v3.8.0) — not applicable hardware
 - [SKIPPED] **NVIDIA GeForce Now installer** (v3.4.0) — out of scope
-- [SKIPPED] **Alacritty as default terminal** (v3.4.0) — using Ghostty as primary terminal
 - [SKIPPED] **Walker crash fix** (v3.4.0, v3.5.1) — not using Walker
 - [SKIPPED] **`omarchy-drive-select` partition info** (v3.4.0) — Omarchy-specific script
 - [SKIPPED] **Remove Preinstalls menu** (v3.4.0) — Omarchy-specific menu system
 - [SKIPPED] **Audio soft mixer toggle** (v3.4.0) — Asus Zephyrus-specific
-- [SKIPPED] **Favicon extraction for web apps** (v3.4.0) — Omarchy-specific web app creation
+- [SKIPPED] **Favicon extraction for web apps** (v3.4.0, v4.0.0) — Omarchy web app creation; v4.0.0's high-res site icons are the same feature
 - [SKIPPED] **Scala installer** (v3.4.0) — not in current dev stack
-- [SKIPPED] **NordVPN installer** (v3.4.0) — uses Tailscale, not NordVPN
+- [SKIPPED] **NordVPN installer** (v3.4.0) — uses Tailscale
 - [SKIPPED] **Google DNS option** (v3.4.0) — DNS config handled separately
 - [SKIPPED] **User theme override system** (v3.4.0) — Omarchy-specific theme mechanism
 - [SKIPPED] **`omarchy-cmd-screenshot` geometry fix** (v3.4.0) — Omarchy-specific script
 - [SKIPPED] **fcitx5 double auto-start fix** (v3.4.1, v3.5.1) — not using fcitx5
 - [SKIPPED] **SDDM password field overflow** (v3.4.1) — not using SDDM
 - [SKIPPED] **`OMARCHY_PATH` SSH environment export** (v3.4.1) — Omarchy-specific env var
-- [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script; concept tracked in P3
+- [SKIPPED] **`omarchy-launch-or-focus` jq fix** (v3.4.1) — Omarchy-specific script; we have our own `launch-or-focus`
 - [SKIPPED] **Screensaver `slidein` animation** (v3.4.1) — minor, Omarchy-specific default
-- [SKIPPED] **Copilot key remapping via makima** (v3.4.2) — hardware-specific (Copilot key keyboards only); `makima-bin` not applicable; v3.5.1 removes makima entirely, Copilot key now native Hyprland
-- [SKIPPED] **Tmux navigation keybinds** (v3.4.1) — using zellij, not tmux
-- [SKIPPED] **`Alt+Shift+Arrow` tmux window swap** (v3.4.2) — using zellij, not tmux
-- [SKIPPED] **Tmux automatic window renaming** (v3.4.2) — using zellij, not tmux
-- [SKIPPED] **Tmux zoom indicator** (v3.4.2) — using zellij, not tmux
-- [SKIPPED] **Tmux copy-mode indicator** (v3.5.0) — using zellij, not tmux
-- [SKIPPED] **`Super+Shift+Return` browser shortcut** (v3.4.2) — we already have `Super+W` for browser; redundant binding
+- [SKIPPED] **Copilot key remapping via makima** (v3.4.2, v3.5.0, v3.5.1) — hardware-specific; makima removed entirely in v3.5.1
+- [SKIPPED] **`Super+Shift+Return` browser shortcut** (v3.4.2) — we already have `Super+W` for browser
 - [SKIPPED] **`plocate` AC-only indexing** (v3.4.2) — `plocate` not in our packages
-- [SKIPPED] **Intel Panther Lake/Arc/PTL GPU fixes** (v3.4.2, v3.5.0, v3.5.1, v3.6.0, v3.7.0, v3.8.0) — hardware-specific, NVIDIA setup
+- [SKIPPED] **Intel Panther Lake/Arc/PTL GPU fixes, thermald, intel-lpmd, media driver/VPL** (v3.4.2–v3.8.0) — Intel-specific, NVIDIA setup here
 - [SKIPPED] **`wayfreeze-git` migration cleanup** (v3.4.2) — `wayfreeze-git` still in our packages (intentional)
-- [SKIPPED] **Limine bootloader cmdline / Direct Boot** (v3.4.2, v3.5.0, v3.5.1, v3.6.0, v3.7.0, v3.7.1) — not using Limine bootloader; v3.7.1 patch (stale `xe.enable_panel_replay` param) is also Limine-specific
+- [SKIPPED] **Limine bootloader cmdline / Direct Boot** (v3.4.2–v3.7.1, v4.0.0) — not using Limine
 - [SKIPPED] **LM Studio downgrade fix** (v3.4.2) — LM Studio not in our packages
-- [SKIPPED] **wireless-regdb** (v2.1.1) — No 6GHz hardware detected
-- [SKIPPED] **impala TUI** — Depends directly on `iwd` binary, incompatible with our NM+iwd backend setup
-- [SKIPPED] **Hypridle timing tuning** — Our 5/10/15min is intentionally more relaxed than Omarchy's 2.5/5/5.5min
-- [SKIPPED] **Intel thermald / intel-lpmd** (v3.5.0) — Intel-specific power management, NVIDIA setup
-- [SKIPPED] **Intel media driver / VPL** (v3.5.0, v3.6.0) — Intel-specific hardware video acceleration
-- [SKIPPED] **Dell XPS hardware fixes** (v3.5.0, v3.5.1, v3.8.0) — Dell-specific hardware (including haptic touchpad control)
-- [SKIPPED] **ONCE installer** (v3.5.0) — `once-bin` is an Omarchy-specific service manager, not applicable
-- [SKIPPED] **npx lazy-install stubs** (v3.5.0, v3.5.1, v3.8.0) — Omarchy-specific approach; we use mise for Node tool management
-- [SKIPPED] **`omarchy-sudo-passwordless`** (v3.5.0, v3.7.0) — security-sensitive; passwordless sudo toggle is a footgun we don't want
-- [SKIPPED] **Battery-low hook** (v3.5.0) — Omarchy hooks system; we use our own hook system at `~/.config/dotfiles/hooks/`; *concept* (run script on low battery) could be added as a user hook but not urgent
-- [SKIPPED] **`omarchy-setup-makima`** (v3.5.0) — makima removed entirely in v3.5.1
-- [SKIPPED] **Logitech MX Keys binding examples** (v3.5.1) — hardware-specific commented examples; not applicable to our hardware
-- [SKIPPED] **Dell XPS mic mute LED sync** (v3.5.1) — Dell XPS-specific hardware script
-- [SKIPPED] **ThinkPad mic mute LED sync** (v3.6.0) — ThinkPad-specific hardware script; v3.7.0 unifies into `omarchy-audio-input-mute` but hardware LED sync is still device-specific
-- [SKIPPED] **Resume performance boost** (v3.5.1) — Intel Panther Lake-specific; removed in v3.6.0 as workaround no longer needed
-- [SKIPPED] **Internal monitor recovery service** (v3.6.0) — `omarchy-recover-internal-monitor.service` + `omarchy-hw-recover-internal-monitor`; *concept* is worth noting but requires the persistent toggle system first and is heavy machinery for desktop use
-- [SKIPPED] **Monitor watch daemon** (v3.6.0) — `omarchy-hyprland-monitor-watch` via socat; desktop-focused (single monitor), not needed
-- [SKIPPED] **Vantablack theme** (v3.6.0) — not a theme variant we use
-- [SKIPPED] **Lumon Industries / Retro 82 themes** (v3.5.0) — not theme variants we use
-- [SKIPPED] **Snapper /home snapshots drop + btrfs quota disable** (v3.6.0) — we use Timeshift, not Snapper; btrfs quotas and snapshot strategy managed separately
-- [SKIPPED] **Voxtype GPU acceleration via Vulkan** (v3.5.0, v3.6.0) — Omarchy-specific setup script; our voxtype is configured via `run_once_after_setup_optional_services.sh.tmpl`
-- [SKIPPED] **Gaming installers** (v3.7.0) — Steam, RetroArch, Lutris, Heroic, Moonlight, Xbox Cloud, Xbox Controllers — gaming suite out of scope; individual games/launchers managed separately if needed
-- [SKIPPED] **`cliamp` TUI music player** (v3.7.0) — not in our workflow; using other media tools
-- [SKIPPED] **`ghui` GitHub TUI** (v3.7.0) — using `gh` CLI + other GitHub tooling
-- [SKIPPED] **Plymouth unlock theming** (v3.7.0) — `omarchy-plymouth-*` scripts; we use Timeshift + systemd-ukify, not Limine/Plymouth in the same way
-- [SKIPPED] **Omarchy logo backgrounds** (v3.7.0) — Omarchy-branded assets; we use our own theme backgrounds
-- [SKIPPED] **Apple display brightness control** (v3.7.0) — Apple external display-specific; not applicable to current hardware
-- [SKIPPED] **Helix editor theming** (v3.7.0, v3.8.0) — `omarchy-install-helix` and improved contrast; not using Helix editor
-- [SKIPPED] **gum theming** (v3.7.0) — Omarchy-specific gum theme integration; we use gum but without Omarchy theme coupling
-- [SKIPPED] **Brave Origin browser theming** (v3.7.0) — Brave Origin not in our browser setup
-- [SKIPPED] **Monitor mirroring keybind `Super+Ctrl+Alt+Del`** (v3.7.0) — `Super+Ctrl+Alt+Del` is a hostile keybind; monitor mirroring handled via other means
-- [SKIPPED] **Voxtype push-to-talk `F5` binding** (v3.7.0) — we use `Super+T`; Tier 1 permanent skip
-- [SKIPPED] **ASUS hardware support** (v3.7.0, v3.8.0) — ASUS Panther Lake / Zenbook / ROG-specific; not applicable hardware
-- [SKIPPED] **`omarchy-default-browser`/`terminal`/`editor` CLIs** (v3.8.0) — Omarchy-specific defaults system; we manage defaults via `globals.yaml` in chezmoi data
-- [SKIPPED] **`omarchy-install-browser`/`omarchy-remove-browser`** (v3.8.0) — Omarchy-specific browser installer; we manage browsers via `packages.yaml`
-- [SKIPPED] **Foot terminal** (v3.8.0) — using Ghostty (primary) and Kitty (baseline); no need for a third terminal
-- [SKIPPED] **Zed editor theming** (v3.8.0) — `omazed` package; not using Zed editor
-- [SKIPPED] **ASCII screensaver/about screen** (v3.8.0) — `omarchy-branding-screensaver`, `omarchy-branding-about`; Omarchy-specific branding tool
-- [SKIPPED] **Voxtype post-boot install offer** (v3.8.0) — Omarchy hooks + post-boot notification; voxtype already installed; Tier 1 permanent skip for dictation workflow
-- [SKIPPED] **`pi` coding agent light/dark sync** (v3.8.0) — not using pi agent
-- [SKIPPED] **Chromium VAAPI flags migration** (v3.8.0) — VAAPI flags not in our Chromium config; Intel-specific issue; not applicable
-- [SKIPPED] **`omarchy-notification-send` helper** (v3.8.0) — Omarchy-internal notification wrapper; we use `notify-send` directly
-- [SKIPPED] **`omarchy-setup-security-fido2/fingerprint` refactor** (v3.8.0) — Omarchy-specific security setup scripts; we handle FIDO2/fingerprint separately
-- [SKIPPED] **Lenovo Yoga Pro bass speaker fix** (v3.8.0) — hardware-specific; not applicable
+- [SKIPPED] **wireless-regdb** (v2.1.1) — no 6GHz hardware detected
+- [SKIPPED] **impala TUI** — depends directly on the `iwd` binary, incompatible with our NM+iwd backend setup; v4.0.0 removes it upstream too
+- [SKIPPED] **Hypridle timing tuning** — our 5/10/15min is intentionally more relaxed than Omarchy's 2.5/5/5.5min
+- [SKIPPED] **Dell XPS hardware fixes** (v3.5.0, v3.5.1, v3.8.0, v4.0.0) — Dell-specific hardware
+- [SKIPPED] **ONCE installer** (v3.5.0) — Omarchy-specific service manager
+- [SKIPPED] **npx lazy-install stubs** (v3.5.0, v3.5.1, v3.8.0) — we use mise for Node tool management
+- [SKIPPED] **`omarchy-sudo-passwordless`** (v3.5.0, v3.7.0) — security-sensitive footgun
+- [SKIPPED] **Battery-low hook** (v3.5.0) — Omarchy hooks system; *concept* could be a user hook but not urgent
+- [SKIPPED] **Logitech MX Keys binding examples** (v3.5.1) — hardware-specific commented examples
+- [SKIPPED] **Mic mute LED sync (Dell XPS, ThinkPad)** (v3.5.1, v3.6.0, v3.7.0) — device-specific hardware LED control
+- [SKIPPED] **Resume performance boost** (v3.5.1) — Intel Panther Lake-specific; removed in v3.6.0
+- [SKIPPED] **Internal monitor recovery service** (v3.6.0, v4.0.0) — `omarchy-recover-internal-monitor`; requires the persistent toggle system first and is heavy machinery for a desktop
+- [SKIPPED] **Monitor watch daemon** (v3.6.0) — desktop-focused single monitor; HyprDynamicMonitors covers profile switching
+- [SKIPPED] **Vantablack, Lumon Industries, Retro 82 themes** (v3.5.0, v3.6.0) — not variants we use
+- [SKIPPED] **Snapper /home snapshots drop + btrfs quota disable** (v3.6.0) — we use Timeshift
+- [SKIPPED] **Voxtype GPU acceleration via Vulkan** (v3.5.0, v3.6.0) — our voxtype is configured via `run_once_after_setup_optional_services`
+- [SKIPPED] **Gaming installers** (v3.7.0) — Steam, RetroArch, Lutris, Heroic, Moonlight, Xbox — out of scope
+- [SKIPPED] **`cliamp` TUI music player** (v3.7.0) — not in our workflow
+- [SKIPPED] **`ghui` GitHub TUI** (v3.7.0) — using `gh` CLI
+- [SKIPPED] **Plymouth unlock theming** (v3.7.0) — `omarchy-plymouth-*`; we use Timeshift + systemd-ukify
+- [SKIPPED] **Omarchy logo backgrounds** (v3.7.0) — Omarchy-branded assets
+- [SKIPPED] **Apple display brightness control** (v3.7.0) — Apple external display-specific
+- [SKIPPED] **Helix editor theming** (v3.7.0, v3.8.0, v4.0.0) — not using Helix
+- [SKIPPED] **gum theming** (v3.7.0) — we use gum without Omarchy theme coupling
+- [SKIPPED] **Brave Origin browser theming** (v3.7.0, v4.0.0) — Brave Origin not in our browser setup
+- [SKIPPED] **Monitor mirroring keybind `Super+Ctrl+Alt+Del`** (v3.7.0, v4.0.0) — hostile keybind; the `monitor-mirror` script itself is implemented
+- [SKIPPED] **`omarchy-default-browser`/`terminal`/`editor` CLIs** (v3.8.0, v4.0.0) — we manage defaults via `globals.yaml`
+- [SKIPPED] **`omarchy-install-browser`/`omarchy-remove-browser`** (v3.8.0) — we manage browsers via `packages.yaml`
+- [SKIPPED] **Zed editor theming** (v3.8.0) — not using Zed
+- [SKIPPED] **ASCII screensaver/about screen** (v3.8.0) — Omarchy branding tool
+- [SKIPPED] **Voxtype post-boot install offer** (v3.8.0) — voxtype already installed
+- [SKIPPED] **`pi` coding agent light/dark sync** (v3.8.0, v4.0.0) — not using pi agent
+- [SKIPPED] **Chromium VAAPI flags migration** (v3.8.0) — Intel-specific issue
+- [SKIPPED] **`omarchy-notification-send` helper** (v3.8.0) — we use `notify-send` directly
+- [SKIPPED] **`omarchy-setup-security-fido2/fingerprint` refactor** (v3.8.0, v4.0.0) — we handle FIDO2/fingerprint separately
+- [SKIPPED] **Lenovo Yoga Pro bass speaker fix** (v3.8.0) — hardware-specific
 
 ---
 
@@ -538,3 +998,6 @@ Last updated: 2026-06-08 (through v3.8.2). Batch 1 implemented 2026-05-04.
 | v3.8.0 | `_research/omarchy/OMARCHY_v3.8.0.md` | 2026-05-13 |
 | v3.8.1 | `_research/omarchy/OMARCHY_v3.8.1.md` | 2026-06-08 |
 | v3.8.2 | `_research/omarchy/OMARCHY_v3.8.2.md` | 2026-06-08 |
+| v3.8.3 | `_research/omarchy/OMARCHY_v3.8.3.md` | 2026-08-24 |
+| v3.8.4 | `_research/omarchy/OMARCHY_v3.8.4.md` | 2026-08-24 |
+| v4.0.0 | `_research/omarchy/OMARCHY_v4.0.0.md` | 2026-08-24 |
