@@ -1,43 +1,72 @@
 #!/usr/bin/env sh
 
-# Script: nightlight-config.sh
-# Purpose: Configure nightlight/blue light filter
-# Requirements: Arch Linux, wofi
+# Script: nightlight-config
+# Purpose: Choose the blue light filter temperature (hyprsunset)
+# Requirements: Arch Linux, hyprsunset, hyprctl, wofi
+# Reachable from: menu-trigger Toggle submenu
+#
+# Sets the warm preference read by nightlight-toggle, and applies it now.
+# See nightlight-toggle for why hyprctl *output* is checked rather than its
+# exit status (`hyprctl hyprsunset` always exits 0, even on invalid input).
 
-# Nightlight configuration menu
-if command -v wofi >/dev/null 2>&1; then
-    TEMP=$(echo "6500K (Daylight)\n6000K (Cool)\n5500K (Neutral)\n5000K (Warm)\n4500K (Warmer)\n4000K (Evening)\n3500K (Night)" | wofi --dmenu --prompt "Color Temperature")
-    
-    case "$TEMP" in
-        "6500K (Daylight)")
-            hyprctl keyword decoration:col.shadow 0xee111111
-            notify-send "󰛨 Nightlight" "Set to Daylight (6500K)"
-            ;;
-        "6000K (Cool)")
-            hyprctl keyword decoration:col.shadow 0xee221111
-            notify-send "󰛨 Nightlight" "Set to Cool (6000K)"
-            ;;
-        "5500K (Neutral)")
-            hyprctl keyword decoration:col.shadow 0xee332211
-            notify-send "󰛨 Nightlight" "Set to Neutral (5500K)"
-            ;;
-        "5000K (Warm)")
-            hyprctl keyword decoration:col.shadow 0xee443311
-            notify-send "󰛨 Nightlight" "Set to Warm (5000K)"
-            ;;
-        "4500K (Warmer)")
-            hyprctl keyword decoration:col.shadow 0xee554411
-            notify-send "󰛨 Nightlight" "Set to Warmer (4500K)"
-            ;;
-        "4000K (Evening)")
-            hyprctl keyword decoration:col.shadow 0xee665511
-            notify-send "󰛨 Nightlight" "Set to Evening (4000K)"
-            ;;
-        "3500K (Night)")
-            hyprctl keyword decoration:col.shadow 0xee776611
-            notify-send "󰛨 Nightlight" "Set to Night (3500K)"
-            ;;
-    esac
+TEMP_FILE="$HOME/.local/state/dotfiles/nightlight-temp"
+MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nightlight-on"
+
+if ! command -v wofi >/dev/null 2>&1; then
+    notify-send "󰛨 Nightlight" "wofi not available for configuration" -t 2000
+    exit 1
+fi
+
+# Wait for the daemon's IPC socket to answer (up to ~3s)
+wait_for_hyprsunset() {
+    _tries=15 # 15 x 0.2s
+    while [ "$_tries" -gt 0 ]; do
+        hyprctl hyprsunset temperature >/dev/null 2>&1 && return 0
+        sleep 0.2
+        _tries=$((_tries - 1))
+    done
+    return 1
+}
+
+CHOICE=$(printf '%s\n' \
+    "6500K (Daylight)" \
+    "6000K (Cool)" \
+    "5500K (Neutral)" \
+    "5000K (Warm)" \
+    "4500K (Warmer)" \
+    "4000K (Evening)" \
+    "3500K (Night)" |
+    wofi --dmenu --prompt "Color Temperature")
+
+# Dismissed the picker
+[ -n "$CHOICE" ] || exit 0
+
+TEMP=${CHOICE%%K*}
+case "$TEMP" in
+    '' | *[!0-9]*)
+        notify-send "󰛨 Nightlight" "Unrecognised temperature choice" -t 2000
+        exit 1
+        ;;
+esac
+
+# Persist as the warm preference nightlight-toggle turns on with
+mkdir -p "$(dirname "$TEMP_FILE")"
+printf '%s\n' "$TEMP" >"$TEMP_FILE"
+
+if ! pgrep -x hyprsunset >/dev/null; then
+    setsid hyprsunset -t "$TEMP" >/dev/null 2>&1 &
+
+    if ! wait_for_hyprsunset; then
+        notify-send "󰛨 Nightlight" "Failed to start hyprsunset (${TEMP}K saved)" -t 2000
+        exit 1
+    fi
 else
-    notify-send "󰛨 Nightlight" "wofi not available for configuration"
+    hyprctl hyprsunset temperature "$TEMP" >/dev/null 2>&1
+fi
+
+if [ "$(hyprctl hyprsunset temperature 2>/dev/null)" = "$TEMP" ]; then
+    : >"$MARKER"
+    notify-send "󰛨 Nightlight" "Temperature set to ${TEMP}K" -t 2000
+else
+    notify-send "󰛨 Nightlight" "Failed to set temperature (${TEMP}K saved)" -t 2000
 fi
