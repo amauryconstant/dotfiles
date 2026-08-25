@@ -19,6 +19,7 @@ prettier = "latest"
 "npm:playwright" = { version = "latest", postinstall = "playwright install" }
 
 # AI Tools
+herdr = "latest"
 "claude-code" = "latest"
 "npm:opencode-ai" = "latest"
 "npm:@fission-ai/openspec" = "latest"
