@@ -10,6 +10,7 @@
 -- SUPER+ALT+M  → Meeting  mode toggle (continuous transcription + AI summary)
 --
 -- binddr (stop on key release) → o.bind(..., { release = true }).
+-- Parakeet binds are desktop-only: laptop is RAM-constrained, Cohere-only.
 -- NOTE: recording start switches to the `voxtype_recording` submap (see
 -- ../../conf.d/voxtype-submap.lua) to neutralise modifier interference.
 --
@@ -39,6 +40,7 @@ o.bind(
 	"~/.local/lib/scripts/desktop/voxtype-record start --model parakeet-tdt-0.6b-v3"
 )
 o.bind("SUPER + CTRL + T", "Stop voice dictation (Parakeet)", "voxtype record stop", { release = true })
+{{ end -}}
 
 {{ end -}}
 
