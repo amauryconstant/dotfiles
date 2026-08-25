@@ -273,7 +273,7 @@ packages:
         - hyprland # Hyprland Wayland compositor
         - uwsm # Universal Wayland Session Manager
         - xdg-desktop-portal-hyprland # Portal integration for Hyprland
-        - waybar # Status bar for Wayland
+        - waybar-git # Status bar for Wayland
         - hyprlock # Official Hyprland screen locker
         - hypridle # Official Hyprland idle daemon
         - polkit-gnome # Polkit authentication agent (hyprpolkitagent crashes)

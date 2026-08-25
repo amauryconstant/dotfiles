@@ -37,31 +37,6 @@ __pycache__
 # Broot build artifact (auto-generated marker file)
 private_dot_config/broot/launcher/
 
-# TEMP: run Hyprland in legacy .conf mode until a Waybar *release* includes
-# PR #5013 (Lua-IPC workspace clicks). With hyprland.lua absent, Hyprland falls
-# back to hyprland.conf, whose legacy "dispatch workspace N" still works.
-#
-# Re-checked 2026-08-30 (no change since 2026-08-24):
-#   PR #5013 merged   2026-05-04 into master
-#   latest release    0.15.0 (2026-02-06) — still predates the merge
-#   Arch extra        waybar 0.15.0-2
-#   installed         waybar 0.15.0-2
-#   no 0.16.0 exists
-#
-# So the fix exists upstream but ships in no tagged release yet. Unblocks when
-# Waybar >= 0.16.0 lands: delete this block, then `chezmoi apply`. The rest of
-# the Lua config (conf/*.lua) is already deployed and live — only this entry
-# point is held back.
-#
-# Next check is a version comparison, not a re-investigation:
-#   curl -s https://api.github.com/repos/Alexays/Waybar/releases/latest | jaq -r .tag_name
-#   pacman -Si waybar | grep Version
-#
-# Full cutover runbook (status, steps, rollback, and the hyprsplit C++ -> Lua
-# swap that rides along): _guides/HYPRLAND_LUA_CUTOVER.md
-# Audit findings/prerequisites behind it: _research/HYPRLAND_LUA_AUDIT.md
-.config/hypr/hyprland.lua
-
 # Steam iGPU-forcing desktop override only makes sense on hybrid-GPU laptops
 {{ if ne .chassisType "laptop" }}
 .local/share/applications/steam.desktop
