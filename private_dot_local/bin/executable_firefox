@@ -15,6 +15,39 @@
 # __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS at it restores normal startup with
 # hardware acceleration intact. Rebuilt on every launch so driver updates are
 # picked up automatically. No-op when egl-wayland2 is absent.
+#
+# Falling back to egl-wayland exposes the browser to a permanent deadlock,
+# typically when an extension popup creates a new EGL surface.
+# Confirmed by stack sampling a wedged process (eu-stack, zero CPU advance,
+# identical stacks seconds apart):
+#
+#   main thread  gtk_main_do_event -> draw -> libxul
+#                -> ConditionVariableImpl::wait_for   (waits for the renderer)
+#   Renderer     libxul -> libEGL_nvidia
+#                -> libnvidia-egl-wayland -> wl_display_dispatch_queue -> ppoll
+#
+# The renderer blocks inside NVIDIA's EGL platform waiting on a Wayland event,
+# while the only thread that can drive that surface is blocked waiting for the
+# renderer. Nothing is queued on the socket and the compositor logs no error --
+# the cycle simply never breaks. Same shape as Mozilla bug 1734368; the known
+# instances of it are fixed in versions older than ours, so this is a residual
+# one specific to the egl-wayland path.
+#
+# This is the SAME defect that makes wayland2 unusable, not a separate one:
+# identical thread signature, but under wayland2 it fires on the very first
+# frame, so the toplevel is acked and never receives a single wl_surface.attach
+# and no window ever maps. Under egl-wayland it fires later, when a new EGL
+# surface appears. One bug, two symptoms. Upstream egl-wayland2 documents the
+# likely trigger as a client contract violation: an application must not commit
+# a wl_surface concurrently with eglSwapBuffers, and Firefox commits the
+# EGL-backed surface from the GTK main thread while the renderer is swapping.
+#
+# __NV_DISABLE_EXPLICIT_SYNC removes the wp_linux_drm_syncobj coordination from
+# the renderer's swap path (verified with WAYLAND_DEBUG: 91 set_acquire_point /
+# 91 set_release_point / get_surface drop to zero) while dmabuf buffers and
+# hardware rendering are retained. It is NOT a proven fix -- the same wedge
+# reproduces under wayland2 with explicit sync disabled -- so treat it as a
+# zero-cost measure and drop it if it never demonstrably helps.
 
 EGL_CONFIG_DIR=/usr/share/egl/egl_external_platform.d
 WAYLAND2_CONFIG="$EGL_CONFIG_DIR/09_nvidia_wayland2.json"
@@ -40,6 +73,7 @@ if [[ -e "$WAYLAND2_CONFIG" ]]; then
         done
 
         export __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS="$filtered_dir"
+        export __NV_DISABLE_EXPLICIT_SYNC=1
     fi
 fi
 
