@@ -37,6 +37,10 @@
 `o.bind(keys, description, dispatcher, opts)` wraps `hl.bind`: it folds `description` into
 `opts.description` and auto-wraps a plain string dispatcher in `hl.dsp.exec_cmd`.
 
+`hs` is **not** a global — it is hyprsplit, pulled in per-module with `local hs = require("hyprsplit")`
+(`conf/plugins.lua`, `conf/bindings/workspace-management.lua`). `dot_luarc.json` still lists it in
+`diagnostics.globals`, so a stray bare `hs` goes unflagged.
+
 **LuaJIT runtime**: Hyprland uses LuaJIT (not standard Lua 5.x). LuaJIT is mostly compatible with Lua 5.1 + some 5.2 features.
 
 ---
@@ -50,12 +54,12 @@ See: `private_dot_config/themes/rose-pine-moon/hyprland.lua`
 
 ```lua
 hl.config({
-    general = {
-        col = {
-            active_border   = "rgba(c4a7e7ee)",  -- iris (accent-border semantic)
-            inactive_border = "rgba(6e6a86aa)",  -- muted (fg-muted semantic)
-        },
-    },
+	general = {
+		col = {
+			active_border = "rgba(c4a7e7ee)", -- iris (accent-border semantic)
+			inactive_border = "rgba(6e6a86aa)", -- muted (fg-muted semantic)
+		},
+	},
 })
 ```
 
@@ -97,7 +101,7 @@ glob port patterns (`DP-*`) anywhere. Rendered output goes to `~/.config/hypr/mo
 
 ## Validation
 
-All wired into mise (`.mise/config.toml`), scoped to `private_dot_config/hypr`:
+All wired into mise (`.mise/config.toml`), covering `private_dot_config/{hypr,themes,dotfiles,hyprdynamicmonitors}`:
 
 | Task | What it does |
 |------|--------------|
@@ -106,15 +110,11 @@ All wired into mise (`.mise/config.toml`), scoped to `private_dot_config/hypr`:
 | `mise run format:lua` | `stylua` apply — **`*.lua` only, by design** |
 | `mise run lint:hypr-lua` | whole-tree parse check via `Hyprland --verify-config` — **manual-only**, see below |
 
-⚠️ **Scope is `private_dot_config/hypr` only.** `themes/*/hyprland.lua` and
-`hyprdynamicmonitors/hyprconfigs/*.lua` live outside it and are **not** linted or formatted — hence
-the 4-space indent in the theme example above. Hyprland does not care; just don't assume a passing
-`lint:lua` covered them.
-
 ### Formatting
 
 No `.stylua.toml` exists, so stylua uses its defaults: **tabs**, 120-col. Match that when
-hand-editing files under `hypr/` — 2-space indent fails `--check`.
+hand-editing any covered Lua file (`hypr/`, `themes/*/hyprland.lua`, `dotfiles/`,
+`hyprdynamicmonitors/hyprconfigs/`) — 2-space indent fails `--check`.
 
 ### Templates (`*.lua.tmpl`)
 
@@ -173,3 +173,13 @@ works fine. Deliberately not duplicated as a second file — ignore the diagnost
 **LuaJIT vs Lua 5.4**: Avoid `<const>`, `<close>`, `table.move` with 5 args (5.4 features). Use `require` style imports only.
 
 **Stubs location**: `/usr/share/hypr/stubs` — referenced in `.luarc.json`. If missing, install `hyprland` package.
+
+**Template-bearing Lua must be `.lua.tmpl`**: a `.lua` file containing `{{ ... }}` deploys raw template
+text and throws at config load. Validate with:
+
+```bash
+chezmoi execute-template < file.lua.tmpl | luajit -bl - >/dev/null   # renders AND parses as Lua
+```
+
+**Module cache**: `require()` caches in `package.loaded`, so `hyprland.lua.tmpl` clears our roots and
+passes `{ reload = true }` to `require_all`. Without it, edits do nothing after `hyprctl reload`.
