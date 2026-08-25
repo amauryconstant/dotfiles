@@ -43,7 +43,7 @@ run = "prettier --write '.chezmoidata/**/*.yaml' --log-level warn"
 [tasks."lint:lua"]
 description = "Check Lua formatting"
 depends = ["lint:lua-tmpl"]
-run = "stylua --check $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
+run = "stylua --check $(find private_dot_config/hypr private_dot_config/themes private_dot_config/dotfiles private_dot_config/hyprdynamicmonitors -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
 
 # *.lua.tmpl is invisible to `find -name '*.lua'`, so templates went unlinted.
 # They cannot be fed to stylua directly (Go template actions aren't valid Lua) —
@@ -58,7 +58,7 @@ run = "find private_dot_config/hypr -name '*.lua.tmpl' -print0 | xargs -0 -r -n1
 # rendering discards the Go template actions. Templates are check-only.
 [tasks."format:lua"]
 description = "Format Lua files (templates are check-only, see lint:lua-tmpl)"
-run = "stylua $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
+run = "stylua $(find private_dot_config/hypr private_dot_config/themes private_dot_config/dotfiles private_dot_config/hyprdynamicmonitors -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
 
 # Validates the Hyprland Lua tree WITHOUT flipping the entry point. The entry
 # point is excluded by .chezmoiignore (held for Waybar >= 0.16.0), so render it
