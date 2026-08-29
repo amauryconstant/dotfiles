@@ -12,14 +12,11 @@ bun = true
 # Runner & Package manager
 uv = "latest"
 bun = "latest"
-node = [
-    {version = "24"},
-    {version="latest"}
-]
+node = [{ version = "24" }, { version = "latest" }]
 
 # Development Tools
 prettier = "latest"
-"npm:playwright" = {version = "latest", postinstall = "playwright install"}
+"npm:playwright" = { version = "latest", postinstall = "playwright install" }
 
 # AI Tools
 "claude-code" = "latest"
@@ -28,7 +25,7 @@ prettier = "latest"
 "github:AlexsJones/llmfit" = "latest"
 "github:arimxyer/models" = "latest"
 "pipx:claude-monitor" = "latest"
-"npm:ccusage"  = "latest"
+"npm:ccusage" = "latest"
 
 # CLIs
 "github:1jehuang/mermaid-rs-renderer" = "latest"
