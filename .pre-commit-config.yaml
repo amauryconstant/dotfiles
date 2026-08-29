@@ -19,3 +19,21 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
+  - id: lua-staged
+    name: stylua --check staged Lua files
+    entry: mise run lint:lua-staged
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: json-staged
+    name: jq empty on staged JSON/JSONC files
+    entry: mise run lint:json-staged
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: yaml-staged
+    name: yamllint on staged YAML data files
+    entry: mise run lint:yaml-staged
+    language: system
+    pass_filenames: false
+    always_run: true
