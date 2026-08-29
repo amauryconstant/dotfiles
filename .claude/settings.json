@@ -174,8 +174,18 @@
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.yaml$ && ! \"$f\" =~ \\.tmpl$ ]] && command -v yamllint > /dev/null && yamllint -c .yamllint.yaml \"$f\" && echo \"✓ YAML OK\" || true",
-            "timeout": 10
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.chezmoidata/.*\\.yaml$ ]] && mise run lint:yaml-file -- \"$f\" || true",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ private_dot_config/hypr/.*\\.lua$ ]] && mise run lint:lua-file -- \"$f\" && echo \"✓ Lua OK\" || true",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.(json|jsonc)$ && ! \"$f\" =~ /modify_ ]] && mise run lint:json-file -- \"$f\" && echo \"✓ JSON OK\" || true",
+            "timeout": 15
           }
         ]
       }
