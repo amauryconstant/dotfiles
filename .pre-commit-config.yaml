@@ -25,6 +25,12 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
+  - id: qml-staged
+    name: qmllint + qmlformat check on staged QML
+    entry: mise run lint:qml-staged
+    language: system
+    pass_filenames: false
+    always_run: true
   - id: json-staged
     name: jq empty on staged JSON/JSONC files
     entry: mise run lint:json-staged

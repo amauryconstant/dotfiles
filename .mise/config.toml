@@ -10,11 +10,11 @@ lua-language-server = "latest"
 
 [tasks.lint]
 description = "Run all linters"
-depends = ["lint:sh", "lint:yaml", "lint:lua", "lint:md"]
+depends = ["lint:sh", "lint:yaml", "lint:lua", "lint:qml", "lint:md"]
 
 [tasks.format]
 description = "Run all formatters"
-depends = ["format:sh", "format:yaml", "format:lua", "format:md"]
+depends = ["format:sh", "format:yaml", "format:lua", "format:qml", "format:md"]
 
 [tasks.verify]
 description = "Run all linters and formatters"
@@ -59,6 +59,18 @@ run = "find private_dot_config/hypr -name '*.lua.tmpl' -print0 | xargs -0 -r -n1
 [tasks."format:lua"]
 description = "Format Lua files (templates are check-only, see lint:lua-tmpl)"
 run = "stylua $(find private_dot_config/hypr private_dot_config/themes private_dot_config/dotfiles private_dot_config/hyprdynamicmonitors -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
+
+# lint:qml is .mise/tasks/lint/qml.sh (auto-discovered, like lint:lua-file).
+# It lints ONE RENDERED TREE rather than per-file, because shell.qml references
+# the Config singleton that exists in source only as Config.qml.tmpl, and it
+# pins the absolute Qt6 tool paths — the qmllint/qmlformat on $PATH are Qt5's
+# and pass everything silently. Rationale in full at the top of that script.
+
+# *.qml only: rendering a template discards the Go template actions, so there is
+# nothing to write back to. Same rule as format:lua.
+[tasks."format:qml"]
+description = "Format QML files (templates are check-only, see lint:qml)"
+run = "test -d private_dot_config/quickshell && find private_dot_config/quickshell -name '*.qml' -type f -print0 | xargs -0 -r /usr/lib/qt6/bin/qmlformat --inplace || true"
 
 # Validates the Hyprland Lua tree WITHOUT flipping the entry point. The entry
 # point is excluded by .chezmoiignore (held for Waybar >= 0.16.0), so render it
