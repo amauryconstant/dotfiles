@@ -35,9 +35,12 @@ o.bind("SUPER + ALT + down", "Focus monitor down", hl.dsp.focus({ monitor = "d" 
 o.bind("SUPER + ALT + s", "Swap workspaces", hs.dsp.workspace.swap_monitors({ monitor1 = "current", monitor2 = "+1" }))
 o.bind("SUPER + ALT + g", "Grab rogue windows", hs.dsp.grab_rogue_windows())
 
--- ⚠️ VERIFY at runtime (Task 18) — no documented 1:1 Lua mapping for
--- `split:workspace, +1, movecurrentwindow`. Try moving window to next monitor's workspace.
-o.bind("SUPER + ALT + m", "Move to other monitor", hs.dsp.window.move({ workspace = "+1" }))
+-- Native dispatcher, not hyprsplit: hs.dsp.window.move({ workspace = "+1" }) routes
+-- through hyprsplit's get_workspace_string, which clamps +1 to the monitor's own
+-- 1-10 range — same-monitor move, never crossing monitors.
+-- ⚠️ VERIFY at cutover: the { monitor = "+1" } argument cannot be checked statically
+-- (the 0.56.2 stub types every dispatcher as `fun(...)`). Needs a two-monitor test.
+o.bind("SUPER + ALT + m", "Move to other monitor", hl.dsp.window.move({ monitor = "+1" }))
 
 -- Cross-monitor workspace move (native dispatcher)
 o.bind("SUPER + SHIFT + ALT + left", "Move workspace to left monitor", hl.dsp.workspace.move({ monitor = "l" }))
