@@ -37,6 +37,21 @@ Singleton {
     readonly property color accentError: root.c.ACCENT_ERROR ?? "#f38ba8"
     readonly property color accentBorder: root.c.ACCENT_BORDER ?? "#cba6f7"
 
+    // The colorset carries 24 variables; these ten complete the set. Waybar's
+    // module mapping (waybar/CLAUDE.md) needs accentHighlight for interactive
+    // widgets and accentUrgentSecondary for the battery 20-30% band, so an
+    // incomplete Theme silently falls back to hardcoded Catppuccin here.
+    readonly property color accentHighlight: root.c.ACCENT_HIGHLIGHT ?? "#cba6f7"
+    readonly property color accentUrgentSecondary: root.c.ACCENT_URGENT_SECONDARY ?? "#fab387"
+    readonly property color accentSecondary: root.c.ACCENT_SECONDARY ?? "#74c7ec"
+    readonly property color accentTertiary: root.c.ACCENT_TERTIARY ?? "#fab387"
+    readonly property color accentAlternative: root.c.ACCENT_ALTERNATIVE ?? "#89dceb"
+    readonly property color accentSubtle: root.c.ACCENT_SUBTLE ?? "#f5e0dc"
+    readonly property color accentSpecial: root.c.ACCENT_SPECIAL ?? "#f2cdcd"
+    readonly property color accentMedia: root.c.ACCENT_MEDIA ?? "#cba6f7"
+    readonly property color accentModification: root.c.ACCENT_MODIFICATION ?? "#f5c2e7"
+    readonly property color accentPerformance: root.c.ACCENT_PERFORMANCE ?? "#eba0ac"
+
     // Called over IPC by theme-switcher; watchChanges only covers hand edits,
     // because switching swaps the themes/current SYMLINK and inotify on the
     // resolved path never fires.

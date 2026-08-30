@@ -1,9 +1,11 @@
+pragma ComponentBehavior: Bound
+
+import "bar"
 import Quickshell
 import Quickshell.Io
-import QtQuick
 
-// Phase 0 skeleton: proves the whole pipeline (deployment, theme bridge, IPC
-// reload, lint) on the cheapest possible payload — a clock.
+// Root scope. Deliberately thin: it wires IPC and fans the bar out over the
+// screens, and owns no widget of its own.
 // Roadmap: _plans/QUICKSHELL_SHELL.md
 ShellRoot {
     // theme-switcher calls this after swapping the themes/current symlink:
@@ -16,28 +18,25 @@ ShellRoot {
         }
     }
 
-    PanelWindow {
-        color: Theme.bgPrimary
-        implicitHeight: Config.barHeight
+    // SUPER+SHIFT+B, from hypr/conf.d/quickshell.lua. SUPER+B still toggles
+    // Waybar, so either bar can be hidden while both run.
+    IpcHandler {
+        target: "bar"
 
-        anchors {
-            left: true
-            right: true
-            top: true
+        function toggle(): void {
+            barVariants.visible = !barVariants.visible;
         }
+    }
 
-        Text {
-            anchors.centerIn: parent
-            color: Theme.fgPrimary
-            font.family: Config.guiFont
-            font.pixelSize: 13
-            text: Qt.formatDateTime(clock.date, "ddd d MMM  HH:mm")
-        }
+    Variants {
+        id: barVariants
 
-        SystemClock {
-            id: clock
+        property bool visible: true
 
-            precision: SystemClock.Minutes
+        model: Quickshell.screens
+
+        Bar {
+            visible: barVariants.visible
         }
     }
 }

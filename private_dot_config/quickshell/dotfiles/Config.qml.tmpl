@@ -3,8 +3,22 @@ pragma Singleton
 import Quickshell
 
 Singleton {
-    // Bar geometry
+    // Bar geometry. Values mirror waybar/config.tmpl so the two bars stack
+    // without a visual jump while both run during the Phase 1 A/B.
     readonly property int barHeight: 30
+    readonly property int barSpacing: 4
+    readonly property int widgetPadding: 8
+    readonly property int iconSize: 16
+    readonly property int fontSize: 13
+
+    // Truncation limits, matching the Waybar modules they replace:
+    // hyprland/window max-length and mpris dynamic-len.
+    readonly property int titleMaxLength: 50
+    readonly property int mediaMaxLength: 35
+
+    // Scroll step for the audio widget, as a fraction. Waybar shelled out to
+    // `pamixer -i 5`; Pipewire volume is a 0..1 float.
+    readonly property real volumeStep: 0.05
 
     // Fonts come from .chezmoidata/globals.yaml so the QML tree cannot drift
     // from GTK/Qt/Waybar/Wofi/Hyprlock.
