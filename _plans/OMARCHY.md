@@ -71,14 +71,27 @@ Because `identity` leaves the read-back unchanged, temperature alone cannot dist
 
 The real question is only whether Waybar has shipped PR #5013 (`fix(hyprland/workspaces): adapt dispatch commands for Lua IPC protocol`), because our Waybar workspace clicks depend on the legacy text dispatch that Lua mode removes.
 
-Checked 2026-08-24: **merged 2026-05-04** into master; latest release **0.15.0 (2026-02-06)** predates it; installed `waybar 0.15.0-2`. The fix is upstream but in no tagged release. Full state recorded in `.chezmoiignore` so the next check is a version comparison, not a re-investigation.
+Re-checked 2026-08-30: **merged 2026-05-04** into master; latest release still **0.15.0 (2026-02-06)**, predating it; Arch `extra` still ships `waybar 0.15.0-2`; no 0.16.0 exists. The fix is upstream but in no tagged release. Full state recorded in `.chezmoiignore` so the next check is a version comparison, not a re-investigation.
+
+**Cutover runbook**: `_research/HYPRLAND_LUA_MIGRATION.md` — hold status, audit findings, verified prerequisites, cutover/rollback steps, hyprsplit coupling risk.
+
+`Hyprland --verify-config` exists ("Do not run Hyprland, only print if the config has any errors"). The entry point is chezmoiignore'd, so render it to a temp path first — it resolves the rest of the tree through `package.path` against the deployed `~/.config/hypr`:
+
+```sh
+TMP=$(mktemp -d)
+chezmoi execute-template < private_dot_config/hypr/hyprland.lua.tmpl > "$TMP/hyprland.lua"
+Hyprland --verify-config -c "$TMP/hyprland.lua"
+```
+
+Proves the tree parses and every `require` resolves; does **not** prove dispatcher arguments are correct — the 0.56.2 stub types every dispatcher as `fun(...)`.
 
 - [x] Confirm which entry point Hyprland loads today — `hyprland.conf`, by deliberate `.chezmoiignore` exclusion of `hyprland.lua`
 - [x] Establish the actual unblock condition and record it where the hold lives
+- [x] Diff each `conf/X.conf` against `conf/X.lua` and reconcile any drift — 21 pairs, 17 at parity. Four findings *(2026-08-30)*: (1) `voice.lua` lacked `.tmpl`, so the two Parakeet bindings were unconditional instead of desktop-only → renamed `voice.lua.tmpl` with the `chassisType` gate; (2) rose-pine dawn/moon wrote 10-digit `0xff<rrggbb><aa>` borders in *both* formats, silently truncated by Hyprland to the last 8 (`hyprctl getoption` returned `907aa9ee`) → converted to `rgba(...)`; (3) `SUPER+ALT+m` was labelled "Move to other monitor" but neither source crossed a monitor → `movewindow, mon:+1` / `hl.dsp.window.move({ monitor = "+1" })`; (4) `media-keys.conf` lacked the `.lua` side's locked/repeat flags, so volume+brightness were dead on the lock screen → `bindeld`/`bindld`
+- [ ] Resolve the `SUPER+ALT+M` double-bind — `voice` ("Toggle meeting transcription") vs `workspace-management` (finding 3 above). Identical in both `.conf` and `.lua`, so not drift, but a real conflict
 - [ ] When Waybar >= 0.16.0 lands: delete the `.chezmoiignore` block, `chezmoi apply`, verify workspace clicks
-- [ ] Diff each `conf/X.conf` against `conf/X.lua` and reconcile any drift (bindings dir has 11 pairs) — both sets are deployed, so divergence is still worth an audit
 - [ ] Gate the retirement of the `.conf` set behind an explicit user go-ahead — keep both until the Lua path is confirmed across a reboot and a `hyprctl reload`
-- [ ] Extend `run_once_after_007_validate_hyprland_config` to validate whichever entry point is authoritative
+- [ ] Extend `run_once_after_007_validate_hyprland_config` to validate whichever entry point is authoritative — use the `Hyprland --verify-config -c <path>` recipe above
 - [ ] Review omarchy's helper surface (`hl.unbind`, `hl.monitor{ transform = }`, `hl.env`) against our `conf/helpers.lua` — adopt `unbind` if we ever need to drop an inherited default
 
 **Not doing**: `waybar-git`. It would be the first locally-built `-git` package in the repo and needs a vendored `#commit=<sha>` pin per `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`.
@@ -124,7 +137,7 @@ Checked 2026-08-24: **merged 2026-05-04** into master; latest release **0.15.0 (
 - [ ] Replace `keybind = shift+enter=text:\x1b\r` with `keybind = shift+enter=csi:13;2u`
 - [ ] Add `keybind = alt+shift+enter=csi:13;4u`
 - [ ] Verify Claude Code / opencode still insert a newline on `Shift+Enter` after the change (some TUIs only understand the legacy sequence — roll back if so)
-- [ ] Mirror into `private_dot_config/kitty/` if the baseline terminal is kept in sync (`map shift+enter send_text all \e[13;2u`)
+- [N/A] Mirror into `private_dot_config/kitty/` — no `kitty/` directory exists in this repo; Kitty is not chezmoi-managed *(verified 2026-08-30)*
 
 ---
 
@@ -419,7 +432,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [ ] Replace `sudo pacman -Sc --noconfirm` with `sudo paccache -rk2` (keeps 2 versions; `pacman-contrib` already in packages)
 - [ ] Add `paccache -ruk0` to drop cached versions of uninstalled packages
 - [ ] Add a free-space check before the update step with a clear warning
-- [ ] Order the prune before any Timeshift snapshot so reclaimed space is real
+- [N/A] Order the prune before any Timeshift snapshot — `system-maintenance` has no snapshot step: `--update` and `--cleanup` are separate options and neither invokes Timeshift, so there is no ordering to fix *(verified 2026-08-30)*
 
 ---
 
