@@ -139,7 +139,7 @@ and missing whitespace control in `monitor.lua.tmpl` (`{{ else }}` → `{{- else
 
 `mise run lint:hypr-lua` wraps `Hyprland --verify-config` ("Do not run Hyprland, only print if the
 config has any errors"). The Lua entry point is `.chezmoiignore`d (see
-`_research/HYPRLAND_LUA_MIGRATION.md`), so the task renders it to a temp path; `package.path`
+`_guides/HYPRLAND_LUA_CUTOVER.md`), so the task renders it to a temp path; `package.path`
 resolves the rest of the tree against the deployed `~/.config/hypr`:
 
 ```bash
