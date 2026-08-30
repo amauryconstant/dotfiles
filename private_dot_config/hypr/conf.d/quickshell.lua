@@ -14,4 +14,8 @@ o.exec_on_start("quickshell -c dotfiles")
 -- SUPER+B stays on waybar-toggle while both bars run, so either can be hidden
 -- independently for an A/B look. At Phase 6 the Waybar binding goes and this
 -- one can move to SUPER+B.
-o.bind("SUPER + SHIFT + B", "Toggle Quickshell bar", "quickshell -c dotfiles ipc call bar toggle")
+--
+-- Goes through the script, not a raw `ipc call`: IPC only reaches a RUNNING
+-- instance, so a direct binding silently did nothing whenever the bar was
+-- down -- and `quickshell ipc` exits 0 even then, so nothing reported it.
+o.bind("SUPER + SHIFT + B", "Toggle Quickshell bar", "~/.local/lib/scripts/desktop/quickshell-toggle")

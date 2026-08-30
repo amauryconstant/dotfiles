@@ -1,0 +1,56 @@
+#!/usr/bin/env sh
+
+# Script: quickshell-toggle
+# Purpose: Toggle the Quickshell bar, starting it if it is not running
+# Requirements: Arch Linux, quickshell
+# Bound to: SUPER+SHIFT+B (hypr/conf.d/quickshell.{lua,conf})
+#
+# Mirrors waybar-toggle, with one difference: a running Quickshell hides and
+# shows over IPC rather than being killed and relaunched. That is instant and
+# keeps the shell's state, so only a missing instance needs a launch.
+
+CONFIG=dotfiles
+
+# ⚠️ `quickshell ipc` exits 0 even when it fails — with no instance it prints
+# "No running instances for ..." and still returns 0. So liveness has to be
+# read from the output, never the exit status.
+#
+# ⚠️ Addressed by config name rather than `pgrep -x quickshell`: voxtype runs
+# its own Quickshell instance, and a bare process match would find that one.
+bar_running() {
+    quickshell -c "$CONFIG" ipc show 2>/dev/null | grep -q '^target bar$'
+}
+
+if bar_running; then
+    # bar.toggle() returns the state it actually reached, so the notification
+    # reports what happened rather than what was asked for.
+    state=$(quickshell -c "$CONFIG" ipc call bar toggle 2>/dev/null)
+    case "$state" in
+    shown) notify-send "󰕮 Quickshell" "Bar shown" -t 2000 ;;
+    hidden) notify-send "󰕮 Quickshell" "Bar hidden" -t 2000 ;;
+    *)
+        notify-send "󰕮 Quickshell" "Bar not responding" -t 2000
+        exit 1
+        ;;
+    esac
+    exit 0
+fi
+
+# setsid detaches from the Hyprland dispatcher's transient shell, so the bar
+# outlives the keypress that started it.
+setsid quickshell -c "$CONFIG" >/dev/null 2>&1 &
+
+# Report the state actually reached. Polling rather than a flat sleep: startup
+# is usually well under a second, but a cold theme read can push it out.
+_tries=20 # 20 x 0.1s
+while [ "$_tries" -gt 0 ]; do
+    if bar_running; then
+        notify-send "󰕮 Quickshell" "Bar started" -t 2000
+        exit 0
+    fi
+    sleep 0.1
+    _tries=$((_tries - 1))
+done
+
+notify-send "󰕮 Quickshell" "Failed to start bar" -t 2000
+exit 1

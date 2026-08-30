@@ -23,8 +23,12 @@ ShellRoot {
     IpcHandler {
         target: "bar"
 
-        function toggle(): void {
+        // Returns the state actually reached, not the one intended, so the
+        // toggle script can report truthfully — the same reasoning
+        // waybar-toggle applies after killing or starting Waybar.
+        function toggle(): string {
             barVariants.visible = !barVariants.visible;
+            return barVariants.visible ? "shown" : "hidden";
         }
     }
 
