@@ -10,7 +10,8 @@
 
 - **Purpose**: Hyprland compositor configuration
 - **Main entry**: `hyprland.conf` (sources modular configs + theme + user extras)
-- **Active format**: **`.conf`** files. Parallel `.lua` files exist (staged migration) but are **not** loaded — `hyprland.conf` sources `.conf`, and sourcing `.conf` blocks the `.lua` path. See `.claude/rules/hyprland-lua.md`.
+- **Active format**: **`.conf`** files. The parallel `.lua` set is deployed but inert — only the entry point `~/.config/hypr/hyprland.lua` is held back, by a `.chezmoiignore` block, so Hyprland falls back to `hyprland.conf`. Hold is on a Waybar release carrying PR #5013. See `.claude/rules/hyprland-lua.md` for syntax, **`_research/HYPRLAND_LUA_MIGRATION.md` for the cutover runbook** (audit findings, prerequisites, steps, rollback).
+- **Cutover side effect**: flipping the entry point also swaps hyprsplit from the hyprpm **C++ plugin** to the **Lua library** (`require("hyprsplit")`), because `autostart.lua` deliberately drops the `exec-once = hyprpm reload -n` that `autostart.conf` carries. Two changes, one reboot.
 - **Reload**: `Super+Shift+R` or `hyprctl reload`
 
 ## Modular Structure
@@ -23,7 +24,7 @@
 |------|---------|-----------|
 | `monitor.conf.tmpl` | Display settings (resolution, scaling, position) | ✅ Yes |
 | `plugins.conf` | hyprsplit / plugin config | ❌ No |
-| `environment.conf` | Env vars (NVIDIA, Qt/GTK, XDG) | ❌ No |
+| `environment.conf.tmpl` | Env vars (NVIDIA, Qt/GTK, XDG) | ✅ Yes |
 | `input.conf` | Keyboard, mouse, touchpad | ❌ No |
 | `general.conf` | Layout, gaps, borders, colors | ❌ No |
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
@@ -61,7 +62,9 @@ Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`). Their `.lua.tmpl` twins exist but are inactive. Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/environment.conf.tmpl`, `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`).
+
+Every one has an inactive `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/environment.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 
@@ -85,7 +88,9 @@ $inactiveBorder = rgba(6e6a86aa)  # muted (fg-muted semantic)
 
 ## Reload
 
-`Super+Shift+R` or `hyprctl reload`. `post_install` script `run_once_after_007_validate_hyprland_config` validates config after apply. Live-test a value without reloading via `hyprctl keyword general:gaps_in 5`.
+`hyprctl reload`. ⚠️ `Super+Shift+R` is documented as the reload key in `hyprland.conf.tmpl` and
+`dotfiles/extra-bindings.conf`, but **no such binding exists** anywhere in the repo — verified with
+`grep -rE 'bind[a-z]* *= *[^,]*, *R,' private_dot_config/`. Either add it or drop the claim. `post_install` script `run_once_after_007_validate_hyprland_config` validates config after apply. Live-test a value without reloading via `hyprctl keyword general:gaps_in 5`.
 
 ## Integration Points
 
