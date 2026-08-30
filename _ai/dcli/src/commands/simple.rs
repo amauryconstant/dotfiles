@@ -66,6 +66,7 @@ fn add_package_to_host_config(package: &str, paths: &ConfigPaths) -> Result<()> 
             description: "Packages installed via dcli install or dcli search commands".to_string(),
             packages: Vec::new(),
             deb_packages: Vec::new(),
+            nix_packages: Vec::new(),
             exclude: Vec::new(),
             conflicts: Vec::new(),
             pre_install_hook: None,

@@ -35,16 +35,16 @@ impl PackageManager {
         let mut packages = Vec::new();
         let mut excluded = HashSet::new();
 
-        // 1. Load base packages
+        // 1. Load base packages (includes nix_packages)
         let base_file = self.paths.base_packages_file();
         if base_file.exists() {
             let base_list = crate::config::load_package_list_any(&base_file)?;
-            for entry in &base_list.packages {
-                packages.push(Package::from(entry));
+            for entry in base_list.all_packages() {
+                packages.push(Package::from(&entry));
             }
         }
 
-        // 2. Load declared-packages (created by dcli install/search)
+        // 2. Load declared-packages (created by dcli install/search, includes nix_packages)
         let (preferred_declared, fallback_declared) =
             crate::config::declared_packages_paths(&self.paths)?;
         let declared_packages_file = if preferred_declared.exists() {
@@ -56,20 +56,20 @@ impl PackageManager {
         };
         if declared_packages_file.exists() {
             let declared_list = crate::config::load_package_list_any(&declared_packages_file)?;
-            for entry in &declared_list.packages {
-                packages.push(Package::from(entry));
+            for entry in declared_list.all_packages() {
+                packages.push(Package::from(&entry));
             }
         }
 
-        // 3. Load system-packages-{host}.yaml (created by dcli merge)
+        // 3. Load system-packages-{host}.yaml (created by dcli merge, includes nix_packages)
         let system_packages_file = self
             .paths
             .config_dir
             .join(format!("system-packages-{}.yaml", config.host));
         if system_packages_file.exists() {
             let system_list = crate::config::load_package_list_any(&system_packages_file)?;
-            for entry in &system_list.packages {
-                packages.push(Package::from(entry));
+            for entry in system_list.all_packages() {
+                packages.push(Package::from(&entry));
             }
         }
 

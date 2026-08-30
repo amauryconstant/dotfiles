@@ -81,8 +81,10 @@ pub fn load_nix_directory_module(
         });
     }
     for np in &raw.nix_packages {
+        // Extract the attribute name from store paths if needed
+        let name = crate::nix_eval::types::extract_name_from_store_path(np);
         packages.push(PackageEntry::WithType {
-            name: np.clone(),
+            name,
             r#type: Some(PackageType::Nix),
         });
     }

@@ -860,6 +860,10 @@ pub struct PackageList {
     #[serde(default)]
     pub deb_packages: Vec<String>,
 
+    /// List of nix packages managed via home-manager or nix profile
+    #[serde(default)]
+    pub nix_packages: Vec<String>,
+
     /// Packages to exclude (only in host files)
     #[serde(default)]
     pub exclude: Vec<String>,
@@ -904,7 +908,40 @@ pub struct PackageList {
     pub post_disable_behavior: Option<String>,
 }
 
-/// Module structure - can be legacy (single file), directory-based, Lua, or Nix
+impl PackageList {
+    /// Get all packages including nix_packages entries converted to PackageEntry::WithType
+    pub fn all_packages(&self) -> Vec<PackageEntry> {
+        let mut all = self.packages.clone();
+        for np in &self.nix_packages {
+            all.push(PackageEntry::WithType {
+                name: np.clone(),
+                r#type: Some(PackageType::Nix),
+            });
+        }
+        all
+    }
+}
+
+impl Default for PackageList {
+    fn default() -> Self {
+        Self {
+            description: String::new(),
+            packages: Vec::new(),
+            deb_packages: Vec::new(),
+            nix_packages: Vec::new(),
+            exclude: Vec::new(),
+            conflicts: Vec::new(),
+            pre_install_hook: None,
+            post_install_hook: None,
+            hook_behavior: "ask".to_string(),
+            pre_hook_behavior: None,
+            post_hook_behavior: None,
+            run_hooks_as_user: RunHooksAsUser::Bool(false),
+            post_disable_hook: None,
+            post_disable_behavior: None,
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub enum ModuleStructure {
     /// Legacy format: single .yaml file with all content
@@ -1080,11 +1117,11 @@ impl ModuleStructure {
     /// Get all packages from any format
     pub fn packages(&self) -> Vec<PackageEntry> {
         match self {
-            ModuleStructure::Legacy { content, .. } => content.packages.clone(),
+            ModuleStructure::Legacy { content, .. } => content.all_packages(),
             ModuleStructure::Directory(dir) => {
                 let mut all_packages = Vec::new();
                 for pkg_list in &dir.package_lists {
-                    all_packages.extend(pkg_list.packages.clone());
+                    all_packages.extend(pkg_list.all_packages());
                 }
                 all_packages
             }
@@ -1952,6 +1989,7 @@ fn load_package_list_nix(path: &Path) -> Result<PackageList> {
         description: nix_module.description,
         packages: nix_module.packages,
         deb_packages: nix_module.deb_packages,
+        nix_packages: Vec::new(),
         exclude: Vec::new(),
         conflicts: nix_module.conflicts,
         pre_install_hook: nix_module.pre_install_hook,
@@ -1999,6 +2037,7 @@ fn load_package_list_lua(path: &Path) -> Result<PackageList> {
         description: lua_module.description,
         packages: lua_module.packages,
         deb_packages: lua_module.deb_packages,
+        nix_packages: Vec::new(),
         exclude: Vec::new(),
         conflicts: lua_module.conflicts,
         pre_install_hook: lua_module.pre_install_hook,
@@ -2227,6 +2266,7 @@ pub fn load_module<P: AsRef<Path>>(path: P) -> Result<ModuleStructure> {
                 description: "Packages defined in module.lua".to_string(),
                 packages: inline_packages,
                 deb_packages: inline_deb_packages,
+                nix_packages: Vec::new(),
                 exclude: Vec::new(),
                 conflicts: Vec::new(),
                 pre_install_hook: None,
@@ -2876,5 +2916,27 @@ mod tests {
         };
         assert_eq!(entry.name(), "vim");
         assert_eq!(entry.package_type(), PackageType::Native);
+    }
+
+    #[test]
+    fn test_package_list_all_packages_includes_nix() {
+        let list = PackageList {
+            packages: vec![
+                PackageEntry::Simple("htop".to_string()),
+            ],
+            nix_packages: vec!["ripgrep".to_string(), "bat".to_string()],
+            ..PackageList::default()
+        };
+        let all = list.all_packages();
+        assert_eq!(all.len(), 3);
+        // First entry should be the regular package "htop" (Native)
+        assert_eq!(all[0].name(), "htop");
+        assert_eq!(all[0].package_type(), PackageType::Native);
+        // Second entry should be "ripgrep" (Nix)
+        assert_eq!(all[1].name(), "ripgrep");
+        assert_eq!(all[1].package_type(), PackageType::Nix);
+        // Third entry should be "bat" (Nix)
+        assert_eq!(all[2].name(), "bat");
+        assert_eq!(all[2].package_type(), PackageType::Nix);
     }
 }

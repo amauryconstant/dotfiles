@@ -969,5 +969,6 @@ Then add conditional logic as needed!
 ## Related Documentation
 
 - [LUA-MODULES.md](LUA-MODULES.md) - Lua module format and full API reference
+- [NIX-MODULES.md](NIX-MODULES.md) - Nix module format and guide
 - [DIRECTORY-MODULES.md](DIRECTORY-MODULES.md) - Directory-based modules
 - [README.md](README.md) - Main dcli documentation

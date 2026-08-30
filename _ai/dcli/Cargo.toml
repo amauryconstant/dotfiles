@@ -1,6 +1,6 @@
 [package]
 name = "dcli"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["Don"]
 description = "A declarative package management CLI tool for Linux, inspired by NixOS"

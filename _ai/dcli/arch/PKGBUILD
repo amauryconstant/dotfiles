@@ -1,0 +1,70 @@
+# Maintainer: Don <theblackdonatello@gmail.com>
+#
+# Binary-repo PKGBUILD for the stable, versioned dcli release.
+# This is NOT the AUR git package (dcli-arch-git is maintained separately).
+# It is built automatically by .gitlab-ci.yml and published to the GitLab
+# Pages pacman repo: https://theblackdon.gitlab.io/dcli/$arch
+#
+# On tag pushes the CI overrides pkgver to match the tag (stripping the
+# leading 'v'). On scheduled/web rebuilds it appends a .YYYYMMDD pkgrel
+# suffix so pacman offers them as upgrades.
+
+pkgname=dcli
+pkgver=0.2.3
+pkgrel=1
+pkgdesc="A declarative package management CLI tool for Arch Linux, inspired by NixOS"
+arch=('x86_64')
+url="https://gitlab.com/theblackdon/dcli"
+license=('0BSD')
+# !lto: makepkg's lto option compiles mlua's vendored Lua C with -flto=auto,
+# which Rust cannot link (undefined lua_* symbols at link time).
+options=('!lto')
+makedepends=('cargo' 'git' 'clang' 'binutils')
+depends=('gcc-libs' 'glibc')
+optdepends=(
+    'fzf: for interactive TUI features'
+    'paru: AUR helper support'
+    'yay: AUR helper support (alternative to paru)'
+    'timeshift: snapshot/backup functionality'
+    'snapper: snapshot/backup functionality (alternative to timeshift)'
+)
+# Replaces the AUR git package so users can switch cleanly without a conflict.
+# Also conflicts with the unrelated Dashlane CLI AUR package (dcli-git): it
+# ships its own /usr/bin/dcli binary under the same name, so the two cannot
+# be installed together (verified 2026-08: no official-repo or AUR package is
+# named exactly 'dcli').
+provides=('dcli')
+conflicts=('dcli-arch-git' 'dcli-bin' 'dcli-git')
+# GitLab archives extract to "<project>-<ref>" (note the 'v': dcli-v0.2.3).
+source=("https://gitlab.com/theblackdon/dcli/-/archive/v${pkgver}/dcli-v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/dcli-v${pkgver}"
+    export RUSTUP_TOOLCHAIN=stable
+    # makepkg exports RUSTFLAGS (reproducible-build remap/debug flags), which
+    # overrides the project's .cargo/config.toml. Append the bfd linker flag:
+    # without it rustc links with rust-lld, which cannot resolve the vendored
+    # Lua symbols from mlua (undefined symbol lua_push* at link time).
+    export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-fuse-ld=bfd"
+    cargo build --release --locked
+}
+
+check() {
+    cd "$srcdir/dcli-v${pkgver}"
+    export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-fuse-ld=bfd"
+    cargo test --release --locked
+}
+
+package() {
+    cd "$srcdir/dcli-v${pkgver}"
+
+    # Install binary
+    install -Dm755 "target/release/dcli" "$pkgdir/usr/bin/dcli"
+
+    # Install zsh completion
+    install -Dm644 "_dcli" "$pkgdir/usr/share/zsh/site-functions/_dcli"
+
+    # Install license
+    install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/${pkgname}/LICENSE"
+}

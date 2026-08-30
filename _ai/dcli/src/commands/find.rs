@@ -110,6 +110,8 @@ pub fn run(paths: &ConfigPaths, package_name: &str, json: bool) -> Result<()> {
             let module_display = if module_path.is_dir() {
                 if module_path.join("module.lua").exists() {
                     module_path.join("module.lua")
+                } else if module_path.join("module.nix").exists() {
+                    module_path.join("module.nix")
                 } else if module_path.join("module.yaml").exists() {
                     module_path.join("module.yaml")
                 } else {

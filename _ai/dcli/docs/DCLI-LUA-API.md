@@ -2376,4 +2376,5 @@ Get total swap size in bytes.
 
 - [LUA-MODULES.md](LUA-MODULES.md) - Lua module format and examples
 - [LUA-HOSTS.md](LUA-HOSTS.md) - Lua host configuration guide
+- [NIX-MODULES.md](NIX-MODULES.md) - Nix module format and guide
 - [README.md](README.md) - Main dcli documentation

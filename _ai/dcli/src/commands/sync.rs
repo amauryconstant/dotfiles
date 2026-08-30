@@ -1473,6 +1473,11 @@ pub fn run(
         sync_home_manager(paths, &config, json)?;
     }
 
+    // Sync Nix Profile (standalone, no home-manager)
+    if !dry_run && config.nix.nix_profile_enabled && !config.nix.home_manager_enabled {
+        sync_nix_profile(paths, &config, dry_run, json)?;
+    }
+
     // Run post-install hooks
     if !no_hooks {
         run_post_install_hooks(paths, &config, json)?;

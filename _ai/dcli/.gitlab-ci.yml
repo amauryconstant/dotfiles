@@ -1,10 +1,13 @@
 stages:
   - build
+  - smoke
   - release
+  - deploy
 
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
   RUSTFLAGS: "-C link-arg=-fuse-ld=bfd"
+  KEEP_BUILDS: "4"   # how many dcli versions to keep in the pacman repo
 
 # Cache cargo dependencies between builds
 cache:
@@ -46,6 +49,99 @@ build-linux-aarch64:
       - dcli-linux-aarch64
     expire_in: 30 days
   allow_failure: true  # aarch64 cross-compile may have issues
+
+# ---------------------------------------------------------------------------
+# Arch binary pacman repo, built on Arch and hosted on GitLab Pages.
+#
+# Users add this to /etc/pacman.conf:
+#   [dcli]
+#   SigLevel = Never
+#   Server = https://theblackdon.gitlab.io/dcli/$arch
+#
+# Triggers:
+#   * tag push ................ release build, pkgver from the tag (vX.Y.Z)
+#   * schedule "weekly-rebuild" pkgrel gets a .YYYYMMDD suffix so pacman
+#                               offers it as an upgrade
+#   * schedule "daily-smoke" ... verify the published package still links
+#                               against current Arch
+#   * manual "Run pipeline" ... on-demand rebuild
+# ---------------------------------------------------------------------------
+
+# Shared arch setup: fresh keyring first (avoids the classic expired-key CI
+# failure), then full system upgrade (Arch never supports partial upgrades).
+.arch-sync: &arch-sync
+  - pacman-key --init 2>/dev/null || true
+  - pacman -Sy --noconfirm archlinux-keyring
+  - pacman -Su --noconfirm
+
+build-package:
+  stage: build
+  image: archlinux:base-devel
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $REBUILD == "1"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  cache:
+    key: arch-build-cache
+    paths:
+      - .pkg-cache/
+  script:
+    - *arch-sync
+    - |
+      # Keep downloaded packages between runs (GitLab cache is limited to
+      # paths inside the project dir, so point pacman's CacheDir there).
+      mkdir -p .pkg-cache
+      sed -i "s|^#CacheDir.*|CacheDir = $CI_PROJECT_DIR/.pkg-cache/|" /etc/pacman.conf
+    - cp arch/PKGBUILD PKGBUILD
+    # Skip the -debug split package: it is not served by the binary repo.
+    - echo 'OPTIONS+=( !debug )' >> /etc/makepkg.conf
+    - |
+      # On tags pkgver must match the tag (strip leading 'v'). On scheduled or
+      # web rebuilds append a .YYYYMMDD pkgrel suffix so pacman offers it as
+      # an upgrade; the next source release sorts higher.
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        sed -i "s/^pkgver=.*/pkgver=${CI_COMMIT_TAG#v}/" PKGBUILD
+      else
+        sed -i "s/^pkgrel=.*/&.$(date +%Y%m%d)/" PKGBUILD
+      fi
+      grep -E '^(pkgname|pkgver|pkgrel)=' PKGBUILD
+    - |
+      # Install every dependency the PKGBUILD declares (all are in Arch repos
+      # for dcli; optdepends are intentionally not installed here).
+      mapfile -t deps < <(bash -c 'source PKGBUILD; printf "%s\n" "${depends[@]}" "${makedepends[@]}"' | sed 's/[<>=].*$//' | sort -u)
+      todo=()
+      for d in "${deps[@]}"; do
+        if pacman -Si "$d" &>/dev/null; then
+          todo+=("$d")
+        else
+          echo "Skipping (not in Arch repos): $d"
+        fi
+      done
+      pacman -S --noconfirm --needed "${todo[@]}"
+    # makepkg refuses to run as root; runuser is in util-linux (base).
+    - useradd -m builder
+    - cp PKGBUILD /home/builder/ && chown -R builder:builder /home/builder
+    - runuser -u builder -- bash -c 'cd /home/builder && makepkg -f --nodeps --noconfirm'
+    - mkdir -p public/x86_64
+    - cp /home/builder/dcli-*.pkg.tar.zst public/x86_64/
+    - ci/repo.sh public/x86_64
+  artifacts:
+    paths:
+      - public/
+
+smoke-test:
+  stage: smoke
+  image: archlinux:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SMOKE == "1"
+  cache:
+    key: arch-smoke-cache
+    paths:
+      - .pkg-cache/
+  script:
+    - *arch-sync
+    - mkdir -p .pkg-cache && sed -i "s|^#CacheDir.*|CacheDir = $CI_PROJECT_DIR/.pkg-cache/|" /etc/pacman.conf
+    - ci/smoke.sh "https://theblackdon.gitlab.io/$CI_PROJECT_NAME/x86_64"
 
 # Create release on tags
 release:
@@ -89,3 +185,27 @@ upload-latest:
       - dcli-linux-x86_64
       - dcli-linux-aarch64
     expire_in: 90 days
+
+# Public GitLab Pages site for the binary pacman repo
+pages:
+  stage: deploy
+  image: alpine:latest
+  needs: ["build-package"]
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $REBUILD == "1"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  script:
+    - |
+      cat > public/index.html <<'HTML'
+      <!doctype html>
+      <meta charset="utf-8">
+      <title>dcli pacman repo</title>
+      <h1>dcli pacman repo</h1>
+      <p>Add this to <code>/etc/pacman.conf</code>:</p>
+      <pre>[dcli]
+      SigLevel = Never
+      Server = https://theblackdon.gitlab.io/dcli/$arch</pre>
+      <p>Then: <code>sudo pacman -Sy dcli</code></p>
+      HTML
+  publish: public
