@@ -28,7 +28,11 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Config.barSpacing
 
-        // Workspaces + window title land here in task 2.
+        WorkspacesWidget {
+            barScreen: root.modelData
+        }
+
+        WindowTitleWidget {}
     }
 
     Row {
