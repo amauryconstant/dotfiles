@@ -52,8 +52,14 @@ not compile as written.
 | 7 | `DesktopEntries` is a built-in singleton (parsed `.desktop` index with icons) | `src/core/desktopentry.hpp` |
 | 8 | Configs are discovered as `~/.config/quickshell/<name>/shell.qml`. **A bare `~/.config/quickshell/shell.qml` disables subdirectory discovery entirely** | `quickshell --help`, Config Selection group |
 | 9 | `Singleton` is a QML element of the `Quickshell` module — singleton QML files need no `qmldir` | `src/core/singleton.hpp:15` |
-| 10 | `qmllint`, `qmlformat`, `qmlls` are already installed (`qt6-declarative`, a quickshell dependency) | `pacman -Qo /usr/lib/qt6/bin/qmllint` |
+| 10 | `qmllint`, `qmlformat`, `qmlls` are installed, but **`/usr/bin/qmllint` is the Qt5 one** (`qt5-declarative`, a syntax-only verifier). The usable Qt6 tools are at `/usr/lib/qt6/bin/` and are **not on `$PATH`** | `pacman -Qo $(command -v qmllint)` → `qt5-declarative 5.15.19`; `/usr/lib/qt6/bin/qmllint --version` → `6.11.2` |
 | 11 | No native backlight module exists. Brightness stays a `Process` call to our own `brightness-set` (already DDC/CI-aware) | no `backlight`/`brightness` under `src/` |
+| 12 | Qt6 `qmllint` **exits 0 even when it emits warnings** (`--max-warnings` defaults to `-1`). `-W 0` makes any warning fatal | unknown property → warning printed, `exit=0`; with `-W 0` → `exit=255` |
+| 13 | `-W 0` **false-positives on `PanelWindow`** (`Type PanelWindow is not creatable [uncreatable-type]`) — it is registered through the `Quickshell._Window` indirection. The lint task needs an empirically-derived category exemption list | ran against a `Scope { PanelWindow { … } }` sample |
+| 14 | `qmlformat` 6.11 has **no `--check`/`--verify`** (only `-i`, `-t`, `-w`, `-n`). A format check must be `qmlformat "$f" \| diff -q - "$f"`. No `.qmlformat.ini` exists → QML defaults to **4 spaces**, unlike the Lua tree's tabs | `/usr/lib/qt6/bin/qmlformat --help` |
+| 15 | `-I /usr/lib/qt6/qml` is **not needed** — it is already the default import path; Quickshell modules resolve without it | `qmllint` on a `Quickshell`/`Quickshell.Io`/`Quickshell.Hyprland` sample → `exit=0` both with and without `-I` |
+| 16 | `quickshell ipc` defaults to config name **`default`** when `--config` is absent. Ours is `dotfiles`, and voxtype runs a second instance, so every IPC call must name its config | `quickshell --help`, Config Selection: *"If `--config` is not passed, 'default' will be assumed."* |
+| 17 | **`.chezmoidata/` files cannot be templates.** A `.tmpl` suffix is a hard error (`.tmpl: unknown format`, exit 1, whole tree fails); `{{ }}` inside a plain data file is emitted **literally**. Gating conditions must live in the *consumer* (or in `.chezmoiignore`, which is templated) | throwaway source dir + `chezmoi data --source` |
 
 **Consequences for `_research/QUICKSHELL_COMPONENT_MAPPING.md`** — three of its four
 "Integration Challenges" are void:
@@ -174,15 +180,21 @@ The alternatives, and why not:
 
 **Reload on theme switch**: the switch swaps the `themes/current` *symlink*, so an inotify
 watch on the resolved path does not fire. `watchChanges` is belt-and-braces for hand edits;
-the real signal is explicit. Add one line to `reload_applications()` in
-`executable_theme-switcher.tmpl`, beside the existing waybar/swaync/ghostty reloads:
+the real signal is explicit. Add one line to `reload_applications()`
+(`private_dot_local/lib/scripts/desktop/executable_theme-switcher.tmpl:76`), beside the
+existing waybar/swaync/ghostty reloads:
 
 ```sh
-quickshell ipc call theme reload 2>/dev/null || true
+quickshell -c dotfiles ipc call theme reload 2>/dev/null || true
 ```
 
 serviced by an `IpcHandler { target: "theme" }` in `shell.qml` whose `reload` function calls
 `FileView.reload()`. `|| true` because the shell may not be running.
+
+**`-c dotfiles` is load-bearing** (fact #16): without it the call targets config name
+`default`, which does not exist, and voxtype's instance means "just pick one" is wrong too.
+Confirm exact flag placement against a running instance — `ipc` carries its own Config
+Selection option group, so `quickshell ipc -c dotfiles call …` may be the accepted form.
 
 **Contrast rules still apply.** `themes/CLAUDE.md` mandates `@fg-primary` on
 `@bg-secondary`/`@bg-tertiary`/`@bg-overlay`. QML gets no automatic enforcement, so the
@@ -204,24 +216,59 @@ Every raw dispatch is a Lua-cutover liability. Keep them countable — one helpe
 
 ### Validation
 
-Mirrors the existing `lint:lua` pattern in `.mise/config.toml`:
+Mirrors the existing `lint:lua` pattern in `.mise/config.toml`. **Three traps here, all
+verified — facts #10, #12, #14. Each one independently reduces the lint task to a no-op that
+reports success.**
+
+🚨 **Always the absolute path `/usr/lib/qt6/bin/qmllint`, never bare `qmllint`.** The bare
+name resolves to Qt5's syntax-only verifier, which exits 0 on `NoSuchType {}` and on unknown
+properties alike. Pin it once in `[env]` or a task variable so no site can drift back.
 
 | Task | Command |
 |---|---|
-| `lint:qml` | `qmllint -I /usr/lib/qt6/qml $(find private_dot_config/quickshell -name '*.qml')` |
-| `format:qml` | `qmlformat -i …` (`--check` under lint) |
-| `lint:qml-tmpl` | render `*.qml.tmpl` through `chezmoi execute-template --source …`, pipe to `qmllint`/`qmlformat --check` — same shape and same one-branch-only limitation as `.mise/tasks/lint/lua-tmpl-file.sh` |
+| `lint:qml` | `/usr/lib/qt6/bin/qmllint -W 0 <exemptions> $(find private_dot_config/quickshell -name '*.qml')` |
+| `format:qml` | `/usr/lib/qt6/bin/qmlformat -i …` — check form is `qmlformat "$f" \| diff -q - "$f"` (no `--check` exists) |
+| `lint:qml-tmpl` | render `*.qml.tmpl` through `chezmoi execute-template --source …`, pipe to the same two — same shape and same one-branch-only limitation as `.mise/tasks/lint/lua-tmpl-file.sh` |
 
-`qmllint` needs `-I /usr/lib/qt6/qml` to resolve the Quickshell modules; without it every
-`import Quickshell` is an error. Wire `lint:qml` into `[tasks.lint].depends`; keep any task
-needing a *running* Hyprland out of it, as `lint:hypr-lua` already is.
+`<exemptions>` is deliberately unresolved here: bare `-W 0` fails on `PanelWindow`
+(fact #13), so Phase 0 must derive the minimum set empirically against a real config and
+record it with a comment per category. Do **not** widen it to silence unrelated noise — an
+over-broad exemption list is the fourth way this task becomes a no-op.
+
+`-I /usr/lib/qt6/qml` is unnecessary (fact #15); omit it rather than cargo-cult it.
+
+Wire `lint:qml` into `[tasks.lint].depends`; keep any task needing a *running* Hyprland out
+of it, as `lint:hypr-lua` already is.
+
+**Prove the linter fails before trusting it.** `.mise/config.toml` already carries this
+lesson for `find -exec` ("returns 0 even when the command fails, so a broken template would
+pass silently"). Same class of bug, three new vectors. Phase 0 exit requires a deliberately
+broken `.qml` making `mise run lint:qml` exit non-zero — a passing lint on good code proves
+nothing.
 
 ### Gating and coexistence
 
 - `.chezmoidata/features.yaml` gains `quickshell_shell: { enabled: false }`, matching the
-  existing `voxtype`/`restic`/`kanata` shape.
-- Autostart is added to `conf/autostart.lua` and `conf/autostart.conf` **gated on that
-  flag** — both, until the `.conf` set is retired (`_guides/HYPRLAND_LUA_CUTOVER.md`).
+  existing `voxtype`/`restic`/`kanata` shape. It stays **plain YAML** — data files cannot be
+  templates (fact #17), so the `{{ if }}` reading it lives in a consumer, never here.
+- Autostart is a **`conf.d/` drop-in gated in `.chezmoiignore`**, not an edit to
+  `conf/autostart.{lua,conf}`. New `conf.d/quickshell.lua` + `conf.d/quickshell.conf` twins
+  (both, until the `.conf` set is retired — `_guides/HYPRLAND_LUA_CUTOVER.md`):
+
+  ```
+  {{ if not .features.quickshell_shell.enabled }}
+  .config/hypr/conf.d/quickshell.lua
+  .config/hypr/conf.d/quickshell.conf
+  {{ end }}
+  ```
+
+  Why this over templating `autostart.lua`: both entry points already glob `conf.d` and
+  tolerate absence (`hyprland.conf.tmpl:25` `source = ~/.config/hypr/conf.d/*.conf`;
+  `require_all.files()` in `hyprland.lua.tmpl:46`), so "flag off" means the file is simply
+  never deployed — no branch to get wrong. `.chezmoiignore` is already templated and proven
+  (the `chassisType`/steam block). And it renames no live, deployed file. The cost is that
+  autostart is split across two locations; `conf/autostart.lua` should carry a pointer
+  comment. Structural precedent: `conf.d/voxtype-submap.{lua,conf}`.
 - Waybar keeps running throughout. Both bars anchor top and stack via layer-shell exclusive
   zones — visually ugly, perfectly functional for A/B.
 - Rollback at every phase: flip the flag, `chezmoi apply`. Repo-level escape hatch is
@@ -237,12 +284,19 @@ Prove the whole pipeline end to end on the cheapest possible payload.
 
 - `shell.qml` with a `PanelWindow` (top, full width, 30px) containing only a clock
 - `Theme.qml` + `Config.qml.tmpl`
-- `IpcHandler` for theme reload; `theme-switcher` line added
-- `features.yaml` flag; gated autostart; `.chezmoiignore` untouched
-- mise `lint:qml` / `format:qml` / `lint:qml-tmpl` tasks + pre-commit dispatch
+- `IpcHandler` for theme reload; `theme-switcher` line added (with `-c dotfiles`)
+- `features.yaml` flag; `conf.d/quickshell.{lua,conf}` drop-ins; **`.chezmoiignore` gains the
+  gating block** (revised — it is the gate, not untouched)
+- mise `lint:qml` / `format:qml` / `lint:qml-tmpl` tasks + pre-commit dispatch, using the
+  absolute Qt6 tool paths and a derived `-W 0` exemption list
+
+Roughly ten files across five subsystems — larger than "one widget" implies. Land it as
+separate commits (QML tree · theme bridge + theme-switcher · gating · lint tooling) so a
+revert is surgical.
 
 **Exit**: bar renders above Waybar; `theme switch` across all 8 themes recolors it live with
-no restart; `mise run lint` passes; flag off → nothing deployed.
+no restart; `mise run lint` passes **and a deliberately broken `.qml` makes it fail**; flag
+off → `chezmoi apply` deploys nothing.
 
 ### Phase 1 — Bar to Waybar parity
 
@@ -417,6 +471,7 @@ Per tool, the checklist is the same:
 | Cleanup removes a fallback too early | Phase 6 is optional, per-tool, and gated on the replacement having lived a month, not on its phase exiting |
 | `waybar.css` deleted while it is still the colorset source of truth | `colors.sh` is generated from it and `Theme.qml` reads `colors.sh`. Phase 6 ordering constraint — invert the chain first or keep the file orphaned |
 | Notification cutover is not reversible in place | Phase 4 owns its own flag, and the revert (`systemctl --user unmask swaync`) is tested before the cutover, not after |
+| `lint:qml` silently passes everything | Three independent causes, all verified: Qt5 `qmllint` on `$PATH` (#10), warnings not affecting exit code (#12), and no `qmlformat --check` (#14). Absolute Qt6 paths + `-W 0` + a `diff`-based format check; Phase 0 exit requires proving the task **fails** on a broken file |
 | Theme contrast rules unenforced in QML | Follow the `themes/CLAUDE.md` mapping by hand; extend `theme-consistency-reviewer` to the QML tree |
 | Scope creep toward a full Omarchy-style shell | The "Out" table is the contract. Anything in it needs an explicit decision to move |
 | Two quickshell instances (ours + voxtype) | Separate configs, separate instance ids; verified non-overlapping paths. Watch memory once both run |
