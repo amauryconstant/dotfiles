@@ -17,6 +17,7 @@ done
 
 # PID file to track recording state
 PID_FILE="/tmp/screenrecord_$USER.pid"
+PATH_FILE="${PID_FILE}.path"
 
 # Check if already recording
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
@@ -28,7 +29,27 @@ if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     # Signal waybar to update (if configured)
     pkill -RTMIN+8 waybar 2>/dev/null
 
-    notify-send "🎬 Screen Recording" "Recording stopped and saved" -t 3000
+    saved_file=""
+    [ -f "$PATH_FILE" ] && read -r saved_file < "$PATH_FILE"
+    rm -f "$PATH_FILE"
+
+    thumb_file=""
+    if [ -n "$saved_file" ] && command -v ffmpeg >/dev/null 2>&1; then
+        thumb_file="${saved_file%.mp4}.png"
+        ffmpeg -y -ss 0 -i "$saved_file" -vframes 1 "$thumb_file" >/dev/null 2>&1 || thumb_file=""
+    fi
+
+    if [ -n "$thumb_file" ] && [ -f "$thumb_file" ]; then
+        # Backgrounded: --wait (implied by -A) would block this script until the
+        # notification is dismissed or clicked. Fixed argv only — never a
+        # shell-interpolated command built from notification content.
+        (
+            action=$(notify-send -i "$thumb_file" -A "open=Open" "🎬 Screen Recording" "Recording stopped and saved" -t 3000)
+            [ "$action" = "open" ] && xdg-open "$saved_file" >/dev/null 2>&1
+        ) &
+    else
+        notify-send "🎬 Screen Recording" "Recording stopped and saved" -t 3000
+    fi
     exit 0
 fi
 
@@ -80,8 +101,9 @@ cmd="$cmd -o $output_file"
 eval "$cmd" &
 recording_pid=$!
 
-# Save PID
+# Save PID and output path (stop branch needs the path for the thumbnail)
 echo "$recording_pid" > "$PID_FILE"
+echo "$output_file" > "$PATH_FILE"
 
 # Signal waybar to show recording indicator (if configured)
 pkill -RTMIN+8 waybar 2>/dev/null
