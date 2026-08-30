@@ -29,7 +29,9 @@ If dcli saves you time or makes your Arch life easier, consider supporting devel
 ## Quick Links
 
 - [Installation](#installation)
-  - [Arch Linux (AUR)](#arch-linux-aur)
+  - [Arch Linux](#arch-linux)
+    - [Binary repo (recommended)](#binary-repo-recommended)
+    - [AUR (alternative)](#aur-alternative)
   - [Fedora (COPR)](#fedora-copr)
   - [Debian/Ubuntu (Manual Install)](#debianubuntu-manual-install)
 - [Quick Start](#quick-start)
@@ -80,9 +82,31 @@ If dcli saves you time or makes your Arch life easier, consider supporting devel
 
 ## Installation
 
-### Arch Linux (AUR)
+### Arch Linux
 
-**Recommended for Arch-based distributions:**
+#### Binary repo (recommended)
+
+The fastest way to install dcli on Arch-based distros (Arch, CachyOS, EndeavourOS, Manjaro, etc.) is the pre-built binary repo hosted on [GitLab Pages](https://theblackdon.gitlab.io/dcli/) — no compiling needed.
+
+Add the repo to `/etc/pacman.conf` (e.g. `sudo nano /etc/pacman.conf`):
+
+```ini
+[dcli]
+SigLevel = Never
+Server = https://theblackdon.gitlab.io/dcli/$arch
+```
+
+Then sync and install:
+
+```bash
+sudo pacman -Sy dcli
+```
+
+> 💡 **Tip:** The binary repo ships the stable, versioned `dcli` package. It is rebuilt automatically on new releases and kept in sync with the latest Arch repositories.
+
+#### AUR (alternative)
+
+If you prefer to build from source, the [AUR package](https://aur.archlinux.org/packages/dcli-arch-git) remains available:
 
 ```bash
 # Using an AUR helper
@@ -91,15 +115,15 @@ yay -S dcli-arch-git
 paru -S dcli-arch-git
 ```
 
-The installer will:
+The AUR package will:
 1. Install Rust toolchain if needed
 2. Build the release binary
-3. Install to `/usr/local/bin/dcli`
+3. Install to `/usr/bin/dcli`
 4. Check for optional dependencies (AUR helper, backup tools)
 
 **Prerequisites:**
 - Arch Linux or Arch-based distro
-- Rust toolchain (installer handles this)
+- Rust toolchain (AUR helper handles this)
 
 **Optional:**
 - `fzf` - For interactive TUI features
@@ -501,6 +525,7 @@ return {
 **Learn More:**
 - 📖 [Lua Host Configuration Guide](docs/LUA-HOSTS.md) - Full host.lua examples
 - 📖 [Lua Module Guide](docs/LUA-MODULES.md) - Dynamic module creation
+- 📖 [Nix Module Guide](docs/NIX-MODULES.md) - Nix-based module creation
 - 📖 [Complete Lua API Reference](docs/DCLI-LUA-API.md) - All available functions
 
 **Current limitations (Lua/Nix configs):**
@@ -1262,6 +1287,8 @@ sudo pacman -S timeshift  # or snapper
 ---
 
 ## AUR Package
+
+> 💡 **Tip:** On Arch, the [binary repo](#binary-repo-recommended) is the recommended way to install dcli — no compiling needed. The AUR package below remains available as a from-source alternative.
 
 dcli is available on the AUR as `dcli-arch-git`:
 

@@ -452,14 +452,17 @@ fn parse_run_hooks_as_user(value: &Option<serde_json::Value>) -> RunHooksAsUser 
     }
 }
 
-/// Extract the package name from a Nix store path like
-/// `/nix/store/<hash>-<name>-<version>` -> `<name>`
-/// If the input doesn't look like a store path, return it unchanged.
-fn extract_name_from_store_path(path: &str) -> String {
+/// Extract the package name from a Nix store path or version-suffixed name.
+/// - `/nix/store/<hash>-<name>-<version>` -> `<name>`
+/// - `<name>-<version>` (e.g. `btop-1.3.2`) -> `<name>`
+/// - plain name (e.g. `btop`) -> `btop` (unchanged)
+pub fn extract_name_from_store_path(path: &str) -> String {
+    let trimmed = path.trim();
+    
     // Check if it looks like a nix store path
-    if path.starts_with("/nix/store/") {
+    if trimmed.starts_with("/nix/store/") {
         // Get the basename: <hash>-<name>-<version> or <hash>-<name>
-        if let Some(basename) = path.rsplit('/').next() {
+        if let Some(basename) = trimmed.rsplit('/').next() {
             // Strip the 32-char base32 hash + '-'
             if basename.len() > 33 {
                 let rest = &basename[33..]; // skip "<hash>-"
@@ -475,7 +478,16 @@ fn extract_name_from_store_path(path: &str) -> String {
             }
         }
     }
-    path.to_string()
+    
+    // For non-store-path names, strip any trailing version suffix (e.g., "btop-1.3.2" -> "btop")
+    if let Some(hyphen_pos) = trimmed.rfind('-') {
+        let suffix = &trimmed[hyphen_pos + 1..];
+        if suffix.starts_with(|c: char| c.is_ascii_digit()) {
+            return trimmed[..hyphen_pos].to_string();
+        }
+    }
+    
+    trimmed.to_string()
 }
 
 impl NixConfigRaw {
@@ -694,8 +706,10 @@ impl NixModuleRaw {
         }
 
         for np in &self.nix_packages {
+            // Extract the attribute name from store paths if needed
+            let name = extract_name_from_store_path(np);
             packages.push(PackageEntry::WithType {
-                name: np.clone(),
+                name,
                 r#type: Some(PackageType::Nix),
             });
         }

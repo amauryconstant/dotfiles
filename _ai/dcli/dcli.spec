@@ -1,7 +1,7 @@
 %global crate dcli
 
 Name:           dcli
-Version:        0.2.2
+Version:        0.2.3
 Release:        1%{?dist}
 Summary:        A declarative package management CLI tool for Linux
 
@@ -54,6 +54,8 @@ install -Dpm 0644 _dcli %{buildroot}%{_datadir}/zsh/site-functions/_dcli
 %{_datadir}/zsh/site-functions/_dcli
 
 %changelog
+* Sun Jul 05 2026 Don <theblackdonatello@gmail.com> - 0.2.3-1
+- Update to 0.2.3
 * Wed Jul 01 2026 Don <theblackdonatello@gmail.com> - 0.2.2-1
 - Update to 0.2.2
 * Wed Jul 01 2026 Don <theblackdonatello@gmail.com> - 0.2.1-1
