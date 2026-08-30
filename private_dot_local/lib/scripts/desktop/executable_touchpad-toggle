@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+
+# Script: touchpad-toggle
+# Purpose: Toggle the touchpad on/off, persisted across reload and reboot
+# Requirements: hyprctl, jaq, hypr-toggle
+# Bound to: XF86TouchpadToggle (hardware.conf, laptop-only)
+
+STATE_DIR="$HOME/.local/state/dotfiles"
+MARKER="$STATE_DIR/touchpad-disabled"
+
+# Device names come from USB/I2C descriptors and are attacker-influenceable;
+# they get embedded in a `hyprctl keyword` string and a persisted config
+# fragment below, so validate before use (the same class of bug the v4.0.1
+# device-name-as-Lua fix addressed — reachable even from a locked binding).
+is_valid_name() {
+    case "$1" in
+        '' | *[!A-Za-z0-9._:-]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+devices=$(hyprctl devices -j 2>/dev/null) || devices="{}"
+# Real touchpad device names vary a lot and don't reliably contain "touchpad"
+# (this machine's is "synaptics-tm3512-010") — match common vendor/type
+# strings instead, excluding trackpoints (some are also Elan-branded).
+name=$(printf '%s' "$devices" | jaq -r '
+    .mice[]?
+    | select(.name | test("touchpad|synaptics|clickpad|alps|elan";"i"))
+    | select(.name | test("trackpoint|trackball";"i") | not)
+    | .name
+' | head -1)
+
+if ! is_valid_name "$name"; then
+    notify-send "🖱️ Touchpad" "No touchpad found (or its name failed validation)" -t 2000
+    exit 1
+fi
+
+mkdir -p "$STATE_DIR"
+
+if [ -f "$MARKER" ]; then
+    hyprctl keyword "device[$name]:enabled" "true" >/dev/null 2>&1
+    hypr-toggle clear touchpad
+    rm -f "$MARKER"
+    notify-send "🖱️ Touchpad" "Enabled" -t 2000
+else
+    hyprctl keyword "device[$name]:enabled" "false" >/dev/null 2>&1
+    hypr-toggle set touchpad "device[$name] { enabled = false }"
+    : > "$MARKER"
+    notify-send "🖱️ Touchpad" "Disabled" -t 2000
+fi

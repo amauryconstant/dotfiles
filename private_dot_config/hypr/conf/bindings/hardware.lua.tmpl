@@ -1,0 +1,15 @@
+-- ============================================================================
+-- Hardware - Lid switch + touchpad toggle (laptop only)
+-- ============================================================================
+-- Mirrors hardware.conf.tmpl. UNVERIFIED: the .lua tree is currently inert
+-- (entry point .chezmoiignore'd, see hyprland-lua.md) so `switch:` keyword
+-- events via o.bind have never been exercised live — verify hl.bind accepts
+-- this the same way `bindl` does before relying on it at Lua cutover.
+-- ============================================================================
+
+{{ if eq .chassisType "laptop" -}}
+o.bind("switch:on:Lid Switch", "Lid closed", "~/.local/lib/scripts/desktop/lid-toggle close", { locked = true })
+o.bind("switch:off:Lid Switch", "Lid opened", "~/.local/lib/scripts/desktop/lid-toggle open", { locked = true })
+
+o.bind("XF86TouchpadToggle", "Toggle touchpad", "~/.local/lib/scripts/desktop/touchpad-toggle", { locked = true })
+{{ end -}}

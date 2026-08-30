@@ -1,0 +1,14 @@
+# ============================================================================
+# Hardware - Lid switch + touchpad toggle (laptop only)
+# ============================================================================
+# Lid switch: disable/re-enable the internal panel on close/open, guarding
+# against disabling the only active display and reapplying its last scale.
+# Touchpad: hardware key toggle, persisted via hypr-toggle across reload/reboot.
+# ============================================================================
+
+{{ if eq .chassisType "laptop" -}}
+bindld = , switch:on:Lid Switch, Lid closed, exec, ~/.local/lib/scripts/desktop/lid-toggle close
+bindld = , switch:off:Lid Switch, Lid opened, exec, ~/.local/lib/scripts/desktop/lid-toggle open
+
+bindld = , XF86TouchpadToggle, Toggle touchpad, exec, ~/.local/lib/scripts/desktop/touchpad-toggle
+{{ end -}}

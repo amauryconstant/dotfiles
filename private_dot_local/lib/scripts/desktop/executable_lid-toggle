@@ -1,0 +1,68 @@
+#!/usr/bin/env sh
+
+# Script: lid-toggle
+# Purpose: Disable/re-enable the internal display on lid close/open (laptop only)
+# Requirements: hyprctl, jaq
+# Bound to: switch:on:Lid Switch / switch:off:Lid Switch (hardware.conf, laptop-only)
+
+STATE_DIR="$HOME/.local/state/dotfiles"
+
+usage() {
+    echo "Usage: lid-toggle {close|open}" >&2
+    exit 1
+}
+
+[ $# -eq 1 ] || usage
+
+# Monitor names come from EDID and are attacker-influenceable; they get
+# embedded in a `hyprctl keyword` string below, so validate before use
+# (the same class of bug the v4.0.1 device-name-as-Lua fix addressed).
+is_valid_name() {
+    case "$1" in
+        '' | *[!A-Za-z0-9._-]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+monitors=$(hyprctl monitors -j 2>/dev/null) || monitors="[]"
+
+# eDP-* is the standard Wayland/DRM naming for the internal panel
+panel=$(printf '%s' "$monitors" | jaq -r '.[] | select(.name | startswith("eDP")) | .name' | head -1)
+
+if ! is_valid_name "$panel"; then
+    notify-send "💻 Lid" "No internal display found (or its name failed validation)" -t 2000
+    exit 1
+fi
+
+mkdir -p "$STATE_DIR"
+SCALE_FILE="$STATE_DIR/lid-monitor-$panel"
+
+case "$1" in
+    close)
+        active_count=$(printf '%s' "$monitors" | jaq -r '[.[] | select(.disabled == false)] | length')
+        if [ "$active_count" -le 1 ]; then
+            notify-send "💻 Lid" "Refusing to disable the only active display" -t 2000
+            exit 0
+        fi
+
+        # Remember the scale so `open` can converge back to it, not a default
+        scale=$(printf '%s' "$monitors" | jaq -r --arg n "$panel" '.[] | select(.name==$n) | .scale')
+        printf '%s\n' "$scale" > "$SCALE_FILE"
+
+        hyprctl keyword monitor "$panel,disable" >/dev/null 2>&1
+        notify-send "💻 Lid" "Internal display disabled" -t 2000
+        ;;
+    open)
+        scale="1"
+        if [ -f "$SCALE_FILE" ]; then
+            read -r scale < "$SCALE_FILE" 2>/dev/null
+            case "$scale" in '' | *[!0-9.]*) scale="1" ;; esac
+        fi
+
+        hyprctl keyword monitor "$panel,preferred,auto,$scale" >/dev/null 2>&1
+        notify-send "💻 Lid" "Internal display re-enabled" -t 2000
+        ;;
+    *)
+        usage
+        ;;
+esac
