@@ -6,7 +6,11 @@
 -- ============================================================================
 
 -- Terminal: Super + Return (opens in current working directory)
-o.bind("SUPER + Return", "Launch terminal in CWD", "{{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)")
+o.bind(
+	"SUPER + Return",
+	"Launch terminal in CWD",
+	"{{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)"
+)
 
 -- Application launcher: Super + D (wofi drun)
 o.bind("SUPER + D", "Application launcher", "wofi --show drun")
@@ -21,7 +25,11 @@ o.bind("SUPER + W", "Web browser", "firefox")
 o.bind("SUPER + O", "Neovim session picker", "ghostty -e ~/.local/lib/scripts/terminal/zellij-sessionizer")
 
 -- Neovim workspace picker (Ghostty-native, zellij-free trial): Super + Shift + O
-o.bind("SUPER + SHIFT + O", "Neovim workspace picker (Ghostty)", "ghostty -e ~/.local/lib/scripts/terminal/ghostty-sessionizer")
+o.bind(
+	"SUPER + SHIFT + O",
+	"Neovim workspace picker (Ghostty)",
+	"ghostty -e ~/.local/lib/scripts/terminal/ghostty-sessionizer"
+)
 
 -- Clipboard history: Super + C (select to copy back)
 o.bind("SUPER + C", "Clipboard history", "cliphist list | wofi --dmenu | cliphist decode | wl-copy")
