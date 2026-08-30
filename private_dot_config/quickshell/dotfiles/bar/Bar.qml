@@ -12,6 +12,12 @@ PanelWindow {
 
     required property var modelData
 
+    // Called over IPC from idle-toggle / idle-toggle-nolock, which already
+    // send `pkill -RTMIN+9 waybar` for the same reason.
+    function refreshIdle(): void {
+        idle.refresh();
+    }
+
     color: Theme.bgPrimary
     implicitHeight: Config.barHeight
     screen: root.modelData
@@ -48,18 +54,29 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Config.barSpacing
 
-        // Order follows waybar/config.tmpl's modules-right. Backlight,
-        // kanata, idle, voxtype and the notification bell land in task 4.
+        // Order follows waybar/config.tmpl's modules-right.
         TrayWidget {}
 
         NetworkWidget {}
 
         BluetoothWidget {}
 
+        BacklightWidget {}
+
         BatteryWidget {}
 
         AudioWidget {}
 
         MediaWidget {}
+
+        KanataWidget {}
+
+        IdleWidget {
+            id: idle
+        }
+
+        VoxtypeWidget {}
+
+        NotificationWidget {}
     }
 }

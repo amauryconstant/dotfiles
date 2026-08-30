@@ -28,6 +28,18 @@ ShellRoot {
         }
     }
 
+    // idle-toggle and idle-toggle-nolock call this after flipping state:
+    //   quickshell -c dotfiles ipc call idle refresh
+    // The indicator is otherwise only re-read on its 30s safety-net timer.
+    IpcHandler {
+        target: "idle"
+
+        function refresh(): void {
+            for (const bar of barVariants.instances)
+                bar.refreshIdle();
+        }
+    }
+
     Variants {
         id: barVariants
 

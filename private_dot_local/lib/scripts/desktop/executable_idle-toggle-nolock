@@ -32,5 +32,8 @@ else
     notify-send "🔅 Idle Lock" "Lock disabled, display still powers off" -t 2000
 fi
 
-# Refresh Waybar idle indicator
+# Refresh the idle indicator in both bars. Waybar takes a real-time signal;
+# Quickshell has no signal mechanism, so it gets an IPC call instead. Both are
+# best-effort: either bar may legitimately not be running.
 pkill -RTMIN+9 waybar 2>/dev/null || true
+quickshell -c dotfiles ipc call idle refresh >/dev/null 2>&1 || true
