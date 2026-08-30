@@ -42,9 +42,40 @@ run = "prettier --write '.chezmoidata/**/*.yaml' --log-level warn"
 
 [tasks."lint:lua"]
 description = "Check Lua formatting"
+depends = ["lint:lua-tmpl"]
 run = "stylua --check $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
 
+# *.lua.tmpl is invisible to `find -name '*.lua'`, so templates went unlinted.
+# They cannot be fed to stylua directly (Go template actions aren't valid Lua) —
+# lua-tmpl-file.sh renders each one first.
+[tasks."lint:lua-tmpl"]
+description = "Check Lua template formatting (rendered)"
+# xargs, not `find -exec`: -exec returns 0 even when the command fails, so a
+# broken template would pass silently. xargs exits 123 if any invocation fails.
+run = "find private_dot_config/hypr -name '*.lua.tmpl' -print0 | xargs -0 -r -n1 mise run lint:lua-tmpl-file --"
+
+# Deliberately *.lua only: stylua cannot rewrite a template in place, since
+# rendering discards the Go template actions. Templates are check-only.
 [tasks."format:lua"]
-description = "Format Lua files"
+description = "Format Lua files (templates are check-only, see lint:lua-tmpl)"
 run = "stylua $(find private_dot_config/hypr -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
 
+# Validates the Hyprland Lua tree WITHOUT flipping the entry point. The entry
+# point is excluded by .chezmoiignore (held for Waybar >= 0.16.0), so render it
+# to a temp path; everything it requires resolves through package.path against
+# the already-deployed ~/.config/hypr.
+#
+# Proves the tree parses and every require() resolves. Does NOT prove dispatcher
+# arguments are semantically correct — the 0.56.2 stub types them all as fun(...).
+#
+# Deliberately NOT in [tasks.lint].depends: needs the Hyprland binary plus a
+# deployed ~/.config/hypr for package.path to resolve. Run it by hand.
+[tasks."lint:hypr-lua"]
+description = "Verify the Hyprland Lua config tree parses (Hyprland --verify-config)"
+run = """
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+worktree_root=$(git rev-parse --show-toplevel)
+chezmoi execute-template --source "$worktree_root" < private_dot_config/hypr/hyprland.lua.tmpl > "$tmp/hyprland.lua"
+Hyprland --verify-config -c "$tmp/hyprland.lua"
+"""
