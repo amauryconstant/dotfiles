@@ -405,6 +405,13 @@ binaries). If a true local-build `-git` is ever added, vendor a reviewed `#commi
 (`com.github.tchx84.Flatseal`) is for inspection; re-capture any GUI change with `chezmoi add`.
 Keep Flatpak ≥ 1.16.4 (sandbox-escape CVEs). Prefer *verified* Flathub apps.
 
+**Docker group (root-equivalent, accepted risk)**: `docker` group membership lets any member
+root the host (`docker run -v /:/host busybox chroot /host`, no password). Granted unconditionally
+by `services.yaml`'s `docker.socket` entry (`user_groups: [docker]`), applied via `usermod -aG` in
+`run_once_after_002_configure_system_services.sh.tmpl`. Omarchy reversed this default in v4.0.1;
+we deliberately keep it — single-user desktop, accepted risk. Revoke manually if ever needed:
+`sudo gpasswd -d $USER docker` + reboot.
+
 ---
 
 ## Backup System
