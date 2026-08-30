@@ -1,5 +1,11 @@
 IdentitiesOnly yes
 
+# Global defaults — options before the first Host block apply to every host.
+# Surface a dropped connection in ~45s instead of waiting for TCP to give up,
+# which is what leaves a terminal stuck in the alternate screen.
+ServerAliveInterval 15
+ServerAliveCountMax 3
+
 # GITHUB - Personal
 Host github.com
    HostName github.com
