@@ -26,6 +26,7 @@
 | `git/` | Git config | ✅ Yes |
 | `themes/` | Theme system | ✅ Yes |
 | `waybar/` | Status bar | ✅ Yes |
+| `quickshell/` | Quickshell shell (bar) — gated, replacing Waybar | ✅ Yes |
 | `wofi/` | Application launcher | ✅ Yes |
 | `wlogout/` | Power menu | ✅ Yes |
 | `swaync/` | Notification daemon | ✅ Yes |

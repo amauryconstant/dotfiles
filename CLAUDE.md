@@ -75,6 +75,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── archives/               # Retired configs (KDE, VSCode) — not deployed
 ├── private_dot_config/     # XDG config (hypr, waybar, wofi, zsh, etc.)
 │   ├── dotfiles/           # Hook system
+│   ├── quickshell/         # Quickshell shell (bar) — behind a features flag
 │   └── themes/             # Theme system
 ├── private_dot_keys/       # 🔐 Encrypted secrets
 ├── private_dot_ssh/        # SSH + encrypted keys
@@ -145,6 +146,7 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 | `chezmoi-templates.md` | Template system, log templates, Go template syntax, validation |
 | `chezmoi-modify-entries.md` | `modify_*` entries — the two kinds (modify_manager vs native modify-template), merge safety, directive/validation reference |
 | `hyprland-lua.md` | Hyprland Lua config — `hl`/`o` globals, theme/monitor profile patterns, rgba format, stylua + `--verify-config` validation |
+| `quickshell-qml.md` | Quickshell QML — imports, Qt5/Qt6 tooling trap, lint exemption discipline, runtime gotchas |
 
 ### Repository Utilities
 
@@ -217,6 +219,10 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 
 **Working on backups?**
 → `private_dot_local/lib/scripts/system/CLAUDE.md` (Timeshift integration)
+
+**Working on the Quickshell bar?**
+→ `.claude/rules/quickshell-qml.md` (QML syntax, tooling, validation)
+→ `private_dot_config/quickshell/CLAUDE.md` (layout, widget sources, Waybar deviations)
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)
