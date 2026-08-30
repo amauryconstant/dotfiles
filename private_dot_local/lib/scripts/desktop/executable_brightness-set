@@ -1,0 +1,71 @@
+#!/usr/bin/env sh
+
+# Script: brightness-set
+# Purpose: Brightness up/down — internal backlight via brightnessctl, external
+#          monitor via DDC/CI (ddcutil) when no backlight exists
+# Requirements: brightnessctl (internal), ddcutil (external)
+# Bound to: XF86MonBrightnessUp/Down (media-keys.conf)
+
+STEP=10
+
+usage() {
+    echo "Usage: brightness-set {up|down}" >&2
+    exit 1
+}
+
+[ $# -eq 1 ] || usage
+
+# Internal backlight present -> unchanged behavior
+has_backlight=false
+for f in /sys/class/backlight/*/; do
+    [ -d "$f" ] && has_backlight=true
+    break
+done
+
+if [ "$has_backlight" = true ]; then
+    case "$1" in
+        up) brightnessctl set "+${STEP}%" ;;
+        down) brightnessctl set "${STEP}%-" ;;
+        *) usage ;;
+    esac
+    exit 0
+fi
+
+command -v ddcutil >/dev/null 2>&1 || { notify-send "🔆 Brightness" "ddcutil not installed"; exit 1; }
+
+monitors=$(hyprctl monitors -j 2>/dev/null) || monitors="[]"
+name=$(printf '%s' "$monitors" | jaq -r '.[] | select(.focused == true) | .name')
+[ -n "$name" ] || { notify-send "🔆 Brightness" "No focused monitor found"; exit 1; }
+
+# ddcutil bus probing is slow (~200ms+); cache per monitor for the session
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+BUS_CACHE="$RUNTIME_DIR/ddc-bus-$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_')"
+
+if [ -f "$BUS_CACHE" ]; then
+    read -r bus < "$BUS_CACHE"
+else
+    # Match by DRM connector (e.g. "DP-1") against Hyprland's monitor name first
+    bus=$(ddcutil detect --brief 2>/dev/null | awk -v target="$name" '
+        /I2C bus:/ { bus = $NF; sub(/^\/dev\/i2c-/, "", bus) }
+        /DRM connector:/ {
+            conn = $NF
+            sub(/^card[0-9]+-/, "", conn)
+            if (conn == target) { print bus; exit }
+        }
+    ')
+    if [ -z "$bus" ]; then
+        # ponytail: no DRM-connector match (older ddcutil, or none found) — falls
+        # back to the first detected display's bus. Correct for a single
+        # external monitor; upgrade to a full multi-monitor match if a second
+        # DDC-capable display is ever added.
+        bus=$(ddcutil detect --brief 2>/dev/null | awk '/I2C bus:/{print $NF; exit}' | sed 's#/dev/i2c-##')
+    fi
+    [ -n "$bus" ] || { notify-send "🔆 Brightness" "Could not detect DDC/CI bus for $name"; exit 1; }
+    printf '%s\n' "$bus" > "$BUS_CACHE"
+fi
+
+case "$1" in
+    up) ddcutil --bus "$bus" setvcp 10 + "$STEP" >/dev/null 2>&1 ;;
+    down) ddcutil --bus "$bus" setvcp 10 - "$STEP" >/dev/null 2>&1 ;;
+    *) usage ;;
+esac

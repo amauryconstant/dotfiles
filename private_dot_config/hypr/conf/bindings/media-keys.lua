@@ -11,9 +11,19 @@ o.bind("XF86AudioRaiseVolume", "Volume up", "pamixer -i 5", { locked = true, rep
 o.bind("XF86AudioLowerVolume", "Volume down", "pamixer -d 5", { locked = true, repeating = true })
 o.bind("XF86AudioMute", "Toggle mute", "pamixer -t", { locked = true, repeating = true })
 
--- Brightness control (laptop)
-o.bind("XF86MonBrightnessUp", "Brightness up", "brightnessctl set +10%", { locked = true, repeating = true })
-o.bind("XF86MonBrightnessDown", "Brightness down", "brightnessctl set 10%-", { locked = true, repeating = true })
+-- Brightness control — internal backlight (laptop) or external monitor via DDC/CI (desktop)
+o.bind(
+	"XF86MonBrightnessUp",
+	"Brightness up",
+	"~/.local/lib/scripts/desktop/brightness-set up",
+	{ locked = true, repeating = true }
+)
+o.bind(
+	"XF86MonBrightnessDown",
+	"Brightness down",
+	"~/.local/lib/scripts/desktop/brightness-set down",
+	{ locked = true, repeating = true }
+)
 
 -- Media playback (playerctl — any MPRIS player: Spotify, Firefox, mpv, ...)
 o.bind("XF86AudioPlay", "Play/pause", "playerctl play-pause", { locked = true })

@@ -124,6 +124,38 @@ else
     {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA power management" }}
 fi
 
+{{ includeTemplate "log_step" "Configuring DDC/CI (external monitor brightness)..." }}
+
+# i2c-dev exposes /dev/i2c-* so ddcutil can talk to external monitors over DDC/CI.
+# i2c group is not created by Arch by default, so we own it end-to-end here.
+if command -v ddcutil >/dev/null 2>&1; then
+    if [ ! -f /etc/modules-load.d/i2c-dev.conf ]; then
+        echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf > /dev/null
+    fi
+    sudo modprobe i2c-dev 2>/dev/null || true
+
+    sudo groupadd -f i2c
+
+    I2C_UDEV_FILE="/etc/udev/rules.d/45-ddcutil-i2c.rules"
+    I2C_UDEV_RULE='KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"'
+    if [ ! -f "$I2C_UDEV_FILE" ] || ! grep -qF "$I2C_UDEV_RULE" "$I2C_UDEV_FILE"; then
+        echo "$I2C_UDEV_RULE" | sudo tee "$I2C_UDEV_FILE" > /dev/null
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+        {{ includeTemplate "log_success" "i2c udev rule installed" }}
+    fi
+
+    if id -nG {{ $username }} | grep -qw i2c; then
+        {{ includeTemplate "log_skip" "User already in i2c group" }}
+    else
+        sudo usermod -aG i2c {{ $username }}
+        {{ includeTemplate "log_success" "User added to i2c group" }}
+        {{ includeTemplate "log_info" "⚠️  Logout and login (or reboot) required for group changes to take effect" }}
+    fi
+else
+    {{ includeTemplate "log_skip" "ddcutil not installed, skipping DDC/CI setup" }}
+fi
+
 # ============================================================================
 # SECTION 3: TAILSCALE VPN SERVICE (Optional)
 # ============================================================================
