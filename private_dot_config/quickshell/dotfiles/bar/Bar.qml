@@ -48,6 +48,18 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Config.barSpacing
 
-        // Tray, audio, media, and the rest land here in tasks 3 and 4.
+        // Order follows waybar/config.tmpl's modules-right. Backlight,
+        // kanata, idle, voxtype and the notification bell land in task 4.
+        TrayWidget {}
+
+        NetworkWidget {}
+
+        BluetoothWidget {}
+
+        BatteryWidget {}
+
+        AudioWidget {}
+
+        MediaWidget {}
     }
 }

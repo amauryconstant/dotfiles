@@ -25,6 +25,11 @@ Singleton {
     readonly property string guiFont: "{{ .globals.guiFont }}"
     readonly property string terminalFont: "{{ .globals.terminalFont }}"
 
+    // Widgets that shell out reach our script library through this, resolved
+    // at runtime like Theme's colors.sh path rather than baked in by the
+    // template, so the rendered QML stays free of an absolute home path.
+    readonly property string scriptsDir: `${Quickshell.env("HOME")}/.local/lib/scripts`
+
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.
     readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
