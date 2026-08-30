@@ -83,9 +83,14 @@ system-maintenance() {
             _log_entry "CLEANUP started"
 
             # Clean package cache
-            if command -v pacman >/dev/null 2>&1; then
-                ui_step "Cleaning package cache..."
-                sudo pacman -Sc --noconfirm >/dev/null 2>&1
+            # paccache, not `pacman -Sc`: -Sc drops EVERY cached version and with
+            # it the offline downgrade path. -rk2 keeps the 2 most recent versions
+            # of installed packages; -ruk0 drops all cached versions of packages
+            # no longer installed. paccache ships with pacman-contrib.
+            if command -v paccache >/dev/null 2>&1; then
+                ui_step "Pruning package cache (keeping 2 versions)..."
+                sudo paccache -rk2 >/dev/null 2>&1
+                sudo paccache -ruk0 >/dev/null 2>&1
             fi
 
             # Remove orphaned packages
