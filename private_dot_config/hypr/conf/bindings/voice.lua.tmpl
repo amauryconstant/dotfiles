@@ -5,13 +5,17 @@
 -- Streaming:    tap to start, tap to stop; text appears live as you speak.
 --
 -- SUPER+T      → Cohere   push-to-talk (DEFAULT — multilingual incl. FR)
--- SUPER+ALT+T  → Parakeet streaming toggle (live incremental text, English)
--- SUPER+CTRL+T → Parakeet push-to-talk (fast English-only alternative)
+-- SUPER+ALT+T  → Parakeet streaming toggle (live incremental text, English) [desktop only]
+-- SUPER+CTRL+T → Parakeet push-to-talk (fast English-only alternative) [desktop only]
 -- SUPER+ALT+M  → Meeting  mode toggle (continuous transcription + AI summary)
 --
 -- binddr (stop on key release) → o.bind(..., { release = true }).
 -- NOTE: recording start switches to the `voxtype_recording` submap (see
 -- ../../conf.d/voxtype-submap.lua) to neutralise modifier interference.
+--
+-- NOTE: laptop is RAM-constrained and configured for Cohere-only STT (q4f16) —
+-- see ../../../voxtype/config.toml.tmpl. The two Parakeet bindings below are
+-- omitted on laptop, mirroring voice.conf.tmpl.
 -- ============================================================================
 
 -- Cohere — default engine, push-to-talk (multilingual, daily driver)
@@ -24,16 +28,19 @@
 o.bind("SUPER + T", "Start voice dictation (Cohere)", "~/.local/lib/scripts/desktop/voxtype-record start")
 o.bind("SUPER + T", "Stop voice dictation (Cohere)", "voxtype record stop", { release = true })
 
--- Parakeet — streaming dictation, toggle (live incremental text, English)
+{{ if ne .chassisType "laptop" -}}
+-- Parakeet — streaming dictation, toggle (live incremental text, English) — desktop only
 o.bind("SUPER + ALT + T", "Toggle streaming dictation (Parakeet)", "~/.local/lib/scripts/desktop/voxtype-record toggle")
 
--- Parakeet — fast English-only push-to-talk
+-- Parakeet — fast English-only push-to-talk — desktop only
 o.bind(
 	"SUPER + CTRL + T",
 	"Start voice dictation (Parakeet)",
 	"~/.local/lib/scripts/desktop/voxtype-record start --model parakeet-tdt-0.6b-v3"
 )
 o.bind("SUPER + CTRL + T", "Stop voice dictation (Parakeet)", "voxtype record stop", { release = true })
+
+{{ end -}}
 
 -- Meeting mode — continuous transcription with speaker diarization + AI summary
 o.bind("SUPER + ALT + M", "Toggle meeting transcription", "~/.local/lib/scripts/desktop/voice-meeting toggle")
