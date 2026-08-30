@@ -1,0 +1,17 @@
+pragma Singleton
+
+import Quickshell
+
+Singleton {
+    // Bar geometry
+    readonly property int barHeight: 30
+
+    // Fonts come from .chezmoidata/globals.yaml so the QML tree cannot drift
+    // from GTK/Qt/Waybar/Wofi/Hyprlock.
+    readonly property string guiFont: "{{ .globals.guiFont }}"
+    readonly property string terminalFont: "{{ .globals.terminalFont }}"
+
+    // Chassis-dependent widgets (battery, power profile, backlight) gate on
+    // this ONE property. Deliberately not eight separate .tmpl widgets.
+    readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
+}

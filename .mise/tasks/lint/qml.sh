@@ -27,6 +27,7 @@ worktree_root=$(git rev-parse --show-toplevel)
 # isolation: shell.qml references the Config singleton, which exists in source
 # only as Config.qml.tmpl, so a per-file pass would report it unresolved.
 # Rendering to a temp tree also reproduces the deployed import graph exactly.
+# qmldir rides along: without it qmllint cannot see `pragma Singleton` types.
 while IFS= read -r file; do
 	rel="${file#"$src"/}"
 	dest="$tmp/${rel%.tmpl}"
@@ -35,7 +36,7 @@ while IFS= read -r file; do
 	*.tmpl) chezmoi execute-template --source "$worktree_root" <"$file" >"$dest" ;;
 	*) cp "$file" "$dest" ;;
 	esac
-done < <(find "$src" \( -name '*.qml' -o -name '*.qml.tmpl' \) -type f)
+done < <(find "$src" \( -name '*.qml' -o -name '*.qml.tmpl' -o -name 'qmldir' \) -type f)
 
 mapfile -t rendered < <(find "$tmp" -name '*.qml' -type f | sort)
 [[ ${#rendered[@]} -gt 0 ]] || exit 0
