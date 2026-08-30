@@ -12,6 +12,14 @@
 !private_dot_config/**/commands/*.md
 !private_dot_config/**/skills/**/*.md
 
+# Markdown under private_dot_config/ is repo documentation living in the chezmoi
+# source tree — versioned here, kept out of ~ by .chezmoiignore. The blanket
+# *.md above relied on a hand-maintained exception list and was silently hiding
+# hypr/conf/bindings/README.md and themes/style-guide-generator.md, so neither
+# could ever be committed. Negate by location, not by filename, so a new doc
+# added here is versioned by default instead of vanishing on a fresh clone.
+!private_dot_config/**/*.md
+
 !_plans/**/**.md
 !_research/**/**.md
 !_guides/**/**.md

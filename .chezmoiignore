@@ -21,8 +21,16 @@ _ai/
 **/CLAUDE.md
 **/STYLE-GUIDE.md
 
+# Repo documentation that lives inside the source tree: versioned, never
+# deployed. `README.md` alone matched only ~/README.md — nested ones (the
+# Hyprland bindings reference) were being deployed to ~ as a stray doc file.
+**/README.md
+
+# Authoring methodology that generated the per-theme STYLE-GUIDE.md files.
+# Same treatment as its output: kept beside them in the repo, not deployed.
+**/style-guide-generator.md
+
 LICENSE
-README.md
 
 __pycache__
 
@@ -33,15 +41,24 @@ private_dot_config/broot/launcher/
 # PR #5013 (Lua-IPC workspace clicks). With hyprland.lua absent, Hyprland falls
 # back to hyprland.conf, whose legacy "dispatch workspace N" still works.
 #
-# Checked 2026-08-24:
+# Re-checked 2026-08-30 (no change since 2026-08-24):
 #   PR #5013 merged   2026-05-04 into master
-#   latest release    0.15.0 (2026-02-06) — predates the merge
+#   latest release    0.15.0 (2026-02-06) — still predates the merge
+#   Arch extra        waybar 0.15.0-2
 #   installed         waybar 0.15.0-2
+#   no 0.16.0 exists
 #
 # So the fix exists upstream but ships in no tagged release yet. Unblocks when
 # Waybar >= 0.16.0 lands: delete this block, then `chezmoi apply`. The rest of
 # the Lua config (conf/*.lua) is already deployed and live — only this entry
 # point is held back.
+#
+# Next check is a version comparison, not a re-investigation:
+#   curl -s https://api.github.com/repos/Alexays/Waybar/releases/latest | jaq -r .tag_name
+#   pacman -Si waybar | grep Version
+#
+# Full cutover runbook (audit findings, prerequisites, steps, rollback, and the
+# hyprsplit C++ -> Lua swap that rides along): _research/HYPRLAND_LUA_MIGRATION.md
 .config/hypr/hyprland.lua
 
 # Steam iGPU-forcing desktop override only makes sense on hybrid-GPU laptops
