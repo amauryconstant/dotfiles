@@ -21,7 +21,7 @@
 -- To identify your monitors, run: hyprctl monitors
 -- ============================================================================
 
-{{ if eq .chassisType "desktop" }}
+{{ if eq .chassisType "desktop" -}}
 -- ============================================================================
 -- Desktop Multi-Monitor Configuration
 -- ============================================================================
@@ -39,7 +39,7 @@ hl.monitor({ output = "DP-1", mode = "3840x2160@144", position = "0x0", scale = 
 -- - Transform: 1 (90° clockwise rotation)
 -- - Physical size after rotation: 1440x2560
 hl.monitor({ output = "HDMI-A-1", mode = "2560x1440@60", position = "3072x144", scale = 1, transform = 1 })
-{{ else }}
+{{- else -}}
 -- ============================================================================
 -- Laptop Configuration with Docking Station Support
 -- ============================================================================
@@ -56,4 +56,4 @@ hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
 -- External monitor when docked (auto-positioned to the right)
 -- hl.monitor({ output = "DP-1", mode = "preferred", position = "auto", scale = 1 })
 -- hl.monitor({ output = "HDMI-A-1", mode = "preferred", position = "auto", scale = 1 })
-{{ end }}
+{{- end }}

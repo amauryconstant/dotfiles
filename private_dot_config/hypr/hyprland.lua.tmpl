@@ -3,31 +3,31 @@
 -- Migrated from hyprland.conf. Modular: each concern is a require() in conf/.
 -- ============================================================================
 
-local home   = os.getenv("HOME")
+local home = os.getenv("HOME")
 local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
 
 -- Resolve require() for conf modules, hyprsplit, themes, and dotfiles extension.
 package.path = table.concat({
-  config .. "/hypr/?.lua",
-  config .. "/hypr/?/init.lua",
-  config .. "/?.lua",
-  package.path,
+	config .. "/hypr/?.lua",
+	config .. "/hypr/?/init.lua",
+	config .. "/?.lua",
+	package.path,
 }, ";")
 
 local require_all = require("conf.require_all")
-require("conf.helpers")        -- defines global o.*
+require("conf.helpers") -- defines global o.*
 
 -- Monitors
 {{ if eq .chassisType "desktop" }}
 require_all.if_exists(config .. "/hypr/monitors.lua", "monitors")  -- HyprDynamicMonitors output (~/.config/hypr/monitors.lua)
 {{ end }}
-require("conf.monitor")        -- laptop fallback / auto-detect
+require("conf.monitor") -- laptop fallback / auto-detect
 
 -- Core
 require("conf.environment")
-require("conf.plugins")        -- hyprsplit hs.config
+require("conf.plugins") -- hyprsplit hs.config
 require("conf.input")
-require("conf.general")        -- structural general/dwindle (border colors via theme)
+require("conf.general") -- structural general/dwindle (border colors via theme)
 require("conf.decoration")
 require("conf.animations")
 require("conf.autostart")
