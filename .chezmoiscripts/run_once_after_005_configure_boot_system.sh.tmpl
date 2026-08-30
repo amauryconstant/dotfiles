@@ -38,6 +38,8 @@ echo ""
 # Initialize variables for NVIDIA DKMS information (available in summary)
 KERNELS_BUILT_COUNT=0
 ALL_BUILT=""
+NVIDIA_MODULES_CHANGED=false
+KMS_HOOK_CHANGED=false
 
 {{ includeTemplate "log_step" "Detect GPU vendor" }}
 
@@ -52,6 +54,10 @@ else
     NVIDIA_DETECTED=true
 
 {{ if .boot.gpu.kms }}
+{{- $nvidiaModules := "nvidia nvidia_modeset nvidia_uvm nvidia_drm" }}
+{{- if .hasIntegratedGpu }}
+{{- $nvidiaModules = "i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm" }}
+{{- end }}
     {{ includeTemplate "log_step" "Configure initramfs NVIDIA modules BEFORE package installation" }}
 
     # CRITICAL: Configure mkinitcpio BEFORE installing nvidia-open-dkms
@@ -66,9 +72,9 @@ else
 
     if [ -f "$NVIDIA_CONF" ]; then
         # Check if existing file has correct content (flexible whitespace handling)
-        # Must include i915 for hybrid graphics
+        # i915 only included when an Intel/AMD iGPU is present (hasIntegratedGpu)
         # Use sudo to read file (owned by root)
-        if sudo grep -Eq "^MODULES=\(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm\)\s*$" "$NVIDIA_CONF"; then
+        if sudo grep -Eq "^MODULES=\({{ $nvidiaModules }}\)\s*$" "$NVIDIA_CONF"; then
             {{ includeTemplate "log_success" "Initramfs NVIDIA configuration already correct" }}
         else
             {{ includeTemplate "log_info" "Updating initramfs NVIDIA configuration..." }}
@@ -81,20 +87,52 @@ else
 
     # Create/update NVIDIA-specific module configuration if needed
     if [ "$NVIDIA_CONF_NEEDS_UPDATE" = true ]; then
-        # CRITICAL: With DKMS, we KEEP 'kms' in HOOKS (early kernel mode setting)
+        # CRITICAL: With DKMS, we KEEP 'kms' in HOOKS (early kernel mode setting) —
+        # unless this is an NVIDIA-only box (see the kms-hook removal below)
+        {{ if .hasIntegratedGpu -}}
         # CRITICAL: On hybrid graphics (Intel + NVIDIA), load i915 BEFORE nvidia modules
         #           This prevents Electron/Chromium apps from stalling ~1min after boot
+        {{ end -}}
         sudo tee "$NVIDIA_CONF" > /dev/null <<'EOF'
 # NVIDIA DKMS module configuration
 # These modules enable early kernel mode setting (KMS) for NVIDIA GPUs
-# IMPORTANT: DO NOT remove 'kms' from HOOKS when using DKMS
-# IMPORTANT: i915 loaded first to prevent Electron/Chromium stalling on hybrid graphics
-MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+MODULES=({{ $nvidiaModules }})
 EOF
         sudo chmod 644 "$NVIDIA_CONF"
         {{ includeTemplate "log_success" "Created/updated $NVIDIA_CONF" }}
         {{ includeTemplate "log_info" "NVIDIA kernel modules loaded via extramodules" }}
+        NVIDIA_MODULES_CHANGED=true
     fi
+
+    {{ if not .hasIntegratedGpu }}
+    {{ includeTemplate "log_step" "NVIDIA-only system - drop kms mkinitcpio hook (proprietary driver handles early KMS itself)" }}
+
+    KMS_MKINITCPIO_CONF="/etc/mkinitcpio.conf"
+    KMS_MKINITCPIO_BACKUP="${KMS_MKINITCPIO_CONF}.backup"
+
+    if grep -Eq '^HOOKS=.*\bkms\b' "$KMS_MKINITCPIO_CONF"; then
+        if [ ! -f "$KMS_MKINITCPIO_BACKUP" ]; then
+            sudo cp "$KMS_MKINITCPIO_CONF" "$KMS_MKINITCPIO_BACKUP"
+            {{ includeTemplate "log_info" "Created backup: $KMS_MKINITCPIO_BACKUP" }}
+        fi
+
+        # kms followed by a space (not the last hook), then kms as the last hook
+        sudo sed -i -E 's/(HOOKS=\([^)]*)\bkms /\1/' "$KMS_MKINITCPIO_CONF"
+        sudo sed -i -E 's/(HOOKS=\([^)]*) kms\b/\1/' "$KMS_MKINITCPIO_CONF"
+
+        if grep -Eq '^HOOKS=.*\bkms\b' "$KMS_MKINITCPIO_CONF"; then
+            {{ includeTemplate "log_error" "Failed to remove kms hook - manual intervention required" }}
+            exit 1
+        else
+            {{ includeTemplate "log_success" "Removed kms hook from mkinitcpio HOOKS (no iGPU to early-modeset)" }}
+            KMS_HOOK_CHANGED=true
+        fi
+    else
+        {{ includeTemplate "log_success" "kms hook already absent from mkinitcpio HOOKS" }}
+    fi
+    {{ else }}
+    {{ includeTemplate "log_skip" "iGPU present - keeping kms mkinitcpio hook for its early modeset" }}
+    {{ end }}
 {{ end }}
 
     {{ includeTemplate "log_step" "Verify NVIDIA drivers installed" }}
@@ -852,6 +890,16 @@ fi
 
 if [ "${UKI_PRESETS_CHANGED:-false}" = true ]; then
     {{ includeTemplate "log_info" "UKI preset configuration changed - rebuild required" }}
+    REBUILD_NEEDED=true
+fi
+
+if [ "$NVIDIA_MODULES_CHANGED" = true ]; then
+    {{ includeTemplate "log_info" "NVIDIA initramfs modules changed - rebuild required" }}
+    REBUILD_NEEDED=true
+fi
+
+if [ "$KMS_HOOK_CHANGED" = true ]; then
+    {{ includeTemplate "log_info" "mkinitcpio HOOKS changed (kms removed) - rebuild required" }}
     REBUILD_NEEDED=true
 fi
 

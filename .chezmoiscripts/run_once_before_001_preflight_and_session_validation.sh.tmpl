@@ -143,7 +143,7 @@ echo ""
 
 if lspci | grep -i nvidia >/dev/null 2>&1; then
 {{- $gpuName := .nvidiaGpuDetected | default "unknown" }}
-    {{ includeTemplate "log_info" (printf "NVIDIA GPU detected: %s" $gpuName) }}
+    {{ includeTemplate "log_info" (printf "NVIDIA GPU PCI ID: %s" $gpuName) }}
     {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
 
     if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
@@ -178,7 +178,7 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         echo "  Current driver: $CURRENT_DRIVER"
         echo "  Target driver:  $TARGET_DRIVER"
         echo ""
-        echo "  Detected GPU: {{ .nvidiaGpuDetected | default "unknown" }}"
+        echo "  Detected GPU (PCI ID): {{ .nvidiaGpuDetected | default "unknown" }}"
         echo ""
         echo "  This migration will:"
         if [ "$CURRENT_DRIVER" = "modern" ]; then
