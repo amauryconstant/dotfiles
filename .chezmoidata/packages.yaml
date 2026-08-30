@@ -290,6 +290,7 @@ packages:
         - wl-clipboard # Wayland clipboard CLI utilities
         - pamixer # PulseAudio/PipeWire mixer CLI
         - brightnessctl # Screen brightness controller
+        - ddcutil # External monitor brightness via DDC/CI (no internal backlight)
         - playerctl # MPRIS media player controller
         - blueman # GTK Bluetooth manager GUI
         - bluetui # Bluetooth TUI manager (now official extra; was AUR)
