@@ -139,7 +139,7 @@ Flags: `l` = works while locked (hyprlock), `e` = repeats on hold.
 ## File Organization
 
 Each file below has a parallel `.lua` twin (inactive until the Lua entry point is unblocked — see
-`_research/HYPRLAND_LUA_MIGRATION.md`). Files are sourced by `hyprland.conf` in alphabetical order.
+`_guides/HYPRLAND_LUA_CUTOVER.md`). Files are sourced by `hyprland.conf` in alphabetical order.
 
 | File | Scope |
 |------|-------|

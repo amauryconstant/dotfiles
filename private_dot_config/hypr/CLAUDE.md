@@ -10,7 +10,7 @@
 
 - **Purpose**: Hyprland compositor configuration
 - **Main entry**: `hyprland.conf` (sources modular configs + theme + user extras)
-- **Active format**: **`.conf`** files. The parallel `.lua` set is deployed but inert — only the entry point `~/.config/hypr/hyprland.lua` is held back, by a `.chezmoiignore` block, so Hyprland falls back to `hyprland.conf`. Hold is on a Waybar release carrying PR #5013. See `.claude/rules/hyprland-lua.md` for syntax, **`_research/HYPRLAND_LUA_MIGRATION.md` for the cutover runbook** (audit findings, prerequisites, steps, rollback).
+- **Active format**: **`.conf`** files. The parallel `.lua` set is deployed but inert — only the entry point `~/.config/hypr/hyprland.lua` is held back, by a `.chezmoiignore` block, so Hyprland falls back to `hyprland.conf`. Hold is on a Waybar release carrying PR #5013. See `.claude/rules/hyprland-lua.md` for syntax, **`_guides/HYPRLAND_LUA_CUTOVER.md` for the cutover runbook** (steps, rollback), `_research/HYPRLAND_LUA_AUDIT.md` for the parity audit behind it.
 - **Cutover side effect**: flipping the entry point also swaps hyprsplit from the hyprpm **C++ plugin** to the **Lua library** (`require("hyprsplit")`), because `autostart.lua` deliberately drops the `exec-once = hyprpm reload -n` that `autostart.conf` carries. Two changes, one reboot.
 - **Reload**: `Super+Shift+R` or `hyprctl reload`
 

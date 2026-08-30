@@ -57,8 +57,9 @@ private_dot_config/broot/launcher/
 #   curl -s https://api.github.com/repos/Alexays/Waybar/releases/latest | jaq -r .tag_name
 #   pacman -Si waybar | grep Version
 #
-# Full cutover runbook (audit findings, prerequisites, steps, rollback, and the
-# hyprsplit C++ -> Lua swap that rides along): _research/HYPRLAND_LUA_MIGRATION.md
+# Full cutover runbook (status, steps, rollback, and the hyprsplit C++ -> Lua
+# swap that rides along): _guides/HYPRLAND_LUA_CUTOVER.md
+# Audit findings/prerequisites behind it: _research/HYPRLAND_LUA_AUDIT.md
 .config/hypr/hyprland.lua
 
 # Steam iGPU-forcing desktop override only makes sense on hybrid-GPU laptops

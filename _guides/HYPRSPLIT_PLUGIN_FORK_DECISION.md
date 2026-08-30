@@ -72,7 +72,7 @@ That's **shezdy's** pre-fork C++ build, loaded because `autostart.conf` still ru
 It takes effect at the **Lua cutover**: `autostart.lua` deliberately drops that
 `hyprpm reload -n`, so once `hyprland.lua` becomes the entry point the C++ plugin stops loading and
 hyprsplit comes from the fork's Lua library instead. Two changes ride one reboot — see
-`_research/HYPRLAND_LUA_MIGRATION.md` → "The hyprsplit coupling".
+`_guides/HYPRLAND_LUA_CUTOVER.md` → "The hyprsplit coupling".
 
 Practical consequence: the fork's *build* health (the "When to Revisit" checks above) matters less
 after cutover than its *Lua API* stability. The five APIs we call are `config`, `dsp.focus`,
@@ -82,4 +82,6 @@ after cutover than its *Lua API* stability. The five APIs we call are `config`, 
 
 Separately, this repo is deliberately staying on legacy `.conf` mode (not the parallel `.lua`
 config) until a Waybar release ships PR #5013 (Lua-IPC workspace clicks) — see the comment above
-`.config/hypr/hyprland.lua` in `.chezmoiignore`. That's an independent decision from this one.
+`.config/hypr/hyprland.lua` in `.chezmoiignore`, and `_guides/HYPRLAND_LUA_CUTOVER.md` for the hold
+status and cutover runbook. That's an independent decision from this one. The audit that reconciled
+the `.conf`/`.lua` pairs is recorded in `_research/HYPRLAND_LUA_AUDIT.md`.
