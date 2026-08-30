@@ -9,3 +9,5 @@ features:
     gpu_device: 0
   restic:
     enabled: true
+  quickshell_shell:
+    enabled: false
