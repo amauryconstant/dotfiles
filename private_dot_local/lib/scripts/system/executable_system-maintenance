@@ -46,6 +46,15 @@ system-maintenance() {
 
             ui_title "SYSTEM UPDATE"
             _log_entry "UPDATE started"
+
+            # Low-disk-space warning, non-blocking (no automatic emergency cleanup exists here)
+            LOW_DISK_THRESHOLD_KB=$((2 * 1024 * 1024)) # 2 GiB
+            avail_kb=$(df --output=avail -k / 2>/dev/null | tail -1)
+            if [ -n "$avail_kb" ] && [ "$avail_kb" -lt "$LOW_DISK_THRESHOLD_KB" ]; then
+                ui_warning "Low disk space on / ($((avail_kb / 1024))MB free) - update may fail"
+                _log_entry "UPDATE low disk space: ${avail_kb}KB free"
+            fi
+
             if command -v pacman >/dev/null 2>&1; then
                 ui_step "Updating packages..."
                 if sudo pacman -Syu --noconfirm; then
