@@ -303,6 +303,9 @@ packages:
         - swayosd # OSD overlay for volume/brightness
         - xkeyboard-config # Keyboard layout definitions
         - hyprpicker # Wayland color picker
+        - zbar # QR/barcode decoding (capture-qr)
+        - tesseract # OCR engine (capture-text-extraction)
+        - tesseract-data-eng # English OCR trained data
         - plymouth # Graphical boot splash screen
         - sddm # Simple Desktop Display Manager
         - solarized-sddm-theme # Solarized theme for SDDM

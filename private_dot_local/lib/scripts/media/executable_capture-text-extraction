@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+# Script: capture-text-extraction
+# Purpose: Select a screen region, OCR the text inside it to the clipboard
+# Requirements: slurp, grim, tesseract, tesseract-data-eng, wl-copy, wayfreeze (optional)
+# Bound to: hardware.conf.tmpl / screenshots.conf (see repo bindings)
+
+SCRIPT_DIR=$(dirname -- "$0")
+# shellcheck source=capture-region.sh
+. "$SCRIPT_DIR/capture-region.sh"
+
+command -v tesseract >/dev/null 2>&1 || { notify-send "📝 Text Extraction" "tesseract not installed" -t 2000; exit 1; }
+
+geometry=$(capture_region_select) || { notify-send "📝 Text Extraction" "Cancelled" -t 2000; exit 1; }
+
+text=$(grim -g "$geometry" - | tesseract stdin stdout 2>/dev/null)
+
+if [ -z "$text" ]; then
+    notify-send "📝 Text Extraction" "No text found in selection" -t 2000
+    exit 1
+fi
+
+printf '%s' "$text" | wl-copy
+notify-send "📝 Text Extraction" "Text copied to clipboard" -t 2000
