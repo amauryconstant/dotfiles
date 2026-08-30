@@ -21,11 +21,10 @@ Last updated: 2026-08-30 (through v4.0.1).
 **Conflict**: Removing the auto-grant breaks any existing workflow assuming plain `docker`/`lazydocker` works without `sudo`; existing group membership also persists across `chezmoi apply` (nothing in the script reverts a prior grant) until explicitly removed.
 **Adapt from**: `bin/omarchy-remove-security-sudoless-docker`, `applications/Docker.desktop`, `bin/omarchy-launch-docker-tui`
 
-- [ ] Decide policy: accept the risk on a single-user desktop, or gate the grant behind an explicit opt-in (matching omarchy's reversal)
-- [ ] If gating: drop `user_groups: [docker]` from the `docker.socket` entry in `services.yaml`; default to `sudo docker`/`sudo lazydocker`
-- [ ] If gating: provide (or document) a manual revocation path for machines that already have the grant — `sudo gpasswd -d $USER docker` + reboot; `usermod -aG` has no automatic reverse in our script today
-- [ ] If keeping the grant: record the accepted risk explicitly in `private_dot_local/lib/scripts/system/CLAUDE.md` → Package Security Policy, since this repo is otherwise security-first
-- [ ] Either way: note that `lazydocker` (already in `packages.yaml`) needs the same access path the CLI gets — don't leave it with a stale sudoless assumption
+- [x] Decide policy: **accept the risk** (user decision 2026-08-30, reversing an earlier same-day attempt at gating behind `features.docker_sudoless.enabled`) — single-user desktop, current unconditional grant "just works as intended"; no code change *(done 2026-08-30)*
+- [x] Accepted risk recorded in `system/CLAUDE.md` → Package Security Policy, noting the deliberate divergence from Omarchy's v4.0.1 reversal *(done 2026-08-30)*
+- [SKIPPED] Feature-gating `services.yaml`/`run_once_after_002`/`menu-install` — built, then reverted per the above decision
+- [N/A] `lazydocker` needs no separate access-path change — sudoless docker stays the default, same as before
 
 ---
 
@@ -125,9 +124,10 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hw-nvidia`, `default/hypr/nvidia.lua`
 
-- [ ] Check whether our detection uses `lspci` — if so, switch to reading `/sys/bus/pci/devices/*/{vendor,device,class}`
-- [ ] Compare our `modern|legacy` classification against omarchy's device-ID table (pre-Maxwell → legacy, Maxwell/Pascal → modern)
-- [ ] Verify `chezmoi data | jaq -r '.nvidiaDriverType'` still resolves correctly after the change
+- [x] Switched from `lspci` to sysfs: `.chezmoi.yaml.tmpl` now scans `/sys/bus/pci/devices/*/{vendor,class,device}` for vendor `0x10de` + class `0x03xx` — pure sysfs reads, never touches live PCI config space, so it can't wake a runtime-suspended dGPU *(done 2026-08-30)*
+- [x] Classification kept as the existing name-string regex (GTX 900/1000, Titan X/XP/Z, Quadro K/M/P) — not rebuilt against a full device-ID table (out of scope for this pass) — but now applied to a name resolved from the static `/usr/share/hwdata/pci.ids` database instead of a live `lspci` call, so it stays wake-safe. `.nvidiaGpuDetected` format changed from a friendly lspci string to a raw PCI ID (`10de:1f91`); the one consumer (`run_once_before_001` log lines) updated to match *(done 2026-08-30)*
+- [x] Verified: `chezmoi execute-template < .chezmoi.yaml.tmpl` resolves `nvidiaDriverType: "modern"`, `nvidiaGpuDetected: "10de:1f91"` on this machine (GTX 1650 Mobile/Max-Q, TU117M — correctly classified modern/Turing) *(done 2026-08-30)*
+- [x] Added `hasIntegratedGpu` (sysfs scan for vendor `0x8086`/`0x1002` + class `0x03xx`) as a side effect — needed by the kms-hook item below; found this machine is actually hybrid (`hasIntegratedGpu: true`), correcting an earlier assumption *(done 2026-08-30)*
 
 ---
 
@@ -138,10 +138,12 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 **Effort**: Medium
 **Conflict**: Interacts with `boot.gpu.kms` and the Plymouth hook ordering already handled in script 005.
 
-- [ ] Confirm the machine is NVIDIA-only (no Intel/AMD iGPU in play) before considering the drop
-- [ ] Check whether `kms` is currently in `HOOKS` and measure UKI size before/after
-- [ ] If dropping: ensure `nvidia_drm.modeset=1` and the nvidia modules remain in `MODULES` so Plymouth still gets a mode set early
-- [ ] Rebuild UKIs and reboot-test — Plymouth must still theme the LUKS prompt
+- [x] Made conditional at apply-time instead of a manual per-machine assumption: `.chezmoi.yaml.tmpl` now exposes `hasIntegratedGpu` (sysfs scan for vendor `0x8086`/`0x1002` + class `0x03xx`, same technique as the NVIDIA sysfs item above) — `run_once_after_005_configure_boot_system.sh.tmpl` checks it, not a hardcoded "this machine is NVIDIA-only" belief. Confirmed via `chezmoi execute-template` that **this machine is actually hybrid** (`hasIntegratedGpu: true`), correcting the OMARCHY.md skip-list's "no hybrid graphics here" note — the hook stays on this box, drops automatically on a genuinely NVIDIA-only one *(done 2026-08-30)*
+- [x] `i915` is now also conditional on `hasIntegratedGpu` in the `MODULES=(...)` write (it was previously hardcoded in, which was already wrong on an NVIDIA-only box); when no iGPU, `kms` is stripped from `/etc/mkinitcpio.conf`'s `HOOKS=` array via a sed pattern mirroring the existing Plymouth-hook-insertion convention (backup-before-first-edit, idempotency check, hard-fail with a clear error if removal verification fails) *(done 2026-08-30)*
+- [x] `nvidia_drm.modeset=1` and the nvidia modules stay in `MODULES` regardless — only `i915` and the `kms` HOOKS entry are conditional, so Plymouth still gets an early mode set *(done 2026-08-30)*
+- [x] Fixed a latent bug found while touching this section: the NVIDIA `MODULES=` conf write never set the script's `REBUILD_NEEDED` flag, so a first-time write (or this new HOOKS edit) could silently skip the `mkinitcpio -P` rebuild it required — both `NVIDIA_MODULES_CHANGED` and `KMS_HOOK_CHANGED` now feed into it *(done 2026-08-30)*
+- [x] Verified: rendered both branches (`hasIntegratedGpu: true` and a simulated `false`) via `chezmoi execute-template`, `bash -n`, and `shellcheck` — clean on both, and unit-tested the HOOKS-removal sed against sample lines with `kms` mid-list and `kms` as the last hook (first version had a backreference bug — `\1` was missing from the replacement — caught and fixed before this) *(done 2026-08-30)*
+- [ ] Rebuild UKIs and reboot-test on a real NVIDIA-only machine (none available in this session) — Plymouth must still theme the LUKS prompt, and UKI size should measurably drop
 
 ---
 
@@ -166,11 +168,12 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-brightness-display-ddc`
 
-- [ ] Add `ddcutil` to `packages.yaml` (`desktop_hyprland` or `system_utilities`)
-- [ ] Implement `brightness-set up|down` — use `brightnessctl` when an internal backlight exists, else `ddcutil setvcp 10` against the focused monitor's I2C bus
-- [ ] Cache the bus number (DDC probing is slow, ~200ms+) so key auto-repeat stays responsive
-- [ ] Repoint `XF86MonBrightnessUp/Down` at the new script
-- [ ] Note: DDC/CI requires the `i2c-dev` module and group permissions — add to the `run_once_after` setup if needed
+- [x] Added `ddcutil` to `packages.yaml` (`desktop_hyprland`, next to `brightnessctl`) *(done 2026-08-30)*
+- [x] Implemented `desktop/executable_brightness-set {up|down}` — `brightnessctl` when `/sys/class/backlight/*` exists (unchanged laptop behavior, verified: this machine has `intel_backlight` and takes this path), else resolves the Hyprland-focused monitor and matches it to a ddcutil bus by DRM connector name (`ddcutil detect --brief`'s "DRM connector: cardN-DP-X" vs Hyprland's `.name`) — verified the awk parser against sample multi-monitor `ddcutil detect --brief` output. `ponytail:` comment marks the single-monitor fallback (first detected bus) as the ceiling if connector matching fails; upgrade path is a full multi-monitor match, not needed for this desktop's one external display *(done 2026-08-30)*
+- [x] Bus number cached per-monitor in `$XDG_RUNTIME_DIR/ddc-bus-<name>` *(done 2026-08-30)*
+- [x] Repointed `XF86MonBrightnessUp/Down` in `media-keys.conf` + `.lua` at the new script; ran `stylua` on the `.lua` edit (line length required reformatting to multi-line `o.bind` calls) *(done 2026-08-30)*
+- [x] `i2c-dev` + group permissions: added to `run_once_after_002_configure_system_services.sh.tmpl` (module load via `/etc/modules-load.d/i2c-dev.conf`, `i2c` group created with `groupadd -f` since Arch doesn't ship one by default, udev rule `KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"`, user added to the group) — gated on `command -v ddcutil`, verified via `chezmoi execute-template` + `shellcheck` *(done 2026-08-30)*
+- [ ] Manual test on the real desktop with an external DDC/CI-capable monitor (not available in this session)
 
 ---
 
@@ -226,10 +229,10 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hyprland-toggle`, `default/hypr/toggles/flags.conf`, `default/hypr/toggles.lua`
 
-- [ ] Add a toggles require at the end of `hyprland.lua.tmpl` reading `~/.local/state/dotfiles/toggles/hypr/` (adapted path, not omarchy)
-- [ ] Create `~/.local/state/dotfiles/toggles/hypr/` in the `create_necessary_directories` script
-- [ ] Implement `hypr-toggle` script that writes/removes flag files in the state dir and runs `hyprctl reload`
-- [ ] Use as foundation for the touchpad toggle (see P3 item below)
+- [x] Built `.conf`-native instead of Lua: Hyprland here still boots from `hyprland.conf` (the `.lua` entry point is `.chezmoiignore`'d pending the Waybar-blocked cutover), so a `require("...toggles")`-only mechanism would be dead code until then. Added `source = ~/.local/state/dotfiles/toggles/hypr/current.conf` near the end of `hyprland.conf.tmpl` instead — a plain Hyprland-config fragment scripts rewrite, works today *(done 2026-08-30)*
+- [x] `run_once_before_004_create_necessary_directories.sh.tmpl` now `mkdir -p`s the dir and `touch`es `current.conf` — a deliberate, documented exception to the lazy-mkdir-in-script convention used everywhere else, because `source =` errors on a missing file and this one is read before any toggle script has ever run *(done 2026-08-30)*
+- [x] Implemented `desktop/executable_hypr-toggle {set|clear} <key> [line...]`: rewrites a `# BEGIN <key>`/`# END <key>` delimited block in `current.conf` (awk delete-between-markers, idempotent re-set/clear) then `hyprctl reload`s. Verified: set/clear round-trip leaves sibling keys' blocks untouched *(done 2026-08-30)*
+- [x] Used as the foundation for touchpad-toggle below *(done 2026-08-30)*
 
 ---
 
@@ -240,12 +243,13 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hyprland-monitor-clamshell`, `bin/omarchy-hw-clamshell`, `bin/omarchy-system-lid-close`
 
-- [ ] Add `bindl` lid switch handlers conditioned on `chassisType == "laptop"`
-- [ ] Wire to a script that disables/enables the `eDP` output via `hyprctl`
-- [ ] Make the handler idempotent and re-apply scale on reopen (v4.0.0's fix — repeated lid events must converge)
-- [ ] Guard against disabling the only active display
-- [ ] Note: interacts with HyprDynamicMonitors — check that a lid event does not fight a profile switch
-- [ ] Validate any monitor/output name against `^[A-Za-z0-9._-]+$` before writing it into a generated `.lua` file or `hyprctl eval` call (v4.0.1 fix, don't reintroduce it while porting)
+- [x] Added `bindld` lid switch handlers (`switch:on:Lid Switch` / `switch:off:Lid Switch`) in new `private_dot_config/hypr/conf/bindings/hardware.conf.tmpl` + `.lua.tmpl`, gated `{{ if eq .chassisType "laptop" }}` *(done 2026-08-30)*
+- [x] New script `desktop/executable_lid-toggle {close|open}` resolves the internal panel via `hyprctl monitors -j` (`eDP*` name), disables/enables it via `hyprctl keyword monitor` *(done 2026-08-30)*
+- [x] Idempotent: `close` persists the panel's current scale to `~/.local/state/dotfiles/lid-monitor-<name>`; `open` reapplies that scale rather than a default, so repeated cycles converge *(done 2026-08-30)*
+- [x] Guards against disabling the only active display (counts non-disabled monitors via `hyprctl monitors -j` first) *(done 2026-08-30)*
+- [x] Checked HyprDynamicMonitors: `hyprdynamicmonitors/config.toml:3` has `enable_lid_events = false` — it deliberately doesn't touch lid events, so no conflict *(verified 2026-08-30)*
+- [x] Output name validated against `^[A-Za-z0-9._-]+$` before any `hyprctl keyword` use (v4.0.1 fix pattern) — no existing in-repo helper to copy, written fresh as a small shell function shared with the touchpad-toggle item below *(done 2026-08-30)*
+- [ ] Manual end-to-end test: real lid close/open cycle on hardware (not testable in this session — no live Hyprland compositor); functional logic verified with mocked `hyprctl`/`jaq` output instead
 
 ---
 
@@ -335,10 +339,11 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Low
 **Adapt from**: `bin/omarchy-capture-qr`
 
-- [ ] Add `zbar` to `packages.yaml`
-- [ ] Implement `capture-qr`: `slurp` region → `grim -g` to stdout → `zbarimg --quiet --raw` → `wl-copy`
-- [ ] Pipe through the existing `clipboard-store` sensitive-content path so history skips it
-- [ ] Never write the decoded value to a temp file
+- [x] Added `zbar` to `packages.yaml` (`desktop_hyprland`) *(done 2026-08-30)*
+- [x] Implemented `media/executable_capture-qr`: `slurp` region → `grim -g` to stdout → `zbarimg --quiet --raw` → `wl-copy`, sharing a new `capture-region.sh` freeze/select helper with the OCR script below. Verified with mocked `slurp`/`grim`/`zbarimg`/`wl-copy` *(done 2026-08-30)*
+- [x] No extra plumbing needed for the sensitive-content path — `wl-copy` already flows through the existing `wl-paste --watch clipboard-store | cliphist store` pipeline, which runs its gitleaks filter on every clipboard write regardless of source. Noted as a documented gap in the script: gitleaks matches known secret *patterns*, so a plain-looking payload (bare Wi-Fi PSK, etc.) with no recognizable format won't be caught *(done 2026-08-30)*
+- [x] Decoded value never touches disk — piped stdout to stdout throughout *(done 2026-08-30)*
+- Bound to `CTRL + Print` in `screenshots.conf`/`.lua` *(done 2026-08-30)*
 
 ---
 
@@ -349,8 +354,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Low
 **Adapt from**: `bin/omarchy-capture-text-extraction`
 
-- [ ] Add `tesseract` and `tesseract-data-eng` to `packages.yaml`
-- [ ] Implement `capture-text-extraction`: `hyprpicker -r -z` to freeze, `slurp` to select, `grim -g` to capture, `tesseract` to extract, `wl-copy` to clipboard
+- [x] Added `tesseract` + `tesseract-data-eng` to `packages.yaml` (`desktop_hyprland`) *(done 2026-08-30)*
+- [x] Implemented `media/executable_capture-text-extraction`: `slurp` to select, `grim -g` to capture, `tesseract stdin stdout` to extract, `wl-copy` to clipboard. Used `wayfreeze` (not `hyprpicker -r -z`) for the freeze step — matches what `executable_screenshot` already uses in this repo, not Omarchy's tool. Shares the freeze/select plumbing with `capture-qr` via new `media/capture-region.sh` (extracted since 3 call sites — screenshot's own smart/windows/fullscreen modes were left untouched, too risky to retrofit for a working script with no test harness). Verified with mocked `tesseract` *(done 2026-08-30)*
+- Bound to `SUPER CTRL SHIFT + Print` in `screenshots.conf`/`.lua` *(done 2026-08-30)*
 - [ ] Share the freeze/select plumbing with `capture-qr` above
 
 ---
@@ -362,9 +368,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Medium
 **Adapt from**: `default/hypr/bindings/utilities.lua`, `bin/omarchy-capture-region`
 
-- [ ] Evaluate whether `slurp` can be driven this way at all, or whether it needs replacing
-- [ ] If pursuing: prototype the transient-bind pattern (`layer.opened`/`layer.closed` on the `selection` namespace) — useful well beyond screenshots
-- [ ] Also handles rotated monitors correctly in v4.0.0 (our `screenrecord` region picker may not)
+- [x] **Scoped down** (user decision 2026-08-30): Omarchy's full mouse-free transient-layer-bind overlay is out of scope for this pass. `executable_screenshot` already implemented `region`/`windows` modes with no keybinding attached — just bound them: `SUPER CTRL + Print` → `screenshot region`, `SUPER ALT + Print` → `screenshot windows`, in `screenshots.conf`/`.lua` *(done 2026-08-30)*
+- [ ] The full transient-bind (`layer.opened`/`layer.closed` on `selection` namespace) mouse-free overlay remains unimplemented — revisit if wanted later
+- [ ] Rotated-monitor handling in the region picker still untouched (applies to both `screenshot` and `screenrecord`)
 
 ---
 
@@ -375,10 +381,11 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-capture-screenrecording` (renamed from `omarchy-cmd-screenrecord` in v3.7.0)
 
-- [ ] Add thumbnail generation: `ffmpeg -ss 0 -vframes 1 -i "$output_file" "$thumb_file"` after recording stops
-- [ ] Add `notify-send` with thumbnail icon and open action (clicking opens in the default video player) — build the action as safe argv (e.g. `notify-send --action` handler resolved to a fixed command + validated path), not a shell-interpolated string; v4.0.1 closed a notification-click injection path in omarchy for the same reason
-- [ ] Add audio normalization pass: `ffmpeg -i input -af loudnorm=I=-14:TP=-1.5:LRA=11` (check for an audio stream first; rename file)
-- [ ] Handle rotated monitors in the region picker (v4.0.0)
+- [x] Added thumbnail generation: `ffmpeg -y -ss 0 -i "$saved_file" -vframes 1 "$thumb_file"` after recording stops. The stop branch didn't previously know the output path (only the PID was persisted) — added a sibling `${PID_FILE}.path` file written at recording start, read and removed at stop *(done 2026-08-30)*
+- [x] Added `notify-send -A "open=Open"` with the thumbnail as icon, backgrounded in a subshell (so the script itself still returns immediately) — clicking "Open" runs a fixed `xdg-open "$saved_file"` argv resolved from the returned action name, never a shell-interpolated string built from notification data (the v4.0.1 injection-class fix). Verified end-to-end with mocked `ffmpeg`/`notify-send`/`xdg-open`: thumbnail generated, action click triggered `xdg-open`, PID+path files cleaned up, tracked process actually killed *(done 2026-08-30)*
+- [ ] Audio normalization pass (`loudnorm=I=-14:TP=-1.5:LRA=11`) — not in this pass's scope, separate sub-feature
+- [ ] Rotated-monitor handling in the region picker — not in this pass's scope, separate sub-feature (also noted under the keyboard-region-picker item above)
+- [N/A] Webcam overlay crop fix — no webcam overlay compositing exists in this script at all (confirmed via exploration), nothing to fix
 
 ---
 
@@ -444,14 +451,14 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ### `paccache` pruning + low-disk-space guard before updates (v4.0.0, v4.0.1)
 
-**What**: Omarchy prunes the package cache with `paccache -rk2` as the **first** update step — before the snapshot, so the space is actually reclaimed — keeping one spare version for the offline downgrade path, and warns when disk space is low before updating. v4.0.1's Improvements list reconfirms "package cache pruned before updating" as part of the same update flow. Our `system-maintenance` uses `pacman -Sc --noconfirm`, which is blunter: it drops *all* cached versions, removing the downgrade path entirely.
+**What**: Omarchy prunes the package cache with `paccache -rk2` as the **first** update step — before the snapshot, so the space is actually reclaimed — keeping one spare version for the offline downgrade path, and warns when disk space is low before updating. v4.0.1's Improvements list reconfirms "package cache pruned before updating" as part of the same update flow.
+**Correction (2026-08-30)**: this item's premise was stale — `system-maintenance` does **not** use `pacman -Sc --noconfirm`; `--cleanup` already runs `paccache -rk2` + `paccache -ruk0` (with a comment explicitly documenting why `-Sc` is avoided). Only the free-space warning was actually missing.
 **Target files**: `private_dot_local/lib/scripts/system/executable_system-maintenance`
 **Effort**: Low
 **Adapt from**: `bin/omarchy-update-pkg-prune`, `bin/omarchy-update-requires-free-space`
 
-- [ ] Replace `sudo pacman -Sc --noconfirm` with `sudo paccache -rk2` (keeps 2 versions; `pacman-contrib` already in packages)
-- [ ] Add `paccache -ruk0` to drop cached versions of uninstalled packages
-- [ ] Add a free-space check before the update step with a clear warning
+- [x] `paccache -rk2` + `paccache -ruk0` already implemented in `--cleanup` *(confirmed pre-existing, 2026-08-30)*
+- [x] Added a free-space check to the `--update` path: warns via `ui_warning` (non-blocking, matches the script's non-interactive automation style) when `/` has under 2GiB free, before `pacman -Syu` runs *(done 2026-08-30)*
 - [N/A] Order the prune before any Timeshift snapshot — `system-maintenance` has no snapshot step: `--update` and `--cleanup` are separate options and neither invokes Timeshift, so there is no ordering to fix *(verified 2026-08-30)*
 
 ---
@@ -616,11 +623,12 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hw-touchpad`
 
-- [ ] Depends on: persistent Hyprland toggle system (P2 item)
-- [ ] Implement `touchpad-toggle`: `hyprctl keyword device[...].enabled false/true` + `notify-send` OSD
-- [ ] Persist state via a toggle conf file
-- [ ] Store the disabled device name as plain-text data (not interpolated into a `.lua`/`hyprctl eval` string) — Lua-quote and reject control characters if it must reach `hyprctl eval` at all; this is the exact v4.0.1 fix in `omarchy-toggle-input-device`
-- [ ] Bind `XF86TouchpadToggle` (hardware key, not a new chord — acceptable under the keybindings preference)
+- [x] Depends on: persistent Hyprland toggle system (P2 item) — built first *(done 2026-08-30)*
+- [x] Implemented `desktop/executable_touchpad-toggle`: finds the touchpad via `hyprctl devices -j`, toggles live via `hyprctl keyword "device[$name]:enabled" true/false`, `notify-send` OSD *(done 2026-08-30)*
+- [x] **Post-apply bug found and fixed**: the initial name-match regex (`test("touchpad")`) worked against a mocked device name but failed on this machine's real hardware — `hyprctl devices -j` reports it as `synaptics-tm3512-010`, no literal "touchpad" substring. Widened the match to `touchpad|synaptics|clickpad|alps|elan` (excluding `trackpoint|trackball`, since some trackpoints are also Elan-branded). Verified end-to-end on real hardware after `chezmoi apply`: two full toggle cycles, `current.conf` block and marker file appeared/cleared correctly each time, touchpad left enabled *(done 2026-08-30)*
+- [x] Persisted via `hypr-toggle set/clear touchpad` (item above) plus a boolean marker file (`~/.local/state/dotfiles/touchpad-disabled`) tracking current state across invocations *(done 2026-08-30)*
+- [x] Device name validated against `^[A-Za-z0-9._:-]+$` (expanded from item 5's pattern to allow `:`, which real touchpad device names use) before it reaches the `hyprctl keyword` string or the persisted config fragment — passed as a quoted argv element, never `eval`'d — the exact v4.0.1 `omarchy-toggle-input-device` fix class *(done 2026-08-30)*
+- [x] Bound `XF86TouchpadToggle` (`bindld` — locked, so it works even from the lock screen, matching the v4.0.1 finding that this bind is reachable while locked) in `hardware.conf.tmpl`/`.lua.tmpl` alongside the lid bindings, laptop-gated *(done 2026-08-30)*
 
 ---
 
