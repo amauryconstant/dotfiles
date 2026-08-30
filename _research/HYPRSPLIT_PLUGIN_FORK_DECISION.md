@@ -50,6 +50,34 @@ Hyprland to the last known-good release as a stopgap (see `package-manager pin` 
 `cmd-update.sh` does not currently respect version pins, so a real Hyprland pin would need
 `IgnorePkg` in `/etc/pacman.conf` too, not packages.yaml alone).
 
+## The fork switch has not taken effect yet
+
+The fork is consumed as a **Lua library**, not (only) as a compiled hyprpm plugin.
+`run_once_before_008_setup_hyprland_plugins.sh.tmpl` clones `cryeprecision/hyprsplit` to
+`~/.config/hypr/hyprsplit`, and its `init.lua` is what `conf/plugins.lua` and
+`conf/bindings/workspace-management.lua` reach via `require("hyprsplit")`. That path sidesteps the
+C++ build entirely — no Hyprland internal headers, so no header-lag breakage.
+
+But the live session is still on the old plugin (checked 2026-08-30):
+
+```
+$ hyprctl plugin list
+Plugin hyprsplit by shezdy:  Version: 1.0  Description: split monitor workspaces
+$ ls -A ~/.local/share/hyprpm/     # empty
+```
+
+That's **shezdy's** pre-fork C++ build, loaded because `autostart.conf` still runs
+`exec-once = hyprpm reload -n`. So the URL change in commit `df0bcce` is committed but inert.
+
+It takes effect at the **Lua cutover**: `autostart.lua` deliberately drops that
+`hyprpm reload -n`, so once `hyprland.lua` becomes the entry point the C++ plugin stops loading and
+hyprsplit comes from the fork's Lua library instead. Two changes ride one reboot — see
+`_research/HYPRLAND_LUA_MIGRATION.md` → "The hyprsplit coupling".
+
+Practical consequence: the fork's *build* health (the "When to Revisit" checks above) matters less
+after cutover than its *Lua API* stability. The five APIs we call are `config`, `dsp.focus`,
+`dsp.window.move`, `dsp.workspace.swap_monitors`, `dsp.grab_rogue_windows`.
+
 ## Related
 
 Separately, this repo is deliberately staying on legacy `.conf` mode (not the parallel `.lua`
