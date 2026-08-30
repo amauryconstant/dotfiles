@@ -25,3 +25,11 @@ o.bind(
 	"Fullscreen recording with audio",
 	"~/.local/lib/scripts/desktop/screenrecord --with-audio"
 )
+
+-- Region/window screenshot without smart-snap
+o.bind("SUPER + CTRL + Print", "Region screenshot", "~/.local/lib/scripts/media/screenshot region")
+o.bind("SUPER + ALT + Print", "Window screenshot", "~/.local/lib/scripts/media/screenshot windows")
+
+-- QR code / OCR capture from a screen region
+o.bind("CTRL + Print", "Capture QR code", "~/.local/lib/scripts/media/capture-qr")
+o.bind("SUPER + CTRL + SHIFT + Print", "Capture text (OCR)", "~/.local/lib/scripts/media/capture-text-extraction")

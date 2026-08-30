@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+# Script: capture-qr
+# Purpose: Select a screen region, decode any QR code inside it to the clipboard
+# Requirements: slurp, grim, zbar (zbarimg), wl-copy, wayfreeze (optional)
+# Bound to: hardware.conf.tmpl / screenshots.conf (see repo bindings)
+#
+# The decoded value never touches disk. wl-copy flows into the existing
+# `wl-paste --watch clipboard-store | cliphist store` pipeline (autostart.conf),
+# so gitleaks-pattern secrets in the payload are already filtered the same way
+# any other clipboard write is — but a plain-looking payload (e.g. a bare
+# Wi-Fi password with no recognizable secret format) won't be caught by that.
+
+SCRIPT_DIR=$(dirname -- "$0")
+# shellcheck source=capture-region.sh
+. "$SCRIPT_DIR/capture-region.sh"
+
+command -v zbarimg >/dev/null 2>&1 || { notify-send "🔳 QR Capture" "zbar not installed" -t 2000; exit 1; }
+
+geometry=$(capture_region_select) || { notify-send "🔳 QR Capture" "Cancelled" -t 2000; exit 1; }
+
+decoded=$(grim -g "$geometry" - | zbarimg --quiet --raw - 2>/dev/null)
+
+if [ -z "$decoded" ]; then
+    notify-send "🔳 QR Capture" "No QR code found in selection" -t 2000
+    exit 1
+fi
+
+printf '%s' "$decoded" | wl-copy
+notify-send "🔳 QR Capture" "Decoded value copied to clipboard" -t 2000
