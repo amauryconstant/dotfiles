@@ -23,6 +23,7 @@ struct UploadableModule {
     metadata: SharingMetadata,
     is_directory: bool,
     is_lua: bool,
+    is_nix: bool,
 }
 
 /// Current phase of the upload process
@@ -157,6 +158,8 @@ impl UploadScreenState {
                 modules_dir.join(&module_info.name)
             } else if module_info.is_lua {
                 modules_dir.join(format!("{}.lua", &module_info.name))
+            } else if module_info.is_nix {
+                modules_dir.join(format!("{}.nix", &module_info.name))
             } else {
                 // Skip legacy single-file YAML modules
                 continue;
@@ -172,6 +175,7 @@ impl UploadScreenState {
                             metadata,
                             is_directory: module_info.is_directory,
                             is_lua: module_info.is_lua,
+                            is_nix: module_info.is_nix,
                         });
                     }
                 }
@@ -234,6 +238,8 @@ impl UploadScreenState {
                     "[dir]"
                 } else if m.is_lua {
                     "[lua]"
+                } else if m.is_nix {
+                    "[nix]"
                 } else {
                     "[yaml]"
                 };

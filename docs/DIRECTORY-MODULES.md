@@ -10,8 +10,9 @@ A directory module follows this structure:
 
 ```
 modules/module-name/
-├── module.yaml                 # Module manifest (YAML)
-├── module.lua                  # OR Module manifest (Lua) - takes precedence
+├── module.nix                  # Module manifest (Nix) - takes precedence
+├── module.lua                  # OR Module manifest (Lua)
+├── module.yaml                 # OR Module manifest (YAML)
 ├── packages.yaml               # Optional: Package files (auto-discovered)
 ├── packages-*.yaml             # Optional: Additional package files
 ├── scripts/                    # Optional: Post-install scripts
@@ -21,7 +22,7 @@ modules/module-name/
     └── ...
 ```
 
-> **Note:** If both `module.lua` and `module.yaml` exist, `module.lua` takes precedence.
+> **Note:** Precedence order: `module.nix` > `module.lua` > `module.yaml`. If multiple manifest formats exist, the highest precedence one is used.
 
 ### Nested Modules
 
@@ -46,14 +47,15 @@ modules/
         └── packages.yaml
 ```
 
-## Module Manifest (module.yaml or module.lua)
+## Module Manifest (module.nix, module.lua, or module.yaml)
 
-The module manifest file defines the module's metadata and configuration. You can use either:
+The module manifest file defines the module's metadata and configuration. You can use:
 
+- **`module.nix`** - Nix-based configuration (dynamic, highest precedence)
+- **`module.lua`** - Dynamic Lua configuration
 - **`module.yaml`** - Static YAML configuration (simpler)
-- **`module.lua`** - Dynamic Lua configuration (more powerful)
 
-If both exist, `module.lua` takes precedence.
+Precedence: `module.nix` > `module.lua` > `module.yaml`. If multiple exist, the highest precedence one is used.
 
 ### YAML Manifest (module.yaml)
 
@@ -121,7 +123,51 @@ return {
 - Dotfiles sync should be conditional
 - Hook behavior depends on environment
 
-See [LUA-MODULES.md](LUA-MODULES.md) for complete Lua API documentation.
+See [LUA-MODULES.md](LUA-MODULES.md) for complete Lua API documentation, or [NIX-MODULES.md](NIX-MODULES.md) for Nix-based modules.
+
+### Nix Manifest (module.nix)
+
+For maximum flexibility, use `module.nix` instead of `module.lua` or `module.yaml`. Nix manifests are evaluated with full access to `nixpkgs` and system facts (hostname, hardware info, etc.), enabling complex conditional logic.
+
+```nix
+{ pkgs, system }: {
+  description = "Development tools";
+  packages = [
+    "git"
+    "vim"
+    "htop"
+  ];
+  conflicts = [ "minimal" ];
+  post_install_hook = "scripts/setup.sh";
+}
+```
+
+Packages with type prefixes are also supported:
+
+```nix
+{ pkgs, system }: {
+  description = "Multimedia apps";
+  packages = [
+    "vlc"
+    "gimp"
+  ];
+  flatpak_packages = [
+    "com.spotify.Client"
+    "org.blender.Blender"
+  ];
+  nix_packages = [
+    "helix"
+  ];
+}
+```
+
+**When to use module.nix:**
+- You prefer Nix over Lua for configuration
+- You want access to `nixpkgs` for dynamic package selection
+- Complex conditional logic based on system facts
+- Integration with existing Nix workflows
+
+> **Note:** `module.nix` requires `nix` to be installed. If `nix` is not available, dcli falls back to `module.lua` or `module.yaml`.
 
 ## Package Files
 
@@ -410,7 +456,7 @@ dcli sync --dry-run
 Directory modules are validated for:
 
 1. **Module Structure**
-   - `module.yaml` must exist
+   - `module.nix`, `module.lua`, or `module.yaml` must exist
    - Module directory must be valid
 
 2. **Description**
@@ -438,6 +484,7 @@ Directory modules are validated for:
 | Feature | Legacy Module | Directory Module |
 |---------|---------------|------------------|
 | **Structure** | Single `.yaml` file | Directory with multiple files |
+| **Manifest Format** | YAML only | Nix, Lua, or YAML (`module.nix` > `module.lua` > `module.yaml`) |
 | **Package Files** | One file only | Multiple files (auto-discovered or explicit) |
 | **Scripts** | External path only | Native `scripts/` subdirectory |
 | **Hooks** | Absolute path required | Relative path from module root |

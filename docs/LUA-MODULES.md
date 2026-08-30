@@ -1600,5 +1600,6 @@ This checks both modules and config files for errors.
 ## Related Documentation
 
 - [DIRECTORY-MODULES.md](DIRECTORY-MODULES.md) - Directory-based module format
+- [NIX-MODULES.md](NIX-MODULES.md) - Nix module format and guide
 - [README.md](README.md) - Main dcli documentation
 - [SERVICES.md](SERVICES.md) - Services management

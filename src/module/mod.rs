@@ -93,7 +93,13 @@ impl ModuleManager {
                 .to_string();
 
             // Load module using new loader
-            let module = crate::config::load_module(path)?;
+            let module = match crate::config::load_module(path) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::warn!("Failed to load module '{}': {}", module_name, e);
+                    continue;
+                }
+            };
             let pkg_count = module.packages().len();
 
             modules.push(ModuleInfo {
@@ -104,6 +110,7 @@ impl ModuleManager {
                 post_install_hook: module.post_install_hook().map(|s| s.to_string()),
                 is_directory: module.is_directory(),
                 is_lua: ext == "lua",
+                is_nix: ext == "nix",
             });
 
             seen_names.insert(module_name);
@@ -124,10 +131,11 @@ impl ModuleManager {
                 continue;
             }
 
-            // Check if this directory contains a module.lua or module.yaml
+            // Check if this directory contains a module.lua, module.yaml, or module.nix
             let has_lua_manifest = path.join("module.lua").exists();
             let has_yaml_manifest = path.join("module.yaml").exists();
-            if !has_lua_manifest && !has_yaml_manifest {
+            let has_nix_manifest = path.join("module.nix").exists();
+            if !has_lua_manifest && !has_yaml_manifest && !has_nix_manifest {
                 continue;
             }
 
@@ -150,7 +158,13 @@ impl ModuleManager {
             }
 
             // Load directory module
-            let module = crate::config::load_module(path)?;
+            let module = match crate::config::load_module(path) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::warn!("Failed to load directory module '{}': {}", module_name, e);
+                    continue;
+                }
+            };
             let pkg_count = module.packages().len();
 
             modules.push(ModuleInfo {
@@ -161,6 +175,7 @@ impl ModuleManager {
                 post_install_hook: module.post_install_hook().map(|s| s.to_string()),
                 is_directory: module.is_directory(),
                 is_lua: false,
+                is_nix: has_nix_manifest,
             });
 
             seen_names.insert(module_name);
@@ -389,6 +404,7 @@ pub struct ModuleInfo {
     pub post_install_hook: Option<String>,
     pub is_directory: bool,
     pub is_lua: bool,
+    pub is_nix: bool,
 }
 
 #[cfg(test)]
