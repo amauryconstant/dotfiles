@@ -75,6 +75,7 @@ packages:
         - man-pages # Linux manual pages
         - sudo # Essential system package
         - gptfdisk # Disk partitioning tool
+        - dosfstools # FAT tools (fsck.fat, mkfs.fat) — /boot ESP repair
         - systemd-ukify # Unified kernel image generation
         - smartmontools # SMART disk health monitoring
         - btrfs-progs # Btrfs filesystem utilities
