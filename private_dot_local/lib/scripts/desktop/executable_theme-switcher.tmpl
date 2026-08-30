@@ -91,6 +91,14 @@ reload_applications() {
     if pgrep -x ghostty >/dev/null; then
         killall -SIGUSR2 ghostty 2>/dev/null
     fi
+
+    # Reload the Quickshell bar's Theme singleton.
+    # Explicit IPC rather than a file watch: switching swaps the
+    # themes/current SYMLINK, so inotify on the resolved colors.sh never
+    # fires. -c dotfiles is required — without it the call targets config
+    # name 'default', and voxtype runs a second instance.
+    # || true because the shell may not be running.
+    quickshell -c dotfiles ipc call theme reload >/dev/null 2>&1 || true
 }
 
 # Switch to a new theme
