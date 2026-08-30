@@ -1,15 +1,33 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-08-24 (through v4.0.0).
+Last updated: 2026-08-30 (through v4.0.1).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
 > **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself is out of scope (we use Waybar + Wofi + hyprlock/hypridle), but three sub-currents are directly relevant to us: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
+>
+> **v4.0.1 context**: A security-focused patch backporting fixes from the post-Quattro `quattro` branch — four CVE-class fixes (FIDO2 authfile symlink/ownership, USB/monitor device names executed as Hyprland Lua, theme-install code execution, video-title command forging) plus hardening, and one default-behavior reversal: **sudoless Docker group membership is no longer granted automatically**, because it is root-equivalent. Our `services.yaml` still grants it unconditionally — tracked as new P1 below. The device-name-as-Lua fix also lands directly on two of our own *not-yet-implemented* backlog items (touchpad toggle, clamshell handling) that were adapted from the exact scripts that had the bug.
 
 ---
 
 ## P1 — High Priority
+
+### Sudoless Docker group granted by default (v4.0.1)
+
+**What**: `docker` group membership is root-equivalent — `docker run -v /:/host busybox chroot /host` rewrites the host filesystem as root, no password required. Omarchy granted this by default for years and reversed it in v4.0.1: the group is no longer added on install/first-boot/upgrade, a migration strips it from existing installs, and the Docker CLI/TUI now route through `sudo`/polkit instead. Our `services.yaml` grants it unconditionally with no opt-in gate: the `docker.socket` entry carries `user_groups: [docker]`, applied via `usermod -aG` in `run_once_after_002_configure_system_services.sh.tmpl`.
+**Target files**: `.chezmoidata/services.yaml`, `.chezmoiscripts/run_once_after_002_configure_system_services.sh.tmpl`, `.chezmoidata/packages.yaml` (`lazydocker`)
+**Effort**: Medium
+**Conflict**: Removing the auto-grant breaks any existing workflow assuming plain `docker`/`lazydocker` works without `sudo`; existing group membership also persists across `chezmoi apply` (nothing in the script reverts a prior grant) until explicitly removed.
+**Adapt from**: `bin/omarchy-remove-security-sudoless-docker`, `applications/Docker.desktop`, `bin/omarchy-launch-docker-tui`
+
+- [ ] Decide policy: accept the risk on a single-user desktop, or gate the grant behind an explicit opt-in (matching omarchy's reversal)
+- [ ] If gating: drop `user_groups: [docker]` from the `docker.socket` entry in `services.yaml`; default to `sudo docker`/`sudo lazydocker`
+- [ ] If gating: provide (or document) a manual revocation path for machines that already have the grant — `sudo gpasswd -d $USER docker` + reboot; `usermod -aG` has no automatic reverse in our script today
+- [ ] If keeping the grant: record the accepted risk explicitly in `private_dot_local/lib/scripts/system/CLAUDE.md` → Package Security Policy, since this repo is otherwise security-first
+- [ ] Either way: note that `lazydocker` (already in `packages.yaml`) needs the same access path the CLI gets — don't leave it with a stale sudoless assumption
+
+---
 
 ### Waybar toggle leaves a stale process (v3.8.4)
 
@@ -73,7 +91,7 @@ The real question is only whether Waybar has shipped PR #5013 (`fix(hyprland/wor
 
 Re-checked 2026-08-30: **merged 2026-05-04** into master; latest release still **0.15.0 (2026-02-06)**, predating it; Arch `extra` still ships `waybar 0.15.0-2`; no 0.16.0 exists. The fix is upstream but in no tagged release. Full state recorded in `.chezmoiignore` so the next check is a version comparison, not a re-investigation.
 
-**Cutover runbook**: `_research/HYPRLAND_LUA_MIGRATION.md` — hold status, audit findings, verified prerequisites, cutover/rollback steps, hyprsplit coupling risk.
+**Cutover runbook**: `_guides/HYPRLAND_LUA_CUTOVER.md` — hold status, cutover/rollback steps, hyprsplit coupling risk. Audit findings/verified prerequisites: `_research/HYPRLAND_LUA_AUDIT.md`.
 
 `Hyprland --verify-config` exists ("Do not run Hyprland, only print if the config has any errors"). The entry point is chezmoiignore'd, so render it to a temp path first — it resolves the rest of the tree through `package.path` against the deployed `~/.config/hypr`:
 
@@ -169,10 +187,10 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 
 ---
 
-### Semantic `colors.toml` + template-rendered app themes (v3.3.0, v3.3.1, v4.0.0)
+### Semantic `colors.toml` + template-rendered app themes (v3.3.0, v3.3.1, v4.0.0, v4.0.1)
 
 **What**: v4.0.0 replaced the ANSI-indexed `color0`–`color15` schema with a **24-key semantic colorset** (`mode`, `accent`, `selection`, `muted`, four `*background`, four `*foreground`, named + `bright_*` colors) and renders every app theme from `default/themed/*.tpl` at theme-set time — btop, neovim, VS Code, Helix, Chromium, foot, ghostty, kitty, alacritty, `hyprland.lua`, `shell.toml`. Per-theme `btop.theme` files are dropped entirely. Placeholders are `{{ key }}`, `{{ key_strip }}` (no `#`), `{{ key_rgb }}`, plus `{{ mix background foreground 15% }}` and gradient helpers. User templates at `~/.config/omarchy/themed/*.tpl` render first and suppress the built-in; a hand-written per-theme file still wins over the template.
-This directly parallels our 24-semantic-variable architecture (`colors.sh` with `BG_*`/`FG_*`/`ACCENT_*`), but we still hand-maintain ~20 config files per theme across 8 themes. The v4.0.0 design is now stable enough to evaluate seriously — including the per-theme escape hatch, which is what makes template generation tolerable.
+This directly parallels our 24-semantic-variable architecture (`colors.sh` with `BG_*`/`FG_*`/`ACCENT_*`), but we still hand-maintain ~20 config files per theme across 8 themes. The v4.0.0 design is now stable enough to evaluate seriously — including the per-theme escape hatch, which is what makes template generation tolerable. v4.0.1 sharpened this further: for themes installed via `omarchy theme install <url>` (i.e. not first-party or user-authored), staging now copies **only** `colors.toml`, `light.mode`, images, and `backgrounds/*` — the four terminal configs, `*.lua`, and `vscode.json` are dropped and generated from `default/themed/*.tpl` instead, closing a code-execution path where a downloaded theme's Lua/config ran at theme-set time. That reframes "hand-written wins over template" as a **trust boundary**, not just a maintenance escape hatch: generation becomes mandatory, not merely default, for anything not first-party/self-authored.
 **Target files**: `private_dot_config/themes/`, `private_dot_config/themes/CLAUDE.md`, theme generation scripts
 **Effort**: High
 
@@ -181,6 +199,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [ ] Adopt the "hand-written per-theme file wins over the template" precedence rule — several of our themes have deliberate manual tuning that must not be flattened
 - [ ] Decide whether generation runs at chezmoi apply time (template) or theme-switch time (script); the chezmoi route avoids a second templating engine
 - [ ] Keep the existing hand-written files in place until the generated set is validated — do not delete on the same change
+- [ ] If we ever add "install theme from an external source": make generation mandatory (not just default) for anything not repo-owned or self-authored — this is the security boundary v4.0.1 added, not just a maintenance nicety
 
 ---
 
@@ -214,9 +233,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Lid / clamshell display handling (v3.6.0, v4.0.0)
+### Lid / clamshell display handling (v3.6.0, v4.0.0, v4.0.1)
 
-**What**: Internal display auto-toggles via Hyprland `bindl` on `switch:on:Lid Switch` / `switch:off:Lid Switch`. v4.0.0 adds idempotent scale recovery on clamshell transitions and a lid-close handler, fixing the case where reopening the lid leaves the internal panel at the wrong scale. Only relevant on laptops (`chassisType == "laptop"`).
+**What**: Internal display auto-toggles via Hyprland `bindl` on `switch:on:Lid Switch` / `switch:off:Lid Switch`. v4.0.0 adds idempotent scale recovery on clamshell transitions and a lid-close handler, fixing the case where reopening the lid leaves the internal panel at the wrong scale. Only relevant on laptops (`chassisType == "laptop"`). v4.0.1 fixed a code-execution bug in the exact script this item adapts from: monitor names sourced from `hyprctl` output (attacker-influenceable) were interpolated unvalidated into generated `.lua` files that Hyprland re-executes on reload — the fix validates output names against `^[A-Za-z0-9._-]+$` before writing them as Lua.
 **Target files**: `private_dot_config/hypr/conf/bindings/desktop-utilities.conf` + `.lua` (or a new `hardware.conf`)
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hyprland-monitor-clamshell`, `bin/omarchy-hw-clamshell`, `bin/omarchy-system-lid-close`
@@ -226,6 +245,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [ ] Make the handler idempotent and re-apply scale on reopen (v4.0.0's fix — repeated lid events must converge)
 - [ ] Guard against disabling the only active display
 - [ ] Note: interacts with HyprDynamicMonitors — check that a lid event does not fight a profile switch
+- [ ] Validate any monitor/output name against `^[A-Za-z0-9._-]+$` before writing it into a generated `.lua` file or `hyprctl eval` call (v4.0.1 fix, don't reintroduce it while porting)
 
 ---
 
@@ -356,7 +376,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 **Adapt from**: `bin/omarchy-capture-screenrecording` (renamed from `omarchy-cmd-screenrecord` in v3.7.0)
 
 - [ ] Add thumbnail generation: `ffmpeg -ss 0 -vframes 1 -i "$output_file" "$thumb_file"` after recording stops
-- [ ] Add `notify-send` with thumbnail icon and open action (clicking opens in the default video player)
+- [ ] Add `notify-send` with thumbnail icon and open action (clicking opens in the default video player) — build the action as safe argv (e.g. `notify-send --action` handler resolved to a fixed command + validated path), not a shell-interpolated string; v4.0.1 closed a notification-click injection path in omarchy for the same reason
 - [ ] Add audio normalization pass: `ffmpeg -i input -af loudnorm=I=-14:TP=-1.5:LRA=11` (check for an audio stream first; rename file)
 - [ ] Handle rotated monitors in the region picker (v4.0.0)
 
@@ -422,9 +442,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### `paccache` pruning + low-disk-space guard before updates (v4.0.0)
+### `paccache` pruning + low-disk-space guard before updates (v4.0.0, v4.0.1)
 
-**What**: Omarchy prunes the package cache with `paccache -rk2` as the **first** update step — before the snapshot, so the space is actually reclaimed — keeping one spare version for the offline downgrade path, and warns when disk space is low before updating. Our `system-maintenance` uses `pacman -Sc --noconfirm`, which is blunter: it drops *all* cached versions, removing the downgrade path entirely.
+**What**: Omarchy prunes the package cache with `paccache -rk2` as the **first** update step — before the snapshot, so the space is actually reclaimed — keeping one spare version for the offline downgrade path, and warns when disk space is low before updating. v4.0.1's Improvements list reconfirms "package cache pruned before updating" as part of the same update flow. Our `system-maintenance` uses `pacman -Sc --noconfirm`, which is blunter: it drops *all* cached versions, removing the downgrade path entirely.
 **Target files**: `private_dot_local/lib/scripts/system/executable_system-maintenance`
 **Effort**: Low
 **Adapt from**: `bin/omarchy-update-pkg-prune`, `bin/omarchy-update-requires-free-space`
@@ -576,88 +596,22 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Theme-install input hardening (v4.0.0)
+### Theme-install input hardening (v4.0.0, v4.0.1)
 
-**What**: v4.0.0 closed three theme-install code-execution paths: `colors.toml` values reaching GNU `sed`'s `e` flag, an unescaped VS Code theme name, and unvalidated keyboard RGB values. Our themes are repo-owned and chezmoi-managed (low risk today), but `colors.sh` is `source`d by scripts — arbitrary shell in a theme file executes. This matters if theme import from external sources is ever added, or if the template-generation work above lands.
+**What**: v4.0.0 closed three theme-install code-execution paths: `colors.toml` values reaching GNU `sed`'s `e` flag, an unescaped VS Code theme name, and unvalidated keyboard RGB values. v4.0.1 went further than input validation: for non-first-party themes, executable files (`*.lua`, terminal configs, `vscode.json`) are no longer staged at all — they're generated from templates instead. That's a stronger boundary than sanitizing values, and directly informs the P2 template-rendering item above. Our themes are repo-owned and chezmoi-managed (low risk today), but `colors.sh` is `source`d by scripts — arbitrary shell in a theme file executes. This matters if theme import from external sources is ever added, or if the template-generation work above lands.
 **Target files**: `private_dot_config/themes/CLAUDE.md`, theme generation/apply scripts
 **Effort**: Low
 
 - [ ] Document the trust boundary in `themes/CLAUDE.md`: theme files are executed, therefore repo-owned only
 - [ ] If template generation lands: validate color values against `^#[0-9a-fA-F]{6}$` before substitution, and never pass theme-derived values through `sed` expressions
+- [ ] Prefer "don't stage executable theme files at all" over "sanitize values" if external theme import is ever added — matches the v4.0.1 approach, stronger than input validation alone
 - [ ] Never add an "import theme from URL" feature without this in place
 
 ---
 
-### Unified CLI dispatch by metadata header (v4.0.0)
+### Touchpad toggle with OSD and persistence (v3.6.0, v4.0.1)
 
-**What**: `bin/omarchy` dispatches ~35 grouped subcommands by **scanning metadata headers in `bin/omarchy-*`** rather than maintaining a dispatch table. We have a lazy-loading CLI architecture in `private_dot_local/bin/` + `lib/scripts/<domain>/` — the header-scan pattern would let subcommand registration follow the files.
-**Target files**: `private_dot_local/bin/CLAUDE.md`, `private_dot_local/lib/scripts/CLAUDE.md`
-**Effort**: Medium
-
-- [ ] Compare against our current lazy-loading dispatch — our per-domain directory layout may already give registration-by-convention for free
-- [ ] Only worth adopting if we hit a real maintenance cost in the current approach
-
----
-
-### Background cycling with glob characters in filenames (v4.0.0)
-
-**What**: Background cycling broke on filenames containing glob characters. Our `random-wallpaper` and `set-wallpaper` scripts iterate wallpaper files.
-**Target files**: `private_dot_local/lib/scripts/media/executable_random-wallpaper.tmpl`, `executable_set-wallpaper.tmpl`
-**Effort**: Low
-
-- [ ] Audit both scripts for unquoted expansions / `ls` parsing over wallpaper filenames
-- [ ] Test with a wallpaper named e.g. `sunset [2].jpg`
-
----
-
-### `mup` alias — mise update bypassing the release-age guard (v3.8.3)
-
-**What**: `mup='MISE_MINIMUM_RELEASE_AGE=0 mise up'` — updates mise tools without waiting out the release-age cooldown. We use mise (`developer.mise.enabled`).
-**Target files**: `private_dot_config/zsh/dot_zshrc.d/aliases.zsh`
-**Effort**: Low
-
-- [ ] Confirm we actually set `MISE_MINIMUM_RELEASE_AGE` (if unset, the alias is pointless)
-- [ ] If set: add `alias mup='MISE_MINIMUM_RELEASE_AGE=0 mise up'`
-
----
-
-### Lazy-load CLI tools via mise instead of npm (v4.0.0)
-
-**What**: Omarchy moved Claude Code and GitHub CLI from npm/pacman to mise-managed lazy-loaded installs, with wrappers keeping them on current releases rather than waiting out the release cooldown. We already manage Node tooling via mise, so this is largely aligned — worth checking Claude Code and `gh` specifically.
-**Target files**: `.chezmoidata/packages.yaml`, mise config
-**Effort**: Low
-
-- [ ] Check how `claude-code` and `github-cli` are currently installed here
-- [ ] If via pacman/npm, evaluate moving to mise for faster release tracking
-
----
-
-### `dosfstools` for FAT filesystem repair (v3.7.0)
-
-**What**: Provides `fsck.fat` and `mkfs.fat` for /boot ESP repair. Lightweight, no conflicts.
-**Target files**: `.chezmoidata/packages.yaml`
-**Effort**: Low
-
-- [ ] Add `dosfstools` to `system_utilities` in `packages.yaml`
-
----
-
-### Reminder system (v3.8.0)
-
-**What**: CLI to set one-shot reminders via systemd timers with desktop notifications. Set, show all, clear all.
-**Target files**: `private_dot_local/lib/scripts/desktop/`, `private_dot_config/hypr/conf/bindings/desktop-utilities.conf`
-**Effort**: Medium
-**Adapt from**: `bin/omarchy-reminder`
-
-- [ ] Implement `reminder` script: parse duration input ("30m", "2h"), create a one-shot `systemd-run --user` timer firing `notify-send`
-- [ ] Add list and clear subcommands
-- [ ] Bindings deferred per the no-new-keybindings preference — reachable via the utilities menu instead
-
----
-
-### Touchpad toggle with OSD and persistence (v3.6.0)
-
-**What**: Touchpad `on`/`off`/`toggle` with state persisted via the toggle system. Hardware keys `XF86TouchpadOn/Off/Toggle`. Laptop-relevant only.
+**What**: Touchpad `on`/`off`/`toggle` with state persisted via the toggle system. Hardware keys `XF86TouchpadOn/Off/Toggle`. Laptop-relevant only. v4.0.1 fixed a code-execution bug in the exact script this adapts from (`omarchy-toggle-input-device`): the disabled device name comes from USB descriptors (attacker-influenceable) and was interpolated unvalidated into `hyprctl eval` and a generated `.lua` file Hyprland re-executes on reload — reachable even from the **locked** `XF86TouchpadToggle` binding, since that bind is `locked = true`.
 **Target files**: `private_dot_config/hypr/conf/bindings/`, `private_dot_local/lib/scripts/desktop/`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-hw-touchpad`
@@ -665,6 +619,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [ ] Depends on: persistent Hyprland toggle system (P2 item)
 - [ ] Implement `touchpad-toggle`: `hyprctl keyword device[...].enabled false/true` + `notify-send` OSD
 - [ ] Persist state via a toggle conf file
+- [ ] Store the disabled device name as plain-text data (not interpolated into a `.lua`/`hyprctl eval` string) — Lua-quote and reject control characters if it must reach `hyprctl eval` at all; this is the exact v4.0.1 fix in `omarchy-toggle-input-device`
 - [ ] Bind `XF86TouchpadToggle` (hardware key, not a new chord — acceptable under the keybindings preference)
 
 ---
@@ -738,12 +693,23 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
+### Switch `mise` to the packaged `mise-bin` (v4.0.1)
+
+**What**: Omarchy switched from a source-built `mise` install to the `mise-bin` package (packaged binary distribution) — faster installs/updates, no build step. We install plain `mise` in `packages.yaml` (`developer.mise.enabled` gates whether the toolchain is set up, not which package resolves).
+**Target files**: `.chezmoidata/packages.yaml`
+**Effort**: Low
+
+- [ ] Check whether our `mise` package currently builds from source or already resolves to a binary release
+- [ ] If from-source: switch to `mise-bin` for faster installs, same binary/CLI
+
+---
+
 ## Completed
 
 - [x] **Sticky CWD when opening a new terminal** (v2.0.0, v4.0.0) — `SUPER + Return` launches the terminal with `--working-directory=$(terminal-cwd)`; script at `private_dot_local/lib/scripts/terminal/executable_terminal-cwd` *(confirmed 2026-08-24)*
 - [x] **`fip`/`dip`/`lip` zsh parsing** (v3.4.0, v4.0.0) — v4.0.0 fixed omarchy's bash functions misparsing under zsh; our `ssh-port-forwarding.zsh` is a native zsh rewrite using `(( $# ))` and `for port in "$@"`, unaffected *(confirmed 2026-08-24)*
 - [x] **Clipboard sensitive-content exclusion** (v1.3.1, v4.0.0) — `clipboard-store` wrapper filters by window class/title; v4.0.0's native equivalent adds nothing we lack *(confirmed 2026-08-24)*
-- [x] **`quickshell` package** (v4.0.0) — already in `packages.yaml`, driving the voxtype waveform OSD overlay; the full omarchy-shell replacement is out of scope *(confirmed 2026-08-24)*
+- [x] **`quickshell` package** (v4.0.0, v4.0.1) — already in `packages.yaml` as the official `extra` package, driving the voxtype waveform OSD overlay; v4.0.1's switch to the packaged `quickshell` (away from a patched workaround build) matches what we already had; the full omarchy-shell replacement is out of scope *(confirmed 2026-08-30)*
 - [x] **`networkmanager` as the network stack** (v4.0.0) — already in `packages.yaml` alongside `iwd` as the backend; omarchy's iwd→NM move validates the existing setup *(confirmed 2026-08-24)*
 - [x] **`pacman-contrib`** (v4.0.0) — already in `packages.yaml`; `paccache` available for the update-prune item above *(confirmed 2026-08-24)*
 - [x] **`wtype`** (v4.0.0) — already in `packages.yaml` as a voxtype dependency *(confirmed 2026-08-24)*
@@ -804,6 +770,17 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 ---
 
 ## Skipped / Out of Scope
+
+### v4.0.1 — security patch backports
+
+- [SKIPPED] **FIDO2 authfile symlink/ownership fix** (v4.0.1) — no FIDO2 setup in this repo (`omarchy-setup-security-fido2` has no equivalent here); nothing to patch
+- [SKIPPED] **`omarchy-sudo-reset` removal** (v4.0.1) — omarchy-specific command, never had an equivalent here
+- [SKIPPED] **Privileged DNS helper PATH pinning** (v4.0.1) — `omarchy-dns` has no equivalent; DNS is managed via NetworkManager/iwd directly, no passwordless root sudoers helper in this repo
+- [SKIPPED] **Video title forging Download Video command** (v4.0.1) — no yt-dlp/download-video wrapper in this repo
+- [SKIPPED] **`omarchy plugin-add` transport-helper guard** (v4.0.1) — our only plugin install (hyprsplit via hyprpm) is pinned to a fixed fork/commit in a lifecycle script, not a user-supplied URL at runtime
+- [SKIPPED] **Quickshell-specific bug fixes** (v4.0.1) — race conditions in notification popup/history, bar sticking in move mode, closed network/Bluetooth panels leaving scans running, `o.shell_succeeds()`, UTF-16 clipboard/webp decoding, calendar day names, speed-test locale — all Quickshell (`omarchy-shell`) internals, already out of scope per the v4.0.0 shell-replacement skip below
+- [SKIPPED] **Windows VM Docker Compose hardening** (v4.0.1) — Windows VM out of scope
+- [SKIPPED] **`psmouse` ISO finalizer fix** (v4.0.1) — Omarchy installer/ISO scope
 
 ### v4.0.0 "Quattro" — architectural rewrite
 
@@ -1014,3 +991,4 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 | v3.8.3 | `_research/omarchy/OMARCHY_v3.8.3.md` | 2026-08-24 |
 | v3.8.4 | `_research/omarchy/OMARCHY_v3.8.4.md` | 2026-08-24 |
 | v4.0.0 | `_research/omarchy/OMARCHY_v4.0.0.md` | 2026-08-24 |
+| v4.0.1 | `_research/omarchy/OMARCHY_v4.0.1.md` | 2026-08-30 |
