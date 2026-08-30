@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Script: run_once_before_004_create_necessary_directories.sh.tmpl
 # Purpose: Create necessary directories for the system
@@ -37,5 +37,13 @@ mkdir -p "$HOME/Public"
 # Create development directories
 mkdir -p "$HOME/Projects"
 mkdir -p "$HOME/Worktrees"
+
+{{ includeTemplate "log_step" "Creating Hyprland toggle state file..." }}
+
+# Exception to the lazy-mkdir-in-script convention: hyprland.conf's `source =`
+# directive errors on a missing file, and this one is sourced before any
+# toggle script has ever run, so it must pre-exist.
+mkdir -p "$HOME/.local/state/dotfiles/toggles/hypr"
+touch "$HOME/.local/state/dotfiles/toggles/hypr/current.conf"
 
 {{ includeTemplate "log_complete" "Directory creation completed successfully" }}

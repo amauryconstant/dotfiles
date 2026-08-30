@@ -1,0 +1,42 @@
+#!/usr/bin/env sh
+
+# Script: hypr-toggle
+# Purpose: Persist a named Hyprland config fragment across `hyprctl reload` and reboot
+# Requirements: Hyprland
+
+STATE_FILE="$HOME/.local/state/dotfiles/toggles/hypr/current.conf"
+
+usage() {
+    echo "Usage: hypr-toggle {set|clear} <key> [hyprland-config-line...]" >&2
+    exit 1
+}
+
+[ $# -ge 2 ] || usage
+action="$1"
+key="$2"
+shift 2
+
+case "$action" in
+    set|clear) ;;
+    *) usage ;;
+esac
+
+mkdir -p "$(dirname "$STATE_FILE")"
+[ -f "$STATE_FILE" ] || touch "$STATE_FILE"
+
+# Delete any existing block for this key (idempotent re-set/clear)
+awk -v key="$key" '
+    $0 == "# BEGIN " key { skip=1; next }
+    $0 == "# END " key { skip=0; next }
+    !skip { print }
+' "$STATE_FILE" > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
+
+if [ "$action" = "set" ]; then
+    {
+        echo "# BEGIN $key"
+        printf '%s\n' "$@"
+        echo "# END $key"
+    } >> "$STATE_FILE"
+fi
+
+hyprctl reload >/dev/null 2>&1 || true
