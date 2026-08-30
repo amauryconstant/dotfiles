@@ -28,6 +28,32 @@
 
 ---
 
+## 🚨 Data files are NOT templates
+
+chezmoi parses a data file's final extension as its **format**, so there is no template step:
+
+| Attempt | Result |
+|---------|--------|
+| `.chezmoidata/foo.yaml.tmpl` | **Hard error** — `chezmoi: .tmpl: unknown format`, exit 1. Breaks the *whole* source tree, not just that file |
+| `{{ .chezmoi.username }}` inside a plain `.chezmoidata/*.yaml` | Emitted **literally** as the string `{{ .chezmoi.username }}` — no error, silently wrong |
+
+Data files are inert values. Conditions belong in the **consumer** (`*.tmpl`, any
+`.chezmoiscripts/` script) or in `.chezmoiignore`, which *is* templated — see its
+`{{ if ne .chassisType "laptop" }}` steam block.
+
+```go
+# WRONG — features.yaml cannot do this
+enabled: "{{ eq .chassisType \"laptop\" }}"
+
+# RIGHT — plain data, condition in whatever reads it
+{{ if .features.voxtype.enabled }}   # in run_onchange_after_configure_voxtype.sh.tmpl
+```
+
+Verify with a throwaway source dir rather than the live one:
+`chezmoi data --source /path/to/scratch`.
+
+---
+
 ## Template Variable Patterns
 
 ### Built-in (chezmoi)
