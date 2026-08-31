@@ -9,7 +9,12 @@
 
 ## Quick Reference
 
-- **Status**: Phase 1 complete — bar at Waybar module parity. **Waybar still runs.**
+- **Status**: Phase 2.5 complete — bar restructured to Amendment A. **The bar now floats
+  (40 tall, inset 8, reserving 56), which Waybar's 30px full-bleed bar cannot stack with:
+  this is the end of the A/B.** Phase 2 (Hyprland Lua cutover) still outstanding
+- ⚠️ **Waybar is stopped by hand, not by config.** `hypr/conf/autostart.{lua,conf}` still
+  carry `waybar`, so the next Hyprland start brings it back on top of the floating bar.
+  Gating that on `features.quickshell_shell` is unfinished business, not a Phase 6 nicety
 - **Gate**: `features.quickshell_shell.enabled` (default `false`). Flip it + `chezmoi apply`
   is the whole rollout; flipping back is the whole rollback
 - **Launch**: `quickshell -c dotfiles`, from `hypr/conf.d/quickshell.{lua,conf}`
@@ -23,22 +28,30 @@ dotfiles/
 ├── shell.qml              # ShellRoot: IPC handlers + Variants over screens
 ├── qmldir                 # declares Theme + Config as singletons (required by qmllint)
 ├── Theme.qml              # colours from themes/current/colors.sh, at runtime
-├── Config.qml.tmpl        # sizes, fonts, chassis, scriptsDir
+├── Config.qml.tmpl        # geometry scale, fonts, chassis, scriptsDir, window-class glyphs
 └── bar/
-    ├── Bar.qml            # PanelWindow, one per screen, three zones
-    ├── BarWidget.qml      # padding, hover, tooltip, click/scroll plumbing
+    ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
+    ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
     ├── BarTooltip.qml     # PopupWindow hover tooltip
+    ├── BarSeparator.qml   # 1x16 hairline, hides with the group it precedes
     ├── WaybarJsonSource.qml  # Process + SplitParser for Waybar-JSON scripts
     └── widgets/*.qml      # one per bar widget
 ```
 
 `shell.qml` owns no widget. Widgets are added to a zone in `Bar.qml`, in
-`waybar/config.tmpl`'s `modules-right` order.
+`waybar/config.tmpl`'s `modules-right` order, inside one of the six separator-delimited
+groups (tray · network+bluetooth · backlight+battery · audio+media · kanata+idle+voxtype ·
+notification).
+
+A widget sets `icon`, `label` and — only for a real state — `iconColor` on `BarWidget`. It
+does **not** declare its own `Text`, write a radius, or pick a rest colour: geometry and the
+accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
 
 ## Widget → source
 
 | Widget | Backed by |
 |---|---|
+| Launcher | none — a chip that runs `wofi --show drun`, new in Phase 2.5 |
 | Workspaces, WindowTitle | `Quickshell.Hyprland` |
 | Audio, Media, Tray | `Pipewire`, `Mpris`, `SystemTray` |
 | Network, Bluetooth, Battery | `Networking`, `Bluetooth`, `UPower` — laptop only |
@@ -67,5 +80,8 @@ Full list in `.claude/rules/quickshell-qml.md`. The two that cost the most time:
 
 - **`UPowerDevice.percentage` is 0..1**, not 0..100. Waybar/`upower` say 72%, the property says 0.72
 - **Pipewire volume needs a `PwObjectTracker`** or it binds to nothing and shows 0% with no error
+- **A glyph literal can be authored as `""`** and render nothing, with no error — it has
+  happened twice here. Take codepoints from the `nerdfonts-search` skill and write them via
+  an explicit `chr(0x…)`, never a paste
 
-Both fail silently and look plausible on screen.
+All three fail silently and look plausible on screen.

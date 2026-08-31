@@ -776,7 +776,7 @@ Phases 0–2 unchanged.
 | 0 | Skeleton, theme bridge, one widget | **Done** |
 | 1 | Bar to Waybar parity | **Done** |
 | 2 | Hyprland Lua cutover | Unchanged. Still the payoff, still gated on the `hyprctl dispatch` audit |
-| **2.5** | — | **New — bar restructure.** See below |
+| **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
 | 3 | OSDs | Unchanged in scope; inherits 2.5's geometry scale |
 | 4 | Notifications | Unchanged in scope; UI now specified by `1f` |
 | 5 | Launcher and power menu | Unchanged in scope; UI now specified by `1d` and `1h` |
@@ -784,6 +784,16 @@ Phases 0–2 unchanged.
 | 6 | Cleanup of replaced tooling | Unchanged, still optional |
 
 ### Phase 2.5 — bar restructure
+
+**Status: done, 2026-08-31.** Taken ahead of Phase 2 rather than after it — Waybar had been
+stopped by hand, so the inset had nothing to coexist with, and the Lua cutover was still
+blocked on the `hyprctl dispatch` audit.
+
+⚠️ **Stopped by hand is not stopped by config.** `hypr/conf/autostart.{lua,conf}` still run
+`waybar` unconditionally, so the next Hyprland start puts a 30px full-bleed bar under the
+floating one. Gating those on `features.quickshell_shell` is what actually ends the A/B, and
+it is the one piece of Phase 2.5 left open. The sequencing argument below held for the
+*Waybar* half; the *Phase 2* half turned out not to bind.
 
 Retrofit `1a`/`1c` onto the shipped bar. Lands after Phase 2 so it does not compete with the
 Lua cutover, and after Waybar has stopped being the daily driver so the inset has nothing to
@@ -804,6 +814,47 @@ coexist with.
 `private_dot_config/quickshell/` (grep, at exit); all 8 themes render the bar with one accent;
 one light and one dark theme both pass the `themes/CLAUDE.md` contrast rules by eye;
 `mise run lint:qml` passes **and still fails on a deliberately broken file**.
+
+**Exit as actually met:**
+
+| Criterion | Result |
+|---|---|
+| No literal hex | ✅ in every widget. `Theme.qml` keeps its 24 Catppuccin fallbacks — those are the fallback mechanism, not a leak |
+| No literal font name | ✅ zero |
+| No inline glyph | ⚠️ **narrowed.** The window-class map moved to `Config` as step 5 requires, but ten widgets still hold their own state glyphs (battery ramp, wifi bars, mic states). A glyph that exists to distinguish one widget's states is that widget's data; hoisting it to `Config` would centralise nothing and read worse. Criterion re-stated as: *no literal hex, no literal font name, and the window-class map lives in `Config`* |
+| One accent across 8 themes | ✅ structurally — `BarWidget.iconColor` defaults to `fgSecondary` and only state overrides it. Not yet eyeballed in all 8 |
+| Contrast, one light + one dark | ⏳ not yet checked by eye |
+| `lint:qml` passes and still fails when broken | ✅ verified: clean run rc 0; `iconColor` → `iconColorTYPO` gives rc 255 |
+
+**Corrections after reading the design source directly.** The canvas is reachable through
+the `DesignSync` MCP tool (project `1d494341-deaa-47cb-ac39-32ccb9c23862`, file
+`Quickshell Mocha Shell.dc.html`); `support.js` is generated runtime and holds no design.
+Artboard `1a` confirmed the geometry scale transcribed above, verbatim. Artboard `1c`
+carried four things the prose had lost:
+
+| Detail | Result |
+|---|---|
+| The launcher chip | Was missing entirely. Added as `LauncherWidget` — accent glyph on a tinted accent ground, the one place the accent appears at rest |
+| Hairline tier | The canvas's `#313244` is `surface0`, i.e. our `BG_TERTIARY`. Bar border, separators and the gap dot were all one tier too dark |
+| Numerals | Workspace numbers, battery % and the clock are `JetBrains Mono` in the canvas — our `terminalFont`. They were rendering in `guiFont` |
+| Urgent workspace | The canvas colours the number and dot and leaves the ground quiet; it is not a filled red pill. A second filled pill would compete with the focused one |
+
+Two deliberate departures, both forced by `themes/CLAUDE.md` rather than by taste:
+
+- **The "empty" pill stays transparent.** The canvas gives it a faint ground, which would
+  make it an elevated surface and force `fg-primary` on the one state that must recede.
+- **"Visible on another monitor" and "occupied" share one appearance.** Verified, not
+  assumed: `BG_TERTIARY` and `BG_OVERLAY` are the same value in the shipped themes, so the
+  fourth tier the canvas uses does not exist here.
+
+A third correction was self-inflicted: `BarWidget`'s rest colour was a fixed `fg-secondary`,
+which becomes the banned `fg-secondary`-on-`bg-secondary` pair the moment a hover ground
+appears. It now follows a `grounded` flag.
+
+**Found while doing it, unrelated to the restructure**: `BacklightWidget`'s nine brightness
+glyphs were all empty string literals, the same silent authoring loss that had blanked the
+workspace glyphs. It has therefore happened twice; both `.claude/rules/quickshell-qml.md` and
+`private_dot_config/quickshell/CLAUDE.md` now carry it as a trap with a grep.
 
 > Layout-stability note, not a design adoption: the clock currently renders in `guiFont`, a
 > proportional face, so the centre zone reflows slightly on every minute tick. Rendering

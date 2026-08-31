@@ -18,7 +18,7 @@ disables subdirectory discovery for every other config, including voxtype's)
 | `dotfiles/shell.qml` | Root `ShellRoot` — IPC handlers + `Variants` over screens. Owns no widget |
 | `dotfiles/qmldir` | Declares the singletons. **Load-bearing** — see below |
 | `dotfiles/{Theme,Config}.qml*` | Singletons. `Config` is `.tmpl`, `Theme` is not |
-| `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `WaybarJsonSource`) |
+| `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
@@ -95,11 +95,27 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 | `Type "BluetoothAdapter" ... not found` | `Quickshell/Bluetooth/qmldir` omits `depends Quickshell`, which Pipewire, SystemTray and Networking all declare |
 | `Type "DeviceType::Enum" ... not found` | Networking's qmltypes records the enum unqualified; qmllint cannot match it to the module's own exported element |
 | `Type "DBusMenuHandle" ... not found` | Not exposed declaratively; unavoidable when reading `SystemTrayItem.menu` |
+| `unknown grouped property scope margins` + `Type margins is used but it is not resolved` | `PanelWindow.margins` is a `Margins` gadget from the same `Quickshell._Window` indirection as the window itself. The block form `margins { left: ... }` is unresolvable; the dotted form still warns, so suppress `unqualified` and `unresolved-type` over those lines. See `bar/Bar.qml` |
+| `Unused import` on `import "../../"` | A singleton reached **only** from inside a template literal (`` `${Config.scriptsDir}/…` ``) is not traced, so the import that makes it resolvable reads as unused. Suppress `unused-imports` over that one import. See `bar/widgets/KanataWidget.qml` |
 | `No type found for property "edges"` | `PopupAnchor.edges`/`gravity` are `Edges::Flags`, unresolvable across the module split. Suppress inline with `missing-type` — the defaults are **not** usable, see below |
 
 ---
 
 ## Runtime behaviours that bite
+
+🚨 **A Nerd Font glyph literal can be authored as an empty string, silently.** It has
+happened twice in this tree: `WorkspacesWidget`'s five state glyphs and `BacklightWidget`'s
+nine-step brightness ramp were both committed as `""`, `""`, … — valid QML, valid strings,
+nothing rendered, no error anywhere. qmllint cannot see it and the widget just looks blank.
+Write glyphs through explicit codepoints (`chr(0xF00DA)` from a script, not a paste), and
+grep for `""` inside glyph arrays before committing. The `nerdfonts-search` skill is the
+source for the codepoints; its output is the thing to transcribe.
+
+🚨 **`ExclusionMode.Auto` only reserves the margins of edges that are actually anchored.**
+A floating bar is anchored `left`/`right`/`top` with a margin on all four sides, so Auto
+reserves `height + topMargin` and windows tile *under* the bottom inset. Set `exclusiveZone`
+explicitly to `barHeight + inset * 2`; assigning it also switches the mode to
+`ExclusionMode.Normal`, which is what you want. See `bar/Bar.qml`.
 
 🚨 **A `PopupWindow` anchored to an item covers that item at the default `edges`.**
 `PopupAnchorState` defaults to `edges = Top | Left`, `gravity = Bottom | Right`
@@ -145,6 +161,68 @@ not needed, but code must not assume data at startup.
 **`FileView.watchChanges` only signals** — handle `onFileChanged` with `reload()`. And it
 watches the *resolved* path, so a symlink swap (as `theme switch` does to `themes/current`)
 never fires. That is why theming is driven by an explicit IPC call.
+
+---
+
+## Geometry and the accent rule
+
+Both are Amendment A of `_plans/QUICKSHELL_SHELL.md`, and both live in exactly one place.
+
+**Geometry** is the scale in `Config.qml.tmpl`: `radiusPanel` 12 / `radiusTile` 10 /
+`radiusChip` 8 / `radiusPill` 999, `gap` 8, `padTight`/`pad`/`padLoose` 12/16/24, plus
+`barHeight` 40, `barInset` 8, `chipSize` 26, `pillHeight` 24. A widget never writes a radius
+or a spacing of its own — the four-step radius ramp is what makes a chip inside a panel read
+as nested rather than as a coincidence.
+
+**The accent rule** — *one accent marks the focused thing, everything else neutral, semantic
+colours only for state* — is enforced by `BarWidget.iconColor`. A widget overrides it only
+for a genuine state (muted, disconnected, inhibited, low battery); at rest every widget is
+the same colour. Set `icon`/`label` on `BarWidget` rather than declaring your own `Text`, and
+the rule applies for free.
+
+🚨 **`iconColor`/`labelColor` are not one fixed rest colour — they follow `grounded`.**
+`themes/CLAUDE.md` bans `@fg-secondary` on `@bg-secondary`/`@bg-tertiary` outright (both
+"secondary" reads at 4.0-4.5:1 and fails WCAG AA), and a hovered chip, a pill and the
+launcher tint are all elevated surfaces. So the default is `fgSecondary` at rest and
+`fgPrimary` the moment a ground appears. Anything that hardcodes one of the two reintroduces
+the banned pair on half the widget's states.
+
+`labelColor` is split from `iconColor` so the glyph can carry a state while the number it
+annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
+puts a number in `terminalFont`: digits only line up fixed-pitch, and a proportional face
+reflows the bar every time the value changes width.
+
+`pill: true` gives a widget its own permanent ground. **Exactly one widget has it** — the
+battery — because charge is the only number that has to be readable without a hover.
+`tinted: true` is the same idea without the pill radius, and **only the launcher chip has
+it**: an accent ground at rest is the single fixed anchor the bar is allowed.
+Everything else is icon-only, with its number in the tooltip.
+
+`BarSeparator` binds to the group that **follows** it (`group: gPower`), so a group that
+collapses to zero width on a desktop takes its leading hairline with it instead of leaving a
+stray rule in the bar. **The hairline is `bgTertiary`, not `bgSecondary`** — the design's
+`#313244` is Catppuccin `surface0`, which is what `BG_TERTIARY` maps to in our colorset. The
+bar's own border is the same colour.
+
+### Reading the design source, not the transcription
+
+The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
+readable through the `DesignSync` MCP tool: `list_files`, then `get_file` on
+`Quickshell Mocha Shell.dc.html`. `support.js` beside it is the generated dc-runtime and
+carries no design content — do not bother fetching it. Reading the artboard directly settled
+four things the plan's prose transcription had lost: the launcher chip, the hairline tier,
+the mono numerals, and that urgent is a text colour rather than a red fill.
+
+⚠️ **Our colorset has three background tiers, not the mockup's four.** `BG_TERTIARY` and
+`BG_OVERLAY` are the same value in the shipped themes (verified in `rose-pine-moon`), so the
+canvas's separate "visible on another monitor" and "occupied" grounds collapse to one. That
+is the plan's own instruction — collapse a tier rather than invent a colour — now confirmed
+against the colorset rather than assumed.
+
+⚠️ **The "empty" workspace pill departs from the mockup on purpose.** The canvas gives it a
+faint ground; ours stays transparent, because a ground makes it an elevated surface and the
+contrast rule would then force `fg-primary` on the one state that has to recede. On the bar
+ground, `fg-muted` is allowed.
 
 ---
 
