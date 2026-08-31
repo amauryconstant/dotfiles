@@ -510,56 +510,27 @@ FloatingWindow {
 
 ## Integration Challenges
 
-### 1. Custom script execution & IPC (kanata, voxtype, swaync indicator)
+🚨 **Resolved 2026-09-01. Three of these four were never real** — they were written from an
+incomplete API picture. Kept as a record of what the wrong picture cost, not as open work.
+`_plans/QUICKSHELL_SHELL.md` "Verified facts" carries how each was checked.
 
-Waybar has `exec-persistent` and `exec` directives that continuously read from a subprocess. Quickshell has:
+| # | Challenge as written | Verdict |
+|---|---|---|
+| 1 | *No `exec-persistent` analog; needs C++ or D-Bus rewrite* | **Void.** `Process { stdout: SplitParser { onRead: … } }` from `Quickshell.Io` is an exact analog, in QML, no C++. kanata's TCP port needs a `Process` (`Socket` is UNIX-only); voxtype is `Process` + `SplitParser`. Shipped as `bar/widgets/{KanataWidget,VoxtypeWidget}.qml` |
+| 2 | *No `.desktop` parser; wrap `gio` or pre-parse to JSON* | **Void.** `DesktopEntries` is a built-in singleton — a parsed index with icons |
+| 3 | *Theming bridge undecided* | **Decided and shipped.** `Theme.qml` parses `~/.config/themes/current/colors.sh` at runtime with a regex; no new per-theme file, no generated QML. Reload is an explicit `IpcHandler` call from `theme-switcher`, because the switch swaps a symlink and an inotify watch on the resolved path never fires |
+| 4 | *No native backlight module* | **Real, and the only one.** Shipped as a `Process` call to our own DDC/CI-aware `brightness-set`, plus a `FileView` watch on `/sys/class/backlight/*/brightness`. One file: `Backlight.qml` |
 
-- `QProcess` (C++ / Qt, accessible from QML via custom C++ modules)
-- No built-in persistent-read abstraction
-
-**Solution**: Wrap these in QML helper components or rewrite them as D-Bus services (swaync already emits D-Bus; kanata TCP could be watched via a QProcess loop).
-
-### 2. `.desktop` file parsing (wofi launcher)
-
-Wofi uses GTK's desktop file loader. Quickshell has no native `.desktop` parser.
-
-**Solution**:
-
-- QML wrapper around `gio desktop-entry` or `desktop-file-utils`
-- Or: pre-parse `.desktop` files at startup via shell script, cache JSON
-
-### 3. Theming bridge (colors.sh → QML)
-
-Current: semantic colors in `colors.sh` (Bash vars), consumed by shell scripts.
-Needed: same vars in QML (Colors singleton or JSON).
-
-**Solution**:
-
-- Generate `Colors.qml` from `colors.sh` at theme switch time
-- Or: `colors.json` consumed at app startup
-- Both triggered by `theme switch` (add to theme-switcher)
-
-**Update 2026-08-24**: Omarchy 4.0.0 ships a working implementation of this bridge —
-one semantic colorset per theme, templates rendering 17 per-app outputs, the shell
-watching its own theme file for live reload, and hand-written per-theme files overriding
-generated ones. See `_research/QUICKSHELL_DESKTOP_RESEARCH.md` → "Omarchy 4 as reference
-implementation" and `_research/omarchy/OMARCHY_v4.0.0.md` (§Configuration Changes).
-One wrinkle specific to us: our `colors.sh` is itself generated *from* `waybar.css`, so
-the CSS is currently the source of truth — that needs inverting before a QML consumer
-makes sense.
-
-### 4. Backlight control (requires `light` command)
-
-Quickshell has no native backlight module. Need QProcess wrapper.
-
-**Solution**: `Hyprland.dispatch("exec light -S X")` or custom QProcess + Slider binding.
+The one wrinkle from the 2026-08-24 note survives, and is now a Phase 6 ordering constraint
+rather than a design problem: our `colors.sh` is generated *from* `waybar.css`, so removing
+Waybar's config would orphan the source of truth that `Theme.qml` reads. See
+`_plans/QUICKSHELL_SHELL.md` → "The `waybar.css` trap".
 
 ---
 
-## Next Steps
+## Status
 
-1. **Theming bridge design** — decide colors.sh → QML Colors mechanism
-2. **Component prioritization** — which to build first (bar → launcher → notifications → power menu)
-3. **Shared module patterns** — extract reusable QML components (buttons, icons, lists, etc.)
-4. **Script executor abstraction** — unified pattern for long-lived processes (kanata, voxtype, swaync) + fallback for non-persistent commands
-5. **Prototype** — build bar + launcher skeleton alongside current stack, validate coexistence + theme bridge before full migration
+Superseded as a planning document. Phases 0, 1, 2.5 and 3 are shipped — see
+`_plans/QUICKSHELL_SHELL.md` for the phase list and `private_dot_config/quickshell/CLAUDE.md`
+for how the tree is actually laid out. The component-by-component mapping above is still
+accurate as a description of what each replaced tool does.

@@ -3,31 +3,50 @@
 **Created**: June 2026
 **Purpose**: API reference for building custom Quickshell desktop shell components (bar, launcher, notifications, etc.)
 
+🚨 **Corrected 2026-09-01.** This doc was written from an incomplete API picture and several of
+its names were wrong: no singleton is auto-available, and `StatusNotifier`/`NetworkManager`/
+`PipeWire` do not exist under those names. The corrections below are verified against the
+installed `quickshell 0.3.1` **and** against the shipped bar in
+`private_dot_config/quickshell/dotfiles/`, which is running code. `_plans/QUICKSHELL_SHELL.md`
+"Verified facts" #1-#4 and #7 record how each was checked.
+
 ---
 
 ## Module Structure
 
-Quickshell exposes four primary QML modules:
-
-| Module | Purpose | Key Types |
+| Module URI | Purpose | Key types / singleton |
 |--------|---------|-----------|
-| `Quickshell` | Core shell, window types, screen info, menus, utilities | `ShellRoot`, `PanelWindow`, `FloatingWindow`, `PopupWindow`, `Scope`, `Clock`, `DesktopEntry`, ... |
-| `Quickshell.Wayland` | Wayland-specific surfaces and protocols | `WlrLayershell`, `WlSessionLock`, `WlrKeyboardFocus`, idle monitoring, screencopy, ... |
-| `Quickshell.WindowManager` | Workspace/window introspection, multi-screen layout | `WindowManager`, `WindowsetProjection`, `HyprlandWorkspace`, `HyprlandMonitor`, ... |
-| `Quickshell.Widgets` | Utility widgets (clipping, wrappers, icons) | `ClippingRectangle`, `WrapperRectangle`, `IconImage`, ... |
+| `Quickshell` | Core shell, window types, screen info, menus, utilities | `ShellRoot`, `PanelWindow`, `PopupWindow`, `Scope`, `Singleton`, `Variants`, `Quickshell` |
+| `Quickshell.Io` | Process and file I/O, IPC | `Process`, `SplitParser`, `StdioCollector`, `Socket`, `FileView`, `JsonAdapter`, `IpcHandler` |
+| `Quickshell.Wayland` | Wayland surfaces and protocols | `WlrLayershell`, `WlSessionLock`, `ScreencopyView` |
+| `Quickshell.Hyprland` | Hyprland IPC | `Hyprland`, `HyprlandWorkspace`, `HyprlandMonitor` |
+| `Quickshell.WindowManager` | Compositor-agnostic window layer | `WindowManager` |
+| `Quickshell.Widgets` | Utility widgets | `ClippingRectangle`, `WrapperRectangle`, `IconImage` |
+| `Quickshell.Networking` | Network state | `Networking` |
+| `Quickshell.Bluetooth` | Bluetooth devices | `Bluetooth`, `BluetoothAdapter` |
+| `Quickshell.Services.{Notifications,Mpris,Pipewire,UPower,SystemTray,Polkit,Pam,Greetd}` | Services | one singleton each |
 
-**Services** are exposed as **singletons** (auto-available, no module import needed):
-- `Hyprland` — Hyprland IPC (workspaces, monitors, toplevels, dispatchers, focus)
-- `NotificationServer` — Freedesktop notification daemon
-- `Mpris` — Media player control
-- `PipeWire` — Audio / volume
-- `UPower` — Battery / power state
-- `StatusNotifier` — System tray
-- `NetworkManager` — Network state
-- `Bluetooth` — Bluetooth devices
-- `Polkit` — Privilege escalation agent
-- `Greetd` + `Pam` — Authentication
-- `Idle` — Idle detection
+🚨 **Singletons are not auto-available.** Each is `QML_SINGLETON` inside its own module and is
+unusable without that module's import — `import Quickshell.Services.SystemTray` before
+`SystemTray.items`. Hyprland types live in `Quickshell.Hyprland`, **not**
+`Quickshell.WindowManager` (which is the newer compositor-agnostic layer).
+
+Real singleton names, and the three this doc had wrong:
+
+| Singleton | Import | Note |
+|---|---|---|
+| `Hyprland` | `Quickshell.Hyprland` | workspaces, monitors, toplevels, dispatch |
+| `NotificationServer` | `Quickshell.Services.Notifications` | |
+| `Mpris` | `Quickshell.Services.Mpris` | |
+| `Pipewire` | `Quickshell.Services.Pipewire` | ❌ not `PipeWire` |
+| `UPower`, `PowerProfiles` | `Quickshell.Services.UPower` | |
+| `SystemTray` | `Quickshell.Services.SystemTray` | ❌ not `StatusNotifier` |
+| `Networking` | `Quickshell.Networking` | ❌ not `NetworkManager` |
+| `Bluetooth` | `Quickshell.Bluetooth` | |
+| `DesktopEntries` | `Quickshell` | parsed `.desktop` index with icons |
+| `Polkit`, `Pam`, `Greetd` | `Quickshell.Services.*` | |
+
+There is no `Idle` singleton; idle monitoring is a `Quickshell.Wayland` type.
 
 ---
 
@@ -295,29 +314,23 @@ FloatingWindow {
 
 ---
 
-## Audio / Volume (singleton `PipeWire`)
+## Audio / Volume (singleton `Pipewire`)
 
 ```qml
-Text {
-  text: {
-    let dev = PipeWire.defaultAudioPlayback;
-    if (!dev) return "No audio";
-    return `Volume: ${(dev.volume * 100).toFixed(0)}%`;
-  }
-}
+import Quickshell.Services.Pipewire
 
-MouseArea {
-  onWheel: (wheel) => {
-    let dev = PipeWire.defaultAudioPlayback;
-    if (dev) dev.volume = Math.max(0, Math.min(1, dev.volume + wheel.angleDelta.y / 120 * 0.05));
-  }
-}
+readonly property PwNode sink: Pipewire.defaultAudioSink
+PwObjectTracker { objects: [sink] }        // without this, volume reads a permanent 0
+Text { text: `Volume: ${Math.round((sink?.audio.volume ?? 0) * 100)}%` }
 ```
+
+Volume lives on `node.audio.volume`/`.muted`, not on the node itself. See
+`bar/widgets/AudioWidget.qml`.
 
 | Property | Type | Notes |
 |----------|------|-------|
-| `defaultAudioPlayback` | audio device | Main speaker/headphone |
-| `defaultAudioCapture` | audio device | Main microphone |
+| `defaultAudioSink` | `PwNode` | Main speaker/headphone — ❌ not `defaultAudioPlayback` |
+| `defaultAudioSource` | `PwNode` | Main microphone — ❌ not `defaultAudioCapture` |
 | `outputDevices` | array | All speakers/headphones |
 | `inputDevices` | array | All microphones |
 
@@ -361,8 +374,8 @@ Text {
 | Singleton | Purpose | Example |
 |-----------|---------|---------|
 | `Mpris` | Media control | Access current playing song, pause/play |
-| `StatusNotifier` | System tray | Show/manage tray icons |
-| `NetworkManager` | Network state | Wifi SSID, connected status |
+| `SystemTray` | System tray | `SystemTray.items` |
+| `Networking` | Network state | `Networking.devices.values`; `signalStrength` is a 0..1 fraction |
 | `Bluetooth` | BT devices | Paired devices, connection state |
 | `Polkit` | Privilege dialogs | Prompt for sudo actions |
 | `Greetd` + `Pam` | Authentication | Fingerprint, password (for custom lock) |
@@ -563,7 +576,7 @@ Scope {
 
 ## Key Observations for Desktop Shell Design
 
-1. **Singletons are auto-accessible** — `Hyprland`, `NotificationServer`, `PipeWire`, `UPower`, etc. work without import or instantiation. Bind directly in QML.
+1. **Singletons need their module imported** — `Hyprland`, `NotificationServer`, `Pipewire`, `UPower` each live in their own module and are undefined without its import. They are singletons, so no instantiation; bind directly once imported.
 
 2. **Models are reactive** — changes to workspace focus, windows, battery state, etc. automatically trigger QML property updates. No polling.
 

@@ -104,6 +104,9 @@ Elevated surfaces (`@bg-secondary`, `@bg-tertiary`) MUST use `@fg-primary` for A
 
 **DO NOT** use `@fg-secondary` on elevated surfaces - this creates insufficient contrast (4.0-4.5:1) that fails WCAG AA standards (4.5:1 required).
 
+Applies to QML as much as to CSS — see "QML Integration (Quickshell)" below, where nothing
+enforces it automatically.
+
 #### Correct Patterns
 
 | Background Surface | Text Color | Typical Contrast | WCAG Status | Use Case |
@@ -268,6 +271,30 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 ```
 
 **Reload**: New shells only — running shells keep old colors (acceptable for CLI tools).
+
+---
+
+## QML Integration (Quickshell)
+
+The Quickshell bar and OSDs read the **same** `colors.sh` at runtime. `Theme.qml`
+(`private_dot_config/quickshell/dotfiles/`) parses it with a regex and exposes all 24 semantic
+variables as QML `color` properties (`BG_PRIMARY` → `Theme.bgPrimary`). So there is no ninth
+per-theme file to maintain — but three consequences follow:
+
+- **The colorset must stay complete.** A key missing from a theme's `colors.sh` falls back to a
+  hardcoded Catppuccin value inside `Theme.qml`. That renders the wrong colour with **no error**.
+- **Reload is an explicit IPC call, not a file watch.** `theme switch` swaps the `themes/current`
+  *symlink*, and an inotify watch on the resolved path never fires. `theme-switcher` calls
+  `quickshell -c dotfiles ipc call theme reload`.
+- **Contrast is by hand.** QML gets none of the CSS review tooling. See below.
+
+### Contrast in QML
+
+The ban on `@fg-secondary` over `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` applies unchanged,
+and nothing enforces it — a wrong pair renders fine and fails only a human eye. The pattern that
+holds the rule is `bar/BarWidget.qml`'s `grounded` property: rest colour is `fgSecondary` on the
+bar ground, and flips to `fgPrimary` the moment the widget draws a ground of its own (hover, pill,
+tint). A widget that hardcodes either one reintroduces the banned pair on half its states.
 
 ---
 

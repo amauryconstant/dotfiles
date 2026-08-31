@@ -7,35 +7,42 @@ back if it goes wrong.
 runbook depends on. `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit fork this
 cutover also activates.
 
-## Status: held, waiting on Waybar
+## Status: held on our own `hyprctl dispatch` call sites
 
 The whole Lua tree (`conf/*.lua`, `conf/bindings/*.lua`, `conf.d/*.lua`, `themes/*/hyprland.lua`)
 is deployed and sitting on disk. Only the **entry point** `~/.config/hypr/hyprland.lua` is
 excluded, by a block in `.chezmoiignore`. With that file absent Hyprland falls back to
 `hyprland.conf`, whose legacy `dispatch workspace N` still works.
 
-The blocker is external: Waybar PR #5013 (`fix(hyprland/workspaces): adapt dispatch commands for
-Lua IPC protocol`). Waybar workspace clicks go through the legacy text dispatch that Lua mode
-removes, so without that PR in a tagged release, clicking a workspace in the bar silently stops
-working.
+**The hold reason changed on 2026-09-01.** It used to be Waybar PR #5013 (`fix(hyprland/
+workspaces): adapt dispatch commands for Lua IPC protocol`) — merged 2026-05-04, still in no
+tagged release, installed waybar is 0.15.0-2. That is now irrelevant, for two reasons:
 
-Re-checked **2026-08-30**:
+- The Quickshell bar does workspace clicks correctly in Lua mode (`activate()` branches on
+  `Hyprland.usingLua` itself), so nothing we click depends on Waybar any more.
+- Since 2026-08-31 the two bars are **mutually exclusive** `conf.d/` drop-ins keyed on
+  `features.quickshell_shell`. With the flag on, Waybar does not autostart at all.
+
+**The blocker is now internal**: 29 `hyprctl dispatch <legacy string>` call sites across 10 of our
+own scripts and configs, every one of which Lua mode breaks. Verified from Hyprland v0.56.2
+source — `dispatchRequest` forks on config provider (`src/debug/HyprCtl.cpp:1130`) and splices the
+request into `return hl.dispatch(…)`, leaving the legacy dispatcher lookup at `:1149` unreachable,
+with no fallback. Five of the sites are `dpms on`, and a dead `dpms on` is a black screen that
+does not come back.
+
+The unblock condition is work, not a version comparison: convert the 29 sites. The per-site
+inventory with `hl.dsp.*` replacements is in `_research/HYPRLAND_LUA_AUDIT.md` → "The `hyprctl
+dispatch` script fleet".
+
+**If the flag is off** (Waybar running), note Waybar is a **degraded** fallback after cutover: it
+renders fine — its Hyprland modules read `socket2` events, unaffected — but its workspace clicks
+are dead until a release carries #5013. Adequate as a "the QML bar crashed, show me something"
+net; not a rollback target. The rollback target is the `.chezmoiignore` block.
 
 | | |
 |---|---|
-| PR #5013 merged | 2026-05-04 into master |
-| Waybar latest release | **0.15.0** (2026-02-06) — predates the merge |
-| Arch `extra` | waybar **0.15.0-2** |
-| Installed | waybar 0.15.0-2 |
 | Installed Hyprland | 0.56.2-1 (the version Omarchy converted for) |
-
-No 0.16.0 exists. The unblock condition is a version comparison, not a re-investigation: **Waybar
->= 0.16.0** (or any release whose changelog carries #5013).
-
-```sh
-curl -s https://api.github.com/repos/Alexays/Waybar/releases/latest | jaq -r .tag_name
-pacman -Si waybar | grep Version
-```
+| Installed Waybar | 0.15.0-2 (no 0.16.0 exists; #5013 unreleased) |
 
 ## Cutover
 
@@ -46,7 +53,12 @@ pacman -Si waybar | grep Version
 5. **Log out and back in.** Not `hyprctl reload` — the entry point itself changes, and a reload
    re-reads the old one.
 6. Verify:
-   - Waybar workspace clicks (the whole reason for the hold)
+   - **The converted dispatch sites, first** — they are the hold reason. Idle DPMS off *and back
+     on*; a voxtype submap entering and resetting; a `session-restore` round trip;
+     `SUPER+ALT+g` (see hyprsplit below, and the `require("hyprsplit")` scope question in
+     `_research/HYPRLAND_LUA_AUDIT.md`)
+   - Workspace clicks in the Quickshell bar (or, with the flag off, Waybar's — expected **dead**,
+     see Status)
    - hyprsplit per-monitor workspaces: `SUPER+1..0`, `SUPER+SHIFT+1..0`, `SUPER+ALT+s` swap,
      `SUPER+ALT+g` grab
    - `SUPER+ALT+m` actually crosses monitors (audit finding 3)

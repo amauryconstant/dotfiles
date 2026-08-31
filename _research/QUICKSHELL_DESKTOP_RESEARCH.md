@@ -1,8 +1,11 @@
 # Quickshell Custom Desktop Research
 
-**Created**: June 2026 · **Revised**: 2026-08-24 (Omarchy 4.0.0)
+**Created**: June 2026 · **Revised**: 2026-08-24 (Omarchy 4.0.0) · **Closed**: 2026-09-01
 **Focus**: Migrating the desktop shell (bar, launcher, notifications, power menu, OSDs, optionally lock) to a custom [Quickshell](https://quickshell.org/) (QtQuick/QML) stack
-**Phase**: Exploration — no decision made. Doors deliberately kept open.
+**Phase**: Closed. **Approach A** (build our own, Omarchy 4 as design reference) was chosen, and
+phases 0, 1, 2.5 and 3 are shipped — bar at Waybar parity plus volume/brightness OSDs. Live work
+is in `_plans/QUICKSHELL_SHELL.md`; this doc is the exploration record behind the decision, kept
+for its comparison of the alternatives.
 
 ---
 
