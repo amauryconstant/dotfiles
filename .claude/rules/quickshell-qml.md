@@ -193,7 +193,10 @@ for a genuine state (muted, disconnected, inhibited, low battery); at rest every
 the same colour. Set `icon`/`label` on `BarWidget` rather than declaring your own `Text`, and
 the rule applies for free.
 
-🚨 **`iconColor`/`labelColor` are not one fixed rest colour — they follow `grounded`.**
+🚨 **`iconColor`/`labelColor` are not one fixed rest colour — they default to `restColor`,
+which follows `grounded`.** A widget colouring for a state ends its ternary on `root.restColor`;
+ending it on a flat `Theme.fgSecondary` pins the ungrounded colour onto a lit ground. That was
+six widgets' worth of defect, found by the reviewer below and fixed 2026-09-01.
 `themes/CLAUDE.md` bans `@fg-secondary` on `@bg-secondary`/`@bg-tertiary` outright (both
 "secondary" reads at 4.0-4.5:1 and fails WCAG AA), and a hovered chip, a pill and the
 launcher tint are all elevated surfaces. So the default is `fgSecondary` at rest and

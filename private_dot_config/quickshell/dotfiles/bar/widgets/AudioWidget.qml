@@ -26,7 +26,7 @@ BarWidget {
         return root.volume < 0.34 ? "󰕿" : root.volume < 0.67 ? "󰖀" : "󰕾";
     }
     // Muted is a state; a volume level is not.
-    iconColor: root.muted ? Theme.fgMuted : Theme.fgSecondary
+    iconColor: root.muted ? Theme.fgMuted : root.restColor
     tooltipText: root.sink ? `${root.sink.description}\nVolume: ${Math.round(root.volume * 100)}%${root.muted ? " (muted)" : ""}` : "No audio sink"
 
     // Waybar's on-click-middle was `pamixer --next-sink`; cycling the

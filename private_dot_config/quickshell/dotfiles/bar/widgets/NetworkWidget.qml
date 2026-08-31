@@ -37,7 +37,7 @@ BarWidget {
     }
     // Connected is the resting state and stays neutral; no route at all is a
     // fault worth colouring, which is the accent rule's "state only" clause.
-    iconColor: root.active ? Theme.fgSecondary : Theme.accentError
+    iconColor: root.active ? root.restColor : Theme.accentError
     tooltipText: {
         if (!root.active)
             return "Disconnected\nNo network interface available";

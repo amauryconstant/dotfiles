@@ -26,7 +26,7 @@ BarWidget {
     icon: root.adapter?.enabled ? "󰂯" : "󰂲"
     // How many devices is tooltip detail; the accent is the whole signal at
     // bar scale, so this carries one and drops the inline count.
-    iconColor: !root.adapter?.enabled ? Theme.fgMuted : root.connected.length > 0 ? Theme.accentPrimary : Theme.fgSecondary
+    iconColor: !root.adapter?.enabled ? Theme.fgMuted : root.connected.length > 0 ? Theme.accentPrimary : root.restColor
     tooltipText: {
         if (!root.adapter)
             return "No bluetooth adapter";

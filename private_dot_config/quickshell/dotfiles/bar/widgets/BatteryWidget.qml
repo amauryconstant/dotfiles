@@ -57,7 +57,7 @@ BarWidget {
     // Graded states from waybar/CLAUDE.md: charging is informational, then
     // error < 10, warning <= 20, urgent-secondary for the 20-30 band. A
     // healthy discharging battery is the resting case and stays neutral.
-    iconColor: root.charging ? Theme.accentInfo : root.percent <= 10 ? Theme.accentError : root.percent <= 20 ? Theme.accentWarning : root.percent <= 30 ? Theme.accentUrgentSecondary : Theme.fgSecondary
+    iconColor: root.charging ? Theme.accentInfo : root.percent <= 10 ? Theme.accentError : root.percent <= 20 ? Theme.accentWarning : root.percent <= 30 ? Theme.accentUrgentSecondary : root.restColor
     // The mockup tints the whole pill at critical, so the one number that
     // matters raises its voice without a second accent appearing on the bar.
     groundColor: root.percent <= 10 && !root.charging ? Qt.alpha(Theme.accentError, 0.14) : Theme.bgSecondary

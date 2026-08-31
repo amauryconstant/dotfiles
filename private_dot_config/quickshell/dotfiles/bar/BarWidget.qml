@@ -19,12 +19,17 @@ Item {
     // A lit ground is an elevated surface, and themes/CLAUDE.md forbids
     // fg-secondary there — hence the swap rather than one fixed rest colour.
     readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
+    // 🚨 The neutral a widget falls back to when no state applies. A widget
+    // overriding iconColor/labelColor for a state MUST end its ternary on this,
+    // never on a flat Theme.fgSecondary: that pins the ungrounded colour onto a
+    // lit ground and reintroduces the banned fg-secondary/bg-secondary pair.
+    readonly property color restColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
     property string icon: ""
-    property color iconColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+    property color iconColor: root.restColor
     property string label: ""
     // Split from iconColor so a widget can colour its glyph for a state while
     // the number it carries stays readable, as the battery pill does.
-    property color labelColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+    property color labelColor: root.restColor
     // Digits only line up in a fixed-pitch face, and a proportional one
     // reflows the bar every time the number changes width.
     property bool monoLabel: false

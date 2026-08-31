@@ -95,7 +95,12 @@ BarWidget {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        color: button.isFocused ? Theme.fgContrast : Theme.fgSecondary
+                        // Only ever drawn on a lit ground — the glyph is
+                        // visible only when the workspace has windows, and that
+                        // pill is accent (focused) or bg-tertiary. fg-secondary
+                        // on bg-tertiary is the pair themes/CLAUDE.md bans, so
+                        // subordination comes from opacity, not from the token.
+                        color: button.isFocused ? Theme.fgContrast : Theme.fgPrimary
                         font.family: Config.guiFont
                         font.pixelSize: Config.fontSize
                         // Subordinate to the number it annotates.

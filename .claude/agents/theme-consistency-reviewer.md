@@ -105,16 +105,19 @@ grep -rn 'fgSecondary' private_dot_config/quickshell/
 
 ```qml
 readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
-property color iconColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
-property color labelColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+readonly property color restColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
 ```
+
+`restColor` is the only neutral a widget may fall back to. A subclass colouring for a state ends
+its ternary on `root.restColor`; a `Theme.fgSecondary` (or `Theme.fgPrimary`) literal in that
+position is the finding.
 
 `fgSecondary` is correct on the **bar's own ground** (`bgPrimary`) and wrong the moment the
 widget draws a ground of its own. So judge each hit by whether a ground is lit under it:
 
 | Hit | Verdict |
 |---|---|
-| a `?:` on `grounded` (or on the widget's own hover/pill flag) | ✅ correct — this is the pattern |
+| a ternary ending on `root.restColor` | ✅ correct — this is the pattern |
 | a `BarWidget` subclass overriding `iconColor`/`labelColor` with a **fixed** `Theme.fgSecondary` rest value | ❌ blocking — the override discards the `grounded` swap, so the banned pair appears on hover |
 | the same override on a widget with `pill: true` or `tinted: true` | ❌ blocking, and permanent — that ground is always lit, not just on hover |
 | a `Text` inside a `Rectangle` whose `color` can be `Theme.bgSecondary`/`bgTertiary`/`bgOverlay` | ❌ blocking — trace the enclosing Rectangle's `color` binding, per state |
@@ -125,9 +128,13 @@ State-coloured overrides are legitimate and must not be flagged as such: a widge
 disconnected, low battery, inhibited). What is being checked is only the **rest** branch of that
 expression — the value it falls through to when no state applies.
 
-Report each finding as `file:line`, name the ground it sits on, and give the fix as the
-`grounded` ternary rather than as a flat swap to `fgPrimary` — a widget that hardcodes
-`fgPrimary` instead is the same bug mirrored, unreadable on the ungrounded bar.
+Report each finding as `file:line`, name the ground it sits on, and give the fix as
+`root.restColor` rather than as a flat swap to `fgPrimary` — a widget that hardcodes `fgPrimary`
+instead is the same bug mirrored, over-loud on the ungrounded bar.
+
+For a `Text` that is not inside a `BarWidget` (the workspace pills), there is no `restColor` to
+reach: judge it against the enclosing `Rectangle.color` per state and name the right token
+directly.
 
 ### Not in scope here
 

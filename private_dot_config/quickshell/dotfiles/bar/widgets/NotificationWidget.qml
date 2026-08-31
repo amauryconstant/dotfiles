@@ -23,7 +23,7 @@ BarWidget {
     }
     // Both do-not-disturb and a waiting notification are states; an idle bell
     // is the resting case and stays neutral.
-    iconColor: root.dnd ? Theme.accentError : root.unread ? Theme.accentWarning : Theme.fgSecondary
+    iconColor: root.dnd ? Theme.accentError : root.unread ? Theme.accentWarning : root.restColor
     label: root.unread ? source.text : ""
     monoLabel: true
     tooltipText: source.tooltip
