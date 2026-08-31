@@ -37,11 +37,14 @@ __pycache__
 # Broot build artifact (auto-generated marker file)
 private_dot_config/broot/launcher/
 
-# Quickshell shell (bar + OSDs) — held behind features.quickshell_shell while
-# it is built out phase by phase. Waybar keeps running throughout; flipping the
-# flag to true and running `chezmoi apply` is the whole rollout, and flipping it
-# back is the whole rollback. Both Hyprland entry points glob conf.d and
-# tolerate absence, so an undeployed drop-in is simply never sourced.
+# Status bar: exactly ONE of the two drop-ins deploys, keyed on
+# features.quickshell_shell. They are mutually exclusive because the Quickshell
+# bar floats (40 tall, inset 8, reserving 56) and Waybar's 30px full-bleed bar
+# cannot stack with that — so autostart and the SUPER+B toggle both live in the
+# drop-in rather than in conf/autostart.* and conf/bindings/desktop-utilities.*.
+# Flipping the flag and running `chezmoi apply` is the whole rollout, and
+# flipping it back is the whole rollback. Both Hyprland entry points glob conf.d
+# and tolerate absence, so an undeployed drop-in is simply never sourced.
 #
 # The gate lives here rather than in the drop-ins because a .lua/.conf file
 # cannot carry template actions, and .chezmoidata files cannot be templates
@@ -50,6 +53,9 @@ private_dot_config/broot/launcher/
 .config/hypr/conf.d/quickshell.lua
 .config/hypr/conf.d/quickshell.conf
 .config/quickshell
+{{ else }}
+.config/hypr/conf.d/waybar.lua
+.config/hypr/conf.d/waybar.conf
 {{ end }}
 
 # Steam iGPU-forcing desktop override only makes sense on hybrid-GPU laptops

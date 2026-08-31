@@ -18,6 +18,8 @@
 
 `hyprland.conf` also pulls `conf.d/*.conf` (drop-ins), `monitors.conf` (HyprDynamicMonitors output), and `~/.config/themes/current/hyprland.conf` (theme borders).
 
+**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 56px, which Waybar's full-bleed bar cannot stack with. Roadmap: `_plans/QUICKSHELL_SHELL.md`.
+
 **Base config files** (`conf/`, each `.conf` shadowed by an inactive `.lua`):
 
 | File | Purpose | Template? |
@@ -30,7 +32,7 @@
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
 | `animations.conf` | Animation curves, timing | ❌ No |
 | `windowrules.conf` | Per-app window behavior | ❌ No |
-| `autostart.conf` | Startup apps (waybar, swaync, nextcloud) | ❌ No |
+| `autostart.conf` | Startup apps (nextcloud, awww, keyring, polkit). **No status bar** — see `conf.d/` below | ❌ No |
 
 `helpers.lua`, `require_all.lua` are Lua-layer infrastructure (inactive).
 
@@ -46,7 +48,7 @@
 | `media-keys.conf` | Volume, brightness, playback | ❌ No |
 | `screenshots.conf` | Screenshot tools (Satty) | ❌ No |
 | `voice.conf.tmpl` | Voice dictation (Voxtype; Parakeet bindings desktop-only) | ✅ Yes |
-| `desktop-utilities.conf` | Utilities (audio, gaps, waybar, nightlight) | ❌ No |
+| `desktop-utilities.conf` | Utilities (audio, gaps, nightlight, idle). **`SUPER+B` is not here** — see `conf.d/` below | ❌ No |
 | `theme-session.conf` | Theme switching, dark mode | ❌ No |
 | `system-control.conf` | Lock, power, help, menu | ❌ No |
 

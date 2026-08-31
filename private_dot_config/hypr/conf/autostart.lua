@@ -7,8 +7,11 @@
 -- (exec-once equivalent: runs once at startup, not on config reload.)
 -- ============================================================================
 
--- Waybar - Status bar (workspaces, system info, tray icons)
-o.exec_on_start("waybar")
+-- NOTE: the status bar is NOT started here. Waybar and the Quickshell bar are
+-- mutually exclusive (the Quickshell one floats and reserves 56px, which
+-- Waybar's full-bleed bar cannot stack with), so each lives in its own
+-- conf.d drop-in and .chezmoiignore deploys exactly one, keyed on
+-- features.quickshell_shell: conf.d/waybar.lua or conf.d/quickshell.lua.
 
 -- awww - Wayland wallpaper daemon with smooth transitions (renamed from swww)
 o.exec_on_start("awww-daemon")

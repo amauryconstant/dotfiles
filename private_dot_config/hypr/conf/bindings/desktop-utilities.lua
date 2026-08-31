@@ -10,7 +10,8 @@ o.bind("SUPER + G", "Toggle gaps", "~/.local/lib/scripts/desktop/workspace-gaps-
 o.bind("SUPER + A", "Audio output switcher", "~/.local/lib/scripts/desktop/audio-switch")
 o.bind("SUPER + SHIFT + A", "Audio settings", "pavucontrol")
 o.bind("SUPER + N", "Nightlight toggle", "~/.local/lib/scripts/desktop/nightlight-toggle")
-o.bind("SUPER + B", "Toggle status bar", "~/.local/lib/scripts/desktop/waybar-toggle")
+-- SUPER+B (toggle status bar) lives in the conf.d drop-in of whichever bar is
+-- deployed -- conf.d/waybar.lua or conf.d/quickshell.lua, never both.
 o.bind("SUPER + I", "Toggle idle lock", "~/.local/lib/scripts/desktop/idle-toggle")
 o.bind("SUPER + SHIFT + I", "Toggle idle no-lock mode", "~/.local/lib/scripts/desktop/idle-toggle-nolock")
 o.bind("SUPER + CTRL + Y", "Activity monitor (btop)", "ghostty -e btop")
