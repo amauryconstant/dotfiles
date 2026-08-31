@@ -50,7 +50,7 @@ BarWidget {
                 color: button.lit ? Theme.fgContrast : Theme.fgMuted
                 font.family: Config.guiFont
                 font.pixelSize: Config.fontSize
-                text: button.isUrgent ? "" : button.isFocused ? "󰺕" : button.isVisible ? "" : button.hasWindows ? "" : "·"
+                text: button.isUrgent ? "" : button.isFocused ? "󰺕" : button.isVisible ? "" : button.hasWindows ? "" : "·"
             }
 
             MouseArea {
