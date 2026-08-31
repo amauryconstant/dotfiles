@@ -1,14 +1,17 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Proposed. Nothing built yet.
+**Status**: Phases 0 and 1 complete on branch `quickshell` (bar at Waybar module parity,
+gated off by default). Phases 2-6 not started. See **Amendment A** at the end of this file
+for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
+unchanged), which revises the phase list.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
 `_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
 **Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon
-stay out.
+stay out (Amendment A's canvas draws a lock screen and a clipboard panel; both still declined).
 **Prerequisite work**: none. This plan is deliberately decoupled from the P2
 `colors.toml` item in `_plans/OMARCHY.md` (see "Theming bridge").
 
-Created 2026-08-30.
+Created 2026-08-30. Amended 2026-08-31.
 
 ---
 
@@ -498,3 +501,348 @@ Per tool, the checklist is the same:
 - `private_dot_config/quickshell/CLAUDE.md` — location-specific patterns
 - `private_dot_config/themes/CLAUDE.md` — that QML consumes `colors.sh` at runtime, and
   what that implies for the contrast rules
+
+
+---
+
+# Amendment A — layout and structure
+
+**Added 2026-08-31.** Supersedes nothing in Phases 0–1 (both shipped); revises the phase
+list from Phase 3 onward and adds a structural contract the shipped bar does not yet meet.
+
+**Source**: Claude Design canvas *"Quickshell Mocha Shell"*, artboards `1a`–`1i` —
+<https://claude.ai/design/p/1d494341-deaa-47cb-ac39-32ccb9c23862>. Not vendored; it is a
+mockup, and every number that matters is transcribed below.
+
+## 🚨 What is adopted, and what is not
+
+**Adopted: structure only** — geometry, panel anatomy, element hierarchy, what sits where
+and at what size. The mockup is a *layout* reference.
+
+**Not adopted: the visual system.** The canvas is drawn in raw Catppuccin Mocha on a
+mauve accent, in Geist + JetBrains Mono. **None of that is taken.** Our existing systems
+stand unchanged and are the only source of these values:
+
+| Aspect | Stays as | Not from the mockup |
+|---|---|---|
+| Colour | `Theme.qml` → `themes/current/colors.sh`, 24 semantic vars, 8 themes | ignore every hex in the canvas |
+| Font | `Config.guiFont` / `Config.terminalFont` ← `globals.yaml` | ignore Geist / JetBrains Mono |
+| Glyphs | our existing Nerd Font picks, via the `nerdfonts-search` skill | the canvas's glyph set is illustrative |
+| Contrast rules | `themes/CLAUDE.md`, by hand | — |
+
+A literal `#rrggbb`, a literal font name, or a hardcoded glyph anywhere in a widget file is
+the defect. Grep for all three at every phase exit.
+
+The mockup's colour rule — *"exactly one accent marks the focused thing, everything else
+neutral, semantic colours only for state"* — is a **structural** observation and is worth
+keeping, expressed in our vocabulary: focused/active uses `Theme.accentPrimary`, everything
+at rest is `Theme.fgSecondary`/`fgMuted`, and `accentError`/`accentWarning`/`accentSuccess`
+appear only for state. The shipped bar does not follow it — `WorkspacesWidget` paints hover,
+focus and urgent in three different accents, and the eleven right-side widgets each carry
+their own Waybar-inherited colour.
+
+## What the design specifies
+
+| # | Artboard | Status against this plan |
+|---|---|---|
+| `1a` | Foundations — geometry scale, glyph set | Geometry adopted; palette and type ignored |
+| `1b` | Dual-monitor composite | Illustrative; confirms per-screen bars, already built |
+| `1c` | Top bar + dock, with widget states | Bar: **restructure** of shipped Phase 1. Dock: **new** |
+| `1d` | Launcher — single command bar | Replaces Phase 5's launcher sketch |
+| `1e` | Workspace overview — focused carousel | **New**, not in any phase |
+| `1f` | Notification centre | Replaces Phase 4's UI, unspecified until now |
+| `1g` | Clipboard history | **New**, and in the plan's "Out" table |
+| `1h` | Power / session menu | Replaces Phase 5's power-menu sketch |
+| `1i` | Lock screen | **New**, and in the plan's "Out" table |
+
+---
+
+## The geometry scale
+
+One scale, defined once in `Config.qml.tmpl`, used by every surface. This is the single
+most portable thing in the canvas.
+
+| Token | Value | Applies to |
+|---|---|---|
+| `radiusPanel` | 12 | bar, launcher, notification centre, popups |
+| `radiusTile` | 10 | notification cards, launcher rows, dock icons |
+| `radiusChip` | 8 | bar icon buttons, small badges |
+| `radiusPill` | 999 | workspace pills, battery pill, mode badges |
+| `gap` | 8 | between sibling elements |
+| `padTight` / `pad` / `padLoose` | 12 / 16 / 24 | inside tiles / panels / hero areas |
+| hairline | 1px, `Theme.bgSecondary` | borders and separators |
+
+Shipped today: a single `radius: 4`, `barSpacing: 4`, `widgetPadding: 8`. The four-step
+radius scale is what makes nested surfaces read as nested.
+
+---
+
+## `1c` — the bar
+
+### Geometry
+
+| | Design | Shipped |
+|---|---|---|
+| Height | 40 | 30 |
+| Inset | 8px all round, floating | 0 — full-bleed `left/right/top` |
+| Reserved (exclusive zone) | 56 = 40 + 8 + 8 | 30 |
+| Radius | `radiusPanel` | 0 |
+| Border | 1px hairline | none |
+
+🚨 **The inset breaks the Phase 1 A/B story.** `Config.qml.tmpl` documents its 30px height
+as *"mirrors `waybar/config.tmpl` so the two bars stack without a visual jump while both
+run"*. A floating 40px bar reserving 56px does not stack with Waybar — it displaces it.
+**The restructure is therefore the event that ends the A/B**, which is why it is sequenced
+as Phase 2.5 below rather than folded back into Phase 1.
+
+### Three zones
+
+Left and right are anchored rows; **the centre is absolutely positioned, not a third flex
+child**. That is deliberate in the canvas and matters: the clock stays optically centred on
+the screen regardless of how wide the left and right zones grow.
+
+- **Left**: a launcher/logo chip (26px square, `radiusChip`, accent glyph on a tinted
+  accent ground — the one place the accent appears at rest), then the workspace pills.
+- **Centre**: `HH:MM` at 14px, then the date at 12px, baseline-aligned, `gap` between them.
+  Shipped `Bar.qml` already uses `anchors.centerIn`, so this zone is structurally correct.
+- **Right**: icon buttons, grouped, with 1px × 16px hairline separators between groups.
+
+### Workspace pills
+
+The largest single change to a shipped widget. Today: one glyph per state in a 4-radius
+rounded square. Design: **a pill carrying the workspace number plus a Nerd Font glyph for
+that workspace's top window**, so the layout is readable without switching to it.
+
+| State | Structure |
+|---|---|
+| focused | h24, `radiusPill`, padded 12, number + app glyph at ~75% opacity |
+| visible on another monitor | h24, `radiusPill`, padded 10, number + app glyph |
+| occupied | h24, `radiusPill`, padded 10, number + app glyph, dimmer |
+| empty | h24 **square** (24×24), `radiusPill`, number only |
+| urgent | h24, `radiusPill`, number + a 5px state dot |
+
+Plus a **6px gap dot between non-contiguous workspace ids** — the canvas shows `1 2 3 4 · 6`,
+so a missing workspace reads as a gap rather than as a renumbering.
+
+The three colour tiers the canvas uses to separate focused / visible / occupied / empty are
+*its* answer to the ramp; ours comes from the semantic colorset. Where the canvas has more
+tiers than our ramp offers, collapse them — structure survives, and merging "occupied" and
+"visible" into one appearance is a better outcome than inventing a colour.
+
+This needs a **window-class → glyph map**. `workspace.toplevels` is already read for
+`hasWindows`, so the data is in hand; the map is new. One lookup object in
+`Config.qml.tmpl` with a fallback glyph, not a chain of `if`s in the widget. Pick codepoints
+with the `nerdfonts-search` skill, as the shipped widget's glyphs were.
+
+### The right-side widget set
+
+The canvas draws five things (network, bluetooth · volume, notifications · battery) against
+the eleven the shipped bar carries. The four script-backed widgets, plus tray, backlight and
+media, have no place in the mockup.
+
+**Do not delete them to match the drawing.** They exist because Waybar carried them and they
+report real state. The structural instruction is *visual weight*, not membership:
+
+- icon-only at rest, in a 26px `radiusChip` square
+- a **pill** (`radiusPill`, own ground) only where a number must actually be read — battery
+- hairline separators grouping related widgets
+- no per-widget colour at rest
+
+Apply that to all eleven. If the bar still reads crowded, *that* is the moment to collapse
+`kanata`/`voxtype`/`idle` into one status cluster — not before.
+
+### Dock — new
+
+Bottom-centre, auto-hiding: h66, `padTight` horizontal, 16 radius, hairline border, drop
+shadow. 42px icon tiles at `radiusTile`, `gap` between, a 4px running-indicator dot under
+each, a hairline separator, then a trailing launcher button. Reveals on a **4px bottom
+hot-edge, 180ms ease-out**.
+
+Genuinely new — nothing today does this job, and Omarchy has no dock to read from. Optional;
+sequenced with the overview.
+
+---
+
+## `1d` — launcher
+
+One window, 760 wide, `radiusPanel`, hairline border, drop shadow. **Three stacked regions**,
+and the panel grows downward: an empty query shows the input row alone, so the keybind feels
+like a prompt rather than a menu.
+
+1. **Input row** — h56, `padLoose`-ish horizontal, hairline bottom border. Leading search
+   glyph, then the query at 16px with a caret, then a right-aligned **mode badge** in a
+   bordered chip.
+2. **Results** — 6px padding around the list. Each row is h48 at `radiusTile`:
+   a 30px icon tile (`radiusChip`) · a two-line stack (name 13.5, command/path 10.5) ·
+   spacer · a right-aligned `↵` on the selected row only. The selected row is the only one
+   with a ground. A hairline separator with 6px margins divides result *groups*
+   (e.g. installed apps vs. the web-search fallback).
+3. **Footer** — h34, hairline top border, key hints on the left (`↑↓ navigate`, `↵ launch`,
+   `⇥ mode`, `esc close`) and a result count + timing on the right.
+
+**Prefix modes** switch without leaving the keyboard: default `apps`, `>` run, `=` calc,
+`:` emoji, `/` files, `?` help. The canvas shows them as a pill row under the panel; that row
+is a discoverability aid for the mockup, not necessarily shipped chrome.
+
+Scope note unchanged from Phase 5: Wofi still serves `cliphist` and every `--dmenu` caller.
+This replaces Wofi as *the app launcher*, nothing more.
+
+---
+
+## `1f` — notification centre
+
+A 440-wide panel, `radiusPanel`, hairline border, drop shadow. Same three-region stack.
+
+1. **Header** — h52, `pad` horizontal, hairline bottom. Title at 13.5 · a **count badge**
+   (h19, `radiusPill`, accent ground) · spacer · a DND toggle as a 28px `radiusChip` button ·
+   a "Clear" text button.
+2. **Body** — 10px padding, `gap` between cards. Each card is `radiusTile` on a distinct
+   ground, and **has no coloured left-border stripe** — deliberately, so every card keeps an
+   identical silhouette. Card anatomy:
+   - **app row**: app glyph · APP NAME in caps at 10.5 with letter-spacing · an optional
+     group-count badge · spacer · relative time (`2 min`, `1 h`)
+   - **content**: title 12.5 semibold, then body 12 regular, `gap` 4 between
+   - **actions** (optional): a row of h28 `radiusChip` buttons — filled for the primary,
+     hairline-outlined for "Dismiss"
+   - **grouped**: a hairline divider, then each collapsed sibling as one muted 11.5 line
+3. **Footer** — h38, hairline top, key/gesture hints.
+
+**Severity is carried by the title colour alone** — `accentError` on the title, card ground
+unchanged. That is the structural rule; it is what keeps the silhouette constant.
+
+Phase 4's D-Bus-ownership constraint is unchanged: swaync must be masked before the
+Quickshell server can own `org.freedesktop.Notifications`.
+
+---
+
+## `1h` — power / session menu
+
+Centred column, `gap` 30 between its three parts:
+
+1. **Identity** — a 34px round avatar chip, then a two-line stack: `user@host`, then uptime
+   and session count at 10.5.
+2. **Tile row** — five 124×124 tiles, 14 radius, hairline border, `gap` 14. Each is a
+   centred column: a 26px glyph, `gap` 12, a 12px label. **Lock is the safe default** and is
+   the only tile with an accent border and glow. **The destructive tile is coloured in its
+   glyph only** — the tile ground and border stay neutral so the row keeps one rhythm.
+3. **Mnemonic row** — the single-key hints (`l s e r p`), a separator dot, `esc cancel`.
+
+Keep the confirmation behaviour of the current `wlogout` wrapper; the tiles are a front-end
+over the existing `session-save` / `systemctl` paths.
+
+---
+
+## `1e` — workspace overview (new, optional)
+
+A carousel, not a grid: the focused workspace stays legible at real proportions while
+neighbours are peripheral context. **Scale 1.0 / 0.69 / 0.46, opacity 1 / 0.6 / 0.35, same
+falloff in both directions.**
+
+Live window thumbnails need `ScreencopyView`, and it **is present in the installed 0.3.1** —
+verified, not assumed: `/usr/lib/qt6/qml/Quickshell/Wayland/_Screencopy/` exports
+`ScreencopyView` with `captureSource`, `live`, `hasContent` and `constraintSize`, and
+`Wayland/qmldir` line 8 re-exports it, so a plain `import Quickshell.Wayland` reaches it.
+
+⚠️ It arrives through the same underscore-module indirection as `PanelWindow`
+(`Quickshell.Wayland._Screencopy`), so expect it to trip qmllint's `uncreatable-type` the
+same way. That category is already the tree's one CLI-wide exemption
+(`.claude/rules/quickshell-qml.md`) — confirm it still covers this rather than widening the list.
+
+Genuinely optional: nothing today does this job, so nothing regresses if it never ships.
+
+---
+
+## Still out, and why the drawings do not change that
+
+Two artboards draw things this plan's "Out" table declines. A mockup is not a decision.
+
+- **`1i` Lock screen.** Declined for lockout risk, not for lack of a design.
+  **Recommendation: still out.** If taken up, it needs its own plan with a recovery path
+  verified *before* hyprlock is displaced — not a phase here.
+- **`1g` Clipboard history.** Declined because `cliphist` + Wofi covers it. Its one genuinely
+  better idea is structural and worth recording: **a three-letter type badge instead of an
+  icon** (reads faster at list density), with a real colour swatch or thumbnail for colour
+  and image entries. **Recommendation: out for now, revisit after Phase 5** — it is the
+  launcher's list widget with a different model, so building it first builds that list twice.
+
+---
+
+## Revised phase list
+
+Phases 0–2 unchanged.
+
+| Phase | Was | Now |
+|---|---|---|
+| 0 | Skeleton, theme bridge, one widget | **Done** |
+| 1 | Bar to Waybar parity | **Done** |
+| 2 | Hyprland Lua cutover | Unchanged. Still the payoff, still gated on the `hyprctl dispatch` audit |
+| **2.5** | — | **New — bar restructure.** See below |
+| 3 | OSDs | Unchanged in scope; inherits 2.5's geometry scale |
+| 4 | Notifications | Unchanged in scope; UI now specified by `1f` |
+| 5 | Launcher and power menu | Unchanged in scope; UI now specified by `1d` and `1h` |
+| **5.5** | — | **New, optional — workspace overview (`1e`) and dock** |
+| 6 | Cleanup of replaced tooling | Unchanged, still optional |
+
+### Phase 2.5 — bar restructure
+
+Retrofit `1a`/`1c` onto the shipped bar. Lands after Phase 2 so it does not compete with the
+Lua cutover, and after Waybar has stopped being the daily driver so the inset has nothing to
+coexist with.
+
+1. `Config.qml.tmpl` — the geometry scale (four radii, three paddings, `gap`), plus
+   `barHeight: 40` and `barInset: 8`
+2. `Bar.qml` — floating window: inset margins, `radiusPanel`, hairline border,
+   exclusive zone accounting for the inset
+3. `BarWidget.qml` — icon-only at rest in a 26px `radiusChip` square; hairline group
+   separators; **the accent rule enforced once, here, for all eleven widgets**
+4. `WorkspacesWidget.qml` — pills: number + top-window glyph, `radiusPill`, the five states,
+   the gap dot for non-contiguous ids
+5. The window-class → glyph map in `Config.qml.tmpl`
+6. Battery becomes the one pill; everything else loses its per-widget colour
+
+**Exit**: no literal hex, font name or inline glyph anywhere under
+`private_dot_config/quickshell/` (grep, at exit); all 8 themes render the bar with one accent;
+one light and one dark theme both pass the `themes/CLAUDE.md` contrast rules by eye;
+`mise run lint:qml` passes **and still fails on a deliberately broken file**.
+
+> Layout-stability note, not a design adoption: the clock currently renders in `guiFont`, a
+> proportional face, so the centre zone reflows slightly on every minute tick. Rendering
+> digits in `Config.terminalFont` fixes that. Both fonts already come from `globals.yaml`,
+> so this changes nothing about which fonts we ship.
+
+---
+
+## Omarchy as tooling reference
+
+The full Omarchy 4 shell source is checked out at `~/Projects/_external/omarchy/shell/`
+(currently `v4.0.1`). `_plans/OMARCHY.md` marks it **SKIPPED** — that skip is about adopting
+their *artifact*, and remains correct. Reading it for structure is not adoption.
+
+| Building | Read |
+|---|---|
+| Launcher (`1d`) | `services/AppSearch.js`, `services/AppLibrary.qml`, `plugins/menu/MenuModel.js` — fuzzy ranking and the `.desktop` model, the parts that are tedious rather than hard |
+| Notification centre (`1f`) | `plugins/notifications/NotificationLogic.js`, `components/NotificationCard.qml` — grouping and dedup rules |
+| Power menu (`1h`) | `plugins/panels/power/` |
+| Clipboard (`1g`, if revisited) | `plugins/clipboard/{capture.sh,ClipboardHistory.js}` — the capture side especially, where the UTF-16 and webp decoding bugs live that their v4.0.1 fixed |
+| Shared panel base | `Ui/{Panel,PopupCard,PanelKeyCatcher,TextField}.qml` — our `BarWidget`/`BarTooltip` pair is the same idea at smaller scale |
+
+**Do not copy** the `manifest.json` plugin registry or `PluginRegistry.qml`. This plan
+already declines a plugin system as YAGNI for one user, and every Omarchy component is shaped
+by it. Read their logic, ignore their registration. Their `Commons/Color.qml` is likewise
+their theming bridge, not ours — `Theme.qml` already does that job.
+
+They have **no dock and no workspace overview**, so `1c`'s dock and `1e` are written from
+scratch. That is a point in favour of leaving both optional.
+
+---
+
+## Risks added by this amendment
+
+| Risk | Mitigation |
+|---|---|
+| The canvas's Mocha hex values leak into QML | Every value goes through `Theme`/`Config`. A literal `#`, font name or glyph in a widget file is the defect; grep at every phase exit |
+| Our 4-step background ramp cannot express the canvas's tier count | Collapse tiers rather than invent colours — merging "occupied" and "visible" beats a hardcoded shade |
+| Floating bar's exclusive zone fights Waybar | Phase 2.5 lands after Waybar stops being the daily driver; the restructure *is* the end of the A/B |
+| Scope creep via the mockup | `1g` and `1i` are drawn but declined, with reasons recorded above |
+| `ScreencopyView` trips `uncreatable-type` like `PanelWindow` | Verified present in 0.3.1; the existing tree-wide exemption should cover it — confirm rather than widen the list |
+| Window-class → glyph map rots as apps change | One lookup object with a fallback glyph, so an unknown class renders something rather than nothing |
