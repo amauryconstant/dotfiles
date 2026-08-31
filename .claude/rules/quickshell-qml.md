@@ -95,15 +95,41 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 | `Type "BluetoothAdapter" ... not found` | `Quickshell/Bluetooth/qmldir` omits `depends Quickshell`, which Pipewire, SystemTray and Networking all declare |
 | `Type "DeviceType::Enum" ... not found` | Networking's qmltypes records the enum unqualified; qmllint cannot match it to the module's own exported element |
 | `Type "DBusMenuHandle" ... not found` | Not exposed declaratively; unavoidable when reading `SystemTrayItem.menu` |
-| `No type found for property "edges"` | `PopupAnchor.edges` is `Edges::Flags`, unresolvable across the module split. Avoided entirely by leaving `edges`/`gravity` at their defaults, which already place a popup below its anchor |
+| `No type found for property "edges"` | `PopupAnchor.edges`/`gravity` are `Edges::Flags`, unresolvable across the module split. Suppress inline with `missing-type` — the defaults are **not** usable, see below |
 
 ---
 
 ## Runtime behaviours that bite
 
+🚨 **A `PopupWindow` anchored to an item covers that item at the default `edges`.**
+`PopupAnchorState` defaults to `edges = Top | Left`, `gravity = Bottom | Right`
+(`_ai/quickshell/src/core/popupanchor.hpp`), and setting `anchor.item` without `anchor.rect`
+makes the anchor rect the item's **full** `boundingRect()` (`popupanchor.cpp` `updateAnchor`).
+So `anchorY` is the item's *top* edge and the popup lands on top of the widget it describes.
+The popup then steals the pointer, `containsMouse` drops, a `visible:`-bound popup hides, the
+pointer returns, and it flickers forever — while swallowing every click meant for the widget.
+Set `edges: Edges.Bottom` and `gravity: Edges.Bottom` (which also centres it horizontally) and
+suppress `missing-type` over those two lines. See `bar/BarTooltip.qml`.
+
+🚨 **A shared `MouseArea` declared after the content container consumes every child's events.**
+Later siblings stack above earlier ones, so `BarWidget`'s catch-all `MouseArea` sat over the
+per-workspace and per-tray-item `MouseArea`s and killed their clicks *and* their `containsMouse`.
+`z: -1` puts it under the content: a child `MouseArea` wins where one exists, and elsewhere the
+event still reaches it because `Text` and `Rectangle` do not accept mouse events.
+
 **Pipewire node properties are unbound without a tracker.** `Pipewire.defaultAudioSink.audio.volume`
 reads a permanent 0 with no error unless a `PwObjectTracker { objects: [sink] }` holds the node.
 See `bar/widgets/AudioWidget.qml`.
+
+**`WifiNetwork.signalStrength` is a 0..1 fraction too.** Same trap, different module: `nmcli`
+reports 61, the property reads 0.61. A `/ 25` banding written for a percentage pins the index at
+0, so a full-strength link draws the empty-signal glyph forever, with no error. See
+`bar/widgets/NetworkWidget.qml`.
+
+**`Networking.devices` is empty for the first ~1-2s**, like Hyprland's models below. It fills on
+its own and `ObjectModel.values` does notify (`valuesChanged`), so a binding recovers — but a
+one-shot read at startup sees nothing. A wifi device's `networks` already contains the connected
+network without `scannerEnabled`; leave the scanner off unless a picker needs the full list.
 
 **`UPowerDevice.percentage` is a 0..1 fraction**, not the 0..100 that the UPower D-Bus API and
 `upower -i` both report. Verified: `upower` said 72%, the property said 0.72. Every threshold
