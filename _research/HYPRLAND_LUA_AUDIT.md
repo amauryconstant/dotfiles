@@ -8,6 +8,10 @@ time of the audit.
 runbook. `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit fork this cutover also
 activates.
 
+Two audits live here. The first (2026-08-30) is **config-side**: `.conf`/`.lua` parity. The
+second (2026-09-01, at the end of this file) is the **`hyprctl dispatch` script fleet** — 29
+call sites that the first audit never scoped, and that a cutover breaks.
+
 ## Audit results
 
 All 21 `.conf`/`.lua` pairs compared semantically — 9 in `conf/`, 11 in `conf/bindings/`, plus the
@@ -69,3 +73,105 @@ catch.
 errors". It resolves the rest of the tree through `package.path`, proving the tree **parses** and
 every `require` resolves — it does **not** prove dispatcher arguments are semantically correct. The
 runnable recipe lives in `_guides/HYPRLAND_LUA_CUTOVER.md`, which is where it gets used.
+
+---
+
+# The `hyprctl dispatch` script fleet (2026-09-01)
+
+Second, separate audit. The 2026-08-30 pass above is **config-side only** — the 21
+`.conf`/`.lua` pairs. Our own scripts and app configs call `hyprctl dispatch` with legacy
+dispatch strings, and none of that was in scope. `_plans/QUICKSHELL_SHELL.md` Phase 2 carried
+the question as *inference, not verified*. It is now verified.
+
+## Verdict: the legacy form **breaks**. Every site must be converted before cutover.
+
+Read from Hyprland `v0.56.2` upstream (the installed version; source is not vendored here).
+
+`hyprctl dispatch` is one registered IPC command, `dispatchRequest`, and it forks on config
+provider **before** it ever reaches the dispatcher table:
+
+```
+src/debug/HyprCtl.cpp:1126  dispatchRequest()
+src/debug/HyprCtl.cpp:1130    if (Config::mgr()->type() == Config::CONFIG_LUA) {
+src/debug/HyprCtl.cpp:1132      std::string evalStr = std::format("return hl.dispatch({})", in);
+src/debug/HyprCtl.cpp:1134      auto ret = luaMgr->eval(evalStr).value_or("ok");
+                                 …returns here…
+src/debug/HyprCtl.cpp:1149    const auto DISPATCHER = g_pKeybindManager->m_dispatchers.find(DISPATCHSTR);
+```
+
+Line 1149 — the legacy lookup in `m_dispatchers` — is unreachable in Lua mode. The text after
+`dispatch ` is spliced into Lua source verbatim, so `dispatch workspace 2` becomes
+`return hl.dispatch(workspace 2)`, a syntax error. There is no fallback path: the `if` returns
+unconditionally.
+
+`hl.dispatch` will not take a legacy string either — it requires a dispatcher userdata built by
+`hl.dsp.*`:
+
+```
+src/config/lua/bindings/LuaBindingsToplevel.cpp:352  hlDispatch()
+                                              :354    "hl.dispatch: expected a dispatcher (e.g. hl.dsp.window.close())"
+src/config/lua/bindings/LuaBindingsDispatchers.cpp:1343  registerDispatcherBindings() — the hl.dsp table
+```
+
+**`hyprctl --batch` is the same code path.** `dispatchBatch` (`HyprCtl.cpp:1309`) splits on `;`
+and feeds each fragment back through `g_pHyprCtl->getReply()`, i.e. through `dispatchRequest`
+again. A batch of six dispatches is six broken calls, not one.
+
+**Failure is loud, but our call sites silence it.** `CConfigManager::eval`
+(`src/config/lua/ConfigManager.cpp:880`) returns `error: …`, `dispatchRequest` appends a hint,
+and `hyprctl` maps a reply starting with `error:` to **exit 7** (`hyprctl/src/main.cpp:277`).
+That exit code is worth nothing where we wrote `2>/dev/null || true`, `|| exit 0`, or
+`>/dev/null 2>&1` — which is most of the fleet — and hypridle ignores its command's status
+entirely.
+
+## Replacement form
+
+Quoting is a shell concern only; `hyprctl` joins `argv` with spaces (`main.cpp:470`) and the
+compositor sees the joined text.
+
+```sh
+hyprctl dispatch 'hl.dsp.focus({ workspace = "2" })'
+```
+
+The `hl.dsp.*` argument shapes are **not** in `/usr/share/hypr/stubs/hl.meta.lua` — it types
+every dispatcher as `fun(...): HL.Dispatcher`. They come from
+`src/config/lua/bindings/LuaBindingsDispatchers.cpp`, one `hl*` factory per entry.
+
+## Inventory — 29 call sites across 10 files
+
+Larger than the ~12 the plan estimated: it missed the shared hypridle template and the
+six-dispatch batch in `window-pop`. Conversion is deliberately **not** done here.
+
+| File:line | Legacy call | Replacement |
+|---|---|---|
+| `.chezmoitemplates/hypridle_general:11` | `dpms on` | `hl.dsp.dpms({ action = "on" })` |
+| `hypr/hypridle.conf.tmpl:28,29` | `dpms off` / `dpms on` | `hl.dsp.dpms({ action = "off"/"on" })` |
+| `hypr/hypridle-nolock.conf.tmpl:20,21` | `dpms off` / `dpms on` | idem |
+| `hyprwhenthen/scripts/executable_float-and-center.sh:3` | `togglefloating address:$A` | `hl.dsp.window.float({ window = "address:$A" })` |
+| `…:4` | `resizewindowpixel exact 50% 50%,address:$A` | `hl.dsp.window.resize({ x =, y =, window = })` — ⚠ `x`/`y` are numbers, no percent form; the 50% must be computed |
+| `…:5` | `focuswindow address:$A` | `hl.dsp.focus({ window = "address:$A" })` |
+| `…:6` | `centerwindow` | `hl.dsp.window.center({})` |
+| `voxtype/config.toml.tmpl:67,68,69` | `submap voxtype_recording` / `voxtype_suppress` / `reset` | `hl.dsp.submap("…")` |
+| `wlogout/layout:9` | `exit` | `hl.dsp.exit()` |
+| `desktop/executable_launch-or-focus:31` | `focuswindow address:$W` | `hl.dsp.focus({ window = … })` |
+| `desktop/executable_recover-workspaces:10` | `split:grabroguewindows` | `require("hyprsplit").dsp.grab_rogue_windows()` — ⚠ see open question |
+| `desktop/executable_session-restore:182,187,192,200` | `exec "[monitor M; workspace N silent] cmd"` | `hl.dsp.exec_cmd(cmd, { monitor = "M", workspace = "N silent" })` — rules table is keyed by window-rule effect name (`LuaBindingsInternal.cpp:buildRuleFromTable`) |
+| `…:316,403` | `movetoworkspacesilent "N,address:$A"` | `hl.dsp.window.move({ workspace = "N", follow = false, window = "address:$A" })` — `silent` is `follow = false` |
+| `…:335,406` | `moveworkspacetomonitor "N M"` | `hl.dsp.workspace.move({ workspace = "N", monitor = "M" })` |
+| `desktop/executable_window-pop:21-26` (one `--batch`) | `togglefloating` · `resizeactive exact W H` · `centerwindow` · `pin` · `alterzorder top` · `tagwindow +pop` | `hl.dsp.window.float` · `.resize({ x = W, y = H })` · `.center({})` · `.pin({})` · `.alter_zorder({ mode = "top" })` · `.tag({ tag = "+pop" })` |
+
+Dangerous two, unchanged from the plan's assessment and now confirmed to be real: **`dpms on`**
+(five of the sites; a dead one is a black screen that does not come back) and the **voxtype
+submaps** (a stuck `voxtype_suppress` submap swallows the keyboard).
+
+## Open at conversion time
+
+- **`split:grabroguewindows` scope.** Under Lua, hyprsplit is a Lua library
+  (`~/.config/hypr/hyprsplit/init.lua:303` `hyprsplit.dsp.grab_rogue_windows`), and our config
+  reaches it through a **local** `require("hyprsplit")` per module — not a global. The
+  `hyprctl` eval runs in the config's `lua_State`, so `require("hyprsplit")` inside the
+  dispatch string should resolve via the `package.path` the entry point sets, but this is the
+  one line in the table not settled from source. Check it live right after cutover.
+- **`workspace N silent` as a rule-table value.** The legacy rule string is passed through as
+  `{ workspace = "N silent" }`; whether the Lua side accepts the `silent` suffix or wants a
+  separate key is unverified.

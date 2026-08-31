@@ -358,19 +358,24 @@ it holds ~12 call sites on the same legacy dispatch-string syntax that Lua mode 
 | `private_dot_config/hypr/hypridle{,-nolock}.conf.tmpl` | 4 | `dpms off` / `dpms on` |
 | `private_dot_config/wlogout/layout` | 1 | via `session-save` |
 
-A Quickshell bar fixes none of these. **Inference, not verified**: they break the same way
-Waybar's clicks do. Quickshell's `activate()` branches on `usingLua` because the IPC
-dispatch *string format* changes with config provider, and `hyprctl` writes to the same
-`.socket.sock` — but this has not been confirmed, because confirming it requires being in
-Lua mode. Settle it first; it may turn out `hyprctl` keeps parsing the legacy form, in which
-case this prerequisite collapses to nothing.
+A Quickshell bar fixes none of these. **Verified 2026-09-01: they do break**, and the table
+above undercounts — the real figure is **29 call sites across 10 files** (it missed the shared
+hypridle template and `window-pop`'s six-dispatch `--batch`). Settled from Hyprland `v0.56.2`
+source, not from a nested session: `dispatchRequest` (`src/debug/HyprCtl.cpp:1126`) forks on
+config provider at line 1130 and splices the text into `return hl.dispatch(<verbatim>)`, so the
+legacy `m_dispatchers` lookup at line 1149 is unreachable in Lua mode, with no fallback.
+`hyprctl --batch` re-enters the same handler per fragment. Full evidence, the per-site
+replacement table and the two open questions are in `_research/HYPRLAND_LUA_AUDIT.md`.
 
-Blast radius if the inference holds: session restore, window automation, voxtype submaps,
-and idle DPMS. The last two are the dangerous ones — a dead `dpms on` means a black screen
-that does not come back.
+Blast radius, now confirmed rather than assumed: session restore, window automation, voxtype
+submaps, and idle DPMS. The last two are the dangerous ones — a dead `dpms on` means a black
+screen that does not come back. Note the failure is `hyprctl` exit 7, which buys nothing here:
+almost every site is written `2>/dev/null || true`, `|| exit 0` or `>/dev/null 2>&1`, and
+hypridle ignores its command's status.
 
-- [ ] Verify whether `hyprctl dispatch <legacy string>` still works under `configProvider = "lua"`
-- [ ] If it does not: convert the ~12 sites, and fold the finding into `_research/HYPRLAND_LUA_AUDIT.md`
+- [x] Verify whether `hyprctl dispatch <legacy string>` still works under `configProvider = "lua"`
+      — **2026-09-01: it does not.** Finding folded into `_research/HYPRLAND_LUA_AUDIT.md`
+- [ ] Convert the 29 sites (inventory with per-site replacement: `_research/HYPRLAND_LUA_AUDIT.md`)
 - [ ] Delete the `.chezmoiignore` TEMP block; `chezmoi apply`
 - [ ] Follow `_guides/HYPRLAND_LUA_CUTOVER.md` (hold status, steps, rollback, hyprsplit coupling)
 - [ ] Verify workspace clicks in Lua mode, and every raw `dispatch()` we shipped in Phase 1
@@ -494,7 +499,7 @@ Per tool, the checklist is the same:
 | Subtree API ahead of installed 0.3.1 | Confirm every relied-on API against the installed build (qmltypes / `strings` / smoke test), as done for fact #5 |
 | A Quickshell update breaks the config | Quickshell is a versioned `extra` package, not `-git`; pin nothing, but keep Waybar until Phase 1 exit and read `changelog/` before upgrading |
 | Raw `dispatch()` strings break at Lua cutover | Fact #6 — funnel them through one helper, audit before Phase 2 |
-| The Lua cutover's real blast radius is wider than Waybar | ~12 `hyprctl dispatch` sites in our own scripts/configs, unaudited by either Lua doc. Phase 2 prerequisite; `dpms on` and voxtype submaps are the dangerous ones |
+| The Lua cutover's real blast radius is wider than Waybar | **Confirmed 2026-09-01**: 29 `hyprctl dispatch` sites across 10 files in our own scripts/configs, all broken by Lua mode. Inventory in `_research/HYPRLAND_LUA_AUDIT.md`; `dpms on` (5 sites) and voxtype submaps are the dangerous ones |
 | Cleanup removes a fallback too early | Phase 6 is optional, per-tool, and gated on the replacement having lived a month, not on its phase exiting |
 | `waybar.css` deleted while it is still the colorset source of truth | `colors.sh` is generated from it and `Theme.qml` reads `colors.sh`. Phase 6 ordering constraint — invert the chain first or keep the file orphaned |
 | Notification cutover is not reversible in place | Phase 4 owns its own flag, and the revert (`systemctl --user unmask swaync`) is tested before the cutover, not after |
