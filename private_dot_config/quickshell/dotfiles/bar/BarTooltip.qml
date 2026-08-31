@@ -20,13 +20,22 @@ PopupWindow {
     implicitHeight: label.implicitHeight + 12
     implicitWidth: label.implicitWidth + 20
 
-    // `edges`/`gravity` are deliberately left at their defaults, which already
-    // place the popup below the anchor — exactly what a top bar wants. Setting
-    // them explicitly would need `--missing-type disable`, because PopupAnchor
-    // declares them as Edges::Flags and qmllint cannot resolve that type across
-    // Quickshell's module split. Widening the exemption list to buy two
-    // redundant lines is the trade the lint task exists to prevent.
+    // 🚨 `edges`/`gravity` MUST be set. The defaults are `Top | Left` /
+    // `Bottom | Right` (popupanchor.hpp), and with `anchor.item` set the anchor
+    // rect is the item's full boundingRect (popupanchor.cpp updateAnchor), so
+    // the default anchorY is the widget's TOP edge — the tooltip lands on top
+    // of the widget it describes. That steals the pointer, so containsMouse
+    // drops, the tooltip hides, the pointer returns, and it flickers forever;
+    // it also swallows every click meant for the widget.
+    //
+    // `Edges.Bottom` for both anchors the popup to the widget's bottom edge and
+    // centres it horizontally (gravity with neither Left nor Right centres —
+    // popupanchor.cpp calcEffectiveX).
     anchor {
+        // qmllint disable missing-type
+        edges: Edges.Bottom
+        gravity: Edges.Bottom
+        // qmllint enable missing-type
         item: root.anchorItem
     }
 
