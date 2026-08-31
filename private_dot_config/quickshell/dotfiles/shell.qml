@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import "bar"
+import "osd"
 import Quickshell
 import Quickshell.Io
 
@@ -43,6 +44,9 @@ ShellRoot {
                 bar.refreshIdle();
         }
     }
+
+    // One OSD, not one per screen: it follows the focused monitor itself.
+    Osd {}
 
     Variants {
         id: barVariants

@@ -30,6 +30,15 @@ Singleton {
     readonly property int pillHeight: 24
     readonly property int iconSize: 16
 
+    // Volume/brightness OSD. It sits bottom-centre, clear of voxtype's own OSD
+    // (a 72-tall card at bottomMargin 72) so a dictation card and a volume key
+    // cannot overlap.
+    readonly property int osdWidth: 320
+    readonly property int osdHeight: 56
+    readonly property int osdMargin: 160
+    readonly property int osdTrackHeight: 6
+    readonly property int osdHideMs: 1500
+
     readonly property int fontSize: 13
     readonly property int fontSizeLarge: 14
     readonly property int fontSizeSmall: 12
@@ -69,6 +78,18 @@ Singleton {
     // rot without the pills going blank.
     readonly property string windowGlyphFallback: "󰣆"
 
+    // Level ramps rendered by TWO surfaces (a bar widget and the OSD), so they
+    // live here rather than in the widget. A glyph that only distinguishes one
+    // widget's own states stays in that widget -- see Amendment A's re-stated
+    // exit criterion in _plans/QUICKSHELL_SHELL.md.
+    readonly property var volumeGlyphs: ["󰕿", "󰖀", "󰕾"]
+    readonly property string volumeGlyphMuted: "󰝟"
+    readonly property string volumeGlyphHeadset: "󰋎"
+    readonly property string volumeGlyphHeadphone: "󰋋"
+    // md-brightness_1..7 -- a seven-step ramp because that is how many the icon
+    // set actually has.
+    readonly property var brightnessGlyphs: ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"]
+
     // Widgets that shell out reach our script library through this, resolved
     // at runtime like Theme's colors.sh path rather than baked in by the
     // template, so the rendered QML stays free of an absolute home path.
@@ -77,6 +98,20 @@ Singleton {
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.
     readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
+
+    function brightnessGlyph(percent: int): string {
+        return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];
+    }
+
+    function volumeGlyph(volume: real, muted: bool, formFactor: string): string {
+        if (muted)
+            return root.volumeGlyphMuted;
+        if (formFactor === "headset")
+            return root.volumeGlyphHeadset;
+        if (formFactor === "headphone")
+            return root.volumeGlyphHeadphone;
+        return root.volumeGlyphs[volume < 0.34 ? 0 : volume < 0.67 ? 1 : 2];
+    }
 
     function windowGlyph(windowClass: string): string {
         const lower = (windowClass ?? "").toLowerCase();
