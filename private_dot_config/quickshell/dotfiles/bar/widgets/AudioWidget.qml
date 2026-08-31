@@ -13,6 +13,20 @@ BarWidget {
     readonly property bool muted: root.sink?.audio?.muted ?? false
     readonly property real volume: root.sink?.audio?.volume ?? 0
 
+    // Icon-only: the three-step glyph already reads as a level, and the exact
+    // percentage is one hover away in the tooltip.
+    icon: {
+        if (root.muted)
+            return "󰝟";
+        const form = root.sink?.properties["device.form-factor"] ?? "";
+        if (form === "headset")
+            return "󰋎";
+        if (form === "headphone")
+            return "󰋋";
+        return root.volume < 0.34 ? "󰕿" : root.volume < 0.67 ? "󰖀" : "󰕾";
+    }
+    // Muted is a state; a volume level is not.
+    iconColor: root.muted ? Theme.fgMuted : Theme.fgSecondary
     tooltipText: root.sink ? `${root.sink.description}\nVolume: ${Math.round(root.volume * 100)}%${root.muted ? " (muted)" : ""}` : "No audio sink"
 
     // Waybar's on-click-middle was `pamixer --next-sink`; cycling the
@@ -43,33 +57,5 @@ BarWidget {
     // node: without this the widget renders a permanent 0% with no error.
     PwObjectTracker {
         objects: [root.sink]
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        // accent-highlight is the interactive-module colour; muted drops to
-        // fg-muted, as in waybar/CLAUDE.md.
-        color: root.muted ? Theme.fgMuted : Theme.accentHighlight
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            if (root.muted)
-                return "󰝟";
-            const form = root.sink?.properties["device.form-factor"] ?? "";
-            if (form === "headset")
-                return "󰋎";
-            if (form === "headphone")
-                return "󰋋";
-            return root.volume < 0.34 ? "󰕿" : root.volume < 0.67 ? "󰖀" : "󰕾";
-        }
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.muted ? Theme.fgMuted : Theme.accentHighlight
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: root.muted ? "" : `${Math.round(root.volume * 100)}%`
-        visible: !root.muted
     }
 }

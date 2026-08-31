@@ -10,7 +10,22 @@ BarWidget {
     id: root
 
     readonly property bool dnd: source.alt.startsWith("dnd")
+    readonly property bool unread: source.text !== "" && source.text !== "0"
 
+    icon: {
+        const icons = {
+            "notification": "󰂚",
+            "none": "󰂜",
+            "dnd-notification": "󰂛",
+            "dnd-none": "󰪑"
+        };
+        return icons[source.alt] ?? "󰂜";
+    }
+    // Both do-not-disturb and a waiting notification are states; an idle bell
+    // is the resting case and stays neutral.
+    iconColor: root.dnd ? Theme.accentError : root.unread ? Theme.accentWarning : Theme.fgSecondary
+    label: root.unread ? source.text : ""
+    monoLabel: true
     tooltipText: source.tooltip
 
     onClicked: Quickshell.execDetached(["swaync-client", "-t", "-sw"])
@@ -21,22 +36,5 @@ BarWidget {
         id: source
 
         command: ["swaync-client", "-swb"]
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.dnd ? Theme.accentError : source.text !== "" && source.text !== "0" ? Theme.accentWarning : Theme.fgPrimary
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            const icons = {
-                "notification": "󰂚",
-                "none": "󰂜",
-                "dnd-notification": "󰂛",
-                "dnd-none": "󰪑"
-            };
-            const icon = icons[source.alt] ?? "󰂜";
-            return source.text !== "" && source.text !== "0" ? `${icon}${source.text}` : icon;
-        }
     }
 }

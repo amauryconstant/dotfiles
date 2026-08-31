@@ -12,14 +12,7 @@ BarWidget {
     readonly property string title: Hyprland.activeToplevel?.title ?? ""
 
     hoverBackground: false
+    label: root.title.length > Config.titleMaxLength ? root.title.substring(0, Config.titleMaxLength - 1) + "…" : root.title
     // Only worth a tooltip when something was actually cut off.
     tooltipText: root.title.length > Config.titleMaxLength ? root.title : ""
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: Theme.fgSecondary
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: root.title.length > Config.titleMaxLength ? root.title.substring(0, Config.titleMaxLength - 1) + "…" : root.title
-    }
 }

@@ -18,6 +18,22 @@ BarWidget {
     // real player it is proxying. Browsers were Waybar's ignored-players.
     readonly property list<string> ignored: ["firefox", "chromium", "playerctld"]
 
+    icon: {
+        if (!root.player)
+            return "";
+        return root.player.isPlaying ? "󰐊" : root.player.playbackState === MprisPlaybackState.Paused ? "󰏤" : "󰓛";
+    }
+    // The track title is the one label the bar cannot move to a tooltip: it is
+    // what the widget is for.
+    label: {
+        const title = root.player?.trackTitle ?? "";
+        if (title === "")
+            return "";
+        const artist = root.player.trackArtist ?? "";
+        const text = String(artist === "" ? title : `${title} - ${artist}`);
+        // Waybar's dynamic-len 35 with a unicode ellipsis.
+        return text.length > Config.mediaMaxLength ? text.substring(0, Config.mediaMaxLength - 1) + "…" : text;
+    }
     tooltipText: root.player ? `${root.player.identity}\n${root.player.trackTitle}\n${root.player.trackArtist} - ${root.player.trackAlbum}` : ""
 
     onClicked: root.player?.togglePlaying()
@@ -30,24 +46,5 @@ BarWidget {
     onScrolledUp: {
         if (root.player?.volumeSupported)
             root.player.volume = Math.min(1, root.player.volume + Config.volumeStep);
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: Theme.accentMedia
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            if (!root.player)
-                return "";
-            const icon = root.player.isPlaying ? "󰐊" : root.player.playbackState === MprisPlaybackState.Paused ? "󰏤" : "󰓛";
-            const title = root.player.trackTitle ?? "";
-            const artist = root.player.trackArtist ?? "";
-            if (title === "")
-                return icon;
-            const label = artist === "" ? title : `${title} - ${artist}`;
-            // Waybar's dynamic-len 35 with a unicode ellipsis.
-            return `${icon} ${label.length > Config.mediaMaxLength ? label.substring(0, Config.mediaMaxLength - 1) + "…" : label}`;
-        }
     }
 }

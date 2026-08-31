@@ -22,6 +22,17 @@ BarWidget {
     property string device: ""
     readonly property int percent: root.maxValue > 0 ? Math.round(root.rawValue / root.maxValue * 100) : 0
 
+    // Icon-only: the nine-step glyph already reads as a level, and the exact
+    // percentage is in the tooltip. Amendment A grants a number-carrying pill
+    // to the battery alone.
+    icon: {
+        // md-brightness_1..7 — a seven-step ramp because that is how
+        // many the icon set actually has. The nine slots this replaced
+        // were nine EMPTY strings, the same authoring loss that blanked
+        // the workspace glyphs, so the widget drew nothing at any level.
+        const icons = ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"];
+        return icons[Math.min(6, Math.floor(root.percent / 15))];
+    }
     tooltipText: `Brightness: ${root.percent}%`
     // No internal backlight means a desktop with a DDC monitor, where reading
     // the current value costs a ~200ms ddcutil probe per update. Not worth a
@@ -52,16 +63,5 @@ BarWidget {
 
         onFileChanged: this.reload()
         onLoaded: root.rawValue = parseInt(this.text().trim(), 10) || 0
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: Theme.accentWarning
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            const icons = ["", "", "", "", "", "", "", "", ""];
-            return `${icons[Math.min(8, Math.floor(root.percent / 12.5))]} ${root.percent}%`;
-        }
     }
 }

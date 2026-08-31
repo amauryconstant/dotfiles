@@ -1,18 +1,39 @@
 import "../"
 import QtQuick
 
-// Shared base for every bar widget: padding, hover background, tooltip, and
-// the click/scroll plumbing. A widget file is then only its data binding and
-// its format string, which is what keeps 14 of them readable.
+// Shared base for every bar widget: the chip, the accent rule, the tooltip,
+// and the click/scroll plumbing. A widget file is then only its data binding
+// and its format string, which is what keeps 14 of them readable.
 //
-// Children go into a Row, so the common icon-plus-label shape needs no layout
-// code of its own.
+// 🚨 The accent rule lives here and nowhere else. `iconColor` defaults to
+// fg-secondary, so a widget is neutral at rest unless it explicitly overrides
+// for a real state — that is the whole rule from Amendment A ("exactly one
+// accent marks the focused thing, everything else neutral, semantic colours
+// only for state"), enforced in one place instead of eleven.
 Item {
     id: root
 
     default property alias content: layout.data
     property bool hoverBackground: true
     readonly property alias hovered: mouse.containsMouse
+    // A lit ground is an elevated surface, and themes/CLAUDE.md forbids
+    // fg-secondary there — hence the swap rather than one fixed rest colour.
+    readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
+    property string icon: ""
+    property color iconColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+    property string label: ""
+    // Split from iconColor so a widget can colour its glyph for a state while
+    // the number it carries stays readable, as the battery pill does.
+    property color labelColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+    // Digits only line up in a fixed-pitch face, and a proportional one
+    // reflows the bar every time the number changes width.
+    property bool monoLabel: false
+    // A pill is a widget carrying a number that must actually be read at a
+    // glance. Amendment A grants exactly one: the battery.
+    property bool pill: false
+    // Only the launcher chip sets this: a permanent ground that is not a pill.
+    property bool tinted: false
+    property color groundColor: Theme.bgSecondary
     // Calendars and device lists only line up in a fixed-pitch font.
     property bool tooltipMonospace: false
     property string tooltipText: ""
@@ -24,16 +45,17 @@ Item {
     signal scrolledUp
 
     implicitHeight: Config.barHeight
-    implicitWidth: layout.implicitWidth + Config.widgetPadding * 2
+    // A lone glyph lands on a 26px square; anything with a label grows from it.
+    implicitWidth: Math.max(Config.chipSize, layout.implicitWidth + Config.padTight)
     visible: layout.implicitWidth > 0
 
     Rectangle {
-        anchors.fill: parent
-        anchors.bottomMargin: 2
-        anchors.topMargin: 2
-        color: Theme.bgSecondary
-        opacity: root.hoverBackground && mouse.containsMouse ? 1 : 0
-        radius: 4
+        anchors.centerIn: parent
+        color: root.pill || root.tinted ? root.groundColor : Theme.bgSecondary
+        height: Config.chipSize
+        opacity: root.grounded ? 1 : 0
+        radius: root.pill ? Config.radiusPill : Config.radiusChip
+        width: parent.width
 
         Behavior on opacity {
             NumberAnimation {
@@ -46,7 +68,25 @@ Item {
         id: layout
 
         anchors.centerIn: parent
-        spacing: Config.barSpacing
+        spacing: Config.gap / 2
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.iconColor
+            font.family: Config.guiFont
+            font.pixelSize: Config.fontSize
+            text: root.icon
+            visible: root.icon !== ""
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.labelColor
+            font.family: root.monoLabel ? Config.terminalFont : Config.guiFont
+            font.pixelSize: root.monoLabel ? Config.fontSizeSmall : Config.fontSize
+            text: root.label
+            visible: root.label !== ""
+        }
     }
 
     // 🚨 `z: -1` is load-bearing. Content goes into `layout`, which is declared

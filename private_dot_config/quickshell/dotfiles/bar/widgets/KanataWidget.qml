@@ -1,5 +1,9 @@
 import "../"
+// Config is only reached from inside a template literal, which the linter
+// does not trace, so the import reads as unused while being load-bearing.
+// qmllint disable unused-imports
 import "../../"
+// qmllint enable unused-imports
 import Quickshell
 import QtQuick
 
@@ -13,6 +17,8 @@ import QtQuick
 BarWidget {
     id: root
 
+    icon: "󰌌"
+    label: source.text
     tooltipText: source.tooltip
     // Waybar used exec-if to hide this when kanata is not running; here the
     // absence of any layer line is the same signal, without the extra poll.
@@ -24,13 +30,5 @@ BarWidget {
         id: source
 
         command: [`${Config.scriptsDir}/desktop/kanata-layer`]
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: Theme.accentAlternative
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: `󰌌 ${source.text}`
     }
 }

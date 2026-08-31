@@ -9,12 +9,17 @@ import QtQuick
 // bar text itself into a monospace calendar block on click. That is a Waybar
 // workaround for having nowhere else to put it — here the calendar lives in
 // the tooltip, where Waybar's own default also puts it, so click is free.
+//
+// The time renders in terminalFont, not guiFont. Not a design adoption: a
+// proportional face changes width as the digits change, so the centre zone
+// reflowed on every minute tick.
 BarWidget {
     id: root
 
+    hoverBackground: false
+    tooltipMonospace: true
     // Only bind while hovered: rebuilding the grid on every minute tick when
     // nobody is looking is pure waste.
-    tooltipMonospace: true
     tooltipText: root.hovered ? root.monthGrid(clock.date) : ""
 
     function monthGrid(now: date): string {
@@ -41,10 +46,20 @@ BarWidget {
 
     Text {
         anchors.verticalCenter: parent.verticalCenter
-        color: Theme.accentPrimary
+        color: Theme.fgPrimary
+        font.family: Config.terminalFont
+        font.pixelSize: Config.fontSizeLarge
+        text: Qt.formatDateTime(clock.date, "HH:mm")
+    }
+
+    Text {
+        id: date
+
+        anchors.verticalCenter: parent.verticalCenter
+        color: Theme.fgMuted
         font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: Qt.formatDateTime(clock.date, "dddd d MMM. yyyy - HH:mm")
+        font.pixelSize: Config.fontSizeSmall
+        text: Qt.formatDateTime(clock.date, "ddd d MMM")
     }
 
     SystemClock {

@@ -22,6 +22,22 @@ BarWidget {
     // qmllint enable unresolved-type
     readonly property var wifi: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
 
+    icon: {
+        if (!root.active)
+            return "󰖪";
+        if (!root.isWifi)
+            return "󰈀";
+        // 🚨 signalStrength is a 0..1 fraction, like UPowerDevice.percentage
+        // and unlike the 0..100 nmcli reports. Dividing by 25 as if it were
+        // a percentage pinned the index at 0, so a full-strength link drew
+        // the empty-signal glyph forever. Verified live: nmcli 61%, the
+        // property 0.61.
+        const bars = ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"];
+        return bars[Math.min(4, Math.floor((root.wifi?.signalStrength ?? 0) * 4))];
+    }
+    // Connected is the resting state and stays neutral; no route at all is a
+    // fault worth colouring, which is the accent rule's "state only" clause.
+    iconColor: root.active ? Theme.fgSecondary : Theme.accentError
     tooltipText: {
         if (!root.active)
             return "Disconnected\nNo network interface available";
@@ -32,24 +48,4 @@ BarWidget {
     visible: Config.isLaptop
 
     onClicked: Quickshell.execDetached(["ghostty", "--class=network-manager", "-e", "nmtui"])
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.active ? Theme.accentInfo : Theme.fgMuted
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            if (!root.active)
-                return "󰖪";
-            if (!root.isWifi)
-                return "󰈀";
-            // 🚨 signalStrength is a 0..1 fraction, like UPowerDevice.percentage
-            // and unlike the 0..100 nmcli reports. Dividing by 25 as if it were
-            // a percentage pinned the index at 0, so a full-strength link drew
-            // the empty-signal glyph forever. Verified live: nmcli 61%, the
-            // property 0.61.
-            const bars = ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"];
-            return bars[Math.min(4, Math.floor((root.wifi?.signalStrength ?? 0) * 4))];
-        }
-    }
 }

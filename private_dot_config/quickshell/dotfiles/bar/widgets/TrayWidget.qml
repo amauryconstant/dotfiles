@@ -31,8 +31,8 @@ BarWidget {
             readonly property var menuHandle: entry.modelData.menu
             // qmllint enable unresolved-type
 
-            height: Config.barHeight
-            width: Config.iconSize + 8
+            height: Config.chipSize
+            width: Config.chipSize
 
             IconImage {
                 id: icon

@@ -6,6 +6,10 @@ import QtQuick
 
 // Waybar's battery module, laptop-only via Config.isLaptop.
 //
+// This is the one pill on the bar (Amendment A): every other widget is
+// icon-only at rest, because charge is the single number that has to be
+// readable without a hover.
+//
 // PowerProfiles is deliberately NOT wired up, despite being the obvious
 // native counterpart. power-profiles-daemon is neither installed here nor in
 // packages.yaml, so Waybar's `on-click: powerprofilesctl` was already dead —
@@ -46,22 +50,24 @@ BarWidget {
         return `${hours}h ${minutes}m ${root.charging ? "until full" : "remaining"}`;
     }
 
+    icon: {
+        const levels = ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰂃", "󰁹"];
+        return root.charging ? "󰢜" : root.plugged ? "󰚥" : levels[Math.min(10, Math.floor(root.percent / 10))];
+    }
+    // Graded states from waybar/CLAUDE.md: charging is informational, then
+    // error < 10, warning <= 20, urgent-secondary for the 20-30 band. A
+    // healthy discharging battery is the resting case and stays neutral.
+    iconColor: root.charging ? Theme.accentInfo : root.percent <= 10 ? Theme.accentError : root.percent <= 20 ? Theme.accentWarning : root.percent <= 30 ? Theme.accentUrgentSecondary : Theme.fgSecondary
+    // The mockup tints the whole pill at critical, so the one number that
+    // matters raises its voice without a second accent appearing on the bar.
+    groundColor: root.percent <= 10 && !root.charging ? Qt.alpha(Theme.accentError, 0.14) : Theme.bgSecondary
+    label: `${Math.round(root.percent)}%`
+    // The glyph carries the state; the number stays readable.
+    labelColor: root.percent <= 10 && !root.charging ? Theme.accentError : Theme.fgPrimary
+    monoLabel: true
+    pill: true
     tooltipText: root.battery ? root.tooltipLines() : ""
     visible: Config.isLaptop && root.battery !== null
 
     onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/battery-status`])
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        // Graded states from waybar/CLAUDE.md: charging is informational,
-        // then error < 10, warning <= 20, urgent-secondary for the 20-30 band.
-        color: root.charging ? Theme.accentInfo : root.plugged ? Theme.accentPrimary : root.percent <= 10 ? Theme.accentError : root.percent <= 20 ? Theme.accentWarning : root.percent <= 30 ? Theme.accentUrgentSecondary : Theme.accentSuccess
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            const levels = ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰂃", "󰁹"];
-            const icon = root.charging ? "󰢜" : root.plugged ? "󰚥" : levels[Math.min(10, Math.floor(root.percent / 10))];
-            return `${icon} ${Math.round(root.percent)}%`;
-        }
-    }
 }

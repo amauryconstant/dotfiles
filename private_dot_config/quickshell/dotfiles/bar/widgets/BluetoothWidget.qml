@@ -23,6 +23,10 @@ BarWidget {
     readonly property list<BluetoothDevice> connected: Bluetooth.devices.values.filter(d => d.connected)
     // qmllint enable unresolved-type
 
+    icon: root.adapter?.enabled ? "󰂯" : "󰂲"
+    // How many devices is tooltip detail; the accent is the whole signal at
+    // bar scale, so this carries one and drops the inline count.
+    iconColor: !root.adapter?.enabled ? Theme.fgMuted : root.connected.length > 0 ? Theme.accentPrimary : Theme.fgSecondary
     tooltipText: {
         if (!root.adapter)
             return "No bluetooth adapter";
@@ -36,13 +40,4 @@ BarWidget {
     visible: Config.isLaptop && root.adapter !== null
 
     onClicked: Quickshell.execDetached(["blueman-manager"])
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        // accent-highlight once something is connected, per waybar/CLAUDE.md.
-        color: !root.adapter?.enabled ? Theme.fgMuted : root.connected.length > 0 ? Theme.accentHighlight : Theme.accentInfo
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: !root.adapter?.enabled ? "󰂲" : root.connected.length > 0 ? ` ${root.connected.length}` : "󰂯"
-    }
 }

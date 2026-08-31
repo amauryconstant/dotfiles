@@ -3,13 +3,36 @@ pragma Singleton
 import Quickshell
 
 Singleton {
-    // Bar geometry. Values mirror waybar/config.tmpl so the two bars stack
-    // without a visual jump while both run during the Phase 1 A/B.
-    readonly property int barHeight: 30
-    readonly property int barSpacing: 4
-    readonly property int widgetPadding: 8
+    id: root
+
+    // Geometry scale, from _plans/QUICKSHELL_SHELL.md Amendment A. Defined
+    // once here and used by every surface, so nested surfaces read as nested:
+    // a chip inside a panel is visibly a smaller radius, not a coincidence.
+    readonly property int radiusPanel: 12
+    readonly property int radiusTile: 10
+    readonly property int radiusChip: 8
+    // Larger than any element it is applied to, which is how a pill stays a
+    // pill at every height without recomputing the radius.
+    readonly property int radiusPill: 999
+
+    readonly property int gap: 8
+    readonly property int padTight: 12
+    readonly property int pad: 16
+    readonly property int padLoose: 24
+
+    // The bar floats: it is 40 tall, inset 8 on every side, and reserves
+    // 40 + 8 + 8. Waybar's 30px full-bleed bar cannot coexist with that, which
+    // is why this restructure is what ends the Phase 1 A/B.
+    readonly property int barHeight: 40
+    readonly property int barInset: 8
+    // Icon buttons at rest, and the height of a workspace pill.
+    readonly property int chipSize: 26
+    readonly property int pillHeight: 24
     readonly property int iconSize: 16
+
     readonly property int fontSize: 13
+    readonly property int fontSizeLarge: 14
+    readonly property int fontSizeSmall: 12
 
     // Truncation limits, matching the Waybar modules they replace:
     // hyprland/window max-length and mpris dynamic-len.
@@ -25,6 +48,27 @@ Singleton {
     readonly property string guiFont: "{{ .globals.guiFont }}"
     readonly property string terminalFont: "{{ .globals.terminalFont }}"
 
+    // Window class to Nerd Font glyph, for the workspace pills. Keys are
+    // matched as a substring of the lowercased class, so a reverse-DNS class
+    // (com.mitchellh.ghostty) and a bare one (firefox) both resolve from one
+    // short key — no second entry per packaging format.
+    readonly property var windowGlyphs: ({
+            firefox: "󰈹",
+            ghostty: "󰆍",
+            thunar: "󰉋",
+            slack: "󰒱",
+            spotify: "󰓇",
+            obsidian: "󰎚",
+            steam: "󰓓",
+            localsend: "󰒖",
+            qbittorrent: "󰇚",
+            easyeffects: "󰺢",
+            satty: "󰋩"
+        })
+    // An unknown class renders something rather than nothing, so the map can
+    // rot without the pills going blank.
+    readonly property string windowGlyphFallback: "󰣆"
+
     // Widgets that shell out reach our script library through this, resolved
     // at runtime like Theme's colors.sh path rather than baked in by the
     // template, so the rendered QML stays free of an absolute home path.
@@ -33,4 +77,10 @@ Singleton {
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.
     readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
+
+    function windowGlyph(windowClass: string): string {
+        const lower = (windowClass ?? "").toLowerCase();
+        const key = Object.keys(root.windowGlyphs).find(k => lower.includes(k));
+        return key ? root.windowGlyphs[key] : root.windowGlyphFallback;
+    }
 }

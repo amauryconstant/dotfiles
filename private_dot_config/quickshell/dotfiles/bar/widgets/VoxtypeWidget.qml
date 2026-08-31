@@ -12,6 +12,39 @@ BarWidget {
 
     readonly property string voxState: source.alt
 
+    icon: {
+        switch (root.voxState) {
+        case "recording":
+            return "󰑋";
+        case "streaming":
+            return "󱜠";
+        case "transcribing":
+            return "󰔮";
+        case "loading":
+            return "󰝲";
+        case "stopped":
+            return "󰍭";
+        default:
+            return "";
+        }
+    }
+    // Mic activity and daemon lifecycle, per waybar/CLAUDE.md: recording is
+    // the loud one, stopped stays visible so failures are not silent. Every
+    // state this renders is off-normal, so all of them keep their colour.
+    iconColor: {
+        switch (root.voxState) {
+        case "recording":
+        case "stopped":
+            return Theme.accentError;
+        case "streaming":
+        case "loading":
+            return Theme.accentInfo;
+        case "transcribing":
+            return Theme.accentWarning;
+        default:
+            return Theme.fgMuted;
+        }
+    }
     tooltipText: source.tooltip
 
     onClicked: Quickshell.execDetached(["systemctl", "--user", "restart", "voxtype"])
@@ -20,43 +53,5 @@ BarWidget {
         id: source
 
         command: [`${Config.scriptsDir}/desktop/voxtype-waybar-status`]
-    }
-
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
-        // Mic activity and daemon lifecycle, per waybar/CLAUDE.md: recording
-        // is the loud one, stopped stays visible so failures are not silent.
-        color: {
-            switch (root.voxState) {
-            case "recording":
-            case "stopped":
-                return Theme.accentError;
-            case "streaming":
-            case "loading":
-                return Theme.accentInfo;
-            case "transcribing":
-                return Theme.accentWarning;
-            default:
-                return Theme.fgMuted;
-            }
-        }
-        font.family: Config.guiFont
-        font.pixelSize: Config.fontSize
-        text: {
-            switch (root.voxState) {
-            case "recording":
-                return "󰑋";
-            case "streaming":
-                return "󱜠";
-            case "transcribing":
-                return "󰔮";
-            case "loading":
-                return "󰝲";
-            case "stopped":
-                return "󰍭";
-            default:
-                return "";
-            }
-        }
     }
 }
