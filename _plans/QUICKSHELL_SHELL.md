@@ -1,7 +1,8 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Phases 0 and 1 complete on branch `quickshell` (bar at Waybar module parity,
-gated off by default). Phases 2-6 not started. See **Amendment A** at the end of this file
+**Status**: Phases 0, 1, 2.5 and 3 complete on branch `quickshell` (floating bar at Waybar
+module parity, plus volume/brightness OSDs; the two bars are now mutually exclusive by
+config). Phase 2 (Lua cutover) and Phases 4-6 not started. See **Amendment A** at the end of this file
 for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
 unchanged), which revises the phase list.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
@@ -383,11 +384,34 @@ resetting; a session restore round-trip.
 
 ### Phase 3 — OSDs
 
+**Status: done, 2026-08-31.**
+
 Volume and brightness overlays. Pure addition: we have none today outside voxtype, so
 nothing can regress. Reuses the Pipewire binding and `brightness-set` from Phase 1.
 
 **Exit**: volume/brightness keys show a themed OSD that fades; no interaction with the
 voxtype instance.
+
+**How it landed** — one file (`osd/Osd.qml`) plus a `Backlight` singleton lifted out of
+`BacklightWidget`, and **no script or keybinding change at all**. Both sources already notify
+(Pipewire on the sink; `FileView.watchChanges` on `/sys/class/backlight/*/brightness`), so the
+OSD fires on whatever caused the change rather than on a hook attached to one caller. Three
+non-obvious pieces, all now in `.claude/rules/quickshell-qml.md`:
+
+| Piece | Why |
+|---|---|
+| `mask: Region {}` | A layer-shell window with no mask swallows every click over its surface even with nothing interactive in it |
+| `armed` flag on a 1s timer | Pipewire's first binding and the first sysfs read land after launch; without it the OSD flashes on every login |
+| `screen:` matched by monitor **name** | `HyprlandMonitor` has no `screen` property; `Hyprland.monitorFor(screen)` is the inverse, not this direction |
+
+Placed at `Config.osdMargin` = 160 so it clears voxtype's OSD (a 72-tall card at bottomMargin
+72). On a desktop with a DDC monitor there is no sysfs backlight and the brightness half never
+fires — the same trade `BacklightWidget` already records, since reading DDC costs a ~200ms
+probe per keypress.
+
+The two level ramps (volume, brightness) moved into `Config` as `volumeGlyph()` /
+`brightnessGlyph()`, because two surfaces now render them. A glyph that distinguishes one
+widget's own states still stays in that widget — Amendment A's re-stated criterion holds.
 
 ### Phase 4 — Notifications
 
@@ -777,7 +801,7 @@ Phases 0–2 unchanged.
 | 1 | Bar to Waybar parity | **Done** |
 | 2 | Hyprland Lua cutover | Unchanged. Still the payoff, still gated on the `hyprctl dispatch` audit |
 | **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
-| 3 | OSDs | Unchanged in scope; inherits 2.5's geometry scale |
+| 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
 | 4 | Notifications | Unchanged in scope; UI now specified by `1f` |
 | 5 | Launcher and power menu | Unchanged in scope; UI now specified by `1d` and `1h` |
 | **5.5** | — | **New, optional — workspace overview (`1e`) and dock** |
@@ -789,11 +813,13 @@ Phases 0–2 unchanged.
 stopped by hand, so the inset had nothing to coexist with, and the Lua cutover was still
 blocked on the `hyprctl dispatch` audit.
 
-⚠️ **Stopped by hand is not stopped by config.** `hypr/conf/autostart.{lua,conf}` still run
-`waybar` unconditionally, so the next Hyprland start puts a 30px full-bleed bar under the
-floating one. Gating those on `features.quickshell_shell` is what actually ends the A/B, and
-it is the one piece of Phase 2.5 left open. The sequencing argument below held for the
-*Waybar* half; the *Phase 2* half turned out not to bind.
+✅ **Closed 2026-08-31.** "Stopped by hand" is now stopped by config. Both bars moved *out* of
+`conf/autostart.{lua,conf}` and out of `conf/bindings/desktop-utilities.{lua,conf}` into their
+own drop-ins — `conf.d/waybar.{lua,conf}` beside the existing `conf.d/quickshell.{lua,conf}` —
+and `.chezmoiignore` grew an `{{ else }}` branch so exactly one pair deploys. Each drop-in now
+carries its own autostart *and* `SUPER+B`; because they are mutually exclusive, both can claim
+the same key and the Phase 6 "rebind SUPER+B" step is already done. The sequencing argument
+below held for the *Waybar* half; the *Phase 2* half turned out not to bind.
 
 Retrofit `1a`/`1c` onto the shipped bar. Lands after Phase 2 so it does not compete with the
 Lua cutover, and after Waybar has stopped being the daily driver so the inset has nothing to

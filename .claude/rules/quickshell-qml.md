@@ -15,11 +15,12 @@ disables subdirectory discovery for every other config, including voxtype's)
 
 | Pattern | Purpose |
 |---------|---------|
-| `dotfiles/shell.qml` | Root `ShellRoot` — IPC handlers + `Variants` over screens. Owns no widget |
+| `dotfiles/shell.qml` | Root `ShellRoot` — IPC handlers + `Variants` over screens + the OSD. Owns no widget |
 | `dotfiles/qmldir` | Declares the singletons. **Load-bearing** — see below |
-| `dotfiles/{Theme,Config}.qml*` | Singletons. `Config` is `.tmpl`, `Theme` is not |
+| `dotfiles/{Theme,Config,Backlight}.qml*` | Singletons. `Config` is `.tmpl`, the other two are not |
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
+| `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
 (`Config.isLaptop`) consumed by `visible:`, never eight separate templates.
@@ -132,6 +133,18 @@ Later siblings stack above earlier ones, so `BarWidget`'s catch-all `MouseArea` 
 per-workspace and per-tray-item `MouseArea`s and killed their clicks *and* their `containsMouse`.
 `z: -1` puts it under the content: a child `MouseArea` wins where one exists, and elsewhere the
 event still reaches it because `Text` and `Rectangle` do not accept mouse events.
+
+🚨 **A layer-shell window with no `mask` swallows every click over its whole surface**, even
+with nothing in it that accepts mouse events — the input region defaults to the full surface,
+and the compositor routes the pointer there. A purely informational overlay must declare
+`mask: Region {}` (empty region = nothing clickable, everything passes through). The `Xor`
+form in the upstream docs is for punching a hole in an otherwise-clickable window. See
+`osd/Osd.qml`.
+
+**A window that follows the focused monitor is matched by name.** `HyprlandMonitor` exposes
+`id`/`name`/`description`/geometry but **no `screen`**; `Quickshell.screens` entries expose
+`name`. So `screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)`,
+not a direct handoff. `Hyprland.monitorFor(screen)` is the inverse and does exist.
 
 **Pipewire node properties are unbound without a tracker.** `Pipewire.defaultAudioSink.audio.volume`
 reads a permanent 0 with no error unless a `PwObjectTracker { objects: [sink] }` holds the node.
@@ -247,8 +260,12 @@ from an exit code — the `|| true` in the calling scripts is harmless but buys 
 by hand with `ipc show`.
 
 Callers today: `desktop/theme-switcher` (theme reload), `desktop/idle-toggle{,-nolock}` (idle
-refresh, beside their existing `pkill -RTMIN+9 waybar`), and the `SUPER+SHIFT+B` binding in
+refresh, beside their existing `pkill -RTMIN+9 waybar`), and the `SUPER+B` binding in
 `hypr/conf.d/quickshell.{lua,conf}`.
+
+**The OSD is deliberately not on IPC.** Both its sources already notify (Pipewire on the sink,
+`FileView.watchChanges` on the sysfs backlight), so a keybinding or a script hook would only
+add a second, less reliable trigger for a change the shell can already see.
 
 ---
 

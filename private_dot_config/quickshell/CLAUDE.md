@@ -9,26 +9,29 @@
 
 ## Quick Reference
 
-- **Status**: Phase 2.5 complete — bar restructured to Amendment A. **The bar now floats
-  (40 tall, inset 8, reserving 56), which Waybar's 30px full-bleed bar cannot stack with:
-  this is the end of the A/B.** Phase 2 (Hyprland Lua cutover) still outstanding
-- ⚠️ **Waybar is stopped by hand, not by config.** `hypr/conf/autostart.{lua,conf}` still
-  carry `waybar`, so the next Hyprland start brings it back on top of the floating bar.
-  Gating that on `features.quickshell_shell` is unfinished business, not a Phase 6 nicety
-- **Gate**: `features.quickshell_shell.enabled` (default `false`). Flip it + `chezmoi apply`
-  is the whole rollout; flipping back is the whole rollback
+- **Status**: Phases 2.5 and 3 complete — floating bar (40 tall, inset 8, reserving 56) plus
+  volume/brightness OSDs. Phase 2 (Hyprland Lua cutover) still outstanding
+- **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` is the whole
+  rollout; flipping back is the whole rollback
+- 🚨 **The two bars are mutually exclusive, by config.** `.chezmoiignore` deploys exactly one
+  of `hypr/conf.d/quickshell.{lua,conf}` and `hypr/conf.d/waybar.{lua,conf}`; each drop-in
+  carries both its own autostart and `SUPER+B`. `conf/autostart.*` and
+  `conf/bindings/desktop-utilities.*` start and bind **no** bar — that is deliberate, not an
+  omission
 - **Launch**: `quickshell -c dotfiles`, from `hypr/conf.d/quickshell.{lua,conf}`
-- **Toggle**: `SUPER+SHIFT+B`. `SUPER+B` still toggles Waybar
+- **Toggle**: `SUPER+B` (`desktop/quickshell-toggle`)
 - **Lint**: `mise run lint:qml` · **Format**: `mise run format:qml`
 
 ## Layout
 
 ```
 dotfiles/
-├── shell.qml              # ShellRoot: IPC handlers + Variants over screens
-├── qmldir                 # declares Theme + Config as singletons (required by qmllint)
+├── shell.qml              # ShellRoot: IPC handlers + Variants over screens + the OSD
+├── qmldir                 # declares the three singletons (required by qmllint)
 ├── Theme.qml              # colours from themes/current/colors.sh, at runtime
-├── Config.qml.tmpl        # geometry scale, fonts, chassis, scriptsDir, window-class glyphs
+├── Config.qml.tmpl        # geometry scale, fonts, chassis, scriptsDir, shared glyph ramps
+├── Backlight.qml          # sysfs backlight, shared by the bar widget and the OSD
+├── osd/Osd.qml            # volume + brightness overlay, follows the focused monitor
 └── bar/
     ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
     ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
@@ -55,8 +58,26 @@ accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
 | Workspaces, WindowTitle | `Quickshell.Hyprland` |
 | Audio, Media, Tray | `Pipewire`, `Mpris`, `SystemTray` |
 | Network, Bluetooth, Battery | `Networking`, `Bluetooth`, `UPower` — laptop only |
-| Backlight | sysfs via `FileView`, writes through `desktop/brightness-set` — laptop only |
+| Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
 | Kanata, Voxtype, Idle, Notification | existing scripts, via `WaybarJsonSource` |
+
+## OSD (Phase 3)
+
+`osd/Osd.qml`, one window, instantiated once in `shell.qml`. **Nothing triggers it** — no
+keybinding, no IPC, no script change: it watches `Pipewire.defaultAudioSink` and the
+`Backlight` singleton, so it fires whatever changed the value (media key, bar scroll, another
+app). Three things in it are load-bearing:
+
+- `mask: Region {}` — an empty input region. Without it the window eats every click in its
+  320×56 patch while up, and it has nothing interactive to justify that
+- an `armed` flag on a 1s timer — Pipewire's first binding and the first sysfs read both land
+  after launch and would flash the OSD on every login
+- `screen:` matched by **name** against `Hyprland.focusedMonitor` — `HyprlandMonitor` has no
+  `screen` property; both sides expose `name`
+
+Sits at `Config.osdMargin` (160) from the bottom, clearing voxtype's own OSD (a 72-tall card
+at bottomMargin 72) so a dictation card and a volume key cannot overlap. On a desktop with a
+DDC monitor there is no sysfs backlight, so the brightness half simply never fires.
 
 **Four scripts are reused, not ported**: `kanata-layer`, `voxtype-waybar-status`,
 `idle-indicator`, and `swaync-client -swb` all already emit Waybar's custom-module JSON. Their
