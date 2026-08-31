@@ -296,6 +296,9 @@ holds the rule is `bar/BarWidget.qml`'s `grounded` property: rest colour is `fgS
 bar ground, and flips to `fgPrimary` the moment the widget draws a ground of its own (hover, pill,
 tint). A widget that hardcodes either one reintroduces the banned pair on half its states.
 
+`theme-consistency-reviewer` reviews the QML tree as a second target, once rather than per
+theme: three greps for a literal hex, a literal font name, and `fgSecondary` on a lit ground.
+
 ---
 
 ## Enhanced Theme Switching

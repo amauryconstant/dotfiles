@@ -280,6 +280,12 @@ Contrast rules from `themes/CLAUDE.md` get **no automatic enforcement in QML** â
 on `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` is a by-hand discipline here. The
 module â†’ semantic-colour mapping this bar follows is `waybar/CLAUDE.md`'s table.
 
+The closest thing to enforcement is the `theme-consistency-reviewer` subagent, which takes this
+tree as a second review target: literal hex (only `Theme.qml`'s fallbacks are allowed), literal
+font name (only `Config.qml.tmpl`, and only through `globals.yaml`), and `Theme.fgSecondary` on
+a lit ground. It judges the third against `BarWidget`'s `grounded` ternary, so an override that
+pins one fixed rest colour is the finding.
+
 ---
 
 ## Validation
