@@ -11,7 +11,10 @@ import QtQuick
 // 🚨 The bar floats (Amendment A): inset on every side, rounded, hairline
 // border. `exclusiveZone` is set explicitly because ExclusionMode.Auto only
 // reserves the margins of edges that are actually anchored — the bottom is
-// not, so Auto would reserve 48 and windows would sit under the lower inset.
+// not, so Auto would reserve just the height and windows would sit under the
+// bar. Reserving exactly the bar's own bottom edge (height + top inset, no
+// more) leaves Hyprland's own gaps_out as the only gap below the bar, so it
+// matches every other window-to-window and window-to-edge gap.
 PanelWindow {
     id: root
 
@@ -27,7 +30,7 @@ PanelWindow {
     }
 
     color: "transparent"
-    exclusiveZone: Config.barHeight + Config.barInset * 2
+    exclusiveZone: Config.barHeight + Config.barInset
     implicitHeight: Config.barHeight
     screen: root.modelData
 

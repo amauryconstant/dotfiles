@@ -9,7 +9,7 @@
 
 ## Quick Reference
 
-- **Status**: Phases 2.5, 3 and 5 complete — floating bar (40 tall, inset 8, reserving 56),
+- **Status**: Phases 2.5, 3 and 5 complete — floating bar (40 tall, inset 8, reserving 48),
   volume/brightness OSDs, launcher and power menu. Phase 2 (Hyprland Lua cutover) and Phase 4
   (notifications) still outstanding
 - **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` is the whole
