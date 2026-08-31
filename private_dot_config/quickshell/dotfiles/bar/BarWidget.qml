@@ -49,12 +49,22 @@ Item {
         spacing: Config.barSpacing
     }
 
+    // 🚨 `z: -1` is load-bearing. Content goes into `layout`, which is declared
+    // above this, so at the default z this MouseArea covers every child and
+    // consumes their events — that is what killed the per-workspace and
+    // per-tray-item clicks (and left WorkspacesWidget's hover highlight dead,
+    // since its own `containsMouse` could never become true).
+    //
+    // Below the Row, a child MouseArea wins where one exists, and everywhere
+    // else the event falls through to this one, because Text and Rectangle do
+    // not accept mouse events.
     MouseArea {
         id: mouse
 
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         anchors.fill: parent
         hoverEnabled: true
+        z: -1
 
         onClicked: event => {
             if (event.button === Qt.RightButton)
