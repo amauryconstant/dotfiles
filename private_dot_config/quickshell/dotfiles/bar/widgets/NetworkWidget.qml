@@ -26,7 +26,7 @@ BarWidget {
         if (!root.active)
             return "Disconnected\nNo network interface available";
         if (root.isWifi && root.wifi)
-            return `${root.wifi.name}\n${root.active.address}\nSignal: ${Math.round(root.wifi.signalStrength)}%`;
+            return `${root.wifi.name}\n${root.active.address}\nSignal: ${Math.round(root.wifi.signalStrength * 100)}%`;
         return `Ethernet\n${root.active.address}`;
     }
     visible: Config.isLaptop
@@ -43,8 +43,13 @@ BarWidget {
                 return "󰖪";
             if (!root.isWifi)
                 return "󰈀";
+            // 🚨 signalStrength is a 0..1 fraction, like UPowerDevice.percentage
+            // and unlike the 0..100 nmcli reports. Dividing by 25 as if it were
+            // a percentage pinned the index at 0, so a full-strength link drew
+            // the empty-signal glyph forever. Verified live: nmcli 61%, the
+            // property 0.61.
             const bars = ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"];
-            return bars[Math.min(4, Math.floor((root.wifi?.signalStrength ?? 0) / 25))];
+            return bars[Math.min(4, Math.floor((root.wifi?.signalStrength ?? 0) * 4))];
         }
     }
 }
