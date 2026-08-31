@@ -1,15 +1,30 @@
 #!/usr/bin/env sh
 
 # Script: quickshell-toggle
-# Purpose: Toggle the Quickshell bar, starting it if it is not running
+# Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
-# Bound to: SUPER+SHIFT+B (hypr/conf.d/quickshell.{lua,conf})
+# Usage: quickshell-toggle [bar|launcher|power]   (default: bar)
+# Bound to: SUPER+B (bar), SUPER+SHIFT+D (launcher), SUPER+ALT+Q (power menu)
+#           — hypr/conf.d/quickshell.{lua,conf}
 #
 # Mirrors waybar-toggle, with one difference: a running Quickshell hides and
 # shows over IPC rather than being killed and relaunched. That is instant and
 # keeps the shell's state, so only a missing instance needs a launch.
+#
+# One script for three surfaces because the hard part is identical for all of
+# them: IPC only reaches a RUNNING instance, so every binding needs the same
+# launch-then-retry dance.
 
 CONFIG=dotfiles
+TARGET=${1:-bar}
+
+case "$TARGET" in
+bar | launcher | power) ;;
+*)
+    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power)" >&2
+    exit 2
+    ;;
+esac
 
 # ⚠️ `quickshell ipc` exits 0 even when it fails — with no instance it prints
 # "No running instances for ..." and still returns 0. So liveness has to be
@@ -17,26 +32,37 @@ CONFIG=dotfiles
 #
 # ⚠️ Addressed by config name rather than `pgrep -x quickshell`: voxtype runs
 # its own Quickshell instance, and a bare process match would find that one.
-bar_running() {
-    quickshell -c "$CONFIG" ipc show 2>/dev/null | grep -q '^target bar$'
+shell_running() {
+    quickshell -c "$CONFIG" ipc show 2>/dev/null | grep -q "^target $TARGET\$"
 }
 
-if bar_running; then
-    # bar.toggle() returns the state it actually reached, so the notification
-    # reports what happened rather than what was asked for.
-    state=$(quickshell -c "$CONFIG" ipc call bar toggle 2>/dev/null)
+# Every target's toggle() returns the state it actually reached, so a failure
+# is visible here rather than being assumed from an exit code that is always 0.
+toggle_target() {
+    state=$(quickshell -c "$CONFIG" ipc call "$TARGET" toggle 2>/dev/null)
     case "$state" in
-    shown) notify-send "󰕮 Quickshell" "Bar shown" -t 2000 ;;
-    hidden) notify-send "󰕮 Quickshell" "Bar hidden" -t 2000 ;;
+    shown | hidden)
+        # Only the bar reports success: it can be toggled off-screen, so what
+        # happened is not otherwise observable. A launcher or a power menu
+        # appearing in front of you is its own notification.
+        if [ "$TARGET" = bar ]; then
+            notify-send "󰕮 Quickshell" "Bar $state" -t 2000
+        fi
+        return 0
+        ;;
     *)
-        notify-send "󰕮 Quickshell" "Bar not responding" -t 2000
-        exit 1
+        notify-send "󰕮 Quickshell" "$TARGET not responding" -t 2000
+        return 1
         ;;
     esac
-    exit 0
+}
+
+if shell_running; then
+    toggle_target
+    exit $?
 fi
 
-# setsid detaches from the Hyprland dispatcher's transient shell, so the bar
+# setsid detaches from the Hyprland dispatcher's transient shell, so the shell
 # outlives the keypress that started it.
 setsid quickshell -c "$CONFIG" >/dev/null 2>&1 &
 
@@ -44,13 +70,19 @@ setsid quickshell -c "$CONFIG" >/dev/null 2>&1 &
 # is usually well under a second, but a cold theme read can push it out.
 _tries=20 # 20 x 0.1s
 while [ "$_tries" -gt 0 ]; do
-    if bar_running; then
-        notify-send "󰕮 Quickshell" "Bar started" -t 2000
-        exit 0
+    if shell_running; then
+        if [ "$TARGET" = bar ]; then
+            notify-send "󰕮 Quickshell" "Bar started" -t 2000
+            exit 0
+        fi
+        # A cold start deliberately still opens the surface that was asked for:
+        # the keypress meant "show me this", not "start the shell".
+        toggle_target
+        exit $?
     fi
     sleep 0.1
     _tries=$((_tries - 1))
 done
 
-notify-send "󰕮 Quickshell" "Failed to start bar" -t 2000
+notify-send "󰕮 Quickshell" "Failed to start shell" -t 2000
 exit 1

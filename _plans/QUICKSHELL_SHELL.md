@@ -1,8 +1,8 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Phases 0, 1, 2.5 and 3 complete on branch `quickshell` (floating bar at Waybar
-module parity, plus volume/brightness OSDs; the two bars are now mutually exclusive by
-config). Phase 2 (Lua cutover) and Phases 4-6 not started. See **Amendment A** at the end of this file
+**Status**: Phases 0, 1, 2.5, 3 and 5 complete on branch `quickshell` (floating bar at Waybar
+module parity, volume/brightness OSDs, launcher and power menu; the two bars are now mutually
+exclusive by config). Phase 2 (Lua cutover) and Phases 4/6 not started. See **Amendment A** at the end of this file
 for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
 unchanged), which revises the phase list.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
@@ -440,6 +440,9 @@ suppresses and replays.
 
 ### Phase 5 — Launcher and power menu
 
+**Status: done, 2026-09-01.** Taken ahead of Phase 4, like 2.5 and 3 — it depends on nothing
+Phase 4 builds, and Phase 2 is still held on the `hyprctl dispatch` conversion.
+
 Small, and last because Wofi and wlogout are not hurting anyone.
 
 - Launcher: `DesktopEntries` + a `TextField` + fuzzy filter. Note Wofi also serves
@@ -448,8 +451,31 @@ Small, and last because Wofi and wlogout are not hurting anyone.
 - Power menu: 6 buttons over the existing `session-save` / `systemctl` paths. Keep the
   confirmation behaviour of the current `wlogout` wrapper.
 
-**Exit**: `SUPER+D` and `SUPER+SHIFT+Q` land on the Quickshell versions; Wofi stays
-installed for dmenu use.
+**Exit as originally written**: `SUPER+D` and `SUPER+SHIFT+Q` land on the Quickshell versions;
+Wofi stays installed for dmenu use.
+
+**Exit as met** — the key swap is deliberately *not* done yet:
+
+| Criterion | Result |
+|---|---|
+| Launcher built | ✅ `launcher/Launcher.qml`. `DesktopEntries` + `TextInput` + ranking compressed from Omarchy's `AppSearch.js`. **Apps mode only** — the artboard's `>`/`=`/`:`/`/`/`?` prefixes and the web-search fallback row are not built |
+| Power menu built | ✅ `power/PowerMenu.qml`, over the exact `wlogout/layout` commands |
+| Lands on `SUPER+D` / `SUPER+SHIFT+Q` | ⏳ **deliberately not.** Both ship on spare keys — `SUPER+SHIFT+D` and `SUPER+ALT+Q` — so Wofi and wlogout keep working unchanged. The swap is a separate, later decision, taken once these are better in daily use. Same gate Phase 6 puts on retirement |
+| Wofi stays installed | ✅ never in question — `cliphist` and every `--dmenu` caller |
+
+**Two departures from artboard `1h`, both recorded**: six tiles rather than five (hibernate
+does real work on the laptop — the bar's eleven-vs-five rule applies again), and wlogout's own
+mnemonics `l u e h r s` rather than the canvas's `l s e r p`, which collides on `s`.
+
+🚨 **"Keep the confirmation behaviour" resolved as: keep the model, add nothing.** The wlogout
+wrapper has no confirmation step — a tile fires on one activation. Inventing one here would be
+a behaviour change disguised as a redesign. The safe default is carried by the *selection*
+instead: Lock is selected on open, so Return alone can never power anything off.
+
+**One script, three surfaces**: `quickshell-toggle` gained an optional target argument
+(`bar`|`launcher`|`power`). The hard part is identical for all three — IPC only reaches a
+running instance — so a second and third copy of the launch-then-retry dance would have been
+the only thing gained by separate scripts.
 
 ### Phase 6 — Cleanup of replaced tooling (OPTIONAL)
 
@@ -808,7 +834,7 @@ Phases 0–2 unchanged.
 | **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
 | 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
 | 4 | Notifications | Unchanged in scope; UI now specified by `1f` |
-| 5 | Launcher and power menu | Unchanged in scope; UI now specified by `1d` and `1h` |
+| 5 | Launcher and power menu | **Done** (2026-09-01, ahead of Phase 4). UI from `1d` and `1h`; both on spare keys, coexisting |
 | **5.5** | — | **New, optional — workspace overview (`1e`) and dock** |
 | 6 | Cleanup of replaced tooling | Unchanged, still optional |
 

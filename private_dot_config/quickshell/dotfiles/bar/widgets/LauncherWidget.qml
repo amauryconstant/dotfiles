@@ -1,6 +1,5 @@
 import "../"
 import "../../"
-import Quickshell
 import QtQuick
 
 // The launcher chip that opens the bar's left zone. Not a Waybar port —
@@ -12,11 +11,17 @@ import QtQuick
 BarWidget {
     id: root
 
+    // Relayed up through Bar to shell.qml, which owns the Launcher window. The
+    // chip cannot reach it directly, and going out through quickshell-toggle
+    // would spawn a process for the shell to talk to itself.
+    signal launcherRequested
+
     groundColor: Qt.alpha(Theme.accentPrimary, 0.12)
     icon: "󰣇"
     iconColor: Theme.accentPrimary
     tinted: true
     tooltipText: "Applications"
 
-    onClicked: Quickshell.execDetached(["wofi", "--show", "drun"])
+    // Opens our own launcher (Phase 5) rather than shelling out to Wofi.
+    onClicked: root.launcherRequested()
 }

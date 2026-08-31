@@ -17,6 +17,9 @@ PanelWindow {
 
     required property var modelData
 
+    // Raised by the launcher chip; shell.qml owns the Launcher window.
+    signal launcherRequested
+
     // Called over IPC from idle-toggle / idle-toggle-nolock, which already
     // send `pkill -RTMIN+9 waybar` for the same reason.
     function refreshIdle(): void {
@@ -53,7 +56,9 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Config.gap
 
-        LauncherWidget {}
+        LauncherWidget {
+            onLauncherRequested: root.launcherRequested()
+        }
 
         WorkspacesWidget {
             barScreen: root.modelData

@@ -42,6 +42,32 @@ Singleton {
     readonly property int fontSize: 13
     readonly property int fontSizeLarge: 14
     readonly property int fontSizeSmall: 12
+    // The launcher query, the one place the design sets type larger than the
+    // bar's, and the 10px key hints under it.
+    readonly property int fontSizeInput: 16
+    readonly property int fontSizeTiny: 10
+
+    // Launcher, artboard 1d. The panel grows downward from the input row, so
+    // only the row heights are fixed; the window height follows the results.
+    readonly property int launcherWidth: 760
+    readonly property int launcherInputHeight: 56
+    readonly property int launcherRowHeight: 48
+    readonly property int launcherIconSize: 30
+    readonly property int launcherFooterHeight: 34
+    readonly property int launcherListPad: 6
+    // The canvas draws three rows. A cap is still needed for a one-letter
+    // query, and eight is what fits without the panel becoming a window.
+    readonly property int launcherMaxResults: 8
+
+    // Power menu, artboard 1h. 14 is the canvas's own tile radius and sits
+    // between radiusPanel and radiusTile deliberately — the tiles are much
+    // larger than either, so the four-step ramp does not reach them.
+    readonly property int powerTileSize: 124
+    readonly property int powerTileRadius: 14
+    readonly property int powerTileGap: 14
+    readonly property int powerColumnGap: 30
+    readonly property int powerAvatarSize: 34
+    readonly property int powerGlyphSize: 26
 
     // Truncation limits, matching the Waybar modules they replace:
     // hyprland/window max-length and mpris dynamic-len.
