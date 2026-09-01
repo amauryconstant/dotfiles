@@ -152,6 +152,13 @@ validate_workspace() {
     fi
 }
 
+# Dispatch one exec with the caller's $rules table. The command goes in a Lua
+# long-bracket string, so a quote or backslash inside it needs no escaping.
+dispatch_exec() {
+    log_debug "session-restore: dispatch $rules $1"
+    hyprctl dispatch "hl.dsp.exec_cmd([[$1]], $rules)" >/dev/null 2>&1
+}
+
 # Launch application with proper command
 launch_app() {
     class="$1"
@@ -167,37 +174,37 @@ launch_app() {
         cwd="$HOME"
     fi
 
-    # Build dispatch rules: always include workspace; add monitor if known
+    # Build dispatch rules: always include workspace; add monitor if known.
+    # Under the Lua config provider these are a TABLE keyed by window-rule
+    # effect name, not a "[...]" prefix string. "N silent" is accepted verbatim
+    # as the workspace value (verified: the window lands on N and the active
+    # workspace does not change).
     if [ -n "$monitor_name" ]; then
-        rules="monitor $monitor_name; workspace $workspace_id silent"
+        rules="{ monitor = \"$monitor_name\", workspace = \"$workspace_id silent\" }"
     else
-        rules="workspace $workspace_id silent"
+        rules="{ workspace = \"$workspace_id silent\" }"
     fi
 
     # For terminal apps with CWD, append --working-directory if supported
     if [ -n "$cwd" ]; then
         case "$class" in
             "com.mitchellh.ghostty"|"ghostty")
-                log_debug "session-restore: dispatch [$rules] $launch_cmd --working-directory='$cwd'"
-                hyprctl dispatch exec "[$rules] $launch_cmd --working-directory='$cwd'" >/dev/null 2>&1
+                dispatch_exec "$launch_cmd --working-directory='$cwd'"
                 return 0
                 ;;
             "kitty")
-                log_debug "session-restore: dispatch [$rules] $launch_cmd --directory='$cwd'"
-                hyprctl dispatch exec "[$rules] $launch_cmd --directory='$cwd'" >/dev/null 2>&1
+                dispatch_exec "$launch_cmd --directory='$cwd'"
                 return 0
                 ;;
             "alacritty")
-                log_debug "session-restore: dispatch [$rules] $launch_cmd --working-directory '$cwd'"
-                hyprctl dispatch exec "[$rules] $launch_cmd --working-directory '$cwd'" >/dev/null 2>&1
+                dispatch_exec "$launch_cmd --working-directory '$cwd'"
                 return 0
                 ;;
         esac
     fi
 
     # Standard app launch
-    log_debug "session-restore: dispatch [$rules] $launch_cmd"
-    hyprctl dispatch exec "[$rules] $launch_cmd" >/dev/null 2>&1
+    dispatch_exec "$launch_cmd"
     return 0
 }
 
@@ -313,7 +320,7 @@ post_restore_workspace_fix() {
         current_ws=$(echo "$current_clients" | jaq -r --arg a "$addr" \
             '.[] | select(.address == $a) | .workspace.id | tostring')
         if [ "$current_ws" != "$ws" ]; then
-            hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1
+            hyprctl dispatch "hl.dsp.window.move({ workspace = \"$ws\", follow = false, window = \"address:$addr\" })" >/dev/null 2>&1
             log_debug "session-restore: post-fix MOVED class=$window_class addr=$addr ws=$current_ws→$ws"
         else
             log_debug "session-restore: post-fix OK class=$window_class addr=$addr ws=$ws (no move needed)"
@@ -332,7 +339,7 @@ post_restore_workspace_fix() {
             '[.[] | select(.workspace.id | tostring == $ws) | .class] | unique | join(",")' \
             2>/dev/null || echo "?")
         if [ "$current_monitor" != "$monitor_name" ]; then
-            hyprctl dispatch moveworkspacetomonitor "$ws $monitor_name" >/dev/null 2>&1
+            hyprctl dispatch "hl.dsp.workspace.move({ workspace = \"$ws\", monitor = \"$monitor_name\" })" >/dev/null 2>&1
             log_debug "session-restore: post-fix MOVED ws=$ws classes=[$ws_classes] monitor=$current_monitor→$monitor_name"
         else
             log_debug "session-restore: post-fix OK ws=$ws classes=[$ws_classes] monitor=$monitor_name (no move needed)"
@@ -400,10 +407,10 @@ correlate() {
     echo "$_faddr" >> "$matched_addr_file"
 
     if [ "$_ws" != "$_tws" ]; then
-        hyprctl dispatch movetoworkspacesilent "$_tws,address:$_faddr" >/dev/null 2>&1
+        hyprctl dispatch "hl.dsp.window.move({ workspace = \"$_tws\", follow = false, window = \"address:$_faddr\" })" >/dev/null 2>&1
     fi
     if [ -n "$_tmon" ]; then
-        hyprctl dispatch moveworkspacetomonitor "$_tws $_tmon" >/dev/null 2>&1
+        hyprctl dispatch "hl.dsp.workspace.move({ workspace = \"$_tws\", monitor = \"$_tmon\" })" >/dev/null 2>&1
     fi
     log_debug "session-restore: socket2 placed class=$_eclass addr=$_faddr title=\"$_etitle\" ws=$_ws→$_tws monitor=$_tmon"
 }

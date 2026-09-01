@@ -44,7 +44,7 @@ PanelWindow {
             label: "Log out",
             glyph: "󰍃",
             destructive: false,
-            command: `${Config.scriptsDir}/desktop/session-save && hyprctl dispatch exit`
+            command: `${Config.scriptsDir}/desktop/session-save && hyprctl dispatch 'hl.dsp.exit()'`
         },
         {
             key: "h",

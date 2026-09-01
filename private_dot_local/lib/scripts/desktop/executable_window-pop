@@ -7,20 +7,22 @@
 # Get active window address
 addr="address:$(hyprctl activewindow -j | jq -r .address)"
 
-# Get monitor dimensions
-monitor_info=$(hyprctl activeworkspace -j)
-monitor_width=$(echo "$monitor_info" | jq -r '.monitor.width')
-monitor_height=$(echo "$monitor_info" | jq -r '.monitor.height')
+# Get monitor dimensions. `hyprctl activeworkspace` reports .monitor as a NAME
+# string, so the old .monitor.width read yielded an empty string and a 0x0
+# resize; the dimensions only exist on `hyprctl monitors`.
+# .width/.height are PHYSICAL pixels while window geometry is LOGICAL, so the
+# scale has to come out before any percentage is taken.
+monitor_info=$(hyprctl monitors -j | jq -r 'map(select(.focused))[0]')
+width=$(echo "$monitor_info" | jq -r '.width / .scale * 30 / 100 | floor')
+height=$(echo "$monitor_info" | jq -r '.height / .scale * 30 / 100 | floor')
 
-# Calculate 30% size
-width=$((monitor_width * 30 / 100))
-height=$((monitor_height * 30 / 100))
-
-# Apply transformations atomically
+# Apply transformations atomically. Under the Lua config provider each --batch
+# fragment is spliced verbatim into `return hl.dispatch(...)`, so every one
+# needs its own hl.dsp.* call; no fragment may contain a ';'.
 hyprctl --batch "\
-  dispatch togglefloating $addr;\
-  dispatch resizeactive exact $width $height;\
-  dispatch centerwindow;\
-  dispatch pin;\
-  dispatch alterzorder top;\
-  dispatch tagwindow +pop"
+  dispatch hl.dsp.window.float({ window = \"$addr\" });\
+  dispatch hl.dsp.window.resize({ x = $width, y = $height });\
+  dispatch hl.dsp.window.center({});\
+  dispatch hl.dsp.window.pin({});\
+  dispatch hl.dsp.window.alter_zorder({ mode = \"top\" });\
+  dispatch hl.dsp.window.tag({ tag = \"+pop\" })"

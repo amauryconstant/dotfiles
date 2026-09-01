@@ -8,7 +8,7 @@
 general {
     lock_cmd = ~/.local/lib/scripts/desktop/immediate-lock  # Single lock entry point (re-entrancy guarded)
     before_sleep_cmd = loginctl lock-session                # Lock before suspend
-    after_sleep_cmd = hyprctl dispatch dpms on              # Turn on display after resume
+    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'              # Turn on display after resume
 
     # True session lock/unlock events. Unlike a listener's on-resume (which fires
     # the instant the mouse moves, BEFORE authentication), on_unlock_cmd only

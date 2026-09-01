@@ -25,8 +25,8 @@ listener {
 # Listener 2: Turn off displays after further inactivity
 listener {
     timeout = {{ .globals.idle.dpms }}
-    on-timeout = hyprctl dispatch dpms off       # Turn off displays
-    on-resume = hyprctl dispatch dpms on         # Turn on displays on activity
+    on-timeout = hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'       # Turn off displays
+    on-resume = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'         # Turn on displays on activity
 }
 {{- if eq .chassisType "laptop" }}
 

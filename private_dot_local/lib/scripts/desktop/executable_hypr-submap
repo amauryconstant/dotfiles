@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+# Script: executable_hypr-submap
+# Purpose: Enter a Hyprland submap by name, under the Lua config provider
+# Requirements: Hyprland (lua config), hyprctl
+
+# Exists because voxtype's output.{pre_recording,pre_output,post_output}_command
+# hooks are undocumented on whether they run through a shell. Under Lua config
+# the dispatch argument is a Lua call — `hl.dsp.submap("name")` — whose quotes
+# and parens survive `sh -c` only if quoted, and survive naive argv splitting
+# only if NOT quoted. Routing through this wrapper keeps the hook a plain
+# whitespace-separated command, so neither reading can break it.
+#
+# Note: `voxtype check` compares the hook strings against its own hardcoded
+# `hyprctl dispatch submap <name>` and will report "configured (but not for
+# Hyprland)". Cosmetic — the hooks work.
+
+set -eu
+
+[ $# -eq 1 ] || { echo "usage: hypr-submap <submap-name|reset>" >&2; exit 2; }
+
+hyprctl dispatch "hl.dsp.submap(\"$1\")" >/dev/null 2>&1 || true

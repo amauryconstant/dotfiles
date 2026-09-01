@@ -6,7 +6,7 @@
 }
 {
     "label" : "logout",
-    "action" : "~/.local/lib/scripts/desktop/session-save && hyprctl dispatch exit",
+    "action" : "~/.local/lib/scripts/desktop/session-save && hyprctl dispatch 'hl.dsp.exit()'",
     "text" : "󰍃 Logout",
     "keybind" : "e"
 }

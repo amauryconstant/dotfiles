@@ -70,9 +70,9 @@ auto_submit = false  # don't send Enter after transcription
 wait_for_modifier_release = true
 modifier_release_timeout_ms = 750
 # Compositor integration hooks (modifier key fix — see voxtype-submap.conf)
-pre_recording_command = "hyprctl dispatch submap voxtype_recording"
-pre_output_command = "hyprctl dispatch submap voxtype_suppress"
-post_output_command = "hyprctl dispatch submap reset"
+pre_recording_command = "{{ .chezmoi.homeDir }}/.local/lib/scripts/desktop/hypr-submap voxtype_recording"
+pre_output_command = "{{ .chezmoi.homeDir }}/.local/lib/scripts/desktop/hypr-submap voxtype_suppress"
+post_output_command = "{{ .chezmoi.homeDir }}/.local/lib/scripts/desktop/hypr-submap reset"
 
 [output.notification]
 on_recording_start = false
