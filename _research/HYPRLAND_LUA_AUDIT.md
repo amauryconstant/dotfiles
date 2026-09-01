@@ -229,14 +229,18 @@ whitespace-separated command — so neither reading can break it. The path is wr
 compares against its own hardcoded `hyprctl dispatch submap <name>` and now reports
 *"configured (but not for Hyprland)"*. Cosmetic.
 
-**Still unverified after conversion** — needs the real session, not a nested one:
+**Confirmed on the real session after the reboot** (full table in
+`_guides/HYPRLAND_LUA_CUTOVER.md`): DPMS goes off *and back on* (`dpmsStatus` true → false → true,
+and both `misc.*_enables_dpms` options are false here, so `dpms on` is genuinely the only way
+back); a production `session-restore` fired all four `exec_cmd` rules-table dispatches and got
+4/4 windows back; `hyprctl plugin list` reports no plugins, so hyprsplit is the Lua library;
+`window-pop` lands an exact 30%.
 
-- `hl.dsp.dpms({ action = "on"/"off" })` accepts its arguments (it returns `ok` nested), but
-  whether it actually powers displays back on can only be seen on real hardware. Five sites.
-  **Stop `hypridle` before the first log-in after cutover** so nothing can blank the display until
-  this is proven by hand.
-- `hl.dsp.workspace.move` was exercised against a headless output added with
-  `hyprctl output create headless`, which moved workspace 3 to it correctly — but a real
-  two-monitor `session-restore` round trip is the honest check.
-- `split:grabroguewindows` resolved as a module, but the nested instance had no rogue windows to
-  grab, so the dispatcher's *effect* is untested.
+**Still unverified**, for want of hardware: anything **multi-monitor** — `hl.dsp.workspace.move`'s
+monitor argument and `SUPER+ALT+m` were exercised only against a nested headless output added with
+`hyprctl output create headless`. Re-check on the desktop profile.
+
+One more instance of the "`ok` proves nothing" trap, found while cleaning up a test window:
+`hl.dsp.window.close({ window = "address:0x…" })` returns `ok` and does **nothing**;
+`hl.dsp.window.close({})` closes the active window. Not one of our 30 sites, but the same shape as
+a defect that would have shipped silently.

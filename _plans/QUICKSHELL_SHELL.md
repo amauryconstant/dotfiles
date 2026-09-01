@@ -2,7 +2,7 @@
 
 **Status**: Phases 0, 1, **2**, 2.5, 3 and 5 complete on branch `quickshell` (floating bar at
 Waybar module parity, volume/brightness OSDs, launcher and power menu on the primary keys; the two
-bars are mutually exclusive by config; Hyprland on the Lua entry point). Phase 4 (notifications)
+bars are mutually exclusive by config; Hyprland running the Lua entry point across a reboot). Phase 4 (notifications)
 and 6 not started. See **Amendment A** at the end of this file
 for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
 unchanged), which revises the phase list.
@@ -381,8 +381,12 @@ hypridle ignores its command's status.
 - [x] Delete the `.chezmoiignore` TEMP block
 - [x] Update `_guides/HYPRLAND_LUA_CUTOVER.md`, `hypr/CLAUDE.md` (both carried the stale
       "held on Waybar #5013" reason), and the audit
-- [ ] `chezmoi apply` + log out/in, with `hypridle` stopped first
-- [ ] Verify workspace clicks in Lua mode, and every raw `dispatch()` we shipped in Phase 1
+- [x] `chezmoi apply` + reboot — done 2026-09-01, `configProvider: "lua"` live
+- [x] Verify the converted sites on the real session — DPMS both ways, a production
+      `session-restore` (4/4 windows), `window-pop`, submaps, hyprsplit as a Lua library.
+      Table in `_guides/HYPRLAND_LUA_CUTOVER.md`
+- [ ] Still open, needs the hardware: anything multi-monitor (`SUPER+ALT+m`,
+      `hl.dsp.workspace.move`'s monitor arg), a bar workspace click, media keys on hyprlock
 - [ ] Update `_plans/OMARCHY.md` P1: the blocker was routed around, not resolved upstream
 
 **Exit**: Lua entry point live across a reboot and a `hyprctl reload`; workspace clicks
@@ -834,7 +838,7 @@ Phases 0–2 unchanged.
 |---|---|---|
 | 0 | Skeleton, theme bridge, one widget | **Done** |
 | 1 | Bar to Waybar parity | **Done** |
-| 2 | Hyprland Lua cutover | **Done** (2026-09-01). 30 sites converted, entry point deployed; runtime checklist pending the log-out/in |
+| 2 | Hyprland Lua cutover | **Done and verified live** (2026-09-01). 30 sites converted; entry point running across a reboot |
 | **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
 | 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
 | 4 | Notifications | Unchanged in scope; UI now specified by `1f` |

@@ -1,25 +1,46 @@
 # Hyprland Lua Config Cutover
 
-How to flip the Hyprland entry point from `.conf` to `.lua` when the block lifts, and how to roll
-back if it goes wrong.
+How the Hyprland entry point was flipped from `.conf` to `.lua`, what was verified afterwards,
+and how to roll back if it turns out worse in daily use.
 
 **See**: `_research/HYPRLAND_LUA_AUDIT.md` for the one-time `.conf`/`.lua` parity audit this
 runbook depends on. `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit fork this
 cutover also activates.
 
-## Status: unblocked 2026-09-01 — cutover committed, runtime verification pending
+## Status: cut over 2026-09-01, verified live
 
-All 30 `hyprctl dispatch` call sites are converted and the `.chezmoiignore` block is deleted, so
-`~/.config/hypr/hyprland.lua` now deploys. **The session on disk is still the old one** until a
-`chezmoi apply` and a log-out/in; the step-6 checklist below has not been run. Do not read this
-section as "verified live".
+Hyprland runs the Lua entry point. Confirmed after a full reboot:
+`hyprctl -j status` reports `configProvider: "lua"`, `backend: "drm"`.
 
-Argument shapes were settled empirically first, in a nested Hyprland running in Lua mode — see
-`_research/HYPRLAND_LUA_AUDIT.md` → "Resolved at conversion time". Both of that audit's open
-questions are answered there.
+Verified on the real session, not a nested one:
 
-The whole Lua tree (`conf/*.lua`, `conf/bindings/*.lua`, `conf.d/*.lua`, `themes/*/hyprland.lua`)
-was already deployed; only the **entry point** was held back.
+| Check | Result |
+|---|---|
+| DPMS off **and** back on | `dpmsStatus` true → false → true. This was the one thing a nested instance could not prove, and `misc.{key_press,mouse_move}_enables_dpms` are both **false** here, so `dpms on` really is the only way back |
+| `session-restore` round trip | Ran itself at login: all four `exec_cmd` dispatches fired with the `{ monitor = …, workspace = "N silent" }` table, `restored=4 expected=4`, "all windows placed via socket2 — skipping post-fix" |
+| Embedded quoting through `exec_cmd` | `ghostty --working-directory='/home/amaury/Projects/airk'` reached the shell intact; separately proved with a filename containing spaces (one file created, not four) |
+| hyprsplit | `hyprctl plugin list` → **no plugins loaded**; `require("hyprsplit").dsp.grab_rogue_windows()` returns `ok` live, with a typo'd module name as the negative control. The C++→Lua swap landed |
+| `window-pop` | floating, pinned, tagged `pop`, exactly 576x324 = 30% of 1920x1080, centred allowing for the bar's reserved zone |
+| Submaps | `voxtype_recording` enters, `reset` returns to `default` |
+| Key swap | `hyprctl binds` shows exactly one `SUPER+D` ("Application launcher") and one `SUPER+SHIFT+Q` ("Power menu"), both `dispatcher: "__lua"`; no `wofi --show drun` or `desktop/wlogout` left in any deployed binding file |
+| Quickshell | running, all five IPC targets present, launcher toggle round-trips |
+| Hyprland log | no config or dispatch errors |
+
+**Still unverified**, for want of the hardware or the event, not for want of trying:
+
+- **Anything multi-monitor** — the machine is on a single output right now. `SUPER+ALT+m` crossing
+  monitors, and `hl.dsp.workspace.move`'s monitor argument, were exercised only against a nested
+  headless output. Re-check on the desktop profile.
+- **hyprwhenthen float-and-center** — needs a real OAuth popup. The script itself was run by hand
+  against a nested instance and produced exactly half the logical monitor.
+- **Media keys on the hyprlock screen**, and a **workspace click on the Quickshell bar** — both
+  need a human at the keyboard.
+
+`voxtype_suppress` is worth knowing about: voxtype's `pre_output_command` still asks for it, and
+that submap is **deliberately not defined** (both `conf.d/voxtype-submap.{lua,conf}` say so — it is
+only needed for `mode = "type"`, and this config is clipboard mode). So that one hook call is a
+no-op that returns `error: … submap doesn't exist` into `/dev/null`. Unchanged from the legacy
+form, which was equally a no-op.
 
 ### What the hold was
 
