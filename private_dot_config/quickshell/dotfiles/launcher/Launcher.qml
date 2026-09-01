@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import "../"
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import QtQuick
@@ -19,8 +20,38 @@ import QtQuick
 PanelWindow {
     id: root
 
-    readonly property list<var> results: root.rank(query.text)
+    readonly property list<var> results: query.text.trim() ? root.rank(query.text) : root.quickAccessCache
     property int selected: 0
+    property var quickAccessCache: []
+
+    // Empty-query quick access, artboard launch-b. Reuses Wofi's own usage
+    // cache (~/.cache/wofi-drun, "<count> <desktop file path>" per line)
+    // rather than building a second usage tracker — Wofi stays installed
+    // (cliphist, --dmenu callers) and keeps writing it, so the data is real.
+    // ponytail: read-only — a launch from here does not increment the cache,
+    // so it drifts stale if Wofi itself stops being used. Fine until proven
+    // otherwise; a write-back needs the entry's full desktop-file path, which
+    // DesktopEntries does not expose, only its id.
+    function parseQuickAccess(text: string): list<var> {
+        const byId = {};
+        for (const entry of DesktopEntries.applications.values)
+            if (entry && !entry.noDisplay && entry.name)
+                byId[entry.id] = entry;
+        const counted = [];
+        for (const line of text.split("\n")) {
+            const m = /^(\d+)\s+(.+)$/.exec(line.trim());
+            if (!m)
+                continue;
+            const entry = byId[m[2].split("/").pop().replace(/\.desktop$/, "")];
+            if (entry)
+                counted.push({
+                    entry,
+                    count: parseInt(m[1], 10)
+                });
+        }
+        counted.sort((a, b) => b.count - a.count);
+        return counted.slice(0, Config.launcherMaxResults).map(c => c.entry);
+    }
 
     // Ranking, compressed from Omarchy's services/AppSearch.js: a prefix beats
     // a substring beats a keyword/comment hit beats an acronym. Their version
@@ -73,6 +104,7 @@ PanelWindow {
         root.selected = 0;
         root.visible = true;
         query.forceActiveFocus();
+        usageFile.reload();
     }
 
     // Returns the state actually reached, matching the bar.toggle() contract so
@@ -112,6 +144,16 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
 
     onResultsChanged: root.selected = 0
+
+    FileView {
+        id: usageFile
+
+        path: `${Quickshell.env("HOME")}/.cache/wofi-drun`
+        printErrors: false
+
+        onLoadFailed: root.quickAccessCache = []
+        onLoaded: root.quickAccessCache = root.parseQuickAccess(usageFile.text())
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -215,6 +257,21 @@ PanelWindow {
                         font.pixelSize: Config.fontSizeTiny
                         text: "apps"
                     }
+                }
+
+                // Quick access, artboard launch-b: same row, same treatment as
+                // the mode badge, so the state is a content change rather than
+                // a second component. Only shows once there is history to name.
+                Text {
+                    anchors.right: modeBadge.left
+                    anchors.rightMargin: Config.gap
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.fgMuted
+                    font.family: Config.terminalFont
+                    font.letterSpacing: 1
+                    font.pixelSize: Config.fontSizeTiny
+                    text: "QUICK ACCESS"
+                    visible: !query.text.trim() && root.quickAccessCache.length > 0
                 }
 
                 Rectangle {
@@ -367,7 +424,7 @@ PanelWindow {
                     color: Theme.fgMuted
                     font.family: Config.terminalFont
                     font.pixelSize: Config.fontSizeTiny
-                    text: `${root.results.length} result${root.results.length === 1 ? "" : "s"}`
+                    text: query.text.trim() ? `${root.results.length} result${root.results.length === 1 ? "" : "s"}` : `${root.results.length} app${root.results.length === 1 ? "" : "s"}`
                 }
             }
         }

@@ -954,3 +954,128 @@ scratch. That is a point in favour of leaving both optional.
 | Scope creep via the mockup | `1g` and `1i` are drawn but declined, with reasons recorded above |
 | `ScreencopyView` trips `uncreatable-type` like `PanelWindow` | Verified present in 0.3.1; the existing tree-wide exemption should cover it — confirm rather than widen the list |
 | Window-class → glyph map rots as apps change | One lookup object with a fallback glyph, so an unknown class renders something rather than nothing |
+
+---
+
+# Amendment B — design update 2026-09-01
+
+**Source**: same Claude Design project, now split into six files — `Foundations.dc.html`,
+`Bar - Dock.dc.html`, `Composites.dc.html`, `Launcher - Menu.dc.html`, `Panels.dc.html`,
+`Session.dc.html` — replacing the single-file `1a`–`1i` artboard set Amendment A read. Fetched
+2026-09-01 via `DesignSync`. Same rule as Amendment A: **structure and semantic-role
+assignment are adopted; literal hex/font/glyph values are not** — but this revision draws its
+mockups directly against our own token names (`@bg-primary`, `@accent-info`, …), not raw
+Mocha hex, which is itself new information, not just a redraw.
+
+## What's genuinely new here
+
+**1. A full 16-role accent table, for the first time.** `Foundations.dc.html` names every
+accent role's job:
+
+| Role | Use |
+|---|---|
+| `accent-primary` | Clock, active workspace |
+| `accent-border` | Active window border, focus ring |
+| `accent-info` | Network, Bluetooth, charging |
+| `accent-success` | Battery normal, positive |
+| `accent-warning` | Battery <20%, backlight |
+| `accent-error` | Critical, urgent workspace |
+| `accent-urgent-secondary` | Battery 20–30% |
+| `accent-modification` | Git diff, search match |
+| `accent-highlight` | Audio / PulseAudio |
+| `accent-media` | Media player controls |
+| `accent-secondary` | Tertiary interactive |
+| `accent-tertiary` | Lock, logout |
+| `accent-performance` | CPU, memory, disk |
+| `accent-alternative` | Reboot, extra buttons |
+| `accent-special` | Custom modules, rare states |
+| `accent-subtle` | Cursors, subtle hints |
+
+All 16 already exist as `Theme.qml` properties — **no theme-bridge change needed.** But
+checking the shipped widgets against this table found a real gap:
+
+| Widget | Assigned role | Shipped colour at rest |
+|---|---|---|
+| `BatteryWidget` | `accent-info` (charging), ramp for level | ✅ already matches |
+| `NetworkWidget` | `accent-info` | ❌ neutral when connected; only `accent-error` on fault |
+| `BluetoothWidget` | `accent-info` | ❌ uses `accent-primary` when connected — wrong role, and `accent-primary` is reserved for clock/active-workspace only per this table |
+| `AudioWidget` | `accent-highlight` | ❌ neutral unless muted |
+| `MediaWidget` | `accent-media` | ❌ no role colour at all |
+
+**Open decision, not resolved here**: Amendment A's bar rule is *"no per-widget colour at
+rest"* (battery is the sole pill exception). This table says several widgets should carry a
+fixed identity colour at rest (connected Bluetooth is always `accent-info`-tinted, not just on
+a fault). Those two rules conflict. Adopting the table means loosening Amendment A's rule for
+exactly these four widgets; not adopting it means the table is descriptive-only for the ones
+already reserved (`accent-error`/`warning` on battery, which already worked). **Needs a call
+before touching `NetworkWidget`/`BluetoothWidget`/`AudioWidget`/`MediaWidget`** — grep confirms
+`accentHighlight`, `accentMedia`, `accentTertiary`, `accentSubtle`, `accentAlternative`,
+`accentBorder` are unused anywhere in the tree today.
+
+**2. Two concrete Launcher findings**, from `Launcher - Menu.dc.html` `launch-a`, checked
+directly against the shipped `launcher/Launcher.qml`:
+
+- **Contrast defect, real, small.** The exec-string line on the *selected* result row is
+  `Theme.fgMuted` unconditionally (`Launcher.qml`, the `row.modelData.execString` `Text`). The
+  design's note: a 13%-accent-fill selected row is an elevated ground, and `fgMuted` on it
+  drops under 4.5:1 in the light themes — the same class of bug `themes/CLAUDE.md` already
+  bans structurally. Fix is one line: `color: row.current ? Theme.fgPrimary : Theme.fgMuted`.
+- **`launch-b` empty-query "quick access" — built 2026-09-01.** `Launcher.qml` now reuses
+  Wofi's own usage cache (`~/.cache/wofi-drun`, `"<count> <desktop file path>"` per line)
+  instead of building a second frecency tracker: Wofi stays installed regardless (cliphist,
+  every `--dmenu` caller) and keeps writing that file, so the data is real, not synthetic. On
+  open, the file is re-read and matched against `DesktopEntries` by basename-minus-`.desktop`
+  (the only identifier `DesktopEntries` exposes is `id`, not the full path Wofi's cache keys
+  on), sorted by count, capped at `Config.launcherMaxResults` (8, already matching the design's
+  "8 apps" footer). The input row gains the same "QUICK ACCESS" label the design specifies, and
+  the footer switches "N results" / "N apps" depending on mode.
+  `ponytail:` **read-only** — launching an app from this launcher does not increment the shared
+  cache, so quick access drifts stale if Wofi itself stops being used. Upgrade path: write back
+  through the same file once/if that's shown to matter; skipped for now since it would need a
+  path-matching heuristic no more reliable than the read side already uses.
+
+**3. A combined CPU+MEM bar pill** (`Bar - Dock.dc.html` `bar-a`), plus a fuller CPU/MEM/DISK
+meter block in the new **Control Centre** panel (below). No widget for any of CPU, memory or
+disk exists in the tree today — this is new scope, not a restructure of something shipped.
+Optional, same footing as the kanata/voxtype/idle consolidation Amendment A already flagged as
+"if the bar reads crowded, not before."
+
+**4. Control Centre — new artboard, conflicts with declared scope.** `Panels.dc.html` `pan-c`
+draws a full control panel: Wi-Fi/Bluetooth/DND/night-light/power-profile/idle-inhibit tiles,
+volume + backlight sliders, a CPU/MEM/DISK meter block, and a now-playing card. This is
+exactly what the plan's "Out" table already declines — *"Clipboard manager, emoji picker,
+**control panels** — cliphist, wofi and the existing menus cover these."* A mockup existing is
+not a decision (same footing as `1g`/`1i` in Amendment A). **Recommendation: still out, by the
+existing rule** — flagging it here rather than silently adding or silently ignoring it.
+
+**5. PowerMenu glyph-colour and selection-ring changes**, from `Session.dc.html` `ses-a`,
+checked against shipped `power/PowerMenu.qml`:
+
+- Design: every tile's glyph carries a fixed role colour at rest — `accent-tertiary` for Lock
+  and Log out, `accent-subtle` for Suspend, `accent-alternative` for Reboot, `accent-error` for
+  Shut down — and the selection ring is `accent-border`.
+- Shipped: only the destructive tile (Shut down) is coloured (`accentError`); every other tile
+  is neutral `fgPrimary` until selected, and the selection ring is `accentPrimary`.
+- Same open-decision shape as finding 1 — adopting per-tile identity colours is a real visual
+  change (five colours visible in an idle menu instead of one). Not applied here.
+
+**6. Confirmed unchanged / still declined** (no plan action needed):
+
+- **System menu** (`menu-a`/`menu-b`, Super+Space) — the design file labels this artboard
+  *"EXPLORATORY ONLY: wofi covers this today and control panels are out of Quickshell-port
+  scope per `_plans/QUICKSHELL_SHELL.md`"* — the design itself defers to this plan. No change.
+- **Clipboard** (`pan-b`) — Amendment A already recommended *"revisit after Phase 5"*; Phase 5
+  is now done (`ses-a`/`launch-a` etc. confirm it). Due for a decision, still declined by
+  default until one is made — not resolved here.
+- **Lock screen** (`ses-b`) — still declined for lockout risk; structural notes (clock
+  top-left, credentials bottom-left, media widget mirrors the notification card) recorded for
+  if it's ever taken up.
+- **Dock** and **workspace overview** (`comp-a`–`comp-d`) — geometry and behaviour unchanged
+  from what Amendment A already recorded for `1c`/`1e`; both still optional, Phase 5.5.
+
+## Plan-list impact
+
+No phase moves. Findings 1–5 above are new decision points layered onto Phases 2.5 (done),
+4 (notifications, unstarted), and the optional Phase 5.5 — not reasons to reopen any of them.
+The one actionable, no-decision-needed item is the Launcher contrast fix (finding 2, first
+bullet) — small enough to take whenever the launcher is next touched.
