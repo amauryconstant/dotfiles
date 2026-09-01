@@ -17,10 +17,11 @@ disables subdirectory discovery for every other config, including voxtype's)
 |---------|---------|
 | `dotfiles/shell.qml` | Root `ShellRoot` — IPC handlers + `Variants` over screens + the OSD. Owns no widget |
 | `dotfiles/qmldir` | Declares the singletons. **Load-bearing** — see below |
-| `dotfiles/{Theme,Config,Backlight}.qml*` | Singletons. `Config` is `.tmpl`, the other two are not |
+| `dotfiles/{Theme,Config,Backlight,Notifications}.qml*` | Singletons. `Config` is `.tmpl`, the other three are not |
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
+| `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
 (`Config.isLaptop`) consumed by `visible:`, never eight separate templates.
@@ -167,6 +168,39 @@ goes 100x out if this is missed.
 **`Quickshell.Io/Socket` is a UNIX socket** — its only address property is `path`. There is no
 TCP support, so anything speaking to a TCP service (kanata's port 5829) goes through a `Process`.
 
+🚨 **A notification's popup timeout must never call `expire()` or `dismiss()`.** Both destroy
+the `Notification`, which removes it from `trackedNotifications` — the history a notification
+centre exists to show. So a toast auto-hiding would silently empty the centre. Popup lifetime
+is a separate list with its own timers in `Notifications.qml`; only a real dismissal destroys
+anything.
+
+🚨 **Constructing `NotificationServer` is what claims `org.freedesktop.Notifications`**, and a
+bus name has exactly one owner. There is no "advertise nothing" configuration — the only way
+not to own notifications is not to construct the server, which is why it sits behind a
+`Loader { active: Config.notificationsOwned }`. With swaync unmasked and a server constructed
+anyway, the two race for the name at login.
+
+🚨 **A notification is NOT tracked by default — the handler must set `tracked = true`.**
+`isTracked()` reads `mCloseReason == 0`, which looks like "tracked unless closed", but the
+member is initialised to `NotificationCloseReason::Dismissed`. `server.cpp` then DELETES the
+notification the instant the `notification` signal returns if it is still untracked. Reading
+the getter's body alone gives the opposite answer; the member's initialiser is the fact.
+
+Missed, the failure is quiet and misleading: popups still appear (the handler already captured
+the pointer), then turn into a list of `null`s, while the centre stays permanently empty. The
+only symptom in the log is `TypeError: Cannot read property 'hints' of null`. Verified live
+2026-09-01. The corollary: implement `transient` by filtering it out of history, never by
+setting `tracked = false`.
+
+**`NotificationServer.extraHints` does not gate `hints`.** It only extends the advertised
+`GetCapabilities` list; every hint a client sends arrives in `Notification.hints` regardless.
+That is how `x-canonical-monitor` (sent by `ui_notify_focused` in `core/gum-ui.sh`) routes a
+popup to a monitor without being declared.
+
+**`keepOnReload` covers a RELOAD, not a restart.** Notifications survive a config reload and
+come back flagged `lastGeneration`; a fresh process starts empty. That matches swaync, which
+also loses history when its daemon restarts, so no disk persistence exists here.
+
 **Hyprland's models populate lazily and asynchronously.** `Hyprland.workspaces` and
 `.monitors` are both empty for the first ~1s. They fill on their own; `refreshWorkspaces()` is
 not needed, but code must not assume data at startup.
@@ -216,24 +250,57 @@ Everything else is icon-only, with its number in the tooltip.
 
 `BarSeparator` binds to the group that **follows** it (`group: gPower`), so a group that
 collapses to zero width on a desktop takes its leading hairline with it instead of leaving a
-stray rule in the bar. **The hairline is `bgTertiary`, not `bgSecondary`** — the design's
-`#313244` is Catppuccin `surface0`, which is what `BG_TERTIARY` maps to in our colorset. The
-bar's own border is the same colour.
+stray rule in the bar. **The hairline is `bgSecondary`** — bar border, separators, the gap dot
+and every panel border alike.
+
+🚨 **This was `bgTertiary` until 2026-09-01, on a mis-mapping.** Amendment A read the canvas's
+`#313244` as "`surface0`, which is what `BG_TERTIARY` maps to". It does not: in
+`themes/catppuccin-mocha/colors.sh`, `BG_SECONDARY` is `#313244` and `BG_TERTIARY` is
+`#45475a`. The correction moved the hairline one tier the wrong way in all 8 themes. See the
+hex table below — and never map a canvas colour by its LABEL.
 
 ### Reading the design source, not the transcription
 
 The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
-readable through the `DesignSync` MCP tool: `list_files`, then `get_file` on
-`Quickshell Mocha Shell.dc.html`. `support.js` beside it is the generated dc-runtime and
-carries no design content — do not bother fetching it. Reading the artboard directly settled
-four things the plan's prose transcription had lost: the launcher chip, the hairline tier,
-the mono numerals, and that urgent is a text colour rather than a red fill.
+readable through the `DesignSync` MCP tool: `list_files`, then `get_file`. It is now **six
+files** — `Foundations`, `Bar - Dock`, `Composites`, `Launcher - Menu`, `Panels`, `Session`
+(`.dc.html`) — replacing the single-file `1a`–`1i` set. `support.js` beside them is the
+generated dc-runtime and carries no design content — do not bother fetching it. Reading the
+artboards directly has now settled seven things the prose transcriptions had lost or got
+wrong: the launcher chip, the hairline tier (twice, in opposite directions), the mono
+numerals, urgent being a text colour rather than a red fill, the card contrast law, and that
+notification cards carry no severity stripe.
 
-⚠️ **Our colorset has three background tiers, not the mockup's four.** `BG_TERTIARY` and
-`BG_OVERLAY` are the same value in the shipped themes (verified in `rose-pine-moon`), so the
-canvas's separate "visible on another monitor" and "occupied" grounds collapse to one. That
-is the plan's own instruction — collapse a tier rather than invent a colour — now confirmed
-against the colorset rather than assumed.
+⚠️ **`DesignSync` needs its own authorization.** A session without it fails with *"DesignSync
+needs design-system authorization"*; `/design-login` grants it. Nothing in the repo can
+substitute — plan on reading the source, not a transcription of it.
+
+### 🚨 Map canvas colours by HEX, never by name
+
+The canvas names three background tiers with Catppuccin-tier names; our colorset has four,
+ordered differently. Matching on the name is how the hairline defect above happened. Verified
+against `themes/catppuccin-mocha/colors.sh`:
+
+| Canvas hex | Canvas label | **Our token** |
+|---|---|---|
+| `#1e1e2e` | bg-primary | `BG_PRIMARY` |
+| `#313244` | bg-secondary | **`BG_SECONDARY`** — hairlines, chip grounds |
+| `#45475a` | (unused by the canvas) | `BG_TERTIARY` |
+| `#181825` | bg-tertiary | **`BG_OVERLAY`** — notification cards, tooltips |
+| `#6c7086` | fg-muted | `FG_MUTED` (`#9399b2` here — a different value, same role) |
+
+The same trap bit `Theme.qml`: **nine of its 24 fallbacks were the canvas's Mocha palette
+rather than our colorset's** — including `accentPrimary`, mauve on the canvas and blue
+(`#89b4fa`) in `colors.sh`. Fixed 2026-09-01. Copy a fallback from `colors.sh`, never from a
+mockup.
+
+⚠️ **The canvas's fourth background tier has no single equivalent here.** Amendment A said
+`BG_TERTIARY` and `BG_OVERLAY` "are the same value in the shipped themes (verified in
+`rose-pine-moon`)" — that generalised from **one** theme. Checked across all eight, they are
+equal only in `rose-pine-moon`; mocha has `#45475a` vs `#181825`, latte `#bcc0cc` vs
+`#e6e9ef`. The canvas's separate "visible on another monitor" and "occupied" grounds still
+collapse to one, but because collapsing a tier beats inventing a colour — **not** because the
+two tokens coincide. They mostly do not.
 
 ⚠️ **The "empty" workspace pill departs from the mockup on purpose.** The canvas gives it a
 faint ground; ours stays transparent, because a ground makes it an elevated surface and the
@@ -245,7 +312,8 @@ ground, `fg-muted` is allowed.
 ## IPC
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
-`bar.toggle()`. List them live with `quickshell ipc --pid <pid> show`.
+`bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
+`notifications.dnd()`. List them live with `quickshell ipc --pid <pid> show`.
 
 **Flag placement differs by flag**, which is not obvious:
 

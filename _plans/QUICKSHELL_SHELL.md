@@ -1,11 +1,11 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Phases 0, 1, **2**, 2.5, 3 and 5 complete on branch `quickshell` (floating bar at
-Waybar module parity, volume/brightness OSDs, launcher and power menu on the primary keys; the two
-bars are mutually exclusive by config; Hyprland running the Lua entry point across a reboot). Phase 4 (notifications)
-and 6 not started. See **Amendment A** at the end of this file
-for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
-unchanged), which revises the phase list.
+**Status**: Phases 0, 1, **2**, 2.5, 3, **4** and 5 complete on branch `quickshell` (floating bar
+at Waybar module parity, volume/brightness OSDs, launcher and power menu on the primary keys,
+notification server + centre with swaync masked; the two bars are mutually exclusive by config;
+Hyprland running the Lua entry point across a reboot). Only the optional 5.5 and 6 remain. See
+**Amendment A** for the layout language adopted 2026-08-31, **Amendment B** for the 2026-09-01
+design update, and **Amendment C** for the colour-mapping correction that landed with Phase 4.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
 `_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
 **Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon
@@ -428,6 +428,59 @@ widget's own states still stays in that widget — Amendment A's re-stated crite
 
 ### Phase 4 — Notifications
 
+**Status: done, 2026-09-01.** Built last of the mandatory phases, as planned — it was the only
+one that could not coexist with what it replaces.
+
+| Criterion | Result |
+|---|---|
+| Server owns the bus name | ✅ `Notifications.qml`. **Behind a `Loader`** — see the trap below |
+| Popups | ✅ `notifications/NotificationPopups.qml`, one window **per screen** (the only such window here besides the bar), honouring `x-canonical-monitor` — the hint `ui_notify_focused` in `core/gum-ui.sh` already sent |
+| History panel | ✅ `notifications/NotificationCentre.qml`, artboard `pan-a`, sharing one `NotificationCard.qml` with the popups |
+| DND | ✅ a property on the singleton, toggled from the centre's header chip and the bell's right-click. **In memory, no state file** — swaync's DND does not survive its own daemon restart either, and nothing outside the shell toggles it |
+| swaync cutover | ✅ `.chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl`, gated on the new `features.quickshell_notifications` |
+| `SUPER+SHIFT+N` moved | ✅ but **not** in `conf.d/quickshell.lua` — see below |
+| Bell off `swaync-client` | ✅ `NotificationWidget.qml` lost its `WaybarJsonSource` and all three `execDetached` calls; the tree now contains no `swaync-client` at all |
+
+**Three findings worth more than the code they produced:**
+
+🚨 **Constructing `NotificationServer` is what claims the bus name.** There is no
+"advertise nothing" configuration, so the only way to *not* own notifications is to not
+construct the server — hence `Loader { active: Config.notificationsOwned }`. Without that, a
+flag-off rollback would unmask swaync while the shell still constructed a server, and the two
+would race for the name at login. The rollback would have looked applied and been broken.
+
+🚨 **A popup timeout must never `expire()`/`dismiss()`.** Both destroy the `Notification`,
+which removes it from `trackedNotifications` — the history the centre exists to show. A toast
+auto-hiding would silently empty the centre. Popup lifetime is a separate list with its own
+timers; only a real dismissal destroys anything.
+
+🚨 **The mirror-image trap, and the one that actually shipped broken for an hour: a
+notification is NOT tracked by default.** `isTracked()` is `mCloseReason == 0`, but
+`mCloseReason` initialises to `Dismissed`, so the handler must set `tracked = true`
+synchronously or `server.cpp` deletes the object as the signal returns. The first live test
+showed popups appearing and the centre reading "No notifications" — the popup list had captured
+pointers that became `null`. Caught only by running it; `qmllint` cannot see it, and reading
+`isTracked()`'s body says the opposite of the truth. The corollary is that `transient` is
+implemented by filtering it out of history, never by setting `tracked = false`.
+
+🚨 **The binding could not live in the drop-in.** `conf.d/quickshell.{lua,conf}` owns the other
+three Quickshell keys, but it is a plain `.lua`/`.conf` — it cannot carry template actions, and
+this key is gated on a *different* flag than the bar is. Both alternatives therefore live in
+`conf/bindings/system-control.{lua,conf}.tmpl`, one per branch of the same `if`.
+
+**Departures from the original phase text, both recorded:**
+
+- **History is in-process only.** The exit criterion said "survive a shell restart";
+  `keepOnReload` survives a *reload* and flags the carried-over notifications
+  `lastGeneration`, while a fresh process starts empty. That is exactly swaync's behaviour, so
+  disk persistence would have exceeded the thing being replaced rather than matched it.
+- **The rollback loses the bar's bell**, not its notifications: the widget is
+  `visible: Config.notificationsOwned`. Keeping it alive would mean keeping the old
+  `WaybarJsonSource` swaync subscriber beside the new binding — two implementations of one
+  widget, for a state that exists only to be temporary. Marked `ponytail:` in the source.
+
+**Original scope notes, for the record:**
+
 The largest single component. `NotificationServer` from
 `Quickshell.Services.Notifications`, plus popups, history panel, and DND.
 
@@ -841,7 +894,7 @@ Phases 0–2 unchanged.
 | 2 | Hyprland Lua cutover | **Done and verified live** (2026-09-01). 30 sites converted; entry point running across a reboot |
 | **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
 | 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
-| 4 | Notifications | Unchanged in scope; UI now specified by `1f` |
+| 4 | Notifications | **Done** (2026-09-01). UI from `1f`/`pan-a`; swaync masked behind its own flag |
 | 5 | Launcher and power menu | **Done** (2026-09-01, ahead of Phase 4). UI from `1d` and `1h`; both on spare keys, coexisting |
 | **5.5** | — | **New, optional — workspace overview (`1e`) and dock** |
 | 6 | Cleanup of replaced tooling | Unchanged, still optional |
@@ -1085,3 +1138,79 @@ No phase moves. Findings 1–5 above were decision points layered onto Phases 2.
 All are now settled: the Launcher contrast fix (finding 2) is applied; the two accent-role
 adoptions (findings 1 and 5) are declined, keeping `NetworkWidget`/`BluetoothWidget`/
 `AudioWidget`/`MediaWidget`/`PowerMenu.qml` as shipped.
+
+
+---
+
+# Amendment C — colour mapping correction, 2026-09-01
+
+Found while reading `Panels.dc.html` directly for Phase 4's card spec. Two of Amendment A's
+recorded facts were wrong, and one of them had already changed shipped code in the wrong
+direction. Verified against `private_dot_config/themes/*/colors.sh`, not inferred.
+
+## 1. Canvas colours map by HEX, never by label
+
+The canvas names three background tiers with Catppuccin-tier names; our colorset has four,
+ordered differently. Matching on the label is what went wrong:
+
+| Canvas hex | Canvas label | **Our token** |
+|---|---|---|
+| `#1e1e2e` | bg-primary | `BG_PRIMARY` |
+| `#313244` | bg-secondary | **`BG_SECONDARY`** |
+| `#45475a` | (unused by the canvas) | `BG_TERTIARY` |
+| `#181825` | bg-tertiary | **`BG_OVERLAY`** |
+
+**Amendment A recorded**: *"the canvas's `#313244` is Catppuccin `surface0`, which is what
+`BG_TERTIARY` maps to in our colorset"*, and moved the bar border, separators and the gap dot
+from `bgSecondary` to `bgTertiary` on that basis. In mocha `BG_SECONDARY` **is** `#313244`;
+`BG_TERTIARY` is `#45475a`. So the "fix" put the hairline one tier too light in all 8 themes —
+the opposite of the defect it was recorded as fixing.
+
+**Corrected**: bar border, `BarSeparator`, the workspace gap dot, the launcher's two rules and
+its mode-badge border, the OSD panel border and the power-menu tile border are all
+`Theme.bgSecondary` again.
+
+## 2. `BG_TERTIARY == BG_OVERLAY` was a one-theme generalisation
+
+Amendment A: *"the same value in the shipped themes (verified in `rose-pine-moon`)"*. Checked
+across all eight, they are equal **only** in `rose-pine-moon` — mocha `#45475a` vs `#181825`,
+latte `#bcc0cc` vs `#e6e9ef`, solarized-dark `#586e75` vs `#073642`. Collapsing the canvas's
+fourth tier is still right, but because collapsing beats inventing a colour, not because the
+tokens coincide.
+
+## 3. Nine of `Theme.qml`'s 24 fallbacks were the canvas's palette, not ours
+
+The same mis-mapping, latent: the fallbacks fire only when a colorset key is missing, so they
+had never rendered. `accentPrimary` fell back to the canvas's mauve `#cba6f7` where
+`colors.sh` says blue `#89b4fa`; the three background tiers were each shifted one step; and
+`fgSecondary`, `fgMuted`, `fgContrast`, `accentInfo` and `accentBorder` were all a different
+value from the theme they claim to mirror. All nine are now verbatim
+`themes/catppuccin-mocha/colors.sh`. This is the risk Amendment A's own table listed as *"the
+canvas's Mocha hex values leak into QML"* — it had already happened, in the fallback layer
+nobody looks at.
+
+## 4. The card contrast law is stricter than `1f` transcribed
+
+The artboard's own note: *"Cards are @bg-tertiary, so every string on them — app label,
+timestamp, body — is @fg-primary; hierarchy comes from size, weight and mono/sans, never from
+dimming."* `1f` had specified collapsed group siblings as *"one muted 11.5 line"*. On an
+elevated ground `fgMuted` is exactly what `themes/CLAUDE.md` bans, so the cards use `fgPrimary`
+throughout. `fgMuted` survives in one place per the same note — the Dismiss button's
+**outline**, because *"borders are foreground-class only"* and a background token cannot carry
+one.
+
+## 5. Clipboard (`pan-b`) — decided: declined
+
+Amendment A said "revisit after Phase 5"; Amendment B left it "declined by default until a
+decision is made". Deciding it here so it stops resurfacing each amendment: **declined, and not
+revisited again without a new reason.** `cliphist` + Wofi already do this, Wofi is unremovable
+regardless (it serves every `--dmenu` caller), and a second clipboard UI would duplicate a
+working path to gain styling. The artboard's own good idea — a three-letter type badge instead
+of an icon — is recorded here in case a Wofi-side tweak ever wants it.
+
+## Still open after Phase 4
+
+- **Contrast by eye across the 8 themes** — the last unmet Phase 2.5 exit criterion, now
+  larger by the notification surfaces. The hairline change above is what to judge first.
+- **Phase 5.5** (dock, workspace overview) and **Phase 6** (retirement) — both optional, both
+  unchanged.

@@ -9,11 +9,17 @@
 
 ## Quick Reference
 
-- **Status**: Phases 2, 2.5, 3 and 5 complete — floating bar (40 tall, inset 8, reserving 48),
-  volume/brightness OSDs, launcher and power menu, and Hyprland now on the Lua entry point.
-  Phase 4 (notifications) is the only one still outstanding
+- **Status**: Phases 2, 2.5, 3, 4 and 5 complete — floating bar (40 tall, inset 8, reserving
+  48), volume/brightness OSDs, launcher, power menu, notification server + centre, and
+  Hyprland on the Lua entry point. Only the optional Phases 5.5 and 6 remain
 - **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` is the whole
   rollout; flipping back is the whole rollback
+- **Second gate**: `features.quickshell_notifications.enabled`, for notifications ONLY.
+  Separate because it does something the bar flag does not — it takes
+  `org.freedesktop.Notifications` from swaync by MASKING the unit
+  (`run_onchange_after_configure_notifications`). A bus name has one owner, so this is the one
+  phase with no coexistence. Flipping it back unmasks swaync, starts it, and points
+  `SUPER+SHIFT+N` back at `swaync-client`
 - 🚨 **The two bars are mutually exclusive, by config.** `.chezmoiignore` deploys exactly one
   of `hypr/conf.d/quickshell.{lua,conf}` and `hypr/conf.d/waybar.{lua,conf}`; each drop-in
   carries both its own autostart and `SUPER+B`. `conf/autostart.*` and
@@ -39,13 +45,18 @@
 ```
 dotfiles/
 ├── shell.qml              # ShellRoot: IPC handlers + Variants over screens + the OSD
-├── qmldir                 # declares the three singletons (required by qmllint)
+├── qmldir                 # declares the four singletons (required by qmllint)
 ├── Theme.qml              # colours from themes/current/colors.sh, at runtime
 ├── Config.qml.tmpl        # geometry scale, fonts, chassis, scriptsDir, shared glyph ramps
 ├── Backlight.qml          # sysfs backlight, shared by the bar widget and the OSD
+├── Notifications.qml      # NotificationServer + DND + popup list + history grouping
 ├── osd/Osd.qml            # volume + brightness overlay, follows the focused monitor
 ├── launcher/Launcher.qml  # app launcher (artboard 1d)
 ├── power/PowerMenu.qml    # power / session menu (artboard 1h)
+├── notifications/
+│   ├── NotificationCard.qml     # THE card — shared by the centre and the popups
+│   ├── NotificationPopups.qml   # toast stack, one window PER SCREEN
+│   └── NotificationCentre.qml   # the 440-wide panel (artboard pan-a)
 └── bar/
     ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
     ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
@@ -73,7 +84,8 @@ accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
 | Audio, Media, Tray | `Pipewire`, `Mpris`, `SystemTray` |
 | Network, Bluetooth, Battery | `Networking`, `Bluetooth`, `UPower` — laptop only |
 | Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
-| Kanata, Voxtype, Idle, Notification | existing scripts, via `WaybarJsonSource` |
+| Kanata, Voxtype, Idle | existing scripts, via `WaybarJsonSource` |
+| Notification | the `Notifications` singleton — Phase 4 cut the last `swaync-client` call out of the tree |
 
 ## OSD (Phase 3)
 
@@ -93,9 +105,10 @@ Sits at `Config.osdMargin` (160) from the bottom, clearing voxtype's own OSD (a 
 at bottomMargin 72) so a dictation card and a volume key cannot overlap. On a desktop with a
 DDC monitor there is no sysfs backlight, so the brightness half simply never fires.
 
-**Four scripts are reused, not ported**: `kanata-layer`, `voxtype-waybar-status`,
-`idle-indicator`, and `swaync-client -swb` all already emit Waybar's custom-module JSON. Their
-names still say "waybar" — renaming waits for Phase 6, when Waybar actually goes.
+**Three scripts are reused, not ported**: `kanata-layer`, `voxtype-waybar-status` and
+`idle-indicator` all already emit Waybar's custom-module JSON. Their names still say "waybar" —
+renaming waits for Phase 6, when Waybar actually goes. (`swaync-client -swb` was the fourth
+until Phase 4; the bell now reads an in-process singleton.)
 
 ## Launcher and power menu (Phase 5)
 
@@ -142,6 +155,34 @@ deliberate departures from artboard `1h`:
 the wrapper it replaces has none. Adding one would be a behaviour change smuggled in as a
 redesign. What protects you is the *selection*: Lock is selected on open, so Return alone can
 never power anything off.
+
+## Notifications (Phase 4)
+
+`Notifications.qml` owns the server; `notifications/` draws it. The centre is the launcher and
+power menu again structurally — focused monitor, exclusive keyboard focus, no mask, click-out
+dismisses — but anchored top-right under the bar rather than centred, where the toasts it
+archives were.
+
+**The popups are the exception to "one window that follows the focus"**: one per screen. A
+notification arrives on its own schedule, so "wherever you were looking when it fired" is the
+wrong answer. Routing honours `x-canonical-monitor`, the hint `ui_notify_focused`
+(`core/gum-ui.sh`) has always sent; anything unhinted lands on the focused monitor.
+
+Four things are load-bearing, all documented in `.claude/rules/quickshell-qml.md`:
+
+- a popup timing out must **not** `expire()`/`dismiss()` — that would empty the history
+- constructing `NotificationServer` is what claims the bus name, hence the `Loader`
+- `transient` cannot be implemented with `tracked = false` (the server deletes immediately)
+- `keepOnReload` survives a reload, not a restart — same as swaync, so no disk persistence
+
+**Card rules from artboard pan-a, both easy to "improve" wrongly**: no severity stripe (every
+card keeps an identical silhouette; severity is the **title colour alone**), and every string
+on a card is `fgPrimary` — the ground is elevated, so hierarchy comes from size, weight and
+mono-vs-sans, never from dimming. `fgMuted` appears on a card in exactly one place: the
+Dismiss button's outline, because borders are foreground-class.
+
+Timeouts mirror the swaync config they replace: 10s normal, 5s low, **critical never
+auto-hides**. Bell gestures are swaync's too — left opens, right toggles DND, middle clears.
 
 ## Deviations from Waybar, and why
 

@@ -3,9 +3,11 @@
 # Script: quickshell-toggle
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
-# Usage: quickshell-toggle [bar|launcher|power]   (default: bar)
-# Bound to: SUPER+B (bar), SUPER+SHIFT+D (launcher), SUPER+ALT+Q (power menu)
-#           — hypr/conf.d/quickshell.{lua,conf}
+# Usage: quickshell-toggle [bar|launcher|power|notifications]   (default: bar)
+# Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu)
+#           — hypr/conf.d/quickshell.{lua,conf}; SUPER+SHIFT+N (notifications)
+#           — hypr/conf/bindings/system-control.{lua,conf}.tmpl, which is where
+#           it lives because that key is gated on a different feature flag
 #
 # Mirrors waybar-toggle, with one difference: a running Quickshell hides and
 # shows over IPC rather than being killed and relaunched. That is instant and
@@ -19,9 +21,9 @@ CONFIG=dotfiles
 TARGET=${1:-bar}
 
 case "$TARGET" in
-bar | launcher | power) ;;
+bar | launcher | power | notifications) ;;
 *)
-    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power)" >&2
+    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications)" >&2
     exit 2
     ;;
 esac
@@ -51,6 +53,9 @@ toggle_target() {
         return 0
         ;;
     *)
+        # Also to stderr: once swaync is masked, THIS SHELL is the notification
+    # daemon, so a notify-send about it being down has nothing to reach.
+    echo "quickshell-toggle: $TARGET not responding" >&2
         notify-send "󰕮 Quickshell" "$TARGET not responding" -t 2000
         return 1
         ;;
@@ -84,5 +89,6 @@ while [ "$_tries" -gt 0 ]; do
     _tries=$((_tries - 1))
 done
 
+echo "quickshell-toggle: failed to start shell" >&2
 notify-send "󰕮 Quickshell" "Failed to start shell" -t 2000
 exit 1

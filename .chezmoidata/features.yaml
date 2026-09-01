@@ -11,3 +11,10 @@ features:
     enabled: true
   quickshell_shell:
     enabled: true
+  # Notifications. Separate from quickshell_shell on purpose: running the bar
+  # must not imply taking org.freedesktop.Notifications away from swaync, which
+  # is what this flag does (see
+  # .chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl).
+  # Flipping it back unmasks swaync and restores its SUPER+SHIFT+N binding.
+  quickshell_notifications:
+    enabled: true

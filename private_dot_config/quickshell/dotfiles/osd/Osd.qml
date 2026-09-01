@@ -79,7 +79,7 @@ PanelWindow {
         id: card
 
         anchors.fill: parent
-        border.color: Theme.bgTertiary
+        border.color: Theme.bgSecondary
         border.width: Config.hairline
         color: Theme.bgPrimary
         opacity: hideTimer.running ? 1 : 0

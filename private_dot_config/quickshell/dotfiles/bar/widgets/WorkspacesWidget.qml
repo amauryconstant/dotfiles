@@ -45,7 +45,7 @@ BarWidget {
             // renumbering: the canvas shows `1 2 3 4 · 6`.
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.bgTertiary
+                color: Theme.bgSecondary
                 height: 6
                 radius: Config.radiusPill
                 visible: entry.index > 0 && root.workspaces[entry.index - 1].id !== entry.modelData.id - 1

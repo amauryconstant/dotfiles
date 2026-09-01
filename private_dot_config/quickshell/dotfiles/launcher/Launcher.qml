@@ -165,7 +165,7 @@ PanelWindow {
         id: panel
 
         anchors.horizontalCenter: parent.horizontalCenter
-        border.color: Theme.bgTertiary
+        border.color: Theme.bgSecondary
         border.width: Config.hairline
         color: Theme.bgPrimary
         // The panel is a modal, not a dropdown: high enough to read without
@@ -241,7 +241,7 @@ PanelWindow {
                     anchors.right: parent.right
                     anchors.rightMargin: Config.pad
                     anchors.verticalCenter: parent.verticalCenter
-                    border.color: Theme.bgTertiary
+                    border.color: Theme.bgSecondary
                     border.width: Config.hairline
                     color: "transparent"
                     height: mode.implicitHeight + Config.gap
@@ -276,7 +276,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.bottom: parent.bottom
-                    color: Theme.bgTertiary
+                    color: Theme.bgSecondary
                     height: Config.hairline
                     visible: root.results.length > 0
                     width: parent.width
@@ -405,7 +405,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.top: parent.top
-                    color: Theme.bgTertiary
+                    color: Theme.bgSecondary
                     height: Config.hairline
                     width: parent.width
                 }

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_notifications.sh.tmpl
+# Purpose: Hand org.freedesktop.Notifications to Quickshell, or give it back to swaync
+# Requirements: Arch Linux, systemd user session, swaync
+#
+# WHY a script at all: org.freedesktop.Notifications has exactly ONE bus owner,
+# so this is the one Quickshell phase with no coexistence. swaync is started as
+# a systemd user unit (/usr/lib/systemd/user/swaync.service) AND is D-Bus
+# activatable, so stopping it is not enough — anything calling notify-send would
+# activate it straight back. Masking is what actually prevents that.
+#
+# WHY run_onchange (not run_once): the flag is a two-way switch. A run_once
+# script could only ever perform the cutover, never the revert, so flipping the
+# flag back would leave swaync masked with nothing owning the bus name — i.e. no
+# notifications at all, silently.
+#
+# The hash covers BOTH flags: the notification server lives inside the
+# Quickshell shell process, so turning the bar off has to hand swaync back too —
+# otherwise the bus name ends up owned by nothing at all.
+# Hash: {{ printf "shell=%s notifications=%s" (.features.quickshell_shell | toJson) (.features.quickshell_notifications | toJson) }}
+
+{{ includeTemplate "log_start" "Configuring notification daemon ownership..." }}
+
+set -euo pipefail
+
+if ! command -v swaync >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "swaync not installed — nothing to mask or restore" }}
+    exit 0
+fi
+
+{{ if and .features.quickshell_shell.enabled .features.quickshell_notifications.enabled }}
+# is-enabled exits nonzero for a masked unit, so the status is read into a
+# variable rather than tested inline — `set -e` plus a masked return would
+# otherwise abort the script on the very state it is checking for.
+unit_state=$(systemctl --user is-enabled swaync.service 2>/dev/null || true)
+
+if [[ "$unit_state" == "masked" ]]; then
+    {{ includeTemplate "log_skip" "swaync already masked — Quickshell owns notifications" }}
+else
+    {{ includeTemplate "log_step" "Masking swaync so Quickshell can own org.freedesktop.Notifications..." }}
+    # --now stops the running instance in the same call; masking alone would
+    # leave the current process holding the bus name until the next log-in.
+    systemctl --user mask --now swaync.service
+    {{ includeTemplate "log_success" "swaync masked — Quickshell's NotificationServer takes the bus name" }}
+fi
+
+# The shell has to be running to claim the name it was just handed. It is
+# started by hypr/conf.d/quickshell.lua, so on a fresh install it may not be up
+# yet; that is fine, this only nudges an already-running session.
+ipc_targets=$(quickshell -c dotfiles ipc show 2>/dev/null || true)
+
+if grep -q '^target notifications$' <<<"$ipc_targets"; then
+    {{ includeTemplate "log_info" "Quickshell notification handler is live" }}
+else
+    {{ includeTemplate "log_warning" "Quickshell is not running the notifications handler yet — restart the shell or log in again" }}
+fi
+{{ else }}
+unit_state=$(systemctl --user is-enabled swaync.service 2>/dev/null || true)
+
+if [[ "$unit_state" != "masked" ]]; then
+    {{ includeTemplate "log_skip" "swaync not masked — already the notification daemon" }}
+else
+    {{ includeTemplate "log_step" "Unmasking swaync and handing notifications back..." }}
+    systemctl --user unmask swaync.service
+    # Started rather than left to D-Bus activation so the revert is observable
+    # here instead of on the next notification.
+    systemctl --user start swaync.service
+    {{ includeTemplate "log_success" "swaync restored — reload Hyprland so SUPER+SHIFT+N points back at it" }}
+fi
+{{ end }}
+
+{{ includeTemplate "log_complete" "Notification daemon ownership configured" }}

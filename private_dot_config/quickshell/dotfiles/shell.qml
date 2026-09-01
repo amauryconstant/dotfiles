@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import "bar"
 import "launcher"
+import "notifications"
 import "osd"
 import "power"
 import Quickshell
@@ -21,8 +22,9 @@ ShellRoot {
         }
     }
 
-    // SUPER+SHIFT+B, from hypr/conf.d/quickshell.lua. SUPER+B still toggles
-    // Waybar, so either bar can be hidden while both run.
+    // SUPER+B, from hypr/conf.d/quickshell.lua. The Waybar drop-in claims the
+    // same key, which is safe because .chezmoiignore deploys exactly one of the
+    // two — they are mutually exclusive, not concurrent.
     IpcHandler {
         target: "bar"
 
@@ -47,10 +49,10 @@ ShellRoot {
         }
     }
 
-    // SUPER+SHIFT+D, from hypr/conf.d/quickshell.lua, via quickshell-toggle.
-    // Coexists with Wofi on SUPER+D rather than replacing the binding: Wofi
-    // still serves cliphist and every --dmenu caller, and this only has to be
-    // better as an app launcher before SUPER+D moves.
+    // SUPER+D, from hypr/conf.d/quickshell.lua, via quickshell-toggle. Took
+    // the primary key on 2026-09-01; the Wofi binding is GATED OFF on the same
+    // flag rather than shadowed, because duplicate binds stack in Hyprland.
+    // Wofi itself stays — cliphist and every --dmenu caller.
     IpcHandler {
         target: "launcher"
 
@@ -59,8 +61,7 @@ ShellRoot {
         }
     }
 
-    // SUPER+ALT+Q, coexisting with wlogout on SUPER+SHIFT+Q for the same
-    // reason.
+    // SUPER+SHIFT+Q, taken from wlogout the same way and on the same day.
     IpcHandler {
         target: "power"
 
@@ -69,8 +70,32 @@ ShellRoot {
         }
     }
 
+    // SUPER+SHIFT+N, taken from swaync-client --toggle-panel. Phase 4 masks
+    // swaync outright — one bus name, one owner — so this is a replacement
+    // rather than a coexistence.
+    IpcHandler {
+        target: "notifications"
+
+        function dnd(): string {
+            return Notifications.toggleDnd() ? "on" : "off";
+        }
+
+        function toggle(): string {
+            return centre.toggle();
+        }
+    }
+
     // One OSD, not one per screen: it follows the focused monitor itself.
     Osd {}
+
+    // Toasts ARE one per screen, unlike every other window here: a
+    // notification arrives on its own schedule, so it belongs where you are
+    // looking now — or on the monitor its x-canonical-monitor hint names.
+    NotificationPopups {}
+
+    NotificationCentre {
+        id: centre
+    }
 
     // Both are single windows that follow the focused monitor: a launcher and a
     // power menu are modals you summoned, so they belong where you are looking.
@@ -93,6 +118,7 @@ ShellRoot {
             visible: barVariants.visible
 
             onLauncherRequested: launcher.toggle()
+            onNotificationCentreRequested: centre.toggle()
         }
     }
 }

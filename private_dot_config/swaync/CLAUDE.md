@@ -8,6 +8,19 @@
 
 ## Quick Reference
 
+- 🚨 **MASKED as of Phase 4 (2026-09-01)** when `features.quickshell_notifications.enabled` is
+  true: Quickshell's `NotificationServer` owns `org.freedesktop.Notifications` instead.
+  `org.freedesktop.Notifications` has exactly ONE owner and swaync is both a systemd user unit
+  and D-Bus activatable, so stopping it is not enough — anything calling `notify-send` would
+  activate it straight back. `systemctl --user mask --now swaync` is what actually prevents
+  that, applied by `.chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl`.
+- **Revert**: set `features.quickshell_notifications.enabled: false` and `chezmoi apply` — the
+  same script unmasks swaync, starts it, and the `SUPER+SHIFT+N` binding in
+  `hypr/conf/bindings/system-control.{lua,conf}.tmpl` swings back to `swaync-client`. Do not
+  unmask by hand; the flag and the binding would then disagree.
+- **Kept, not removed**: this config, the 8 per-theme `swaync.css.tmpl` files and the package
+  all stay. Retirement is Phase 6 of `_plans/QUICKSHELL_SHELL.md`, gated on the replacement
+  having lived a month — masked is the reversible state, deleted is not.
 - **Purpose**: Notification daemon with persistent control center panel (the repo's only notification daemon — no dunst)
 - **Toggle**: `Super+Shift+N` → `swaync-client --toggle-panel`
 - **Reload CSS**: `swaync-client --reload-css` (hot-reload stylesheet without restart)

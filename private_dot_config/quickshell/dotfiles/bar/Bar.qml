@@ -22,6 +22,7 @@ PanelWindow {
 
     // Raised by the launcher chip; shell.qml owns the Launcher window.
     signal launcherRequested
+    signal notificationCentreRequested
 
     // Called over IPC from idle-toggle / idle-toggle-nolock, which already
     // send `pkill -RTMIN+9 waybar` for the same reason.
@@ -47,7 +48,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        border.color: Theme.bgTertiary
+        border.color: Theme.bgSecondary
         border.width: Config.hairline
         color: Theme.bgPrimary
         radius: Config.radiusPanel
@@ -161,7 +162,9 @@ PanelWindow {
 
             spacing: Config.gap / 2
 
-            NotificationWidget {}
+            NotificationWidget {
+                onCentreRequested: root.notificationCentreRequested()
+            }
         }
     }
 }

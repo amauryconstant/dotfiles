@@ -15,27 +15,34 @@ Singleton {
     // Raw KEY -> "#hex" map. Prefer the semantic properties below.
     property var c: ({})
 
+    // 🚨 Every fallback below is a VERBATIM copy of the matching value in
+    // themes/catppuccin-mocha/colors.sh. Nine of them used to be the design
+    // canvas's own Mocha palette instead, which is a different mapping —
+    // the canvas makes mauve the primary accent, our colorset makes it blue,
+    // and its background tier NAMES are offset by one from ours. Copy from
+    // colors.sh, never from a mockup.
+
     // Background hierarchy
     readonly property color bgPrimary: root.c.BG_PRIMARY ?? "#1e1e2e"
-    readonly property color bgSecondary: root.c.BG_SECONDARY ?? "#181825"
-    readonly property color bgTertiary: root.c.BG_TERTIARY ?? "#313244"
-    readonly property color bgOverlay: root.c.BG_OVERLAY ?? "#313244"
+    readonly property color bgSecondary: root.c.BG_SECONDARY ?? "#313244"
+    readonly property color bgTertiary: root.c.BG_TERTIARY ?? "#45475a"
+    readonly property color bgOverlay: root.c.BG_OVERLAY ?? "#181825"
 
     // Foreground hierarchy. themes/CLAUDE.md mandates fgPrimary on
     // bgSecondary/bgTertiary/bgOverlay — QML gets no automatic enforcement,
     // so follow that mapping by hand.
     readonly property color fgPrimary: root.c.FG_PRIMARY ?? "#cdd6f4"
-    readonly property color fgSecondary: root.c.FG_SECONDARY ?? "#a6adc8"
-    readonly property color fgMuted: root.c.FG_MUTED ?? "#6c7086"
-    readonly property color fgContrast: root.c.FG_CONTRAST ?? "#1e1e2e"
+    readonly property color fgSecondary: root.c.FG_SECONDARY ?? "#bac2de"
+    readonly property color fgMuted: root.c.FG_MUTED ?? "#9399b2"
+    readonly property color fgContrast: root.c.FG_CONTRAST ?? "#11111b"
 
     // Accents
-    readonly property color accentPrimary: root.c.ACCENT_PRIMARY ?? "#cba6f7"
-    readonly property color accentInfo: root.c.ACCENT_INFO ?? "#89dceb"
+    readonly property color accentPrimary: root.c.ACCENT_PRIMARY ?? "#89b4fa"
+    readonly property color accentInfo: root.c.ACCENT_INFO ?? "#94e2d5"
     readonly property color accentSuccess: root.c.ACCENT_SUCCESS ?? "#a6e3a1"
     readonly property color accentWarning: root.c.ACCENT_WARNING ?? "#f9e2af"
     readonly property color accentError: root.c.ACCENT_ERROR ?? "#f38ba8"
-    readonly property color accentBorder: root.c.ACCENT_BORDER ?? "#cba6f7"
+    readonly property color accentBorder: root.c.ACCENT_BORDER ?? "#b4befe"
 
     // The colorset carries 24 variables; these ten complete the set. Waybar's
     // module mapping (waybar/CLAUDE.md) needs accentHighlight for interactive

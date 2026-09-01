@@ -215,7 +215,7 @@ PanelWindow {
                         // destructive tile is red in its GLYPH only, so the row
                         // keeps one rhythm and the selection stays the only
                         // thing the eye is pulled to.
-                        border.color: tile.current ? Theme.accentPrimary : Theme.bgTertiary
+                        border.color: tile.current ? Theme.accentPrimary : Theme.bgSecondary
                         border.width: Config.hairline
                         color: Theme.bgSecondary
                         height: Config.powerTileSize

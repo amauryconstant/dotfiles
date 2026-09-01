@@ -11,5 +11,14 @@ o.bind("SUPER + L", "Lock screen", "~/.local/lib/scripts/desktop/immediate-lock"
 o.bind("SUPER + SHIFT + Q", "Power menu", "~/.local/lib/scripts/desktop/wlogout")
 {{ end -}}
 o.bind("SUPER + Space", "Main system menu", "~/.local/lib/scripts/user-interface/system-menu")
+{{ if and .features.quickshell_shell.enabled .features.quickshell_notifications.enabled -}}
+-- Phase 4 owns the notification daemon: swaync is MASKED by
+-- run_onchange_after_configure_notifications, so swaync-client would talk to
+-- nothing. Both alternatives live here rather than in conf.d/quickshell.lua,
+-- because a .lua drop-in cannot carry template actions and this key is gated on
+-- a different flag than the bar is.
+o.bind("SUPER + SHIFT + N", "Notification center", "~/.local/lib/scripts/desktop/quickshell-toggle notifications")
+{{ else -}}
 o.bind("SUPER + SHIFT + N", "Notification center", "swaync-client --toggle-panel")
+{{ end -}}
 o.bind("SUPER + slash", "Keybinding help", "~/.local/lib/scripts/desktop/keybindings")

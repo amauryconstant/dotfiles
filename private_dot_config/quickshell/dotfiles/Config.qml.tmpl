@@ -77,6 +77,34 @@ Singleton {
     readonly property int powerAvatarSize: 34
     readonly property int powerGlyphSize: 26
 
+    // Notifications, artboard pan-a. The centre and the popup stack share one
+    // card component, so they share its metrics; only the surface around it
+    // differs. Radii, paddings and font sizes all come from the scale above —
+    // the canvas's 10px body padding is padTight - 2, which is close enough
+    // that inventing an eighth padding step would cost more than it buys.
+    readonly property int notifWidth: 440
+    readonly property int notifHeaderHeight: 52
+    readonly property int notifFooterHeight: 38
+    readonly property int notifBadgeHeight: 19
+    readonly property int notifGroupBadgeHeight: 16
+    readonly property int notifActionHeight: 28
+    readonly property int notifIconSize: 12
+    readonly property int notifListPad: 10
+    // Popups reuse notifWidth so a toast and its history card are the same
+    // object at the same size — the toast is not a second, narrower design.
+    readonly property int notifPopupMargin: 8
+    // Beyond this the stack stops being readable and starts being a wall; the
+    // overflow is already in history, which is where it belongs.
+    readonly property int notifPopupMaxVisible: 4
+    // Timeouts mirror swaync's config.json, the daemon these replace:
+    // 10s normal, 5s low, and critical never auto-hides.
+    readonly property int notifTimeoutMs: 10000
+    readonly property int notifTimeoutLowMs: 5000
+    // How many entries the centre keeps. UPSTREAM DOES NOT CAP THIS: the
+    // server tracks every notification until something dismisses it, so an
+    // uncapped centre grows for as long as the session does.
+    readonly property int notifHistoryMax: 50
+
     // Truncation limits, matching the Waybar modules they replace:
     // hyprland/window max-length and mpris dynamic-len.
     readonly property int titleMaxLength: 50
@@ -123,6 +151,18 @@ Singleton {
     // md-brightness_1..7 -- a seven-step ramp because that is how many the icon
     // set actually has.
     readonly property var brightnessGlyphs: ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"]
+    // The four bell states, rendered by the bar widget AND the notification
+    // centre's DND button -- so they live here by the same rule as the ramps
+    // above. Keys are <dnd?>-<unread?>, the same four combinations the swaync
+    // module they replace reported through `swaync-client -swb`.
+    // md-bell(0xf009a) / md-bell_ring(0xf009b) / md-bell_outline(0xf009c) /
+    // md-bell_off_outline(0xf0a91).
+    readonly property var notifGlyphs: ({
+            notification: "󰂚",
+            none: "󰂜",
+            "dnd-notification": "󰂛",
+            "dnd-none": "󰪑"
+        })
 
     // Widgets that shell out reach our script library through this, resolved
     // at runtime like Theme's colors.sh path rather than baked in by the
@@ -132,6 +172,14 @@ Singleton {
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.
     readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
+
+    // 🚨 Whether this shell owns org.freedesktop.Notifications. Load-bearing,
+    // not cosmetic: a bus name has ONE owner, so merely instantiating
+    // NotificationServer takes it. With the flag off, swaync is unmasked and
+    // instantiating anyway would make the two race for the name at login —
+    // exactly the state the rollback exists to avoid. See
+    // .chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl.
+    readonly property bool notificationsOwned: {{ .features.quickshell_notifications.enabled }}
 
     function brightnessGlyph(percent: int): string {
         return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];
