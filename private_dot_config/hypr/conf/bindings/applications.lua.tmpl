@@ -12,8 +12,12 @@ o.bind(
 	"{{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)"
 )
 
--- Application launcher: Super + D (wofi drun)
+{{ if not .features.quickshell_shell.enabled -}}
+-- Application launcher: Super + D (wofi drun). Gated: with the Quickshell
+-- shell on, conf.d/quickshell.lua claims this key. Wofi stays installed
+-- regardless -- cliphist and every --dmenu caller.
 o.bind("SUPER + D", "Application launcher", "wofi --show drun")
+{{ end -}}
 
 -- File manager: Super + E (launch-or-focus for single-instance)
 o.bind("SUPER + E", "File manager", "~/.local/lib/scripts/desktop/launch-or-focus thunar")

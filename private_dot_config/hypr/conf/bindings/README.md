@@ -10,7 +10,7 @@
 | Keys | Action |
 |------|--------|
 | `SUPER+Return` | Terminal in current directory |
-| `SUPER+D` | Application launcher (Wofi drun) |
+| `SUPER+D` | Application launcher — Quickshell, or Wofi drun when `features.quickshell_shell` is off |
 | `SUPER+E` | File manager (Thunar, launch-or-focus) |
 | `SUPER+W` | Web browser (Firefox) |
 | `SUPER+O` | Neovim workspace picker (Ghostty) |
@@ -66,7 +66,7 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | `SUPER+L` | Lock screen |
 | `SUPER+Space` | Main system menu |
 | `SUPER+/` | Keybinding help (interactive viewer) |
-| `SUPER+SHIFT+Q` | Power menu (wlogout) |
+| `SUPER+SHIFT+Q` | Power menu — Quickshell, or wlogout when `features.quickshell_shell` is off |
 | `SUPER+SHIFT+N` | Notification center (swaync) |
 
 ### Desktop utilities (`desktop-utilities.conf`)
@@ -74,7 +74,7 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | Keys | Action |
 |------|--------|
 | `SUPER+A` / `SUPER+SHIFT+A` | Audio output switcher / pavucontrol |
-| `SUPER+B` | Toggle Waybar |
+| `SUPER+B` | Toggle the status bar (bound in `conf.d/quickshell.*` or `conf.d/waybar.*`, whichever deploys) |
 | `SUPER+G` | Toggle gaps (presentation mode) |
 | `SUPER+I` / `SUPER+SHIFT+I` | Toggle idle lock / idle no-lock (display still sleeps) |
 | `SUPER+M` | Monitor switcher |

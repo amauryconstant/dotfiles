@@ -9,9 +9,13 @@
 # Opens terminal in current working directory
 bindd = SUPER, Return, Launch terminal in CWD, exec, {{ .globals.applications.terminal }} --working-directory=$(~/.local/lib/scripts/terminal/terminal-cwd)
 
+{{ if not .features.quickshell_shell.enabled -}}
 # Application launcher: Super + D
-# Wofi shows desktop applications from .desktop files
+# Wofi shows desktop applications from .desktop files.
+# Gated: with the Quickshell shell on, conf.d/quickshell.conf claims this key.
+# Wofi itself stays installed regardless -- cliphist and every --dmenu caller.
 bindd = SUPER, D, Application launcher, exec, wofi --show drun
+{{ end }}
 
 # File manager: Super + E (GUI)
 # Uses launch-or-focus for single-instance behavior

@@ -7,8 +7,13 @@
 # Lock screen: Super + L
 bindd = SUPER, L, Lock screen, exec, ~/.local/lib/scripts/desktop/immediate-lock
 
+{{ if not .features.quickshell_shell.enabled -}}
 # Power menu: Super + Shift + Q
+# Gated: with the Quickshell shell on, conf.d/quickshell.conf claims this key
+# for the Quickshell power menu. Duplicate binds STACK in Hyprland -- both
+# would fire -- so the old one has to be gated off, not merely shadowed.
 bindd = SUPER SHIFT, Q, Power menu, exec, ~/.local/lib/scripts/desktop/wlogout
+{{ end }}
 
 # Main system menu: Super + Space
 # Provides access to all system functions
