@@ -369,7 +369,10 @@ PanelWindow {
                             }
 
                             Text {
-                                color: Theme.fgMuted
+                                // The selected row's ground is a 13% accent
+                                // fill — elevated, so fg-muted fails contrast
+                                // there (themes/CLAUDE.md).
+                                color: row.current ? Theme.fgPrimary : Theme.fgMuted
                                 elide: Text.ElideRight
                                 font.family: Config.terminalFont
                                 font.pixelSize: Config.fontSizeTiny

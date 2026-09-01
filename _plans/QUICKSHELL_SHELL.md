@@ -1002,24 +1002,20 @@ checking the shipped widgets against this table found a real gap:
 | `AudioWidget` | `accent-highlight` | ❌ neutral unless muted |
 | `MediaWidget` | `accent-media` | ❌ no role colour at all |
 
-**Open decision, not resolved here**: Amendment A's bar rule is *"no per-widget colour at
-rest"* (battery is the sole pill exception). This table says several widgets should carry a
-fixed identity colour at rest (connected Bluetooth is always `accent-info`-tinted, not just on
-a fault). Those two rules conflict. Adopting the table means loosening Amendment A's rule for
-exactly these four widgets; not adopting it means the table is descriptive-only for the ones
-already reserved (`accent-error`/`warning` on battery, which already worked). **Needs a call
-before touching `NetworkWidget`/`BluetoothWidget`/`AudioWidget`/`MediaWidget`** — grep confirms
+**Decided 2026-09-01: keep current.** Amendment A's bar rule — *"no per-widget colour at
+rest"*, battery the sole pill exception — stands. `NetworkWidget`/`BluetoothWidget`/
+`AudioWidget`/`MediaWidget` are not changed; the table above is descriptive of the design only.
 `accentHighlight`, `accentMedia`, `accentTertiary`, `accentSubtle`, `accentAlternative`,
-`accentBorder` are unused anywhere in the tree today.
+`accentBorder` remain unused in the tree.
 
 **2. Two concrete Launcher findings**, from `Launcher - Menu.dc.html` `launch-a`, checked
 directly against the shipped `launcher/Launcher.qml`:
 
-- **Contrast defect, real, small.** The exec-string line on the *selected* result row is
+- **Contrast defect — fixed 2026-09-01.** The exec-string line on the *selected* result row was
   `Theme.fgMuted` unconditionally (`Launcher.qml`, the `row.modelData.execString` `Text`). The
   design's note: a 13%-accent-fill selected row is an elevated ground, and `fgMuted` on it
-  drops under 4.5:1 in the light themes — the same class of bug `themes/CLAUDE.md` already
-  bans structurally. Fix is one line: `color: row.current ? Theme.fgPrimary : Theme.fgMuted`.
+  drops under 4.5:1 in the light themes — the same class of bug `themes/CLAUDE.md` already bans
+  structurally. Now `color: row.current ? Theme.fgPrimary : Theme.fgMuted`.
 - **`launch-b` empty-query "quick access" — built 2026-09-01.** `Launcher.qml` now reuses
   Wofi's own usage cache (`~/.cache/wofi-drun`, `"<count> <desktop file path>"` per line)
   instead of building a second frecency tracker: Wofi stays installed regardless (cliphist,
@@ -1056,8 +1052,9 @@ checked against shipped `power/PowerMenu.qml`:
   Shut down — and the selection ring is `accent-border`.
 - Shipped: only the destructive tile (Shut down) is coloured (`accentError`); every other tile
   is neutral `fgPrimary` until selected, and the selection ring is `accentPrimary`.
-- Same open-decision shape as finding 1 — adopting per-tile identity colours is a real visual
-  change (five colours visible in an idle menu instead of one). Not applied here.
+- **Decided 2026-09-01: keep current.** Same reasoning as finding 1 — five colours visible in
+  an idle menu is a real visual change from "only the destructive tile is coloured," declined
+  for the same reason the bar widgets stayed neutral. `PowerMenu.qml` unchanged.
 
 **6. Confirmed unchanged / still declined** (no plan action needed):
 
@@ -1075,7 +1072,8 @@ checked against shipped `power/PowerMenu.qml`:
 
 ## Plan-list impact
 
-No phase moves. Findings 1–5 above are new decision points layered onto Phases 2.5 (done),
-4 (notifications, unstarted), and the optional Phase 5.5 — not reasons to reopen any of them.
-The one actionable, no-decision-needed item is the Launcher contrast fix (finding 2, first
-bullet) — small enough to take whenever the launcher is next touched.
+No phase moves. Findings 1–5 above were decision points layered onto Phases 2.5 (done), 4
+(notifications, unstarted), and the optional Phase 5.5 — not reasons to reopen any of them.
+All are now settled: the Launcher contrast fix (finding 2) is applied; the two accent-role
+adoptions (findings 1 and 5) are declined, keeping `NetworkWidget`/`BluetoothWidget`/
+`AudioWidget`/`MediaWidget`/`PowerMenu.qml` as shipped.
