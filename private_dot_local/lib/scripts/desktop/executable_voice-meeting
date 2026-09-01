@@ -2,7 +2,7 @@
 
 # Script: voice-meeting
 # Purpose: Wrapper around `voxtype meeting` for Hyprland keybinding + terminal use.
-#          `toggle` starts/stops with desktop-notification feedback (SUPER+ALT+M);
+#          `toggle` starts/stops with desktop-notification feedback (SUPER+CTRL+M);
 #          all other subcommands pass through to `voxtype meeting`.
 # Requirements: voxtype (meeting mode), notify-send
 

@@ -6,7 +6,7 @@
 #   SUPER+T        → Cohere    push-to-talk (DEFAULT — #1 Open ASR, multilingual incl. FR)
 #   SUPER+ALT+T    → Parakeet  streaming toggle (live incremental text, English) [desktop only]
 #   SUPER+CTRL+T   → Parakeet  push-to-talk (fast English-only alternative) [desktop only]
-#   SUPER+ALT+M    → Meeting   mode (voice-meeting CLI)
+#   SUPER+CTRL+M   → Meeting   mode (voice-meeting CLI)
 #
 # Cohere benched ~1.45s for 11s audio on the i9-13900K (CPU) — ~7x realtime, only
 # marginally slower than Parakeet, so it's the everyday default. Streaming stays on
@@ -91,7 +91,7 @@ enabled = true
 frontend = "quickshell"  # QML-native OSD (v0.7.5); requires `quickshell` + `voxtype setup quickshell`
 top_margin = 0.85        # swayosd-aligned fractional position
 
-# Meeting mode (SUPER+ALT+M): continuous transcription + speaker attribution.
+# Meeting mode (SUPER+CTRL+M): continuous transcription + speaker attribution.
 # Summaries are CLI-only since 1.0 (`voice-meeting summarize <id>` → Ollama);
 # the old [meeting.summary] block and chunk_duration_secs left the config surface.
 [meeting]

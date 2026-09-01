@@ -55,9 +55,9 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | `SUPER+ALT+G` | Grab rogue windows |
 | `SUPER+SHIFT+ALT+Left/Right` | Move whole workspace to left/right monitor |
 
-> ⚠️ `SUPER+ALT+M` is **double-bound** — also "Toggle meeting transcription" in `voice.conf.tmpl`.
-> Present identically in the `.lua` twins, so it is a real conflict, not `.conf`/`.lua` drift.
-> Tracked in `_plans/OMARCHY.md`.
+> `SUPER+ALT+M` was double-bound with "Toggle meeting transcription" until 2026-09-01. Hyprland
+> matched the two on `m` and `M` under the same modmask, so both fired on one press. Meeting
+> transcription moved to `SUPER+CTRL+M`; the monitor binding kept the key.
 
 ### System control (`system-control.conf`)
 
@@ -103,7 +103,7 @@ modifiers can't interfere. Parakeet bindings are **desktop-only** — gated
 | `SUPER+T` | Cohere push-to-talk (default, multilingual) |
 | `SUPER+ALT+T` | Parakeet streaming toggle *(desktop)* |
 | `SUPER+CTRL+T` | Parakeet push-to-talk *(desktop)* |
-| `SUPER+ALT+M` | Meeting transcription toggle — see conflict note above |
+| `SUPER+CTRL+M` | Meeting transcription toggle |
 
 ### Media keys (`media-keys.conf`)
 

@@ -6,7 +6,54 @@
 
 PORT=5829
 
-while true; do
+# The bar that spawned us. This script only writes on a layer change, so it
+# never takes SIGPIPE when the bar's read end closes, and `nc` blocks
+# indefinitely while connected — so neither the loop below nor the shell
+# notices a dead parent on its own. Verified 2026-09-01: seven orphans
+# reparented onto systemd --user, each still holding a kanata connection.
+# Both bars spawn this script, so the guard lives here rather than in either.
+PARENT_PID=$PPID
+MAIN_PID=$$
+
+# 🚨 $PPID is read AFTER any reparent that already happened, so a spawner which
+# exits in the same instant leaves this holding the REAPER's pid (systemd --user
+# or 1) — a parent that never dies, silently disabling the guard for good. Both
+# bars keep running while their children do, so they never hit that; a bare
+# `sh -c 'script &'` does, which is what made this guard look broken in testing.
+# Treat an already-reaped start as already orphaned. The reaper is `systemd`
+# (the --user instance) in this session, not pid 1, so match on the name.
+# Both scripts exist ONLY as a bar's stdout source; if one is ever run as a
+# systemd unit instead, this check is what has to be revisited first.
+case "$(cat /proc/"$PARENT_PID"/comm 2>/dev/null)" in
+systemd | init | "") exit 0 ;;
+*) ;;
+esac
+
+# NOT `kill -0`: that succeeds on a ZOMBIE, so a bar left unreaped by its own
+# parent would keep this loop alive forever. /proc/<pid>/stat field 3 is the
+# state character; "Z" is a dead parent nobody has waited on, a missing file is
+# a gone one. The -r test comes first because the redirect's own failure message
+# would escape 2>/dev/null, which is applied after it.
+parent_alive() {
+    [ -r /proc/"$PARENT_PID"/stat ] || return 1
+    read -r _ _ state _ < /proc/"$PARENT_PID"/stat || return 1
+    [ "$state" != Z ]
+}
+
+# Kills `nc` rather than this shell: that unblocks the pipeline, the loop below
+# re-tests its condition and exits on its own, and the EXIT trap then reaps the
+# watchdog. A bare `pkill -P "$MAIN_PID"` would match the watchdog itself, since
+# it is also a child of this shell.
+(
+  while parent_alive; do
+    sleep 5
+  done
+  pkill -P "$MAIN_PID" -x nc 2>/dev/null
+) &
+WATCHDOG_PID=$!
+trap 'kill "$WATCHDOG_PID" 2>/dev/null' EXIT
+
+while parent_alive; do
   nc localhost "$PORT" </dev/null 2>/dev/null | while IFS= read -r line; do
     layer=$(printf '%s' "$line" | jq -r '.LayerChange.new // empty' 2>/dev/null)
     if [ -n "$layer" ]; then

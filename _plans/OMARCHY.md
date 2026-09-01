@@ -53,7 +53,6 @@ Hyprland --verify-config -c "$TMP/hyprland.lua"
 
 Proves the tree parses and every `require` resolves; does **not** prove dispatcher arguments are correct — the 0.56.2 stub types every dispatcher as `fun(...)`. The technique that *does* prove them, used for the 2026-09-01 conversion: run a **nested** Hyprland (`Hyprland -c <tmp>/hyprland.lua`, which nests as a Wayland client) off a minimal Lua entry point, then fire each `hl.dsp.*` form at it with `hyprctl -i` / `HYPRLAND_INSTANCE_SIGNATURE` and check the reply for an `error:` prefix.
 
-- [ ] Resolve the `SUPER+ALT+M` double-bind — `voice` ("Toggle meeting transcription") vs `workspace-management` ("Move to other monitor"). Identical in both `.conf` and `.lua`, so not drift, but a real conflict. **Confirmed live 2026-09-01**: `hyprctl binds` shows both under `modmask=72`, one on key `M` and one on key `m`, so both fire. Still open — it needs a decision on which keeps the key, not a fix
 - [ ] Gate the retirement of the `.conf` set behind an explicit user go-ahead — keep both until the Lua path is confirmed across a reboot and a `hyprctl reload`
 - [ ] Extend `run_once_after_007_validate_hyprland_config` to validate whichever entry point is authoritative — use the `Hyprland --verify-config -c <path>` recipe above
 - [ ] Review omarchy's helper surface (`hl.unbind`, `hl.monitor{ transform = }`, `hl.env`) against our `conf/helpers.lua` — adopt `unbind` if we ever need to drop an inherited default

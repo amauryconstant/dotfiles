@@ -3,10 +3,10 @@ import "../../"
 import Quickshell
 import QtQuick
 
-// Waybar's custom/voxtype. voxtype-waybar-status is reused unchanged: it
-// wraps `voxtype status --follow` and layers a synthetic "loading" state that
-// voxtype itself has no equivalent for, which is worth more than a
-// reimplementation would be.
+// Waybar's custom/voxtype. `voxtype status --follow` is event-driven (no
+// polling) and read directly: since voxtype 1.0 the daemon stays up and
+// unloads its model at idle itself, so there is no restart window left for a
+// wrapper to report.
 BarWidget {
     id: root
 
@@ -20,8 +20,6 @@ BarWidget {
             return "󱜠";
         case "transcribing":
             return "󰔮";
-        case "loading":
-            return "󰝲";
         case "stopped":
             return "󰍭";
         default:
@@ -37,7 +35,6 @@ BarWidget {
         case "stopped":
             return Theme.accentError;
         case "streaming":
-        case "loading":
             return Theme.accentInfo;
         case "transcribing":
             return Theme.accentWarning;
@@ -52,6 +49,6 @@ BarWidget {
     WaybarJsonSource {
         id: source
 
-        command: [`${Config.scriptsDir}/desktop/voxtype-waybar-status`]
+        command: ["voxtype", "status", "--follow", "--format", "json"]
     }
 }

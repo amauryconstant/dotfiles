@@ -80,6 +80,14 @@ run = "test -d private_dot_config/quickshell && find private_dot_config/quickshe
 # Proves the tree parses and every require() resolves. Does NOT prove dispatcher
 # arguments are semantically correct — the 0.56.2 stub types them all as fun(...).
 #
+# lint:theme-contrast is .mise/tasks/lint/theme-contrast.py (auto-discovered).
+# It measures the Quickshell QML's colour pairs against WCAG in ALL 8 colorsets,
+# which is the rule themes/CLAUDE.md states and says nothing enforces in QML.
+#
+# Deliberately NOT in [tasks.lint].depends, same reason as lint:hypr-lua below:
+# its pair table is harvested BY HAND from the QML, so it goes stale silently
+# when a widget changes a colour. Run it after touching colours in that tree.
+
 # Deliberately NOT in [tasks.lint].depends: needs the Hyprland binary plus a
 # deployed ~/.config/hypr for package.path to resolve. Run it by hand.
 [tasks."lint:hypr-lua"]

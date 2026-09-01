@@ -105,10 +105,10 @@ Sits at `Config.osdMargin` (160) from the bottom, clearing voxtype's own OSD (a 
 at bottomMargin 72) so a dictation card and a volume key cannot overlap. On a desktop with a
 DDC monitor there is no sysfs backlight, so the brightness half simply never fires.
 
-**Three scripts are reused, not ported**: `kanata-layer`, `voxtype-waybar-status` and
-`idle-indicator` all already emit Waybar's custom-module JSON. Their names still say "waybar" —
-renaming waits for Phase 6, when Waybar actually goes. (`swaync-client -swb` was the fourth
-until Phase 4; the bell now reads an in-process singleton.)
+**Two scripts are reused, not ported**: `kanata-layer` and `idle-indicator` already emit Waybar's
+custom-module JSON. Voxtype reads `voxtype status --follow --format json` directly — the
+`voxtype-waybar-status` wrapper it used went with voxtype 1.0's on-demand loading.
+(`swaync-client -swb` was a third until Phase 4; the bell now reads an in-process singleton.)
 
 ## Launcher and power menu (Phase 5)
 

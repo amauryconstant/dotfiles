@@ -259,6 +259,52 @@ and every panel border alike.
 `#45475a`. The correction moved the hairline one tier the wrong way in all 8 themes. See the
 hex table below — and never map a canvas colour by its LABEL.
 
+### Contrast is measured, not eyeballed — `mise run lint:theme-contrast`
+
+`themes/CLAUDE.md` states the rules and says outright that QML gets no automatic
+enforcement. `.mise/tasks/lint/theme-contrast.py` is that enforcement: it reads all **8**
+colorsets (not just the one symlinked at `themes/current`) and measures the pairs this tree
+actually renders. **Manual-only**, like `lint:hypr-lua` — its pair table is harvested by hand,
+so it goes stale silently when a widget changes a colour. Run it after touching any colour here.
+
+🚨 **Harvest by parenting, never by grepping colour lines.** Most `Theme.bgSecondary` uses in
+this tree are 1px hairlines and borders, not grounds. Reading `color: Theme.bgSecondary` two
+lines above a `Theme.fgMuted` and calling it a violation invents failures that are not on
+screen — the 2026-09-01 pass started with five such suspects in `NotificationCentre`,
+`PowerMenu` and `Launcher` and **all five were hairlines**.
+
+Two thresholds, per WCAG 2.1: **4.5:1 for text, 3:1 for UI components and graphics** — an
+outline, a progress fill. Getting this wrong in the strict direction is how a legitimate
+outline gets "fixed" into a `fgPrimary` that competes with the button beside it.
+
+What the first run found, all four fixed 2026-09-01 and all four invisible to the eye on the
+one theme that happened to be applied:
+
+| Site | Was | Ratio | Now |
+|---|---|---|---|
+| OSD progress fill on its track | `accentPrimary` on `bgTertiary` | **1.38** in solarized-light | track is `bgSecondary` |
+| OSD dimmed fill | `fgMuted` on `bgTertiary` | **1.00** in both solarized themes — `FG_MUTED` *equals* `BG_TERTIARY` there | `fgSecondary` on `bgSecondary` |
+| PowerMenu avatar initial | `accentPrimary` on `bgTertiary` | **1.46** solarized-dark | `fgPrimary` on `bgSecondary` |
+| NotificationCard action outlines | `fgMuted` on `bgOverlay` | **2.18** solarized-light | `fgSecondary` |
+
+The pattern in three of the four: **`bgTertiary` is the trap tier.** It is the only ground
+whose distance from the foreground tokens varies enough between themes to vanish entirely, and
+`themes/CLAUDE.md` already bans `fg-muted` on it. Prefer `bgSecondary` for any ground that has
+to carry something on top of it.
+
+### `Theme.fgOnAccent` — text on an accent fill
+
+🚨 **No fixed token works across the 8 themes.** `FG_CONTRAST` is the one named for the job and
+lands at **1.49:1** on gruvbox-dark's own `ACCENT_PRIMARY` — the focused workspace number, the
+most-read thing in the bar, unreadable in that theme. `BG_PRIMARY` is better there (8.69) and
+worse in gruvbox-light (2.19). So `Theme.qml` computes the pick per theme from WCAG relative
+luminance, and the worst case across all 8 goes 1.49 → 3.47.
+
+Use `Theme.fgOnAccent` for anything drawn **on** an `accentPrimary` fill — the focused workspace
+pill, the notification count badge, an active DND chip, the launcher's text selection. A bare
+`Theme.fgContrast` at such a site is the defect. `Theme.luminance()`/`Theme.contrast()` are
+there too if a new surface needs the same decision.
+
 ### Reading the design source, not the transcription
 
 The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
@@ -347,8 +393,9 @@ colorset every other app reads, so there is no ninth per-theme file. All **24** 
 variables are exposed; a missing key falls back to hardcoded Catppuccin, which renders wrong
 colours with no error, so the property set must stay complete.
 
-Contrast rules from `themes/CLAUDE.md` get **no automatic enforcement in QML** — `@fg-primary`
-on `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` is a by-hand discipline here. The
+Contrast rules from `themes/CLAUDE.md` are measured by `mise run lint:theme-contrast` (see
+above) across all 8 colorsets; everything that task's hand-harvested pair table does not cover
+is still by-hand discipline here. The
 module → semantic-colour mapping this bar follows is `waybar/CLAUDE.md`'s table.
 
 The closest thing to enforcement is the `theme-consistency-reviewer` subagent, which takes this
@@ -362,8 +409,9 @@ pins one fixed rest colour is the finding.
 ## Validation
 
 ```bash
-mise run lint:qml      # render whole tree, qmllint -W 0, qmlformat diff check
-mise run format:qml    # qmlformat --inplace, *.qml only (a template has nothing to write back to)
+mise run lint:qml             # render whole tree, qmllint -W 0, qmlformat diff check
+mise run format:qml           # qmlformat --inplace, *.qml only (a template has nothing to write back to)
+mise run lint:theme-contrast  # WCAG pairs across all 8 colorsets — MANUAL, see above
 ```
 
 Both are wired into `[tasks.lint]`/`[tasks.format]` and into pre-commit via

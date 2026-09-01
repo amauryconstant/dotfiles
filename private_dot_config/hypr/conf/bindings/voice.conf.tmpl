@@ -7,7 +7,7 @@
 # SUPER+T        → Cohere    push-to-talk (DEFAULT — #1 Open ASR, multilingual incl. FR)
 # SUPER+ALT+T    → Parakeet  streaming toggle (live incremental text, English) [desktop only]
 # SUPER+CTRL+T   → Parakeet  push-to-talk (fast English-only alternative) [desktop only]
-# SUPER+ALT+M    → Meeting   mode toggle (continuous transcription + Ollama summary)
+# SUPER+CTRL+M   → Meeting   mode toggle (continuous transcription + Ollama summary)
 #
 # Engine on SUPER+T is omitted on purpose → uses config default (engine = "cohere").
 #
@@ -37,4 +37,4 @@ binddr = SUPER CTRL, T, Stop voice dictation (Parakeet), exec, voxtype record st
 
 {{ end -}}
 # Meeting mode — continuous transcription with speaker diarization + AI summary
-bindd  = SUPER ALT, M, Toggle meeting transcription, exec, ~/.local/lib/scripts/desktop/voice-meeting toggle
+bindd  = SUPER CTRL, M, Toggle meeting transcription, exec, ~/.local/lib/scripts/desktop/voice-meeting toggle

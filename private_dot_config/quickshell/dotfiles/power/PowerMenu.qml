@@ -162,14 +162,18 @@ PanelWindow {
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Theme.bgTertiary
+                    // accentPrimary on bgTertiary read 1.38-1.46:1 in the
+                    // solarized pair and gruvbox-light — an invisible initial.
+                    // Neutral on bgSecondary is both legible and what the
+                    // accent rule wants: nothing here is the focused thing.
+                    color: Theme.bgSecondary
                     height: Config.powerAvatarSize
                     radius: Config.radiusPill
                     width: Config.powerAvatarSize
 
                     Text {
                         anchors.centerIn: parent
-                        color: Theme.accentPrimary
+                        color: Theme.fgPrimary
                         font.family: Config.terminalFont
                         font.pixelSize: Config.fontSizeSmall
                         text: root.identity.substring(0, 1).toUpperCase() || "?"

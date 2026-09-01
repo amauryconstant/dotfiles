@@ -87,7 +87,7 @@ BarWidget {
                         anchors.verticalCenter: parent.verticalCenter
                         // fg-contrast on an accent ground; fg-primary on the
                         // elevated bg-tertiary, per themes/CLAUDE.md.
-                        color: button.isFocused ? Theme.fgContrast : button.isUrgent ? Theme.accentError : button.hasWindows ? Theme.fgPrimary : Theme.fgMuted
+                        color: button.isFocused ? Theme.fgOnAccent : button.isUrgent ? Theme.accentError : button.hasWindows ? Theme.fgPrimary : Theme.fgMuted
                         font.family: Config.terminalFont
                         font.pixelSize: Config.fontSizeSmall
                         text: entry.modelData.name
@@ -100,7 +100,7 @@ BarWidget {
                         // pill is accent (focused) or bg-tertiary. fg-secondary
                         // on bg-tertiary is the pair themes/CLAUDE.md bans, so
                         // subordination comes from opacity, not from the token.
-                        color: button.isFocused ? Theme.fgContrast : Theme.fgPrimary
+                        color: button.isFocused ? Theme.fgOnAccent : Theme.fgPrimary
                         font.family: Config.guiFont
                         font.pixelSize: Config.fontSize
                         // Subordinate to the number it annotates.

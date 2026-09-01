@@ -7,7 +7,7 @@
 -- SUPER+T      → Cohere   push-to-talk (DEFAULT — multilingual incl. FR)
 -- SUPER+ALT+T  → Parakeet streaming toggle (live incremental text, English) [desktop only]
 -- SUPER+CTRL+T → Parakeet push-to-talk (fast English-only alternative) [desktop only]
--- SUPER+ALT+M  → Meeting  mode toggle (continuous transcription + AI summary)
+-- SUPER+CTRL+M → Meeting  mode toggle (continuous transcription + AI summary)
 --
 -- binddr (stop on key release) → o.bind(..., { release = true }).
 -- Parakeet binds are desktop-only: laptop is RAM-constrained, Cohere-only.
@@ -40,4 +40,4 @@ o.bind("SUPER + CTRL + T", "Stop voice dictation (Parakeet)", "voxtype record st
 {{ end -}}
 
 -- Meeting mode — continuous transcription with speaker diarization + AI summary
-o.bind("SUPER + ALT + M", "Toggle meeting transcription", "~/.local/lib/scripts/desktop/voice-meeting toggle")
+o.bind("SUPER + CTRL + M", "Toggle meeting transcription", "~/.local/lib/scripts/desktop/voice-meeting toggle")

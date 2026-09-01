@@ -5,7 +5,8 @@ at Waybar module parity, volume/brightness OSDs, launcher and power menu on the 
 notification server + centre with swaync masked; the two bars are mutually exclusive by config;
 Hyprland running the Lua entry point across a reboot). Only the optional 5.5 and 6 remain. See
 **Amendment A** for the layout language adopted 2026-08-31, **Amendment B** for the 2026-09-01
-design update, and **Amendment C** for the colour-mapping correction that landed with Phase 4.
+design update, **Amendment C** for the colour-mapping correction that landed with Phase 4, and
+**Amendment D** for the measured contrast pass that closed Phase 2.5's last exit criterion.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
 `_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
 **Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon
@@ -941,7 +942,7 @@ one light and one dark theme both pass the `themes/CLAUDE.md` contrast rules by 
 | No literal font name | ✅ zero |
 | No inline glyph | ⚠️ **narrowed.** The window-class map moved to `Config` as step 5 requires, but ten widgets still hold their own state glyphs (battery ramp, wifi bars, mic states). A glyph that exists to distinguish one widget's states is that widget's data; hoisting it to `Config` would centralise nothing and read worse. Criterion re-stated as: *no literal hex, no literal font name, and the window-class map lives in `Config`* |
 | One accent across 8 themes | ✅ structurally — `BarWidget.iconColor` defaults to `fgSecondary` and only state overrides it. Not yet eyeballed in all 8 |
-| Contrast, one light + one dark | ⏳ not yet checked by eye |
+| Contrast, one light + one dark | ✅ **measured** across all 8 colorsets 2026-09-01 (`mise run lint:theme-contrast`), 5 defects fixed — see **Amendment D**. The by-eye half is deliberately left to daily use rather than a capture session |
 | `lint:qml` passes and still fails when broken | ✅ verified: clean run rc 0; `iconColor` → `iconColorTYPO` gives rc 255 |
 
 **Corrections after reading the design source directly.** The canvas is reachable through
@@ -1210,7 +1211,80 @@ of an icon — is recorded here in case a Wofi-side tweak ever wants it.
 
 ## Still open after Phase 4
 
-- **Contrast by eye across the 8 themes** — the last unmet Phase 2.5 exit criterion, now
-  larger by the notification surfaces. The hairline change above is what to judge first.
 - **Phase 5.5** (dock, workspace overview) and **Phase 6** (retirement) — both optional, both
-  unchanged.
+  unchanged. Phase 6's gate (each replaced tool must have *lived* a month) makes nothing
+  eligible before roughly 2026-10-01.
+- **Multi-monitor verification** — Phase 2's remaining open box. Blocked on the desktop; this
+  machine has only `eDP-1`.
+
+---
+
+# Amendment D — the contrast pass, 2026-09-01
+
+Closes the last unmet Phase 2.5 exit criterion, which had been deferred through Amendments A,
+B and C. It was written as *"one light and one dark theme both pass the `themes/CLAUDE.md`
+contrast rules by eye"*. Done better and cheaper first: the rule is pairwise over tokens, so it
+is **computable across all 8 colorsets at once** — `mise run lint:theme-contrast`
+(`.mise/tasks/lint/theme-contrast.py`, manual-only, same footing as `lint:hypr-lua` because its
+pair table is harvested by hand).
+
+## What the measurement found that eyes could not
+
+Five defects, all invisible on the theme that happened to be applied, all in themes that would
+only have surfaced on a switch (the fifth is the accent case below the table):
+
+| Site | Was | Worst ratio | Now |
+|---|---|---|---|
+| OSD progress fill on its track | `accentPrimary` on `bgTertiary` | **1.38** (solarized-light) | track is `bgSecondary` |
+| OSD dimmed fill | `fgMuted` on `bgTertiary` | **1.00** — `FG_MUTED` *equals* `BG_TERTIARY` in both solarized themes | `fgSecondary` on `bgSecondary` |
+| PowerMenu avatar initial | `accentPrimary` on `bgTertiary` | **1.46** (solarized-dark) | `fgPrimary` on `bgSecondary` |
+| NotificationCard action outlines | `fgMuted` on `bgOverlay` | **2.18** (solarized-light) | `fgSecondary` |
+
+🚨 **Three of the four are `bgTertiary` used as a ground.** It is the only background tier whose
+distance from the foreground tokens varies enough between themes to vanish outright.
+`themes/CLAUDE.md` already banned `fg-muted` on it; the finding generalises that to *anything*
+on it. The rule now recorded in both that file and `.claude/rules/quickshell-qml.md`: prefer
+`bgSecondary` for any ground that has to carry something.
+
+🚨 **A fifth defect needed a new mechanism, not a different token.** `FG_CONTRAST` is the token
+named for text on an accent fill, and it lands at **1.49:1** on gruvbox-dark's own
+`ACCENT_PRIMARY` — the focused workspace number, unreadable in that theme. `BG_PRIMARY` is
+better there (8.69) and worse in gruvbox-light (2.19). Neither fixed token works, so `Theme.qml`
+gained `fgOnAccent`, which picks per theme by WCAG relative luminance; worst case across all 8
+goes **1.49 → 3.47**. Its four call sites are the focused workspace pill, the notification count
+badge, the DND chip and the launcher's text selection.
+
+## What was measured and deliberately not changed
+
+The task carries an `ACCEPTED` baseline, each entry with a reason. All of it is colorset
+property rather than a choice this tree can make differently — Waybar, wofi and swaync render
+the same ratios today:
+
+- **solarized-dark / solarized-light**: `fg-primary` is base0/base00 by design, ~3.6–4.8:1 on
+  every ground. No consumer clears AA there.
+- **rose-pine-dawn**: `fg-secondary` on `bg-primary` at 4.02, which `themes/CLAUDE.md` already
+  documents as *"± AA (theme-dependent)"*.
+- **gruvbox-light**: `accent-primary` is `#d79921` on a `#ebdbb2` elevated ground, 1.81.
+- Every `accent-*` on `bg-primary` in the light themes — the widget state colours.
+
+Fixing those means editing the colorsets, which is the P2 `colors.toml` item in
+`_plans/OMARCHY.md`, not this plan.
+
+## A correction to `themes/CLAUDE.md`
+
+Its own contrast table claimed `@fg-primary` on `@bg-secondary` is *"7.0:1+, ✓ AA"* and on
+`@bg-tertiary` *"6.0:1+, ✓ AA"*. Measured, the ranges are 3.64–10.90 and 1.67–8.82. Corrected
+in place, with the trap-tier note.
+
+## The by-eye half, and why it is no longer a task
+
+The literal criterion was *"one light and one dark theme both pass by eye"*. **Decided
+2026-09-01: judged in daily use, not in a capture session.** The measurement is what catches
+the failures eyes cannot — the four above were all sub-2:1 in themes that were not applied at
+the time, and no amount of looking at rose-pine-moon would have found them. What eyes are
+actually good for is the residue: whether a legal ratio still reads badly. That needs the
+themes lived in, not screenshotted.
+
+So the criterion is **closed as measured**, and anything the eye turns up later is a new
+finding against `mise run lint:theme-contrast`'s pair table — most likely a pair the table does
+not yet name, since a named one is now checked in all 8 colorsets on every run.

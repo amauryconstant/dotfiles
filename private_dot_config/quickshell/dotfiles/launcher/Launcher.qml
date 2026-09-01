@@ -216,7 +216,7 @@ PanelWindow {
                     font.family: Config.guiFont
                     font.pixelSize: Config.fontSizeInput
                     selectByMouse: true
-                    selectedTextColor: Theme.fgContrast
+                    selectedTextColor: Theme.fgOnAccent
                     selectionColor: Theme.accentPrimary
 
                     // The canvas draws a 2px accent bar, not the platform caret.

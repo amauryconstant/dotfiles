@@ -104,7 +104,7 @@ PanelWindow {
                         text: qsTr("Notifications")
                     }
 
-                    // Accent ground, fgContrast text: the one place in this
+                    // Accent ground, fgOnAccent text: the one place in this
                     // panel the accent appears, marking the count.
                     Rectangle {
                         color: Theme.accentPrimary
@@ -117,7 +117,7 @@ PanelWindow {
                             id: count
 
                             anchors.centerIn: parent
-                            color: Theme.fgContrast
+                            color: Theme.fgOnAccent
                             font.family: Config.terminalFont
                             font.pixelSize: Config.fontSizeTiny
                             font.weight: Font.DemiBold
@@ -142,7 +142,7 @@ PanelWindow {
 
                         Text {
                             anchors.centerIn: parent
-                            color: Notifications.dnd ? Theme.fgContrast : Theme.fgPrimary
+                            color: Notifications.dnd ? Theme.fgOnAccent : Theme.fgPrimary
                             font.family: Config.guiFont
                             font.pixelSize: Config.fontSize
                             text: Notifications.glyph()

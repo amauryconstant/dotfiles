@@ -59,6 +59,31 @@ Singleton {
     readonly property color accentModification: root.c.ACCENT_MODIFICATION ?? "#f5c2e7"
     readonly property color accentPerformance: root.c.ACCENT_PERFORMANCE ?? "#eba0ac"
 
+    // Text drawn ON an accentPrimary fill — the focused workspace pill, the
+    // notification count badge, an active DND chip, the launcher's selection.
+    //
+    // 🚨 Neither fixed token works across the 8 themes. FG_CONTRAST is the one
+    // named for this job, but gruvbox-dark's lands at 1.49:1 on its own accent
+    // — the focused workspace number, the single most-read thing in the bar,
+    // is unreadable there. BG_PRIMARY is better in gruvbox-dark (8.69) and
+    // worse in gruvbox-light (2.19). So pick per theme, by measurement:
+    // WCAG relative luminance, whichever of the two contrasts more. Verified
+    // 2026-09-01 across all 8 colorsets; the worst case goes 1.49 -> 3.47.
+    readonly property color fgOnAccent: root.contrast(root.fgContrast, root.accentPrimary) >= root.contrast(root.bgPrimary, root.accentPrimary) ? root.fgContrast : root.bgPrimary
+
+    // WCAG 2.1 relative luminance / contrast ratio. Qt's `color` exposes r/g/b
+    // as 0..1 floats already, so there is no hex parsing here.
+    function luminance(colour: color): real {
+        const channel = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        return 0.2126 * channel(colour.r) + 0.7152 * channel(colour.g) + 0.0722 * channel(colour.b);
+    }
+
+    function contrast(a: color, b: color): real {
+        const la = root.luminance(a);
+        const lb = root.luminance(b);
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    }
+
     // Called over IPC by theme-switcher; watchChanges only covers hand edits,
     // because switching swaps the themes/current SYMLINK and inotify on the
     // resolved path never fires.

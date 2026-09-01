@@ -238,6 +238,42 @@ shapes; they are **not** in the Hyprland stubs, which type every dispatcher as `
 
 **Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).
 
+🚨 **A bar's persistent JSON source must guard on its parent still being alive.** `kanata-layer` is
+spawned by whichever bar is deployed (Waybar's `exec-persistent`, Quickshell's
+`WaybarJsonSource`), and only writes on a state change — so it never takes SIGPIPE when the bar's
+read end closes. Quickshell's `Process` destructor
+SIGKILLs its direct child, but only on a graceful teardown; a hard-killed or crashed bar leaves
+the whole tree behind. Verified live 2026-09-01: **seven orphaned `kanata-layer`** (and five
+`voxtype-waybar-status`, since retired with voxtype 1.0) reparented onto `systemd --user`, each
+still holding an open kanata TCP connection, accumulating one set per bar restart.
+
+It now captures `$PPID` at start and stops when it goes. The shape follows the blocking point:
+
+- `kanata-layer` blocks inside `nc | while read` for as long as it stays connected, so a
+  background watchdog `pkill -P "$MAIN_PID" -x nc`s when the parent dies. It kills `nc` rather
+  than the shell on purpose: that unblocks the pipeline, the outer loop re-tests its own
+  condition and exits, and the `EXIT` trap reaps the watchdog. A bare `pkill -P "$MAIN_PID"`
+  would match the watchdog itself, which is also a child of that shell.
+
+Two traps, both hit while building this and both silent:
+
+🚨 **`kill -0` succeeds on a ZOMBIE**, so a parent left unreaped keeps the guard true forever.
+The check is `/proc/<pid>/stat` field 3 instead — state `Z` and a missing file both mean gone.
+The `[ -r ... ]` test comes first because a failing redirect prints its own message *before*
+`2>/dev/null` is applied.
+
+🚨 **`$PPID` is read AFTER any reparent that already happened.** A spawner that exits in the
+same instant — `sh -c 'script &'` — leaves the script holding the REAPER's pid, which in a
+systemd user session is `systemd --user`, not pid 1. That parent never dies, so the guard is
+disabled for the life of the process, silently. Both scripts therefore refuse to start when
+their parent's `comm` is `systemd`/`init`: being spawned by the reaper means already orphaned.
+**If either script is ever run as a systemd unit rather than as a bar's stdout source, that
+check is the first thing to revisit.**
+
+Testing it needs both shapes: a parent that stays alive and is then killed *and reaped* (the
+bar case), and a spawner that exits instantly (the reaper-capture case). A parent that merely
+dies without being waited on proves nothing — that is the zombie above.
+
 ---
 
 ## Idle & Lock

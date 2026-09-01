@@ -104,8 +104,9 @@ Elevated surfaces (`@bg-secondary`, `@bg-tertiary`) MUST use `@fg-primary` for A
 
 **DO NOT** use `@fg-secondary` on elevated surfaces - this creates insufficient contrast (4.0-4.5:1) that fails WCAG AA standards (4.5:1 required).
 
-Applies to QML as much as to CSS — see "QML Integration (Quickshell)" below, where nothing
-enforces it automatically.
+Applies to QML as much as to CSS — see "QML Integration (Quickshell)" below. The QML side is
+measured by `mise run lint:theme-contrast`, which reads all 8 colorsets rather than the one
+currently symlinked; the CSS side is still by hand.
 
 #### Correct Patterns
 
@@ -113,8 +114,17 @@ enforces it automatically.
 |-------------------|------------|------------------|-------------|----------|
 | `@bg-primary` | `@fg-primary` | 8.0-9.0:1 | ✓✓ AAA | Primary content |
 | `@bg-primary` | `@fg-secondary` | 4.0-5.5:1 | ± AA (theme-dependent) | Less critical text |
-| **`@bg-secondary`** | **`@fg-primary`** | **7.0:1+** | **✓ AA** | **Elevated surfaces** |
-| `@bg-tertiary` | `@fg-primary` | 6.0:1+ | ✓ AA | Popovers, notifications |
+| **`@bg-secondary`** | **`@fg-primary`** | **3.6–10.9:1** | **✓ AA except solarized** | **Elevated surfaces** |
+| `@bg-tertiary` | `@fg-primary` | 1.7–8.8:1 | ± theme-dependent | Popovers, notifications |
+
+⚠️ **The "7.0:1+" and "6.0:1+" figures above were wrong.** Measured across all 8 colorsets
+2026-09-01 (`mise run lint:theme-contrast`): `@fg-primary` on `@bg-secondary` is 4.11 in
+solarized-dark and 3.64 in solarized-light — solarized puts body text at base0/base00 by
+design, so no consumer clears AA there. `@fg-primary` on `@bg-tertiary` is worse still, 1.70
+and 1.67 in the same two themes. **`@bg-tertiary` is the trap tier**: it is the only ground
+whose distance from the foreground tokens varies enough between themes to vanish outright
+(`FG_MUTED` *equals* `BG_TERTIARY` in both solarized themes, a ratio of exactly 1.00). Prefer
+`@bg-secondary` for any ground that has to carry something on top of it.
 
 #### Incorrect Patterns (DO NOT USE)
 

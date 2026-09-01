@@ -18,9 +18,12 @@ import QtQuick
 //  2. Every string on the card is fgPrimary — app label, timestamp, body,
 //     collapsed siblings, all of it. The card ground is elevated, so
 //     themes/CLAUDE.md forbids fgSecondary and fgMuted on it. Hierarchy comes
-//     from size, weight and mono-vs-sans, never from dimming. fgMuted appears
-//     on this card in exactly one place: the Dismiss button's OUTLINE, because
-//     borders are foreground-class and a background token cannot carry one.
+//     from size, weight and mono-vs-sans, never from dimming. The only
+//     non-fgPrimary foreground on this card is the OUTLINE on the secondary
+//     action buttons, because borders are foreground-class and a background
+//     token cannot carry one. It was fgMuted until the 2026-09-01 contrast
+//     pass measured it below the 3:1 a UI component needs in four themes;
+//     fgSecondary is the quietest token that clears 3:1 in all eight.
 Rectangle {
     id: root
 
@@ -170,7 +173,11 @@ Rectangle {
                     required property int index
 
                     color: action.index === 0 ? Theme.bgSecondary : "transparent"
-                    border.color: action.index === 0 ? "transparent" : Theme.fgMuted
+                    // fgSecondary, not fgMuted: an outline is a UI component
+                    // and wants 3:1, which fgMuted on this card's bgOverlay
+                    // ground misses in four of the eight themes (2.18 at worst).
+                    // Still foreground-class, so Amendment C's rule holds.
+                    border.color: action.index === 0 ? "transparent" : Theme.fgSecondary
                     border.width: action.index === 0 ? 0 : Config.hairline
                     height: Config.notifActionHeight
                     radius: Config.radiusChip
@@ -201,7 +208,8 @@ Rectangle {
             }
 
             Rectangle {
-                border.color: Theme.fgMuted
+                // Same 3:1 outline rule as the action buttons above.
+                border.color: Theme.fgSecondary
                 border.width: Config.hairline
                 color: "transparent"
                 height: Config.notifActionHeight

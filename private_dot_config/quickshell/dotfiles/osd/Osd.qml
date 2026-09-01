@@ -125,12 +125,19 @@ PanelWindow {
             anchors.right: value.left
             anchors.rightMargin: Config.gap
             anchors.verticalCenter: parent.verticalCenter
-            color: Theme.bgTertiary
+            // bgSecondary, not bgTertiary: accentPrimary on bgTertiary is
+            // 1.38-1.46:1 in both solarized themes and gruvbox-light, so the
+            // fill vanished into its own track. bgSecondary clears 3:1 in 7
+            // of 8 (verified 2026-09-01).
+            color: Theme.bgSecondary
             height: Config.osdTrackHeight
             radius: Config.radiusPill
 
             Rectangle {
-                color: root.dimmed ? Theme.fgMuted : Theme.accentPrimary
+                // fgSecondary rather than fgMuted: FG_MUTED equals BG_TERTIARY
+                // exactly in both solarized themes, so the dimmed fill used to
+                // be invisible at 1.00:1.
+                color: root.dimmed ? Theme.fgSecondary : Theme.accentPrimary
                 height: parent.height
                 radius: parent.radius
                 width: parent.width * root.level
