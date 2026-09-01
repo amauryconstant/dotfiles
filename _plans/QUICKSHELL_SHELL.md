@@ -1,8 +1,9 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Phases 0, 1, 2.5, 3 and 5 complete on branch `quickshell` (floating bar at Waybar
-module parity, volume/brightness OSDs, launcher and power menu; the two bars are now mutually
-exclusive by config). Phase 2 (Lua cutover) and Phases 4/6 not started. See **Amendment A** at the end of this file
+**Status**: Phases 0, 1, **2**, 2.5, 3 and 5 complete on branch `quickshell` (floating bar at
+Waybar module parity, volume/brightness OSDs, launcher and power menu on the primary keys; the two
+bars are mutually exclusive by config; Hyprland on the Lua entry point). Phase 4 (notifications)
+and 6 not started. See **Amendment A** at the end of this file
 for the layout language adopted 2026-08-31 (structure only — colours, fonts and glyphs are
 unchanged), which revises the phase list.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
@@ -375,9 +376,12 @@ hypridle ignores its command's status.
 
 - [x] Verify whether `hyprctl dispatch <legacy string>` still works under `configProvider = "lua"`
       — **2026-09-01: it does not.** Finding folded into `_research/HYPRLAND_LUA_AUDIT.md`
-- [ ] Convert the 29 sites (inventory with per-site replacement: `_research/HYPRLAND_LUA_AUDIT.md`)
-- [ ] Delete the `.chezmoiignore` TEMP block; `chezmoi apply`
-- [ ] Follow `_guides/HYPRLAND_LUA_CUTOVER.md` (hold status, steps, rollback, hyprsplit coupling)
+- [x] Convert the sites — **30, not 29** (`PowerMenu.qml:47` postdated the inventory).
+      Done 2026-09-01; per-site table and conversion notes in `_research/HYPRLAND_LUA_AUDIT.md`
+- [x] Delete the `.chezmoiignore` TEMP block
+- [x] Update `_guides/HYPRLAND_LUA_CUTOVER.md`, `hypr/CLAUDE.md` (both carried the stale
+      "held on Waybar #5013" reason), and the audit
+- [ ] `chezmoi apply` + log out/in, with `hypridle` stopped first
 - [ ] Verify workspace clicks in Lua mode, and every raw `dispatch()` we shipped in Phase 1
 - [ ] Update `_plans/OMARCHY.md` P1: the blocker was routed around, not resolved upstream
 
@@ -460,7 +464,7 @@ Wofi stays installed for dmenu use.
 |---|---|
 | Launcher built | ✅ `launcher/Launcher.qml`. `DesktopEntries` + `TextInput` + ranking compressed from Omarchy's `AppSearch.js`. **Apps mode only** — the artboard's `>`/`=`/`:`/`/`/`?` prefixes and the web-search fallback row are not built |
 | Power menu built | ✅ `power/PowerMenu.qml`, over the exact `wlogout/layout` commands |
-| Lands on `SUPER+D` / `SUPER+SHIFT+Q` | ⏳ **deliberately not.** Both ship on spare keys — `SUPER+SHIFT+D` and `SUPER+ALT+Q` — so Wofi and wlogout keep working unchanged. The swap is a separate, later decision, taken once these are better in daily use. Same gate Phase 6 puts on retirement |
+| Lands on `SUPER+D` / `SUPER+SHIFT+Q` | ✅ **swapped 2026-09-01**, alongside the Phase 2 cutover (same binding files, same log-out/in). Duplicate binds *stack* in Hyprland rather than overriding, so the Wofi and wlogout bindings are **gated off** on `features.quickshell_shell` — which required renaming `system-control.{conf,lua}` to `.tmpl`. Wofi and wlogout both stay installed; retirement is still Phase 6 |
 | Wofi stays installed | ✅ never in question — `cliphist` and every `--dmenu` caller |
 
 **Two departures from artboard `1h`, both recorded**: six tiles rather than five (hibernate
@@ -525,7 +529,7 @@ Per tool, the checklist is the same:
 | Subtree API ahead of installed 0.3.1 | Confirm every relied-on API against the installed build (qmltypes / `strings` / smoke test), as done for fact #5 |
 | A Quickshell update breaks the config | Quickshell is a versioned `extra` package, not `-git`; pin nothing, but keep Waybar until Phase 1 exit and read `changelog/` before upgrading |
 | Raw `dispatch()` strings break at Lua cutover | Fact #6 — funnel them through one helper, audit before Phase 2 |
-| The Lua cutover's real blast radius is wider than Waybar | **Confirmed 2026-09-01**: 29 `hyprctl dispatch` sites across 10 files in our own scripts/configs, all broken by Lua mode. Inventory in `_research/HYPRLAND_LUA_AUDIT.md`; `dpms on` (5 sites) and voxtype submaps are the dangerous ones |
+| The Lua cutover's real blast radius is wider than Waybar | **Confirmed and closed 2026-09-01**: 30 sites across 11 files, all converted. Shapes proved in a nested Hyprland in Lua mode before committing; `dpms on` (5 sites) is the one thing a nested instance cannot prove, so `hypridle` is stopped for the first log-in. Inventory and conversion notes in `_research/HYPRLAND_LUA_AUDIT.md` |
 | Cleanup removes a fallback too early | Phase 6 is optional, per-tool, and gated on the replacement having lived a month, not on its phase exiting |
 | `waybar.css` deleted while it is still the colorset source of truth | `colors.sh` is generated from it and `Theme.qml` reads `colors.sh`. Phase 6 ordering constraint — invert the chain first or keep the file orphaned |
 | Notification cutover is not reversible in place | Phase 4 owns its own flag, and the revert (`systemctl --user unmask swaync`) is tested before the cutover, not after |
@@ -830,7 +834,7 @@ Phases 0–2 unchanged.
 |---|---|---|
 | 0 | Skeleton, theme bridge, one widget | **Done** |
 | 1 | Bar to Waybar parity | **Done** |
-| 2 | Hyprland Lua cutover | Unchanged. Still the payoff, still gated on the `hyprctl dispatch` audit |
+| 2 | Hyprland Lua cutover | **Done** (2026-09-01). 30 sites converted, entry point deployed; runtime checklist pending the log-out/in |
 | **2.5** | — | **Done** (2026-08-31, ahead of Phase 2). Bar restructure. See below |
 | 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
 | 4 | Notifications | Unchanged in scope; UI now specified by `1f` |

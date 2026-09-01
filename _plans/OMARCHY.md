@@ -23,14 +23,27 @@ main failure mode when this plan is rewritten.
 
 ### Hyprland Lua config is the forward path (v4.0.0)
 
-**What**: Omarchy converted all Hyprland configuration from `.conf` to Lua for Hyprland 0.56 (`hyprland.lua` sourcing a bootstrap, `hl.monitor{}`, `hl.env()`, `hl.unbind()`, `o.bind()` action tables, `omarchy_default_bindings = false` escape hatches, `.luarc.json` shipped alongside). Our repo has already done this migration; only the entry-point cutover is held back.
+**What**: Omarchy converted all Hyprland configuration from `.conf` to Lua for Hyprland 0.56 (`hyprland.lua` sourcing a bootstrap, `hl.monitor{}`, `hl.env()`, `hl.unbind()`, `o.bind()` action tables, `omarchy_default_bindings = false` escape hatches, `.luarc.json` shipped alongside). Our repo has already done this migration, entry point included *(cutover 2026-09-01)*.
 **Target files**: `.chezmoiignore`, `private_dot_config/hypr/conf/**`, `private_dot_config/hypr/conf/bindings/**`, `.chezmoiscripts/run_once_after_007_validate_hyprland_config.sh.tmpl`
 **Effort**: Medium
-**Blocked on**: a Waybar release carrying PR #5013 (`fix(hyprland/workspaces): adapt dispatch commands for Lua IPC protocol`) — our Waybar workspace clicks depend on the legacy text dispatch that Lua mode removes. Merged upstream 2026-05-04, in no tagged release as of 2026-08-30 (latest 0.15.0). External; nothing to do here until it lands.
+**Blocked on**: nothing. **Routed around 2026-09-01, not resolved upstream** — see below.
 
-**Cutover runbook**: `_guides/HYPRLAND_LUA_CUTOVER.md` — hold status, cutover/rollback steps, hyprsplit coupling risk. Audit findings/verified prerequisites: `_research/HYPRLAND_LUA_AUDIT.md`. Entry point confirmed as `hyprland.conf` by deliberate `.chezmoiignore` exclusion; the 21 `.conf`/`.lua` pairs were diffed and reconciled (4 findings, all fixed — see archive).
+> **Correction (2026-09-01): Waybar was never the real blocker, and the cutover did not wait for it.**
+> PR #5013 (`fix(hyprland/workspaces): adapt dispatch commands for Lua IPC protocol`) is still in no
+> tagged release (merged 2026-05-04; Arch `extra` still ships `waybar 0.15.0-2`; no 0.16.0 exists),
+> and that no longer matters. The Quickshell bar does workspace clicks in Lua mode natively
+> (`HyprlandWorkspace.activate()` branches on `Hyprland.usingLua`), and since 2026-08-31 exactly
+> one of the two bars deploys. Waybar remains a **degraded** fallback under Lua — it renders fine
+> off `socket2`, but its workspace clicks are dead.
+>
+> The blocker that actually held the cutover was **internal and previously unscoped**: 30
+> `hyprctl dispatch <legacy string>` sites across 11 of our own scripts and configs, every one of
+> which Lua mode breaks with no fallback. All converted 2026-09-01; inventory, verified argument
+> shapes and conversion notes in `_research/HYPRLAND_LUA_AUDIT.md`.
 
-`Hyprland --verify-config` exists ("Do not run Hyprland, only print if the config has any errors"). The entry point is chezmoiignore'd, so render it to a temp path first — it resolves the rest of the tree through `package.path` against the deployed `~/.config/hypr`:
+**Cutover runbook**: `_guides/HYPRLAND_LUA_CUTOVER.md` — cutover/rollback steps, hyprsplit coupling risk. Audit findings/verified prerequisites: `_research/HYPRLAND_LUA_AUDIT.md`. The `.chezmoiignore` hold on `hyprland.lua` was deleted 2026-09-01; the 21 `.conf`/`.lua` pairs were diffed and reconciled (4 findings, all fixed — see archive).
+
+`Hyprland --verify-config` exists ("Do not run Hyprland, only print if the config has any errors"). Rendering to a temp path is still the recipe `mise run lint:hypr-lua` uses (it renders the template rather than reading the deployed file), and it resolves the rest of the tree through `package.path` against the deployed `~/.config/hypr`:
 
 ```sh
 TMP=$(mktemp -d)
@@ -38,10 +51,9 @@ chezmoi execute-template < private_dot_config/hypr/hyprland.lua.tmpl > "$TMP/hyp
 Hyprland --verify-config -c "$TMP/hyprland.lua"
 ```
 
-Proves the tree parses and every `require` resolves; does **not** prove dispatcher arguments are correct — the 0.56.2 stub types every dispatcher as `fun(...)`.
+Proves the tree parses and every `require` resolves; does **not** prove dispatcher arguments are correct — the 0.56.2 stub types every dispatcher as `fun(...)`. The technique that *does* prove them, used for the 2026-09-01 conversion: run a **nested** Hyprland (`Hyprland -c <tmp>/hyprland.lua`, which nests as a Wayland client) off a minimal Lua entry point, then fire each `hl.dsp.*` form at it with `hyprctl -i` / `HYPRLAND_INSTANCE_SIGNATURE` and check the reply for an `error:` prefix.
 
-- [ ] Resolve the `SUPER+ALT+M` double-bind — `voice` ("Toggle meeting transcription") vs `workspace-management` ("Move to other monitor"). Identical in both `.conf` and `.lua`, so not drift, but a real conflict
-- [ ] When Waybar >= 0.16.0 lands: delete the `.chezmoiignore` block, `chezmoi apply`, verify workspace clicks
+- [ ] Resolve the `SUPER+ALT+M` double-bind — `voice` ("Toggle meeting transcription") vs `workspace-management` ("Move to other monitor"). Identical in both `.conf` and `.lua`, so not drift, but a real conflict. **Confirmed live 2026-09-01**: `hyprctl binds` shows both under `modmask=72`, one on key `M` and one on key `m`, so both fire. Still open — it needs a decision on which keeps the key, not a fix
 - [ ] Gate the retirement of the `.conf` set behind an explicit user go-ahead — keep both until the Lua path is confirmed across a reboot and a `hyprctl reload`
 - [ ] Extend `run_once_after_007_validate_hyprland_config` to validate whichever entry point is authoritative — use the `Hyprland --verify-config -c <path>` recipe above
 - [ ] Review omarchy's helper surface (`hl.unbind`, `hl.monitor{ transform = }`, `hl.env`) against our `conf/helpers.lua` — adopt `unbind` if we ever need to drop an inherited default

@@ -9,8 +9,9 @@
 ## Quick Reference
 
 - **Purpose**: Hyprland compositor configuration
-- **Main entry**: `hyprland.conf` (sources modular configs + theme + user extras)
-- **Active format**: **`.lua`** — Hyprland loads `hyprland.lua` if present, else `hyprland.conf`. The `.conf` tree is retained as the rollback path (`rm ~/.config/hypr/hyprland.lua`). Requires `waybar-git` (workspace clicks need Waybar PR #5013, merged but in no tagged release). See `.claude/rules/hyprland-lua.md` for syntax, **`_guides/HYPRLAND_LUA_CUTOVER.md` for the cutover runbook** (steps, rollback), `_research/HYPRLAND_LUA_AUDIT.md` for the parity audit behind it.
+- **Main entry**: `hyprland.lua` (`require`s the `conf/` modules; `hyprland.conf` remains on disk as the fallback/rollback path)
+- **Active format**: **`.lua`**, as of the 2026-09-01 cutover — the `.chezmoiignore` block holding back `~/.config/hypr/hyprland.lua` is gone, and Hyprland prefers that entry point over `hyprland.conf`. The `.conf` set stays deployed as the rollback target until the Lua path is confirmed across a reboot. The hold was never a Waybar release in the end (PR #5013 is still unreleased and no longer matters): it was 30 of our own `hyprctl dispatch <legacy string>` sites, all converted to `hl.dsp.*`. See `.claude/rules/hyprland-lua.md` for syntax, **`_guides/HYPRLAND_LUA_CUTOVER.md` for the cutover runbook** (steps, rollback), `_research/HYPRLAND_LUA_AUDIT.md` for the parity audit and the dispatch inventory.
+- 🚨 **No `hyprctl dispatch <legacy string>` anywhere.** Lua mode splices the request verbatim into `return hl.dispatch(...)`, so a legacy string is a hard error (exit 7) with no fallback — and almost every call site in this tree swallows that status. New code writes `hyprctl dispatch 'hl.dsp.…'`.
 - **Cutover side effect**: flipping the entry point also swaps hyprsplit from the hyprpm **C++ plugin** to the **Lua library** (`require("hyprsplit")`), because `autostart.lua` deliberately drops the `exec-once = hyprpm reload -n` that `autostart.conf` carries. Two changes, one reboot.
 - **Reload**: `Super+Shift+R` or `hyprctl reload`
 
@@ -50,7 +51,7 @@
 | `voice.conf.tmpl` | Voice dictation (Voxtype; Parakeet bindings desktop-only) | ✅ Yes |
 | `desktop-utilities.conf` | Utilities (audio, gaps, nightlight, idle). **`SUPER+B` is not here** — see `conf.d/` below | ❌ No |
 | `theme-session.conf` | Theme switching, dark mode | ❌ No |
-| `system-control.conf` | Lock, power, help, menu | ❌ No |
+| `system-control.conf.tmpl` | Lock, power, help, menu (the wlogout `SUPER+SHIFT+Q` is gated on `features.quickshell_shell`) | ✅ Yes |
 
 Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system).
 
@@ -64,9 +65,9 @@ Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/environment.conf.tmpl`, `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}` etc.), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`).
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/environment.conf.tmpl`, `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the wlogout `SUPER+SHIFT+Q`, same gate).
 
-Every one has an inactive `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/environment.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
+Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/environment.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 

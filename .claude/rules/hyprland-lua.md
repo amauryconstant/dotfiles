@@ -13,7 +13,7 @@
 
 | Pattern | Purpose |
 |---------|---------|
-| `hypr/hyprland.lua.tmpl` | Entry point — `package.path` + `require` order (currently `.chezmoiignore`d) |
+| `hypr/hyprland.lua.tmpl` | Entry point — `package.path` + `require` order. **Live since the 2026-09-01 cutover**; no longer `.chezmoiignore`d |
 | `hypr/conf/*.lua` | Module configs, loaded via `require` (not `source` — that's the `.conf` path) |
 | `hypr/conf/bindings/*.lua` | Binding modules, loaded by `require_all.files()` |
 | `hypr/conf/{helpers,require_all}.lua` | Lua-layer infrastructure, no `.conf` twin |
@@ -159,6 +159,36 @@ source dir, which silently lints the wrong tree from a worktree or second clone.
 **Deliberately not in `[tasks.lint].depends`** — unlike every other task in the table, it needs the
 `Hyprland` binary *and* a deployed `~/.config/hypr` for `package.path` to resolve. `mise run lint`
 does not run it; invoke it by hand.
+
+### Proving a dispatcher's arguments: a nested Hyprland
+
+The gap above is real and it is where a dead `dpms on` hides. The check that closes it is a
+**nested Hyprland in Lua mode** — it nests as a Wayland client inside the running session, so it
+costs nothing and cannot touch the live compositor:
+
+```sh
+TMP=$(mktemp -d)
+printf 'hl.config({})\npackage.path = os.getenv("HOME") .. "/.config/hypr/?.lua;" .. package.path\n' > "$TMP/hyprland.lua"
+Hyprland -c "$TMP/hyprland.lua" &
+# then, against the NEW instance signature under $XDG_RUNTIME_DIR/hypr:
+HYPRLAND_INSTANCE_SIGNATURE=<new> hyprctl -j status          # => configProvider: "lua"
+HYPRLAND_INSTANCE_SIGNATURE=<new> hyprctl dispatch 'hl.dsp.…'
+```
+
+A **minimal** entry point, not the real tree — the real one drags in plugins, monitors and
+autostart. `hl.config({})` plus `package.path` is enough to select the Lua provider.
+
+🚨 **Read the reply text, not just the exit code.** A bad call returns
+`error: … <message>` and exit 7, but a call that succeeds *without doing anything* returns
+`info: …` and exit 0. So `ok` alone proves the argument shape parsed, never that the dispatcher
+had an effect — confirm the effect in `hyprctl clients -j` / `workspaces -j`. This is how the
+2026-09-01 conversion was validated; the resulting per-dispatcher notes are in
+`_research/HYPRLAND_LUA_AUDIT.md`.
+
+🚨 **`hyprctl monitors` reports `.width`/`.height` in PHYSICAL pixels; window geometry is
+LOGICAL.** Anything computing a window size from a monitor must divide by `.scale` first. Missed,
+a "50%" renders as the whole monitor — and a scale-1 laptop hides it while a scale-1.25 desktop
+does not.
 
 ---
 

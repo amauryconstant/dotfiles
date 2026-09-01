@@ -9,9 +9,9 @@
 
 ## Quick Reference
 
-- **Status**: Phases 2.5, 3 and 5 complete — floating bar (40 tall, inset 8, reserving 48),
-  volume/brightness OSDs, launcher and power menu. Phase 2 (Hyprland Lua cutover) and Phase 4
-  (notifications) still outstanding
+- **Status**: Phases 2, 2.5, 3 and 5 complete — floating bar (40 tall, inset 8, reserving 48),
+  volume/brightness OSDs, launcher and power menu, and Hyprland now on the Lua entry point.
+  Phase 4 (notifications) is the only one still outstanding
 - **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` is the whole
   rollout; flipping back is the whole rollback
 - 🚨 **The two bars are mutually exclusive, by config.** `.chezmoiignore` deploys exactly one
@@ -20,12 +20,18 @@
   `conf/bindings/desktop-utilities.*` start and bind **no** bar — that is deliberate, not an
   omission
 - **Launch**: `quickshell -c dotfiles`, from `hypr/conf.d/quickshell.{lua,conf}`
-- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power]` — `SUPER+B` (bar),
-  `SUPER+SHIFT+D` (launcher), `SUPER+ALT+Q` (power menu). One script for all three: IPC only
-  reaches a *running* instance, so every binding needs the same launch-then-retry dance
-- 🚨 **Phase 5 coexists, it does not replace.** `SUPER+D` still opens Wofi and `SUPER+SHIFT+Q`
-  still opens wlogout. The swap happens only once ours are better in daily use, and **Wofi is
-  never removable** — it serves `cliphist` and every `--dmenu` caller
+- 🚨 **`PowerMenu.qml` holds the tree's only `hyprctl dispatch`** (log out). Under the Lua config
+  provider it must be `hl.dsp.exit()`, never the legacy `exit` — it was the 30th call site the
+  cutover audit had missed, because it postdates that inventory
+- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power]` — `SUPER+B` (bar), `SUPER+D`
+  (launcher), `SUPER+SHIFT+Q` (power menu). One script for all three: IPC only reaches a
+  *running* instance, so every binding needs the same launch-then-retry dance
+- 🚨 **The primary keys were taken on 2026-09-01, by gating not shadowing.** Duplicate binds
+  *stack* in Hyprland — both would fire — so the Wofi `SUPER+D`
+  (`conf/bindings/applications.{conf,lua}.tmpl`) and the wlogout `SUPER+SHIFT+Q`
+  (`conf/bindings/system-control.{conf,lua}.tmpl`, renamed to `.tmpl` for this) are wrapped in
+  `{{ if not .features.quickshell_shell.enabled }}`. Flip the flag and the old pair comes back.
+  **Wofi is still never removable** — it serves `cliphist` and every `--dmenu` caller
 - **Lint**: `mise run lint:qml` · **Format**: `mise run format:qml`
 
 ## Layout

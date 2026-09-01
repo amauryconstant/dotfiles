@@ -9,8 +9,9 @@ runbook. `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit fork this
 activates.
 
 Two audits live here. The first (2026-08-30) is **config-side**: `.conf`/`.lua` parity. The
-second (2026-09-01, at the end of this file) is the **`hyprctl dispatch` script fleet** — 29
-call sites that the first audit never scoped, and that a cutover breaks.
+second (2026-09-01, at the end of this file) is the **`hyprctl dispatch` script fleet** — 30
+call sites that the first audit never scoped, and that a cutover breaks. **All 30 were converted
+on 2026-09-01**; see "Conversion" at the end.
 
 ## Audit results
 
@@ -137,10 +138,11 @@ The `hl.dsp.*` argument shapes are **not** in `/usr/share/hypr/stubs/hl.meta.lua
 every dispatcher as `fun(...): HL.Dispatcher`. They come from
 `src/config/lua/bindings/LuaBindingsDispatchers.cpp`, one `hl*` factory per entry.
 
-## Inventory — 29 call sites across 10 files
+## Inventory — 30 call sites across 11 files
 
 Larger than the ~12 the plan estimated: it missed the shared hypridle template and the
-six-dispatch batch in `window-pop`. Conversion is deliberately **not** done here.
+six-dispatch batch in `window-pop`. A 30th was found on 2026-09-01 — `PowerMenu.qml`, which
+postdates this table.
 
 | File:line | Legacy call | Replacement |
 |---|---|---|
@@ -153,6 +155,7 @@ six-dispatch batch in `window-pop`. Conversion is deliberately **not** done here
 | `…:6` | `centerwindow` | `hl.dsp.window.center({})` |
 | `voxtype/config.toml.tmpl:67,68,69` | `submap voxtype_recording` / `voxtype_suppress` / `reset` | `hl.dsp.submap("…")` |
 | `wlogout/layout:9` | `exit` | `hl.dsp.exit()` |
+| `quickshell/dotfiles/power/PowerMenu.qml:47` | `exit` | `hl.dsp.exit()` — **added 2026-09-01**, postdates the original count. Deploys whenever `features.quickshell_shell.enabled` |
 | `desktop/executable_launch-or-focus:31` | `focuswindow address:$W` | `hl.dsp.focus({ window = … })` |
 | `desktop/executable_recover-workspaces:10` | `split:grabroguewindows` | `require("hyprsplit").dsp.grab_rogue_windows()` — ⚠ see open question |
 | `desktop/executable_session-restore:182,187,192,200` | `exec "[monitor M; workspace N silent] cmd"` | `hl.dsp.exec_cmd(cmd, { monitor = "M", workspace = "N silent" })` — rules table is keyed by window-rule effect name (`LuaBindingsInternal.cpp:buildRuleFromTable`) |
@@ -164,14 +167,76 @@ Dangerous two, unchanged from the plan's assessment and now confirmed to be real
 (five of the sites; a dead one is a black screen that does not come back) and the **voxtype
 submaps** (a stuck `voxtype_suppress` submap swallows the keyboard).
 
-## Open at conversion time
+## Resolved at conversion time (2026-09-01)
 
-- **`split:grabroguewindows` scope.** Under Lua, hyprsplit is a Lua library
-  (`~/.config/hypr/hyprsplit/init.lua:303` `hyprsplit.dsp.grab_rogue_windows`), and our config
-  reaches it through a **local** `require("hyprsplit")` per module — not a global. The
-  `hyprctl` eval runs in the config's `lua_State`, so `require("hyprsplit")` inside the
-  dispatch string should resolve via the `package.path` the entry point sets, but this is the
-  one line in the table not settled from source. Check it live right after cutover.
-- **`workspace N silent` as a rule-table value.** The legacy rule string is passed through as
-  `{ workspace = "N silent" }`; whether the Lua side accepts the `silent` suffix or wants a
-  separate key is unverified.
+Both settled empirically against a **nested Hyprland in Lua mode** before any site was committed
+— a minimal entry point (`hl.config({})` plus the real `package.path`) run as
+`Hyprland -c <tmp>/hyprland.lua`, which nests as a Wayland client and reports
+`configProvider: "lua"` on `hyprctl -j status`. Legacy `dispatch centerwindow` there returns
+`error: … expected a dispatcher` and exit 7, confirming the fork; every `hl.dsp.*` form below
+returned `ok`.
+
+- **`workspace = "N silent"` as a rule-table value — accepted verbatim.** Not just "no error":
+  `hl.dsp.exec_cmd([[ghostty]], { monitor = "WAYLAND-1", workspace = "7 silent" })` put the
+  window on workspace 7 while the active workspace stayed unchanged. The suffix needs no
+  separate key.
+- **`require("hyprsplit")` inside a dispatch eval string — resolves.** It runs in the config's
+  `lua_State`, so the entry point's `package.path` applies. Proved by negative control: the same
+  call with a typo'd module name returns `module 'hyprsplit_NOPE' not found`, so the working call
+  is genuinely resolving rather than silently no-oping.
+
+Also verified live, since none of it is checkable statically (the stub types every dispatcher as
+`fun(...): HL.Dispatcher`):
+
+- `hl.dsp.window.resize({ x = N, y = N })` is **exact**, not a delta — a window came out at
+  precisely the requested size.
+- `hyprctl --batch` works with Lua fragments: all six of `window-pop`'s applied in one call.
+  No replacement string contains a `;`, so the batch separator stays unambiguous.
+- A Lua **long-bracket string** `[[...]]` carries a command containing single quotes with no
+  escaping — which is what `session-restore` now uses for `exec_cmd`.
+- `hl.dsp.window.float` is a **toggle** (it replaces `togglefloating`), unchanged from the
+  legacy behaviour: firing it at an already-floating window un-floats it.
+
+## Conversion (2026-09-01)
+
+All 30 sites converted to `hl.dsp.*`. Three did not survive as straight substitutions:
+
+- **`session-restore`** — the four `exec` sites collapsed into one `dispatch_exec()` helper.
+  `$rules` is now a Lua **table literal** built where the `[...]` string used to be built, and
+  the command goes through `[[ ]]` so a quote inside it needs no escaping.
+- **`float-and-center.sh`** — `resizewindowpixel exact 50% 50%` has no Lua equivalent
+  (`hl.dsp.window.resize` takes numbers), so the 50% is computed from the window's monitor.
+- **`window-pop`** — each `--batch` fragment got its own `hl.dsp.*` call.
+
+**Two pre-existing defects surfaced while converting, both about monitor geometry:**
+
+1. `window-pop` read its monitor size as `hyprctl activeworkspace -j | jq -r '.monitor.width'`.
+   `.monitor` there is a **name string**, so that yielded empty, `$((… * 30 / 100))` evaluated to
+   0, and the "30% size" was a `resizeactive exact 0 0`. It had never worked. Dimensions only
+   exist on `hyprctl monitors -j`.
+2. `hyprctl monitors` reports `.width`/`.height` in **physical** pixels, while window geometry is
+   **logical**. Dividing by `.scale` is mandatory: on the nested monitor (944x1004 at scale 2) a
+   "half size" computed from the physical width came out as the *entire* logical monitor. Verified
+   after the fix: exactly 236x251 of a 472x502 logical monitor. The laptop runs scale 1 so it
+   would have hidden this; the desktop profile's 3840x2160 at scale 1.25 would not.
+
+**One site did not become a dispatch string at all.** voxtype's
+`output.{pre_recording,pre_output,post_output}_command` hooks are undocumented on whether they run
+through a shell, and the Lua call survives `sh -c` only if quoted and naive argv splitting only if
+*not* quoted. They now call `desktop/hypr-submap <name>`, a wrapper that keeps the hook a plain
+whitespace-separated command — so neither reading can break it. The path is written absolute via
+`{{ .chezmoi.homeDir }}` for the same reason (`~` is also shell-only). Side effect: `voxtype check`
+compares against its own hardcoded `hyprctl dispatch submap <name>` and now reports
+*"configured (but not for Hyprland)"*. Cosmetic.
+
+**Still unverified after conversion** — needs the real session, not a nested one:
+
+- `hl.dsp.dpms({ action = "on"/"off" })` accepts its arguments (it returns `ok` nested), but
+  whether it actually powers displays back on can only be seen on real hardware. Five sites.
+  **Stop `hypridle` before the first log-in after cutover** so nothing can blank the display until
+  this is proven by hand.
+- `hl.dsp.workspace.move` was exercised against a headless output added with
+  `hyprctl output create headless`, which moved workspace 3 to it correctly — but a real
+  two-monitor `session-restore` round trip is the honest check.
+- `split:grabroguewindows` resolved as a module, but the nested instance had no rogue windows to
+  grab, so the dispatcher's *effect* is untested.
