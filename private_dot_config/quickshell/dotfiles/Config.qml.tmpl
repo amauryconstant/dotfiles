@@ -14,6 +14,12 @@ Singleton {
     // Larger than any element it is applied to, which is how a pill stays a
     // pill at every height without recomputing the radius.
     readonly property int radiusPill: 999
+    // Tooltip corners and the launcher mode badge — smaller than radiusChip,
+    // shared so the two don't independently derive the same value.
+    readonly property int radiusTooltip: 6
+
+    // 1px hairlines: borders, separators, dividers.
+    readonly property int hairline: 1
 
     readonly property int gap: 8
     readonly property int padTight: 12

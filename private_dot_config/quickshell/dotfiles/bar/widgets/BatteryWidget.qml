@@ -63,7 +63,7 @@ BarWidget {
     groundColor: root.percent <= 10 && !root.charging ? Qt.alpha(Theme.accentError, 0.14) : Theme.bgSecondary
     label: `${Math.round(root.percent)}%`
     // The glyph carries the state; the number stays readable.
-    labelColor: root.percent <= 10 && !root.charging ? Theme.accentError : Theme.fgPrimary
+    labelColor: root.percent <= 10 && !root.charging ? Theme.accentError : root.restColor
     monoLabel: true
     pill: true
     tooltipText: root.battery ? root.tooltipLines() : ""

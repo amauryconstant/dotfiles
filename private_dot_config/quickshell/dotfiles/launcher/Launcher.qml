@@ -124,7 +124,7 @@ PanelWindow {
 
         anchors.horizontalCenter: parent.horizontalCenter
         border.color: Theme.bgTertiary
-        border.width: 1
+        border.width: Config.hairline
         color: Theme.bgPrimary
         // The panel is a modal, not a dropdown: high enough to read without
         // covering the bar it was summoned from.
@@ -200,10 +200,10 @@ PanelWindow {
                     anchors.rightMargin: Config.pad
                     anchors.verticalCenter: parent.verticalCenter
                     border.color: Theme.bgTertiary
-                    border.width: 1
+                    border.width: Config.hairline
                     color: "transparent"
-                    height: mode.implicitHeight + 8
-                    radius: Config.radiusChip - 2
+                    height: mode.implicitHeight + Config.gap
+                    radius: Config.radiusTooltip
                     width: mode.implicitWidth + 14
 
                     Text {
@@ -220,7 +220,7 @@ PanelWindow {
                 Rectangle {
                     anchors.bottom: parent.bottom
                     color: Theme.bgTertiary
-                    height: 1
+                    height: Config.hairline
                     visible: root.results.length > 0
                     width: parent.width
                 }
@@ -346,7 +346,7 @@ PanelWindow {
                 Rectangle {
                     anchors.top: parent.top
                     color: Theme.bgTertiary
-                    height: 1
+                    height: Config.hairline
                     width: parent.width
                 }
 

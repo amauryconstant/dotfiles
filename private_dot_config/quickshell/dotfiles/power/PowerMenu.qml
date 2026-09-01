@@ -216,7 +216,7 @@ PanelWindow {
                         // keeps one rhythm and the selection stays the only
                         // thing the eye is pulled to.
                         border.color: tile.current ? Theme.accentPrimary : Theme.bgTertiary
-                        border.width: 1
+                        border.width: Config.hairline
                         color: Theme.bgSecondary
                         height: Config.powerTileSize
                         radius: Config.powerTileRadius

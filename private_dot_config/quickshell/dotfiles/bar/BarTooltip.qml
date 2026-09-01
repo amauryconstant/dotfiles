@@ -42,9 +42,9 @@ PopupWindow {
     Rectangle {
         anchors.fill: parent
         border.color: Theme.accentBorder
-        border.width: 1
+        border.width: Config.hairline
         color: Theme.bgOverlay
-        radius: 6
+        radius: Config.radiusTooltip
 
         // themes/CLAUDE.md: fg-primary on an elevated surface, never
         // fg-secondary. bgOverlay is elevated.

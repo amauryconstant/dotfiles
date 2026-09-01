@@ -12,13 +12,13 @@ Item {
     required property Item group
 
     implicitHeight: Config.barHeight
-    implicitWidth: 1
+    implicitWidth: Config.hairline
     visible: root.group.implicitWidth > 0
 
     Rectangle {
         anchors.centerIn: parent
         color: Theme.bgTertiary
         height: 16
-        width: 1
+        width: Config.hairline
     }
 }

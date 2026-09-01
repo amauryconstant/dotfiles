@@ -80,7 +80,7 @@ PanelWindow {
 
         anchors.fill: parent
         border.color: Theme.bgTertiary
-        border.width: 1
+        border.width: Config.hairline
         color: Theme.bgPrimary
         opacity: hideTimer.running ? 1 : 0
         radius: Config.radiusPanel
