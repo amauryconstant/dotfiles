@@ -52,6 +52,16 @@ Variants {
         // notification. `None` is also what the bar and the OSD use.
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         WlrLayershell.layer: WlrLayer.Overlay
+        // Its own layer namespace, so a Hyprland layerrule can animate the
+        // toasts without also animating the bar, the OSD, the dock and the
+        // launcher — every other surface here shares `quickshell`. The
+        // open/close effect is Hyprland's, not QML's: a layer surface is
+        // animated compositor-side, so there is nothing in this file to tune.
+        // The rule is in hypr/conf.d/quickshell.{lua,conf}.
+        //
+        // 🚨 Settable only before the window connects (wlr_layershell.hpp:106),
+        // which a property declaration is; assigning it later is a silent no-op.
+        WlrLayershell.namespace: "quickshell-notifications"
 
         // Without a mask a layer-shell window swallows every click over its
         // whole surface. The stack is as tall as its content, so the mask is
@@ -94,14 +104,9 @@ Variants {
                         onClicked: Notifications.hidePopup(card.modelData)
                     }
 
-                    // 0 means "stay up" (critical), and `running: false` is
-                    // how a Timer expresses that.
-                    Timer {
-                        interval: Math.max(1, Notifications.popupTimeout(card.modelData))
-                        running: Notifications.popupTimeout(card.modelData) > 0
-
-                        onTriggered: Notifications.hidePopup(card.modelData)
-                    }
+                    // No lifetime Timer here: this delegate is destroyed and
+                    // recreated on every arrival, so its timer would restart
+                    // too. Deadlines live in the Notifications singleton.
                 }
             }
         }

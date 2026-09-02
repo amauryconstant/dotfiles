@@ -26,3 +26,13 @@ o.bind("SUPER + B", "Toggle status bar", "~/.local/lib/scripts/desktop/quickshel
 -- Wofi is not removable regardless: it serves cliphist and every --dmenu caller.
 o.bind("SUPER + D", "Application launcher", "~/.local/lib/scripts/desktop/quickshell-toggle launcher")
 o.bind("SUPER + SHIFT + Q", "Power menu", "~/.local/lib/scripts/desktop/quickshell-toggle power")
+
+-- Toast open/close effect. Layer surfaces are animated by the compositor, not
+-- by Quickshell, so this is the only place it can be changed. The popup window
+-- sets its own WlrLayershell.namespace for exactly this reason -- matching
+-- `quickshell` would drag the bar, OSD, dock and launcher along with it.
+--
+-- The direction is explicit: a bare "slide" lets Hyprland pick the nearest
+-- edge, and for a top-right anchor that is the TOP one, so the toasts flew
+-- upwards. Other values of `animation`: "popin 80%", "fade", or no_anim = true.
+hl.layer_rule({ match = { namespace = "quickshell-notifications" }, animation = "slide right" })

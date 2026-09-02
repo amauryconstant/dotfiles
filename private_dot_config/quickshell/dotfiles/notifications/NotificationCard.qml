@@ -38,6 +38,14 @@ Rectangle {
 
     readonly property bool critical: root.notification.urgency === NotificationUrgency.Critical
 
+    // The hairline is what makes a toast read as a card over an arbitrary
+    // wallpaper — without it the popup is a bare rounded rect. Same tier as
+    // every other border in this tree. Critical takes it in accentError, which
+    // is the artboard-legal way to do swaync's inset red glow: it changes no
+    // silhouette, it is still severity-by-colour, and unlike the title colour
+    // alone it survives a critical whose summary is off screen.
+    border.color: root.critical ? Theme.accentError : Theme.bgSecondary
+    border.width: Config.hairline
     color: Theme.bgOverlay
     implicitHeight: layout.implicitHeight
     radius: Config.radiusTile

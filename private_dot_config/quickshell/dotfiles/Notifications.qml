@@ -33,6 +33,12 @@ Singleton {
     // Popups currently on screen. Plain list rather than a filter over the
     // server's model: see the header — the two lifetimes are unrelated.
     property list<var> popups: []
+    // 🚨 Hide deadlines by notification id, ticked below. NOT a Timer in the
+    // popup delegate: the Repeater's model is a JS array, which Qt does not
+    // diff, so every arrival destroys and recreates all delegates — and a
+    // per-delegate Timer would restart on each one, keeping the oldest toast up
+    // forever under any steady stream (voxtype's start/stop pair does it).
+    property var deadlines: ({})
 
     // Null whenever this shell does not own notifications, so every read below
     // has to tolerate that rather than assume a server exists.
@@ -83,6 +89,7 @@ Singleton {
     // unless it was transient, in which case the popup WAS its whole life and
     // there is nowhere for it to go.
     function hidePopup(notification: var): void {
+        delete root.deadlines[notification.id];
         root.popups = root.popups.filter(n => n !== notification);
         if (notification.transient)
             notification.expire();
@@ -107,15 +114,20 @@ Singleton {
         return Config.notifGlyphs[key] ?? Config.notifGlyphs["none"];
     }
 
-    // 0 from a client means "no expiry, decide yourself"; -1 means the
-    // server's default. Critical never auto-hides, matching swaync's
-    // timeout-critical: 0 — an alert you can miss is not an alert.
+    // 🚨 expireTimeout is in MILLISECONDS. The fd.o spec's expire_timeout is,
+    // and notification.cpp assigns the D-Bus argument verbatim — the property's
+    // own doc comment ("Time in seconds") is wrong. Multiplying by 1000 turned
+    // every `notify-send -t 2000` in this repo into a 33-minute toast, which is
+    // what "notifications never disappear" was.
+    //
+    // -1 means "server decides"; 0 means never expire, and so does Critical —
+    // matching swaync's timeout-critical: 0. An alert you can miss is not one.
     function popupTimeout(notification: var): int {
         if (notification.urgency === NotificationUrgency.Critical)
             return 0;
         const requested = notification.expireTimeout;
-        if (requested > 0)
-            return requested * 1000;
+        if (requested >= 0)
+            return requested;
         return notification.urgency === NotificationUrgency.Low ? Config.notifTimeoutLowMs : Config.notifTimeoutMs;
     }
 
@@ -163,8 +175,28 @@ Singleton {
                 // and those already had their moment on screen.
                 if (root.dnd || notification.lastGeneration)
                     return;
+                const ms = root.popupTimeout(notification);
+                if (ms > 0)
+                    root.deadlines[notification.id] = Date.now() + ms;
                 root.popups = [notification, ...root.popups].slice(0, Config.notifPopupMaxVisible);
             }
+        }
+    }
+
+    // One tick for every popup, rather than one Timer each: the delegates are
+    // rebuilt too often to own their own lifetime (see `deadlines`). Idle
+    // whenever nothing is on screen.
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.popups.length > 0
+
+        onTriggered: {
+            const now = Date.now();
+            // Copy: hidePopup mutates the list this iterates.
+            for (const n of [...root.popups])
+                if (n && root.deadlines[n.id] <= now)
+                    root.hidePopup(n);
         }
     }
 
