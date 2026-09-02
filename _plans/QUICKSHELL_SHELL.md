@@ -1,12 +1,14 @@
 # Quickshell Shell — Integration Plan
 
-**Status**: Phases 0, 1, **2**, 2.5, 3, **4** and 5 complete on branch `quickshell` (floating bar
-at Waybar module parity, volume/brightness OSDs, launcher and power menu on the primary keys,
-notification server + centre with swaync masked; the two bars are mutually exclusive by config;
-Hyprland running the Lua entry point across a reboot). Only the optional 5.5 and 6 remain. See
+**Status**: Phases 0, 1, **2**, 2.5, 3, **4**, 5 and **5.5** complete on branch `quickshell`
+(floating bar at Waybar module parity, volume/brightness OSDs, launcher and power menu on the
+primary keys, notification server + centre with swaync masked, auto-hiding dock and workspace
+overview; the two bars are mutually exclusive by config; Hyprland running the Lua entry point
+across a reboot). Only the optional 6 remains. See
 **Amendment A** for the layout language adopted 2026-08-31, **Amendment B** for the 2026-09-01
-design update, **Amendment C** for the colour-mapping correction that landed with Phase 4, and
-**Amendment D** for the measured contrast pass that closed Phase 2.5's last exit criterion.
+design update, **Amendment C** for the colour-mapping correction that landed with Phase 4,
+**Amendment D** for the measured contrast pass that closed Phase 2.5's last exit criterion, and
+**Amendment E** for what reading `Composites.dc.html` settled about Phase 5.5.
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
 `_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
 **Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon
@@ -897,7 +899,7 @@ Phases 0–2 unchanged.
 | 3 | OSDs | **Done** (2026-08-31, also ahead of Phase 2). Inherited 2.5's geometry scale |
 | 4 | Notifications | **Done** (2026-09-01). UI from `1f`/`pan-a`; swaync masked behind its own flag |
 | 5 | Launcher and power menu | **Done** (2026-09-01, ahead of Phase 4). UI from `1d` and `1h`; both on spare keys, coexisting |
-| **5.5** | — | **New, optional — workspace overview (`1e`) and dock** |
+| **5.5** | — | **Done** (2026-09-02). Dock and workspace overview. See **Amendment E** |
 | 6 | Cleanup of replaced tooling | Unchanged, still optional |
 
 ### Phase 2.5 — bar restructure
@@ -1288,3 +1290,225 @@ themes lived in, not screenshotted.
 So the criterion is **closed as measured**, and anything the eye turns up later is a new
 finding against `mise run lint:theme-contrast`'s pair table — most likely a pair the table does
 not yet name, since a named one is now checked in all 8 colorsets on every run.
+
+---
+
+# Amendment E — Phase 5.5, 2026-09-02
+
+The dock and the workspace overview, the last two optional surfaces. Built from
+`Composites.dc.html` (`comp-a`, `comp-b`) read **directly** through `DesignSync`, not from
+Amendment A's transcription of it — which is the substance of this amendment. The canvas
+settled four more things the prose had lost or got wrong, bringing that tally to eleven, and
+together they cut roughly half the work Amendment A implied.
+
+> ⚠️ **Finding 1 was reversed in daily use, 2026-09-02 — see "Previews and the scrim" below.**
+> The artboard reading was right and the requirement was wrong: real previews were wanted, and
+> `hyprland-toplevel-export-v1` delivers them, including for inactive workspaces.
+
+## 1. 🚨 No `ScreencopyView`. The artboard draws window *chrome*, not screenshots
+
+Amendment A budgeted for live thumbnails and pre-worried about `ScreencopyView` tripping
+qmllint's `uncreatable-type` through the `Quickshell.Wayland._Screencopy` indirection.
+
+The artboard draws no screenshot anywhere. Each window is a rounded card with a 22px titlebar
+(`#181825` = `bgOverlay`, app glyph + name at 9px) over placeholder content bars.
+`HyprlandToplevel.lastIpcObject` already carries the raw `hyprctl clients` fields — `at`,
+`size`, `class`, `floating` (`hyprland_toplevel.hpp:45`) — which is enough to draw exactly
+that, at real proportions, for free. The capture path, its permissions and its per-frame cost
+all go with the finding.
+
+## 2. The artboard's cards are portrait; no monitor is
+
+Measured off `comp-b`: focused `520×640` (aspect 0.81), neighbours `300×440` (0.68) and
+`200×340` (0.59). Three different aspect ratios, none of them a screen. So the drawn cards are
+**not** a `scale:` transform of one card, and they cannot host a truthful window layout.
+
+**Deviation, recorded**: cards take the **monitor's** aspect ratio. The artboard's own note
+supplies the curve to apply — *"scale 1.0 / 0.69 / 0.46, opacity 1 / .6 / .35, same falloff both
+directions"* — and that carries over unchanged. Note the drawn heights (640/440/340) give
+1.0/0.69/**0.53**, so the artboard disagrees with its own note on the third step; the note wins,
+being the implementable statement.
+
+## 3. Two drawn behaviours need a raw `Hyprland.dispatch()`. Both are out
+
+- **"drag window to move"**, from the hint line. `HyprlandToplevel` exposes no move invokable
+  at all; only `workspace.activate()` is Lua-aware (it branches on `Hyprland.usingLua`). A raw
+  dispatch string is precisely what Phase 2 spent 30 sites eliminating. The hint line ships as
+  `← → switch · ↵ activate · esc close`.
+- **The dashed "+" card** that creates the next workspace. Same reason: creation is a dispatch.
+
+## 4. Dock geometry — three values Amendment A transcribed wrong
+
+| Element | Amendment A said | Artboard says |
+|---|---|---|
+| Panel radius | 16 | 16 ✓ |
+| Panel horizontal padding | `padTight` (12) | **14** |
+| Tile radius | `radiusTile` (10) | **12** |
+| Tile gap | `gap` (8) | **10** |
+| Running-indicator dot | "4px dot under each" | **not drawn** |
+
+Grounds, by hex per Amendment C: panel `#1e1e2e` = `BG_PRIMARY`, border and separator `#313244`
+= `BG_SECONDARY`, tiles `#313244` with `#cdd6f4` = `FG_PRIMARY` glyphs, trailing launcher tile
+on an accent tint at 14% with an `accentPrimary` glyph — the treatment `BarWidget`'s `tinted`
+already gives the bar's launcher chip.
+
+**The running dot is kept against the artboard.** A static mockup of one moment is weak
+evidence that a *state* indicator does not exist, Amendment A specifies it explicitly, and
+without it the dock is a strictly worse `SUPER+D`. This is the one place Phase 5.5 overrides
+the canvas, flagged rather than silent.
+
+## What the contrast task caught, again
+
+`mise run lint:theme-contrast` was extended with the new pairs and immediately found **two more
+defects invisible on the applied theme** — the same pattern as Amendment D:
+
+| Site | Was | Worst ratio | Now |
+|---|---|---|---|
+| Overview inactive page dots | `bgSecondary` on the `bgOverlay` scrim | **1.00** in gruvbox-dark, gruvbox-light, rose-pine-dawn and both solarized — `BG_SECONDARY` *equals* `BG_OVERLAY` there, so the dots were simply not on screen in 5 of 8 themes | `fgSecondary` (min 3.61) |
+| Dock hovered tile | `bgTertiary` ground under a `fgPrimary` glyph | **1.67** solarized-light, **1.70** solarized-dark | ground unchanged at `bgSecondary`; hover is a neutral `fgSecondary` hairline outline |
+
+The second is Amendment D's trap tier for the third time. The rule stands: **`bgTertiary` is
+never a ground that has to carry something.** The dock tile is already `bgSecondary`, so there
+is no ground left to step up to — hover has to be an outline.
+
+Three pairs are recorded as `ACCEPTED` with reasons: `ACCENT_PRIMARY` on `BG_PRIMARY`/`BG_OVERLAY`
+in gruvbox-light (its accent is mid-yellow, the reason already on file), and `ACCENT_BORDER` on
+`BG_OVERLAY` in latte / gruvbox-light / solarized-dark — `accent-border` is the compositor's own
+active-window border colour in every theme, so those ratios are what Hyprland already draws, and
+the focused card additionally carries 2.2× the scale, full opacity against 0.6/0.35, and the only
+accent footer pill. A faint outline there degrades; it does not lose the state.
+
+## Verification
+
+- `mise run lint:qml` clean, and **proved to still fail**: `Theme.accentPrimary` →
+  `accentPrimaryTYPO` in `Overview.qml` gives rc 255, restored gives rc 0.
+- `mise run lint:theme-contrast` green across all 8 colorsets after the two fixes.
+- **The projection was measured, not eyeballed.** The tree was rendered to a temp dir, run with
+  `quickshell -p` (with `notificationsOwned` forced false — a second `NotificationServer` would
+  race the live shell for the bus name), the overview opened over IPC, and each window's
+  computed rect logged against `hyprctl clients -j`. On the focused card: `preview=518.4×291.6`,
+  window `at=(10,122) size=1900×948` → `x=2.7 y=32.9 w=513.0 h=256.0`, matching
+  `10/1920×518.4`, `122/1080×291.6`, `1900/1920×518.4`, `948/1080×291.6` exactly. The falloff
+  measured 518.4 / 357.7 / 238.5, i.e. 1.0 / 0.690 / 0.460.
+- **One leg is unverified on this hardware**: every branch above ran at `scale=1`, where the
+  `/ monitor.scale` divide is a no-op. The unit claim is settled from source rather than
+  observation — `ipc/monitor.cpp:41` copies `width`/`height`/`scale` verbatim out of the
+  `hyprctl monitors` JSON, so they are physical pixels while window geometry is logical. A
+  scaled output (the desktop, or `hyprctl keyword monitor eDP-1,preferred,auto,1.25`, reverted
+  by `hyprctl reload`) would close it; it was not run, because it reflows every window in the
+  live session.
+
+## Two dock defects found in daily use, 2026-09-02
+
+Both reported within minutes of the dock going live, and neither was reachable from the
+headless checks above — they need a pointer, which is what made them the first real
+"eyes on it" findings of the whole plan.
+
+**The dock was unclickable and flickered at bottom-centre.** One cause: hover came from a
+`MouseArea`, which reports hover only while nothing above it has it. Each tile owns a
+`MouseArea` for its click, so reaching a tile set `containsMouse` false and the dock retracted
+out from under the click. `z: -1` had been reasoned about as if it helped — stacking decides
+who *wins* an event, not who else observes it. Fixed with a `HoverHandler`, which is passive
+and runs in parallel with a child's grab, matching `ui/ReloadPopup.qml:126` upstream.
+
+**The revealed mask dropped the pointer.** A single static centred band missed an off-centre
+entry, and left a seam between the panel's resting edge and the hot edge. Now the union of the
+hot edge and the panel's **live** rect (nested `Region`, `Intersection.Combine` by default),
+with the hot edge growing to meet the panel and staying full-width. This is what
+caelestia's `modules/drawers/Regions.qml` does — its regions are sized off the running
+animation (`panel.height * (1 - offsetScale) + borderThickness`) rather than off a final
+position. Omarchy has no dock to compare against; caelestia's drawers are the closest prior
+art and were read directly.
+
+A `Config.dockHideDelayMs` (220) grace period was added on top. caelestia needs none because
+its hit-testing is exhaustive coordinate math inside one `MouseArea`; anything built from real
+child `MouseArea`s wants the slack.
+
+**Verified with the pointer under program control** —
+`hyprctl dispatch 'hl.dsp.cursor.move({ x = …, y = … })'`, which takes a **table**, not
+positional args. Logging `hovered`/`revealed`/`hotEdge.height`/`panel` margin across a scripted
+sweep: hidden mid-screen, revealed on a bottom-centre entry, **held continuously while moving
+onto a tile**, held on a far-left entry at x=120 against a panel spanning only x≈815–1104, then
+one sample of `hovered=false delay=true revealed=true` (the grace period) before hiding.
+
+## A third finding: `chezmoi apply` does not reload the shell
+
+The dock did not appear at all on the first apply. The files were correct and the shell's log
+said *"Reloading configuration… Configuration Loaded"* — while the live generation was still
+the pre-apply one, with no `overview` IPC target and no dock surface. The watcher compares
+**content, not mtime** (so `touch` does nothing), and chezmoi replaces files by rename, which a
+per-file `QFileSystemWatcher` path does not survive. Recorded in
+`.claude/rules/quickshell-qml.md`: finish an apply with `quickshell -c dotfiles kill` and a
+relaunch, and verify with `ipc show`, never by looking at the deployed files.
+
+## Phase 5.5 is disabled in full, 2026-09-02
+
+Both surfaces were tried in daily use the day they shipped and **both were declined**.
+`Config.dockEnabled` and `Config.overviewEnabled` are `false`; the dock is never mapped and the
+overview sits behind a `Loader`, so neither costs anything at runtime. The `SUPER+grave`
+binding is removed from both Hyprland drop-ins — they are plain files, so one line in them
+cannot be template-gated, and re-enabling the overview means restoring it alongside the flag.
+
+- **Dock**: the bar's launcher chip and `SUPER+D` already cover launching, so it was a second
+  way to do one thing.
+- **Overview**: not wanted, even with live previews working.
+
+Kept rather than deleted, and that is now a real question rather than an obvious one: this is
+~620 lines of QML that nothing runs. The case for keeping it is that it *works*, the flags are
+one property each, and six of this plan's hardest-won findings live in that code rather than
+only in prose — `HoverHandler` vs `MouseArea` for hover, live-rect mask unions, the screencopy
+context conditions, `Theme.scrim`, `Theme.fgOnScrim`, and the monitor-scale projection. Two of
+those (`scrim`, `fgOnScrim`) are in `Theme.qml` and would survive deletion; the rest would not.
+
+**This is the outcome the phase was framed for** — *"nothing today does either job, so nothing
+regresses if they are wrong"*. Building both to find that out was the point, and the answer
+came from a day of use rather than from any amount of reasoning about the artboards. Worth
+noting how little the headless checks predicted: every finding that changed the design came
+from the pointer, the eye, or a theme switch.
+
+## Previews and the scrim, 2026-09-02
+
+Two more findings from actually using the overview, and one of them **reverses finding 1**.
+
+**`ScreencopyView` is back, and finding 1 was wrong.** The artboard genuinely draws window
+chrome rather than screenshots, so the reading was defensible — but the thing wanted was a real
+preview, and it turns out to be available. `captureSource` accepts a
+`Quickshell.Wayland.Toplevel`, reached as `hyprlandToplevel.wayland`, over
+`hyprland-toplevel-export-v1`. **Hyprland re-renders windows on inactive workspaces for it**:
+verified with all six toplevels reporting `hasContent` at `1900x948` while a single workspace
+was active. That is the fact the whole feature hinges on, and it was assumed away rather than
+checked the first time.
+
+Two conditions, both silent, and both cost a probe to find:
+
+- The view must sit in a **rendered** window. Inside a bare `Item` under `ShellRoot` no
+  recording context is ever created and `hasContent` stays false forever, with no error.
+- `captureFrame()` at `Component.onCompleted` logs *"Cannot capture frame, as no recording
+  context is ready"*; a 1.5s timer was still too early. `live: true` avoids the timing
+  question — scoped to an explicit `active` property, because a window's `visible` does **not**
+  reach its content item and binding capture to it would capture for the life of the session.
+  Verified across all three states: `live=false` closed, `live=true` + `hasContent` open,
+  `live=false` again after closing.
+
+**The scrim could not be a background token.** Reported as "too white in a light theme", and
+measured: `BG_OVERLAY` is 0.71–0.96 luminance in all four light themes, so the artboard's 86%
+scrim over it washes the screen out. `FG_CONTRAST` is no use either — it inverts per theme
+(0.006 in mocha, 0.88 in gruvbox-dark, 0.92 in solarized-dark). A scrim is a **shade**, not a
+theme colour, so `Theme.scrim` is a deliberate literal under the same exemption the fallbacks
+have.
+
+🚨 **That immediately broke everything drawn on it**, and would have shipped that way if the
+contrast task had not been extended: the scrim is dark in *every* theme, so a light theme's own
+`FG_PRIMARY` lands on it at **1.81** (gruvbox-light) and 2.63 (latte). `Theme.fgOnScrim` is the
+same computed pick as `fgOnAccent` — better of `FG_PRIMARY` / `BG_PRIMARY` — taking the worst
+case across all 8 to **6.64**. Three tokens in `Theme.qml` are now computed rather than read,
+each because no member of the 24-variable set works everywhere.
+
+`lint:theme-contrast` gained its own scrim section, since a shade is not a colorset token and
+the `PAIRS` table cannot express one.
+
+## Still open
+
+**Phase 6** only — retirement, gated on each replaced tool having *lived* a month, so nothing
+is eligible before roughly 2026-10-01. Plus Phase 2's multi-monitor box, still blocked on the
+desktop.

@@ -1,12 +1,15 @@
 pragma ComponentBehavior: Bound
 
 import "bar"
+import "dock"
 import "launcher"
 import "notifications"
 import "osd"
+import "overview"
 import "power"
 import Quickshell
 import Quickshell.Io
+import QtQuick
 
 // Root scope. Deliberately thin: it wires IPC and fans the bar out over the
 // screens, and owns no widget of its own.
@@ -70,6 +73,21 @@ ShellRoot {
         }
     }
 
+    // SUPER+grave (Phase 5.5), when Config.overviewEnabled. The handler stays
+    // registered either way so `ipc show` still answers for it rather than
+    // reporting a missing target, which reads like a broken wiring.
+    IpcHandler {
+        target: "overview"
+
+        function toggle(): string {
+            // Loader.item is typed QObject, so the linter cannot see the
+            // Overview's own members through it. Suppressed over this one line.
+            // qmllint disable missing-property
+            return overviewLoader.item?.toggle() ?? "disabled";
+            // qmllint enable missing-property
+        }
+    }
+
     // SUPER+SHIFT+N, taken from swaync-client --toggle-panel. Phase 4 masks
     // swaync outright — one bus name, one owner — so this is a replacement
     // rather than a coexistence.
@@ -107,6 +125,16 @@ ShellRoot {
         id: power
     }
 
+    // Behind a Loader rather than `visible: false`: with the flag off there is
+    // no window, no screencopy and no carousel bindings at all.
+    Loader {
+        id: overviewLoader
+
+        active: Config.overviewEnabled
+
+        sourceComponent: Overview {}
+    }
+
     Variants {
         id: barVariants
 
@@ -119,6 +147,16 @@ ShellRoot {
 
             onLauncherRequested: launcher.toggle()
             onNotificationCentreRequested: centre.toggle()
+        }
+    }
+
+    // The dock is furniture rather than a modal, so it fans out over the
+    // screens like the bar — not onto the focused monitor like the rest.
+    Variants {
+        model: Quickshell.screens
+
+        Dock {
+            onLauncherRequested: launcher.toggle()
         }
     }
 }

@@ -36,6 +36,11 @@ PAIRS = [
     ("FG_SECONDARY", "BG_OVERLAY", 3.0, "NotificationCard action outlines"),
     ("FG_SECONDARY", "BG_SECONDARY", 3.0, "OSD dimmed progress fill"),
     ("ACCENT_PRIMARY", "BG_SECONDARY", 3.0, "OSD progress fill on its track"),
+    # The dock's and the bar's launcher glyphs are accent-on-accent-tint, a
+    # blend no token pair describes; left unharvested here exactly as the bar's
+    # has always been, so the omission is visible rather than silent.
+    ("ACCENT_PRIMARY", "BG_PRIMARY", 3.0, "dock running dot on the dock panel"),
+    ("ACCENT_BORDER", "BG_OVERLAY", 3.0, "overview focused card outline"),
     ("FG_MUTED", "BG_PRIMARY", 4.5, "INHERENT: footers, hints, clock date, empty pill"),
     ("ACCENT_ERROR", "BG_PRIMARY", 4.5, "INHERENT: urgent workspace, critical states"),
     ("ACCENT_ERROR", "BG_OVERLAY", 4.5, "INHERENT: NotificationCard urgent title"),
@@ -63,6 +68,16 @@ ACCEPTED = {
     # gruvbox-light's ACCENT_PRIMARY is #d79921 on a #ebdbb2 elevated ground.
     # Waybar's active workspace has the same ratio in this theme today.
     ("ACCENT_PRIMARY", "BG_SECONDARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
+    ("ACCENT_PRIMARY", "BG_PRIMARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
+    ("ACCENT_PRIMARY", "BG_OVERLAY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
+    # ACCENT_BORDER is the Hyprland active-window border in every theme, so
+    # these ratios are what the compositor already draws around the focused
+    # window today. The overview's focused card additionally carries 2.2x the
+    # scale, full opacity against 0.6/0.35, and the only accent footer pill —
+    # so a faint outline in these three degrades rather than losing the state.
+    ("ACCENT_BORDER", "BG_OVERLAY", "catppuccin-latte"): "accent-border is the compositor's own border colour",
+    ("ACCENT_BORDER", "BG_OVERLAY", "gruvbox-light"): "accent-border is the compositor's own border colour",
+    ("ACCENT_BORDER", "BG_OVERLAY", "solarized-dark"): "accent-border is the compositor's own border colour",
 }
 
 SHORT = {
@@ -125,6 +140,32 @@ for fg, bg, minimum, where in PAIRS:
 
 # fgOnAccent is computed in Theme.qml rather than being a fixed token, because
 # neither FG_CONTRAST nor BG_PRIMARY clears 4.5:1 on ACCENT_PRIMARY in all 8.
+# The overview scrim is a SHADE (black at alpha), not a colorset token, so the
+# PAIRS table above cannot express it. Measured against pure black: the scrim
+# composites over the wallpaper, and this is the limiting case.
+print()
+print("fgOnScrim — the scrim is dark in EVERY theme, so a light theme's own")
+print("foregrounds vanish on it. Theme.qml picks FG_PRIMARY / BG_PRIMARY per theme:")
+BLACK = "#000000"
+for name in names:
+    colours = themes[name]
+    fgp = contrast(colours["FG_PRIMARY"], BLACK)
+    bgp = contrast(colours["BG_PRIMARY"], BLACK)
+    pick, ratio = ("fgPrimary", fgp) if fgp >= bgp else ("bgPrimary", bgp)
+    naive = fgp
+    flag = "!" if ratio < 4.5 else " "
+    print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}  {pick:<10}{flag}   (naive fgPrimary would be {naive:.2f})")
+    if ratio < 4.5:
+        failures.append(("FG_ON_SCRIM", "SCRIM", name, ratio, 4.5))
+# The active page dot is the one accent drawn on the scrim.
+print()
+print("accentPrimary on the scrim — the active page dot:")
+for name in names:
+    ratio = contrast(themes[name]["ACCENT_PRIMARY"], BLACK)
+    if ratio < 3.0:
+        failures.append(("ACCENT_PRIMARY", "SCRIM", name, ratio, 3.0))
+    print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}{'  !' if ratio < 3.0 else ''}")
+
 print()
 print("fgOnAccent — Theme.qml picks the better of FG_CONTRAST / BG_PRIMARY per theme:")
 for name in names:

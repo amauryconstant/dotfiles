@@ -77,6 +77,81 @@ Singleton {
     readonly property int powerAvatarSize: 34
     readonly property int powerGlyphSize: 26
 
+    // Dock, artboard comp-a. Deliberately OUTSIDE the geometry scale, the same
+    // way powerTileRadius is: the scale exists so nested surfaces read as
+    // nested, and the dock is a PEER of the bar, not something inside it.
+    // Every value here is measured off the artboard rather than transcribed --
+    // Amendment A had the padding, the tile radius and the gap all wrong.
+    // Off. Tried in daily use 2026-09-02 and not wanted: the bar's launcher
+    // chip and SUPER+D already cover launching, so the dock was a second way
+    // to do one thing. Flip to true to get it back — nothing else changes.
+    readonly property bool dockEnabled: false
+    readonly property int dockHeight: 66
+    readonly property int dockRadius: 16
+    readonly property int dockPad: 14
+    readonly property int dockGap: 10
+    readonly property int dockTileSize: 42
+    readonly property int dockTileRadius: 12
+    readonly property int dockIconSize: 19
+    // The reveal strip. 4px is enough to catch a mouse thrown at the edge and
+    // small enough that it never intercepts a click meant for a window.
+    readonly property int dockHotEdge: 4
+    readonly property int dockRevealMs: 180
+    // Grace period before hiding. caelestia's drawers get away with none
+    // because their hit regions are exhaustive coordinate math; a dock built
+    // from real child MouseAreas wants the slack, and every dock people
+    // actually like (macOS, Plank, Dash-to-Dock) has one.
+    readonly property int dockHideDelayMs: 220
+    // Running indicator. Kept against the artboard, which draws none: without
+    // it the dock is a strictly worse SUPER+D. See Amendment E.
+    readonly property int dockIndicator: 4
+
+    // Pinned dock entries, as DESKTOP-ENTRY IDS for DesktopEntries.byId().
+    //
+    // 🚨 Deliberately NOT interpolated from globals.yaml applications, which
+    // holds binary and MIME names rather than desktop ids: `ghostty` is
+    // `com.mitchellh.ghostty.desktop` and `org.xfce.thunar` is `thunar.desktop`,
+    // so two of the four would resolve to null. DesktopEntries.heuristicLookup()
+    // does not close the gap either -- it falls back to StartupWMClass, which is
+    // `com.mitchellh.ghostty` for the one and absent for the other.
+    readonly property var dockApps: ["com.mitchellh.ghostty", "firefox", "thunar", "nvim"]
+    // md-view_grid(0xf0570) -- the trailing "all apps" tile, which opens the
+    // same launcher SUPER+D does.
+    readonly property string dockLauncherGlyph: "󰕰"
+
+    // Workspace overview, artboard comp-b. A carousel, not a grid: the focused
+    // workspace stays legible at real proportions while neighbours are
+    // peripheral context.
+    //
+    // Off, like the dock, and declined the same way — tried in daily use
+    // 2026-09-02 and not wanted. Re-enabling needs BOTH this flag and the
+    // SUPER+grave binding restored to hypr/conf.d/quickshell.{lua,conf}; the
+    // drop-ins are plain files, so a line in them cannot be template-gated.
+    readonly property bool overviewEnabled: false
+    //
+    // The artboard draws three DIFFERENT card aspect ratios (0.81/0.68/0.59),
+    // none of which is a screen, so its cards cannot host a truthful window
+    // layout. Ours take the monitor's own aspect and apply the artboard note's
+    // falloff curve instead. See Amendment E.
+    readonly property var overviewCardScale: [1.0, 0.69, 0.46]
+    readonly property var overviewCardOpacity: [1.0, 0.6, 0.35]
+    readonly property int overviewGap: 28
+    // 520/1920 on the artboard canvas -- the focused card's share of the width.
+    readonly property real overviewFocusedFraction: 0.27
+    readonly property int overviewCardRadius: 14
+    readonly property int overviewFooterHeight: 44
+    readonly property int overviewTitleBarHeight: 22
+    readonly property int overviewDotSize: 8
+    readonly property int overviewDotActiveWidth: 22
+    // Scrim depth. Applied to Theme.scrim (a shade, not a theme colour — see
+    // the note there), so this reads the same in a light theme as in a dark
+    // one. 0.86 over BG_OVERLAY was the artboard's figure and rendered nearly
+    // white on latte and rose-pine-dawn.
+    // Back to the artboard's own figure. It needs to be this deep: the scrim
+    // composites over the wallpaper, and a thinner one leaves the ground
+    // wallpaper-dependent, which no fixed foreground can be legible against.
+    readonly property real overviewScrimOpacity: 0.86
+
     // Notifications, artboard pan-a. The centre and the popup stack share one
     // card component, so they share its metrics; only the surface around it
     // differs. Radii, paddings and font sizes all come from the scale above —

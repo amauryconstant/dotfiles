@@ -22,6 +22,8 @@ disables subdirectory discovery for every other config, including voxtype's)
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
 | `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
+| `dotfiles/dock/Dock.qml` | Auto-hiding dock. One window **per screen**, hot-edge reveal |
+| `dotfiles/overview/*.qml` | Workspace carousel and its card. One window, follows the focused monitor |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
 (`Config.isLaptop`) consumed by `visible:`, never eight separate templates.
@@ -201,6 +203,116 @@ popup to a monitor without being declared.
 come back flagged `lastGeneration`; a fresh process starts empty. That matches swaync, which
 also loses history when its daemon restarts, so no disk persistence exists here.
 
+🚨 **`chezmoi apply` does not reliably reload a running Quickshell.** Verified 2026-09-02
+after Phase 5.5: the files on disk were correct, the shell's own log said
+*"Reloading configuration… Configuration Loaded"* — and the live generation was still the
+pre-apply one. `ipc show` listed no `overview` target and `hyprctl layers` showed no dock
+surface, while the same tree run with `quickshell -p` mapped it immediately at `1920x74 @0,1006`
+with no errors.
+
+Two facts behind it, both measured:
+
+- **The watcher compares CONTENT, not mtime.** `touch shell.qml` produces no reload at all;
+  appending a byte produces one. So `touch` is not a reload command.
+- `EngineGeneration::setWatchingFiles` (`generation.cpp:170`) adds a `QFileSystemWatcher` path
+  for every scanned file *and* its directory. chezmoi replaces files by writing a temp and
+  renaming over the target, which is exactly the pattern a per-file watch does not survive —
+  and the one directory-triggered reload can land mid-apply, re-reading files that have not
+  been replaced yet. (The mid-apply ordering is inference; the stale generation is not.)
+
+So an apply that changes this tree ends with **`quickshell -c dotfiles kill`** and a relaunch
+through `desktop/quickshell-toggle`, which starts the shell without toggling the surface off.
+Never trust the reload, and never verify by looking at the files — verify with
+`quickshell -c dotfiles ipc show` (is the new target there?) or `hyprctl layers`.
+
+🚨 **`ScreencopyView` needs a RENDERED window, and `captureFrame()` needs a ready context.**
+Both failures are quiet. Put the view anywhere that is not actually being painted — inside a
+bare `Item` under `ShellRoot`, say — and no recording context is ever created, so `hasContent`
+stays false forever with no error. Call `captureFrame()` from `Component.onCompleted` and it
+logs *"Cannot capture frame, as no recording context is ready"* and captures nothing; even a
+1.5s timer was too early here. `live: true` sidesteps the timing entirely, and scoping it to
+the surface's own visibility means nothing is captured at rest.
+
+**Hyprland DOES capture windows on inactive workspaces.** Verified 2026-09-02: all six
+toplevels reported `hasContent` with `sourceSize` `1900x948` while only one workspace was
+active. `captureSource` takes a `Quickshell.Wayland.Toplevel` — reach it as
+`hyprlandToplevel.wayland` — over `hyprland-toplevel-export-v1`, and a `ShellScreen` for a whole
+monitor.
+
+🚨 **A window's `visible` does not reach its content item.** `live: root.visible` inside a
+`PanelWindow` reads the *item's* visibility, so a capture bound to it runs for the life of the
+session. Pass the window's visibility down as an explicit property instead.
+
+🚨 **A modal scrim cannot be built from a background token.** `BG_OVERLAY` measures 0.71–0.96
+luminance in all four light themes, so an 86% scrim over it renders near-white — and
+`FG_CONTRAST` inverts per theme (0.006 in mocha, 0.88 in gruvbox-dark). A scrim is a *shade*,
+not a theme colour: `Theme.scrim` is a deliberate literal, under the same exemption as
+`Theme.qml`'s fallbacks.
+
+🚨 **Then everything drawn on it needs `Theme.fgOnScrim`.** The scrim is dark in every theme,
+so a light theme's own foregrounds land on it at **1.81** (gruvbox-light) and 2.63 (latte) and
+are simply not there. Same computed pick as `fgOnAccent`, better of `FG_PRIMARY` / `BG_PRIMARY`;
+worst case across all 8 becomes 6.64. `mise run lint:theme-contrast` checks both, in their own
+section — the scrim is not a colorset token, so the `PAIRS` table cannot express it.
+
+🚨 **A hover-driven reveal needs a `HoverHandler`, never a `MouseArea`.** A hover-enabled
+`MouseArea` reports hover only while nothing above it has it, so **every child `MouseArea`
+steals it** — and `z: -1` does not help, because stacking decides who *wins* the event, not
+who else gets to see it. The dock's tiles each own a `MouseArea` for their click, so the
+pointer reaching a tile set `containsMouse` false and the dock retracted out from under the
+click it was about to receive. Pointer handlers are passive and run in parallel with a child's
+grab; quickshell's own `ui/ReloadPopup.qml:126` uses one for exactly this. Symptom to
+recognise: the surface is *unclickable* and flickers worst wherever its controls are densest.
+
+🚨 **The reveal mask is the UNION of the hot edge and the panel's LIVE rect.** `regions` is
+`Region`'s default property (`region.hpp:109`) and `Intersection` defaults to `Combine`
+(`region.hpp:144`), so a nested `Region` unions in:
+
+```qml
+mask: Region {
+    item: hotEdge
+    Region { item: panel }
+}
+```
+
+Three ways a single rect gets this wrong, all of which drop the pointer out of the input region
+and oscillate: binding it to the panel **alone** (the panel has not arrived yet while it slides),
+pinning it to one **static centred** band (an off-centre entry is outside it), and leaving a
+**seam** between the panel's resting edge and the hot edge (crossing it loses hover). Grow the
+hot edge to meet the panel while revealed, and keep it full-width so the edge can be entered
+anywhere. caelestia's `modules/drawers/Regions.qml` sizes its regions off the live animation
+(`panel.height * (1 - offsetScale) + borderThickness`) for the same reason — with slack.
+
+**Add a hide grace period anyway.** caelestia gets away with none because its hit-testing is
+exhaustive coordinate math in one `MouseArea`; anything built from real child `MouseArea`s
+wants the slack. `Config.dockHideDelayMs` (220) holds `revealed` true through a momentary loss:
+`revealed: hoverHandler.hovered || hideDelay.running`.
+
+Verified by driving the pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x = …, y = … })'`
+(note the **table** argument — a positional `move(x, y)` errors) and logging the state: hover
+held continuously from a bottom-centre entry, onto a tile, and across a far-left entry at
+x=120 against a panel spanning only x≈815–1104.
+
+🚨 **`DesktopEntries.byId()` is a function call, not a dependency.** A binding written
+`readonly property var entry: DesktopEntries.byId(id)` never re-evaluates when the manager
+rescans after a `.desktop` file changes (`desktopentry.cpp` `handleFileChanges`). Resolve off
+the model instead — `DesktopEntries.applications.values.find(e => e.id === id)` — which is
+reactive for free. `heuristicLookup()` is also weaker than it sounds: it is `byId()` and then
+an exact `StartupWMClass` match, nothing more, so `ghostty` does **not** find
+`com.mitchellh.ghostty.desktop` and `org.xfce.thunar` does not find `thunar.desktop`.
+
+🚨 **`HyprlandMonitor.width`/`height` are PHYSICAL pixels; window `at`/`size` are LOGICAL.**
+`ipc/monitor.cpp:41` copies them verbatim out of the `hyprctl monitors` JSON, so the trap
+`hyprland-lua.md` records for shell scripts applies identically in QML. Anything projecting a
+window into a monitor-shaped space divides by `.scale` first, and subtracts the monitor's own
+logical `x`/`y` origin before scaling. Verified against a live layout: at scale 1 the fractions
+match `hyprctl clients` exactly — which is also why a scale-1 machine cannot catch this.
+
+**A child sized off a positioner is a binding loop.** `height: someRow.height` inside a
+`Repeater` in that `Row` deadlocks: the Row sizes itself from the very children reading it
+back. Derive the size from the data instead — the overview's slots take their height from the
+monitor's aspect.
+
 **Hyprland's models populate lazily and asynchronously.** `Hyprland.workspaces` and
 `.monitors` are both empty for the first ~1s. They fill on their own; `refreshWorkspaces()` is
 not needed, but code must not assume data at startup.
@@ -359,7 +471,8 @@ ground, `fg-muted` is allowed.
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
 `bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
-`notifications.dnd()`. List them live with `quickshell ipc --pid <pid> show`.
+`notifications.dnd()`, `overview.toggle()`. List them live with
+`quickshell ipc --pid <pid> show`.
 
 **Flag placement differs by flag**, which is not obvious:
 
@@ -391,7 +504,9 @@ add a second, less reliable trigger for a change the shell can already see.
 `Theme.qml` parses `~/.config/themes/current/colors.sh` at runtime — the same format-neutral
 colorset every other app reads, so there is no ninth per-theme file. All **24** semantic
 variables are exposed; a missing key falls back to hardcoded Catppuccin, which renders wrong
-colours with no error, so the property set must stay complete.
+colours with no error, so the property set must stay complete. Three properties are *computed*
+rather than read — `fgOnAccent`, `scrim` and `fgOnScrim` — each because no token in the set
+works across all 8 themes.
 
 Contrast rules from `themes/CLAUDE.md` are measured by `mise run lint:theme-contrast` (see
 above) across all 8 colorsets; everything that task's hand-harvested pair table does not cover

@@ -3,8 +3,9 @@
 # Script: quickshell-toggle
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
-# Usage: quickshell-toggle [bar|launcher|power|notifications]   (default: bar)
-# Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu)
+# Usage: quickshell-toggle [bar|launcher|power|notifications|overview]  (default: bar)
+# Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
+#           SUPER+grave (overview)
 #           — hypr/conf.d/quickshell.{lua,conf}; SUPER+SHIFT+N (notifications)
 #           — hypr/conf/bindings/system-control.{lua,conf}.tmpl, which is where
 #           it lives because that key is gated on a different feature flag
@@ -13,7 +14,7 @@
 # shows over IPC rather than being killed and relaunched. That is instant and
 # keeps the shell's state, so only a missing instance needs a launch.
 #
-# One script for three surfaces because the hard part is identical for all of
+# One script for every surface because the hard part is identical for all of
 # them: IPC only reaches a RUNNING instance, so every binding needs the same
 # launch-then-retry dance.
 
@@ -21,9 +22,9 @@ CONFIG=dotfiles
 TARGET=${1:-bar}
 
 case "$TARGET" in
-bar | launcher | power | notifications) ;;
+bar | launcher | power | notifications | overview) ;;
 *)
-    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications)" >&2
+    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications|overview)" >&2
     exit 2
     ;;
 esac

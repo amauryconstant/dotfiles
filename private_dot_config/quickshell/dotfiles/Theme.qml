@@ -71,6 +71,26 @@ Singleton {
     // 2026-09-01 across all 8 colorsets; the worst case goes 1.49 -> 3.47.
     readonly property color fgOnAccent: root.contrast(root.fgContrast, root.accentPrimary) >= root.contrast(root.bgPrimary, root.accentPrimary) ? root.fgContrast : root.bgPrimary
 
+    // 🚨 The modal scrim, and the second thing here that NO token can supply.
+    // A scrim's job is to darken whatever is behind it, which is a shade
+    // rather than a theme colour. Measured luminance, 2026-09-02:
+    //   BG_OVERLAY  is 0.71-0.96 in all four LIGHT themes (latte 0.81,
+    //               gruvbox-light 0.72, rose-pine-dawn 0.96, solarized-light
+    //               0.81) — a scrim built from it washes the screen out.
+    //   FG_CONTRAST inverts per theme: 0.006 in mocha but 0.88 in
+    //               gruvbox-dark and 0.92 in solarized-dark.
+    // So neither is usable, and this is a deliberate literal — the same
+    // exemption Theme.qml's fallbacks have, for the same reason. Alpha lives
+    // in Config so the depth stays tunable without touching the colour.
+    readonly property color scrim: Qt.rgba(0, 0, 0, 1)
+
+    // 🚨 Anything drawn ON the scrim needs the same per-theme pick fgOnAccent
+    // needs, and for a sharper reason: the scrim is dark in EVERY theme, so a
+    // light theme's own foregrounds land on it at 1.81 (gruvbox-light) and
+    // 2.63 (latte) — the labels simply are not there. Picking the better of
+    // FG_PRIMARY / BG_PRIMARY takes the worst case across all 8 to 6.64.
+    readonly property color fgOnScrim: root.contrast(root.fgPrimary, root.scrim) >= root.contrast(root.bgPrimary, root.scrim) ? root.fgPrimary : root.bgPrimary
+
     // WCAG 2.1 relative luminance / contrast ratio. Qt's `color` exposes r/g/b
     // as 0..1 floats already, so there is no hex parsing here.
     function luminance(colour: color): real {
