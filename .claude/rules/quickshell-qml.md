@@ -498,6 +498,13 @@ runs a second instance so "just pick one" is wrong too.
 from an exit code — the `|| true` in the calling scripts is harmless but buys nothing. Verify
 by hand with `ipc show`.
 
+🚨 **An IPC function with no type annotations is never registered.** `ipchandler.hpp:130-131`:
+*"Argument and return types must be explicitly specified or they will not be registered."* So
+`function toggle() {…}` registers nothing while `function toggle(): void {…}` registers, and
+with the exit-0 behaviour above the failure is silent from both ends — the handler is simply
+absent from `ipc show`. Every handler in `shell.qml` is annotated today (`: void` or `: string`);
+an unannotated one added later would look like a broken target rather than a syntax problem.
+
 Callers today: `desktop/theme-switcher` (theme reload), `desktop/idle-toggle{,-nolock}` (idle
 refresh, beside their existing `pkill -RTMIN+9 waybar`), and the `SUPER+B` binding in
 `hypr/conf.d/quickshell.{lua,conf}`.

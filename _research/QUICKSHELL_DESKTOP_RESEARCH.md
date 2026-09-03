@@ -81,9 +81,19 @@ Omarchy 4 does not charge it.
 
 ## Native Quickshell Capabilities (from vendored source `_ai/quickshell/src/`)
 
+> **Verified against quickshell 0.3.1 source on 2026-09-03** (`_ai/quickshell/CMakeLists.txt:2`
+> declares 0.3.1; the installed package is `quickshell 0.3.1-1`, so source and runtime match).
+> Every module the inventory below names does exist, and every capability it attributes to one is
+> real. Two things needed correcting: the table's left column holds **source directory paths, not
+> importable QML module URIs** — they differ, sometimes substantially (see the naming note under the
+> table) — and the inventory **omits six shipped modules**, two of which (`Quickshell.Networking`
+> and `Quickshell.Bluetooth`) directly replace Waybar modules and so were load-bearing for the
+> "narrows the gap" conclusion at the end of this section. They are listed in a second table below.
+> Nothing in the original inventory was deleted; it is left as written.
+
 A lot of the hard system-integration plumbing is **built into Quickshell** as first-class QML modules — so "build your own" does *not* mean reimplementing daemons. Inventory:
 
-| Module path | Provides | Replaces / enables |
+| Source path | Provides | Replaces / enables |
 |-------------|----------|--------------------|
 | `services/notifications` | Freedesktop notification **server** (`org.freedesktop.Notifications`) | **swaync** (daemon + custom history panel in QML) |
 | `services/mpris` | Media player control | Bar/dashboard media widget |
@@ -98,7 +108,38 @@ A lot of the hard system-integration plumbing is **built into Quickshell** as fi
 | `wayland/wlr_layershell` | Layer-shell surfaces | Bars, panels, OSD overlays |
 | `wayland/toplevel`, `screencopy`, `shortcuts_inhibit` | Window list, screenshots, shortcut grabs | Dock/overview, screenshot tools |
 
-**Implication for approach selection**: this narrows the gap between "from-scratch" and "adopt a mature shell." The differentiator of Caelestia/DMS is *polish + curated UX*, not access to system internals — those internals are equally available to a hand-rolled config. Strengthens the case for **Approach A**.
+**Naming (corrected 2026-09-03)**: the paths above are directories under `_ai/quickshell/src/`, and
+none of them is what you type in an `import`. `services/*` becomes `Quickshell.Services.*`, but
+**`services/status_notifier` registers as `Quickshell.Services.SystemTray`**
+(`_ai/quickshell/src/services/status_notifier/CMakeLists.txt:42`), and the whole `wayland/`
+subtree collapses into the single `Quickshell.Wayland` URI, which re-exports its parts as private
+submodules — `_WlrLayerShell`, `_ToplevelManagement`, `_Screencopy`, `_IdleInhibitor`,
+`_IdleNotify`, `_ShortcutsInhibitor` (see the `import` lines in
+`/usr/lib/qt6/qml/Quickshell/Wayland/qmldir`). The one exception is `wayland/hyprland`, which is
+its own top-level `Quickshell.Hyprland` (`_ai/quickshell/src/wayland/hyprland/module.md`). The
+authoritative list of registered modules is the set of `qmldir` files under
+`/usr/lib/qt6/qml/Quickshell/`.
+
+**Omitted from the inventory but shipped in 0.3.1** (added 2026-09-03; the first two mattered to
+the conclusion below, since the migration table above puts network and bluetooth under Waybar):
+
+| QML module | Provides | Replaces / enables |
+|------------|----------|--------------------|
+| `Quickshell.Networking` | `Networking` singleton over NetworkManager — devices, wifi networks, signal strength (`_ai/quickshell/src/network/qml.hpp:81`, URI at `network/CMakeLists.txt:17`) | Waybar `network` module |
+| `Quickshell.Bluetooth` | `Bluetooth` singleton over BlueZ — adapters, devices, pairing state (`_ai/quickshell/src/bluetooth/bluez.hpp:65`, URI at `bluetooth/CMakeLists.txt:27`) | Waybar `bluetooth` module |
+| `Quickshell` (core) | `DesktopEntries` singleton (`_ai/quickshell/src/core/desktopentry.hpp:299`), `SystemClock` (`core/clock.hpp:49`), `ColorQuantizer` (`core/colorquantizer.hpp:70`), plus the window/screen/popup primitives | **Wofi** — a launcher needs desktop-entry enumeration, and this is where it comes from. `SystemClock` replaces the Waybar clock; `ColorQuantizer` means even wallpaper-dynamic theming is native, not a Caelestia/DMS differentiator |
+| `Quickshell.Io` | `Process`, `FileView`, `Socket`, `IpcHandler`, JSON adapters (`_ai/quickshell/src/io/module.md`) | Every script-backed widget, and the IPC surface a `theme switch` hook calls |
+| `Quickshell.Widgets` | `IconImage`, `ClippingRectangle`, the `Wrapper*` layout helpers (`/usr/lib/qt6/qml/Quickshell/Widgets/qmldir`) | Themed icon rendering for tray items and desktop entries |
+| `Quickshell.WindowManager` | Compositor-agnostic window/workspace interface (`_ai/quickshell/src/windowmanager/module.md`) | The portable alternative to `Quickshell.Hyprland`, relevant to Open Question #6 |
+
+Type names, spot-checked against the source: `NotificationServer`
+(`_ai/quickshell/src/services/notifications/qml.hpp:76` — the C++ class is `NotificationServerQml`,
+renamed on registration), `WlSessionLock` / `WlSessionLockSurface`
+(`_ai/quickshell/src/wayland/session_lock.hpp:56`, `:145`), `PolkitAgent`
+(`_ai/quickshell/src/services/polkit/qml.hpp:25`). All three are as this section implies.
+
+**Implication for approach selection**: this narrows the gap between "from-scratch" and "adopt a mature shell." The differentiator of Caelestia/DMS is *polish + curated UX*, not access to system internals — those internals are equally available to a hand-rolled config. Strengthens the case for **Approach A**. *(2026-09-03: this held up, and the corrections above strengthen it further —
+network, bluetooth, desktop entries and even wallpaper color quantization are all native too.)*
 
 ---
 
