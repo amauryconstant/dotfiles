@@ -60,15 +60,19 @@
 | `bg-primary` | Main background | `.control-center` background |
 | `bg-secondary` | Elevated surfaces | `.notification-action`, `.widget-mpris-player` |
 | `bg-tertiary` | Popovers | Action hover, DND checked |
-| `bg-elevated` | Highest elevation | Special elevated elements |
+| `bg-elevated` | Highest elevation | Special elevated elements — ⚠️ **CSS-only** |
 | `bg-overlay` | Modal overlays | `.notification-background` |
+
+⚠️ `bg-elevated` is declared only in each theme's `waybar.css`, **not** in `colors.sh`, so it is
+invisible to shell scripts and to Quickshell's `Theme.qml`. Same category as the `*-hover`
+variants — see `themes/CLAUDE.md`. The colorset is exactly 24 variables and this is not one.
 
 ### Foreground Hierarchy
 
 | Variable | Role | CSS Target |
 |----------|------|-----------|
 | `fg-primary` | Primary text | All body text, `.summary` |
-| `fg-secondary` | Secondary text | `.time`, `.body` |
+| `fg-secondary` | Secondary text | `.time`, `.body` — ⚠️ **on `.notification-background`, which is `bg-overlay`: this is the banned elevated pairing** (`themes/CLAUDE.md`). Quickshell's `NotificationCard.qml` does not repeat it — everything on a card is `fg-primary`, hierarchy by size/weight/mono (Amendment C) |
 | `fg-muted` | Disabled/inactive | Unfocused elements |
 | `fg-contrast` | High contrast | Text on colored backgrounds (close button, active actions) |
 
@@ -87,8 +91,17 @@
 
 ## Integration Points
 
-- **Hyprland autostart**: `autostart.conf` (exec-once = swaync)
-- **Keybinding**: `bindings/system-control.conf` (Super+Shift+N)
+🚨 **swaync is masked whenever Quickshell owns notifications.** `features.quickshell_notifications`
+decides which daemon holds `org.freedesktop.Notifications` — the bus name has exactly one owner, so
+there is no coexistence. `.chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl` masks
+or unmasks `swaync.service` on that flag. It is currently **masked**; everything below applies only
+after flipping the flag back.
+
+- **Start**: systemd user unit (`/usr/lib/systemd/user/swaync.service`) + D-Bus activation.
+  **Not** a Hyprland `exec-once` — `hypr/conf/autostart.lua:58` explicitly warns against adding one,
+  because it conflicts with `SystemdService=`.
+- **Keybinding**: `Super+Shift+N` — restored to swaync only when the flag is off; Quickshell's
+  notification centre holds it otherwise.
 - **Theme switcher**: `executable_theme-switcher.tmpl` (reload on theme change)
 - **Session denylist**: `dotfiles/session-denylist.conf` (not saved/restored)
 - **Theme CSS**: `themes/*/swaync.css.tmpl`

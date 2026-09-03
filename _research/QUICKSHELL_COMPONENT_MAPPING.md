@@ -530,7 +530,13 @@ Waybar's config would orphan the source of truth that `Theme.qml` reads. See
 
 ## Status
 
-Superseded as a planning document. Phases 0, 1, 2.5 and 3 are shipped — see
+Superseded as a planning document. **Phases 0–5.5 are shipped** (bar, OSDs, notifications,
+launcher, power menu, dock and overview — the last two ship disabled) — see
 `_plans/QUICKSHELL_SHELL.md` for the phase list and `private_dot_config/quickshell/CLAUDE.md`
 for how the tree is actually laid out. The component-by-component mapping above is still
 accurate as a description of what each replaced tool does.
+
+**Still the completeness checklist.** As of 2026-09-03 the shell's scope is a *full* desktop-shell
+replacement, not a bar port, so the coverage table above is the reference for what remains to be
+owned — including the pieces previously declined on scope grounds (clipboard, system menu, lock
+screen). See `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1.

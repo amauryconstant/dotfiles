@@ -222,10 +222,15 @@ is packaged in a way that rules out Approaches B and C for it specifically.
 
 ## Status
 
-Exploration only — still no decision, and no `_plans/` entry. What changed in 2026-08 is
-that a reference implementation now exists rather than a set of imperfect candidates.
+**Closed 2026-09-01.** Approach **A** (build our own, Omarchy 4 as design reference) was chosen;
+Phases 0–5.5 are shipped on branch `quickshell`. Live work is `_plans/QUICKSHELL_SHELL.md`; the
+tree's layout is `private_dot_config/quickshell/CLAUDE.md`. This document is kept as the
+exploration record behind the decision, for its comparison of the alternatives.
 
-Next step is **not** implementation. When ready:
+*(Until 2026-09-03 this section still read "exploration only — still no decision, and no `_plans/`
+entry", contradicting the header four phases later. The reading list below is likewise historical.)*
+
+Historical — the next steps as they stood before the decision:
 
 1. Read Omarchy 4's shell and theming — highest-value first read, replacing doannc2212 in
    that role. The clone at `~/Projects/_external/omarchy` is used by the release tracker

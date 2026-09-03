@@ -45,8 +45,8 @@
 |----------|------|-------|-------------------------|
 | `@bg-primary` | Main background | Bars, windows, primary canvas | `@fg-primary` or `@fg-secondary` |
 | `@bg-secondary` | Elevated surfaces | Hover states, cards, inputs | **ALWAYS @fg-primary** |
-| `@bg-tertiary` | Popovers | Notifications, tertiary elevation | `@fg-primary` |
-| `@bg-overlay` | Modal overlays | Dialogs, semi-transparent | `@fg-primary` |
+| `@bg-tertiary` | Tertiary elevation | ⚠️ **carries no text** — see the trap-tier note below | (none) |
+| `@bg-overlay` | Cards, tooltips, modal overlays | Notification cards, popover content, dialogs | `@fg-primary` |
 
 ### Foreground/Text Hierarchy
 
@@ -63,7 +63,7 @@
 
 | Variable | Role | Usage |
 |----------|------|-------|
-| `@accent-primary` | Active states | Clock, active workspace, battery plugged |
+| `@accent-primary` | Active states | Clock, active workspace — **the one active thing per surface** |
 | `@accent-info` | Connectivity | Network, Bluetooth, battery charging |
 | `@accent-success` | Success states | Battery normal, positive indicators |
 | `@accent-warning` | Warnings | Battery low (<20%), backlight, caution |
@@ -85,7 +85,7 @@
 | `@accent-special` | Special states | Custom modules, rare indicators |
 | `@accent-urgent-secondary` | Moderate urgency | Battery 20-30%, moderate warnings |
 
-**Hover Variants**:
+**Hover Variants** — ⚠️ **CSS-only, not part of the colorset**:
 
 | Variable | Role | Usage |
 |----------|------|-------|
@@ -93,6 +93,12 @@
 | `@accent-highlight-hover` | Audio hover | 10% opacity version of accent-highlight |
 | `@accent-warning-hover` | Backlight hover | 10% opacity version of accent-warning |
 | `@accent-success-hover` | Battery hover | 10% opacity version of accent-success |
+
+These four are declared **only** in each theme's `waybar.css` and `swaync.css.tmpl`. They are
+**not** in `colors.sh`, which holds exactly **24** `readonly` variables — so they are invisible to
+the shell scripts and to Quickshell's `Theme.qml`, both of which read `colors.sh` alone. A QML or
+shell consumer needing a hover tint composites the base accent itself. Do not design against
+these outside GTK CSS.
 
 ---
 
@@ -110,12 +116,12 @@ currently symlinked; the CSS side is still by hand.
 
 #### Correct Patterns
 
-| Background Surface | Text Color | Typical Contrast | WCAG Status | Use Case |
-|-------------------|------------|------------------|-------------|----------|
-| `@bg-primary` | `@fg-primary` | 8.0-9.0:1 | ✓✓ AAA | Primary content |
-| `@bg-primary` | `@fg-secondary` | 4.0-5.5:1 | ± AA (theme-dependent) | Less critical text |
-| **`@bg-secondary`** | **`@fg-primary`** | **3.6–10.9:1** | **✓ AA except solarized** | **Elevated surfaces** |
-| `@bg-tertiary` | `@fg-primary` | 1.7–8.8:1 | ± theme-dependent | Popovers, notifications |
+| Background Surface | Text Color | Measured range (all 8) | WCAG Status | Use Case |
+|-------------------|------------|------------------------|-------------|----------|
+| `@bg-primary` | `@fg-primary` | 4.13–11.86:1 | ✓ AA except solarized-light | Primary content |
+| `@bg-primary` | `@fg-secondary` | 4.02–9.26:1 | ± AA (rose-pine-dawn 4.02) | Less critical text |
+| **`@bg-secondary`** | **`@fg-primary`** | **3.64–10.90:1** | **✓ AA except solarized** | **Elevated surfaces** |
+| `@bg-tertiary` | `@fg-primary` | 1.67–8.82:1 | ✗ fails in solarized + latte | Avoid — see below |
 
 ⚠️ **The "7.0:1+" and "6.0:1+" figures above were wrong.** Measured across all 8 colorsets
 2026-09-01 (`mise run lint:theme-contrast`): `@fg-primary` on `@bg-secondary` is 4.11 in
@@ -153,20 +159,34 @@ whose distance from the foreground tokens varies enough between themes to vanish
 
 ### Theme-Specific Contrast Ratios
 
-| Theme | FG_PRIMARY on BG_SECONDARY | FG_SECONDARY on BG_SECONDARY | Status |
-|-------|---------------------------|------------------------------|--------|
-| Catppuccin Latte | 5.53:1 | 4.05:1 | Use PRIMARY only |
-| Catppuccin Mocha | 9.26:1 | 7.10:1 | PRIMARY preferred |
-| Gruvbox Light | 7.78:1 | 6.43:1 | PRIMARY preferred |
-| Gruvbox Dark | 8.59:1 | 6.76:1 | PRIMARY preferred |
-| Rose Pine Dawn | 7.00:1 | 4.23:1 ✗ | Use PRIMARY only |
-| Rose Pine Moon | 5.18:1 | 4.46:1 ✗ | Use PRIMARY only |
-| Solarized Light | 4.99:1 | 4.39:1 ✗ | Use PRIMARY only |
-| Solarized Dark | 5.61:1 | 4.86:1 | PRIMARY preferred |
+Measured 2026-09-03 against every `colors.sh`. **Both columns, every row** — the FG_PRIMARY
+column here was previously estimated rather than measured and was wrong in 6 of 8 rows (it
+claimed 4.99 for solarized-light, which actually measures 3.64, and 5.18 for rose-pine-moon,
+which measures 10.90). Regenerate with `mise run lint:theme-contrast` rather than by hand.
 
-**Key:** ✗ = Fails WCAG AA if using FG_SECONDARY
+| Theme | FG_PRIMARY on BG_SECONDARY | FG_SECONDARY on BG_SECONDARY | FG_PRIMARY on BG_TERTIARY |
+|-------|---------------------------|------------------------------|---------------------------|
+| Catppuccin Latte | 5.17:1 | 4.05:1 ✗ | 4.39:1 ✗ |
+| Catppuccin Mocha | 8.69:1 | 7.10:1 | 6.31:1 |
+| Gruvbox Light | 8.45:1 | 6.43:1 | 6.76:1 |
+| Gruvbox Dark | 8.45:1 | 6.76:1 | 6.43:1 |
+| Rose Pine Dawn | 7.00:1 | 4.23:1 ✗ | 6.07:1 |
+| Rose Pine Moon | 10.90:1 | 4.46:1 ✗ | 8.82:1 |
+| Solarized Light | **3.64:1 ✗** | 4.39:1 ✗ | **1.67:1 ✗** |
+| Solarized Dark | **4.11:1 ✗** | 4.86:1 | **1.70:1 ✗** |
 
-**Rationale:** Combining "secondary" background with "secondary" text creates insufficient contrast. Both variables are designed to be subtle; pairing them results in readability issues, particularly visible in Firefox (URL bar icons, selected tabs) on themes like Rose Pine Dawn.
+**Key:** ✗ = below the 4.5:1 AA floor for text.
+
+**Rationale:** combining a "secondary" background with "secondary" text is insufficient in five
+of eight themes. Both variables are designed to be subtle; pairing them fails, most visibly in
+Firefox (URL bar icons, selected tabs) on Rose Pine Dawn.
+
+🚨 **Solarized inverts the rule.** In *both* solarized themes `FG_SECONDARY` measures **better**
+than `FG_PRIMARY` on every ground (light: 4.39 vs 3.64; dark: 4.86 vs 4.11), because Solarized
+assigns body text to base00/base0 by design. No consumer clears AA there — Waybar, wofi and
+swaync render the same ratios today — so this is a **colorset** decision, not a per-app one, and
+the fix is to promote the darker foreground into `FG_PRIMARY` in those two colorsets. Tracked in
+`_research/QUICKSHELL_DESIGN_AUDIT.md`.
 
 ---
 
@@ -296,15 +316,28 @@ per-theme file to maintain — but three consequences follow:
 - **Reload is an explicit IPC call, not a file watch.** `theme switch` swaps the `themes/current`
   *symlink*, and an inotify watch on the resolved path never fires. `theme-switcher` calls
   `quickshell -c dotfiles ipc call theme reload`.
-- **Contrast is by hand.** QML gets none of the CSS review tooling. See below.
+- **Contrast is measured, not eyeballed.** `mise run lint:theme-contrast` reads all 8 colorsets.
+  See below for what it does and does not cover.
 
 ### Contrast in QML
 
-The ban on `@fg-secondary` over `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` applies unchanged,
-and nothing enforces it — a wrong pair renders fine and fails only a human eye. The pattern that
-holds the rule is `bar/BarWidget.qml`'s `grounded` property: rest colour is `fgSecondary` on the
-bar ground, and flips to `fgPrimary` the moment the widget draws a ground of its own (hover, pill,
-tint). A widget that hardcodes either one reintroduces the banned pair on half its states.
+The ban on `@fg-secondary` over `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` applies unchanged.
+The pattern that holds the rule is `bar/BarWidget.qml`'s `grounded` property: rest colour is
+`fgSecondary` on the bar ground, and flips to `fgPrimary` the moment the widget draws a ground of
+its own (hover, pill, tint). A widget that hardcodes either one reintroduces the banned pair on
+half its states.
+
+`mise run lint:theme-contrast` enforces this across all 8 colorsets — **manual-only**, because its
+`PAIRS` table is harvested by hand from the QML and therefore goes stale silently when a widget
+changes a colour. Run it after touching any colour in that tree, and re-harvest the table when
+the tree grows a surface. It covers only the pairs listed in it: a pair the code renders but the
+table omits is invisible (which is how `FG_PRIMARY` on `BG_TERTIARY` went unmeasured). Harvest by
+reading the **parenting**, not by grepping colour lines — most `Theme.bgSecondary` uses in that
+tree are 1px hairlines, not grounds.
+
+Three properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
+`fgOnAccent`, `scrim` and `fgOnScrim` — each because no fixed token clears its floor in all 8.
+That is the general pattern: **a colour whose job is defined against a ground has to be computed.**
 
 `theme-consistency-reviewer` reviews the QML tree as a second target, once rather than per
 theme: three greps for a literal hex, a literal font name, and `fgSecondary` on a lit ground.

@@ -11,6 +11,14 @@
 
 ## Module → semantic color assignments
 
+🚨 **This table is Waybar's mapping, and the Quickshell bar deliberately diverges from it.**
+Waybar colours most modules by role *at rest* (network `@accent-info`, audio `@accent-highlight`,
+battery `@accent-success`). Quickshell follows the **accent rule** instead — one accent marks the
+one active thing, every other widget is neutral at rest, and semantic colours fire only on state.
+That divergence was decided twice (Amendment A, re-confirmed Amendment B 2026-09-01) and is not
+an oversight. Do not read this table as the target for Quickshell; see
+`private_dot_config/quickshell/CLAUDE.md` and `.claude/rules/quickshell-qml.md`.
+
 | Module | Default State | Alternative States | Rationale |
 |--------|---------------|-------------------|-----------|
 | **Clock** | `@accent-primary` | - | Primary focal point |

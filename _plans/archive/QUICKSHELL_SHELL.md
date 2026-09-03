@@ -4,7 +4,9 @@
 (floating bar at Waybar module parity, volume/brightness OSDs, launcher and power menu on the
 primary keys, notification server + centre with swaync masked, auto-hiding dock and workspace
 overview; the two bars are mutually exclusive by config; Hyprland running the Lua entry point
-across a reboot). Only the optional 6 remains. See
+across a reboot). **Phase 5.5's two surfaces are complete but ship OFF** — `Config.dockEnabled`
+and `Config.overviewEnabled` are both `false`; "complete" here means built and validated, not
+enabled. Only the optional 6 remains. See
 **Amendment A** for the layout language adopted 2026-08-31, **Amendment B** for the 2026-09-01
 design update, **Amendment C** for the colour-mapping correction that landed with Phase 4,
 **Amendment D** for the measured contrast pass that closed Phase 2.5's last exit criterion, and

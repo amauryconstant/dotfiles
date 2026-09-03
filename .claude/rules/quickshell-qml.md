@@ -420,14 +420,23 @@ there too if a new surface needs the same decision.
 ### Reading the design source, not the transcription
 
 The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
-readable through the `DesignSync` MCP tool: `list_files`, then `get_file`. It is now **six
-files** — `Foundations`, `Bar - Dock`, `Composites`, `Launcher - Menu`, `Panels`, `Session`
-(`.dc.html`) — replacing the single-file `1a`–`1i` set. `support.js` beside them is the
-generated dc-runtime and carries no design content — do not bother fetching it. Reading the
-artboards directly has now settled seven things the prose transcriptions had lost or got
-wrong: the launcher chip, the hairline tier (twice, in opposite directions), the mono
-numerals, urgent being a text colour rather than a red fill, the card contrast law, and that
-notification cards carry no severity stripe.
+readable through the `DesignSync` MCP tool: `list_files`, then `get_file`. It is now **nine
+files** — `Foundations`, `Bar - Dock`, `Composites`, `Launcher - Menu`, `Panels`, `Session`,
+plus `Popovers`, `States` and `Proof` (`.dc.html`) — replacing the single-file `1a`–`1i` set.
+`support.js` beside them is the generated dc-runtime and carries no design content — do not
+bother fetching it. Reading the artboards directly has now settled seven things the prose
+transcriptions had lost or got wrong: the launcher chip, the hairline tier (twice, in opposite
+directions), the mono numerals, urgent being a text colour rather than a red fill, the card
+contrast law, and that notification cards carry no severity stripe.
+
+🚨 **The design and this tree disagree in places, and the design disagrees with itself in
+sixteen.** Before implementing anything from an artboard, read
+`_research/QUICKSHELL_DESIGN_AUDIT.md` — it catalogues the internal contradictions, the four
+claims that are numerically false (measured against all 8 colorsets, where the design measured
+two), and the shipped defects it correctly identifies. `_research/QUICKSHELL_DESIGN_BRIEF_R5.md`
+carries the rulings and the scope decision. `Foundations` was **rewritten** after Amendment B
+read it: `f-b` (interaction states), `f-c` (motion), `f-d` (glyph inventory) are new and were
+never recorded in the plan.
 
 ⚠️ **`DesignSync` needs its own authorization.** A session without it fails with *"DesignSync
 needs design-system authorization"*; `/design-login` grants it. Nothing in the repo can

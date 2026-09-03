@@ -22,7 +22,7 @@
 
 ## Contrast rule
 
-`#input` sits on `@bg-secondary` (elevated) → text **must** be `@fg-primary`, not `@fg-secondary` (which fails WCAG AA; `@fg-primary` gives 7:1+ across all themes). See `themes/CLAUDE.md`.
+`#input` sits on `@bg-secondary` (elevated) → text **must** be `@fg-primary`, not `@fg-secondary`. Measured range for `@fg-primary` on `@bg-secondary` is **3.64–10.90:1** across the 8 colorsets (not "7:1+", which this file claimed until 2026-09-03) — it clears AA in six, and fails in both solarized themes, where the colorset itself is the problem. See `themes/CLAUDE.md` → Theme-Specific Contrast Ratios.
 
 ## Menu-system integration
 

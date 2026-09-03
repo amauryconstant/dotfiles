@@ -10,6 +10,24 @@ installed `quickshell 0.3.1` **and** against the shipped bar in
 `private_dot_config/quickshell/dotfiles/`, which is running code. `_plans/QUICKSHELL_SHELL.md`
 "Verified facts" #1-#4 and #7 record how each was checked.
 
+🚨 **Corrected again 2026-09-03.** The 2026-09-01 pass fixed the prose and left the **code
+examples** wrong. Six further errors, each verified against `_ai/quickshell/src/` and
+`/usr/lib/qt6/qml/Quickshell/`:
+
+| Was | Is | Consequence if believed |
+|---|---|---|
+| `UPower` device `percentage` "0–100" | **0.0–1.0 fraction** | every threshold 100× out; the example below printed "1%" for a full battery |
+| `import Quickshell.WindowManager` for `Hyprland` (two examples) | `import Quickshell.Hyprland` | the singleton is undefined; this is the error the 2026-09-01 header says it fixed, fixed only in prose |
+| `HyprlandMonitor.width/height` "dimensions in pixels" | **PHYSICAL** pixels, while window geometry is **LOGICAL** | anything projecting a window into a monitor-shaped space is wrong by `scale`; already broke the overview once |
+| `NotificationServer` example calls `close()` and reads `.notifications` | the handler **must set `tracked = true`** or the notification is destroyed the instant it returns; history is `trackedNotifications` | popups appear, then become a list of `null`s and the centre stays empty |
+| `Clock { interval: … }` | the type is **`SystemClock`** | no such type |
+| `DesktopEntry { appId: … }` declarative form | resolve off `DesktopEntries.applications.values`; the id property is `id`, and `byId()` is a call, not a reactive dependency | a binding that never re-evaluates on rescan |
+
+**And one omission that changed a decision**: `Quickshell.Services.Polkit` and
+`Quickshell.Services.Pam` are **real, shipped modules** with first-class APIs — see the Polkit
+and PAM section below. A 2026-09-03 planning note claimed a polkit agent would have to be
+hand-written over raw D-Bus; that was wrong.
+
 ---
 
 ## Module Structure
@@ -140,7 +158,7 @@ The `Hyprland` singleton provides real-time workspace, monitor, and window intro
 
 ```qml
 import Quickshell
-import Quickshell.WindowManager
+import Quickshell.Hyprland   // NOT Quickshell.WindowManager
 
 Text {
   text: {
@@ -217,7 +235,7 @@ Text {
 | Property | Type | Notes |
 |----------|------|-------|
 | `name` | string | Monitor name (e.g., "DP-1", "HDMI-A-1") |
-| `width`, `height` | int | Dimensions in pixels |
+| `width`, `height` | int | 🚨 **PHYSICAL** pixels, copied verbatim out of `hyprctl monitors`. Window `at`/`size` are **LOGICAL** — divide by `scale`, and subtract the monitor's logical `x`/`y` origin, before comparing |
 | `x`, `y` | int | Position in workspace |
 | `refreshRate` | double | Hz |
 | `scale` | double | Scaling factor |
@@ -263,11 +281,19 @@ FloatingWindow {
     bodySupported: true
     bodyMarkupSupported: true
     persistenceSupported: true
+
+    // 🚨 MANDATORY. A notification is NOT tracked by default: server.cpp DELETES it the
+    // instant this handler returns unless tracked is set. Miss it and popups still appear
+    // (the handler already captured the pointer) but history becomes a list of nulls.
+    onNotification: notification => {
+      notification.tracked = true;
+    }
   }
   
   Column {
     Repeater {
-      model: notifServer.notifications
+      // history is trackedNotifications, not notifications
+      model: notifServer.trackedNotifications
       
       delegate: Rectangle {
         required property Notification modelData
@@ -349,7 +375,7 @@ Text {
   text: {
     let bat = UPower.displayDevice;
     if (!bat) return "No battery";
-    return `${(bat.percentage).toFixed(0)}% (${bat.state})`;
+    return `${(bat.percentage * 100).toFixed(0)}% (${bat.state})`;  // percentage is 0.0-1.0
   }
 }
 ```
@@ -362,7 +388,7 @@ Text {
 
 | Device Property | Type | Notes |
 |------|------|-------|
-| `percentage` | 0–100 | Charge percentage |
+| `percentage` | **0.0–1.0** | 🚨 A **fraction**, not the 0–100 that the UPower D-Bus API and `upower -i` both report. Verified: `upower` said 72%, the property read 0.72. Every threshold is 100× out if this is missed |
 | `state` | string | "charging", "discharging", "empty", "fully-charged", "pending-charge", "pending-discharge" |
 | `timeToEmpty` | seconds | Time until depleted (if discharging) |
 | `timeToFull` | seconds | Time until full (if charging) |
@@ -377,8 +403,68 @@ Text {
 | `SystemTray` | System tray | `SystemTray.items` |
 | `Networking` | Network state | `Networking.devices.values`; `signalStrength` is a 0..1 fraction |
 | `Bluetooth` | BT devices | Paired devices, connection state |
-| `Polkit` | Privilege dialogs | Prompt for sudo actions |
-| `Greetd` + `Pam` | Authentication | Fingerprint, password (for custom lock) |
+| `Polkit` | Privilege dialogs | Registers a real polkit agent — see below |
+| `Greetd` + `Pam` | Authentication | Password prompts, for a custom lock — see below |
+
+---
+
+## Polkit and PAM (`Quickshell.Services.Polkit`, `Quickshell.Services.Pam`)
+
+🚨 **Both are shipped, first-class modules.** Verified 2026-09-03 in
+`_ai/quickshell/src/services/{polkit,pam}/` and installed at
+`/usr/lib/qt6/qml/Quickshell/Services/{Polkit,Pam}/`. An authentication dialog does **not**
+require hand-writing an `org.freedesktop.PolicyKit1.AuthenticationAgent` over raw D-Bus.
+
+### `PolkitAgent` (`polkit/qml.hpp`)
+
+A `QML_ELEMENT` you instantiate; it registers as the session's polkit agent.
+
+| Member | Kind | Notes |
+|---|---|---|
+| `path` | R/W string | session path to register for |
+| `isRegistered` | bindable bool | whether registration succeeded |
+| `isActive` | bindable bool | a request is in flight |
+| `flow` | bindable `AuthFlow*` | the current request, or null |
+
+### `AuthFlow` (`polkit/flow.hpp`) — one authentication request
+
+| Member | Kind | Maps to the `pf-d` artboard |
+|---|---|---|
+| `message` | string | polkit's own reason string, unedited |
+| `actionId` | string | the mono action-id line (`org.freedesktop.systemd1.manage-units`) |
+| `iconName` | string | |
+| `identities`, `selectedIdentity` | list / R-W | which user to authenticate as — **the artboard does not draw this** |
+| `isResponseRequired` | bindable bool | whether to show the field |
+| `inputPrompt` | bindable string | the field's label ("Password") |
+| `responseVisible` | bindable bool | echo on/off |
+| `supplementaryMessage` | bindable string | the "Wrong password — 2 attempts left" line |
+| `supplementaryIsError` | bindable bool | whether that line is an error |
+| `isCompleted` / `isSuccessful` / `isCancelled` / `failed` | bindable bool | terminal states, incl. the exhausted case |
+| `submit(value)` | invokable | |
+| `cancelAuthenticationRequest()` | invokable | |
+
+The design's `pf-d` maps onto this almost exactly — including the supplementary error line and
+the action id. The one artboard gap is `identities`: polkit may offer a **choice of user**, and
+`pf-d` assumes a single implicit one.
+
+**The real risk is not the API, it is exclusivity**: a polkit session has one agent. Adopting
+this means unregistering `polkit-gnome` (`hypr/conf/autostart.lua:32`), and a crash in the
+Quickshell agent then leaves no agent at all — every privileged action fails until the shell is
+restarted. That, not the D-Bus work, is what the deferral has to weigh.
+
+### `PamContext` (`pam/qml.hpp`)
+
+| Member | Kind | Notes |
+|---|---|---|
+| `active` | R/W bool | |
+| `config`, `configDirectory` | R/W string | PAM service name (e.g. `login`) |
+| `user` | R/W string | |
+| `message`, `messageIsError` | read-only | prompt / failure text |
+| `responseRequired`, `responseVisible` | read-only bool | |
+| `start()`, `respond(value)`, `abort()` | invokable | |
+
+Plus `PamResult` and `PamError` singletons with `toString()`. This is what a `WlSessionLock`
+screen authenticates against — note it is a **separate object**, not a property of the lock.
 
 ---
 
@@ -397,12 +483,12 @@ Scope {
 }
 ```
 
-### Clock (periodic timer)
+### SystemClock (periodic timer)
 Emit signals on intervals (useful for time displays, polling).
 
 ```qml
-Clock {
-  interval: 1000 // update every 1s
+SystemClock {   // the type is SystemClock, not Clock
+  precision: SystemClock.Seconds
   
   onTriggered: {
     text = new Date().toLocaleTimeString()
@@ -425,31 +511,42 @@ DesktopEntry {
 ```
 
 ### PopupAnchor (position popups relative to items)
-Automatically position a PopupWindow adjacent to a target (e.g., context menus).
+
+`PopupWindow` has an `anchor` group — there is no `PopupAnchor.rect()` factory.
 
 ```qml
-Rectangle {
-  id: button
-  
-  MouseArea {
-    onClicked: {
-      popup.popupAnchor = PopupAnchor.rect(button, button.mapToGlobal(0, 0));
-      popup.visible = !popup.visible;
-    }
-  }
-}
-
 PopupWindow {
-  id: popup
-  popupAnchor: PopupAnchor.rect(button, button.mapToGlobal(0, 0))
+    id: popup
+    anchor {
+        item: owner          // the widget this popup describes
+        edges: Edges.Bottom  // NOT the default
+        gravity: Edges.Bottom
+    }
 }
 ```
+
+🚨 **The defaults cover the owner and oscillate.** `PopupAnchorState` defaults to
+`edges = Top | Left`, `gravity = Bottom | Right`, and setting `anchor.item` without
+`anchor.rect` makes the anchor rect the item's **full** `boundingRect()`. So `anchorY` is the
+item's *top* edge and the popup lands on top of the widget it describes — it then steals the
+pointer, `containsMouse` drops, a `visible:`-bound popup hides, the pointer returns, and it
+flickers forever while swallowing every click meant for the widget. `edges: Edges.Bottom` plus
+`gravity: Edges.Bottom` (which also centres it horizontally) is the fix; both lines need a
+`missing-type` qmllint suppression, since `Edges::Flags` is unresolvable across the module split.
+
+See `bar/BarTooltip.qml` and `.claude/rules/quickshell-qml.md`.
 
 ---
 
 ## Session Lock (for custom lock screens)
 
 Secure lock surface using Wayland `ext-session-lock-v1` + PAM auth.
+
+⚠️ **The example below is illustrative, not verified.** `WlSessionLock` has no `pam` sub-object
+and no `onPasswordAccepted` signal in 0.3.1 — PAM is the separate `PamContext` element documented
+above (`start()` / `respond()` / `abort()`, with `message` and `responseRequired`). Rewrite
+against `PamContext` before relying on this. Verified: `WlSessionLock` is in `Quickshell.Wayland`
+and `PamContext` in `Quickshell.Services.Pam`.
 
 ```qml
 import Quickshell
@@ -500,7 +597,7 @@ This bar shows focused workspace and current window title.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.WindowManager
+import Quickshell.Hyprland   // NOT Quickshell.WindowManager
 
 Scope {
   PanelWindow {
