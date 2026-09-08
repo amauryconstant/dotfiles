@@ -153,6 +153,19 @@ not a direct handoff. `Hyprland.monitorFor(screen)` is the inverse and does exis
 reads a permanent 0 with no error unless a `PwObjectTracker { objects: [sink] }` holds the node.
 See `bar/widgets/AudioWidget.qml`.
 
+🚨 **`Pipewire.defaultAudioSink` is resolved BY NAME, so a duplicate node wins silently.**
+`defaults.cpp` `onMetadataProperty` reads `default.audio.sink` out of the metadata as a *name*
+string and hands it to `registry->findNodeByName()` — first match, no id, no tiebreak. Every
+suspend/resume on this laptop leaks one orphaned `Audio/Sink` node whose `device.id` points at a
+device that no longer exists, all sharing the name `alsa_output.pci-…-analog-stereo`; after 17
+resumes there were 18. Quickshell bound a frozen one, so `onVolumeChanged` never fired and the OSD
+and `AudioWidget` tracked a node nothing could change — while `pamixer` was correctly moving the
+real sink all along. The symptom reads as *"the volume keys do nothing"*, and every layer below QML
+tests clean. Diagnose with `wpctl status` (the live default carries `*`) or
+`pw-dump | jq '.[] | select(.info.props["media.class"]=="Audio/Sink")'`; `systemctl --user restart
+wireplumber` destroys the orphans. The leak is swept on every resume by `after_sleep_cmd` in
+`.chezmoitemplates/hypridle_general`.
+
 **`WifiNetwork.signalStrength` is a 0..1 fraction too.** Same trap, different module: `nmcli`
 reports 61, the property reads 0.61. A `/ 25` banding written for a percentage pins the index at
 0, so a full-strength link draws the empty-signal glyph forever, with no error. See
