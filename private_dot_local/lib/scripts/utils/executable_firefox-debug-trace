@@ -101,7 +101,7 @@ run_test() {
 
     ui_separator
     ui_title "Test $test_num: $test_name"
-    ui_box "$test_cmd" "$ACCENT_PRIMARY"
+    ui_box "$test_cmd" "$SIGNAL_FOCUS"
     ui_info "Expected: $expected"
 
     local test_dir="$LOGS_DIR/test-$(printf '%02d' "$test_num")-$test_name"
@@ -425,7 +425,7 @@ print_summary() {
     ui_separator
     ui_title "Debug Complete"
 
-    ui_box "Reports saved to:" "$ACCENT_PRIMARY"
+    ui_box "Reports saved to:" "$SIGNAL_FOCUS"
     echo "  $OUTPUT_BASE/"
     echo "  - report.txt (plain text)"
     echo "  - report.md (markdown)"

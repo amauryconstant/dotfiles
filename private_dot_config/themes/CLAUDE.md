@@ -22,9 +22,9 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`, `dunst.conf` (vestigial — no dunst installed; safe to ignore)
+- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `opencode.json`
-- **Shell**: `colors.sh` (uppercase var mirror, sourced by gum-ui — see Shell Script Integration below)
+- **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
 
 `swaync.css.tmpl` is the **only templated file** (injects `.globals.*` fonts); `hyprland.lua` is the Lua-config counterpart to `hyprland.conf` (see `.claude/rules/hyprland-lua.md`). All others are static — add the new file to every theme dir when introducing one.
@@ -129,7 +129,7 @@ solarized-dark and 3.64 in solarized-light — solarized puts body text at base0
 design, so no consumer clears AA there. `@fg-primary` on `@bg-tertiary` is worse still, 1.70
 and 1.67 in the same two themes. **`@bg-tertiary` is the trap tier**: it is the only ground
 whose distance from the foreground tokens varies enough between themes to vanish outright
-(`FG_MUTED` *equals* `BG_TERTIARY` in both solarized themes, a ratio of exactly 1.00). Prefer
+(`INK_MUTED` *equals* `FILL_INERT` in both solarized themes, a ratio of exactly 1.00). Prefer
 `@bg-secondary` for any ground that has to carry something on top of it.
 
 #### Incorrect Patterns (DO NOT USE)
@@ -159,12 +159,12 @@ whose distance from the foreground tokens varies enough between themes to vanish
 
 ### Theme-Specific Contrast Ratios
 
-Measured 2026-09-03 against every `colors.sh`. **Both columns, every row** — the FG_PRIMARY
+Measured 2026-09-03 against every `colors.sh`. **Both columns, every row** — the INK_PRIMARY
 column here was previously estimated rather than measured and was wrong in 6 of 8 rows (it
 claimed 4.99 for solarized-light, which actually measures 3.64, and 5.18 for rose-pine-moon,
 which measures 10.90). Regenerate with `mise run lint:theme-contrast` rather than by hand.
 
-| Theme | FG_PRIMARY on BG_SECONDARY | FG_SECONDARY on BG_SECONDARY | FG_PRIMARY on BG_TERTIARY |
+| Theme | INK_PRIMARY on GROUND_RAISED | INK_SECONDARY on GROUND_RAISED | INK_PRIMARY on FILL_INERT |
 |-------|---------------------------|------------------------------|---------------------------|
 | Catppuccin Latte | 5.17:1 | 4.05:1 ✗ | 4.39:1 ✗ |
 | Catppuccin Mocha | 8.69:1 | 7.10:1 | 6.31:1 |
@@ -181,12 +181,17 @@ which measures 10.90). Regenerate with `mise run lint:theme-contrast` rather tha
 of eight themes. Both variables are designed to be subtle; pairing them fails, most visibly in
 Firefox (URL bar icons, selected tabs) on Rose Pine Dawn.
 
-🚨 **Solarized inverts the rule.** In *both* solarized themes `FG_SECONDARY` measures **better**
-than `FG_PRIMARY` on every ground (light: 4.39 vs 3.64; dark: 4.86 vs 4.11), because Solarized
+🚨 **Solarized inverts the rule.** In *both* solarized themes `INK_SECONDARY` measures **better**
+than `INK_PRIMARY` on every ground (light: 4.39 vs 3.64; dark: 4.86 vs 4.11), because Solarized
 assigns body text to base00/base0 by design. No consumer clears AA there — Waybar, wofi and
-swaync render the same ratios today — so this is a **colorset** decision, not a per-app one, and
-the fix is to promote the darker foreground into `FG_PRIMARY` in those two colorsets. Tracked in
-`_research/QUICKSHELL_DESIGN_AUDIT.md`.
+swaync render the same ratios today — so this is a **colorset** property, not a per-app one.
+
+The shell now handles it **by measurement rather than by editing the palette**: `Theme.qml`
+withdraws `INK_SECONDARY` wherever it fails 4.5:1 on `GROUND_BASE`, and that ground carries
+`INK_PRIMARY` alone there. Design page 01 states the rule ("offered per ground, per theme, and
+withdrawn where it fails"); `mise run lint:theme-contrast` prints which themes withdraw it. One
+derivation covers every colorset, including any added later, which promoting two foregrounds by
+hand would not. The other consumers still render the raw ratios.
 
 ---
 
@@ -290,14 +295,21 @@ All 12 lazygit theme fields and their semantic mappings:
 
 ## Shell Script Integration (CLI Tools)
 
-System CLI tools source `~/.config/themes/current/colors.sh` via gum-ui library. Variables: `BG_PRIMARY`, `FG_PRIMARY`, `ACCENT_SUCCESS`, etc. (mirroring CSS names in uppercase+underscore format).
+System CLI tools source `~/.config/themes/current/colors.sh` via the gum-ui library. The keys
+are **roles**: `GROUND_BASE`, `INK_PRIMARY`, `SIGNAL_OK`, `IDENTITY_3`. They no longer mirror the
+CSS variable names — `waybar.css` and the rest still carry their own module-named variables, and
+nothing translates between the two, because nothing needs to.
+
+⚠️ **`INK_MUTED` is terminal-only.** It survives in the colorset for `gum-ui.sh` and
+`organize-wallpapers-by-color`, and is banned in the shell: it fails as text (2.48 worst) and
+under 3:1 as an outline.
 
 **Loading**: `gum-ui.sh` sources `colors.sh` automatically — scripts using `$UI_LIB` get theme colors.
 
 **Direct sourcing**:
 ```bash
 . ~/.config/themes/current/colors.sh
-echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
+echo "${SIGNAL_FOCUS}Primary color${INK_PRIMARY}"
 ```
 
 **Reload**: New shells only — running shells keep old colors (acceptable for CLI tools).
@@ -306,13 +318,18 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 
 ## QML Integration (Quickshell)
 
-The Quickshell bar and OSDs read the **same** `colors.sh` at runtime. `Theme.qml`
-(`private_dot_config/quickshell/dotfiles/`) parses it with a regex and exposes all 24 semantic
-variables as QML `color` properties (`BG_PRIMARY` → `Theme.bgPrimary`). So there is no ninth
-per-theme file to maintain — but three consequences follow:
+The Quickshell shell reads the **same** `colors.sh` at runtime. `Theme.qml`
+(`private_dot_config/quickshell/dotfiles/`) parses it with a regex and exposes the 18 role keys
+as QML `color` properties (`GROUND_BASE` → `Theme.groundBase`). Since the 2026-09-09 rename the
+two speak one vocabulary, so that file is no longer a translation layer — what is left in it is
+the **derived** tier, the materials no theme binds. There is no ninth per-theme file to
+maintain, but three consequences follow:
 
 - **The colorset must stay complete.** A key missing from a theme's `colors.sh` falls back to a
   hardcoded Catppuccin value inside `Theme.qml`. That renders the wrong colour with **no error**.
+  🚨 The parser's character class is `[A-Z0-9_]+`, not `[A-Z_]+`: `IDENTITY_1`…`IDENTITY_5` carry
+  a digit, and a class without one drops all five silently into that same fallback. The same bug
+  was live in `theme-contrast.py`'s own parser.
 - **Reload is an explicit IPC call, not a file watch.** `theme switch` swaps the `themes/current`
   *symlink*, and an inotify watch on the resolved path never fires. `theme-switcher` calls
   `quickshell -c dotfiles ipc call theme reload`.
@@ -331,13 +348,14 @@ half its states.
 `PAIRS` table is harvested by hand from the QML and therefore goes stale silently when a widget
 changes a colour. Run it after touching any colour in that tree, and re-harvest the table when
 the tree grows a surface. It covers only the pairs listed in it: a pair the code renders but the
-table omits is invisible (which is how `FG_PRIMARY` on `BG_TERTIARY` went unmeasured). Harvest by
+table omits is invisible (which is how `INK_PRIMARY` on `FILL_INERT` went unmeasured). Harvest by
 reading the **parenting**, not by grepping colour lines — most `Theme.bgSecondary` uses in that
 tree are 1px hairlines, not grounds.
 
-Three properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
-`fgOnAccent`, `scrim` and `fgOnScrim` — each because no fixed token clears its floor in all 8.
-That is the general pattern: **a colour whose job is defined against a ground has to be computed.**
+Four properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
+`inkOnSignal`, `scrim`, `fgOnScrim` and the `inkSecondary` withdrawal — each because no fixed
+token clears its floor in all 8. That is the general pattern: **a colour whose job is defined
+against a ground has to be computed.**
 
 `theme-consistency-reviewer` reviews the QML tree as a second target, once rather than per
 theme: three greps for a literal hex, a literal font name, and `fgSecondary` on a lit ground.

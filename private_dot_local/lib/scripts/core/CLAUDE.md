@@ -189,21 +189,21 @@ updates=$(ui_spin_silent "Checking updates" "checkupdates 2>/dev/null")
 ```bash
 # Colors loaded automatically by gum-ui.sh
 . "$UI_LIB"
-ui_success "Success!"  # Uses ACCENT_SUCCESS
-ui_error "Error!"      # Uses ACCENT_ERROR
+ui_success "Success!"  # Uses SIGNAL_OK
+ui_error "Error!"      # Uses SIGNAL_ERROR
 
 # Direct access (if needed)
 . ~/.config/themes/current/colors.sh
-echo "${ACCENT_SUCCESS}Success!${NC}"
+echo "${SIGNAL_OK}Success!${NC}"
 ```
 
 **Semantic mappings**:
-- Primary actions → `ACCENT_PRIMARY`
-- Success states → `ACCENT_SUCCESS`
-- Errors → `ACCENT_ERROR`
-- Warnings → `ACCENT_WARNING`
-- Secondary text → `FG_SECONDARY`
-- Muted/disabled → `FG_MUTED`
+- Primary actions → `SIGNAL_FOCUS`
+- Success states → `SIGNAL_OK`
+- Errors → `SIGNAL_ERROR`
+- Warnings → `SIGNAL_WARN`
+- Secondary text → `INK_SECONDARY`
+- Muted/disabled → `INK_MUTED`
 
 **Theme switching**: New shells pick up active theme automatically
 

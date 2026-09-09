@@ -205,8 +205,8 @@ gray:   #928374  (comments, dimmed)
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
-  - FG_PRIMARY on BG_SECONDARY: 8.59:1 (✓ passes AAA ≥7.0:1)
-  - FG_SECONDARY on BG_SECONDARY: 6.76:1 (✓ passes AA, but PRIMARY preferred)
+  - INK_PRIMARY on GROUND_RAISED: 8.59:1 (✓ passes AAA ≥7.0:1)
+  - INK_SECONDARY on GROUND_RAISED: 6.76:1 (✓ passes AA, but PRIMARY preferred)
 
 **Official palette alignment:**
 - [ ] Colors match official Gruvbox Dark palette exactly

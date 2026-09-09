@@ -17,10 +17,14 @@ disables subdirectory discovery for every other config, including voxtype's)
 |---------|---------|
 | `dotfiles/shell.qml` | Root `ShellRoot` — IPC handlers + `Variants` over screens + the OSD. Owns no widget |
 | `dotfiles/qmldir` | Declares the singletons. **Load-bearing** — see below |
-| `dotfiles/{Theme,Config,Backlight,Notifications}.qml*` | Singletons. `Config` is `.tmpl`, the other three are not |
+| `dotfiles/{Theme,Config,Backlight,Notifications,Meters,MenuServer}.qml*` | Singletons. `Config` is `.tmpl`, the other five are not |
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
+| `dotfiles/launcher/PickerSurface.qml` | The chrome the launcher, the menu and the clipboard share. Consumers supply **data**, never a delegate — see below |
+| `dotfiles/launcher/Launcher.qml` | App launcher: ranking, `:` run, `=` calc |
+| `dotfiles/menu/MenuPicker.qml` | The dmenu surface, fed by `MenuServer`'s socket |
+| `dotfiles/clipboard/ClipboardPicker.qml` | cliphist history |
 | `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
 | `dotfiles/dock/Dock.qml` | Auto-hiding dock. One window **per screen**, hot-edge reveal |
 | `dotfiles/overview/*.qml` | Workspace carousel and its card. One window, follows the focused monitor |
@@ -87,6 +91,21 @@ placed *outside* a disable/enable region still fails the build.
 ⚠️ **A comment whose first word is `qmllint` is parsed as a directive**, so prose explaining a
 suppression must never start a line with it. Doing so produces one `invalid-lint-directive`
 warning per word.
+
+---
+
+🚨 **A `property Component` used as a delegate fails the build, at the WRONG file.** qmllint
+cannot know the component is a delegate, so the `index`/`modelData` required properties that
+`pragma ComponentBehavior: Bound` forces read as unsatisfiable — and the error surfaces at every
+*use site* (`Component is missing required property index from Rectangle`, on `shell.qml`'s
+`Launcher {}`), not in the file that declared the property. There is no suppression for it that
+is not a lie. `PickerSurface` therefore takes **row data** and owns the delegate itself; that
+was smaller code anyway, since all three list surfaces draw the same row.
+
+⚠️ **The lint task renders from `git ls-files`, so an UNTRACKED new file is invisible to it** —
+and worse, the files that import it fail with *"X was not found"* while the real cause is that
+X was never copied into the render tree. `git add -N` the new file before running
+`mise run lint:qml`.
 
 ---
 
@@ -256,15 +275,15 @@ monitor.
 `PanelWindow` reads the *item's* visibility, so a capture bound to it runs for the life of the
 session. Pass the window's visibility down as an explicit property instead.
 
-🚨 **A modal scrim cannot be built from a background token.** `BG_OVERLAY` measures 0.71–0.96
+🚨 **A modal scrim cannot be built from a background token.** `GROUND_FLOAT` measures 0.71–0.96
 luminance in all four light themes, so an 86% scrim over it renders near-white — and
-`FG_CONTRAST` inverts per theme (0.006 in mocha, 0.88 in gruvbox-dark). A scrim is a *shade*,
+`INK_CONTRAST_CANDIDATE` inverts per theme (0.006 in mocha, 0.88 in gruvbox-dark). A scrim is a *shade*,
 not a theme colour: `Theme.scrim` is a deliberate literal, under the same exemption as
 `Theme.qml`'s fallbacks.
 
 🚨 **Then everything drawn on it needs `Theme.fgOnScrim`.** The scrim is dark in every theme,
 so a light theme's own foregrounds land on it at **1.81** (gruvbox-light) and 2.63 (latte) and
-are simply not there. Same computed pick as `inkOnSignal`, better of `FG_PRIMARY` / `BG_PRIMARY`;
+are simply not there. Same computed pick as `inkOnSignal`, better of `INK_PRIMARY` / `GROUND_BASE`;
 worst case across all 8 becomes 6.64. `mise run lint:theme-contrast` checks both, in their own
 section — the scrim is not a colorset token, so the `PAIRS` table cannot express it.
 
@@ -399,10 +418,10 @@ and `inkPrimary` the moment a ground appears. Anything that hardcodes one of the
 reintroduces the banned pair on half the widget's states.
 
 🚨 **`signalError` is the ONLY semantic colour a bar widget may take.** Measured across all
-eight colorsets, `ACCENT_WARNING` lands at **2.05** in rose-pine-dawn and 2.19 in
-gruvbox-light, and `ACCENT_INFO` at **2.80–3.31** in the light sets — under the 3:1 a graphic
+eight colorsets, `SIGNAL_WARN` lands at **2.05** in rose-pine-dawn and 2.19 in
+gruvbox-light, and `SIGNAL_INFO` at **2.80–3.31** in the light sets — under the 3:1 a graphic
 owes, so a state drawn in either was *less* visible than the same state drawn neutral. Only
-`ACCENT_ERROR` clears 3:1 everywhere (worst 3.25, on `BG_PRIMARY`). The battery's low band,
+`SIGNAL_ERROR` clears 3:1 everywhere (worst 3.25, on `GROUND_BASE`). The battery's low band,
 the idle inhibitor's second state, the unread bell and three dictation states all moved onto
 their own **glyph**, which is what they should always have carried. `signalWarn`, `signalInfo`
 and `signalOk` are bound in `Theme.qml` and drawn nowhere.
@@ -427,8 +446,8 @@ and every panel border alike. `edge` resolves to `groundRaised`; use the role na
 `border.color` and a ground are different jobs even where the value coincides.
 
 🚨 **This was the fill-inert tier until 2026-09-01, on a mis-mapping.** Amendment A read the canvas's
-`#313244` as "`surface0`, which is what `BG_TERTIARY` maps to". It does not: in
-`themes/catppuccin-mocha/colors.sh`, `BG_SECONDARY` is `#313244` and `BG_TERTIARY` is
+`#313244` as "`surface0`, which is what `FILL_INERT` maps to". It does not: in
+`themes/catppuccin-mocha/colors.sh`, `GROUND_RAISED` is `#313244` and `FILL_INERT` is
 `#45475a`. The correction moved the hairline one tier the wrong way in all 8 themes. See the
 hex table below — and never map a canvas colour by its LABEL.
 
@@ -463,11 +482,11 @@ one theme that happened to be applied:
 | Site | Was | Ratio | Now |
 |---|---|---|---|
 | OSD progress fill on its track | `accentPrimary` on `bgTertiary` | **1.38** in solarized-light | track is `bgSecondary` |
-| OSD dimmed fill | `fgMuted` on `bgTertiary` | **1.00** in both solarized themes — `FG_MUTED` *equals* `BG_TERTIARY` there | `fgSecondary` on `bgSecondary` |
+| OSD dimmed fill | `fgMuted` on `bgTertiary` | **1.00** in both solarized themes — `INK_MUTED` *equals* `FILL_INERT` there | `fgSecondary` on `bgSecondary` |
 | PowerMenu avatar initial | `accentPrimary` on `bgTertiary` | **1.46** solarized-dark | `fgPrimary` on `bgSecondary` |
 | NotificationCard action outlines | `fgMuted` on `bgOverlay` | **2.18** solarized-light | `fgSecondary` |
 
-The pattern in three of the four: **`fillInert` (`BG_TERTIARY`) is the trap tier**, which is
+The pattern in three of the four: **`fillInert` (`FILL_INERT`) is the trap tier**, which is
 exactly why the role system makes it a *material* rather than a ground and forbids text on it
 outright. Prefer `groundRaised` for any ground that has to carry something on top of it. The
 2026-09-08 pass found a fourth instance the first one missed: the occupied workspace pill, at
@@ -475,16 +494,16 @@ outright. Prefer `groundRaised` for any ground that has to carry something on to
 
 ### `Theme.inkOnSignal` — text on an accent fill
 
-🚨 **No fixed token works across the 8 themes.** `FG_CONTRAST` is the one named for the job and
+🚨 **No fixed token works across the 8 themes.** `INK_CONTRAST_CANDIDATE` is the one named for the job and
 lands at **1.49:1** on gruvbox-dark's own accent — the focused workspace number, the most-read
-thing in the bar, unreadable in that theme. `BG_PRIMARY` is better there (8.69) and worse in
+thing in the bar, unreadable in that theme. `GROUND_BASE` is better there (8.69) and worse in
 gruvbox-light (2.19). So `Theme.qml` computes the pick per theme from WCAG relative luminance,
 and the worst case across all 8 goes 1.49 → **3.47** (rose-pine-dawn).
 
 🚨 **Design page 01 says this is a fixed binding to `GROUND_BASE`; pages 04 and 07 say it is
-computed. Keep it computed** — the computation picks whichever of `FG_CONTRAST` / `BG_PRIMARY`
-contrasts more, and `BG_PRIMARY` *is* `GROUND_BASE`, so its result is ≥ the fixed binding in
-every theme and can never be worse. Page 13 quotes 4.34 (latte) as the worst case for the bound
+computed. Keep it computed** — the computation picks whichever of `INK_CONTRAST_CANDIDATE` /
+`GROUND_BASE` contrasts more, and `GROUND_BASE` is one of its two candidates, so its result is ≥
+the fixed binding in every theme and can never be worse. Page 13 quotes 4.34 (latte) as the worst case for the bound
 value; that is not the worst case, rose-pine-dawn is.
 
 Use `Theme.inkOnSignal` for anything drawn **on** a `signalFocus` fill — the focused workspace
@@ -533,11 +552,11 @@ against `themes/catppuccin-mocha/colors.sh`:
 
 | Canvas hex | Canvas label | **Our token** |
 |---|---|---|
-| `#1e1e2e` | bg-primary | `BG_PRIMARY` |
-| `#313244` | bg-secondary | **`BG_SECONDARY`** — hairlines, chip grounds |
-| `#45475a` | (unused by the canvas) | `BG_TERTIARY` |
-| `#181825` | bg-tertiary | **`BG_OVERLAY`** — notification cards, tooltips |
-| `#6c7086` | fg-muted | `FG_MUTED` (`#9399b2` here — a different value, same role) |
+| `#1e1e2e` | bg-primary | `GROUND_BASE` |
+| `#313244` | bg-secondary | **`GROUND_RAISED`** — hairlines, chip grounds |
+| `#45475a` | (unused by the canvas) | `FILL_INERT` |
+| `#181825` | bg-tertiary | **`GROUND_FLOAT`** — notification cards, tooltips |
+| `#6c7086` | fg-muted | `INK_MUTED` (`#9399b2` here — a different value, same role) |
 
 The same trap bit `Theme.qml`: **nine of its 24 fallbacks were the canvas's Mocha palette
 rather than our colorset's** — including `accentPrimary`, mauve on the canvas and blue
@@ -545,8 +564,8 @@ rather than our colorset's** — including `accentPrimary`, mauve on the canvas 
 mockup.
 
 ⚠️ **The canvas's fourth background tier has no single equivalent here.** Amendment A said
-`BG_TERTIARY` and `BG_OVERLAY` "are the same value in the shipped themes (verified in
-`rose-pine-moon`)" — that generalised from **one** theme. Checked across all eight, they are
+`FILL_INERT` and `GROUND_FLOAT` (then `FILL_INERT` and `GROUND_FLOAT`) "are the same value in the
+shipped themes (verified in `rose-pine-moon`)" — that generalised from **one** theme. Checked across all eight, they are
 equal only in `rose-pine-moon`; mocha has `#45475a` vs `#181825`, latte `#bcc0cc` vs
 `#e6e9ef`. The canvas's separate "visible on another monitor" and "occupied" grounds still
 collapse to one, but because collapsing a tier beats inventing a colour — **not** because the
@@ -563,8 +582,14 @@ ground, `fg-muted` is allowed.
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
 `bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
-`notifications.dnd()`, `overview.toggle()`. List them live with
+`notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`. List them live with
 `quickshell ipc --pid <pid> show`.
+
+🚨 **The menu picker is deliberately NOT here.** A dmenu call must BLOCK until the user chooses,
+and an IPC handler returns immediately — so `MenuServer.qml` runs a `SocketServer` at
+`$XDG_RUNTIME_DIR/quickshell-menu.sock` instead, one connection per menu. See
+`quickshell/CLAUDE.md` for the protocol and the four traps in the wrapper
+(`nc -N`, the stripped trailing newline, `[ -S ]` against a stale socket, and queueing).
 
 **Flag placement differs by flag**, which is not obvious:
 
@@ -606,20 +631,34 @@ hardcoded Catppuccin, which renders wrong colours **with no error**, so the prop
 stay complete, and every fallback is a verbatim copy from `themes/catppuccin-mocha/colors.sh` —
 never from a mockup.
 
-🚨 **The property names are SEMANTIC ROLES, not colorset keys.** A token names a meaning or it
-names the module that happens to spend it, and only the first kind can be reasoned about — a
-module-named scheme cannot even *express* the requirement that a CPU readout and a failed
-service must stay tellable apart. `Theme.qml` is the translation layer, so `colors.sh` keeps its
-module-named keys and waybar, wofi, swaync, btop and ghostty are untouched. Renaming the
-colorsets themselves is a separate round.
+🚨 **The names are SEMANTIC ROLES, in the colorset too.** A token names a meaning or it names the
+module that happens to spend it, and only the first kind can be reasoned about — a module-named
+scheme cannot even *express* the requirement that a CPU readout and a failed service must stay
+tellable apart. Until 2026-09-09 `Theme.qml` was a translation layer over module-named keys;
+the colorsets were renamed on that date, so a property here now reads **the key of the same
+name** and six keys with no consumer were deleted. `waybar.css`, `wofi.css`, `swaync.css.tmpl`,
+`btop.theme` and `ghostty.conf` carry their own variables and were never involved.
 
-| Tier | Roles | Reads |
+| Tier | Roles | Colorset keys |
 |---|---|---|
-| Ground | `groundBase` `groundRaised` `groundFloat` | `BG_PRIMARY` `BG_SECONDARY` `BG_OVERLAY` |
-| Material | `fillInert` | `BG_TERTIARY` — **never accepts text**, 1.67 at worst |
-| Ink | `inkPrimary` `inkSecondary` | `FG_PRIMARY` `FG_SECONDARY` |
-| Signal | `signalFocus` `signalError` `signalWarn` `signalOk` `signalInfo` | `ACCENT_PRIMARY` `ACCENT_ERROR` `ACCENT_WARNING` `ACCENT_SUCCESS` `ACCENT_INFO` |
-| Identity | `identity1`…`identity5` | `ACCENT_SUBTLE` `ACCENT_SPECIAL` `ACCENT_MODIFICATION` `ACCENT_HIGHLIGHT` `ACCENT_TERTIARY` |
+| Ground | `groundBase` `groundRaised` `groundFloat` | `GROUND_BASE` `GROUND_RAISED` `GROUND_FLOAT` |
+| Material | `fillInert` | `FILL_INERT` — **never accepts text**, 1.67 at worst |
+| Ink | `inkPrimary` `inkSecondary` | `INK_PRIMARY` `INK_SECONDARY` |
+| Signal | `signalFocus` `signalError` `signalWarn` `signalOk` `signalInfo` | `SIGNAL_FOCUS` `SIGNAL_ERROR` `SIGNAL_WARN` `SIGNAL_OK` `SIGNAL_INFO` |
+| Identity | `identity1`…`identity5` | `IDENTITY_1`…`IDENTITY_5` |
+
+🚨 **The colorset parser's character class is `[A-Z0-9_]+`, not `[A-Z_]+`.** `IDENTITY_1`…`_5`
+carry a digit, and a class without one drops all five silently into the hardcoded fallback —
+wrong colours, no error. The same bug was live in `theme-contrast.py`'s own parser and was
+fixed with it.
+
+🚨 **`inkSecondary` is OFFERED, not guaranteed.** Design page 01: the quiet ink is "offered per
+ground, per theme, and withdrawn where it fails". `Theme.qml` measures `inkSecondaryOffered`
+against `groundBase` and falls back to `inkPrimary` below 4.5:1 — rose-pine-dawn (4.02) and both
+Solarized sets, where the palette assigns body text to base0/base00. Withdrawing by measurement
+fixes every colorset including any added later; hand-editing two palettes fixes two. Never
+assign `inkSecondaryOffered` to a `color:` — like `inkContrastCandidate`, it exists only to be
+measured.
 
 **Six values are derived, not read**: `edge` (every hairline), `hover` (one opaque step up the
 ground stack), `press` (`inkPrimary` at 8%), `select` (`signalFocus` at 13%, **always** paired
@@ -629,14 +668,17 @@ works across all 8 themes. `disabledOpacity` is measured against the **live** th
 fixed — the lowest 5% step of `inkSecondary` over `groundBase` still clearing 3:1, which lands
 between 0.60 and 0.85 depending on the colorset.
 
-🚨 **Two tokens are RETIRED from drawing.** `FG_MUTED` has no successor at all: it is banned as
-text (2.48 worst) and fails 3:1 as an outline, so every former site is now `inkSecondary` or the
-`disabled` derivation. `FG_CONTRAST` survives only as `inkContrastCandidate`, read by the
-`inkOnSignal` computation and never assigned to a `color:`. `ACCENT_BORDER`,
-`ACCENT_PERFORMANCE`, `ACCENT_SECONDARY`, `ACCENT_ALTERNATIVE` and `ACCENT_URGENT_SECONDARY` are
-not bound: the first four sit too near `signalFocus` or `signalError` to be identity slots, and
-the last was the battery's 20–30% band, which is `signalWarn`'s job — expressed by the glyph,
-since no warn colour clears 3:1.
+🚨 **`INK_MUTED` is not bound here at all.** It is banned as text (2.48 worst) and fails 3:1 as
+an outline, so every former site is `inkSecondary` or the `disabled` derivation. It survives in
+the colorset only because `core/gum-ui.sh` and `media/organize-wallpapers-by-color` spend it,
+and a terminal is not a lit surface. `INK_CONTRAST_CANDIDATE` (was `INK_CONTRAST_CANDIDATE`) survives as a
+property that is read by the `inkOnSignal` computation and never assigned to a `color:`.
+
+**Six keys were deleted outright** in the rename, all with zero consumers: `ACCENT_BORDER`,
+`ACCENT_PERFORMANCE`, `ACCENT_MEDIA`, `ACCENT_SECONDARY`, `ACCENT_ALTERNATIVE` and
+`ACCENT_URGENT_SECONDARY`. The first four sat too near `signalFocus` or `signalError` to be
+identity slots; the last was the battery's 20–30% band, which is `signalWarn`'s job — expressed
+by the glyph, since no warn colour clears 3:1. 24 keys became 18.
 
 Contrast rules from `themes/CLAUDE.md` are measured by `mise run lint:theme-contrast` (see
 above) across all 8 colorsets; everything that task's hand-harvested pair table does not cover

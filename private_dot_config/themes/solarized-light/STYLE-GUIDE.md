@@ -212,8 +212,8 @@ green:   #859900  (success, additions, keywords)
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
-  - FG_PRIMARY on BG_SECONDARY: 4.99:1 (✓ passes ≥4.5:1)
-  - FG_SECONDARY on BG_SECONDARY: 4.39:1 (✗ fails, use PRIMARY only)
+  - INK_PRIMARY on GROUND_RAISED: 4.99:1 (✓ passes ≥4.5:1)
+  - INK_SECONDARY on GROUND_RAISED: 4.39:1 (✗ fails, use PRIMARY only)
 
 **Official palette alignment:**
 

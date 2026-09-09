@@ -185,9 +185,9 @@ This uses Rose Pine's dedicated highlight tier (designed for selection states) r
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
-  - FG_PRIMARY on BG_SECONDARY: 7.00:1 (✓ passes ≥4.5:1)
-  - FG_PRIMARY on BG_PRIMARY: 8.59:1 (✓ passes AAA)
-  - FG_SECONDARY on BG_PRIMARY: 4.02:1 (⚠ borderline, use sparingly)
+  - INK_PRIMARY on GROUND_RAISED: 7.00:1 (✓ passes ≥4.5:1)
+  - INK_PRIMARY on GROUND_BASE: 8.59:1 (✓ passes AAA)
+  - INK_SECONDARY on GROUND_BASE: 4.02:1 (⚠ borderline, use sparingly)
 
 **Official palette alignment:**
 - [ ] Colors match official Rose Pine Dawn palette exactly

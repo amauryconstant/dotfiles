@@ -232,8 +232,8 @@ lavender:  #b4befe  (borders, hints, active focus)
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
-  - FG_PRIMARY on BG_SECONDARY: 9.26:1 (✓ passes AAA ≥7.0:1)
-  - FG_SECONDARY on BG_SECONDARY: 7.10:1 (✓ passes AAA, but PRIMARY preferred)
+  - INK_PRIMARY on GROUND_RAISED: 9.26:1 (✓ passes AAA ≥7.0:1)
+  - INK_SECONDARY on GROUND_RAISED: 7.10:1 (✓ passes AAA, but PRIMARY preferred)
 
 **Official palette alignment:**
 - [ ] Colors match official Catppuccin Mocha palette exactly

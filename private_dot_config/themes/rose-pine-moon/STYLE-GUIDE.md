@@ -215,8 +215,8 @@ This uses Rose Pine's dedicated highlight tier (designed for selection states) r
 - [ ] **Elevated surfaces**: All `@bg-secondary` surfaces use `@fg-primary` (NOT `@fg-secondary`)
 - [ ] **Firefox compliance**: Icons on URL bar, selected tabs, sidebar all use primary text
 - [ ] **Contrast ratios**:
-  - FG_PRIMARY on BG_SECONDARY: 5.18:1 (✓ passes ≥4.5:1)
-  - FG_SECONDARY on BG_SECONDARY: 4.46:1 (✗ fails, use PRIMARY only)
+  - INK_PRIMARY on GROUND_RAISED: 5.18:1 (✓ passes ≥4.5:1)
+  - INK_SECONDARY on GROUND_RAISED: 4.46:1 (✗ fails, use PRIMARY only)
 
 **Official palette alignment:**
 - [ ] Colors match official Rose Pine Moon palette exactly

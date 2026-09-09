@@ -296,7 +296,7 @@ ui_success "Directory structure created"
 # Git preservation notification
 if [ -d "$OUTPUT_DIR/.git" ]; then
     ui_info "Git repository detected and preserved"
-    ui_text "Remote: $(git -C "$OUTPUT_DIR" remote get-url origin 2>/dev/null || echo 'none')" "$FG_MUTED"
+    ui_text "Remote: $(git -C "$OUTPUT_DIR" remote get-url origin 2>/dev/null || echo 'none')" "$INK_MUTED"
 fi
 
 ui_spacer
@@ -316,29 +316,34 @@ for theme in "${THEMES[@]}"; do
         continue
     fi
 
-    # Extract background colors (strip # prefix)
-    bg_primary=$(grep -oP '(?<=BG_PRIMARY=")[^"]+' "$colors_file" | tr -d '#')
-    bg_secondary=$(grep -oP '(?<=BG_SECONDARY=")[^"]+' "$colors_file" | tr -d '#')
-    bg_overlay=$(grep -oP '(?<=BG_OVERLAY=")[^"]+' "$colors_file" | tr -d '#')
+    # Extract the three grounds (strip # prefix)
+    bg_primary=$(grep -oP '(?<=GROUND_BASE=")[^"]+' "$colors_file" | tr -d '#')
+    bg_secondary=$(grep -oP '(?<=GROUND_RAISED=")[^"]+' "$colors_file" | tr -d '#')
+    bg_overlay=$(grep -oP '(?<=GROUND_FLOAT=")[^"]+' "$colors_file" | tr -d '#')
 
-    # Extract 8 core accent colors
-    accent_primary=$(grep -oP '(?<=ACCENT_PRIMARY=")[^"]+' "$colors_file" | tr -d '#')
-    accent_info=$(grep -oP '(?<=ACCENT_INFO=")[^"]+' "$colors_file" | tr -d '#')
-    accent_success=$(grep -oP '(?<=ACCENT_SUCCESS=")[^"]+' "$colors_file" | tr -d '#')
-    accent_warning=$(grep -oP '(?<=ACCENT_WARNING=")[^"]+' "$colors_file" | tr -d '#')
-    accent_error=$(grep -oP '(?<=ACCENT_ERROR=")[^"]+' "$colors_file" | tr -d '#')
-    accent_highlight=$(grep -oP '(?<=ACCENT_HIGHLIGHT=")[^"]+' "$colors_file" | tr -d '#')
-    accent_secondary=$(grep -oP '(?<=ACCENT_SECONDARY=")[^"]+' "$colors_file" | tr -d '#')
-    accent_tertiary=$(grep -oP '(?<=ACCENT_TERTIARY=")[^"]+' "$colors_file" | tr -d '#')
+    # Extract the ten accents: five signals plus five identity slots. The old
+    # eight included ACCENT_SECONDARY, which the role rename dropped as too
+    # near SIGNAL_FOCUS to be an identity slot -- the identity tier replaces it
+    # and then some, which suits matching a wallpaper to a palette.
+    accent_focus=$(grep -oP '(?<=SIGNAL_FOCUS=")[^"]+' "$colors_file" | tr -d '#')
+    accent_info=$(grep -oP '(?<=SIGNAL_INFO=")[^"]+' "$colors_file" | tr -d '#')
+    accent_ok=$(grep -oP '(?<=SIGNAL_OK=")[^"]+' "$colors_file" | tr -d '#')
+    accent_warn=$(grep -oP '(?<=SIGNAL_WARN=")[^"]+' "$colors_file" | tr -d '#')
+    accent_error=$(grep -oP '(?<=SIGNAL_ERROR=")[^"]+' "$colors_file" | tr -d '#')
+    identity_1=$(grep -oP '(?<=IDENTITY_1=")[^"]+' "$colors_file" | tr -d '#')
+    identity_2=$(grep -oP '(?<=IDENTITY_2=")[^"]+' "$colors_file" | tr -d '#')
+    identity_3=$(grep -oP '(?<=IDENTITY_3=")[^"]+' "$colors_file" | tr -d '#')
+    identity_4=$(grep -oP '(?<=IDENTITY_4=")[^"]+' "$colors_file" | tr -d '#')
+    identity_5=$(grep -oP '(?<=IDENTITY_5=")[^"]+' "$colors_file" | tr -d '#')
 
     # Format: theme<TAB>bg_colors(space-sep)<TAB>accent_colors(space-sep)
     printf '%s\t%s\t%s\n' \
         "$theme" \
         "$bg_primary $bg_secondary $bg_overlay" \
-        "$accent_primary $accent_info $accent_success $accent_warning $accent_error $accent_highlight $accent_secondary $accent_tertiary" \
+        "$accent_focus $accent_info $accent_ok $accent_warn $accent_error $identity_1 $identity_2 $identity_3 $identity_4 $identity_5" \
         >> "$THEME_COLORS_TSV"
 
-    ui_text "$theme: 3 bg + 8 accent colors" "$FG_MUTED"
+    ui_text "$theme: 3 grounds + 10 accent colors" "$INK_MUTED"
 done
 ui_spacer
 
@@ -396,7 +401,7 @@ for wallpaper in "${WALLPAPERS[@]}"; do
     # Show dominant color count
     num_colors=$(echo "$color_data" | wc -l)
     dominant_hex=$(echo "$color_data" | head -1 | cut -d: -f2)
-    ui_text "  $num_colors colors, dominant: #$dominant_hex" "$FG_MUTED"
+    ui_text "  $num_colors colors, dominant: #$dominant_hex" "$INK_MUTED"
 done
 ui_spacer
 
@@ -682,11 +687,11 @@ while IFS=$'\t' read -r wp_path best_theme score _s1 _s2 _s3 _s4; do
         cp "$wp_path" "$OUTPUT_DIR/$best_theme/"
         THEME_COUNTS[$best_theme]=$((THEME_COUNTS[$best_theme] + 1))
         ASSIGNED_COUNT=$((ASSIGNED_COUNT + 1))
-        ui_text "  $filename -> $best_theme (${score})" "$FG_MUTED"
+        ui_text "  $filename -> $best_theme (${score})" "$INK_MUTED"
     else
         cp "$wp_path" "$UNASSIGNED_DIR/"
         UNASSIGNED_COUNT=$((UNASSIGNED_COUNT + 1))
-        ui_text "  $filename -> unassigned (${score} < $MATCH_THRESHOLD)" "$FG_MUTED"
+        ui_text "  $filename -> unassigned (${score} < $MATCH_THRESHOLD)" "$INK_MUTED"
     fi
 done < "$SCORES_TSV"
 
@@ -888,7 +893,7 @@ for theme in "${THEMES[@]}"; do
     if [ "$count" -gt 0 ]; then
         ui_success "  $theme: $count wallpapers"
     else
-        ui_text "  $theme: 0 wallpapers" "$FG_MUTED"
+        ui_text "  $theme: 0 wallpapers" "$INK_MUTED"
     fi
 done
 ui_spacer
@@ -896,7 +901,7 @@ ui_spacer
 if [ "$UNASSIGNED_COUNT" -gt 0 ]; then
     ui_warning "Unassigned: $UNASSIGNED_COUNT wallpapers"
     ui_info "Review in: $UNASSIGNED_DIR"
-    ui_text "Re-run with lower --threshold if needed" "$FG_MUTED"
+    ui_text "Re-run with lower --threshold if needed" "$INK_MUTED"
 fi
 ui_spacer
 
