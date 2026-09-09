@@ -2,7 +2,7 @@
 
 # Script: menu-trigger
 # Purpose: Trigger menu (Capture/Share/Toggle quick actions)
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
@@ -55,7 +55,7 @@ case "$CHOICE" in
         CLIP_CHOICE=$(show_menu "Clipboard" "$CLIP_OPTIONS")
         case "$CLIP_CHOICE" in
             "󰁍 Back") "$SCRIPTS_DIR/user-interface/menu-trigger" ;;
-            "󰅟 Clipboard History") cliphist list | wofi --dmenu | cliphist decode | wl-copy ;;
+            "󰅟 Clipboard History") "$SCRIPTS_DIR/desktop/quickshell-toggle" clipboard ;;
             "󰅢 Clear Clipboard") cliphist wipe && notify "󰅟 Clipboard" "History cleared" ;;
         esac ;;
     "󰒖 Share")

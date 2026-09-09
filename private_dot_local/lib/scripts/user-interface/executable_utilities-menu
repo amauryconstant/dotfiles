@@ -2,7 +2,7 @@
 
 # Script: utilities-menu.sh
 # Purpose: Quick access to system utilities
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"

@@ -2,7 +2,7 @@
 
 # Script: menu-remove.sh
 # Purpose: Package removal menu (placeholder - not yet implemented)
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 # TODO: Implement package removal functionality
 
 # Source helpers

@@ -1,0 +1,76 @@
+#!/usr/bin/env sh
+
+# Script: quickshell-menu
+# Purpose: Present a list and print the chosen item — the dmenu contract, served
+#          by the Quickshell shell instead of Wofi
+# Requirements: Arch Linux, jaq, openbsd-netcat; wofi for the fallback path
+# Usage: printf 'a\nb\n' | quickshell-menu [--prompt "Title"]
+# Exit:  0 with the chosen line on stdout; 1 and no output when cancelled —
+#        identical to `wofi --dmenu`, because every caller tests for empty
+#
+# Reads items on stdin, newline-separated, exactly as `wofi --dmenu` does, so
+# converting a caller is a one-word change.
+#
+# 🚨 The Wofi fallback is load-bearing, not politeness. These menus run during
+# first-boot setup and while the shell is being restarted; a picker that hung
+# whenever the bar was down would take system-menu, theme-menu and every
+# menu-* script with it. Wofi therefore stays installed even though nothing
+# reaches for it while the shell is up.
+#
+# Why a socket and not `quickshell ipc call`: an IPC handler returns
+# immediately, and `ipc call` exits 0 even for a target that does not exist. A
+# menu has to BLOCK until the user chooses. See quickshell/dotfiles/MenuServer.qml.
+
+PROMPT=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --prompt)
+        PROMPT="$2"
+        shift 2
+        ;;
+    --prompt=*)
+        PROMPT="${1#--prompt=}"
+        shift
+        ;;
+    *)
+        shift
+        ;;
+    esac
+done
+
+SOCKET="${XDG_RUNTIME_DIR}/quickshell-menu.sock"
+ITEMS=$(cat)
+REQUEST=$(printf '%s\n' "$ITEMS" |
+    jaq -R -s -c --arg p "$PROMPT" '{prompt:$p, items:(rtrimstr("\n") | split("\n"))}')
+
+# 🚨 The reachability test is the CONNECTION, never `[ -S "$SOCKET" ]`. A shell
+# that is killed leaves its socket file behind — quickshell deletes a stale one
+# only when it next starts (socket.cpp:170) — so the file test passes against a
+# dead shell, nc then fails, and the caller gets an empty answer it reads as a
+# cancellation. That is precisely the hang the fallback exists to prevent, so it
+# has to hinge on nc's exit status instead.
+#
+# 🚨 NOT `nc -N`. That half-closes the write side after the request, and
+# QLocalSocket has no half-close: Qt reports PeerClosedError and drops the
+# connection before the shell can answer, so every call came back empty. Plain
+# `nc -U` holds the socket open and exits when the shell closes it, which is
+# exactly the handshake MenuServer.respond() performs.
+# 🚨 The trailing newline is REQUIRED and is not there for tidiness: the shell
+# reads the request through a SplitParser, which emits nothing until it sees
+# one, and `$(...)` has already stripped the newline jaq wrote. Without it the
+# request is never parsed, the shell never answers, and nc waits forever —
+# there is no timeout anywhere in this path.
+if RESULT=$(printf '%s\n' "$REQUEST" | nc -U "$SOCKET" 2>/dev/null); then
+    [ -n "$RESULT" ] || exit 1
+    printf '%s\n' "$RESULT"
+    exit 0
+fi
+
+# No shell, or one that died: Wofi's own geometry, kept so the fallback looks
+# like what it replaces.
+printf '%s\n' "$ITEMS" | wofi --dmenu \
+    --prompt "$PROMPT" \
+    --width 295 \
+    --height 600 \
+    --cache-file /dev/null

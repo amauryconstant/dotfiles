@@ -2,7 +2,7 @@
 
 # Script: menu-install.sh
 # Purpose: Install menu (Package installation and setup)
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
@@ -22,7 +22,9 @@ case "$CHOICE" in
             {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager.sh" install
         else
             # Fallback to simple search and install
-            PACKAGE=$(echo "" | wofi --dmenu --prompt "Package name to install")
+            # An empty list: the picker answers with the typed text, which is
+            # dmenu's own contract for a query that matches nothing.
+            PACKAGE=$(printf '' | "$MENU_PICKER" --prompt "Package name to install")
             if [ -n "$PACKAGE" ]; then
                 if confirm "Install package: $PACKAGE?"; then
                     {{ .globals.applications.terminal }} -e sh -c "paru -S $PACKAGE; read -p 'Press Enter to continue...'"
@@ -87,13 +89,13 @@ case "$CHOICE" in
                 {{ .globals.applications.terminal }} -e sh -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh; read -p 'Press Enter to continue...'"
                 ;;
             "󰌠 Python (mise)")
-                VERSION=$(echo "3.12\n3.11\n3.10" | wofi --dmenu --prompt "Python version")
+                VERSION=$(printf '3.12\n3.11\n3.10\n' | "$MENU_PICKER" --prompt "Python version")
                 if [ -n "$VERSION" ]; then
                     {{ .globals.applications.terminal }} -e sh -c "mise use --global python@$VERSION; read -p 'Press Enter to continue...'"
                 fi
                 ;;
             "󰎙 Node.js (mise)")
-                VERSION=$(echo "lts\n20\n18" | wofi --dmenu --prompt "Node.js version")
+                VERSION=$(printf 'lts\n20\n18\n' | "$MENU_PICKER" --prompt "Node.js version")
                 if [ -n "$VERSION" ]; then
                     {{ .globals.applications.terminal }} -e sh -c "mise use --global node@$VERSION; read -p 'Press Enter to continue...'"
                 fi

@@ -3,3 +3,4 @@ singleton Config Config.qml
 singleton Backlight Backlight.qml
 singleton Notifications Notifications.qml
 singleton Meters Meters.qml
+singleton MenuServer MenuServer.qml

@@ -2,7 +2,7 @@
 
 # Script: monitor-switch.sh
 # Purpose: Cycle through monitor configurations
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, gum
 
 # Source UI library for monitor-focused notifications
 if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then

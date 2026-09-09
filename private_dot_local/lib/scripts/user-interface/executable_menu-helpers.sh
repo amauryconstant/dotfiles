@@ -2,20 +2,23 @@
 
 # Script: menu-helpers.sh
 # Purpose: Shared utilities for menu system
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu (falls back to wofi on its own)
 
-# Show menu with Wofi dmenu mode
+# 🚨 THE choke point. Sixteen menu-* scripts reach the user only through these
+# two functions, so the picker is swapped here and nowhere else. quickshell-menu
+# speaks the same contract Wofi did -- items on stdin, the choice on stdout,
+# exit 1 and no output when cancelled -- and falls back to Wofi itself whenever
+# the shell is not reachable, which is why nothing below has to care.
+MENU_PICKER="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/quickshell-menu"
+
+# Show menu
 # Usage: show_menu "Prompt text" "option1|option2|option3"
 show_menu() {
 	prompt="$1"
 	options="$2"
 
 	# Convert pipe-separated options to newline-separated
-	echo "$options" | tr '|' '\n' | wofi --dmenu \
-		--prompt "$prompt" \
-		--width 295 \
-		--height 600 \
-		--cache-file /dev/null
+	echo "$options" | tr '|' '\n' | "$MENU_PICKER" --prompt "$prompt"
 }
 
 # Show confirmation dialog
@@ -23,11 +26,7 @@ show_menu() {
 # Returns: 0 if Yes, 1 if No/Cancel
 confirm() {
 	question="$1"
-	result=$(echo "Yes|No" | tr '|' '\n' | wofi --dmenu \
-		--prompt "$question" \
-		--width 295 \
-		--height 150 \
-		--cache-file /dev/null)
+	result=$(echo "Yes|No" | tr '|' '\n' | "$MENU_PICKER" --prompt "$question")
 
 	[ "$result" = "Yes" ]
 }

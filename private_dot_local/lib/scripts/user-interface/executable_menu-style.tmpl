@@ -2,7 +2,7 @@
 
 # Script: menu-style.sh
 # Purpose: Style menu (Theme/Wallpaper/Config)
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 
 # Source helpers
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
@@ -40,7 +40,7 @@ case "$CHOICE" in
         if [ -n "$WALLPAPER_DIR" ] && [ -d "$WALLPAPER_DIR" ]; then
             WALLPAPER=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.webp" \) | \
                 sed "s|$WALLPAPER_DIR/||" | \
-                wofi --dmenu --prompt "Select Wallpaper" --width 400 --height 600)
+                "$MENU_PICKER" --prompt "Select Wallpaper")
             if [ -n "$WALLPAPER" ]; then
                 "$SCRIPTS_DIR/media/set-wallpaper.sh" "$WALLPAPER_DIR/$WALLPAPER"
             fi

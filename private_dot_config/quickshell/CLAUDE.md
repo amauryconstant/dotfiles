@@ -13,11 +13,18 @@
   **rewritten fourteen-page design** (`Shell-00-Index` … `Shell-13-Accessibility`; the nine-file
   set every older note cites no longer exists). Floating bar (40 tall, inset 8, reserving 48),
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
-  Lua entry point. Popovers, the system menu and clipboard history are designed and **not built**
-- 🚨 **Colours are SEMANTIC ROLES now**, not module names: `groundBase`/`groundRaised`/
-  `groundFloat`, `fillInert`, `inkPrimary`/`inkSecondary`, `signal*`, `identity1..5`, plus six
-  derived materials. `Theme.qml` is the translation layer; `themes/*/colors.sh` is untouched, so
-  every other consumer of the colorset is unaffected. See `.claude/rules/quickshell-qml.md`
+  Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
+  history. Popovers (page 06) and page 10's *native nested* menu are designed and **not built**
+- 🚨 **Colours are SEMANTIC ROLES, all the way down.** `themes/*/colors.sh` was renamed on
+  2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
+  six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a
+  translation layer — it reads the key of the same name and adds only the **derived** tier.
+  `waybar.css`, `wofi.css`, `swaync.css.tmpl` and the rest carry their own variables and were
+  never involved. See `.claude/rules/quickshell-qml.md`
+- 🚨 **The second ink is OFFERED, not guaranteed.** `Theme.inkSecondary` falls back to
+  `inkPrimary` wherever it fails 4.5:1 on `groundBase` — rose-pine-dawn (4.02) and both
+  Solarized sets. One derivation instead of hand-editing two palettes; design page 01 states
+  the rule, `mise run lint:theme-contrast` prints which themes withdraw it
 - 🚨 **BOTH Phase 5.5 surfaces ship OFF**: `Config.dockEnabled` and `Config.overviewEnabled`
   are both `false`. Built, tried in daily use 2026-09-02, and declined — the bar's launcher
   chip and `SUPER+D` already covered launching, and the carousel was not wanted. The dock is
@@ -44,16 +51,23 @@
 - 🚨 **`PowerMenu.qml` holds the tree's only `hyprctl dispatch`** (log out). Under the Lua config
   provider it must be `hl.dsp.exit()`, never the legacy `exit` — it was the 30th call site the
   cutover audit had missed, because it postdates that inventory
-- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power|notifications|overview]` —
-  `SUPER+B` (bar), `SUPER+D` (launcher), `SUPER+SHIFT+Q` (power menu), `SUPER+SHIFT+N`
-  (notifications), `SUPER+grave` (overview). One script for all of them: IPC only reaches a
-  *running* instance, so every binding needs the same launch-then-retry dance
+- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power|notifications|overview|clipboard]`
+  — `SUPER+B` (bar), `SUPER+D` (launcher), `SUPER+SHIFT+Q` (power menu), `SUPER+SHIFT+N`
+  (notifications), `SUPER+C` (clipboard), `SUPER+grave` (overview). One script for all of them:
+  IPC only reaches a *running* instance, so every binding needs the same launch-then-retry dance
+- 🚨 **The menu picker is NOT on IPC — it is a SOCKET**, `$XDG_RUNTIME_DIR/quickshell-menu.sock`,
+  served by `MenuServer.qml` and called by `desktop/quickshell-menu`. A dmenu call has to BLOCK
+  until the user chooses, and an IPC handler returns immediately (and `ipc call` exits 0 even
+  for a target that does not exist). One connection is one menu
 - 🚨 **The primary keys were taken on 2026-09-01, by gating not shadowing.** Duplicate binds
   *stack* in Hyprland — both would fire — so the Wofi `SUPER+D`
   (`conf/bindings/applications.{conf,lua}.tmpl`) and the wlogout `SUPER+SHIFT+Q`
   (`conf/bindings/system-control.{conf,lua}.tmpl`, renamed to `.tmpl` for this) are wrapped in
   `{{ if not .features.quickshell_shell.enabled }}`. Flip the flag and the old pair comes back.
-  **Wofi is still never removable** — it serves `cliphist` and every `--dmenu` caller
+  **Wofi is now a FALLBACK, not a renderer.** `SUPER+C` was taken the same way on 2026-09-09
+  and `SUPER+SHIFT+C` retired (deletion is Shift+Delete inside the surface). It stays installed
+  because `quickshell-menu` falls back to it when the shell is unreachable — during first-boot
+  setup, and across a shell restart — which is the one thing a blocking picker must never do
 - 🚨 **`chezmoi apply` does not reliably reload the running shell.** The log will still say
   *"Configuration Loaded"* while the live generation is the pre-apply one — chezmoi replaces
   files by rename, which a per-file watch does not survive, and the watcher compares content
@@ -88,14 +102,19 @@ Part 5.
 ```
 dotfiles/
 ├── shell.qml              # ShellRoot: IPC handlers + Variants over screens + the OSD
-├── qmldir                 # declares the five singletons (required by qmllint)
+├── qmldir                 # declares the six singletons (required by qmllint)
 ├── Theme.qml              # semantic roles + derived materials, from colors.sh at runtime
 ├── Config.qml.tmpl        # geometry, type, motion, fonts, chassis, scriptsDir, glyph ramps
 ├── Backlight.qml          # sysfs backlight, shared by the bar widget and the OSD
 ├── Meters.qml             # CPU + memory from /proc, for the bar's one load readout
 ├── Notifications.qml      # NotificationServer + DND + popups + grouping + restart persistence
+├── MenuServer.qml         # the dmenu SOCKET — one connection is one blocking menu call
 ├── osd/Osd.qml            # volume + brightness overlay, follows the focused monitor
-├── launcher/Launcher.qml  # app launcher + `:` run and `=` calc (design page 05)
+├── launcher/
+│   ├── PickerSurface.qml  # the chrome all three list surfaces share (see below)
+│   └── Launcher.qml       # app launcher + `:` run and `=` calc (design page 05)
+├── menu/MenuPicker.qml    # what every `show_menu` call in this repo now draws
+├── clipboard/ClipboardPicker.qml  # cliphist history (design page 11)
 ├── power/PowerMenu.qml    # power / session menu (design page 09)
 ├── dock/Dock.qml          # auto-hiding dock, one PER SCREEN — DORMANT, no page in the current design
 ├── overview/
@@ -122,6 +141,75 @@ notification).
 A widget sets `icon`, `label` and — only for a real state — `iconColor` on `BarWidget`. It
 does **not** declare its own `Text`, write a radius, or pick a rest colour: geometry and the
 accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
+
+## The three list surfaces — `launcher/PickerSurface.qml`
+
+Design page 11 says the clipboard is *"deliberately the launcher's shape, because it is the same
+interaction and a second layout would be a second thing to learn"*. So there is one chrome —
+window, scrim-dismiss, panel, header with query field and counter, scrolling list, footer,
+keyboard model — and three consumers: `Launcher`, `MenuPicker`, `ClipboardPicker`.
+
+🚨 **Consumers supply DATA, not a delegate.** A `property Component delegate` does not survive
+qmllint: it cannot know the component is a delegate, so the `index`/`modelData` required
+properties that `pragma ComponentBehavior: Bound` forces read as unsatisfiable, and **every use
+site fails the build** — including `shell.qml`, which is where the error surfaces rather than in
+the file that caused it. The three row shapes were the same shape anyway, so one built-in
+delegate reads a small row contract:
+
+| Field | Effect |
+|---|---|
+| `title` | required |
+| `subtitle` | its absence is what makes a row `rowH` 34 instead of `launcherRowHeight` 48 — page 10's menu row and page 05's launcher row, decided by the data |
+| `glyph` / `iconSource` | leading glyph, or a themed icon which wins over it |
+| `mono` | title in `terminalFont` — content that will be pasted verbatim |
+| `elideMiddle` | for a path, whose identifying half is its tail |
+| `subtitleError` | subtitle in `signalError`, for a failure reported in place |
+
+**Esc is configurable**: `escapeClears` (default true) is the launcher's two-step Esc. `MenuPicker`
+sets it false — there the query is incidental and Esc means the blocked caller gets nothing.
+
+**Shift+Delete, not Delete**, for `removed`. The query field always holds focus, so a bare Delete
+mid-query would destroy a row while the user meant to edit text. Page 11 draws "del"; this is one
+modifier further and the footer says so.
+
+## The dmenu substrate — `MenuServer.qml` + `desktop/quickshell-menu`
+
+Twenty-two scripts in this repo ask the user to pick from a list. Sixteen route through
+`show_menu()` in `user-interface/menu-helpers.sh`; the rest called `wofi --dmenu` directly. All of
+them now reach the shell.
+
+🚨 **A socket, not IPC.** A dmenu call is request/response and **blocking** — the script must not
+return until the user has chosen. `quickshell ipc call` cannot do that: a handler returns
+immediately, and `ipc call` exits 0 even when the target does not exist, so a caller could not
+even tell. `SocketServer` gives blocking, cancellation, concurrent callers and a clean
+"shell is down" signal for free. Protocol is one line each way: `{"prompt":…,"items":[…]}` in, the
+chosen item out, nothing at all on cancel.
+
+Four things that each broke it once, all now load-bearing in the wrapper:
+
+| Trap | What happens |
+|---|---|
+| `nc -N` | half-closes the write side; QLocalSocket has **no half-close**, so Qt reports `PeerClosedError` and drops the connection before the shell can answer. Every call returned empty |
+| `$(…)` strips the trailing newline | `SplitParser` emits nothing without one, so the request is never parsed and nc waits **forever** — there is no timeout in this path |
+| `[ -S "$socket" ]` as the reachability test | a killed shell leaves its socket file behind (quickshell deletes a stale one only when it next starts, `socket.cpp:170`), so the file test passes against a dead shell and the caller reads the empty answer as a cancellation. Test the **connection**: nc's exit status |
+| a second request while one is open | refused immediately rather than queued. A menu that appears minutes later, attached to a script that has moved on, is worse than a refusal |
+
+**With nothing matching, Return answers with the TYPED TEXT.** That is dmenu's contract, not a
+nicety: `menu-install` asks for a package name by handing the picker an empty list.
+
+## Clipboard — `clipboard/ClipboardPicker.qml`
+
+**Fronts `cliphist`; does not replace it.** `media/clipboard-store` is a four-layer secret filter
+(password-manager windows, browser auth pages, terminal `ssh`/`sudo`/`gpg`/`pass` titles, then a
+`gitleaks stdin` scan) already wired to `wl-paste --watch`. That is page 11's sensitive-source
+policy, implemented better than the page states it.
+
+Return copies and closes; it **never pastes** — a shell that synthesises keystrokes into whatever
+happens to be focused will eventually type into the wrong window. Two departures from page 11,
+both forced by what cliphist stores: no age and no source application (it records neither, and
+inventing "2m · Neovim" would be a lie in `inkSecondary`), and no thumbnail yet — the dimensions
+and format cliphist already prints in its `[[ binary data … ]]` preview are what tell two
+screenshots apart.
 
 ## Widget → source
 
@@ -322,7 +410,7 @@ what the Phase 2 cutover removed: dragging a window between workspaces (there is
 A slot's height comes from the **monitor**, never from the carousel `Row`: sizing a child off
 the positioner that sizes itself from its children is a binding loop.
 
-🚨 **The scrim is `Theme.scrim`, a shade rather than a token**, because `BG_OVERLAY` is
+🚨 **The scrim is `Theme.scrim`, a shade rather than a token**, because `GROUND_FLOAT` is
 0.71–0.96 luminance in every light theme and an 86% scrim over it renders near-white. Anything
 drawn on it then needs `Theme.fgOnScrim`: the scrim is dark in all 8 themes, so a light theme's
 own `fgPrimary` measures 1.81 there.

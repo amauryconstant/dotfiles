@@ -27,6 +27,13 @@ o.bind("SUPER + B", "Toggle status bar", "~/.local/lib/scripts/desktop/quickshel
 o.bind("SUPER + D", "Application launcher", "~/.local/lib/scripts/desktop/quickshell-toggle launcher")
 o.bind("SUPER + SHIFT + Q", "Power menu", "~/.local/lib/scripts/desktop/quickshell-toggle power")
 
+-- Clipboard history, taken from `cliphist list | wofi --dmenu | cliphist decode
+-- | wl-copy`. SUPER+SHIFT+C has no successor: deletion is Shift+Delete inside
+-- the surface, where the entry being deleted is the one on screen.
+-- cliphist keeps the store and media/clipboard-store keeps filtering it; only
+-- the picker moved.
+o.bind("SUPER + C", "Clipboard history", "~/.local/lib/scripts/desktop/quickshell-toggle clipboard")
+
 -- Toast open/close effect. Layer surfaces are animated by the compositor, not
 -- by Quickshell, so this is the only place it can be changed. The popup window
 -- sets its own WlrLayershell.namespace for exactly this reason -- matching

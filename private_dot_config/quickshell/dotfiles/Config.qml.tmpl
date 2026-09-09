@@ -324,6 +324,17 @@ Singleton {
     // md-volume_variant_off(0xf0ac0) — the failed-service case for audio.
     // A failed service SHOWS, with a label; only absent hardware hides.
     readonly property string audioFailedGlyph: "󰫀"
+    // md-magnify(0xf0349) / md-console(0xf018d) / md-calculator(0xf00ec) --
+    // the launcher header at rest, and the two prefix modes. Centralised here
+    // rather than inline because PickerSurface is shared by three surfaces and
+    // a glyph literal in a QML file is the one thing no linter checks.
+    readonly property string searchGlyph: "󰍉"
+    readonly property string terminalGlyph: "󰆍"
+    readonly property string calcGlyph: "󰃬"
+    // md-clipboard_text_outline(0xf0c5) -- the clipboard picker header.
+    readonly property string clipboardGlyph: ""
+    // md-menu(0xf035c) -- a script-driven menu's header.
+    readonly property string menuGlyph: "󰍜"
 
     // The four bell states, rendered by the bar widget AND the notification
     // centre's DND button -- so they live here by the same rule as the ramps

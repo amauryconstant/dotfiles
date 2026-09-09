@@ -28,9 +28,13 @@ bindd = SUPER, W, Web browser, exec, firefox
 # Fuzzy-find a project and open it as a plain Neovim workspace (splits live in nvim)
 bindd = SUPER, O, Neovim session picker, exec, ghostty -e ~/.local/lib/scripts/terminal/ghostty-sessionizer
 
+{{ if not .features.quickshell_shell.enabled -}}
 # Clipboard history: Super + C
-# Shows clipboard history via wofi, select to copy back to clipboard
+# Shows clipboard history via wofi, select to copy back to clipboard. Gated:
+# with the Quickshell shell on, conf.d/quickshell.conf claims this key and
+# deletion moves inside that surface as Shift+Delete.
 bindd = SUPER, C, Clipboard history, exec, cliphist list | wofi --dmenu | cliphist decode | wl-copy
 
 # Delete from clipboard history: Super + Shift + C
 bindd = SUPER SHIFT, C, Delete from clipboard history, exec, cliphist list | wofi --dmenu | cliphist delete
+{{ end -}}

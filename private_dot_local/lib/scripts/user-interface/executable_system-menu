@@ -3,7 +3,7 @@
 # Script: system-menu
 # Purpose: Main menu entry point - called by Super+Space keybinding
 #          Displays 10 categories, routes to submenus
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 # Adapted from: Omarchy's omarchy-menu
 # Note: Do not confuse with menu-system (power management submenu)
 
@@ -25,8 +25,10 @@ CHOICE=$(show_menu "Main Menu" "$MAIN_OPTIONS")
 
 case "$CHOICE" in
     "󰀻 Apps")
-        # Launch application launcher
-        wofi --show drun
+        # The shell's own launcher, through the toggle script so a shell that
+        # is not running gets started rather than the call silently doing
+        # nothing -- the same reason every binding goes through it.
+        "$SCRIPTS_DIR/desktop/quickshell-toggle" launcher
         ;;
     "󰗚 Learn")
         "$SCRIPTS_DIR/user-interface/menu-learn"

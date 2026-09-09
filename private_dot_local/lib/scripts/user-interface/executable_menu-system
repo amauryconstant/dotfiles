@@ -3,7 +3,7 @@
 # Script: menu-system
 # Purpose: Power/session controls submenu
 #          Lock/Suspend/Restart/Shutdown options
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 # Note: Do not confuse with system-menu (main entry point)
 
 # Source helpers

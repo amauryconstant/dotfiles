@@ -2,7 +2,7 @@
 
 # Script: nightlight-config
 # Purpose: Choose the blue light filter temperature (hyprsunset)
-# Requirements: Arch Linux, hyprsunset, hyprctl, wofi
+# Requirements: Arch Linux, hyprsunset, hyprctl, quickshell-menu
 # Reachable from: menu-trigger Toggle submenu
 #
 # Sets the warm preference read by nightlight-toggle, and applies it now.
@@ -12,8 +12,8 @@
 TEMP_FILE="$HOME/.local/state/dotfiles/nightlight-temp"
 MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nightlight-on"
 
-if ! command -v wofi >/dev/null 2>&1; then
-    notify-send "󰛨 Nightlight" "wofi not available for configuration" -t 2000
+if [ ! -x "$HOME/.local/lib/scripts/desktop/quickshell-menu" ]; then
+    notify-send "󰛨 Nightlight" "no menu picker available for configuration" -t 2000
     exit 1
 fi
 
@@ -36,7 +36,7 @@ CHOICE=$(printf '%s\n' \
     "4500K (Warmer)" \
     "4000K (Evening)" \
     "3500K (Night)" |
-    wofi --dmenu --prompt "Color Temperature")
+    "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Color Temperature")
 
 # Dismissed the picker
 [ -n "$CHOICE" ] || exit 0

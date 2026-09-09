@@ -5,14 +5,9 @@
 # Displays all active Hyprland keybindings by querying hyprctl in real-time.
 # Automatically categorizes by dispatcher type and formats for easy reading.
 #
-# Dependencies: hyprctl, jaq (jq-compatible), wofi, awk
+# Dependencies: hyprctl, jaq (jq-compatible), quickshell-menu, awk
 # Usage: Run directly or bind to a key (e.g., Super + /)
 # ============================================================================
-
-# Wofi configuration
-WOFI_WIDTH=1200
-WOFI_HEIGHT=800
-WOFI_STYLE="$HOME/.config/wofi/keybinds.css"
 
 # ============================================================================
 # Modifier Bitmask Decoder
@@ -119,6 +114,9 @@ get_description() {
             # Clean up common exec commands
             case "$arg" in
                 *"ghostty"*) echo "Terminal" ;;
+                *"quickshell-toggle launcher"*) echo "Application launcher" ;;
+                *"quickshell-toggle power"*) echo "Power menu" ;;
+                *"quickshell-menu"*) echo "Menu" ;;
                 *"wofi"*) echo "Application launcher" ;;
                 *"dolphin"*) echo "File manager" ;;
                 *"cliphist"*) echo "Clipboard history" ;;
@@ -251,15 +249,9 @@ END {
 }
 ')
 
-# Display in wofi
-echo "$formatted" | wofi \
-    --dmenu \
-    --insensitive \
-    --prompt "Keybindings" \
-    --width "$WOFI_WIDTH" \
-    --height "$WOFI_HEIGHT" \
-    --style "$WOFI_STYLE" \
-    --no-actions \
-    > /dev/null
+# Display only -- the chosen line is discarded, this is a reference sheet.
+# Filtering is case-insensitive in the picker, so --insensitive has no successor
+# and needs none.
+echo "$formatted" | "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Keybindings" > /dev/null
 
 exit 0

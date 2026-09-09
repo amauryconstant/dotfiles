@@ -13,14 +13,22 @@
 - **Hook tools**: `hook-create`, `hook-edit`, `hook-list`, `hook-test`
 - **Extra bindings**: `dotfiles-bindings-edit`
 - **UI pattern**: `menu-helpers.sh` (show_menu + notify) — NOT gum-ui
+- **Renderer**: `desktop/quickshell-menu` (the shell), falling back to Wofi when it is unreachable
 
 ## Main Menu (system-menu)
 
-Routes `Super+Space` → Wofi dmenu → category script.
+Routes `Super+Space` → the picker → category script.
+
+🚨 **The picker is `desktop/quickshell-menu`, not Wofi.** Since 2026-09-09 `show_menu()` and
+`confirm()` write the list to the shell over a UNIX socket
+(`$XDG_RUNTIME_DIR/quickshell-menu.sock`) and block on the reply, which is why a dmenu call could
+not be an `ipc call`: an IPC handler returns immediately. Wofi remains the fallback and the
+contract is unchanged — items on stdin, the choice on stdout, exit 1 and no output on cancel —
+so sixteen `menu-*` scripts converted without an edit of their own.
 
 | Icon | Category | Script | Purpose |
 |------|----------|--------|---------|
-| 󰀻 | Apps | wofi --show drun | Application launcher |
+| 󰀻 | Apps | `quickshell-toggle launcher` | Application launcher |
 | 󰗚 | Learn | menu-learn | Help/documentation |
 | 󰈿 | Trigger | menu-trigger | Quick actions (capture, share, toggle) |
 | 󰏘 | Style | menu-style | Theme switching, appearance |

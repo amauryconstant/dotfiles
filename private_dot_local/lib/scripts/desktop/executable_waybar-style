@@ -2,11 +2,11 @@
 
 # Script: waybar-style.sh
 # Purpose: Configure Waybar styling
-# Requirements: Arch Linux, wofi
+# Requirements: Arch Linux, quickshell-menu
 
 # Waybar style configuration menu
-if command -v wofi >/dev/null 2>&1; then
-    STYLE=$(echo "󰍹 Default\n󰖩 Dark\n󰔜 Light\n󰥔 Minimal\n󰔓 Compact" | wofi --dmenu --prompt "Waybar Style")
+if [ -x "$HOME/.local/lib/scripts/desktop/quickshell-menu" ]; then
+    STYLE=$(echo "󰍹 Default\n󰖩 Dark\n󰔜 Light\n󰥔 Minimal\n󰔓 Compact" | "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Waybar Style")
     
     case "$STYLE" in
         "󰍹 Default")
@@ -36,5 +36,5 @@ if command -v wofi >/dev/null 2>&1; then
             ;;
     esac
 else
-    notify-send "󰘯 Waybar" "wofi not available for style configuration"
+    notify-send "󰘯 Waybar" "no menu picker available for style configuration"
 fi

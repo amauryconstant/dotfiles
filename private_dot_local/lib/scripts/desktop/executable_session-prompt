@@ -2,7 +2,7 @@
 
 # Script: session-prompt.sh
 # Purpose: Prompt user to restore saved Hyprland session (default slot)
-# Requirements: Arch Linux, wofi, notify-send, jaq
+# Requirements: Arch Linux, quickshell-menu, notify-send, jaq
 
 SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
 SESSIONS_DIR="$HOME/.local/state/dotfiles"
@@ -18,12 +18,10 @@ log_info() {
 
 # Check critical dependencies
 check_dependencies() {
-    for cmd in jaq wofi; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            logger -t hypr-session "[WARN] session-prompt: missing dependency $cmd"
-            exit 0  # Silent degradation for session-prompt
-        fi
-    done
+    if ! command -v jaq >/dev/null 2>&1; then
+        logger -t hypr-session "[WARN] session-prompt: missing dependency jaq"
+        exit 0 # Silent degradation for session-prompt
+    fi
     log_debug "session-prompt: dependencies OK"
 }
 
@@ -86,11 +84,8 @@ if [[ "$session_age" -le "$max_age" ]]; then
     prompt_text="Session '$slot' from $formatted_time"
     [[ -n "$summary" ]] && prompt_text="$prompt_text — $summary"
 
-    choice=$(printf 'Restore session (%s windows)\nSkip' "$window_count" | wofi \
-        --dmenu \
-        --prompt "$prompt_text" \
-        --width 550 \
-        --height 150)
+    choice=$(printf 'Restore session (%s windows)\nSkip' "$window_count" |
+        "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "$prompt_text")
 
     if [[ "$choice" = "Restore session ($window_count windows)" ]]; then
         log_info "session-prompt: user chose to restore slot=$slot"
@@ -128,11 +123,8 @@ $entry"
         exit 0
     fi
 
-    choice=$(printf '%s\nSkip' "$menu_entries" | wofi \
-        --dmenu \
-        --prompt "Choose session to restore" \
-        --width 450 \
-        --height 250)
+    choice=$(printf '%s\nSkip' "$menu_entries" |
+        "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Choose session to restore")
 
     if [[ -z "$choice" ]] || [[ "$choice" = "Skip" ]]; then
         log_debug "session-prompt: user chose to skip"

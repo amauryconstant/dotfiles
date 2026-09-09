@@ -1,8 +1,10 @@
 pragma ComponentBehavior: Bound
 
 import "bar"
+import "clipboard"
 import "dock"
 import "launcher"
+import "menu"
 import "notifications"
 import "osd"
 import "overview"
@@ -61,6 +63,18 @@ ShellRoot {
 
         function toggle(): string {
             return launcher.toggle();
+        }
+    }
+
+    // SUPER+C, taken from `cliphist list | wofi --dmenu | cliphist decode |
+    // wl-copy`. The old binding is gated off on the same flag rather than
+    // shadowed, and SUPER+SHIFT+C goes away entirely: deletion is Shift+Delete
+    // inside the surface, so it no longer needs a key of its own.
+    IpcHandler {
+        target: "clipboard"
+
+        function toggle(): string {
+            return clipboard.toggle();
         }
     }
 
@@ -123,6 +137,14 @@ ShellRoot {
 
     PowerMenu {
         id: power
+    }
+
+    // Opened by a SOCKET rather than IPC or a binding: it answers a blocked
+    // script. See MenuServer for why a socket and not an IpcHandler.
+    MenuPicker {}
+
+    ClipboardPicker {
+        id: clipboard
     }
 
     // Behind a Loader rather than `visible: false`: with the flag off there is
