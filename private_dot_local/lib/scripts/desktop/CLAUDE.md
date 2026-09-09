@@ -161,7 +161,10 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
-2. Reloads core apps (Hyprland, Waybar, Swaync, Ghostty)
+2. Reloads core apps (Hyprland, Waybar, Swaync). **Not Ghostty** — it has no
+   signal/CLI reload (confirmed absent as of 1.3.1: man page states
+   auto-reload "isn't capable of this yet"), only app menu / its own keybind
+   / restart
 3. Runs every `theme-apply-*` in this directory (glob loop, not an enumerated list — a new apply
    script wires itself by existing). Each is independent: reads `themes/current`, writes to its
    own app, reads no other's output, so glob order is fine

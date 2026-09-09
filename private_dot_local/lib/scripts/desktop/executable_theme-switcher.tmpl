@@ -84,13 +84,22 @@ reload_applications() {
         killall -SIGUSR2 waybar 2>/dev/null
     fi
 
-    # Reload swaync CSS via symlink (hot-reload, no restart needed)
-    swaync-client --reload-css 2>/dev/null || true
-
-    # Reload Ghostty
-    if pgrep -x ghostty >/dev/null; then
-        killall -SIGUSR2 ghostty 2>/dev/null
+    # Reload swaync CSS via symlink (hot-reload, no restart needed).
+    # Guarded on the process, not just `|| true`: when swaync is masked
+    # (Quickshell owns notifications, features.quickshell_notifications),
+    # swaync-client can't reach org.erikreider.swaync.cc and BLOCKS
+    # forever waiting for it instead of failing -- which used to hang this
+    # entire function before the Ghostty reload and the quickshell IPC
+    # call below ever ran.
+    if pgrep -x swaync >/dev/null; then
+        swaync-client --reload-css 2>/dev/null || true
     fi
+
+    # Ghostty has NO external reload mechanism (no signal handler, no CLI
+    # action) as of 1.3.1 -- the man page states outright that config
+    # auto-reload isn't implemented yet. Only the app menu, its own
+    # reload_config keybind, or a restart pick up the new theme; nothing
+    # here can do that for the user.
 
     # Reload the Quickshell bar's Theme singleton.
     # Explicit IPC rather than a file watch: switching swaps the
