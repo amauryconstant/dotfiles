@@ -1,0 +1,515 @@
+# Desktop shell — surface inventory
+
+**Date**: 2026-09-03
+**Purpose**: the complete list of surfaces a desktop shell owns here, described by *what they are
+made of* and *how they must behave* — not by how they are drawn or built.
+**For**: the design system. Every entry is something the design must eventually specify; nothing
+here prescribes a layout, a component name, or an API.
+
+**Derived from**: `_research/QUICKSHELL_COMPONENT_MAPPING.md` (what each replaced tool does),
+`_research/QUICKSHELL_QML_API.md` (what the runtime can express), the script inventory under
+`private_dot_local/lib/scripts/`, and `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 (scope law).
+
+**Scope law**: the shell replaces the desktop shell wholesale. A surface stays out only for a
+**technical or safety** reason, and that reason must name the condition that brings it back.
+Nothing is out on grounds of "that's not a bar".
+
+---
+
+## How to read this
+
+Surfaces are grouped by **behaviour class**, because the class — not the content — decides most of
+the design: whether it takes keyboard focus, whether it can be dismissed by looking away, how many
+of it exist at once, and what happens on a second monitor.
+
+| Class | Defining property |
+|---|---|
+| **Persistent** | Always on screen. Never takes focus. Reserves space or floats over content |
+| **Ambient** | Appears without being asked, disappears on its own, accepts no keyboard input |
+| **Summoned** | The user asks for it. Takes keyboard focus. Dismissed by choosing, or by cancelling |
+| **Interrupt** | The *system* asks for it. Takes focus away from whatever the user was doing |
+| **Foundation** | Not a surface — a rule every surface obeys |
+
+Each entry states: what it is **made of** (its content), the **behaviour** expected of it, the
+**constraints** that are facts rather than preferences, and its current **status**.
+
+Status vocabulary: **Shipped** · **Shipped, off by default** · **Partial** (some of it exists) ·
+**Not built** · **Deferred** (with a named condition).
+
+---
+
+## Class 1 — Persistent
+
+### 1. Status bar
+
+**Made of**: three zones (identity/workspaces, a centre, a system-status cluster) holding roughly
+fourteen distinct readouts: workspace set, focused window title, clock, audio, network, Bluetooth,
+battery, screen brightness, system tray, media player, notification state, keyboard layer,
+dictation state, idle state.
+
+**Behaviour**: never takes focus. Each readout is a *glyph at rest*; its number or detail lives in
+a hover affordance or a popover, not on the bar. Exactly one element may carry an accent at rest —
+everything else is neutral until it has a genuine state to report. Groups are separated by a
+hairline that disappears with the group it introduces, so a machine missing a whole class of
+hardware shows no orphan rules.
+
+**Constraints**: one per monitor. It must reserve its own space plus its float inset, or windows
+tile underneath it. Readouts appear and disappear with hardware and services, so every zone has to
+survive its neighbours vanishing.
+
+**Status**: Shipped.
+
+### 2. Dock
+
+**Made of**: a row of application tiles — pinned entries plus running windows — each with an icon,
+a running/focused indicator, and a hover label.
+
+**Behaviour**: hidden at rest. Revealed by the pointer reaching a screen edge, retracted when it
+leaves, with a grace period so that crossing onto a tile does not retract it out from under the
+click. Clicking a tile focuses or launches. It is a pointer surface; it never takes keyboard focus.
+
+**Constraints**: one per monitor. The reveal region must cover both the hot edge and the panel's
+live position while it animates, with no seam between them — otherwise the pointer falls out of the
+region mid-reveal and it oscillates. Tiles resolve to real installed applications, so the design
+must say what an unresolvable entry looks like.
+
+**Status**: Shipped, off by default.
+
+---
+
+## Class 2 — Ambient
+
+### 3. Notification toasts
+
+**Made of**: a stack of cards. Each card carries an application identity, a summary, a body, an
+optional image, an optional set of actions, and an urgency. Long bodies truncate; images may be
+absent.
+
+**Behaviour**: appears on arrival, stacks newest-first, auto-hides after a timeout that the sender
+may specify, and can be dismissed by hand. Auto-hiding a toast must never destroy the underlying
+notification — the centre's history is the same set of objects, so a toast that expires still has
+to be readable later. Actions are invokable from the card. Urgent notifications do not auto-hide.
+
+**Constraints**: one stack per monitor, and a sender may request *which* monitor it lands on.
+Bodies are untrusted third-party text: they may be arbitrarily long, contain markup, or be empty.
+Urgency is a small enumeration, and the design must express it as something other than a coloured
+fill — a red card is unreadable in half the palettes.
+
+**Status**: Shipped.
+
+### 4. Adjustment overlay
+
+**Made of**: a glyph, a progress track and fill, and optionally a numeric value. Currently used for
+volume and screen brightness; it should generalise to any continuously-adjusted quantity.
+
+**Behaviour**: appears when the value changes from any source — a key, a script, another
+application — holds while the value keeps changing, then fades. Purely informational: it accepts
+no input at all, and the pointer must pass straight through it to whatever is underneath.
+
+**Constraints**: exactly one instance, following the focused monitor. It must distinguish states
+that share a value: muted-at-50% is not the same as 50%. A progress fill is a UI component, not
+text, so its contrast floor is lower than text — but it still has one, and the track it sits on is
+the thing that usually fails.
+
+**Status**: Shipped.
+
+### 5. Mode and state indicators
+
+**Made of**: small persistent markers for states the user has switched on and can forget about —
+idle inhibition, presentation mode, screen recording in progress, dictation listening, non-default
+keyboard layer.
+
+**Behaviour**: visible whenever the state is active, invisible otherwise. These are the states most
+likely to be *forgotten*, so they need to read as "something is deliberately not normal", distinct
+from both a resting readout and an error. Several can be active at once, and the design must rank
+them: the strongest relaxation of normal behaviour wins the indicator.
+
+**Constraints**: some of these states are composed from independent switches — clearing one does
+not necessarily restore the default — so an indicator cannot imply a single three-way mode.
+
+**Status**: Partial. The states exist and some are shown; there is no shared vocabulary for them.
+
+---
+
+## Class 3 — Summoned
+
+### 6. Application launcher
+
+**Made of**: a query field, a result list of installed applications with icons, and a selection.
+
+**Behaviour**: summoned by a key. Takes exclusive keyboard focus. Fuzzy-matches as the user types,
+ranks by recency/frequency, launches on confirm, closes on cancel or on losing focus. Keyboard is
+the primary input; the pointer is secondary.
+
+**Constraints**: one instance, on the focused monitor. The application index is live — entries can
+appear or change while the launcher is open. Icons may be missing for some entries. Non-application
+modes are a separate component, below.
+
+**Status**: Shipped (application mode only).
+
+### 7. Generic list picker
+
+**The largest single gap.** Eighteen scripts summon a chooser today, and they are not launchers:
+they hand the shell a list of lines and expect one back.
+
+**Made of**: a title or prompt, a list of arbitrary text lines (sometimes with a leading glyph or
+an icon), a filter field, and a selection. Some callers need a yes/no confirmation shape rather
+than a list.
+
+**Behaviour**: summoned *by a script*, not by the user directly. Takes exclusive keyboard focus,
+filters as typed, returns exactly one selection or a cancellation. Cancelling must be
+distinguishable from selecting nothing. Callers vary in list length from two items to several
+hundred, and in line width from one word to a full command line.
+
+**Constraints**: this is a reusable surface with many callers, so the design owes it a *contract*,
+not a screen: how a title is shown, how long lines behave, how a list too long to fit scrolls, what
+an empty filter result says, and how a confirmation variant differs from a list variant. Callers
+today style themselves individually; that must collapse into one specified surface with variants.
+
+**Status**: Not built.
+
+### 8. Hierarchical system menu
+
+**Made of**: a root menu of about ten categories (applications, help, quick actions, appearance,
+setup, install, update, AI, about, power), each opening a submenu, some nesting a level deeper.
+Leaves either run something, or open one of the other surfaces in this document.
+
+**Behaviour**: summoned by a key. Keyboard-navigable in both directions — entering a submenu and
+going back — with a visible sense of where you are. Each level is a list picker, so this component
+is largely a *navigation model* layered on component 7, plus the rule for how a leaf hands off.
+
+**Constraints**: the real menu tree already exists and has a fixed shape; the design should be
+drawn against it rather than an invented one. Depth is at most three. Some leaves are destructive
+(power, package removal) and need a confirmation step that the launcher path does not have.
+
+**Status**: Not built.
+
+### 9. Keybindings reference
+
+**Made of**: the full binding set, grouped by modifier or by category, each row a key combination
+and a description. Long — this is the one summoned surface that is a *document*, not a chooser.
+
+**Behaviour**: summoned by a key, filterable, scrollable, dismissed by cancel. Read-only. The
+design question is legibility at density, not interaction.
+
+**Constraints**: key combinations are typographically awkward — modifiers, symbols and letters
+mixed — and want a distinct treatment from the descriptions beside them. The list is generated, so
+its length and content change without notice.
+
+**Status**: Not built.
+
+### 10. Theme picker
+
+**Made of**: the eight themes, each ideally previewable as something more than its name.
+
+**Behaviour**: summoned from the menu or a key; selecting one re-themes the entire shell live.
+
+**Constraints**: this is the one picker whose *own* appearance changes as a result of using it. The
+design should say what the transition looks like, and whether the picker survives it. A preview
+must not imply a colour is available that the theme does not define.
+
+**Status**: Not built.
+
+### 11. Display and monitor profile picker
+
+**Made of**: the available monitor arrangements, each with enough identity to be told apart —
+outputs, resolutions, which is primary.
+
+**Behaviour**: summoned when monitors change or on demand. Selecting one reconfigures the layout,
+which may make the picker's own monitor disappear.
+
+**Constraints**: the shell's own geometry changes as a direct result of the selection. Monitor
+identity is not a port name — the same physical display can arrive on a different connector — so
+the design must not lean on "DP-1" as a label a user recognises.
+
+**Status**: Not built.
+
+### 12. Session save and restore prompt
+
+**Made of**: a prompt naming a saved window session and how many windows it holds, with a restore
+or skip choice; and, for saving, a slot chooser.
+
+**Behaviour**: appears at login when a saved session exists, and on demand. Timing matters — it
+arrives while the desktop is still assembling itself.
+
+**Constraints**: it competes for attention with everything else that happens at login. The design
+should decide whether this is a picker or an interrupt; it is currently drawn as a picker but
+behaves like one of the few things the shell asks the user unprompted.
+
+**Status**: Not built.
+
+### 13. Colour-temperature control
+
+**Made of**: an on/off state plus a temperature value, and the schedule that drives it.
+
+**Behaviour**: summoned to adjust; the value is continuous, so this is closer to a slider surface
+than a list. Changing it has an immediate, whole-screen visual effect.
+
+**Constraints**: the shell's own colours are being distorted while the user is adjusting them. Any
+preview inside this surface is lying by definition, and the design should acknowledge that rather
+than fight it.
+
+**Status**: Not built.
+
+### 14. Audio device picker
+
+**Made of**: the available outputs and inputs, each with a name, a type, and which is current.
+
+**Behaviour**: summoned to switch. Devices appear and disappear as hardware is plugged in, while
+the surface is open.
+
+**Constraints**: device names come from the system and are frequently long, duplicated, or
+meaningless to a human. This may be a variant of the audio popover (component 20) rather than a
+separate surface — the design should rule on that rather than leaving both.
+
+**Status**: Not built.
+
+### 15. Screenshot and recording control
+
+**Made of**: a mode choice (region, window, whole screen), a destination, and — for recording — a
+running state with elapsed time and a stop affordance.
+
+**Behaviour**: summoned by a key. Region selection is a full-screen interaction with its own
+visual language: a dimmed field, a live selection rectangle, dimensions. Recording then transitions
+into a persistent indicator (component 5) that must be reachable to stop.
+
+**Constraints**: the only surface here that draws over the *entire* screen and takes pointer input
+across all of it. It must also stay out of its own capture. There is no surface for this at all
+today, in any tool being replaced.
+
+**Status**: Not built.
+
+### 16. Clipboard history
+
+**Made of**: a list of past clipboard entries — text, and ideally images — most recent first, with
+a preview and a selection that re-copies.
+
+**Behaviour**: summoned by a key, filterable, selection replaces the current clipboard content.
+
+**Constraints**: **the shell must own the storage.** The system provides only the *current*
+selection, so history, capacity, eviction and persistence across restarts are all design decisions
+with no default to inherit. Clipboard content is frequently sensitive — passwords pass through it —
+so the design must state a policy for previewing and for whether history survives a lock.
+
+**Status**: Not built.
+
+### 17. Power and session menu
+
+**Made of**: five or six terminal actions — lock, log out, suspend, hibernate, reboot, shut down —
+each a tile with a glyph and a label.
+
+**Behaviour**: summoned by a key. Keyboard-navigable, one action per tile, immediate on confirm.
+Most actions save the window session first; lock does not.
+
+**Constraints**: every action is irreversible and several are destructive of unsaved work. The
+design must rank them so the safest is the default landing point, and give the destructive ones
+weight without resorting to a red fill that half the palettes cannot render legibly. Hibernate may
+be unavailable on a given machine and must degrade rather than fail.
+
+**Status**: Shipped.
+
+### 18. Workspace overview
+
+**Made of**: the workspaces of a monitor, each holding scaled representations of its windows,
+positioned as they actually are.
+
+**Behaviour**: summoned by a key. Selecting a workspace switches to it; selecting a window focuses
+it. Live rather than a snapshot — windows moving while it is open should be visible.
+
+**Constraints**: it follows the focused monitor and shows that monitor's aspect, not a portrait
+card. Window positions must be projected from real geometry, which means accounting for display
+scaling; a shell that ignores this renders a plausible-looking but wrong layout. Windows on
+inactive workspaces *can* be shown live.
+
+**Status**: Shipped, off by default.
+
+### 19. Notification centre
+
+**Made of**: the full notification history as a list of the same cards used for toasts, grouped or
+ordered by time, plus controls — clear all, clear one, do-not-disturb.
+
+**Behaviour**: summoned by a key or from the bar. Scrollable, actions still invokable on old
+entries, dismissal removes an entry permanently. Do-not-disturb suppresses toasts while still
+recording history.
+
+**Constraints**: history is in memory only — it survives a configuration reload but not a restart —
+so the design should not promise permanence it does not have. The empty state is the state a user
+sees most often. Card contrast is stricter here than for toasts, because cards sit on a panel
+ground rather than over the wallpaper.
+
+**Status**: Shipped.
+
+### 20. Widget popovers
+
+**Made of**: seven detail surfaces, one per bar readout that has more to say than a glyph — audio,
+network, Bluetooth, battery, media, calendar, notifications. Each carries the readout's full state
+plus its common controls.
+
+**Behaviour**: opened from its bar widget, anchored beneath it and never covering it, closed by
+choosing, by cancelling, or by clicking away. Some are read-only; some contain controls that change
+system state (switching a network, disconnecting a device, transport controls).
+
+**Constraints**: these collectively replace a monolithic control centre, so together they must
+cover everything that panel would have. They are the only summoned surfaces anchored to a specific
+point rather than centred, and the anchoring is what makes them read as belonging to their widget.
+Each must have a meaningful state for "the underlying service is absent".
+
+**Status**: Partial — one hover tooltip exists; the seven popovers do not.
+
+---
+
+## Class 4 — Interrupt
+
+### 21. Authentication dialog
+
+**Made of**: the action being authorised, the application asking, a password field, and a feedback
+line for failures and remaining attempts. Sometimes a choice of *which* identity to authenticate
+as.
+
+**Behaviour**: raised by the system, not the user. Takes focus immediately, cannot be ignored
+indefinitely, and either succeeds, fails with a retry, or is cancelled. Every failure state has
+text the surface must show verbatim from the system.
+
+**Constraints**: exactly one such agent may exist for the whole session, so adopting this means
+displacing the existing one — and a crash then leaves *none*, breaking every privileged action
+until the shell restarts. Deferred until the shell has a crash-recovery story; keep designing it.
+The identity-choice case is a real branch the current drawings assume away.
+
+**Status**: Deferred, weakly. Design work should continue.
+
+### 22. Lock screen
+
+**Made of**: a clock, an identity, a password field, authentication feedback, and whatever ambient
+information is allowed while locked — notification presence, media state, battery.
+
+**Behaviour**: covers every monitor, takes all input, and cannot be dismissed except by
+authenticating. Distinct visual states for idle, typing, verifying, failed. It is also the surface
+most likely to be seen at a glance from across a room.
+
+**Constraints**: a crash here is unrecoverable without a text console, which is why it is deferred.
+The design must decide how much is shown on a locked screen — every notification preview is a
+privacy decision. Multi-monitor behaviour needs a rule: one prompt or one per screen.
+
+**Status**: Deferred.
+
+### 23. Greeter
+
+**Made of**: user selection, password entry, session selection, and system actions.
+
+**Behaviour**: the pre-session equivalent of the lock screen. Same authentication states, different
+lifecycle — it runs before there is a session at all.
+
+**Constraints**: the runtime supports this, but no decision has been recorded on whether it is in
+scope. If it is, it shares almost all of the lock screen's visual language and should be designed
+alongside it rather than separately.
+
+**Status**: Not built, no decision recorded.
+
+---
+
+## Class 5 — Foundations
+
+These are not surfaces; they are the rules that make thirty surfaces read as one shell.
+
+### 24. Colour and contrast law
+
+**Made of**: a semantic colour vocabulary — a small set of named roles, not a palette — that
+resolves against **eight** different colorsets, four light and four dark.
+
+**Behaviour**: every pairing of a foreground role on a background role must clear its contrast
+floor *in all eight*, at 4.5:1 for text and 3:1 for graphics and UI components. Roles that are
+distinguishable in one theme can be identical in another.
+
+**Constraints**: no fixed token works everywhere. At least three colours have to be *computed* per
+theme rather than named: the foreground on an accent fill, a modal scrim, and the foreground on
+that scrim. Any rule of the form "use role X on role Y" is false somewhere unless it has been
+measured against all eight.
+
+### 25. Interaction states
+
+**Made of**: the full state set for every interactive element — rest, hover, focus, active/pressed,
+selected, disabled, loading, error — and the rule for which states an element is allowed to skip.
+
+**Behaviour**: an element's rest appearance changes when it is placed on a lit ground rather than
+the bare bar, so "rest" is not one fixed appearance. Keyboard focus must be visible on every
+summoned surface, since keyboard is the primary input for most of them.
+
+**Constraints**: the disabled state cannot use the muted foreground role — it collapses to
+invisibility against a mid background in two of the eight themes.
+
+### 26. Motion
+
+**Made of**: the durations, easings and directions for reveal, dismiss, value change, and
+attention.
+
+**Behaviour**: motion communicates origin — a popover grows from its widget, a dock slides from its
+edge, a toast enters from where it will live. Ambient surfaces fade; summoned surfaces move.
+
+**Constraints**: reveal animations that are driven by pointer position must remain interruptible
+mid-flight, and the surface must stay usable while animating.
+
+### 27. Glyph and icon inventory
+
+**Made of**: the complete set of glyphs the shell draws, by role rather than by codepoint — state
+ramps (battery charge, signal strength, brightness, volume), category marks, action marks.
+
+**Behaviour**: ramps must be monotonic and readable at a glance, distinguishing full from empty
+from unavailable.
+
+**Constraints**: a missing glyph renders as nothing at all, silently — no error, no fallback box.
+Every ramp must therefore be specified as an explicit, verifiable list rather than "the battery
+icons".
+
+### 28. Density and geometry
+
+**Made of**: one radius ramp, one spacing scale, and a small set of fixed heights, shared by every
+surface.
+
+**Behaviour**: nesting reads as nesting because the ramp is consistent — a chip inside a panel
+inside a screen. No surface invents its own radius or spacing.
+
+**Constraints**: the shell spans monitors of different scales and pixel densities simultaneously,
+so the scale is defined in logical units and must survive being rendered at 1× and 1.25× side by
+side.
+
+### 29. Multiplicity and focus
+
+**Made of**: the rule, per surface, for how many exist and where they go.
+
+**Behaviour**: three distinct answers, and every surface has exactly one: *one per monitor* (bar,
+dock, toasts), *one following the focused monitor* (overlays, summoned surfaces), or *one covering
+everything* (lock, region capture).
+
+**Constraints**: a monitor's identity for this purpose is its name, and the shell's notion of the
+focused monitor and the window manager's are different objects that must be reconciled. The design
+should state the rule per surface rather than leaving it to implementation.
+
+### 30. Degradation
+
+**Made of**: the appearance of every surface when the thing it describes is absent — no battery, no
+Bluetooth adapter, no backlight, no network, no media player, a service that has not started yet.
+
+**Behaviour**: degrade by *source*, not by machine class. A desktop with a plugged-in battery
+should show one; a laptop with its Bluetooth disabled should not show an adapter. Several sources
+are empty for the first second or two after login and fill in on their own, so "absent" and "not
+yet arrived" need different treatments.
+
+**Constraints**: this is what keeps a single design working across a laptop and a desktop without
+branching into two designs.
+
+---
+
+## Summary
+
+| Class | Surfaces | Shipped | Partial | Not built | Deferred |
+|---|---|---|---|---|---|
+| Persistent | 2 | 2 | — | — | — |
+| Ambient | 3 | 2 | 1 | — | — |
+| Summoned | 15 | 4 | 1 | 10 | — |
+| Interrupt | 3 | — | — | 1 | 2 |
+| Foundation | 7 | — | — | — | — |
+| **Total** | **30** | **8** | **2** | **11** | **2** |
+
+The bulk of the remaining work is **class 3**, and most of it is one component: the generic list
+picker (7) and the menu navigation model on top of it (8) together account for eighteen existing
+callers. Designing that contract well retires more of this list than any other single decision.

@@ -19,7 +19,7 @@
 
 `hyprland.conf` also pulls `conf.d/*.conf` (drop-ins), `monitors.conf` (HyprDynamicMonitors output), and `~/.config/themes/current/hyprland.conf` (theme borders).
 
-**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 56px, which Waybar's full-bleed bar cannot stack with. Roadmap: `_plans/QUICKSHELL_SHELL.md`.
+**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 56px, which Waybar's full-bleed bar cannot stack with. Roadmap: `_plans/archive/QUICKSHELL_SHELL.md`.
 
 **Base config files** (`conf/`, each `.conf` shadowed by an inactive `.lua`):
 

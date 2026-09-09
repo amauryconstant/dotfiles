@@ -48,7 +48,7 @@ private_dot_config/broot/launcher/
 #
 # The gate lives here rather than in the drop-ins because a .lua/.conf file
 # cannot carry template actions, and .chezmoidata files cannot be templates
-# (see .claude/rules/chezmoi-data.md). Roadmap: _plans/QUICKSHELL_SHELL.md
+# (see .claude/rules/chezmoi-data.md). Roadmap: _plans/archive/QUICKSHELL_SHELL.md
 {{ if not .features.quickshell_shell.enabled }}
 .config/hypr/conf.d/quickshell.lua
 .config/hypr/conf.d/quickshell.conf

@@ -3,15 +3,21 @@
 **Location**: `private_dot_config/quickshell/dotfiles/` → `~/.config/quickshell/dotfiles/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md`
-**Roadmap**: `_plans/QUICKSHELL_SHELL.md`
+**Roadmap**: `_plans/archive/QUICKSHELL_SHELL.md`
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
 ## Quick Reference
 
-- **Status**: Phases 2, 2.5, 3, 4, 5 and 5.5 complete — floating bar (40 tall, inset 8,
-  reserving 48), volume/brightness OSDs, launcher, power menu, notification server + centre,
-  and Hyprland on the Lua entry point. Only the optional Phase 6 remains
+- **Status**: Phases 2, 2.5, 3, 4, 5 and 5.5 complete, then realigned 2026-09-08 against the
+  **rewritten fourteen-page design** (`Shell-00-Index` … `Shell-13-Accessibility`; the nine-file
+  set every older note cites no longer exists). Floating bar (40 tall, inset 8, reserving 48),
+  volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
+  Lua entry point. Popovers, the system menu and clipboard history are designed and **not built**
+- 🚨 **Colours are SEMANTIC ROLES now**, not module names: `groundBase`/`groundRaised`/
+  `groundFloat`, `fillInert`, `inkPrimary`/`inkSecondary`, `signal*`, `identity1..5`, plus six
+  derived materials. `Theme.qml` is the translation layer; `themes/*/colors.sh` is untouched, so
+  every other consumer of the colorset is unaffected. See `.claude/rules/quickshell-qml.md`
 - 🚨 **BOTH Phase 5.5 surfaces ship OFF**: `Config.dockEnabled` and `Config.overviewEnabled`
   are both `false`. Built, tried in daily use 2026-09-02, and declined — the bar's launcher
   chip and `SUPER+D` already covered launching, and the carousel was not wanted. The dock is
@@ -56,27 +62,49 @@
   `quickshell -c dotfiles ipc show`, never by looking at the deployed files
 - **Lint**: `mise run lint:qml` · **Format**: `mise run format:qml`
 
+## Departures from the design, and why
+
+The fourteen-page design is the input, not a specification to apply blindly. Each row below is a
+decision; each is also commented at its site. Everything **not** listed here follows the design.
+
+| Design says | Here | Why |
+|---|---|---|
+| **09** five session tiles, no hibernate | six, hibernate kept | Hibernate does real work on this laptop, and the design's own rule — *a control that would do nothing is removed* — endorses keeping one that works |
+| **09** nothing pre-selected | Lock pre-selected | Already safe: an accidental Return locks, which is recoverable. It is also wlogout's model, which this menu replaced without smuggling in a behaviour change |
+| **09** 88px tiles | 124px | 88 was drawn for a five-tile row; we have six. Cosmetic, no defect |
+| **08** OSD fill on `fillInert` over a `groundRaised` track | fill `signalFocus`, track `groundRaised` | The design's pair measures ≈**1.3:1**, under its own 3:1 graphic floor |
+| **01** `inkOnSignal` is a fixed binding | computed | Pages 04 and 07 call it computed; the computation's result is provably ≥ the fixed binding in every theme |
+| **07** timestamp in `inkSecondary` | `inkPrimary` | Page 01's tier table binds `groundFloat` as carrying the primary ink only. Foundation beats surface |
+| **02** three density columns | default 13 only | The only thing that could select a column is the system menu, which is not built. Two unreachable columns are dead configuration |
+| **04** a named width-breakpoint overflow order | **not built** | No output this repo drives is narrow enough to fire it, so it could be neither observed nor tested. The parts that *do* fire are built: the title's pixel bound and the tray's 8-item cap. See the ponytail note in `Config.qml.tmpl` |
+| **07** inline reply | not built | Needs `x-kde-reply` plumbing; out of the agreed scope |
+| — | dock and overview kept, dormant and untouched | Neither has a page in the new set; both already `false` and declined in daily use |
+
+Rulings, contradictions and every measurement behind these: `_research/QUICKSHELL_DESIGN_AUDIT.md`
+Part 5.
+
 ## Layout
 
 ```
 dotfiles/
 ├── shell.qml              # ShellRoot: IPC handlers + Variants over screens + the OSD
-├── qmldir                 # declares the four singletons (required by qmllint)
-├── Theme.qml              # colours from themes/current/colors.sh, at runtime
-├── Config.qml.tmpl        # geometry scale, fonts, chassis, scriptsDir, shared glyph ramps
+├── qmldir                 # declares the five singletons (required by qmllint)
+├── Theme.qml              # semantic roles + derived materials, from colors.sh at runtime
+├── Config.qml.tmpl        # geometry, type, motion, fonts, chassis, scriptsDir, glyph ramps
 ├── Backlight.qml          # sysfs backlight, shared by the bar widget and the OSD
-├── Notifications.qml      # NotificationServer + DND + popup list + history grouping
+├── Meters.qml             # CPU + memory from /proc, for the bar's one load readout
+├── Notifications.qml      # NotificationServer + DND + popups + grouping + restart persistence
 ├── osd/Osd.qml            # volume + brightness overlay, follows the focused monitor
-├── launcher/Launcher.qml  # app launcher (artboard 1d)
-├── power/PowerMenu.qml    # power / session menu (artboard 1h)
-├── dock/Dock.qml          # auto-hiding dock, one PER SCREEN (artboard comp-a)
+├── launcher/Launcher.qml  # app launcher + `:` run and `=` calc (design page 05)
+├── power/PowerMenu.qml    # power / session menu (design page 09)
+├── dock/Dock.qml          # auto-hiding dock, one PER SCREEN — DORMANT, no page in the current design
 ├── overview/
-│   ├── Overview.qml       # workspace carousel (artboard comp-b)
+│   ├── Overview.qml       # workspace carousel — DORMANT, no page in the current design
 │   └── WorkspaceCard.qml  # one card, used at all three carousel scales
 ├── notifications/
 │   ├── NotificationCard.qml     # THE card — shared by the centre and the popups
 │   ├── NotificationPopups.qml   # toast stack, one window PER SCREEN
-│   └── NotificationCentre.qml   # the 440-wide panel (artboard pan-a)
+│   └── NotificationCentre.qml   # the 340-wide panel (design page 07)
 └── bar/
     ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
     ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
@@ -99,11 +127,12 @@ accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
 
 | Widget | Backed by |
 |---|---|
-| Launcher | none — a chip that runs `wofi --show drun`, new in Phase 2.5 |
+| Launcher | none — a chip that raises `launcherRequested`; `shell.qml` owns the window |
 | Workspaces, WindowTitle | `Quickshell.Hyprland` |
 | Audio, Media, Tray | `Pipewire`, `Mpris`, `SystemTray` |
 | Network, Bluetooth, Battery | `Networking`, `Bluetooth`, `UPower` — laptop only |
 | Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
+| Meters | the `Meters` singleton (`/proc/stat` + `/proc/meminfo` via `FileView` on a 2s timer) — **new**, Waybar had no cpu/memory module here |
 | Kanata, Voxtype, Idle | existing scripts, via `WaybarJsonSource` |
 | Notification | the `Notifications` singleton — Phase 4 cut the last `swaync-client` call out of the tree |
 
@@ -115,11 +144,22 @@ keybinding, no IPC, no script change: it watches `Pipewire.defaultAudioSink` and
 app). Three things in it are load-bearing:
 
 - `mask: Region {}` — an empty input region. Without it the window eats every click in its
-  320×56 patch while up, and it has nothing interactive to justify that
+  200×96 patch while up, and it has nothing interactive to justify that
 - an `armed` flag on a 1s timer — Pipewire's first binding and the first sysfs read both land
   after launch and would flash the OSD on every login
 - `screen:` matched by **name** against `Hyprland.focusedMonitor` — `HyprlandMonitor` has no
   `screen` property; both sides expose `name`
+
+**Fixed 200 × 96** (was 320 × 56): a readout that resizes as the number crosses 100 draws the eye
+to the wrong thing. A 28px glyph beside a 20px number, over a 152 × 6 track. The number carries
+**no percent sign** — the bar under it already says what the scale is — and it is **not clamped**
+at 100 while the bar is, because clamping the number would hide a real state. There is **no
+fade-in**, only a `motionSlow` fade-out: a readout you have to wait for has already failed.
+
+🚨 **The fill stays `signalFocus` on a `groundRaised` track**, against design page 08, which puts
+the fill on `fillInert` over `groundRaised`. That pair measures about **1.3:1** in Mocha — the
+design contradicts its own 3:1 graphic floor there. Both candidate pairs are rows in
+`lint:theme-contrast` so the comparison is on record.
 
 Sits at `Config.osdMargin` (160) from the bottom, clearing voxtype's own OSD (a 72-tall card
 at bottomMargin 72) so a dictation card and a volume key cannot overlap. On a desktop with a
@@ -157,14 +197,33 @@ Both differ from every other window in this tree on two points:
 launches. Icons are `IconImage` on `Quickshell.iconPath(icon, true)`, falling back to
 `Config.windowGlyphFallback` when the theme has none — same contract the workspace pills have.
 
-**Apps is the only mode.** The artboard's `>` run, `=` calc, `:` emoji, `/` files and `?` help
-prefixes are not built; the mode badge renders `apps` as structure, and nothing switches it.
-The web-search fallback row (and with it the group separator) is likewise not built.
+**340 wide** (was 760), with popover chrome: a hairline-separated header carrying the glyph, the
+query, an accent caret and a right-aligned match count, and a permanent footer carrying the keys
+on the left and the prefix hint on the right.
+
+**Three modes.** Apps, plus `:` **run in a terminal** (`Config.terminal`, from `globals.yaml`) and
+`=` **calculate** through `qalc` — Return copies the result and launches nothing. `libqalculate`
+is in `packages.yaml` for exactly this; without it the mode reports nothing rather than pretending
+to work. The five-prefix set an older mockup drew (`>` `:` emoji, `/` files, `?` help) is not
+built, and neither is the web-search fallback row.
+
+🚨 **Esc CLEARS the query; a second Esc closes.** The one surface where Esc is not a single-step
+close. The function is `clearOrClose()` and **must not** be called `escape()` — that is an illegal
+method name in QML and the engine rejects the whole file at load time, which qmllint does not
+catch.
+
+**Zero matches** is two lines, never one: the fact in `inkPrimary`, the exit in `inkSecondary`,
+and the list area keeps its height so the surface does not jump as the query narrows.
+
+**There is no "Starting…" state.** `DesktopEntry.execute()` reports nothing on success and gives
+no completion signal, so a spinner or a fixed delay would be theatre. A spawn that *throws* is
+real: the row keeps the failure text, its siblings go inert at `Theme.disabledOpacity`, and the
+launcher refuses to close — the one place Return does not dismiss it.
 
 ### Power menu
 
 A front-end over the **exact** commands `wlogout/layout` ran, `session-save` included. Two
-deliberate departures from artboard `1h`:
+deliberate departures from design page 09:
 
 - **Six tiles, not five.** Hibernate exists here and does real work on the laptop. Same rule
   the bar's eleven widgets follow: do not delete a function to match the drawing
@@ -174,18 +233,31 @@ deliberate departures from artboard `1h`:
 🚨 **It keeps wlogout's activation model: one activation fires, no confirmation step**, because
 the wrapper it replaces has none. Adding one would be a behaviour change smuggled in as a
 redesign. What protects you is the *selection*: Lock is selected on open, so Return alone can
-never power anything off.
+never power anything off. Design page 09 asks for **nothing** pre-selected; ours is already safe
+and is the model this menu was written to replace without smuggling in a behaviour change.
+
+🚨 **The tiles ground on `groundBase`, not `groundRaised`.** The power-off tile draws
+`signalError` as a glyph and a border, and that pair measures **2.81** on `groundRaised` in
+solarized-dark — under the 3:1 a graphic owes. On `groundBase` it is 3.25 at worst and clears
+everywhere. The tiles sit on the scrim anyway, so the raised tier bought nothing.
+
+🚨 **The scrim is `Theme.scrim`, never a background token.** It was `groundBase` at 86%, which is
+the documented defect one tier over: that token measures 0.71–0.96 luminance in all four light
+colorsets, so the wash rendered near-white. Everything drawn directly on the scrim — the identity
+line, the mnemonic row — takes `Theme.fgOnScrim`.
 
 ## Dock and workspace overview (Phase 5.5)
 
 Both optional, both genuinely new — nothing here did either job, and Omarchy has no dock to
-read from. Four things the **artboards** (`Composites.dc.html`, `comp-a`/`comp-b`) settled that
+read from. 🚨 **Both are DORMANT and have no page in the current design set**, so nothing below
+was realigned on 2026-09-08 — they still use the token names the rest of the tree moved off,
+via the mechanical rename only. Four things the now-deleted `Composites` artboards settled that
 the plan's prose transcription had wrong or missing; see Amendment E.
 
 ### Dock — `dock/Dock.qml`
 
 One per screen, like the bar and unlike every modal here: a dock is furniture, not something
-you summon. Geometry is measured off `comp-a` and sits **outside** the geometry scale
+you summon. Geometry was measured off the old `comp-a` artboard and sits **outside** the scale
 (`Config.dock*`), the same way `powerTileRadius` does — the dock is a peer of the bar, not
 something nested in it. Amendment A's transcription had the padding (14, not `padTight`), the
 tile radius (12, not `radiusTile`) and the gap (10, not `gap`) all wrong.
@@ -205,7 +277,7 @@ tile radius (12, not `radiusTile`) and the gap (10, not `gap`) all wrong.
 
 Plus a `Config.dockHideDelayMs` grace period, so a momentary hover loss cannot retract it.
 
-**The running-indicator dot is kept against the artboard**, which draws none. A static mockup
+**The running-indicator dot is kept against the artboard**, which drew none. A static mockup
 of one moment is weak evidence that a *state* indicator does not exist, Amendment A specifies
 it, and without it the dock is a strictly worse `SUPER+D`. Running → `workspace.activate()`;
 not running → `entry.execute()`.
@@ -238,7 +310,7 @@ copied verbatim from the `hyprctl monitors` JSON (`ipc/monitor.cpp:41`), so they
 **physical** pixels while window `at`/`size` are **logical**. Missed, a scale-1.25 display
 draws every window 25% oversized — and a scale-1 laptop hides it completely.
 
-Cards take the **monitor's** aspect, not the artboard's: `comp-b` draws three different aspect
+Cards take the **monitor's** aspect, not the artboard's: the old `comp-b` drew three aspect
 ratios (0.81 / 0.68 / 0.59), none of which is a screen, so its cards cannot host a truthful
 layout. The note's falloff curve carries over unchanged (scale 1.0 / 0.69 / 0.46, opacity
 1 / .6 / .35).
@@ -274,14 +346,38 @@ Four things are load-bearing, all documented in `.claude/rules/quickshell-qml.md
 - `transient` cannot be implemented with `tracked = false` (the server deletes immediately)
 - `keepOnReload` survives a reload, not a restart — same as swaync, so no disk persistence
 
-**Card rules from artboard pan-a, both easy to "improve" wrongly**: no severity stripe (every
-card keeps an identical silhouette; severity is the **title colour alone**), and every string
-on a card is `fgPrimary` — the ground is elevated, so hierarchy comes from size, weight and
-mono-vs-sans, never from dimming. `fgMuted` appears on a card in exactly one place: the
-Dismiss button's outline, because borders are foreground-class.
+**Card rules, both easy to "improve" wrongly**: no severity stripe (every card keeps an
+identical silhouette), and every string on a card is `inkPrimary` — the ground is
+`groundFloat`, which design page 01's own tier table says carries the primary ink *only*, so
+hierarchy comes from size, weight and mono-vs-sans, never from dimming. Page 07 draws the
+timestamp in `inkSecondary`; the foundation page wins. The one non-`inkPrimary` foreground on a
+card is the secondary action's **outline** — a graphic at 3:1, not text, and page 13 rules it
+`inkSecondary` explicitly (it was 2.18 as the retired muted token).
 
-Timeouts mirror the swaync config they replace: 10s normal, 5s low, **critical never
-auto-hides**. Bell gestures are swaync's too — left opens, right toggles DND, middle clears.
+**Timeouts are 5s normal, 3s low, critical never** — shorter than the swaync config they replaced
+(10s/5s), because an expired popup is not gone: it moves to the centre, which is the whole
+difference between dismissing and ignoring. The stack shows **three** cards and a `+N more`
+count; history is bounded at **100**, oldest dropped first. Bell gestures are swaync's — left
+opens, right toggles DND, middle clears.
+
+🚨 **Severity moved off the title colour.** It is now the glyph chip: a `signalError` tint AND a
+different glyph, plus the card's border. `signalError` as TEXT measures **2.81** at worst and is
+banned in every theme, so the old title colour was unreadable exactly when it mattered. There is
+no severity *title* either — it repeats what the glyph and body already say.
+
+**Grouping collapses at THREE, not two.** Two messages from one app are two things to read;
+hiding one behind a count saves a card and costs the message, so a pair is expanded back in place.
+
+**An image payload replaces the glyph chip** with a 38px thumbnail in the same slot, decoded *at*
+that size — a screenshot notification that stalls the shell for a 4K decode is worse than no
+thumbnail — and falls back to the glyph on a failed decode.
+
+🚨 **DND and the undismissed queue now survive a RESTART**, in
+`~/.local/state/quickshell/notifications.json` via `FileView` (which creates the parent directory
+on write). They are the only two things in this shell that persist: one the user set deliberately,
+the other is their unread mail. **A restored entry is a SNAPSHOT, not a live `Notification`** —
+the sending process is gone, so its actions cannot be invoked and none are offered; only Dismiss
+is. Its `actions` is an empty array rather than absent, so the card needs no special case.
 
 ## Deviations from Waybar, and why
 
@@ -304,5 +400,9 @@ Full list in `.claude/rules/quickshell-qml.md`. The two that cost the most time:
 - **A glyph literal can be authored as `""`** and render nothing, with no error — it has
   happened twice here. Take codepoints from the `nerdfonts-search` skill and write them via
   an explicit `chr(0x…)`, never a paste
+- **`escape()` is an illegal QML method name.** Renders, formats and lints clean, then the engine
+  refuses the whole file at load with *"Illegal method name"*. Only running the tree finds it
+- **A character-count truncation does not bound pixels.** `titleMaxLength` and `mediaMaxLength`
+  are gone; use `BarWidget.labelMaxWidth` plus `Text.elide`
 
 All three fail silently and look plausible on screen.

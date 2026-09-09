@@ -58,7 +58,7 @@ it replaces an 8-theme eyeball pass with three greps.
 ## Quickshell QML Tree
 
 Scope: everything under `private_dot_config/quickshell/`. Amendment A of
-`_plans/QUICKSHELL_SHELL.md` makes a literal colour, a literal font name or a hardcoded glyph
+`_plans/archive/QUICKSHELL_SHELL.md` makes a literal colour, a literal font name or a hardcoded glyph
 **the defect** — every value goes through the `Theme` or `Config` singleton.
 
 ### Literal hex — blocking

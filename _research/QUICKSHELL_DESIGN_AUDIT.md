@@ -1,7 +1,14 @@
-# Quickshell design audit — rounds 1–4
+# Quickshell design audit — rounds 1–4, and the round-5 rewrite
 
-**Date**: 2026-09-03 · **Source**: Claude Design project `1d494341-deaa-47cb-ac39-32ccb9c23862`,
-all nine files.
+**Date**: 2026-09-03, extended 2026-09-08 · **Source**: Claude Design project
+`1d494341-deaa-47cb-ac39-32ccb9c23862`.
+
+🚨 **Parts 1–4 below audit the NINE-file set, which no longer exists.** The project was rewritten
+as **fourteen pages**, `Shell-00-Index` … `Shell-13-Accessibility`. Every artboard id those parts
+cite (`f-a`, `bar-a`, `pop-g`, `st-b`, `pf-a`, `comp-a`, `comp-b`, `pan-a`, `1a`–`1i`) is dead.
+They are kept because the *measurements* are still valid and several of them are why the current
+code looks the way it does — not because the files they cite can still be opened. **Part 5 is the
+current set.**
 **Rulings that act on this**: `_research/QUICKSHELL_DESIGN_BRIEF_R5.md`. This document is the
 **evidence**; the brief is the decisions.
 
@@ -245,3 +252,59 @@ Same formula as `.mise/tasks/lint/theme-contrast.py`, over the eight colorsets. 
 **not** cover most of these pairs: its `PAIRS` table is hand-harvested from the *shipped* tree, so
 pairs the design introduces are invisible until they ship. The one it should already have had is
 `FG_PRIMARY` / `BG_TERTIARY` — which is how 3.1's workspace-pill defect went unmeasured.
+
+---
+
+# Part 5 — the fourteen-page rewrite (2026-09-08)
+
+**Source**: `Shell-00-Index` … `Shell-13-Accessibility`, read in full except page 12 (polkit and
+lock screen), which the index marks deferred on safety and which nothing implemented depends on.
+
+The rewrite is a genuine improvement on the nine-file set: it replaces module-named colour tokens
+with a **role system**, states a **behaviour law**, and carries its own **worst-of-eight contrast
+table** (page 13) rather than leaving the numbers to a reader. Most of Part 1's contradictions are
+gone. What follows is what survived, plus what the new set gets wrong — measured the same way.
+
+## 5.1 — It still contradicts itself, in four places
+
+| # | Conflict | Ruling here |
+|---|---|---|
+| 5.1a | **`inkOnSignal` is a fixed binding, or it is computed.** Page 01's tier-4 table: *"GROUND_BASE always — a fixed binding, not a computation."* Pages 04 and 07 both say *"computed `inkOnSignal`"* | **Computed.** The computation picks whichever of `FG_CONTRAST` / `BG_PRIMARY` contrasts more against the accent, and `BG_PRIMARY` **is** `GROUND_BASE` — so its result is ≥ the fixed binding in every theme, and can never be worse |
+| 5.1b | **`ground-float` carries `ink-primary` only, except where it doesn't.** Page 01's tier-1 table binds `GROUND_FLOAT` as *"Carries INK_PRIMARY only"*. Page 07 draws the notification card's timestamp in `ink-secondary`, on a card whose ground is `ground-float` | **Foundation wins.** Every string on the card stays `inkPrimary`; hierarchy comes from size, weight and mono-vs-sans |
+| 5.1c | **The OSD's own fill fails the design's own graphic floor.** Page 08 puts the progress track on `ground-raised` and its fill on `fill-inert`, calling that *"the one legal use of that tier"*. Measured, `FILL_INERT` on `GROUND_RAISED` is `#45475a` on `#313244` in Mocha — about **1.3:1**, against the 3:1 page 13 sets for a graphic | **Rejected.** The fill stays `accentPrimary` on a `groundRaised` track, which was measured at ≥3:1 in seven of eight on 2026-09-01. Both candidate pairs are now rows in the contrast lint so the comparison is on record |
+| 5.1d | **Page 13's own worst case for `inkOnSignal` is not the worst case.** The row reads *"4.34 · latte · bound"*. Measured across all eight, the bound value is worse than that in **rose-pine-dawn**, where even the computed pick reaches only **3.47** | Not a defect in the code — the computed pick is already the best available — but the *number* on page 13 is wrong, and it is the number that justifies "a signal fill carries glyphs only" |
+
+## 5.2 — Where the design is right and this tree was wrong
+
+All four were shipped defects, all four are fixed, and none was visible in Mocha.
+
+| Site | Was | Measured | Now |
+|---|---|---|---|
+| Occupied workspace pill | `FG_PRIMARY` on `BG_TERTIARY` | **1.67** sol-light, 1.70 sol-dark, 4.39 latte | `inkPrimary` on `groundRaised` |
+| Notification severity | the title in `ACCENT_ERROR` | **2.81** worst as text, banned in all eight | glyph chip tint **and** a different glyph; no severity title |
+| PowerMenu scrim | `BG_PRIMARY` at 86% | that token is 0.71–0.96 luminance in all four light colorsets | `Theme.scrim` at `Config.scrimOpacity`, with `fgOnScrim` on everything drawn on it |
+| Battery low band | `ACCENT_WARNING` glyph | **2.05** rose-pine-dawn, 2.19 gruvbox-light — under the 3:1 a graphic owes | shape only; `signalError` is the sole colour, and it clears 3:1 everywhere (worst 3.25) |
+
+The last row generalises, and it is the sharpest thing the new set says: **no accent role clears
+3:1 in all eight colorsets, and gruvbox-light is the worst case for every one of them.** That is
+the evidence for L1 — anything load-bearing is foreground-class — and acting on it removed the
+`INHERENT` exemption block from `.mise/tasks/lint/theme-contrast.py` entirely, because the pairs it
+excused are no longer drawn rather than being excused.
+
+## 5.3 — Deliberate departures
+
+Recorded in full, with reasons, in `private_dot_config/quickshell/CLAUDE.md`. In brief: six session
+tiles rather than five (hibernate works here); Lock still pre-selected; the OSD fill above; one
+density column rather than three, because the only thing that could select a column is the system
+menu, which is not built.
+
+## 5.4 — Still open
+
+1. **Solarized's `FG_PRIMARY`** — Part 4.2's finding, which page 13 independently confirms and
+   calls a colorset bug. Unfixed: it belongs to `themes/*/colors.sh`, not to any consumer.
+2. **The colorset rename.** The role names live in `Theme.qml` as a translation layer over the
+   module-named keys. Renaming the colorsets themselves touches waybar, wofi, swaync, wlogout,
+   hyprland, btop, ghostty and both theme skills, and is a separate round.
+3. **`signal-warn` / `signal-info` have no legal graphic use left.** Both are under 3:1 on their own
+   ground in four of eight, so nothing in the shell draws them; they sit in `Theme.qml` bound and
+   unused. Either a future surface finds a ground they clear, or the palette owes them one.
