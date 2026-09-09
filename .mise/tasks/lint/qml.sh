@@ -36,7 +36,7 @@ while IFS= read -r file; do
 	*.tmpl) chezmoi execute-template --source "$worktree_root" <"$file" >"$dest" ;;
 	*) cp "$file" "$dest" ;;
 	esac
-done < <(find "$src" \( -name '*.qml' -o -name '*.qml.tmpl' -o -name 'qmldir' \) -type f)
+done < <(git ls-files -- "$src/*.qml" "$src/*.qml.tmpl" "$src/*qmldir")
 
 mapfile -t rendered < <(find "$tmp" -name '*.qml' -type f | sort)
 [[ ${#rendered[@]} -gt 0 ]] || exit 0
@@ -62,7 +62,7 @@ while IFS= read -r file; do
 		"$QMLFORMAT" "$file" | diff -u "$file" - | head -30 >&2
 		status=1
 	fi
-done < <(find "$src" -name '*.qml' -type f | sort)
+done < <(git ls-files -- "$src/*.qml")
 
 [[ "$status" -eq 0 ]] || echo "Fix with: mise run format:qml" >&2
 exit "$status"
