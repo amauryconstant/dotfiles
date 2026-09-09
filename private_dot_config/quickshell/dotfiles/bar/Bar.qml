@@ -84,7 +84,20 @@ PanelWindow {
         spacing: Config.gap / 2
 
         // Order follows waybar/config.tmpl's modules-right; the grouping and
-        // its hairlines are Amendment A's.
+        // its hairlines are Amendment A's. The meter leads, as the design draws
+        // it — everything after it keeps the order it already had.
+        Row {
+            id: gMeter
+
+            spacing: Config.gap / 2
+
+            MetersWidget {}
+        }
+
+        BarSeparator {
+            group: gTray
+        }
+
         Row {
             id: gTray
 
