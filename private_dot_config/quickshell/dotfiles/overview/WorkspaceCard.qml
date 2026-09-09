@@ -44,9 +44,9 @@ Rectangle {
     // Every ground here is bg-overlay and every string on it is fg-primary:
     // an elevated surface takes fg-primary for ALL text per themes/CLAUDE.md,
     // and hierarchy comes from size and opacity, never from dimming the token.
-    border.color: root.focused ? Theme.accentBorder : Theme.bgSecondary
+    border.color: root.focused ? Theme.focusRing : Theme.edge
     border.width: Config.hairline
-    color: Theme.bgOverlay
+    color: Theme.groundFloat
     height: root.previewHeight + (root.focused ? Config.overviewFooterHeight : 0)
     radius: Config.overviewCardRadius
     width: root.previewWidth
@@ -71,7 +71,7 @@ Rectangle {
                 readonly property real sx: preview.width / root.logicalWidth
                 readonly property real sy: preview.height / root.logicalHeight
 
-                color: Theme.bgSecondary
+                color: Theme.groundRaised
                 height: Math.max(4, (win.ipc?.size?.[1] ?? 0) * win.sy)
                 radius: Config.radiusChip * root.detail
                 width: Math.max(4, (win.ipc?.size?.[0] ?? 0) * win.sx)
@@ -110,20 +110,20 @@ Rectangle {
                     // screenshot is unreadable at every one of these scales.
                     // Below about 10px the chrome is noise rather than
                     // information, so a very small card shows bare rectangles.
-                    visible: !win.captured && Config.fontSizeSmall * root.detail >= 6
+                    visible: !win.captured && Config.fontBody * root.detail >= 6
 
                     Text {
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         font.family: Config.guiFont
-                        font.pixelSize: Config.fontSizeSmall * root.detail
+                        font.pixelSize: Config.fontBody * root.detail
                         text: Config.windowGlyph(win.ipc?.class ?? "")
                     }
 
                     Text {
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         elide: Text.ElideRight
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeTiny * root.detail
+                        font.pixelSize: Config.fontMeta * root.detail
                         // Subordinate to the glyph beside it by opacity, not by
                         // a dimmer token — fg-secondary on an elevated ground is
                         // the pair themes/CLAUDE.md bans outright.
@@ -150,7 +150,7 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            color: Theme.bgSecondary
+            color: Theme.groundRaised
             height: Config.hairline
         }
 
@@ -160,7 +160,7 @@ Rectangle {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.accentPrimary
+                color: Theme.signalFocus
                 height: Config.pillHeight
                 radius: Config.radiusPill
                 width: Math.max(height, label.implicitWidth + Config.padTight)
@@ -171,18 +171,18 @@ Rectangle {
                     anchors.centerIn: parent
                     // fgOnAccent, never fgContrast: the named token lands at
                     // 1.49:1 on gruvbox-dark's own accent.
-                    color: Theme.fgOnAccent
+                    color: Theme.inkOnSignal
                     font.family: Config.terminalFont
-                    font.pixelSize: Config.fontSizeSmall
+                    font.pixelSize: Config.fontBody
                     text: root.workspace?.name ?? ""
                 }
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.fgPrimary
+                color: Theme.inkPrimary
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontSizeSmall
+                font.pixelSize: Config.fontBody
                 text: {
                     const n = root.workspace?.toplevels.values.length ?? 0;
                     return n === 1 ? "1 window" : `${n} windows`;

@@ -48,9 +48,9 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        border.color: Theme.bgSecondary
+        border.color: Theme.edge
         border.width: Config.hairline
-        color: Theme.bgPrimary
+        color: Theme.groundBase
         radius: Config.radiusPanel
     }
 

@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 import QtQuick
 
@@ -26,10 +27,19 @@ Singleton {
     id: root
 
     // Do not disturb. Suppresses POPUPS ONLY — history still fills, which is
-    // the point of the mode. In memory, no state file: swaync's DND does not
-    // survive its own daemon restart either, and nothing outside this shell
-    // toggles it.
+    // the point of the mode. Persisted: the user set it deliberately and will
+    // not think to re-set it after a restart.
     property bool dnd: false
+    // 🚨 Undismissed notifications restored from the last session. These are
+    // SNAPSHOTS, not live Notification objects — the process that sent them is
+    // gone, so its actions cannot be invoked and none are offered. Everything
+    // the card reads is present; `actions` is deliberately empty rather than
+    // absent, so the card needs no special case. Drawing dead action buttons
+    // would be worse than not restoring at all.
+    property list<var> restored: []
+    // Set once the state file has been read, so a write cannot race the load
+    // and truncate the queue it was about to restore.
+    property bool stateLoaded: false
     // Popups currently on screen. Plain list rather than a filter over the
     // server's model: see the header — the two lifetimes are unrelated.
     property list<var> popups: []
@@ -39,6 +49,9 @@ Singleton {
     // per-delegate Timer would restart on each one, keeping the oldest toast up
     // forever under any steady stream (voxtype's start/stop pair does it).
     property var deadlines: ({})
+    // Arrival times by notification id. Notification carries none, and the
+    // card needs one to render a relative timestamp that survives a restart.
+    property var arrivals: ({})
 
     // Null whenever this shell does not own notifications, so every read below
     // has to tolerate that rather than assume a server exists.
@@ -48,11 +61,11 @@ Singleton {
     // insertion-ordered, uncapped and includes transients, so all three are
     // this file's job.
     readonly property list<var> history: {
-        if (!root.server)
-            return [];
-        const all = root.server.trackedNotifications.values.filter(n => !n.transient);
+        const all = root.server ? root.server.trackedNotifications.values.filter(n => !n.transient) : [];
         all.reverse();
-        return all.slice(0, Config.notifHistoryMax);
+        // Restored entries sort after everything from this session: they are
+        // older than anything that has arrived since the shell started.
+        return [...all, ...root.restored].slice(0, Config.notifHistoryMax);
     }
     readonly property int unread: root.history.length
 
@@ -74,7 +87,27 @@ Singleton {
                 rest: []
             });
         }
-        return out;
+        // 🚨 A group collapses at THREE, not at two. Two messages from one app
+        // are two things the user has to read; hiding one of them behind a
+        // count saves a card and costs the message. So a pair is expanded back
+        // into its members, in place.
+        const expanded = [];
+        for (const g of out) {
+            if (g.rest.length + 1 >= 3) {
+                expanded.push(g);
+                continue;
+            }
+            expanded.push({
+                lead: g.lead,
+                rest: []
+            });
+            for (const n of g.rest)
+                expanded.push({
+                    lead: n,
+                    rest: []
+                });
+        }
+        return expanded;
     }
 
     function clearAll(): void {
@@ -82,7 +115,33 @@ Singleton {
             // Copy first: dismiss() mutates the model this iterates.
             for (const n of [...root.server.trackedNotifications.values])
                 n.dismiss();
+        root.restored = [];
         root.popups = [];
+        root.persist();
+    }
+
+    // The undismissed queue and the DND flag, and nothing else. Every other
+    // surface in this shell persists nothing and should not: a popover or a
+    // launcher coming back open after a restart would be reporting state the
+    // user did not ask for. These two are the user's unread mail and a switch
+    // they threw on purpose.
+    function persist(): void {
+        if (!root.stateLoaded)
+            return;
+        const queue = root.history.map(n => ({
+                    appName: n.appName ?? "",
+                    desktopEntry: n.desktopEntry ?? "",
+                    summary: n.summary ?? "",
+                    body: n.body ?? "",
+                    appIcon: n.appIcon ?? "",
+                    image: n.image ?? "",
+                    urgency: n.urgency,
+                    arrivedAt: root.arrivedAt(n)
+                }));
+        state.setText(JSON.stringify({
+            dnd: root.dnd,
+            queue
+        }));
     }
 
     // The popup for a notification goes away; the notification does not —
@@ -96,8 +155,15 @@ Singleton {
     }
 
     // A real dismissal: destroys the notification, so it leaves history too.
+    // A restored snapshot has nothing to destroy — dropping it from the list is
+    // the whole of its dismissal.
     function dismiss(notification: var): void {
         root.hidePopup(notification);
+        if (notification.restored) {
+            root.restored = root.restored.filter(n => n !== notification);
+            root.persist();
+            return;
+        }
         notification.dismiss();
     }
 
@@ -105,7 +171,14 @@ Singleton {
         root.dnd = !root.dnd;
         if (root.dnd)
             root.popups = [];
+        root.persist();
         return root.dnd;
+    }
+
+    // When this notification reached the shell. A restored snapshot carries its
+    // own; a live one is looked up by id.
+    function arrivedAt(notification: var): double {
+        return notification.arrivedAt ?? root.arrivals[notification.id] ?? Date.now();
     }
 
     // <dnd?>-<unread?>, the same four keys the swaync module reported.
@@ -169,6 +242,7 @@ Singleton {
                 // this handler returns, which empties the centre and leaves the
                 // popup stack holding nulls.
                 notification.tracked = true;
+                root.arrivals[notification.id] = Date.now();
 
                 // DND suppresses popups only; history still fills, which is the
                 // point of the mode. A reload replays the previous generation,
@@ -178,7 +252,10 @@ Singleton {
                 const ms = root.popupTimeout(notification);
                 if (ms > 0)
                     root.deadlines[notification.id] = Date.now() + ms;
-                root.popups = [notification, ...root.popups].slice(0, Config.notifPopupMaxVisible);
+                // Capped at the history bound, not at the visible count: the
+                // stack shows notifPopupMaxVisible and reports the rest as a
+                // count, so the list has to hold more than it draws.
+                root.popups = [notification, ...root.popups].slice(0, Config.notifHistoryMax);
             }
         }
     }
@@ -200,6 +277,43 @@ Singleton {
         }
     }
 
+    // Undismissed queue + DND across a RESTART. keepOnReload covers a config
+    // reload only; a fresh process starts empty, and the unread queue is the
+    // one thing in this shell that a user would notice losing. FileView creates
+    // the parent directory on write (fileview.cpp:231), so nothing has to
+    // mkdir ~/.local/state/quickshell first.
+    FileView {
+        id: state
+
+        path: `${Quickshell.env("HOME")}/.local/state/quickshell/notifications.json`
+        // A first run has no file, and that is not an error worth logging.
+        printErrors: false
+        // Deliberately NOT watched: this file is ours alone, and re-reading our
+        // own write would restore what we just persisted on top of the live
+        // notifications it was serialised from.
+        watchChanges: false
+
+        onLoadFailed: root.stateLoaded = true
+        onLoaded: {
+            try {
+                const saved = JSON.parse(state.text());
+                root.dnd = saved.dnd ?? false;
+                root.restored = (saved.queue ?? []).map(e => Object.assign({}, e, {
+                        restored: true,
+                        // The card reads all of these; a snapshot supplies them so
+                        // it needs no branch of its own.
+                        actions: [],
+                        hints: ({}),
+                        resident: false,
+                        transient: false
+                    }));
+            } catch (e) {
+                root.restored = [];
+            }
+            root.stateLoaded = true;
+        }
+    }
+
     // A dismissal from anywhere — the app itself, a script, our own Clear —
     // must also take the popup down. Objects destroyed elsewhere would
     // otherwise linger in `popups` as broken references.
@@ -210,6 +324,7 @@ Singleton {
             // NULL entry in the list, and every popup binding then reads
             // properties off it.
             root.popups = root.popups.filter(n => n && live.includes(n));
+            root.persist();
         }
 
         target: root.server?.trackedNotifications ?? null

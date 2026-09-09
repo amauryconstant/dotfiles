@@ -13,15 +13,21 @@ import QtQuick
 BarWidget {
     id: root
 
+    // Capped, with the overflow folded behind one glyph — the same cap the
+    // launcher's result list uses. An uncapped tray is the one widget that can
+    // push every other one off a narrow output.
+    readonly property var shown: SystemTray.items.values.slice(0, Config.trayMaxItems)
+    readonly property int overflow: SystemTray.items.values.length - root.shown.length
+
     hoverBackground: false
 
     Repeater {
-        model: SystemTray.items
+        model: root.shown
 
         Item {
             id: entry
 
-            required property SystemTrayItem modelData
+            required property var modelData
             // SystemTrayItem.menu is a DBusMenuHandle, which Quickshell does
             // not expose declaratively, so qmllint cannot resolve its type.
             // Suppressed inline, on this one line, rather than by adding
@@ -70,6 +76,20 @@ BarWidget {
                 }
                 onWheel: event => entry.modelData.scroll(event.angleDelta.y, false)
             }
+        }
+    }
+
+    Item {
+        height: Config.chipSize
+        visible: root.overflow > 0
+        width: Config.chipSize
+
+        Text {
+            anchors.centerIn: parent
+            color: root.restColor
+            font.family: Config.guiFont
+            font.pixelSize: Config.glyphBar
+            text: Config.overflowGlyph
         }
     }
 }

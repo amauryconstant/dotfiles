@@ -82,7 +82,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.alpha(Theme.scrim, Config.overviewScrimOpacity)
+        color: Qt.alpha(Theme.scrim, Config.scrimOpacity)
     }
 
     MouseArea {
@@ -109,7 +109,7 @@ PanelWindow {
             color: Theme.fgOnScrim
             font.family: Config.terminalFont
             font.letterSpacing: 2
-            font.pixelSize: Config.fontSizeSmall
+            font.pixelSize: Config.fontBody
             // Subordination by opacity, not by a dimmer token: the scrim is a
             // bg-overlay ground, where themes/CLAUDE.md bans fg-secondary and
             // fg-muted alike.
@@ -186,7 +186,7 @@ PanelWindow {
                     // fg-secondary lands at 2.38 (gruvbox-light) and vanishes.
                     // The earlier bgSecondary was worse still — it EQUALS
                     // bgOverlay in five of eight themes and measured 1.00.
-                    color: dot.index === root.selected ? Theme.accentPrimary : Theme.fgOnScrim
+                    color: dot.index === root.selected ? Theme.signalFocus : Theme.fgOnScrim
                     height: Config.overviewDotSize
                     radius: Config.radiusPill
                     width: dot.index === root.selected ? Config.overviewDotActiveWidth : Config.overviewDotSize
@@ -202,7 +202,7 @@ PanelWindow {
             anchors.horizontalCenter: parent.horizontalCenter
             color: Theme.fgOnScrim
             font.family: Config.terminalFont
-            font.pixelSize: Config.fontSizeSmall
+            font.pixelSize: Config.fontBody
             opacity: 0.6
             // The artboard's third clause, "drag window to move", is absent
             // because the behaviour is — see the header.

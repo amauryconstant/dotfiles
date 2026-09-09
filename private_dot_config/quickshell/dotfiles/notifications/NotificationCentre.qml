@@ -6,7 +6,8 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import QtQuick
 
-// Notification centre, artboard pan-a. Replaces swaync's control center.
+// Notification centre, design page Shell-07-Notifications. Replaces swaync's
+// control center.
 //
 // Structurally the launcher and the power menu again: one window on the focused
 // monitor, exclusive keyboard focus, no mask, a click outside dismisses. It
@@ -67,9 +68,9 @@ PanelWindow {
         anchors.rightMargin: Config.barInset
         anchors.top: parent.top
         anchors.topMargin: Config.barHeight + Config.barInset * 2
-        border.color: Theme.bgSecondary
+        border.color: Theme.edge
         border.width: Config.hairline
-        color: Theme.bgPrimary
+        color: Theme.groundBase
         implicitHeight: layout.implicitHeight
         radius: Config.radiusPanel
         width: Config.notifWidth
@@ -97,9 +98,9 @@ PanelWindow {
                     spacing: Config.gap + 2
 
                     Text {
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         font.family: Config.guiFont
-                        font.pixelSize: Config.fontSizeLarge
+                        font.pixelSize: Config.fontTitle
                         font.weight: Font.DemiBold
                         text: qsTr("Notifications")
                     }
@@ -107,7 +108,7 @@ PanelWindow {
                     // Accent ground, fgOnAccent text: the one place in this
                     // panel the accent appears, marking the count.
                     Rectangle {
-                        color: Theme.accentPrimary
+                        color: Theme.signalFocus
                         height: Config.notifBadgeHeight
                         radius: Config.radiusPill
                         visible: Notifications.unread > 0
@@ -117,9 +118,9 @@ PanelWindow {
                             id: count
 
                             anchors.centerIn: parent
-                            color: Theme.fgOnAccent
+                            color: Theme.inkOnSignal
                             font.family: Config.terminalFont
-                            font.pixelSize: Config.fontSizeTiny
+                            font.pixelSize: Config.fontMeta
                             font.weight: Font.DemiBold
                             text: Notifications.unread
                         }
@@ -135,16 +136,16 @@ PanelWindow {
                     // DND. Same four bell glyphs the bar widget uses, from
                     // Config — one state, one glyph set, two surfaces.
                     Rectangle {
-                        color: Notifications.dnd ? Theme.accentPrimary : Theme.bgSecondary
+                        color: Notifications.dnd ? Theme.signalFocus : Theme.groundRaised
                         height: Config.notifActionHeight
                         radius: Config.radiusChip
                         width: Config.notifActionHeight
 
                         Text {
                             anchors.centerIn: parent
-                            color: Notifications.dnd ? Theme.fgOnAccent : Theme.fgPrimary
+                            color: Notifications.dnd ? Theme.inkOnSignal : Theme.inkPrimary
                             font.family: Config.guiFont
-                            font.pixelSize: Config.fontSize
+                            font.pixelSize: Config.glyphRow
                             text: Notifications.glyph()
                         }
 
@@ -156,7 +157,7 @@ PanelWindow {
                     }
 
                     Rectangle {
-                        color: Theme.bgSecondary
+                        color: Theme.groundRaised
                         height: Config.notifActionHeight
                         radius: Config.radiusChip
                         width: clear.implicitWidth + Config.padLoose - 2
@@ -165,9 +166,9 @@ PanelWindow {
                             id: clear
 
                             anchors.centerIn: parent
-                            color: Theme.fgPrimary
+                            color: Theme.inkPrimary
                             font.family: Config.guiFont
-                            font.pixelSize: Config.fontSizeSmall - 1
+                            font.pixelSize: Config.fontBody - 1
                             font.weight: Font.Medium
                             text: qsTr("Clear")
                         }
@@ -185,7 +186,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.bottom: parent.bottom
-                    color: Theme.bgSecondary
+                    color: Theme.edge
                     height: Config.hairline
                     width: parent.width
                 }
@@ -200,7 +201,10 @@ PanelWindow {
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
                 contentHeight: cards.implicitHeight + Config.notifListPad * 2
-                implicitHeight: Math.min(contentHeight, root.height * 0.7)
+                // Bounded at notifCentreMaxHeight, taller than a popover
+                // because this is a list the user came to read — and still
+                // bounded by the output, which a fixed number is not.
+                implicitHeight: Math.min(contentHeight, Config.notifCentreMaxHeight, root.height * 0.7)
                 width: parent.width
 
                 Column {
@@ -229,10 +233,12 @@ PanelWindow {
                 }
             }
 
+            // The empty state is the state a user sees most often, so it is
+            // inkSecondary — legible — rather than a retired muted token.
             Text {
-                color: Theme.fgMuted
+                color: Theme.inkSecondary
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontSizeSmall
+                font.pixelSize: Config.fontBody
                 height: Config.notifHeaderHeight
                 horizontalAlignment: Text.AlignHCenter
                 text: Notifications.dnd ? qsTr("Do not disturb") : qsTr("No notifications")
@@ -241,15 +247,16 @@ PanelWindow {
                 width: parent.width
             }
 
-            // Footer: key hints. fgMuted is allowed here — the footer sits on
-            // the panel's own bgPrimary ground, not on a card.
+            // Footer: key hints. inkSecondary is legal here — the footer sits
+            // on the panel's own groundBase, which is the one ground that
+            // carries a second ink.
             Item {
                 height: Config.notifFooterHeight
                 width: parent.width
 
                 Rectangle {
                     anchors.top: parent.top
-                    color: Theme.bgSecondary
+                    color: Theme.edge
                     height: Config.hairline
                     width: parent.width
                 }
@@ -261,17 +268,17 @@ PanelWindow {
                     spacing: Config.pad - 2
 
                     Text {
-                        color: Theme.fgMuted
+                        color: Theme.inkSecondary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeTiny
+                        font.pixelSize: Config.fontMeta
                         font.weight: Font.Medium
                         text: qsTr("super+shift+n toggle")
                     }
 
                     Text {
-                        color: Theme.fgMuted
+                        color: Theme.inkSecondary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeTiny
+                        font.pixelSize: Config.fontMeta
                         font.weight: Font.Medium
                         text: qsTr("click → dismiss")
                     }

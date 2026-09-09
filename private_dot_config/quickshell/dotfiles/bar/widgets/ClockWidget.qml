@@ -46,9 +46,9 @@ BarWidget {
 
     Text {
         anchors.verticalCenter: parent.verticalCenter
-        color: Theme.fgPrimary
+        color: Theme.inkPrimary
         font.family: Config.terminalFont
-        font.pixelSize: Config.fontSizeLarge
+        font.pixelSize: Config.fontTitle
         text: Qt.formatDateTime(clock.date, "HH:mm")
     }
 
@@ -56,9 +56,9 @@ BarWidget {
         id: date
 
         anchors.verticalCenter: parent.verticalCenter
-        color: Theme.fgMuted
+        color: Theme.inkSecondary
         font.family: Config.guiFont
-        font.pixelSize: Config.fontSizeSmall
+        font.pixelSize: Config.fontBody
         text: Qt.formatDateTime(clock.date, "ddd d MMM")
     }
 

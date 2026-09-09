@@ -39,7 +39,9 @@ PanelWindow {
         if (!root.armed)
             return;
         root.icon = glyph;
-        root.level = Math.max(0, Math.min(1, level));
+        // Not clamped to 1: the bar clamps, the number does not, so an
+        // over-100% volume still reports the value it actually reached.
+        root.level = Math.max(0, level);
         root.dimmed = dimmed;
         hideTimer.restart();
     }
@@ -60,7 +62,7 @@ PanelWindow {
     visible: hideTimer.running || card.opacity > 0
 
     // An empty mask is an empty input region, so clicks land on whatever is
-    // underneath. Without it this window would eat every click in its 320x56
+    // underneath. Without it this window would eat every click in its 200x96
     // patch while it is up, and it has no interactive element to justify that.
     mask: Region {}
 
@@ -79,72 +81,81 @@ PanelWindow {
         id: card
 
         anchors.fill: parent
-        border.color: Theme.bgSecondary
+        border.color: Theme.edge
         border.width: Config.hairline
-        color: Theme.bgPrimary
+        color: Theme.groundBase
         opacity: hideTimer.running ? 1 : 0
         radius: Config.radiusPanel
 
+        // 🚨 Fade-OUT only. A readout you have to wait for has already failed,
+        // so the appearance is instant and only the disappearance is animated —
+        // hence the Behavior being live only while the hold timer is not.
         Behavior on opacity {
+            enabled: !hideTimer.running
+
             NumberAnimation {
-                duration: 150
+                duration: Config.motionSlow
             }
         }
 
-        Text {
-            id: glyph
+        Column {
+            anchors.centerIn: parent
+            spacing: Config.padTight - 1
 
-            anchors.left: parent.left
-            anchors.leftMargin: Config.pad
-            anchors.verticalCenter: parent.verticalCenter
-            color: root.dimmed ? Theme.fgMuted : Theme.fgPrimary
-            font.family: Config.guiFont
-            font.pixelSize: Config.fontSizeLarge
-            text: root.icon
-        }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Config.padTight + 1
 
-        Text {
-            id: value
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    // A 28px glyph is a GRAPHIC at 3:1, not text at 4.5 — and
+                    // it is the one size where a seven-step brightness ramp is
+                    // genuinely distinguishable, which is why three steps are
+                    // the rule everywhere else in the shell.
+                    color: root.dimmed ? Theme.inkSecondary : Theme.inkPrimary
+                    font.family: Config.guiFont
+                    font.pixelSize: Config.glyphOsd
+                    text: root.icon
+                }
 
-            anchors.right: parent.right
-            anchors.rightMargin: Config.pad
-            anchors.verticalCenter: parent.verticalCenter
-            color: Theme.fgPrimary
-            // Digits only line up in a fixed-pitch face, and the number changes
-            // width on nearly every keypress.
-            font.family: Config.terminalFont
-            font.pixelSize: Config.fontSizeSmall
-            horizontalAlignment: Text.AlignRight
-            text: `${Math.round(root.level * 100)}%`
-            width: Config.padLoose
-        }
-
-        Rectangle {
-            anchors.left: glyph.right
-            anchors.leftMargin: Config.gap
-            anchors.right: value.left
-            anchors.rightMargin: Config.gap
-            anchors.verticalCenter: parent.verticalCenter
-            // bgSecondary, not bgTertiary: accentPrimary on bgTertiary is
-            // 1.38-1.46:1 in both solarized themes and gruvbox-light, so the
-            // fill vanished into its own track. bgSecondary clears 3:1 in 7
-            // of 8 (verified 2026-09-01).
-            color: Theme.bgSecondary
-            height: Config.osdTrackHeight
-            radius: Config.radiusPill
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.inkPrimary
+                    // No percent sign: the bar underneath already says what the
+                    // scale is. Over 100% the number keeps counting while the
+                    // bar clamps, because clamping the number would hide a real
+                    // state.
+                    font.family: Config.guiFont
+                    font.pixelSize: Config.fontDisplay
+                    font.weight: Font.DemiBold
+                    text: Math.round(root.level * 100)
+                }
+            }
 
             Rectangle {
-                // fgSecondary rather than fgMuted: FG_MUTED equals BG_TERTIARY
-                // exactly in both solarized themes, so the dimmed fill used to
-                // be invisible at 1.00:1.
-                color: root.dimmed ? Theme.fgSecondary : Theme.accentPrimary
-                height: parent.height
-                radius: parent.radius
-                width: parent.width * root.level
+                anchors.horizontalCenter: parent.horizontalCenter
+                // groundRaised, not fillInert: fillInert on groundRaised is
+                // roughly 1.3:1 in Mocha, far under the 3:1 a graphic owes, so
+                // the design's own track/fill pairing fails its own floor. This
+                // pair was measured at 3:1 in 7 of 8 on 2026-09-01.
+                color: Theme.groundRaised
+                height: Config.osdTrackHeight
+                radius: Config.radiusPill
+                width: Config.osdTrackWidth
 
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 120
+                Rectangle {
+                    // inkSecondary rather than a muted token: FG_MUTED equals
+                    // BG_TERTIARY exactly in both solarized themes, so the
+                    // dimmed fill used to be invisible at 1.00:1.
+                    color: root.dimmed ? Theme.inkSecondary : Theme.signalFocus
+                    height: parent.height
+                    radius: parent.radius
+                    width: parent.width * Math.min(1, root.level)
+
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: Config.motionFast
+                        }
                     }
                 }
             }

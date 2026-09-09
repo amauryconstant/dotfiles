@@ -30,10 +30,11 @@ BarWidget {
         if (title === "")
             return "";
         const artist = root.player.trackArtist ?? "";
-        const text = String(artist === "" ? title : `${title} - ${artist}`);
-        // Waybar's dynamic-len 35 with a unicode ellipsis.
-        return text.length > Config.mediaMaxLength ? text.substring(0, Config.mediaMaxLength - 1) + "…" : text;
+        return String(artist === "" ? title : `${title} - ${artist}`);
     }
+    // Same rule as the window title: a pixel bound, not Waybar's dynamic-len
+    // 35 characters.
+    labelMaxWidth: Config.titleMaxW
     tooltipText: root.player ? `${root.player.identity}\n${root.player.trackTitle}\n${root.player.trackArtist} - ${root.player.trackAlbum}` : ""
 
     onClicked: root.player?.togglePlaying()

@@ -111,9 +111,9 @@ PanelWindow {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: root.revealed ? Config.barInset : -Config.dockHeight
         anchors.horizontalCenter: parent.horizontalCenter
-        border.color: Theme.bgSecondary
+        border.color: Theme.edge
         border.width: Config.hairline
-        color: Theme.bgPrimary
+        color: Theme.groundBase
         height: Config.dockHeight
         radius: Config.dockRadius
         width: row.implicitWidth + Config.dockPad * 2
@@ -170,9 +170,9 @@ PanelWindow {
                     // thing" the one-accent rule is about.
                     Rectangle {
                         anchors.top: parent.top
-                        border.color: Theme.fgSecondary
+                        border.color: Theme.inkSecondary
                         border.width: area.containsMouse ? Config.hairline : 0
-                        color: Theme.bgSecondary
+                        color: Theme.groundRaised
                         height: Config.dockTileSize
                         radius: Config.dockTileRadius
                         width: Config.dockTileSize
@@ -189,7 +189,7 @@ PanelWindow {
                         // has. fg-primary because bg-secondary is a lit ground.
                         Text {
                             anchors.centerIn: parent
-                            color: Theme.fgPrimary
+                            color: Theme.inkPrimary
                             font.family: Config.guiFont
                             font.pixelSize: Config.dockIconSize
                             text: Config.windowGlyph(tile.classKey)
@@ -199,11 +199,11 @@ PanelWindow {
 
                     // Kept against the artboard, which draws no indicator: a
                     // dock that cannot show what is running is a strictly worse
-                    // SUPER+D. See Amendment E in _plans/QUICKSHELL_SHELL.md.
+                    // SUPER+D. See Amendment E in _plans/archive/QUICKSHELL_SHELL.md.
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.horizontalCenter: parent.horizontalCenter
-                        color: Theme.accentPrimary
+                        color: Theme.signalFocus
                         height: Config.dockIndicator
                         radius: Config.radiusPill
                         visible: tile.windows.length > 0
@@ -235,7 +235,7 @@ PanelWindow {
             // bar's group separators — same tier, same colour.
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.bgSecondary
+                color: Theme.groundRaised
                 height: 26
                 width: Config.hairline
             }
@@ -248,14 +248,14 @@ PanelWindow {
                 // launcher chip: a single fixed anchor, everything else neutral.
                 Rectangle {
                     anchors.top: parent.top
-                    color: Qt.alpha(Theme.accentPrimary, launcherArea.containsMouse ? 0.2 : 0.14)
+                    color: Qt.alpha(Theme.signalFocus, launcherArea.containsMouse ? 0.2 : 0.14)
                     height: Config.dockTileSize
                     radius: Config.dockTileRadius
                     width: Config.dockTileSize
 
                     Text {
                         anchors.centerIn: parent
-                        color: Theme.accentPrimary
+                        color: Theme.signalFocus
                         font.family: Config.guiFont
                         font.pixelSize: Config.dockIconSize
                         text: Config.dockLauncherGlyph

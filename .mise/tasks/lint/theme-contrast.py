@@ -27,27 +27,6 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# (foreground token, background token, minimum ratio, where it renders)
-PAIRS = [
-    ("FG_PRIMARY", "BG_SECONDARY", 4.5, "BarWidget grounded, PowerMenu tile label + avatar"),
-    ("FG_PRIMARY", "BG_OVERLAY", 4.5, "NotificationCard, every string"),
-    ("FG_PRIMARY", "BG_PRIMARY", 4.5, "workspace pill occupied, OSD value"),
-    ("FG_SECONDARY", "BG_PRIMARY", 4.5, "BarWidget rest colour, ungrounded"),
-    ("FG_SECONDARY", "BG_OVERLAY", 3.0, "NotificationCard action outlines"),
-    ("FG_SECONDARY", "BG_SECONDARY", 3.0, "OSD dimmed progress fill"),
-    ("ACCENT_PRIMARY", "BG_SECONDARY", 3.0, "OSD progress fill on its track"),
-    # The dock's and the bar's launcher glyphs are accent-on-accent-tint, a
-    # blend no token pair describes; left unharvested here exactly as the bar's
-    # has always been, so the omission is visible rather than silent.
-    ("ACCENT_PRIMARY", "BG_PRIMARY", 3.0, "dock running dot on the dock panel"),
-    ("ACCENT_BORDER", "BG_OVERLAY", 3.0, "overview focused card outline"),
-    ("FG_MUTED", "BG_PRIMARY", 4.5, "INHERENT: footers, hints, clock date, empty pill"),
-    ("ACCENT_ERROR", "BG_PRIMARY", 4.5, "INHERENT: urgent workspace, critical states"),
-    ("ACCENT_ERROR", "BG_OVERLAY", 4.5, "INHERENT: NotificationCard urgent title"),
-    ("ACCENT_WARNING", "BG_PRIMARY", 4.5, "INHERENT: backlight, transcribing, battery low"),
-    ("ACCENT_INFO", "BG_PRIMARY", 4.5, "INHERENT: charging, streaming"),
-    ("ACCENT_URGENT_SECONDARY", "BG_PRIMARY", 4.5, "INHERENT: battery 20-30%"),
-]
 
 # Known-and-accepted cells: a property of the shipped colorset, not of a choice
 # this tree can make differently. Each needs a reason, and the reason must be
@@ -57,6 +36,12 @@ ACCEPTED = {
     # Solarized puts body text at base0/base00 (#839496 / #657b83) by design —
     # roughly 4:1 on its own backgrounds. Every consumer renders this, and the
     # only fix is a different FG_PRIMARY, i.e. editing the colorset.
+    #
+    # Design page 13 names this an open COLORSET bug and it is right: in BOTH
+    # Solarized sets, FG_SECONDARY measures BETTER on the same ground than
+    # FG_PRIMARY does (4.99 vs 4.13 light, 5.61 vs 4.75 dark), so the mapping
+    # has the two foregrounds the wrong way round. The fix belongs to the
+    # colorsets, not to any consumer of them.
     ("FG_PRIMARY", "BG_SECONDARY", "solarized-dark"): "solarized base0 by design",
     ("FG_PRIMARY", "BG_SECONDARY", "solarized-light"): "solarized base00 by design",
     ("FG_PRIMARY", "BG_OVERLAY", "solarized-dark"): "solarized base0 by design",
@@ -65,20 +50,69 @@ ACCEPTED = {
     # themes/CLAUDE.md already documents fg-secondary on bg-primary as
     # "± AA (theme-dependent)" and permits it for less critical text.
     ("FG_SECONDARY", "BG_PRIMARY", "rose-pine-dawn"): "documented as theme-dependent",
-    # gruvbox-light's ACCENT_PRIMARY is #d79921 on a #ebdbb2 elevated ground.
-    # Waybar's active workspace has the same ratio in this theme today.
-    ("ACCENT_PRIMARY", "BG_SECONDARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
-    ("ACCENT_PRIMARY", "BG_PRIMARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
-    ("ACCENT_PRIMARY", "BG_OVERLAY", "gruvbox-light"): "gruvbox-light accent is mid-yellow",
+    # 🚨 NO accent role clears 3:1 in all eight colorsets, and gruvbox-light is
+    # the worst case for every one of them. That measurement IS the reason the
+    # design makes everything load-bearing foreground-class and leaves accent as
+    # decoration: every site below pairs it with a glyph, a number or a return
+    # mark, so a faint accent degrades rather than losing the state.
+    ("ACCENT_PRIMARY", "BG_SECONDARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow; never the sole carrier",
+    ("ACCENT_PRIMARY", "BG_PRIMARY", "gruvbox-light"): "gruvbox-light accent is mid-yellow; never the sole carrier",
     # ACCENT_BORDER is the Hyprland active-window border in every theme, so
     # these ratios are what the compositor already draws around the focused
-    # window today. The overview's focused card additionally carries 2.2x the
-    # scale, full opacity against 0.6/0.35, and the only accent footer pill —
-    # so a faint outline in these three degrades rather than losing the state.
+    # window today. The overview that uses it is dormant besides.
     ("ACCENT_BORDER", "BG_OVERLAY", "catppuccin-latte"): "accent-border is the compositor's own border colour",
     ("ACCENT_BORDER", "BG_OVERLAY", "gruvbox-light"): "accent-border is the compositor's own border colour",
     ("ACCENT_BORDER", "BG_OVERLAY", "solarized-dark"): "accent-border is the compositor's own border colour",
+    # ACCENT_ERROR on the card ground is the critical card's 1px border, drawn
+    # alongside a tinted chip AND a different glyph — three carriers.
+    # The critical card's 1px border. The card MUST ground on BG_OVERLAY — it is
+    # a thing on top of the desktop, not part of a panel — so unlike the power
+    # tile below there is no ground to move it to. It is the third carrier
+    # anyway: the chip takes a signalError tint AND the glyph itself changes.
+    ("ACCENT_ERROR", "BG_OVERLAY", "solarized-dark"): "critical card border; the chip tint and the glyph carry it",
 }
+
+# (foreground token, background token, minimum ratio, where it renders)
+#
+# Harvested BY PARENTING, not by grepping colour lines: most Theme.edge /
+# BG_SECONDARY uses in that tree are 1px hairlines and borders, and reading one
+# two lines above an FG_ token invents failures that are not on screen.
+#
+# 🚨 There is no INHERENT escape hatch any more. It used to excuse five
+# accent-as-text pairs on the grounds that Waybar renders the same ratios, and
+# parity with an older tool is not a reason to ship failing text. The rules
+# changed instead: no accent is drawn as text in this tree now, and the warn and
+# info roles are not drawn as graphics either — the battery, the idle
+# indicator, the bell and the dictation widget all moved their non-error states
+# onto the glyph, which is what they should always have carried.
+PAIRS = [
+    # --- text, floor 4.5
+    ("FG_PRIMARY", "BG_PRIMARY", 4.5, "OSD readout, launcher row name and zero-match line, panel headers and titles"),
+    ("FG_PRIMARY", "BG_SECONDARY", 4.5, "BarWidget grounded, occupied workspace pill, meter and battery pills, PowerMenu tile label + avatar"),
+    ("FG_PRIMARY", "BG_OVERLAY", 4.5, "NotificationCard, every string on it"),
+    ("FG_SECONDARY", "BG_PRIMARY", 4.5, "BarWidget rest colour, clock date, empty workspace pill, launcher second line + footer + placeholder, centre empty state + footer"),
+
+    # --- graphics and UI components, floor 3.0
+    ("ACCENT_PRIMARY", "BG_SECONDARY", 3.0, "OSD progress fill on its track"),
+    ("ACCENT_PRIMARY", "BG_PRIMARY", 3.0, "launcher caret, prefix mark and return mark; dock running dot"),
+    ("FG_SECONDARY", "BG_SECONDARY", 3.0, "OSD dimmed progress fill"),
+    ("FG_SECONDARY", "BG_OVERLAY", 3.0, "NotificationCard action outlines"),
+    ("ACCENT_ERROR", "BG_PRIMARY", 3.0, "audio failed-service glyph, network no-route glyph, battery critical glyph, DND bell, idle inhibitor, PowerMenu power-off glyph and border"),
+    ("ACCENT_ERROR", "BG_OVERLAY", 3.0, "critical NotificationCard border and chip glyph"),
+    ("ACCENT_BORDER", "BG_OVERLAY", 3.0, "overview focused card outline (dormant surface)"),
+]
+
+# Pairs the design BANS. Measured on purpose: the reason a rule exists is the
+# number, and deleting the row leaves the next reader free to reintroduce it.
+# None of these is drawn anywhere in the tree.
+BANNED = [
+    ("FG_PRIMARY", "BG_TERTIARY", 4.5, "no text on fill-inert. This is the 1.67 that moved the occupied workspace pill onto BG_SECONDARY"),
+    ("FG_MUTED", "BG_PRIMARY", 4.5, "FG_MUTED is retired: banned as text, and under 3:1 as an outline. There is no successor token"),
+    ("ACCENT_ERROR", "BG_PRIMARY", 4.5, "signal-error is never a TEXT colour. The notification title and the urgent workspace number both moved off it"),
+    ("ACCENT_WARNING", "BG_PRIMARY", 3.0, "not drawn as a graphic either: 2.05 in rose-pine-dawn. The battery band and the dictation state carry glyphs instead"),
+    ("ACCENT_INFO", "BG_PRIMARY", 3.0, "same, at 2.80: charging and streaming are distinct glyphs, not tinted ones"),
+    ("ACCENT_SUCCESS", "BG_PRIMARY", 3.0, "no green anywhere in this shell — a healthy system is neutral, not green"),
+]
 
 SHORT = {
     "catppuccin-latte": "latte",
@@ -131,12 +165,58 @@ for fg, bg, minimum, where in PAIRS:
             continue
         ratio = contrast(colours[fg], colours[bg])
         bad = ratio < minimum
-        accepted = (fg, bg, name) in ACCEPTED or where.startswith("INHERENT")
+        accepted = (fg, bg, name) in ACCEPTED
         if bad and not accepted:
             failures.append((fg, bg, name, ratio, minimum))
         cells.append(f"{'!' if bad and not accepted else '~' if bad else ' '}{ratio:8.2f}")
     print(f"{fg + ' on ' + bg:<40}{minimum:>4}  " + "".join(cells))
     print(f"{'':<44}  {where}")
+
+print()
+print("BANNED pairs — measured so a rule keeps its evidence. None of these is drawn.")
+for fg, bg, minimum, why in BANNED:
+    worst, worst_theme = 99.0, ""
+    for name in names:
+        colours = themes[name]
+        if fg not in colours or bg not in colours:
+            continue
+        ratio = contrast(colours[fg], colours[bg])
+        if ratio < worst:
+            worst, worst_theme = ratio, name
+    print(f"  {fg + ' on ' + bg:<32}worst {worst:5.2f} ({SHORT.get(worst_theme, worst_theme)}) vs {minimum}")
+    print(f"  {'':<32}{why}")
+
+# focusRing and disabledOpacity are DERIVED in Theme.qml rather than named by a
+# theme, so no PAIRS row can express them. Both are reproduced from the same
+# rule the QML uses, which is the only way they stay in step.
+print()
+print("focusRing — better of ACCENT_PRIMARY / FG_PRIMARY against BG_SECONDARY, floor 3.0:")
+for name in names:
+    colours = themes[name]
+    on_accent = contrast(colours["ACCENT_PRIMARY"], colours["BG_SECONDARY"])
+    on_ink = contrast(colours["FG_PRIMARY"], colours["BG_SECONDARY"])
+    picked = "signalFocus" if on_accent >= on_ink else "inkPrimary"
+    ratio = max(on_accent, on_ink)
+    if ratio < 3.0:
+        failures.append(("FOCUS_RING", "BG_SECONDARY", name, ratio, 3.0))
+    print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}  {picked}{'  !' if ratio < 3.0 else ''}")
+
+print()
+print("disabledOpacity — lowest 5% step of FG_SECONDARY over BG_PRIMARY clearing 3.0:")
+for name in names:
+    colours = themes[name]
+    fgc = tuple(int(colours["FG_SECONDARY"][i:i + 2], 16) for i in (1, 3, 5))
+    bgc = tuple(int(colours["BG_PRIMARY"][i:i + 2], 16) for i in (1, 3, 5))
+    chosen = None
+    for step in range(12, 21):
+        alpha = step / 20
+        blend = "#" + "".join(f"{round(f * alpha + b * (1 - alpha)):02x}" for f, b in zip(fgc, bgc))
+        if contrast(blend, colours["BG_PRIMARY"]) >= 3.0:
+            chosen = alpha
+            break
+    if chosen is None:
+        failures.append(("DISABLED", "BG_PRIMARY", name, 0.0, 3.0))
+    print(f"  {SHORT.get(name, name):<12}{'none clears 3:1 — falls back to full opacity' if chosen is None else f'{chosen:.2f}'}")
 
 # fgOnAccent is computed in Theme.qml rather than being a fixed token, because
 # neither FG_CONTRAST nor BG_PRIMARY clears 4.5:1 on ACCENT_PRIMARY in all 8.

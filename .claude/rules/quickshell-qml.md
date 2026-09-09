@@ -6,7 +6,7 @@ disables subdirectory discovery for every other config, including voxtype's)
 **Gated by**: `features.quickshell_shell` via `.chezmoiignore`
 
 **See**: Root `CLAUDE.md` for core standards
-**See**: `_plans/QUICKSHELL_SHELL.md` for the phase roadmap
+**See**: `_plans/archive/QUICKSHELL_SHELL.md` for the phase roadmap
 **See**: `.claude/rules/hyprland-lua.md` — this file is its counterpart
 
 ---
@@ -38,7 +38,7 @@ singletons; `import "../"` reaches the shared bar components.
 🚨 **Never `import "root:/"`.** Quickshell's `root:` URL scheme resolves at runtime but
 qmllint has no interceptor for it, so the import silently fails to lint — the file passes
 while every type in it goes unchecked. Verified: with relative imports, a typo'd
-`Theme.fgPrimaryTYPO` two directories deep is caught.
+`Theme.inkPrimaryTYPO` two directories deep is caught.
 
 **`pragma Singleton` needs a `qmldir` entry.** It works at runtime without one, but qmllint
 reports *"not declared as singleton in qmldir"* and fails. The lint task copies `qmldir` into
@@ -264,7 +264,7 @@ not a theme colour: `Theme.scrim` is a deliberate literal, under the same exempt
 
 🚨 **Then everything drawn on it needs `Theme.fgOnScrim`.** The scrim is dark in every theme,
 so a light theme's own foregrounds land on it at **1.81** (gruvbox-light) and 2.63 (latte) and
-are simply not there. Same computed pick as `fgOnAccent`, better of `FG_PRIMARY` / `BG_PRIMARY`;
+are simply not there. Same computed pick as `inkOnSignal`, better of `FG_PRIMARY` / `BG_PRIMARY`;
 worst case across all 8 becomes 6.64. `mise run lint:theme-contrast` checks both, in their own
 section — the scrim is not a colorset token, so the `PAIRS` table cannot express it.
 
@@ -306,6 +306,13 @@ Verified by driving the pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x =
 held continuously from a bottom-centre entry, onto a tile, and across a far-left entry at
 x=120 against a panel spanning only x≈815–1104.
 
+🚨 **`escape` is an ILLEGAL METHOD NAME and qmllint does not catch it.** A
+`function escape(): void {…}` on a `PanelWindow` renders, formats and lints clean —
+`mise run lint:qml` passed on it — and then the engine refuses the whole file at LOAD time with
+*"Illegal method name"*, taking the surface with it (`Type Launcher unavailable`). The only thing
+that finds it is actually running the tree. Found 2026-09-08 on the launcher's Esc handler, now
+`clearOrClose()`.
+
 🚨 **`DesktopEntries.byId()` is a function call, not a dependency.** A binding written
 `readonly property var entry: DesktopEntries.byId(id)` never re-evaluates when the manager
 rescans after a `.desktop` file changes (`desktopentry.cpp` `handleFileChanges`). Resolve off
@@ -338,13 +345,43 @@ never fires. That is why theming is driven by an explicit IPC call.
 
 ## Geometry and the accent rule
 
-Both are Amendment A of `_plans/QUICKSHELL_SHELL.md`, and both live in exactly one place.
+Both are Amendment A of `_plans/archive/QUICKSHELL_SHELL.md`, and both live in exactly one place.
 
-**Geometry** is the scale in `Config.qml.tmpl`: `radiusPanel` 12 / `radiusTile` 10 /
-`radiusChip` 8 / `radiusPill` 999, `gap` 8, `padTight`/`pad`/`padLoose` 12/16/24, plus
-`barHeight` 40, `barInset` 8, `chipSize` 26, `pillHeight` 24. A widget never writes a radius
-or a spacing of its own — the four-step radius ramp is what makes a chip inside a panel read
-as nested rather than as a coincidence.
+**Geometry** is the scale in `Config.qml.tmpl`, and a widget never writes a radius, a
+spacing, a font size or an animation duration of its own.
+
+🚨 **There are exactly THREE radii, and radii are NOT on the density ramp**: `radiusChip` 8
+for chips and rows, `radiusPanel` 12 for surfaces, `radiusPill` 999. The four-step ramp this
+tree used to carry (plus a fifth at 14 on the power tiles and a sixth at 6 on tooltips) was
+inventing distinctions no surface needs — a tooltip and a chip are the same kind of thing.
+Spacing is `gap` 8 and `padTight`/`pad`/`padLoose` 12/16/24; `rowH` 34 is a list row and
+`launcherRowHeight` 48 is a two-line one. `barHeight` 40, `barInset` 8, `chipSize` 26,
+`pillHeight` 24.
+
+🚨 **`hitMin` 32 does not scale with anything.** It is a pointer fact, not a density
+preference: a widget whose paint is 26 still claims 32 of pointer space. `BarWidget`'s
+`MouseArea` floors at it, which costs no layout because chips sit `gap` apart and two 32px
+areas on adjacent 26px chips are 34 apart.
+
+**Type is six steps and four glyph sizes, and nothing outside them is drawn**: `fontMeta` 11,
+`fontBody` 12, `fontTitle` 14, `fontDisplay` 20 (the OSD readout, its only use), with glyphs
+at `glyphRow` 13, `glyphBar` 16, `glyphOsd` 28, `glyphTile` 32. QML's `font.pixelSize` is an
+**integer**, so the design's half-pixel steps round here — meta 10.5 → 11, title 13.5 → 14.
+That is a QML constraint, not a reading of the design.
+
+**Motion is three durations**: `motionFast` 120 (hover and press tints, meter fills),
+`motionSlow` 180 (reflow, pill travel, OSD fade-out), `motionEnter` 220 (arrival). Never
+animated: text replacing text, the focus ring, and anything whose only change is a colour role
+— which is why a live theme switch repaints with no transition at all.
+
+🚨 **Truncation is by PIXELS, never by character count.** `titleMaxLength` and
+`mediaMaxLength` are gone: `WWWW…` is about three times the width of `iiii…`, so a character
+cap does not bound the bar. Set `labelMaxWidth` on `BarWidget` and let `Text.elide` do it —
+`labelElideMode: Text.ElideMiddle` for a path, whose identifying half is its tail.
+
+**The design publishes three density columns** (compact 12 / default 13 / roomy 14). Only the
+default is implemented: the one thing that could select a column is the system menu, which is
+not built, and two unreachable columns are dead configuration.
 
 **The accent rule** — *one accent marks the focused thing, everything else neutral, semantic
 colours only for state* — is enforced by `BarWidget.iconColor`. A widget overrides it only
@@ -354,31 +391,42 @@ the rule applies for free.
 
 🚨 **`iconColor`/`labelColor` are not one fixed rest colour — they default to `restColor`,
 which follows `grounded`.** A widget colouring for a state ends its ternary on `root.restColor`;
-ending it on a flat `Theme.fgSecondary` pins the ungrounded colour onto a lit ground. That was
+ending it on a flat `Theme.inkSecondary` pins the ungrounded colour onto a lit ground. That was
 six widgets' worth of defect, found by the reviewer below and fixed 2026-09-01.
-`themes/CLAUDE.md` bans `@fg-secondary` on `@bg-secondary`/`@bg-tertiary` outright (both
-"secondary" reads at 4.0-4.5:1 and fails WCAG AA), and a hovered chip, a pill and the
-launcher tint are all elevated surfaces. So the default is `fgSecondary` at rest and
-`fgPrimary` the moment a ground appears. Anything that hardcodes one of the two reintroduces
-the banned pair on half the widget's states.
+`themes/CLAUDE.md` bans the second ink on an elevated ground outright, and a hovered chip, a
+pill and the launcher tint are all elevated surfaces. So the default is `inkSecondary` at rest
+and `inkPrimary` the moment a ground appears. Anything that hardcodes one of the two
+reintroduces the banned pair on half the widget's states.
+
+🚨 **`signalError` is the ONLY semantic colour a bar widget may take.** Measured across all
+eight colorsets, `ACCENT_WARNING` lands at **2.05** in rose-pine-dawn and 2.19 in
+gruvbox-light, and `ACCENT_INFO` at **2.80–3.31** in the light sets — under the 3:1 a graphic
+owes, so a state drawn in either was *less* visible than the same state drawn neutral. Only
+`ACCENT_ERROR` clears 3:1 everywhere (worst 3.25, on `BG_PRIMARY`). The battery's low band,
+the idle inhibitor's second state, the unread bell and three dictation states all moved onto
+their own **glyph**, which is what they should always have carried. `signalWarn`, `signalInfo`
+and `signalOk` are bound in `Theme.qml` and drawn nowhere.
 
 `labelColor` is split from `iconColor` so the glyph can carry a state while the number it
 annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
 puts a number in `terminalFont`: digits only line up fixed-pitch, and a proportional face
 reflows the bar every time the value changes width.
 
-`pill: true` gives a widget its own permanent ground. **Exactly one widget has it** — the
-battery — because charge is the only number that has to be readable without a hover.
+`pill: true` gives a widget its own permanent ground. **Exactly two widgets have it** — the
+battery and the meter — because charge and load are the two numbers that have to be readable
+without a hover. The design draws both grounded; what it forbids is a *second meter* beside
+the first, not a second ground.
 `tinted: true` is the same idea without the pill radius, and **only the launcher chip has
 it**: an accent ground at rest is the single fixed anchor the bar is allowed.
 Everything else is icon-only, with its number in the tooltip.
 
 `BarSeparator` binds to the group that **follows** it (`group: gPower`), so a group that
 collapses to zero width on a desktop takes its leading hairline with it instead of leaving a
-stray rule in the bar. **The hairline is `bgSecondary`** — bar border, separators, the gap dot
-and every panel border alike.
+stray rule in the bar. **The hairline is `Theme.edge`** — bar border, separators, the gap dot
+and every panel border alike. `edge` resolves to `groundRaised`; use the role name, because a
+`border.color` and a ground are different jobs even where the value coincides.
 
-🚨 **This was `bgTertiary` until 2026-09-01, on a mis-mapping.** Amendment A read the canvas's
+🚨 **This was the fill-inert tier until 2026-09-01, on a mis-mapping.** Amendment A read the canvas's
 `#313244` as "`surface0`, which is what `BG_TERTIARY` maps to". It does not: in
 `themes/catppuccin-mocha/colors.sh`, `BG_SECONDARY` is `#313244` and `BG_TERTIARY` is
 `#45475a`. The correction moved the hairline one tier the wrong way in all 8 themes. See the
@@ -392,9 +440,16 @@ colorsets (not just the one symlinked at `themes/current`) and measures the pair
 actually renders. **Manual-only**, like `lint:hypr-lua` — its pair table is harvested by hand,
 so it goes stale silently when a widget changes a colour. Run it after touching any colour here.
 
-🚨 **Harvest by parenting, never by grepping colour lines.** Most `Theme.bgSecondary` uses in
-this tree are 1px hairlines and borders, not grounds. Reading `color: Theme.bgSecondary` two
-lines above a `Theme.fgMuted` and calling it a violation invents failures that are not on
+🚨 **There is no `INHERENT` escape hatch any more.** It used to excuse five accent-as-text pairs
+on the grounds that Waybar renders the same ratios — parity with an older tool is not a reason to
+ship failing text, as design page 13 says outright. The rules changed instead, so those pairs are
+no longer drawn rather than being excused. The script also carries a `BANNED` list, measured and
+reported but asserted absent from the tree: a rule keeps its evidence, or the next reader
+reintroduces what it forbids.
+
+🚨 **Harvest by parenting, never by grepping colour lines.** Most `Theme.groundRaised` uses in
+this tree are 1px hairlines and borders, not grounds. Reading `color: Theme.groundRaised` two
+lines above an ink token and calling it a violation invents failures that are not on
 screen — the 2026-09-01 pass started with five such suspects in `NotificationCentre`,
 `PowerMenu` and `Launcher` and **all five were hairlines**.
 
@@ -412,48 +467,63 @@ one theme that happened to be applied:
 | PowerMenu avatar initial | `accentPrimary` on `bgTertiary` | **1.46** solarized-dark | `fgPrimary` on `bgSecondary` |
 | NotificationCard action outlines | `fgMuted` on `bgOverlay` | **2.18** solarized-light | `fgSecondary` |
 
-The pattern in three of the four: **`bgTertiary` is the trap tier.** It is the only ground
-whose distance from the foreground tokens varies enough between themes to vanish entirely, and
-`themes/CLAUDE.md` already bans `fg-muted` on it. Prefer `bgSecondary` for any ground that has
-to carry something on top of it.
+The pattern in three of the four: **`fillInert` (`BG_TERTIARY`) is the trap tier**, which is
+exactly why the role system makes it a *material* rather than a ground and forbids text on it
+outright. Prefer `groundRaised` for any ground that has to carry something on top of it. The
+2026-09-08 pass found a fourth instance the first one missed: the occupied workspace pill, at
+**1.67** in solarized-light.
 
-### `Theme.fgOnAccent` — text on an accent fill
+### `Theme.inkOnSignal` — text on an accent fill
 
 🚨 **No fixed token works across the 8 themes.** `FG_CONTRAST` is the one named for the job and
-lands at **1.49:1** on gruvbox-dark's own `ACCENT_PRIMARY` — the focused workspace number, the
-most-read thing in the bar, unreadable in that theme. `BG_PRIMARY` is better there (8.69) and
-worse in gruvbox-light (2.19). So `Theme.qml` computes the pick per theme from WCAG relative
-luminance, and the worst case across all 8 goes 1.49 → 3.47.
+lands at **1.49:1** on gruvbox-dark's own accent — the focused workspace number, the most-read
+thing in the bar, unreadable in that theme. `BG_PRIMARY` is better there (8.69) and worse in
+gruvbox-light (2.19). So `Theme.qml` computes the pick per theme from WCAG relative luminance,
+and the worst case across all 8 goes 1.49 → **3.47** (rose-pine-dawn).
 
-Use `Theme.fgOnAccent` for anything drawn **on** an `accentPrimary` fill — the focused workspace
+🚨 **Design page 01 says this is a fixed binding to `GROUND_BASE`; pages 04 and 07 say it is
+computed. Keep it computed** — the computation picks whichever of `FG_CONTRAST` / `BG_PRIMARY`
+contrasts more, and `BG_PRIMARY` *is* `GROUND_BASE`, so its result is ≥ the fixed binding in
+every theme and can never be worse. Page 13 quotes 4.34 (latte) as the worst case for the bound
+value; that is not the worst case, rose-pine-dawn is.
+
+Use `Theme.inkOnSignal` for anything drawn **on** a `signalFocus` fill — the focused workspace
 pill, the notification count badge, an active DND chip, the launcher's text selection. A bare
-`Theme.fgContrast` at such a site is the defect. `Theme.luminance()`/`Theme.contrast()` are
-there too if a new surface needs the same decision.
+`Theme.inkContrastCandidate` at such a site is the defect; that property exists only to be one
+of the two candidates and is never assigned to a `color:`.
 
 ### Reading the design source, not the transcription
 
 The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
-readable through the `DesignSync` MCP tool: `list_files`, then `get_file`. It is now **nine
-files** — `Foundations`, `Bar - Dock`, `Composites`, `Launcher - Menu`, `Panels`, `Session`,
-plus `Popovers`, `States` and `Proof` (`.dc.html`) — replacing the single-file `1a`–`1i` set.
-`support.js` beside them is the generated dc-runtime and carries no design content — do not
-bother fetching it. Reading the artboards directly has now settled seven things the prose
-transcriptions had lost or got wrong: the launcher chip, the hairline tier (twice, in opposite
-directions), the mono numerals, urgent being a text colour rather than a red fill, the card
-contrast law, and that notification cards carry no severity stripe.
+readable through the `DesignSync` MCP tool: `list_files`, then `get_file`.
 
-🚨 **The design and this tree disagree in places, and the design disagrees with itself in
-sixteen.** Before implementing anything from an artboard, read
-`_research/QUICKSHELL_DESIGN_AUDIT.md` — it catalogues the internal contradictions, the four
-claims that are numerically false (measured against all 8 colorsets, where the design measured
-two), and the shipped defects it correctly identifies. `_research/QUICKSHELL_DESIGN_BRIEF_R5.md`
-carries the rulings and the scope decision. `Foundations` was **rewritten** after Amendment B
-read it: `f-b` (interaction states), `f-c` (motion), `f-d` (glyph inventory) are new and were
-never recorded in the plan.
+🚨 **The project was REWRITTEN on 2026-09-08 and every earlier artboard id is dead.** It is
+now **fourteen pages** — `Shell-00-Index`, `Shell-01-Colour`, `Shell-02-Geometry`,
+`Shell-03-Behaviour`, then one page per surface (`04-Bar`, `05-Launcher`, `06-Popovers`,
+`07-Notifications`, `08-OSD`, `09-Session`, `10-Menu`, `11-Clipboard`, `12-Deferred`) and
+`Shell-13-Accessibility`. The nine-file set (`Foundations`, `Bar - Dock`, `Composites`,
+`Launcher - Menu`, `Panels`, `Session`, `Popovers`, `States`, `Proof`) and every id inside it
+— `f-a`, `bar-a`, `pop-g`, `st-b`, `pf-a`, `comp-a`, `comp-b`, `pan-a`, `1a`–`1i` — no longer
+resolves. `support.js` beside them is the generated dc-runtime and carries no design content.
+
+Three pages state rules and nothing else does: **01** colour, type and motion; **02**
+geometry; **03** behaviour. A surface page states only its own departures from those, so a
+number found on a surface page that contradicts a foundation page is a **defect in the
+design**, not a local override. There have been four such, all catalogued.
+
+🚨 **Read `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 before implementing anything from a
+page.** It records where the fourteen-page set contradicts itself, where its numbers are
+wrong, and which of this tree's departures are deliberate. Parts 1–4 audit the dead nine-file
+set and are kept for their measurements only.
 
 ⚠️ **`DesignSync` needs its own authorization.** A session without it fails with *"DesignSync
 needs design-system authorization"*; `/design-login` grants it. Nothing in the repo can
 substitute — plan on reading the source, not a transcription of it.
+
+**Two surfaces this tree ships have no page in the current set**: the dock and the workspace
+overview. Both are dormant (`Config.dockEnabled` / `Config.overviewEnabled` are `false`) and
+both were declined in daily use, so their absence is consistent rather than an omission to
+correct. They are not deleted, and they are not updated.
 
 ### 🚨 Map canvas colours by HEX, never by name
 
@@ -531,11 +601,42 @@ add a second, less reliable trigger for a change the shell can already see.
 ## Theming
 
 `Theme.qml` parses `~/.config/themes/current/colors.sh` at runtime — the same format-neutral
-colorset every other app reads, so there is no ninth per-theme file. All **24** semantic
-variables are exposed; a missing key falls back to hardcoded Catppuccin, which renders wrong
-colours with no error, so the property set must stay complete. Three properties are *computed*
-rather than read — `fgOnAccent`, `scrim` and `fgOnScrim` — each because no token in the set
-works across all 8 themes.
+colorset every other app reads, so there is no ninth per-theme file. A missing key falls back to
+hardcoded Catppuccin, which renders wrong colours **with no error**, so the property set must
+stay complete, and every fallback is a verbatim copy from `themes/catppuccin-mocha/colors.sh` —
+never from a mockup.
+
+🚨 **The property names are SEMANTIC ROLES, not colorset keys.** A token names a meaning or it
+names the module that happens to spend it, and only the first kind can be reasoned about — a
+module-named scheme cannot even *express* the requirement that a CPU readout and a failed
+service must stay tellable apart. `Theme.qml` is the translation layer, so `colors.sh` keeps its
+module-named keys and waybar, wofi, swaync, btop and ghostty are untouched. Renaming the
+colorsets themselves is a separate round.
+
+| Tier | Roles | Reads |
+|---|---|---|
+| Ground | `groundBase` `groundRaised` `groundFloat` | `BG_PRIMARY` `BG_SECONDARY` `BG_OVERLAY` |
+| Material | `fillInert` | `BG_TERTIARY` — **never accepts text**, 1.67 at worst |
+| Ink | `inkPrimary` `inkSecondary` | `FG_PRIMARY` `FG_SECONDARY` |
+| Signal | `signalFocus` `signalError` `signalWarn` `signalOk` `signalInfo` | `ACCENT_PRIMARY` `ACCENT_ERROR` `ACCENT_WARNING` `ACCENT_SUCCESS` `ACCENT_INFO` |
+| Identity | `identity1`…`identity5` | `ACCENT_SUBTLE` `ACCENT_SPECIAL` `ACCENT_MODIFICATION` `ACCENT_HIGHLIGHT` `ACCENT_TERTIARY` |
+
+**Six values are derived, not read**: `edge` (every hairline), `hover` (one opaque step up the
+ground stack), `press` (`inkPrimary` at 8%), `select` (`signalFocus` at 13%, **always** paired
+with a glyph or a weight change — the tint alone reaches 1.10–1.98), `focusRing` and
+`disabledOpacity`. Plus `inkOnSignal`, `scrim` and `fgOnScrim`, each because no token in the set
+works across all 8 themes. `disabledOpacity` is measured against the **live** theme rather than
+fixed — the lowest 5% step of `inkSecondary` over `groundBase` still clearing 3:1, which lands
+between 0.60 and 0.85 depending on the colorset.
+
+🚨 **Two tokens are RETIRED from drawing.** `FG_MUTED` has no successor at all: it is banned as
+text (2.48 worst) and fails 3:1 as an outline, so every former site is now `inkSecondary` or the
+`disabled` derivation. `FG_CONTRAST` survives only as `inkContrastCandidate`, read by the
+`inkOnSignal` computation and never assigned to a `color:`. `ACCENT_BORDER`,
+`ACCENT_PERFORMANCE`, `ACCENT_SECONDARY`, `ACCENT_ALTERNATIVE` and `ACCENT_URGENT_SECONDARY` are
+not bound: the first four sit too near `signalFocus` or `signalError` to be identity slots, and
+the last was the battery's 20–30% band, which is `signalWarn`'s job — expressed by the glyph,
+since no warn colour clears 3:1.
 
 Contrast rules from `themes/CLAUDE.md` are measured by `mise run lint:theme-contrast` (see
 above) across all 8 colorsets; everything that task's hand-harvested pair table does not cover
@@ -544,7 +645,7 @@ module → semantic-colour mapping this bar follows is `waybar/CLAUDE.md`'s tabl
 
 The closest thing to enforcement is the `theme-consistency-reviewer` subagent, which takes this
 tree as a second review target: literal hex (only `Theme.qml`'s fallbacks are allowed), literal
-font name (only `Config.qml.tmpl`, and only through `globals.yaml`), and `Theme.fgSecondary` on
+font name (only `Config.qml.tmpl`, and only through `globals.yaml`), and `Theme.inkSecondary` on
 a lit ground. It judges the third against `BarWidget`'s `grounded` ternary, so an override that
 pins one fixed rest colour is the finding.
 

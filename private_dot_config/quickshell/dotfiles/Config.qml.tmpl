@@ -5,18 +5,16 @@ import Quickshell
 Singleton {
     id: root
 
-    // Geometry scale, from _plans/QUICKSHELL_SHELL.md Amendment A. Defined
-    // once here and used by every surface, so nested surfaces read as nested:
-    // a chip inside a panel is visibly a smaller radius, not a coincidence.
+    // 🚨 THREE radii, and design page Shell-02-Geometry is explicit that radii
+    // are NOT on the density ramp. The four-step ramp this file used to carry
+    // (12 / 10 / 8 / 6, plus a fifth at 14 on the power tiles) was inventing
+    // distinctions no surface needs: a tooltip and a chip are the same kind of
+    // thing, and a power tile is a surface.
     readonly property int radiusPanel: 12
-    readonly property int radiusTile: 10
     readonly property int radiusChip: 8
     // Larger than any element it is applied to, which is how a pill stays a
     // pill at every height without recomputing the radius.
     readonly property int radiusPill: 999
-    // Tooltip corners and the launcher mode badge — smaller than radiusChip,
-    // shared so the two don't independently derive the same value.
-    readonly property int radiusTooltip: 6
 
     // 1px hairlines: borders, separators, dividers.
     readonly property int hairline: 1
@@ -25,6 +23,23 @@ Singleton {
     readonly property int padTight: 12
     readonly property int pad: 16
     readonly property int padLoose: 24
+
+    // A list row: popover, menu, notification centre. The launcher's rows are
+    // taller because they carry two lines — see launcherRowHeight.
+    readonly property int rowH: 34
+    // 🚨 A pointer fact, not a density preference, so it does NOT scale with
+    // anything else here. A widget whose paint is smaller than this still
+    // claims 32 of pointer space; chips sit `gap` apart, so two 32px hit areas
+    // on adjacent 26px chips are 34 apart and never overlap.
+    readonly property int hitMin: 32
+
+    // Motion. Three durations and nothing between them. NEVER animated: text
+    // replacing text (a title, a percentage, a date), the focus ring, and
+    // anything whose only change is a colour role — which is why a live theme
+    // switch repaints with no transition at all.
+    readonly property int motionFast: 120
+    readonly property int motionSlow: 180
+    readonly property int motionEnter: 220
 
     // The bar floats: it is 40 tall, inset 8 on every side — matching
     // Hyprland's gaps_out (general.conf) so the bar's edges line up with every
@@ -37,47 +52,94 @@ Singleton {
     readonly property int chipSize: 26
     readonly property int pillHeight: 24
     readonly property int iconSize: 16
+    // ponytail: the design's named overflow order (date drops, then the title
+    // shrinks to titleMinW and drops, then the meter loses its readout, then
+    // the tray folds, then workspaces collapse to the focused pill) is NOT
+    // implemented. It is driven by output width, and no output this repo drives
+    // is narrow enough to reach the first breakpoint — so it could be neither
+    // observed nor tested, and the breakpoints themselves would be invented
+    // numbers. The two steps that DO fire are built: the title's pixel bound
+    // below, and trayMaxItems. Add the driver when a narrow output exists.
+
+    // Window-title bounds. 🚨 These replace a titleMaxLength of 50 CHARACTERS,
+    // which does not bound pixels at all: "WWWW…" is roughly three times the
+    // width of "iiii…", so a character cap either wraps the bar or wastes half
+    // of it depending on the title. Width plus Text.elide is the only cap that
+    // means anything.
+    readonly property int titleMinW: 100
+    readonly property int titleMaxW: 260
 
     // Volume/brightness OSD. It sits bottom-centre, clear of voxtype's own OSD
     // (a 72-tall card at bottomMargin 72) so a dictation card and a volume key
     // cannot overlap.
-    readonly property int osdWidth: 320
-    readonly property int osdHeight: 56
+    // Fixed 200x96 whatever the payload: a readout that resizes as the number
+    // crosses 100 draws the eye to the wrong thing.
+    readonly property int osdWidth: 200
+    readonly property int osdHeight: 96
     readonly property int osdMargin: 160
+    readonly property int osdTrackWidth: 152
     readonly property int osdTrackHeight: 6
     readonly property int osdHideMs: 1500
 
-    readonly property int fontSize: 13
-    readonly property int fontSizeLarge: 14
-    readonly property int fontSizeSmall: 12
-    // The launcher query, the one place the design sets type larger than the
-    // bar's, and the 10px key hints under it.
-    readonly property int fontSizeInput: 16
-    readonly property int fontSizeTiny: 10
+    // Type — the whole scale, and nothing outside it is drawn. A seventh size
+    // is a sign that an element wants a job one of these already has.
+    //
+    // 🚨 QML's font.pixelSize is an INTEGER, so the design's half-pixel steps
+    // round here: meta 10.5 -> 11, title 13.5 -> 14. That is a QML constraint,
+    // not a reading of the design; font.pointSize would take the fraction but
+    // then every size in the tree would be in a different unit from every
+    // geometry value.
+    readonly property int fontMeta: 11
+    readonly property int fontBody: 12
+    readonly property int fontTitle: 14
+    // The OSD readout, and the only display size in the shell.
+    readonly property int fontDisplay: 20
 
-    // Launcher, artboard 1d. The panel grows downward from the input row, so
-    // only the row heights are fixed; the window height follows the results.
-    readonly property int launcherWidth: 760
-    readonly property int launcherInputHeight: 56
+    // Glyphs are sized separately from text, and there are exactly four. A
+    // seven-step ramp is only legible at glyphOsd; at glyphBar it is not, which
+    // is why three steps are the rule everywhere else.
+    readonly property int glyphRow: 13
+    readonly property int glyphBar: 16
+    readonly property int glyphOsd: 28
+    readonly property int glyphTile: 32
+
+    // Launcher, design page Shell-05-Launcher. The panel grows downward from
+    // the input row, so only the row heights are fixed; the window height
+    // follows the results. 340 wide, matching popMaxW: it is the same kind of
+    // surface as a popover, and the old 760 came from an artboard that no
+    // longer exists.
+    readonly property int launcherWidth: 340
+    readonly property int launcherInputHeight: 48
+    // Taller than rowH because each launcher row carries two lines.
     readonly property int launcherRowHeight: 48
-    readonly property int launcherIconSize: 30
-    readonly property int launcherFooterHeight: 34
+    readonly property int launcherIconSize: 20
+    readonly property int launcherFooterHeight: 32
     readonly property int launcherListPad: 6
     // The canvas draws three rows. A cap is still needed for a one-letter
     // query, and eight is what fits without the panel becoming a window.
     readonly property int launcherMaxResults: 8
 
-    // Power menu, artboard 1h. 14 is the canvas's own tile radius and sits
+    // Panel bounds shared by every list surface. popMaxH is CHOSEN, not
+    // computed, and the row budget follows from it: 420 - 34 header - 32 footer
+    // leaves 354, which holds 8 rows of 34 with 7 gaps of 8 = 328. A ninth
+    // needs 370 and overflows, so the list scrolls.
+    readonly property int popMinW: 300
+    readonly property int popMaxW: 340
+    readonly property int popMaxH: 420
+
+    // Power menu, design page Shell-09-Session. 14 is the canvas's own tile radius and sits
     // between radiusPanel and radiusTile deliberately — the tiles are much
     // larger than either, so the four-step ramp does not reach them.
+    // 🚨 Six tiles, not the design's five: hibernate does real work on this
+    // laptop, and the design's own rule — "a control that would do nothing is
+    // removed, not disabled" — endorses keeping one that works. The tiles stay
+    // at 124 for the same reason: 88 was drawn for a five-tile row.
     readonly property int powerTileSize: 124
-    readonly property int powerTileRadius: 14
     readonly property int powerTileGap: 14
     readonly property int powerColumnGap: 30
     readonly property int powerAvatarSize: 34
-    readonly property int powerGlyphSize: 26
 
-    // Dock, artboard comp-a. Deliberately OUTSIDE the geometry scale, the same
+    // Dock, design page Shell-04-Bar (dock: no page in the current set). Deliberately OUTSIDE the geometry scale, the same
     // way powerTileRadius is: the scale exists so nested surfaces read as
     // nested, and the dock is a PEER of the bar, not something inside it.
     // Every value here is measured off the artboard rather than transcribed --
@@ -119,7 +181,7 @@ Singleton {
     // same launcher SUPER+D does.
     readonly property string dockLauncherGlyph: "󰕰"
 
-    // Workspace overview, artboard comp-b. A carousel, not a grid: the focused
+    // Workspace overview, no page in the current design set. A carousel, not a grid: the focused
     // workspace stays legible at real proportions while neighbours are
     // peripheral context.
     //
@@ -143,47 +205,51 @@ Singleton {
     readonly property int overviewTitleBarHeight: 22
     readonly property int overviewDotSize: 8
     readonly property int overviewDotActiveWidth: 22
-    // Scrim depth. Applied to Theme.scrim (a shade, not a theme colour — see
-    // the note there), so this reads the same in a light theme as in a dark
-    // one. 0.86 over BG_OVERLAY was the artboard's figure and rendered nearly
-    // white on latte and rose-pine-dawn.
-    // Back to the artboard's own figure. It needs to be this deep: the scrim
-    // composites over the wallpaper, and a thinner one leaves the ground
-    // wallpaper-dependent, which no fixed foreground can be legible against.
-    readonly property real overviewScrimOpacity: 0.86
+    // Scrim depth, shared by every surface that dims what is behind it.
+    // Applied to Theme.scrim (a shade, not a theme colour — see the note
+    // there), so it reads the same in a light theme as in a dark one. 0.86 over
+    // a BACKGROUND TOKEN was the old figure and rendered nearly white on latte
+    // and rose-pine-dawn. It needs to be this deep: the scrim composites over
+    // the wallpaper, and a thinner one leaves the ground wallpaper-dependent,
+    // which no fixed foreground can be legible against.
+    readonly property real scrimOpacity: 0.86
 
-    // Notifications, artboard pan-a. The centre and the popup stack share one
+    // Notifications, design page Shell-07-Notifications. The centre and the popup stack share one
     // card component, so they share its metrics; only the surface around it
     // differs. Radii, paddings and font sizes all come from the scale above —
     // the canvas's 10px body padding is padTight - 2, which is close enough
     // that inventing an eighth padding step would cost more than it buys.
-    readonly property int notifWidth: 440
+    readonly property int notifWidth: 340
     readonly property int notifHeaderHeight: 52
     readonly property int notifFooterHeight: 38
     readonly property int notifBadgeHeight: 19
     readonly property int notifGroupBadgeHeight: 16
     readonly property int notifActionHeight: 28
     readonly property int notifIconSize: 12
+    // An image payload replaces the glyph chip in the same slot, so a card with
+    // one is the same shape as a card without. Decoded AT this size — a
+    // screenshot notification that stalls the shell for a 4K decode is worse
+    // than no thumbnail at all.
+    readonly property int notifThumbSize: 38
     readonly property int notifListPad: 10
     // Popups reuse notifWidth so a toast and its history card are the same
     // object at the same size — the toast is not a second, narrower design.
     readonly property int notifPopupMargin: 8
     // Beyond this the stack stops being readable and starts being a wall; the
     // overflow is already in history, which is where it belongs.
-    readonly property int notifPopupMaxVisible: 4
-    // Timeouts mirror swaync's config.json, the daemon these replace:
-    // 10s normal, 5s low, and critical never auto-hides.
-    readonly property int notifTimeoutMs: 10000
-    readonly property int notifTimeoutLowMs: 5000
+    readonly property int notifPopupMaxVisible: 3
+    // 5s normal, 3s low, critical never. Shorter than the swaync config these
+    // replaced (10s/5s) because an expired popup is not gone — it moves to the
+    // centre, which is the whole difference between dismissing and ignoring.
+    readonly property int notifTimeoutMs: 5000
+    readonly property int notifTimeoutLowMs: 3000
     // How many entries the centre keeps. UPSTREAM DOES NOT CAP THIS: the
     // server tracks every notification until something dismisses it, so an
     // uncapped centre grows for as long as the session does.
-    readonly property int notifHistoryMax: 50
-
-    // Truncation limits, matching the Waybar modules they replace:
-    // hyprland/window max-length and mpris dynamic-len.
-    readonly property int titleMaxLength: 50
-    readonly property int mediaMaxLength: 35
+    readonly property int notifHistoryMax: 100
+    // Taller than popMaxH: the centre is a list the user came to read, not a
+    // panel they glanced at.
+    readonly property int notifCentreMaxHeight: 620
 
     // Scroll step for the audio widget, as a fraction. Waybar shelled out to
     // `pamixer -i 5`; Pipewire volume is a 0..1 float.
@@ -191,6 +257,11 @@ Singleton {
 
     // Fonts come from .chezmoidata/globals.yaml so the QML tree cannot drift
     // from GTK/Qt/Waybar/Wofi/Hyprlock.
+    // The terminal the launcher's `:` run mode opens a command in. From
+    // globals.yaml for the same reason the fonts are: so the QML tree cannot
+    // drift from what every other consumer of that file thinks the terminal is.
+    readonly property string terminal: "{{ .globals.applications.terminal }}"
+
     readonly property string guiFont: "{{ .globals.guiFont }}"
     readonly property string terminalFont: "{{ .globals.terminalFont }}"
 
@@ -218,7 +289,7 @@ Singleton {
     // Level ramps rendered by TWO surfaces (a bar widget and the OSD), so they
     // live here rather than in the widget. A glyph that only distinguishes one
     // widget's own states stays in that widget -- see Amendment A's re-stated
-    // exit criterion in _plans/QUICKSHELL_SHELL.md.
+    // exit criterion in _plans/archive/QUICKSHELL_SHELL.md.
     readonly property var volumeGlyphs: ["󰕿", "󰖀", "󰕾"]
     readonly property string volumeGlyphMuted: "󰝟"
     readonly property string volumeGlyphHeadset: "󰋎"
@@ -226,6 +297,34 @@ Singleton {
     // md-brightness_1..7 -- a seven-step ramp because that is how many the icon
     // set actually has.
     readonly property var brightnessGlyphs: ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"]
+    // Tray items past this fold behind the overflow glyph — the same cap the
+    // launcher's result list uses.
+    readonly property int trayMaxItems: 8
+    // The meter raises a tint under its number past these, rather than
+    // colouring the digits. No design figure exists; these are the usual
+    // "busy" and "in trouble" marks and are the knob to turn if they nag.
+    readonly property int meterWarnPercent: 80
+    readonly property int meterCriticalPercent: 90
+
+    // 🚨 Written from explicit codepoints, never pasted. A Nerd Font glyph
+    // literal can be authored as an empty string — valid QML, valid string,
+    // nothing rendered and no error anywhere — and it has shipped that way in
+    // this tree twice. Verified present in GeistMono Nerd Font before use.
+    // md-alert(0xf0026) — a critical notification's chip glyph. Severity is
+    // carried by the glyph CHANGING plus its tint, never by a title colour:
+    // signalError as text measures 2.81 at worst and is banned.
+    // md-memory(0xf035b) — the bar's single load readout.
+    readonly property string meterGlyph: "󰍛"
+    readonly property string notifCriticalGlyph: "󰀦"
+    // fa-picture_o(0xf03e) — the placeholder when an image payload fails to
+    // decode, and the marker on an image entry.
+    readonly property string imageGlyph: ""
+    // md-dots_horizontal(0xf0d7) — tray overflow past the 8-item cap.
+    readonly property string overflowGlyph: ""
+    // md-volume_variant_off(0xf0ac0) — the failed-service case for audio.
+    // A failed service SHOWS, with a label; only absent hardware hides.
+    readonly property string audioFailedGlyph: "󰫀"
+
     // The four bell states, rendered by the bar widget AND the notification
     // centre's DND button -- so they live here by the same rule as the ramps
     // above. Keys are <dnd?>-<unread?>, the same four combinations the swaync

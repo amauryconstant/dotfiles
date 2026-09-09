@@ -45,7 +45,7 @@ BarWidget {
             // renumbering: the canvas shows `1 2 3 4 · 6`.
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.bgSecondary
+                color: Theme.edge
                 height: 6
                 radius: Config.radiusPill
                 visible: entry.index > 0 && root.workspaces[entry.index - 1].id !== entry.modelData.id - 1
@@ -55,26 +55,34 @@ BarWidget {
             Rectangle {
                 id: button
 
-                // Waybar's five states. Precedence matters: urgent wins, then
-                // the workspace with input focus, then one merely occupied.
+                // Four states and no fifth. Precedence matters: urgent wins,
+                // then the workspace with input focus, then one merely
+                // occupied. "Visible on another monitor" and "occupied"
+                // deliberately share one appearance.
                 readonly property bool hasWindows: entry.modelData.toplevels.values.length > 0
                 readonly property bool isFocused: entry.modelData.focused
                 readonly property bool isUrgent: entry.modelData.urgent
                 readonly property var topWindow: entry.modelData.toplevels.values[0] ?? null
 
-                // Urgent is a text colour on a quiet ground, not a red fill:
-                // the accent marks the FOCUSED workspace and nothing else, so
-                // a second filled pill would compete with it.
-                color: button.isFocused ? Theme.accentPrimary : button.isUrgent ? Theme.bgSecondary : button.hasWindows || area.containsMouse ? Theme.bgTertiary : "transparent"
+                // 🚨 Occupied is groundRaised, NEVER fillInert. inkPrimary on
+                // fillInert measures 1.67 in solarized-light, 1.70 in
+                // solarized-dark and 4.39 in Latte — the number on the most
+                // common pill state was unreadable in three of the eight
+                // colorsets, which no amount of looking at Mocha would show.
+                //
+                // Urgent is the 13% selection tint plus a weight change, never
+                // a colour alone: signalError as TEXT measures 2.81 at worst
+                // and is banned outright.
+                color: button.isFocused ? Theme.signalFocus : button.isUrgent ? Theme.select : button.hasWindows || area.containsMouse ? Theme.hover : "transparent"
                 height: Config.pillHeight
                 radius: Config.radiusPill
                 // An empty workspace is a number in a 24px round square; every
                 // other state grows from that to fit its glyph.
                 //
                 // The mockup gives "empty" a faint ground of its own. Ours stays
-                // transparent deliberately: themes/CLAUDE.md requires fg-primary
-                // on any elevated surface, which would un-recess the very state
-                // that needs to recede. On the bar ground, fg-muted is allowed.
+                // transparent deliberately: an elevated surface would force
+                // inkPrimary onto the one state that has to recede. On the bar
+                // ground, inkSecondary is legal and is what it uses.
                 width: Math.max(height, contents.implicitWidth + Config.padTight)
 
                 Row {
@@ -85,39 +93,27 @@ BarWidget {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        // fg-contrast on an accent ground; fg-primary on the
-                        // elevated bg-tertiary, per themes/CLAUDE.md.
-                        color: button.isFocused ? Theme.fgOnAccent : button.isUrgent ? Theme.accentError : button.hasWindows ? Theme.fgPrimary : Theme.fgMuted
+                        color: button.isFocused ? Theme.inkOnSignal : button.hasWindows || button.isUrgent ? Theme.inkPrimary : Theme.inkSecondary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeSmall
+                        // The number is L3's carrier for urgent: the tint alone
+                        // reaches 1.10-1.98 and cannot say anything by itself.
+                        font.weight: button.isUrgent ? Font.Bold : Font.Normal
+                        font.pixelSize: Config.fontBody
                         text: entry.modelData.name
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        // Only ever drawn on a lit ground — the glyph is
-                        // visible only when the workspace has windows, and that
-                        // pill is accent (focused) or bg-tertiary. fg-secondary
-                        // on bg-tertiary is the pair themes/CLAUDE.md bans, so
-                        // subordination comes from opacity, not from the token.
-                        color: button.isFocused ? Theme.fgOnAccent : Theme.fgPrimary
+                        // Only ever drawn on a lit ground, so inkPrimary —
+                        // subordination comes from opacity, not from a quieter
+                        // token, because inkSecondary is illegal on groundRaised.
+                        color: button.isFocused ? Theme.inkOnSignal : Theme.inkPrimary
                         font.family: Config.guiFont
-                        font.pixelSize: Config.fontSize
+                        font.pixelSize: Config.glyphRow
                         // Subordinate to the number it annotates.
                         opacity: 0.75
                         text: Config.windowGlyph(button.topWindow?.lastIpcObject?.class ?? "")
-                        visible: button.hasWindows && !button.isUrgent
-                    }
-
-                    // Urgent replaces the app glyph rather than adding to it:
-                    // which app is shouting matters less than that one is.
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.accentError
-                        height: 5
-                        radius: Config.radiusPill
-                        visible: button.isUrgent
-                        width: 5
+                        visible: button.hasWindows
                     }
                 }
 

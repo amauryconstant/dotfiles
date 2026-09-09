@@ -33,13 +33,16 @@ BarWidget {
         switch (root.voxState) {
         case "recording":
         case "stopped":
-            return Theme.accentError;
+            return Theme.signalError;
+        // streaming and transcribing both have their own glyph, which is the
+        // carrier. They used to take signalInfo and signalWarn, both of
+        // which measure under 3:1 on a light ground in four of the eight
+        // colorsets — a state colour nobody could see is worse than none.
         case "streaming":
-            return Theme.accentInfo;
         case "transcribing":
-            return Theme.accentWarning;
+            return root.restColor;
         default:
-            return Theme.fgMuted;
+            return root.restColor;
         }
     }
     tooltipText: source.tooltip

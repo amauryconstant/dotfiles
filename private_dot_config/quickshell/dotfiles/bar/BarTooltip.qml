@@ -41,10 +41,10 @@ PopupWindow {
 
     Rectangle {
         anchors.fill: parent
-        border.color: Theme.accentBorder
+        border.color: Theme.edge
         border.width: Config.hairline
-        color: Theme.bgOverlay
-        radius: Config.radiusTooltip
+        color: Theme.groundFloat
+        radius: Config.radiusChip
 
         // themes/CLAUDE.md: fg-primary on an elevated surface, never
         // fg-secondary. bgOverlay is elevated.
@@ -52,9 +52,9 @@ PopupWindow {
             id: label
 
             anchors.centerIn: parent
-            color: Theme.fgPrimary
+            color: Theme.inkPrimary
             font.family: root.monospace ? Config.terminalFont : Config.guiFont
-            font.pixelSize: Config.fontSize
+            font.pixelSize: Config.fontBody
             text: root.text
         }
     }

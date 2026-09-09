@@ -54,16 +54,22 @@ BarWidget {
         const levels = ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰂃", "󰁹"];
         return root.charging ? "󰢜" : root.plugged ? "󰚥" : levels[Math.min(10, Math.floor(root.percent / 10))];
     }
-    // Graded states from waybar/CLAUDE.md: charging is informational, then
-    // error < 10, warning <= 20, urgent-secondary for the 20-30 band. A
-    // healthy discharging battery is the resting case and stays neutral.
-    iconColor: root.charging ? Theme.accentInfo : root.percent <= 10 ? Theme.accentError : root.percent <= 20 ? Theme.accentWarning : root.percent <= 30 ? Theme.accentUrgentSecondary : root.restColor
+    // 🚨 The battery carries SHAPE: an eleven-step level glyph plus a distinct
+    // charging glyph and a distinct plugged one. Colour fires exactly once, at
+    // signalError, because it is the only semantic role that clears 3:1 on a
+    // light ground in all eight colorsets — signalWarn measures 2.05 in
+    // rose-pine-dawn and 2.19 in gruvbox-light, so the 20-30% band it used to
+    // carry was a colour nobody could see. The bands still exist; they are
+    // expressed by the glyph and, at critical, by the pill's own tint.
+    iconColor: root.percent <= 10 && !root.charging ? Theme.signalError : root.restColor
     // The mockup tints the whole pill at critical, so the one number that
     // matters raises its voice without a second accent appearing on the bar.
-    groundColor: root.percent <= 10 && !root.charging ? Qt.alpha(Theme.accentError, 0.14) : Theme.bgSecondary
+    groundColor: root.percent <= 10 && !root.charging ? Qt.alpha(Theme.signalError, 0.14) : Theme.groundRaised
     label: `${Math.round(root.percent)}%`
-    // The glyph carries the state; the number stays readable.
-    labelColor: root.percent <= 10 && !root.charging ? Theme.accentError : root.restColor
+    // The glyph and the tint carry the state; the number stays readable.
+    // signalError as TEXT is banned in every theme (2.81 at worst), and this is
+    // the number that most has to be legible when it is low.
+    labelColor: root.restColor
     monoLabel: true
     pill: true
     tooltipText: root.battery ? root.tooltipLines() : ""

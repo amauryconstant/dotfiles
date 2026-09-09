@@ -12,9 +12,11 @@ BarWidget {
     id: root
 
     icon: source.text
-    // Both states this widget can show are inhibitor states, so both keep a
-    // semantic colour: it is only ever visible when something is off-normal.
-    iconColor: source.text === "󰒲" ? Theme.accentError : Theme.accentWarning
+    // Both states are off-normal — the widget only exists when one of them is
+    // — and each has its own glyph, which is the carrier. Only the error state
+    // takes a colour: signalWarn measures 2.05 in rose-pine-dawn, so colouring
+    // the other one made it LESS visible than leaving it neutral.
+    iconColor: source.text === "󰒲" ? Theme.signalError : root.restColor
     tooltipText: source.tooltip
     // Empty text is the armed-and-healthy case: nothing to say, nothing shown.
     visible: source.text !== ""

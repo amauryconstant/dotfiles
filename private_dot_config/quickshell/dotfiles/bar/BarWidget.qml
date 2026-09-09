@@ -16,17 +16,27 @@ Item {
     default property alias content: layout.data
     property bool hoverBackground: true
     readonly property alias hovered: mouse.containsMouse
+    // Whether the label actually had to be cut, so a tooltip is offered only
+    // when it carries something the bar is not already showing.
+    readonly property alias labelTruncated: labelText.truncated
     // A lit ground is an elevated surface, and themes/CLAUDE.md forbids
     // fg-secondary there — hence the swap rather than one fixed rest colour.
     readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
     // 🚨 The neutral a widget falls back to when no state applies. A widget
     // overriding iconColor/labelColor for a state MUST end its ternary on this,
-    // never on a flat Theme.fgSecondary: that pins the ungrounded colour onto a
+    // never on a flat Theme.inkSecondary: that pins the ungrounded colour onto a
     // lit ground and reintroduces the banned fg-secondary/bg-secondary pair.
-    readonly property color restColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+    readonly property color restColor: root.grounded ? Theme.inkPrimary : Theme.inkSecondary
     property string icon: ""
     property color iconColor: root.restColor
     property string label: ""
+    // 🚨 Pixel bound plus Text.elide, never a character count: "WWWW…" is about
+    // three times the width of "iiii…", so a character cap does not bound the
+    // bar at all. 0 means unbounded.
+    property int labelMaxWidth: 0
+    // A path elides mid-string, because the filename is the identifying half.
+    // Everything else elides at the end.
+    property int labelElideMode: Text.ElideRight
     // Split from iconColor so a widget can colour its glyph for a state while
     // the number it carries stays readable, as the battery pill does.
     property color labelColor: root.restColor
@@ -38,7 +48,7 @@ Item {
     property bool pill: false
     // Only the launcher chip sets this: a permanent ground that is not a pill.
     property bool tinted: false
-    property color groundColor: Theme.bgSecondary
+    property color groundColor: Theme.groundRaised
     // Calendars and device lists only line up in a fixed-pitch font.
     property bool tooltipMonospace: false
     property string tooltipText: ""
@@ -56,7 +66,7 @@ Item {
 
     Rectangle {
         anchors.centerIn: parent
-        color: root.pill || root.tinted ? root.groundColor : Theme.bgSecondary
+        color: root.pill || root.tinted ? root.groundColor : Theme.groundRaised
         height: Config.chipSize
         opacity: root.grounded ? 1 : 0
         radius: root.pill ? Config.radiusPill : Config.radiusChip
@@ -64,7 +74,7 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 120
+                duration: Config.motionFast
             }
         }
     }
@@ -79,18 +89,22 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             color: root.iconColor
             font.family: Config.guiFont
-            font.pixelSize: Config.fontSize
+            font.pixelSize: Config.glyphBar
             text: root.icon
             visible: root.icon !== ""
         }
 
         Text {
+            id: labelText
+
             anchors.verticalCenter: parent.verticalCenter
             color: root.labelColor
+            elide: root.labelMaxWidth > 0 ? root.labelElideMode : Text.ElideNone
             font.family: root.monoLabel ? Config.terminalFont : Config.guiFont
-            font.pixelSize: root.monoLabel ? Config.fontSizeSmall : Config.fontSize
+            font.pixelSize: Config.fontBody
             text: root.label
             visible: root.label !== ""
+            width: root.labelMaxWidth > 0 ? Math.min(implicitWidth, root.labelMaxWidth) : implicitWidth
         }
     }
 
@@ -103,12 +117,18 @@ Item {
     // Below the Row, a child MouseArea wins where one exists, and everywhere
     // else the event falls through to this one, because Text and Rectangle do
     // not accept mouse events.
+    // 🚨 The hit area floors at 32 even where the paint is 26. That is a
+    // pointer fact rather than a density preference, and it costs nothing here:
+    // chips sit `gap` (8) apart, so two 32px areas on adjacent 26px chips are
+    // 34 apart and never overlap.
     MouseArea {
         id: mouse
 
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-        anchors.fill: parent
+        anchors.centerIn: parent
+        height: Math.max(Config.hitMin, parent.height)
         hoverEnabled: true
+        width: Math.max(Config.hitMin, parent.width)
         z: -1
 
         onClicked: event => {

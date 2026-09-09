@@ -4,9 +4,15 @@ import Quickshell
 import Quickshell.Networking
 import QtQuick
 
-// Waybar's network module, laptop-only as it was there. Native throughout —
-// Waybar polled at 5s for bandwidth; this is event-driven, and bandwidth is
-// dropped because the native module does not expose counters.
+// Waybar's network module. Native throughout — Waybar polled at 5s for
+// bandwidth; this is event-driven, and bandwidth is dropped because the native
+// module does not expose counters.
+//
+// 🚨 No longer laptop-gated. "No wireless adapter" is not "no network": the
+// widget reports the ACTIVE ROUTE and draws the wired glyph where there is one,
+// and hides only when there is no networking at all. A desktop on ethernet has
+// something to report, so it reports it — degradation is per SOURCE, never per
+// machine class.
 BarWidget {
     id: root
 
@@ -37,7 +43,7 @@ BarWidget {
     }
     // Connected is the resting state and stays neutral; no route at all is a
     // fault worth colouring, which is the accent rule's "state only" clause.
-    iconColor: root.active ? root.restColor : Theme.accentError
+    iconColor: root.active ? root.restColor : Theme.signalError
     tooltipText: {
         if (!root.active)
             return "Disconnected\nNo network interface available";
@@ -45,7 +51,10 @@ BarWidget {
             return `${root.wifi.name}\n${root.active.address}\nSignal: ${Math.round(root.wifi.signalStrength * 100)}%`;
         return `Ethernet\n${root.active.address}`;
     }
-    visible: Config.isLaptop
+    // Networking.devices is empty for the first ~1-2s and fills on its own;
+    // ObjectModel.values notifies, so this binding recovers rather than
+    // latching a startup reading.
+    visible: Networking.devices.values.length > 0
 
-    onClicked: Quickshell.execDetached(["ghostty", "--class=network-manager", "-e", "nmtui"])
+    onClicked: Quickshell.execDetached([Config.terminal, "--class=network-manager", "-e", "nmtui"])
 }

@@ -23,21 +23,22 @@ BarWidget {
     readonly property list<BluetoothDevice> connected: Bluetooth.devices.values.filter(d => d.connected)
     // qmllint enable unresolved-type
 
-    icon: root.adapter?.enabled ? "󰂯" : "󰂲"
+    icon: "󰂯"
     // How many devices is tooltip detail; the accent is the whole signal at
     // bar scale, so this carries one and drops the inline count.
-    iconColor: !root.adapter?.enabled ? Theme.fgMuted : root.connected.length > 0 ? Theme.accentPrimary : root.restColor
+    iconColor: root.connected.length > 0 ? Theme.signalFocus : root.restColor
     tooltipText: {
         if (!root.adapter)
             return "No bluetooth adapter";
-        if (!root.adapter.enabled)
-            return "Bluetooth disabled";
         if (root.connected.length === 0)
             return `${root.adapter.name}\n0 connected`;
         return `${root.adapter.name}\n${root.connected.length} connected\n\n` + root.connected.map(d => d.batteryAvailable ? `${d.name}  ${Math.round(d.battery * 100)}%` : d.name).join("\n");
     }
     tooltipMonospace: true
-    visible: Config.isLaptop && root.adapter !== null
+    // 🚨 A disabled adapter HIDES the widget rather than dimming it. Absent
+    // hardware hides, a failed service shows, and nothing greys — so there is
+    // no "bluetooth off" glyph in this tree, because off is absence.
+    visible: Config.isLaptop && (root.adapter?.enabled ?? false)
 
     onClicked: Quickshell.execDetached(["blueman-manager"])
 }

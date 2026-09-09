@@ -11,7 +11,12 @@ BarWidget {
     icon: Notifications.glyph()
     // Both do-not-disturb and a waiting notification are states; an idle bell
     // is the resting case and stays neutral.
-    iconColor: Notifications.dnd ? Theme.accentError : root.unread ? Theme.accentWarning : root.restColor
+    // DND is the state most likely to be forgotten, so it keeps a colour —
+    // signalError is the one semantic role that clears 3:1 on every ground.
+    // Unread does not: the bell has four distinct glyphs and the count is in
+    // the centre, so a second carrier bought nothing and signalWarn was
+    // invisible in half the light themes anyway.
+    iconColor: Notifications.dnd ? Theme.signalError : root.restColor
     label: root.unread ? Notifications.unread : ""
     monoLabel: true
     // Hidden when this shell does not own notifications: swaync is then the

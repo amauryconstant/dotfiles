@@ -17,7 +17,7 @@ Item {
 
     Rectangle {
         anchors.centerIn: parent
-        color: Theme.bgSecondary
+        color: Theme.edge
         height: 16
         width: Config.hairline
     }

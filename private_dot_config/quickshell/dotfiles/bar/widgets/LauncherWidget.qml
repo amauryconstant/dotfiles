@@ -16,9 +16,9 @@ BarWidget {
     // would spawn a process for the shell to talk to itself.
     signal launcherRequested
 
-    groundColor: Qt.alpha(Theme.accentPrimary, 0.12)
+    groundColor: Qt.alpha(Theme.signalFocus, 0.12)
     icon: "󰣇"
-    iconColor: Theme.accentPrimary
+    iconColor: Theme.signalFocus
     tinted: true
     tooltipText: "Applications"
 

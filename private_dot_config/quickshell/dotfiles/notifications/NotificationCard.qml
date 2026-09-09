@@ -6,30 +6,37 @@ import Quickshell.Services.Notifications
 import Quickshell.Widgets
 import QtQuick
 
-// The one notification card, artboard pan-a. Used by BOTH the centre and the
-// popup stack — a toast is the same object at the same width, not a second
-// narrower design.
+// The one notification card, design page Shell-07-Notifications. Used by BOTH
+// the centre and the popup stack — a toast is the same object at the same
+// width, not a second narrower design.
 //
-// 🚨 Two structural rules from the artboard, both easy to "improve" wrongly:
+// 🚨 Three structural rules, all easy to "improve" wrongly:
 //
-//  1. NO coloured left-border stripe. The canvas sets `border-left:0`
-//     explicitly. Every card keeps an identical silhouette; severity is
-//     carried by the TITLE COLOUR ALONE.
-//  2. Every string on the card is fgPrimary — app label, timestamp, body,
-//     collapsed siblings, all of it. The card ground is elevated, so
-//     themes/CLAUDE.md forbids fgSecondary and fgMuted on it. Hierarchy comes
-//     from size, weight and mono-vs-sans, never from dimming. The only
-//     non-fgPrimary foreground on this card is the OUTLINE on the secondary
-//     action buttons, because borders are foreground-class and a background
-//     token cannot carry one. It was fgMuted until the 2026-09-01 contrast
-//     pass measured it below the 3:1 a UI component needs in four themes;
-//     fgSecondary is the quietest token that clears 3:1 in all eight.
+//  1. NO coloured left-border stripe. Every card keeps an identical
+//     silhouette.
+//  2. Severity is carried by the GLYPH CHIP — its tint AND the glyph itself
+//     changing — never by a title colour. signalError as text measures 2.81 at
+//     worst across the eight colorsets and is banned outright, so the title
+//     colour this card used to vary was unreadable exactly when it mattered
+//     most. There is likewise no severity TITLE: it repeats what the glyph and
+//     body already say, and at 12.5px it would owe 4.5 rather than 3:1.
+//  3. Every string on the card is inkPrimary — app label, timestamp, body,
+//     collapsed siblings, all of it. The card grounds on groundFloat, which
+//     design page 01's own tier table says "carries INK_PRIMARY only". Page 07
+//     draws the timestamp in inkSecondary; the two disagree, and the
+//     foundation page wins. Hierarchy comes from size, weight and
+//     mono-vs-sans, never from dimming. The one non-inkPrimary foreground here
+//     is the OUTLINE on the secondary action buttons — a graphic at 3:1, not
+//     text, and page 13 rules explicitly that it is inkSecondary.
 Rectangle {
     id: root
 
     required property var notification
     // Collapsed siblings from the same app, rendered as one line each.
     property list<var> rest: []
+    // A popup is a glance: its body clamps to three lines. The centre is a list
+    // the user came to read, so 0 means unclamped there.
+    property int bodyMaxLines: 0
     // Popups have no actions row: the pointer is not reliably over a toast
     // that is about to vanish, and a mis-click on Dismiss loses the message.
     property bool showActions: true
@@ -40,15 +47,15 @@ Rectangle {
 
     // The hairline is what makes a toast read as a card over an arbitrary
     // wallpaper — without it the popup is a bare rounded rect. Same tier as
-    // every other border in this tree. Critical takes it in accentError, which
-    // is the artboard-legal way to do swaync's inset red glow: it changes no
-    // silhouette, it is still severity-by-colour, and unlike the title colour
-    // alone it survives a critical whose summary is off screen.
-    border.color: root.critical ? Theme.accentError : Theme.bgSecondary
+    // every other border in this tree. Critical takes it in signalError, which
+    // is legal as a GRAPHIC at 3:1 and changes no silhouette — the second
+    // carrier beside the chip glyph, for a critical whose summary is off
+    // screen.
+    border.color: root.critical ? Theme.signalError : Theme.edge
     border.width: Config.hairline
-    color: Theme.bgOverlay
+    color: Theme.groundFloat
     implicitHeight: layout.implicitHeight
-    radius: Config.radiusTile
+    radius: Config.radiusChip
 
     Column {
         id: layout
@@ -57,29 +64,80 @@ Rectangle {
 
         // App row: icon, APP NAME in caps, group count, spacer, relative time.
         Item {
-            height: appName.implicitHeight + Config.padTight
+            height: Math.max(appRow.implicitHeight, appName.implicitHeight) + Config.padTight
             width: parent.width
 
             Row {
+                id: appRow
+
                 anchors.left: parent.left
                 anchors.leftMargin: Config.padTight
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Config.gap + 1
 
-                IconImage {
-                    implicitSize: Config.notifIconSize + 4
-                    source: root.notification.appIcon ? Quickshell.iconPath(root.notification.appIcon, true) : ""
-                    visible: source !== ""
+                // The identity slot: a 38px image thumbnail where the sender
+                // supplied one, otherwise a 26px chip holding the app icon or
+                // the severity glyph. Same slot and same alignment either way,
+                // so a card with an image is the same shape as one without.
+                Item {
+                    id: identity
+
+                    // Bound to STATUS, not to the source string: a failed
+                    // decode must fall back to the glyph chip rather than
+                    // leaving a hole where a thumbnail was promised.
+                    readonly property bool hasImage: thumb.status === Image.Ready
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitHeight: identity.hasImage ? Config.notifThumbSize : Config.chipSize
+                    implicitWidth: identity.implicitHeight
+
+                    Rectangle {
+                        anchors.fill: parent
+                        clip: true
+                        color: root.critical ? Qt.alpha(Theme.signalError, 0.18) : Theme.groundRaised
+                        radius: Config.radiusChip
+
+                        Image {
+                            id: thumb
+
+                            anchors.fill: parent
+                            asynchronous: true
+                            fillMode: Image.PreserveAspectCrop
+                            source: root.notification.image
+                            // 🚨 Decoded AT thumbnail size. A screenshot
+                            // notification that stalls the shell for a full 4K
+                            // decode is worse than no thumbnail at all.
+                            sourceSize.height: Config.notifThumbSize
+                            sourceSize.width: Config.notifThumbSize
+                            visible: identity.hasImage
+                        }
+
+                        IconImage {
+                            anchors.centerIn: parent
+                            implicitSize: Config.notifIconSize + 4
+                            source: root.notification.appIcon ? Quickshell.iconPath(root.notification.appIcon, true) : ""
+                            visible: !identity.hasImage && !root.critical && source !== ""
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: root.critical ? Theme.signalError : Theme.inkPrimary
+                            font.family: Config.guiFont
+                            font.pixelSize: Config.glyphRow
+                            text: root.critical ? Config.notifCriticalGlyph : Config.notifGlyphs.notification
+                            visible: !identity.hasImage && (root.critical || !root.notification.appIcon)
+                        }
+                    }
                 }
 
                 Text {
                     id: appName
 
-                    color: Theme.fgPrimary
+                    color: Theme.inkPrimary
                     font.capitalization: Font.AllUppercase
                     font.family: Config.terminalFont
                     font.letterSpacing: 0.4
-                    font.pixelSize: Config.fontSizeTiny
+                    font.pixelSize: Config.fontMeta
                     font.weight: Font.Medium
                     text: root.notification.appName || root.notification.desktopEntry || "unknown"
                 }
@@ -88,7 +146,7 @@ Rectangle {
                 // this card, so it never renders a lone "1".
                 Rectangle {
                     anchors.verticalCenter: appName.verticalCenter
-                    color: Theme.bgSecondary
+                    color: Theme.groundRaised
                     height: Config.notifGroupBadgeHeight
                     radius: Config.radiusPill
                     visible: root.rest.length > 0
@@ -98,9 +156,9 @@ Rectangle {
                         id: groupCount
 
                         anchors.centerIn: parent
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeTiny - 1
+                        font.pixelSize: Config.fontMeta - 1
                         font.weight: Font.Medium
                         text: root.rest.length + 1
                     }
@@ -114,9 +172,9 @@ Rectangle {
                 // neither this item's parent nor its sibling and the anchor is
                 // rejected at runtime with only a warning.
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.fgPrimary
+                color: Theme.inkPrimary
                 font.family: Config.terminalFont
-                font.pixelSize: Config.fontSizeTiny
+                font.pixelSize: Config.fontMeta
                 text: age.label
             }
         }
@@ -127,10 +185,11 @@ Rectangle {
             width: parent.width
 
             Text {
-                color: root.critical ? Theme.accentError : Theme.fgPrimary
+                // Not severity-coloured: see rule 2 in the header.
+                color: Theme.inkPrimary
                 elide: Text.ElideRight
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontSize
+                font.pixelSize: Config.fontTitle
                 font.weight: Font.DemiBold
                 text: root.notification.summary
                 // bodyMarkupSupported is false, so anything tag-shaped in here
@@ -141,12 +200,12 @@ Rectangle {
             }
 
             Text {
-                color: Theme.fgPrimary
+                color: Theme.inkPrimary
                 elide: Text.ElideRight
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontSizeSmall
+                font.pixelSize: Config.fontBody
                 lineHeight: 1.35
-                maximumLineCount: 4
+                maximumLineCount: root.bodyMaxLines > 0 ? root.bodyMaxLines : Number.MAX_SAFE_INTEGER
                 text: root.notification.body
                 textFormat: Text.PlainText
                 visible: text !== ""
@@ -180,12 +239,12 @@ Rectangle {
                     required property var modelData
                     required property int index
 
-                    color: action.index === 0 ? Theme.bgSecondary : "transparent"
+                    color: action.index === 0 ? Theme.groundRaised : "transparent"
                     // fgSecondary, not fgMuted: an outline is a UI component
                     // and wants 3:1, which fgMuted on this card's bgOverlay
                     // ground misses in four of the eight themes (2.18 at worst).
                     // Still foreground-class, so Amendment C's rule holds.
-                    border.color: action.index === 0 ? "transparent" : Theme.fgSecondary
+                    border.color: action.index === 0 ? "transparent" : Theme.inkSecondary
                     border.width: action.index === 0 ? 0 : Config.hairline
                     height: Config.notifActionHeight
                     radius: Config.radiusChip
@@ -195,9 +254,9 @@ Rectangle {
                         id: actionLabel
 
                         anchors.centerIn: parent
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         font.family: Config.guiFont
-                        font.pixelSize: Config.fontSizeSmall - 1
+                        font.pixelSize: Config.fontBody - 1
                         font.weight: Font.Medium
                         text: action.modelData.text
                     }
@@ -217,7 +276,7 @@ Rectangle {
 
             Rectangle {
                 // Same 3:1 outline rule as the action buttons above.
-                border.color: Theme.fgSecondary
+                border.color: Theme.inkSecondary
                 border.width: Config.hairline
                 color: "transparent"
                 height: Config.notifActionHeight
@@ -228,9 +287,9 @@ Rectangle {
                     id: dismissLabel
 
                     anchors.centerIn: parent
-                    color: Theme.fgPrimary
+                    color: Theme.inkPrimary
                     font.family: Config.guiFont
-                    font.pixelSize: Config.fontSizeSmall - 1
+                    font.pixelSize: Config.fontBody - 1
                     font.weight: Font.Medium
                     text: qsTr("Dismiss")
                 }
@@ -256,7 +315,7 @@ Rectangle {
             width: parent.width
 
             Rectangle {
-                color: Theme.bgPrimary
+                color: Theme.groundBase
                 height: Config.hairline
                 visible: root.rest.length > 0
                 width: parent.width - Config.padTight * 2
@@ -276,10 +335,14 @@ Rectangle {
                     // reads as one more ordinary line — and everything our own
                     // scripts send shares the app name `notify-send`, so that
                     // grouping is the common case here, not the rare one.
-                    color: sibling.modelData.urgency === NotificationUrgency.Critical ? Theme.accentError : Theme.fgPrimary
+                    color: Theme.inkPrimary
+                    // A collapsed sibling keeps its severity through its GLYPH,
+                    // for the same reason the lead card does — signalError as
+                    // text is banned in every theme.
+                    font.bold: sibling.modelData.urgency === NotificationUrgency.Critical
                     elide: Text.ElideRight
                     font.family: Config.guiFont
-                    font.pixelSize: Config.fontSizeSmall - 1
+                    font.pixelSize: Config.fontBody - 1
                     leftPadding: Config.padTight
                     rightPadding: Config.padTight
                     text: sibling.modelData.summary
@@ -298,12 +361,13 @@ Rectangle {
     }
 
     // Relative timestamps ("2 min", "1 h"), like swaync's
-    // relative-timestamps. Notification carries no arrival time, so it is
-    // recorded here on creation.
+    // relative-timestamps. Notification carries no arrival time, so the
+    // singleton records one — here rather than in the delegate, because a card
+    // restored from the last session must not read as having just arrived.
     QtObject {
         id: age
 
-        readonly property double created: Date.now()
+        readonly property double created: Notifications.arrivedAt(root.notification)
         property string label: "now"
 
         function refresh(): void {

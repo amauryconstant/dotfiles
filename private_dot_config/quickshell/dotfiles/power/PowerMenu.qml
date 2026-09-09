@@ -124,9 +124,16 @@ PanelWindow {
 
     // A full-surface scrim: the menu is modal, and dimming what is behind it is
     // what makes a destructive row read as a decision rather than a toolbar.
+    //
+    // 🚨 Theme.scrim, NOT a background token. A scrim is a shade rather than a
+    // theme colour: groundBase measures 0.71-0.96 luminance in all four light
+    // colorsets, so an 86% wash built from it renders near-white and the tiles
+    // float on nothing. Everything drawn directly on it then needs fgOnScrim —
+    // the scrim is dark in every theme, so a light theme's own inkPrimary lands
+    // on it at 1.81 and is simply not there.
     Rectangle {
         anchors.fill: parent
-        color: Qt.alpha(Theme.bgPrimary, 0.86)
+        color: Qt.alpha(Theme.scrim, Config.scrimOpacity)
 
         MouseArea {
             anchors.fill: parent
@@ -166,16 +173,16 @@ PanelWindow {
                     // solarized pair and gruvbox-light — an invisible initial.
                     // Neutral on bgSecondary is both legible and what the
                     // accent rule wants: nothing here is the focused thing.
-                    color: Theme.bgSecondary
+                    color: Theme.groundRaised
                     height: Config.powerAvatarSize
                     radius: Config.radiusPill
                     width: Config.powerAvatarSize
 
                     Text {
                         anchors.centerIn: parent
-                        color: Theme.fgPrimary
+                        color: Theme.inkPrimary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeSmall
+                        font.pixelSize: Config.fontBody
                         text: root.identity.substring(0, 1).toUpperCase() || "?"
                     }
                 }
@@ -185,16 +192,19 @@ PanelWindow {
                     spacing: 3
 
                     Text {
-                        color: Theme.fgPrimary
+                        // On the scrim, not on a panel: fgOnScrim, per the note
+                        // on the scrim Rectangle above.
+                        color: Theme.fgOnScrim
                         font.family: Config.guiFont
-                        font.pixelSize: Config.fontSize
+                        font.pixelSize: Config.fontBody
                         text: root.identity
                     }
 
                     Text {
-                        color: Theme.fgMuted
+                        color: Theme.fgOnScrim
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontSizeTiny
+                        font.pixelSize: Config.fontMeta
+                        opacity: 0.8
                         text: root.uptime
                     }
                 }
@@ -219,11 +229,17 @@ PanelWindow {
                         // destructive tile is red in its GLYPH only, so the row
                         // keeps one rhythm and the selection stays the only
                         // thing the eye is pulled to.
-                        border.color: tile.current ? Theme.accentPrimary : Theme.bgSecondary
+                        border.color: tile.current ? Theme.signalFocus : Theme.edge
                         border.width: Config.hairline
-                        color: Theme.bgSecondary
+                        // 🚨 groundBase, not groundRaised. The power-off tile
+                        // draws signalError as a glyph and a border, and that
+                        // pair measures 2.81 on groundRaised in solarized-dark
+                        // — under the 3:1 a graphic owes. On groundBase it is
+                        // 3.25 at worst and clears everywhere. The tiles sit on
+                        // the scrim anyway, so the raised tier bought nothing.
+                        color: Theme.groundBase
                         height: Config.powerTileSize
-                        radius: Config.powerTileRadius
+                        radius: Config.radiusPanel
                         width: Config.powerTileSize
 
                         MouseArea {
@@ -240,9 +256,9 @@ PanelWindow {
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                color: tile.modelData.destructive ? Theme.accentError : tile.current ? Theme.accentPrimary : Theme.fgPrimary
+                                color: tile.modelData.destructive ? Theme.signalError : tile.current ? Theme.signalFocus : Theme.inkPrimary
                                 font.family: Config.guiFont
-                                font.pixelSize: Config.powerGlyphSize
+                                font.pixelSize: Config.glyphTile
                                 text: tile.modelData.glyph
                             }
 
@@ -250,9 +266,9 @@ PanelWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 // bgSecondary is elevated, so fg-primary is the
                                 // only legal neutral here (themes/CLAUDE.md).
-                                color: Theme.fgPrimary
+                                color: Theme.inkPrimary
                                 font.family: Config.guiFont
-                                font.pixelSize: Config.fontSizeSmall
+                                font.pixelSize: Config.fontBody
                                 text: tile.modelData.label
                             }
                         }
@@ -263,9 +279,10 @@ PanelWindow {
             // Mnemonic row.
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: Theme.fgMuted
+                color: Theme.fgOnScrim
                 font.family: Config.terminalFont
-                font.pixelSize: Config.fontSizeTiny
+                font.pixelSize: Config.fontMeta
+                opacity: 0.8
                 text: `${root.actions.map(a => a.key).join("  ")}   \u00b7   esc cancel`
             }
         }

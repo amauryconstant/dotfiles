@@ -30,6 +30,11 @@ Variants {
             const wanted = n.hints?.["x-canonical-monitor"];
             return wanted ? wanted === win.modelData.name : win.modelData.name === Hyprland.focusedMonitor?.name;
         })
+        // Three cards at once and a count for the rest: past that the stack
+        // stops being a glance and starts being a wall, and the overflow is
+        // already in the centre, which is where it belongs.
+        readonly property list<var> shown: win.mine.slice(0, Config.notifPopupMaxVisible)
+        readonly property int overflow: win.mine.length - win.shown.length
 
         color: "transparent"
         // Toasts must not push windows around; the bar already reserves its
@@ -79,13 +84,16 @@ Variants {
             width: parent.width
 
             Repeater {
-                model: win.mine
+                model: win.shown
 
                 NotificationCard {
                     id: card
 
                     required property var modelData
 
+                    // A popup is a glance, so its body clamps to three lines;
+                    // the full text is in the centre.
+                    bodyMaxLines: 3
                     notification: card.modelData
                     // A toast's actions are a mis-click waiting to happen: it
                     // is about to vanish from under the pointer. The centre is
@@ -108,6 +116,16 @@ Variants {
                     // recreated on every arrival, so its timer would restart
                     // too. Deadlines live in the Notifications singleton.
                 }
+            }
+
+            Text {
+                color: Theme.inkPrimary
+                font.family: Config.terminalFont
+                font.pixelSize: Config.fontMeta
+                horizontalAlignment: Text.AlignHCenter
+                text: qsTr("+%1 more").arg(win.overflow)
+                visible: win.overflow > 0
+                width: parent.width
             }
         }
     }
