@@ -14,7 +14,8 @@
   set every older note cites no longer exists). Floating bar (40 tall, inset 8, reserving 48),
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
   Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
-  history. Popovers (page 06) and page 10's *native nested* menu are designed and **not built**
+  history. **2026-09-10**: the seven bar popovers (page 06). Page 10's *native nested* menu is
+  designed and **not built**
 - 🚨 **Colours are SEMANTIC ROLES, all the way down.** `themes/*/colors.sh` was renamed on
   2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
   six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a
@@ -124,7 +125,11 @@ dotfiles/
 │   ├── NotificationCard.qml     # THE card — shared by the centre and the popups
 │   ├── NotificationPopups.qml   # toast stack, one window PER SCREEN
 │   └── NotificationCentre.qml   # the 340-wide panel (design page 07)
+├── bar/popovers/*.qml     # the seven payloads — one per bar widget that owns one
 └── bar/
+    ├── BarPopover.qml     # the shared popover chrome: header, body slot, footer, anchoring, grabs
+    ├── PopoverRow.qml     # the 34 row shared by every list-shaped payload
+    ├── PopoverSlider.qml  # the only control in the shell that takes both drag and the wheel
     ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
     ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
     ├── BarTooltip.qml     # PopupWindow hover tooltip
@@ -246,6 +251,78 @@ both forced by what cliphist stores: no age and no source application (it record
 inventing "2m · Neovim" would be a lie in `inkSecondary`), and no thumbnail yet — the dimensions
 and format cliphist already prints in its `[[ binary data … ]]` preview are what tell two
 screenshots apart.
+
+## Popovers (design page 06)
+
+Seven payloads on one chrome: **audio, network, bluetooth, calendar, media, meters, power**,
+each anchored under the bar widget that owns it. They are what removed the last four
+shell-outs from the bar — `pavucontrol`, `nmtui`, `blueman-manager` and `btop` all moved from
+the click to the footer, where the design puts the "escape hatch".
+
+🚨 **`grabFocus` cannot be used.** `PopupWindow.grabFocus` makes Qt request an *xdg_popup* grab,
+and a popup whose parent is a **layer-shell** window cannot be one. Measured 2026-09-10:
+
+```
+WARN qt.qpa.wayland: Failed to create grabbing popup. Ensure popup has a transientParent set
+                     and that parent window has received input.
+WARN: Cannot attach popup ... as the popup is not an xdg_popup.
+```
+
+and the popup sets itself back to invisible. So the click-outside dismissal that flag exists for
+is simply unavailable here, and the design's two open modes are built from what is:
+
+| Mode | Grab | Close signal | Ring |
+|---|---|---|---|
+| **Pointer** (a click on the widget) | none — the keyboard stays with the application, which is exactly what page 03 demands | losing the pointer, with `Config.popHideDelayMs` (260) of slack for the crossing | no |
+| **Keyboard** (the `popovers` submap) | `HyprlandFocusGrab`, verified to deliver keys to a focused `Item` and to signal `cleared` on an outside click | Esc, `cleared`, or the same key again | yes |
+
+The keyboard grab **takes the keyboard from the focused application** for as long as it is up.
+That is the trap page 03 describes, and it is why the ring is mandatory in that mode and absent
+in the other.
+
+🚨 **`anchor.updateAnchor()` on every open.** The anchor rect is computed only when a popup is
+*first* shown and does not follow its item (`popupanchor.hpp`). Bar widgets move — the window
+title changes width, a workspace appears — so without it a reopened popover lands where its
+widget used to be.
+
+🚨 **`signal closed` is taken.** `PopupWindow` already carries one, and overriding it is a
+*runtime* warning (`Duplicate signal name: invalid override`) that qmllint does not report. The
+chrome's is `dismissed`.
+
+**The coordinator is one string on `Bar`.** A `Bar` is created per screen by the `Variants` in
+`shell.qml`, so `openPopover` is per-output for free: two screens may each show one, and an
+output vanishing takes its bar, its popovers and its coordinator with it. `Bar.togglePopover(id,
+keyboard)` closes whatever is open before opening the next.
+
+**Widgets raise, `Bar` decides.** Each of the seven declares `popoverRequested` and `Bar` relays
+it — the same shape `LauncherWidget` and `NotificationWidget` already had. `Bar` also binds
+`popoverOpen` back onto the widget, which keeps its chip lit and **suppresses its tooltip**: a
+tooltip hanging over the popover it opened describes the widget twice and covers the payload.
+
+🚨 **The ↵ mark follows the CURSOR, not `selected`.** `PopoverRow` means something different by
+`selected` than the launcher does: *this is the current device / the active route*, which Return
+would not change. A ↵ on a row that does nothing is a lie about the key.
+
+Departures from page 06, each measured:
+
+| Design | Here | Why |
+|---|---|---|
+| Slider fill `fill-inert` on a `ground-raised` track — "the one legal use of that tier" | fill `signalFocus` | The pair measures **1.15–1.3** (worst rose-pine-dawn) against page 13's own 3:1 graphic floor. Same ruling the OSD already took; both pairs are lint rows |
+| Thumb hairline `accent-border` | `Theme.edge` | That key was deleted from all 8 colorsets on 2026-09-09 for having no consumer, and page 13 lists it as *compositor decoration measured only so nobody re-adopts it* |
+| Meters payload includes temperature | CPU, memory, uptime | `Meters.qml` records it: a temperature is not a percentage until someone names the hwmon path and the threshold it is a percentage OF |
+| Power payload includes a profile control | absent | `power-profiles-daemon` is not installed, and `PowerProfiles.profile` answers "Balanced" anyway with no daemon — the row would state a profile that is not real. Page 03: a control that would do nothing is removed |
+| Meter fill takes the warn/error ramp | the band is a **word** (`warn` / `critical`), the fill goes `signalError` only at critical | `signalWarn` is 2.05 in rose-pine-dawn and banned as a graphic here; a band nobody can see is not a band |
+
+**Escape hatches**, all clickable, all closing the popover: `pavucontrol` (added to
+`packages.yaml` — it was never installed, so `AudioWidget`'s old click did nothing),
+`nm-connection-editor` (replacing `nmtui` in a terminal), `blueman`, `btop`, `battery-status`.
+The calendar's footer carries today's date instead, because it launches nothing.
+
+**Keyboard**: `SUPER+P` enters the `popovers` submap in `hypr/conf.d/quickshell.{lua,conf}`;
+`a n b c m e w` pick audio / network / bluetooth / calendar / media / meters / power, Esc leaves.
+One top-level key rather than seven, and every key goes through
+`quickshell-toggle popover <id>` for the same reason every other binding does: IPC only reaches a
+running instance.
 
 ## Widget → source
 

@@ -163,6 +163,27 @@ edges with every window's, and per the paragraph above the gap under the bar is
 QML side alone. Both are 4 today; `gaps_in` is half that, keeping the screen-edge gap equal
 to the window-to-window gap.
 
+🚨 **`PopupWindow.grabFocus` does not work on a layer-shell parent.** It sets `Qt::Popup`
+(`popupwindow.cpp:63`), which makes Qt request an *xdg_popup* grab — and a popup parented to a
+layer surface is not an xdg_popup. Measured 2026-09-10 with `quickshell -p`: *"Failed to create
+grabbing popup. Ensure popup has a transientParent set and that parent window has received
+input"*, then *"Cannot attach popup … as the popup is not an xdg_popup"*, and the popup silently
+sets itself back to invisible. So a bar popup gets **no** click-outside dismissal from Qt.
+`HyprlandFocusGrab` (`Quickshell.Hyprland`, re-exported from `_FocusGrab`) is what works: keys
+reach a focused `Item` inside the popup and `cleared` fires on an outside click — but it takes
+the keyboard away from the focused application for as long as it is active, and it survives a
+workspace switch, so it is only correct for a surface the user deliberately summoned.
+
+🚨 **`signal closed` on a `PopupWindow` is an override, not a new signal.** The engine reports
+*"Duplicate signal name: invalid override of property change signal or superclass signal"* at
+RUNTIME and qmllint says nothing. Same class of trap as the illegal `escape()` method name.
+
+🚨 **A popup anchored to an item does not follow it.** `popupanchor.hpp:83-87`: the anchor rect
+is computed when the popup is first shown, and `updateAnchor()` is the only thing that
+recomputes it. Anything anchored to a bar widget must call it on every open — the window title
+changes width and the workspace pills come and go, so the second opening lands where the widget
+used to be.
+
 🚨 **A `PopupWindow` anchored to an item covers that item at the default `edges`.**
 `PopupAnchorState` defaults to `edges = Top | Left`, `gravity = Bottom | Right`
 (`_ai/quickshell/src/core/popupanchor.hpp`), and setting `anchor.item` without `anchor.rect`

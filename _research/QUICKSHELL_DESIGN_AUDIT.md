@@ -302,9 +302,28 @@ menu, which is not built.
 
 1. **Solarized's `FG_PRIMARY`** — Part 4.2's finding, which page 13 independently confirms and
    calls a colorset bug. Unfixed: it belongs to `themes/*/colors.sh`, not to any consumer.
-2. **The colorset rename.** The role names live in `Theme.qml` as a translation layer over the
-   module-named keys. Renaming the colorsets themselves touches waybar, wofi, swaync, wlogout,
-   hyprland, btop, ghostty and both theme skills, and is a separate round.
+2. ~~**The colorset rename.**~~ **Done 2026-09-09** (commit `60cd3300`): the colorsets carry the
+   18 role names themselves, `Theme.qml` reads the key of the same name, and six keys with no
+   consumer were deleted.
 3. **`signal-warn` / `signal-info` have no legal graphic use left.** Both are under 3:1 on their own
    ground in four of eight, so nothing in the shell draws them; they sit in `Theme.qml` bound and
    unused. Either a future surface finds a ground they clear, or the palette owes them one.
+
+## 5.5 — Page 06 rulings (2026-09-10, when the popovers were built)
+
+Five, in the same style as 5.1. The first two are contradictions inside the set; the rest are
+places the design assumes hardware or data this machine does not have.
+
+| # | Page 06 says | Ruling | Measurement |
+|---|---|---|---|
+| 5.5a | The slider's filled portion is `fill-inert` on a `ground-raised` track — *"the one legal use of that tier, and the reason it exists"* | **Rejected.** Fill is `signalFocus` | `FILL_INERT` on `GROUND_RAISED` measures **1.15** (rose-pine-dawn) and 1.3 (mocha) against the 3:1 page 13 sets for a graphic. Identical to 5.1c, which page 08 had already produced for the OSD; both are now BANNED rows in `theme-contrast.py` so the number survives |
+| 5.5b | The thumb carries *"the `accent-border` hairline inside it, which is that token's one remaining job"* | **Rejected.** `Theme.edge` | `ACCENT_BORDER` was one of the six keys deleted from all 8 colorsets on 2026-09-09 for having no consumer — and page **13** itself lists it as *"compositor decoration — outside the shell's set, measured here only so nobody re-adopts it"* at 1.81. Page 06 contradicts page 13; page 13 wins |
+| 5.5c | The meters payload is CPU, memory, **temperature**, uptime | Temperature **not built**; uptime added | Not a contrast question: a temperature is not a percentage until someone names the hwmon path and the threshold it is a percentage OF. `Meters.qml` carries the note and the place it goes |
+| 5.5d | The power payload carries a **profile** control | **Not drawn** | `power-profiles-daemon` is not installed here, and `PowerProfiles.profile` still answers "Balanced" with no daemon running — so the control would state a profile that is not real. Page 03's own rule: a control that would do nothing is removed, never disabled |
+| 5.5e | A meter's warning states are a ramp — `signal-warn` then `signal-error` | The band is a **word**; only critical takes colour | `SIGNAL_WARN` on `GROUND_BASE` is 2.05 (rose-pine-dawn), under the graphic floor in four of eight. Same finding that moved the battery's low band onto its glyph in 5.2 |
+
+One thing page 06 asks for that is **not a design defect but a platform limit**: pointer-opened
+popovers are specified to close on a click outside, with no keyboard grab. Under layer-shell
+there is no mechanism that does both — `PopupWindow.grabFocus` fails outright on a layer parent
+and `HyprlandFocusGrab` takes the keyboard. Pointer mode therefore closes on losing the pointer
+instead. Measurements and the exact Qt errors are in `.claude/rules/quickshell-qml.md`.

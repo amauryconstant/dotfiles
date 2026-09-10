@@ -289,6 +289,7 @@ packages:
         - wl-clipboard # Wayland clipboard CLI utilities
         - libqalculate # qalc, the Quickshell launcher's `=` calculator mode
         - pamixer # PulseAudio/PipeWire mixer CLI
+        - pavucontrol # PipeWire mixer GUI — the audio popover's escape hatch (per-app streams)
         - brightnessctl # Screen brightness controller
         - ddcutil # External monitor brightness via DDC/CI (no internal backlight)
         - playerctl # MPRIS media player controller

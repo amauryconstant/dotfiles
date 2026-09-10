@@ -84,6 +84,18 @@ PAIRS = [
     ("INK_SECONDARY_EFF", "GROUND_FLOAT", 3.0, "NotificationCard action outlines"),
     ("SIGNAL_ERROR", "GROUND_BASE", 3.0, "audio failed-service glyph, network no-route glyph, battery critical glyph, DND bell, idle inhibitor, PowerMenu power-off glyph and border"),
     ("SIGNAL_ERROR", "GROUND_FLOAT", 3.0, "critical NotificationCard border and chip glyph"),
+
+    # --- popovers (design page Shell-06-Popovers). The chrome grounds on
+    # GROUND_BASE, so its text pairs are the two rows above; what is new is the
+    # slider and the meter fill.
+    #
+    # The calendar's "today" number is inkOnSignal on SIGNAL_FOCUS and is NOT a
+    # row here: inkOnSignal is COMPUTED in Theme.qml rather than bound in
+    # colors.sh, so this table's parser cannot see it. The fgOnAccent section
+    # below already measures exactly that pick, per theme, and the number is the
+    # same pairing the focused workspace pill has shipped since Phase 2.5.
+    ("SIGNAL_FOCUS", "GROUND_RAISED", 3.0, "popover slider fill on its track, and the thumb"),
+    ("INK_SECONDARY_EFF", "GROUND_RAISED", 3.0, "meter and media-position fill on its track"),
 ]
 
 # Pairs the design BANS. Measured on purpose: the reason a rule exists is the
@@ -91,6 +103,7 @@ PAIRS = [
 # None of these is drawn anywhere in the tree.
 BANNED = [
     ("INK_PRIMARY", "FILL_INERT", 4.5, "no text on fill-inert. This is the 1.67 that moved the occupied workspace pill onto GROUND_RAISED"),
+    ("FILL_INERT", "GROUND_RAISED", 3.0, "design page 06 calls this the slider's 'one legal use' of fill-inert; it is under the 3:1 that page 13 sets for a graphic, so the popover slider fills with SIGNAL_FOCUS instead — the same ruling the OSD already took"),
     ("INK_MUTED", "GROUND_BASE", 4.5, "INK_MUTED is retired: banned as text, and under 3:1 as an outline. There is no successor token"),
     ("SIGNAL_ERROR", "GROUND_BASE", 4.5, "signal-error is never a TEXT colour. The notification title and the urgent workspace number both moved off it"),
     ("SIGNAL_WARN", "GROUND_BASE", 3.0, "not drawn as a graphic either: 2.05 in rose-pine-dawn. The battery band and the dictation state carry glyphs instead"),
