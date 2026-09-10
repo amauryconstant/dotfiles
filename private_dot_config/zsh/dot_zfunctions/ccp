@@ -39,5 +39,6 @@ ccp() {
     || { echo "Failed to merge profiles" >&2; return 1; }
   print -r -- "$merged" >| "$tmpfile"
 
-  claude --settings "$tmpfile" "${claude_args[@]}"
+  # CCP_SETTINGS lets the statusline name the profile and read its effective settings.
+  CCP_SETTINGS="$tmpfile" claude --settings "$tmpfile" "${claude_args[@]}"
 }
