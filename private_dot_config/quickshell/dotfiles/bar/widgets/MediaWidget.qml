@@ -37,7 +37,9 @@ BarWidget {
     labelMaxWidth: Config.titleMaxW
     tooltipText: root.player ? `${root.player.identity}\n${root.player.trackTitle}\n${root.player.trackArtist} - ${root.player.trackAlbum}` : ""
 
-    onClicked: root.player?.togglePlaying()
+    signal popoverRequested
+
+    onClicked: root.popoverRequested()
     onMiddleClicked: root.player?.previous()
     onRightClicked: root.player?.next()
     onScrolledDown: {

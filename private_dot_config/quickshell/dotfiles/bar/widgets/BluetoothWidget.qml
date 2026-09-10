@@ -1,6 +1,5 @@
 import "../"
 import "../../"
-import Quickshell
 import Quickshell.Bluetooth
 import QtQuick
 
@@ -40,5 +39,7 @@ BarWidget {
     // no "bluetooth off" glyph in this tree, because off is absence.
     visible: Config.isLaptop && (root.adapter?.enabled ?? false)
 
-    onClicked: Quickshell.execDetached(["blueman-manager"])
+    signal popoverRequested
+
+    onClicked: root.popoverRequested()
 }

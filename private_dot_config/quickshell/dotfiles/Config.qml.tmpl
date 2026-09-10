@@ -97,6 +97,10 @@ Singleton {
     // not a reading of the design; font.pointSize would take the fraction but
     // then every size in the tree would be in a different unit from every
     // geometry value.
+    // The section label above a group of rows. 9.5 in the design, and the only
+    // step below fontMeta; it is drawn in the terminal face, in caps, and
+    // design page 06 says it appears in popovers and nowhere else.
+    readonly property int fontSection: 10
     readonly property int fontMeta: 11
     readonly property int fontBody: 12
     readonly property int fontTitle: 14
@@ -134,6 +138,28 @@ Singleton {
     readonly property int popMinW: 300
     readonly property int popMaxW: 340
     readonly property int popMaxH: 420
+
+    // Popovers, design page Shell-06-Popovers. One chrome, seven payloads: a
+    // 34 header carrying glyph and title, the payload, and a 32 footer with the
+    // keys on the left and the escape hatch on the right. Width and height come
+    // from the three bounds above, which the launcher shares.
+    readonly property int popHeaderHeight: 34
+    readonly property int popFooterHeight: 32
+    // The slider is the only place in the shell where drag and the wheel both
+    // exist. The thumb is larger than the track on purpose: the track reports a
+    // value, the thumb is what a pointer has to hit.
+    readonly property int popSliderTrack: 6
+    readonly property int popSliderThumb: 16
+    // 🚨 2px OUTSIDE the paint and never animated (Theme.focusRing). Drawn only
+    // where the surface traps the keyboard, which for a popover means only when
+    // it was opened from the submap rather than by pointer.
+    readonly property int popRingWidth: 2
+    // 🚨 Pointer-opened popovers take NO keyboard grab, so nothing tells the
+    // shell about a click landing elsewhere -- see BarPopover.qml. Losing the
+    // pointer is therefore the close signal, and it needs the same slack the
+    // dock needs for the same reason: crossing from the widget to the surface
+    // below it passes through a moment where neither reports hover.
+    readonly property int popHideDelayMs: 260
 
     // Power menu, design page Shell-09-Session. 14 is the canvas's own tile radius and sits
     // between radiusPanel and radiusTile deliberately — the tiles are much
@@ -302,6 +328,13 @@ Singleton {
     readonly property string volumeGlyphMuted: "󰝟"
     readonly property string volumeGlyphHeadset: "󰋎"
     readonly property string volumeGlyphHeadphone: "󰋋"
+    // Wifi signal, wired route, and no route at all. Hoisted out of
+    // NetworkWidget when the network popover started drawing the same ramp:
+    // a glyph set that distinguishes ONE widget's states belongs to that
+    // widget, but this one now has two consumers.
+    readonly property var wifiGlyphs: ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"]
+    readonly property string wiredGlyph: "󰈀"
+    readonly property string noNetworkGlyph: "󰖪"
     // md-brightness_1..7 -- a seven-step ramp because that is how many the icon
     // set actually has.
     readonly property var brightnessGlyphs: ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"]

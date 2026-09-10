@@ -23,6 +23,9 @@ Singleton {
     // 0..100, integers — these are read as numbers on a bar, not plotted.
     property int cpu: 0
     property int memory: 0
+    // Seconds since boot, for the meters popover. Not a percentage and never
+    // on the bar: it is context for the two numbers that are.
+    property int uptime: 0
 
     // What the bar draws. One number, never two: a second permanent readout
     // beside the battery is exactly the noise the accent rule exists to stop.
@@ -70,6 +73,23 @@ Singleton {
             root.memory = Math.round(100 * (1 - available / total));
     }
 
+    function readUptime(text: string): void {
+        root.uptime = Math.floor(Number(text.trim().split(/\s+/)[0]) || 0);
+    }
+
+    // Formatted where it is read rather than stored as a string: the popover is
+    // the only consumer, and a number survives a locale change.
+    function uptimeText(): string {
+        const days = Math.floor(root.uptime / 86400);
+        const hours = Math.floor((root.uptime % 86400) / 3600);
+        const minutes = Math.floor((root.uptime % 3600) / 60);
+        if (days > 0)
+            return `${days}d ${hours}h`;
+        if (hours > 0)
+            return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    }
+
     FileView {
         id: stat
 
@@ -88,6 +108,15 @@ Singleton {
         onLoaded: root.readMemory(meminfo.text())
     }
 
+    FileView {
+        id: uptimeFile
+
+        path: "/proc/uptime"
+        printErrors: false
+
+        onLoaded: root.readUptime(uptimeFile.text())
+    }
+
     Timer {
         interval: 2000
         repeat: true
@@ -97,6 +126,7 @@ Singleton {
         onTriggered: {
             stat.reload();
             meminfo.reload();
+            uptimeFile.reload();
         }
     }
 }

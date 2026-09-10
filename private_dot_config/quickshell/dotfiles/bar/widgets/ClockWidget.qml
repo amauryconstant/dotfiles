@@ -16,11 +16,15 @@ import QtQuick
 BarWidget {
     id: root
 
+    signal popoverRequested
+
     hoverBackground: false
     tooltipMonospace: true
     // Only bind while hovered: rebuilding the grid on every minute tick when
     // nobody is looking is pure waste.
     tooltipText: root.hovered ? root.monthGrid(clock.date) : ""
+
+    onClicked: root.popoverRequested()
 
     function monthGrid(now: date): string {
         const year = now.getFullYear();

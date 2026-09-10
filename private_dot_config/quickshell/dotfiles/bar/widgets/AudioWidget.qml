@@ -1,11 +1,11 @@
 import "../"
 import "../../"
-import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
 
-// Waybar's pulseaudio module. Volume and mute are native now; only the GUI
-// (pavucontrol) is still a shell-out, matching Waybar's on-click.
+// Waybar's pulseaudio module. Volume and mute are native; the left click opens
+// the audio popover (design page Shell-06-Popovers), which is where the device
+// list lives and where pavucontrol is named as the escape hatch.
 BarWidget {
     id: root
 
@@ -45,6 +45,8 @@ BarWidget {
     label: root.failed ? qsTr("audio") : ""
     tooltipText: root.failed ? qsTr("PipeWire is not running\nsystemctl --user restart pipewire wireplumber") : root.sink ? `${root.sink.description}\nVolume: ${Math.round(root.volume * 100)}%${root.muted ? " (muted)" : ""}` : ""
 
+    signal popoverRequested
+
     // Waybar's on-click-middle was `pamixer --next-sink`; cycling the
     // preferred default is the native equivalent.
     function nextSink(): void {
@@ -60,7 +62,7 @@ BarWidget {
             root.sink.audio.volume = Math.max(0, Math.min(1, value));
     }
 
-    onClicked: Quickshell.execDetached(["pavucontrol"])
+    onClicked: root.popoverRequested()
     onMiddleClicked: root.nextSink()
     onRightClicked: {
         if (root.sink?.audio)

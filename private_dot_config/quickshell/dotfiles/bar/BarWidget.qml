@@ -21,7 +21,7 @@ Item {
     readonly property alias labelTruncated: labelText.truncated
     // A lit ground is an elevated surface, and themes/CLAUDE.md forbids
     // fg-secondary there — hence the swap rather than one fixed rest colour.
-    readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
+    readonly property bool grounded: root.pill || root.tinted || root.popoverOpen || (root.hoverBackground && mouse.containsMouse)
     // 🚨 The neutral a widget falls back to when no state applies. A widget
     // overriding iconColor/labelColor for a state MUST end its ternary on this,
     // never on a flat Theme.inkSecondary: that pins the ungrounded colour onto a
@@ -46,6 +46,11 @@ Item {
     // A pill is a widget carrying a number that must actually be read at a
     // glance. Amendment A grants exactly one: the battery.
     property bool pill: false
+    // Set by Bar.qml for the widget whose popover is open on this output. It
+    // keeps the chip lit for as long as the surface it opened is up, and it
+    // suppresses the tooltip: a tooltip hanging over the popover it opened
+    // describes the widget twice and covers the payload.
+    property bool popoverOpen: false
     // Only the launcher chip sets this: a permanent ground that is not a pill.
     property bool tinted: false
     property color groundColor: Theme.groundRaised
@@ -151,6 +156,6 @@ Item {
         anchorItem: root
         monospace: root.tooltipMonospace
         text: root.tooltipText
-        visible: mouse.containsMouse && root.tooltipText !== ""
+        visible: mouse.containsMouse && root.tooltipText !== "" && !root.popoverOpen
     }
 }

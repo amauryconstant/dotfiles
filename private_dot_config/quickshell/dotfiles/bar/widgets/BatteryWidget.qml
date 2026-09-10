@@ -1,6 +1,5 @@
 import "../"
 import "../../"
-import Quickshell
 import Quickshell.Services.UPower
 import QtQuick
 
@@ -75,5 +74,7 @@ BarWidget {
     tooltipText: root.battery ? root.tooltipLines() : ""
     visible: Config.isLaptop && root.battery !== null
 
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/battery-status`])
+    signal popoverRequested
+
+    onClicked: root.popoverRequested()
 }

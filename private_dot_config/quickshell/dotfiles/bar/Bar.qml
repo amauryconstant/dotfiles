@@ -1,4 +1,5 @@
 import "../"
+import "popovers"
 import "widgets"
 import Quickshell
 import QtQuick
@@ -26,6 +27,23 @@ PanelWindow {
 
     required property var modelData
 
+    // 🚨 The per-output popover coordinator, and it costs one string: a Bar is
+    // created per screen by the Variants in shell.qml, so "one popover per
+    // OUTPUT, not one per shell" (design page Shell-06-Popovers) needs no
+    // registry and no singleton. Two screens may each show one, which is
+    // correct on a multi-head desk; an output vanishing takes its Bar, its
+    // popovers and this string with it.
+    property string openPopover: ""
+    readonly property var popovers: ({
+            audio: pAudio,
+            bluetooth: pBluetooth,
+            calendar: pCalendar,
+            media: pMedia,
+            meters: pMeters,
+            network: pNetwork,
+            power: pPower
+        })
+
     // Raised by the launcher chip; shell.qml owns the Launcher window.
     signal launcherRequested
     signal notificationCentreRequested
@@ -34,6 +52,23 @@ PanelWindow {
     // send `pkill -RTMIN+9 waybar` for the same reason.
     function refreshIdle(): void {
         idle.refresh();
+    }
+
+    // `keyboard` is what separates the two open modes of design page 03: by
+    // pointer there is no grab at all, by binding the popover grabs the
+    // keyboard and draws a focus ring. The IPC target passes true; a widget
+    // click passes false.
+    function togglePopover(id: string, keyboard: bool): void {
+        const target = root.popovers[id] ?? null;
+        if (!target)
+            return;
+        const wasOpen = root.openPopover === id;
+        if (root.openPopover !== "")
+            root.popovers[root.openPopover]?.close();
+        if (wasOpen)
+            return;
+        root.openPopover = id;
+        target.open(keyboard);
     }
 
     color: "transparent"
@@ -80,7 +115,12 @@ PanelWindow {
     // Absolutely positioned rather than a third flex child, so the clock stays
     // optically centred however wide the left and right zones grow.
     ClockWidget {
+        id: wClock
+
         anchors.centerIn: parent
+        popoverOpen: root.openPopover === "calendar"
+
+        onPopoverRequested: root.togglePopover("calendar", false)
     }
 
     Row {
@@ -97,7 +137,13 @@ PanelWindow {
 
             spacing: Config.gap / 2
 
-            MetersWidget {}
+            MetersWidget {
+                id: wMeters
+
+                popoverOpen: root.openPopover === "meters"
+
+                onPopoverRequested: root.togglePopover("meters", false)
+            }
         }
 
         BarSeparator {
@@ -121,9 +167,21 @@ PanelWindow {
 
             spacing: Config.gap / 2
 
-            NetworkWidget {}
+            NetworkWidget {
+                id: wNetwork
 
-            BluetoothWidget {}
+                popoverOpen: root.openPopover === "network"
+
+                onPopoverRequested: root.togglePopover("network", false)
+            }
+
+            BluetoothWidget {
+                id: wBluetooth
+
+                popoverOpen: root.openPopover === "bluetooth"
+
+                onPopoverRequested: root.togglePopover("bluetooth", false)
+            }
         }
 
         BarSeparator {
@@ -137,7 +195,13 @@ PanelWindow {
 
             BacklightWidget {}
 
-            BatteryWidget {}
+            BatteryWidget {
+                id: wBattery
+
+                popoverOpen: root.openPopover === "power"
+
+                onPopoverRequested: root.togglePopover("power", false)
+            }
         }
 
         BarSeparator {
@@ -149,9 +213,21 @@ PanelWindow {
 
             spacing: Config.gap / 2
 
-            AudioWidget {}
+            AudioWidget {
+                id: wAudio
 
-            MediaWidget {}
+                popoverOpen: root.openPopover === "audio"
+
+                onPopoverRequested: root.togglePopover("audio", false)
+            }
+
+            MediaWidget {
+                id: wMedia
+
+                popoverOpen: root.openPopover === "media"
+
+                onPopoverRequested: root.togglePopover("media", false)
+            }
         }
 
         BarSeparator {
@@ -184,6 +260,93 @@ PanelWindow {
             NotificationWidget {
                 onCentreRequested: root.notificationCentreRequested()
             }
+        }
+    }
+
+    // Popovers are declared here rather than inside their widgets: the widget
+    // is what they anchor to, and the coordinator above needs to reach every
+    // one of them by name.
+    AudioPopover {
+        id: pAudio
+
+        anchorHovered: wAudio.hovered
+        anchorItem: wAudio
+
+        onDismissed: {
+            if (root.openPopover === "audio")
+                root.openPopover = "";
+        }
+    }
+
+    BluetoothPopover {
+        id: pBluetooth
+
+        anchorHovered: wBluetooth.hovered
+        anchorItem: wBluetooth
+
+        onDismissed: {
+            if (root.openPopover === "bluetooth")
+                root.openPopover = "";
+        }
+    }
+
+    CalendarPopover {
+        id: pCalendar
+
+        anchorHovered: wClock.hovered
+        anchorItem: wClock
+
+        onDismissed: {
+            if (root.openPopover === "calendar")
+                root.openPopover = "";
+        }
+    }
+
+    MediaPopover {
+        id: pMedia
+
+        anchorHovered: wMedia.hovered
+        anchorItem: wMedia
+
+        onDismissed: {
+            if (root.openPopover === "media")
+                root.openPopover = "";
+        }
+    }
+
+    MetersPopover {
+        id: pMeters
+
+        anchorHovered: wMeters.hovered
+        anchorItem: wMeters
+
+        onDismissed: {
+            if (root.openPopover === "meters")
+                root.openPopover = "";
+        }
+    }
+
+    NetworkPopover {
+        id: pNetwork
+
+        anchorHovered: wNetwork.hovered
+        anchorItem: wNetwork
+
+        onDismissed: {
+            if (root.openPopover === "network")
+                root.openPopover = "";
+        }
+    }
+
+    PowerPopover {
+        id: pPower
+
+        anchorHovered: wBattery.hovered
+        anchorItem: wBattery
+
+        onDismissed: {
+            if (root.openPopover === "power")
+                root.openPopover = "";
         }
     }
 }

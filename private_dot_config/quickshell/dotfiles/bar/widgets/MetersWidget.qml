@@ -1,6 +1,5 @@
 import "../"
 import "../../"
-import Quickshell
 import QtQuick
 
 // The bar's single load readout (design page Shell-04-Bar). New — Waybar's
@@ -31,5 +30,7 @@ BarWidget {
     tooltipText: `${qsTr("CPU")}  ${Meters.cpu}%\n${qsTr("Memory")}  ${Meters.memory}%`
     tooltipMonospace: true
 
-    onClicked: Quickshell.execDetached([Config.terminal, "-e", "btop"])
+    signal popoverRequested
+
+    onClicked: root.popoverRequested()
 }
