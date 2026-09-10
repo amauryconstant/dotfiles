@@ -34,6 +34,33 @@ o.bind("SUPER + SHIFT + Q", "Power menu", "~/.local/lib/scripts/desktop/quickshe
 -- the picker moved.
 o.bind("SUPER + C", "Clipboard history", "~/.local/lib/scripts/desktop/quickshell-toggle clipboard")
 
+-- Popovers (design page Shell-06-Popovers). ONE submap rather than seven
+-- top-level keys: the SUPER space is crowded, and a popover is a place you go
+-- rather than a thing you toggle mid-flow.
+--
+-- 🚨 The submap is what makes these popovers KEYBOARD-mode: opened this way a
+-- popover takes a Hyprland focus grab, puts a cursor on its first row and draws
+-- a focus ring. A pointer click on the same widget opens the same surface with
+-- no grab and no ring -- see quickshell/dotfiles/bar/BarPopover.qml.
+o.bind("SUPER + P", "Popovers", hl.dsp.submap("popovers"))
+
+hl.define_submap("popovers", function()
+	local function popover(key, id)
+		hl.bind(key, hl.dsp.exec_cmd("~/.local/lib/scripts/desktop/quickshell-toggle popover " .. id))
+		hl.bind(key, hl.dsp.submap("reset"))
+	end
+
+	popover("A", "audio")
+	popover("N", "network")
+	popover("B", "bluetooth")
+	popover("C", "calendar")
+	popover("M", "media")
+	popover("E", "meters")
+	popover("W", "power")
+
+	hl.bind("ESCAPE", hl.dsp.submap("reset"))
+end)
+
 -- Toast open/close effect. Layer surfaces are animated by the compositor, not
 -- by Quickshell, so this is the only place it can be changed. The popup window
 -- sets its own WlrLayershell.namespace for exactly this reason -- matching

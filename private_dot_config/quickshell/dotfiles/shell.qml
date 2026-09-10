@@ -10,6 +10,7 @@ import "osd"
 import "overview"
 import "power"
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 
@@ -99,6 +100,28 @@ ShellRoot {
             // qmllint disable missing-property
             return overviewLoader.item?.toggle() ?? "disabled";
             // qmllint enable missing-property
+        }
+    }
+
+    // The `popovers` submap in hypr/conf.d/quickshell.lua, via quickshell-toggle.
+    // This is the ONLY way a popover opens in keyboard mode: a pointer click
+    // opens the same surface with no grab and no ring (design page 03).
+    //
+    // 🚨 Both the argument and the return type must be annotated or the handler
+    // is never registered at all (ipchandler.hpp) — and `ipc call` exits 0 for
+    // a missing target, so the failure would be silent from both ends.
+    IpcHandler {
+        target: "popover"
+
+        function toggle(id: string): string {
+            const name = Hyprland.focusedMonitor?.name ?? "";
+            for (const bar of barVariants.instances) {
+                if (bar.modelData?.name !== name)
+                    continue;
+                bar.togglePopover(id, true);
+                return bar.openPopover === id ? "shown" : "hidden";
+            }
+            return "no bar";
         }
     }
 

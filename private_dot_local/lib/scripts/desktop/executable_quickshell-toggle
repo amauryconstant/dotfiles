@@ -4,6 +4,7 @@
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
 # Usage: quickshell-toggle [bar|launcher|power|notifications|overview|clipboard]
+#        quickshell-toggle popover <audio|network|bluetooth|calendar|media|meters|power>
 #        (default: bar)
 # Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
 #           SUPER+grave (overview)
@@ -21,11 +22,24 @@
 
 CONFIG=dotfiles
 TARGET=${1:-bar}
+# Only the popover target takes one, and it is which popover: the IPC handler
+# is `popover toggle <id>` rather than seven separate targets, because they are
+# one surface with seven payloads.
+ARG=${2:-}
 
 case "$TARGET" in
 bar | launcher | power | notifications | overview | clipboard) ;;
+popover)
+    case "$ARG" in
+    audio | network | bluetooth | calendar | media | meters | power) ;;
+    *)
+        echo "quickshell-toggle: popover needs an id (audio|network|bluetooth|calendar|media|meters|power)" >&2
+        exit 2
+        ;;
+    esac
+    ;;
 *)
-    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications|overview|clipboard)" >&2
+    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications|overview|clipboard|popover <id>)" >&2
     exit 2
     ;;
 esac
@@ -43,7 +57,7 @@ shell_running() {
 # Every target's toggle() returns the state it actually reached, so a failure
 # is visible here rather than being assumed from an exit code that is always 0.
 toggle_target() {
-    state=$(quickshell -c "$CONFIG" ipc call "$TARGET" toggle 2>/dev/null)
+    state=$(quickshell -c "$CONFIG" ipc call "$TARGET" toggle ${ARG:+"$ARG"} 2>/dev/null)
     case "$state" in
     shown | hidden)
         # Only the bar reports success: it can be toggled off-screen, so what
