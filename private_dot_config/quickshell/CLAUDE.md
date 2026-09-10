@@ -210,8 +210,14 @@ above rather than packing glyph, state and payload into one label:
 ```json
 {"prompt": "Select Theme", "items": [
   {"header": true, "title": "LIGHT"},
-  {"title": "Rose Pine Dawn", "glyph": "", "badge": "current", "payload": "rose-pine-dawn"}]}
+  {"title": "Rose Pine Dawn", "badge": "current", "payload": "rose-pine-dawn",
+   "glyph": "", "iconSource": "file:///home/…/themes/rose-pine-dawn/icon.png"}]}
 ```
+
+`iconSource` is any URL `QtQuick.Image` accepts and **wins over `glyph`**, which stays the
+fallback for a missing file and for the Wofi path, where no image can be drawn at all.
+`theme-menu` uses it for the per-theme brand marks vendored in `themes/<name>/icon.png` — see
+`themes/CLAUDE.md` for their provenance.
 
 `MenuServer.normalise()` turns both shapes into one row: a plain string becomes
 `{title: s, payload: s}`, so the sixteen `show_menu()` callers, their `case` statements and

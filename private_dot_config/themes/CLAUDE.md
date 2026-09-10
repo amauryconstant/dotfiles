@@ -26,6 +26,7 @@
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
+- **Brand mark**: `icon.png` — **optional**, 128×128, drawn by the theme picker (see below)
 
 `swaync.css.tmpl` is the **only templated file** (injects `.globals.*` fonts); `hyprland.lua` is the Lua-config counterpart to `hyprland.conf` (see `.claude/rules/hyprland-lua.md`). All others are static — add the new file to every theme dir when introducing one.
 
@@ -228,6 +229,37 @@ Each theme has `STYLE-GUIDE.md` with methodology-focused documentation:
 **Solarized**: CIELAB precision, symmetric design, selective contrast
 
 **Format**: Design Principles → Color Selection Framework → Context-Specific → Variant Adaptation → Palette → Terminal → Validation → References
+
+---
+
+## Brand marks — `icon.png`
+
+`user-interface/theme-menu` draws each row's `icon.png` in the picker's icon column and falls
+back to a Nerd Font glyph when the file is absent. **Optional per theme**, 128×128 PNG (the
+column paints at 20, so 128 covers HiDPI with headroom).
+
+Upstream assets, all resized with `magick <src> -resize 128x128 <theme>/icon.png`:
+
+| Theme dirs | Source | License |
+|---|---|---|
+| `catppuccin-mocha` | `catppuccin/catppuccin` `assets/logos/exports/1544x1544_circle.png` | MIT |
+| `catppuccin-latte` | same repo, `latte_circle.png` | MIT |
+| `rose-pine-{dawn,moon}` | `rose-pine/rose-pine-theme` `assets/icon.svg` | MIT |
+| `solarized-{dark,light}` | `altercation/solarized` `img/solarized-yinyang.png` | MIT |
+| `gruvbox-{dark,light}` | **none — no official mark exists**; falls back to `md-package_variant_closed` | — |
+
+🚨 **PNG, not SVG, deliberately.** `IconImage` is a plain `QtQuick.Image`
+(`_ai/quickshell/src/widgets/IconImage.qml`), so an SVG would render through qt6-svg's own
+parser rather than the librsvg that produced these — one asset pipeline instead of two, and
+nothing to debug when a filter or mask draws differently.
+
+Rosé Pine ships one mark for both variants, and Solarized's yin-yang *is* the dark/light pair —
+so four of the eight rows share a file with their sibling. That is the upstream's decision, not
+a shortcut here: the section header and the name already say which variant a row is.
+
+Verify a candidate at the size it will actually be drawn before vendoring it — Solarized's
+`solarized-palette.png` and `solarized-165.png` both dissolve into mush at 20px, which is why
+the yin-yang won.
 
 ---
 

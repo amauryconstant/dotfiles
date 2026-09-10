@@ -183,7 +183,8 @@ Opens `~/.config/dotfiles/extra-bindings.conf` in `$EDITOR` and calls `hyprctl r
 ## theme-menu
 
 Interactive theme selector. **The one caller that does not use `show_menu()`**: it sends JSON
-objects through `quickshell-menu --json`, so the theme glyph lands in the picker's icon column,
+objects through `quickshell-menu --json`, so each theme's own brand mark
+(`themes/<name>/icon.png`, with a glyph fallback where upstream has none) lands in the icon column,
 the active theme carries a `badge` instead of a `✓ ` prefix that shifted every other title, and
 the slug travels as `payload` — invisible, and out of the fuzzy-match haystack. Rows are grouped
 under `DARK` / `LIGHT` section headers.

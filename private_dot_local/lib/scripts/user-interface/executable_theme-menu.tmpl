@@ -28,8 +28,9 @@ TAB=$(printf '\t')
 
 CURRENT_THEME=$("$THEME_SWITCHER" current --slug)
 
-# Map each theme variant to a unique Material Design glyph. Presentation, so it
-# stays here — unlike the dark/light arm, which theme-switcher owns.
+# The FALLBACK mark for a theme with no icon.png, and the only thing the Wofi
+# path can draw. Presentation, so it stays here — unlike the dark/light arm,
+# which theme-switcher owns.
 theme_glyph() {
     case "$1" in
         catppuccin-latte)
@@ -44,11 +45,8 @@ theme_glyph() {
         rose-pine-moon)
             printf '󰖚' # md-weather-sunset
             ;;
-        gruvbox-light)
-            printf '' # nf-md-tree
-            ;;
-        gruvbox-dark)
-            printf '󰹩' # nf-md-tree_outline
+        gruvbox-light | gruvbox-dark)
+            printf '󰏗' # md-package_variant_closed
             ;;
         solarized-light)
             printf '' # fa-sun
@@ -62,7 +60,16 @@ theme_glyph() {
     esac
 }
 
-# One tab-separated row per theme: variant, glyph, display name, slug, badge.
+# The theme's own brand mark, as a file:// URL for QtQuick.Image. Vendored per
+# theme dir (see themes/CLAUDE.md), so a theme without one simply falls back to
+# its glyph rather than needing a special case here.
+theme_icon() {
+    icon="$THEMES_DIR/$1/icon.png"
+    [ -f "$icon" ] && printf 'file://%s' "$icon"
+}
+
+# One tab-separated row per theme: variant, glyph, display name, slug, badge,
+# icon URL.
 theme_rows() {
     for theme_dir in "$THEMES_DIR"/*; do
         [ -d "$theme_dir" ] || continue
@@ -72,12 +79,13 @@ theme_rows() {
         badge=""
         [ "$theme" = "$CURRENT_THEME" ] && badge="current"
 
-        printf '%s\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$("$THEME_SWITCHER" variant "$theme")" \
             "$(theme_glyph "$theme")" \
             "$(echo "$theme" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')" \
             "$theme" \
-            "$badge"
+            "$badge" \
+            "$(theme_icon "$theme")"
     done | sort -t"$TAB" -k3,3
 }
 
@@ -91,7 +99,7 @@ build_items() {
         group=$(printf '%s\n' "$rows" | awk -F'\t' -v v="$variant" '$1 == v')
         [ -n "$group" ] || continue
 
-        printf 'header\t\t%s\t\t\n' "$(printf '%s' "$variant" | tr '[:lower:]' '[:upper:]')"
+        printf 'header\t\t%s\t\t\t\n' "$(printf '%s' "$variant" | tr '[:lower:]' '[:upper:]')"
         printf '%s\n' "$group"
     done | jaq -R -s -c '
         [ split("\n")[]
@@ -99,7 +107,7 @@ build_items() {
           | split("\t")
           | if .[0] == "header"
             then {header: true, title: .[2]}
-            else {glyph: .[1], title: .[2], payload: .[3], badge: .[4]}
+            else {glyph: .[1], title: .[2], payload: .[3], badge: .[4], iconSource: .[5]}
             end ]'
 }
 

@@ -23,6 +23,7 @@ import Quickshell.Io
 // PickerSurface already has instead of packing glyph, state and payload into
 // one string:
 //   {"title": "Rose Pine Dawn", "glyph": "", "badge": "current",
+//    "iconSource": "file:///home/…/themes/rose-pine-dawn/icon.png",
 //    "payload": "rose-pine-dawn"}
 //   {"header": true, "title": "LIGHT"}
 // `payload` is what the caller is answered with -- so a slug travels without
@@ -68,6 +69,10 @@ Singleton {
             title: item.title,
             subtitle: item.subtitle ?? "",
             glyph: item.glyph ?? "",
+            // A file:// URL, or anything else QtQuick.Image takes. It wins over
+            // the glyph, which stays the fallback for a missing file and for
+            // the Wofi path, where an image cannot be drawn at all.
+            iconSource: item.iconSource ?? "",
             badge: item.badge ?? "",
             payload: item.payload ?? item.title,
             header: item.header === true
