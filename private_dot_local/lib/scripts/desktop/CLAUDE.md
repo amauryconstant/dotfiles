@@ -161,10 +161,11 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
-2. Reloads core apps (Hyprland, Waybar, Swaync). **Not Ghostty** — it has no
-   signal/CLI reload (confirmed absent as of 1.3.1: man page states
-   auto-reload "isn't capable of this yet"), only app menu / its own keybind
-   / restart
+2. Reloads core apps (Hyprland, Waybar, Swaync, Ghostty, Quickshell).
+   **Ghostty reloads on SIGUSR2** — undocumented in the man pages, verified on
+   1.3.1-arch2 (the binary logs "received SIGUSR2, reloading configuration" and
+   survives the signal). Do not read the man page's silence as absence: that
+   reading removed the call in 87fe34b5 and broke Ghostty theming.
 3. Runs every `theme-apply-*` in this directory (glob loop, not an enumerated list — a new apply
    script wires itself by existing). Each is independent: reads `themes/current`, writes to its
    own app, reads no other's output, so glob order is fine

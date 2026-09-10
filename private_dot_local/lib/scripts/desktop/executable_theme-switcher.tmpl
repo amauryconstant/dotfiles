@@ -95,11 +95,16 @@ reload_applications() {
         swaync-client --reload-css 2>/dev/null || true
     fi
 
-    # Ghostty has NO external reload mechanism (no signal handler, no CLI
-    # action) as of 1.3.1 -- the man page states outright that config
-    # auto-reload isn't implemented yet. Only the app menu, its own
-    # reload_config keybind, or a restart pick up the new theme; nothing
-    # here can do that for the user.
+    # Ghostty reloads its config on SIGUSR2 (verified on 1.3.1-arch2: the
+    # binary logs "received SIGUSR2, reloading configuration", and the
+    # process survives the signal, which a missing handler would not).
+    # It is undocumented in the man pages -- do not conclude from their
+    # silence that it is a no-op, that mistake removed this call once.
+    # gtk-single-instance = false means one process per window, so signal
+    # them all.
+    if pgrep -x ghostty >/dev/null; then
+        killall -SIGUSR2 ghostty 2>/dev/null
+    fi
 
     # Reload the Quickshell bar's Theme singleton.
     # Explicit IPC rather than a file watch: switching swaps the
