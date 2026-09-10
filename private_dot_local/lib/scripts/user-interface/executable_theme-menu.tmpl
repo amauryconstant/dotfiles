@@ -68,8 +68,26 @@ theme_icon() {
     [ -f "$icon" ] && printf 'file://%s' "$icon"
 }
 
+# The theme's own ground and ink, straight out of its colorset. Drawn behind the
+# glyph for a theme with no icon.png -- which is what tells Gruvbox Dark from
+# Gruvbox Light at a glance, since both fall back to the same box. Ignored when
+# an icon is present.
+#
+# 🚨 INK_PRIMARY, not SIGNAL_FOCUS. The accent would say more about a theme, but
+# measured on its own GROUND_BASE it reaches 2.19 in gruvbox-light and 3.41/3.47
+# in solarized-light and rose-pine-dawn -- under the 3:1 a graphic owes. The ink
+# clears 4.13 in all eight, and the ground is what carries the dark/light
+# distinction anyway.
+theme_colors() {
+    colors="$THEMES_DIR/$1/colors.sh"
+    [ -f "$colors" ] || return
+    printf '%s\t%s' \
+        "$(sed -n 's/^readonly GROUND_BASE="\(.*\)"/\1/p' "$colors")" \
+        "$(sed -n 's/^readonly INK_PRIMARY="\(.*\)"/\1/p' "$colors")"
+}
+
 # One tab-separated row per theme: variant, glyph, display name, slug, badge,
-# icon URL.
+# icon URL, glyph ground, glyph colour.
 theme_rows() {
     for theme_dir in "$THEMES_DIR"/*; do
         [ -d "$theme_dir" ] || continue
@@ -79,13 +97,14 @@ theme_rows() {
         badge=""
         [ "$theme" = "$CURRENT_THEME" ] && badge="current"
 
-        printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$("$THEME_SWITCHER" variant "$theme")" \
             "$(theme_glyph "$theme")" \
             "$(echo "$theme" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')" \
             "$theme" \
             "$badge" \
-            "$(theme_icon "$theme")"
+            "$(theme_icon "$theme")" \
+            "$(theme_colors "$theme")"
     done | sort -t"$TAB" -k3,3
 }
 
@@ -99,7 +118,7 @@ build_items() {
         group=$(printf '%s\n' "$rows" | awk -F'\t' -v v="$variant" '$1 == v')
         [ -n "$group" ] || continue
 
-        printf 'header\t\t%s\t\t\t\n' "$(printf '%s' "$variant" | tr '[:lower:]' '[:upper:]')"
+        printf 'header\t\t%s\t\t\t\t\t\n' "$(printf '%s' "$variant" | tr '[:lower:]' '[:upper:]')"
         printf '%s\n' "$group"
     done | jaq -R -s -c '
         [ split("\n")[]
@@ -107,7 +126,8 @@ build_items() {
           | split("\t")
           | if .[0] == "header"
             then {header: true, title: .[2]}
-            else {glyph: .[1], title: .[2], payload: .[3], badge: .[4], iconSource: .[5]}
+            else {glyph: .[1], title: .[2], payload: .[3], badge: .[4],
+                  iconSource: .[5], glyphBackground: .[6], glyphColor: .[7]}
             end ]'
 }
 

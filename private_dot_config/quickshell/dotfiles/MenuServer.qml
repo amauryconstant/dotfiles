@@ -74,6 +74,8 @@ Singleton {
             // the Wofi path, where an image cannot be drawn at all.
             iconSource: item.iconSource ?? "",
             badge: item.badge ?? "",
+            glyphColor: item.glyphColor ?? "",
+            glyphBackground: item.glyphBackground ?? "",
             payload: item.payload ?? item.title,
             header: item.header === true
         };

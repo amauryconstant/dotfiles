@@ -32,6 +32,10 @@ import QtQuick
 //   subtitleError subtitle in signalError, for a failure reported in place
 //   badge         short right-aligned meta text -- the trailing slot, which the
 //                 return mark takes over while the row is selected
+//   glyphColor    the glyph in a colour the row supplies, not Theme's
+//   glyphBackground  a round ground behind that glyph, same deal. Both exist for
+//                 the theme picker, where a row is a SAMPLE of another palette;
+//                 they are ignored when iconSource is set
 //   header        a section label rather than a row: no tint, no hit target,
 //                 and the cursor steps straight over it
 //
@@ -322,6 +326,8 @@ PanelWindow {
                         readonly property bool header: (row.modelData.header ?? false) === true
                         readonly property bool current: !row.header && row.index === root.selected
                         readonly property string badge: row.modelData.badge ?? ""
+                        readonly property string glyphBackground: row.modelData.glyphBackground ?? ""
+                        readonly property string glyphColor: row.modelData.glyphColor ?? ""
                         readonly property string iconSource: row.modelData.iconSource ?? ""
                         readonly property string subtitle: row.modelData.subtitle ?? ""
 
@@ -383,12 +389,29 @@ PanelWindow {
                                 visible: row.iconSource !== ""
                             }
 
+                            // A ground behind the glyph, in a colour the ROW
+                            // supplies. The one place a colour outside Theme is
+                            // drawn: the theme picker's rows are samples of
+                            // other palettes, so the colour is content rather
+                            // than chrome. Round, because the icons it stands in
+                            // for are. The hairline is not decoration -- a light
+                            // theme's ground on a light panel is otherwise
+                            // invisible.
+                            Rectangle {
+                                anchors.fill: parent
+                                border.color: Theme.edge
+                                border.width: Config.hairline
+                                color: row.glyphBackground
+                                radius: width / 2
+                                visible: row.iconSource === "" && row.glyphBackground !== ""
+                            }
+
                             // An entry with no themed icon still renders
                             // something, the same contract the workspace pills'
                             // glyph fallback has.
                             Text {
                                 anchors.centerIn: parent
-                                color: row.current ? Theme.signalFocus : Theme.inkSecondary
+                                color: row.glyphColor !== "" ? row.glyphColor : (row.current ? Theme.signalFocus : Theme.inkSecondary)
                                 font.family: Config.guiFont
                                 font.pixelSize: Config.glyphRow
                                 text: row.modelData.glyph ?? ""

@@ -165,6 +165,7 @@ delegate reads a small row contract:
 | `elideMiddle` | for a path, whose identifying half is its tail |
 | `subtitleError` | subtitle in `signalError`, for a failure reported in place |
 | `badge` | short right-aligned meta text. **One trailing slot**: the `↵` mark takes it over while the row is selected, so a badge and the mark can never collide, and the title column has one thing to anchor against |
+| `glyphColor` / `glyphBackground` | the glyph in a colour the ROW supplies, on a round ground of its own. The one place a non-`Theme` colour is drawn in this tree: a theme-picker row is a **sample of another palette**, so the colour is content. Ignored when `iconSource` is set, and the ground carries a `Theme.edge` hairline or a light sample vanishes on a light panel |
 | `header` | a section label instead of a row — `menuSectionHeight` 24, no tint, no hit target, and `moveSelection` steps straight over it. A section is a ROW, not a parallel list: a separate model would need re-indexing against the filtered rows on every keystroke |
 
 🚨 **A `current` marker belongs in `badge`, never in a `subtitle`.** A subtitle is what decides

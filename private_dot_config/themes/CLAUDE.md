@@ -253,6 +253,16 @@ Upstream assets, all resized with `magick <src> -resize 128x128 <theme>/icon.png
 parser rather than the librsvg that produced these — one asset pipeline instead of two, and
 nothing to debug when a filter or mask draws differently.
 
+**A theme with no icon gets a tinted chip instead**: `theme-menu` reads that theme's own
+`GROUND_BASE` and `INK_PRIMARY` out of `colors.sh` and sends them as `glyphBackground` /
+`glyphColor`, so Gruvbox Dark and Gruvbox Light are told apart by their own grounds rather than
+by two different box glyphs.
+
+🚨 **The glyph is `INK_PRIMARY`, not `SIGNAL_FOCUS`.** The accent says more about a theme, but
+measured on that theme's own `GROUND_BASE` it reaches **2.19** in gruvbox-light (3.41 and 3.47 in
+solarized-light and rose-pine-dawn) — under the 3:1 a graphic owes. The ink clears 4.13 in all
+eight, and the ground is what carries the dark/light distinction anyway.
+
 Rosé Pine ships one mark for both variants, and Solarized's yin-yang *is* the dark/light pair —
 so four of the eight rows share a file with their sibling. That is the upstream's decision, not
 a shortcut here: the section header and the name already say which variant a row is.
