@@ -67,12 +67,12 @@ fi
 
 | Hook | Trigger Script | Arguments | Use Case |
 |------|----------------|-----------|----------|
-| `theme-change` | `theme-switcher.sh` | `$theme_name` | Custom app theming (Obsidian, web apps) |
-| `package-sync` | `package-manager.sh sync` | `sync` | Post-install validation, custom setup |
-| `wallpaper-change` | `set-wallpaper.sh` | `$wallpaper_path` | External sync (lockscreen, conky) |
+| `theme-change` | `theme-switcher` | `$theme_name` | Custom app theming (Obsidian, web apps) |
+| `package-sync` | `package-manager sync` | `sync` | Post-install validation, custom setup |
+| `wallpaper-change` | `set-wallpaper` | `$wallpaper_path` | External sync (lockscreen, conky) |
 | `dark-mode-change` | `darkman` scripts | `dark/light` | Web browser themes, external apps |
-| `pre-maintenance` | `system-maintenance.sh` | none | Backup preparation, service stops |
-| `post-maintenance` | `system-maintenance.sh` | `success/failure` | Validation, cleanup, notifications |
+| `pre-maintenance` | `system-maintenance` | none | Backup preparation, service stops |
+| `post-maintenance` | `system-maintenance` | `success/failure` | Validation, cleanup, notifications |
 | `menu-extend` | `system-menu` | `options` / `handle <choice>` | Custom entries in Super+Space menu |
 | `idle-change` | `hypridle` listener 1 | `timeout` / `resume` | Pause apps when idle. **`resume` fires on any input, BEFORE auth** — not an unlock |
 | `lock-change` | `hypridle` `on_lock_cmd` / `on_unlock_cmd` | `lock` / `unlock` | True authenticated lock/unlock — mute mic, pause syncs |

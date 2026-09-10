@@ -17,7 +17,7 @@
 
 ### Firefox Theme Integration
 
-**Script**: `theme-apply-firefox.sh`
+**Script**: `theme-apply-firefox`
 **Method**: CSS symlink injection via userChrome.css
 **Status**: ✅ Working
 
@@ -42,7 +42,7 @@
 
 ### Spotify Theme Integration
 
-**Script**: `theme-apply-spotify.sh`
+**Script**: `theme-apply-spotify`
 **Method**: spicetify-cli configuration
 **Status**: ✅ Fully automated (Flatpak support)
 
@@ -64,7 +64,7 @@
    - Search for: Rosé-Pine
    - Search for: Gruvbox
    - Search for: Solarized
-4. Themes auto-apply via `theme-switcher.sh`
+4. Themes auto-apply via `theme-switcher`
 
 **Troubleshooting**:
 - If prefs not found: Run Spotify once to generate preferences file, then re-run `chezmoi apply`
@@ -89,7 +89,7 @@
 
 ### opencode Theme Integration
 
-**Script**: `theme-apply-opencode.sh`
+**Script**: `theme-apply-opencode`
 **Method**: Custom JSON theme files with symlink management
 **Status**: ✅ Fully integrated
 
@@ -120,7 +120,7 @@
 
 ### claude-code CLI Theme Integration
 
-**Script**: `theme-apply-claude-code.sh`
+**Script**: `theme-apply-claude-code`
 **Method**: Direct JSON config modification
 **Status**: ✅ Fully integrated
 
@@ -194,18 +194,18 @@ theme-menu                        # Interactive menu (Quickshell picker)
 
 ## Window Management
 
-**launch-or-focus.sh**: Single-instance app launcher
+**launch-or-focus**: Single-instance app launcher
 - Focus if window exists, launch if not
 - Integration: `Super+E` → dolphin
-- Pattern: `launch-or-focus.sh dolphin` or `launch-or-focus.sh btop "ghostty -e btop"`
+- Pattern: `launch-or-focus dolphin` or `launch-or-focus btop "ghostty -e btop"`
 
-**keybindings.sh**: Keybinding reference (`Super+?`)
+**keybindings**: Keybinding reference (`Super+?`)
 
 ---
 
 ## Display & Monitors
 
-**Scripts**: monitor-switch.sh, monitor-mirror.sh, monitor-*.sh
+**Scripts**: monitor-switch, monitor-mirror, monitor-*.sh
 - Display configuration management
 - All use `notify-send` for feedback
 - Keybinding-triggered utilities
@@ -214,9 +214,11 @@ theme-menu                        # Interactive menu (Quickshell picker)
 
 ## Appearance & Style
 
-**Waybar**: waybar-toggle.sh, waybar-style.sh
-**Night light**: nightlight-toggle.sh, nightlight-config.sh
-**Workspace gaps**: workspace-gaps-toggle.sh, workspace-gaps-reset.sh
+**Bar**: `quickshell-toggle` (bar, launcher, power, notifications, clipboard, overview, popovers)
+— the active shell. `waybar-toggle`, `waybar-style` drive the fallback bar
+**Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
+**Night light**: nightlight-toggle, nightlight-config
+**Workspace gaps**: workspace-gaps-toggle, workspace-gaps-reset
 **Idle management**: idle-toggle, idle-toggle-nolock (see "Idle & Lock" below)
 
 All use `notify-send` for user feedback.

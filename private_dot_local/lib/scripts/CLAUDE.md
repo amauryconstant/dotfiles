@@ -57,12 +57,12 @@ fi
 **Available hook points**:
 | Hook | Triggered By | Arguments | Use Case |
 |------|--------------|-----------|----------|
-| `theme-change` | theme-switcher.sh | `$theme_name` | Custom app theming |
+| `theme-change` | theme-switcher | `$theme_name` | Custom app theming |
 | `package-sync` | package-manager sync | `sync` | Post-install validation |
-| `wallpaper-change` | set-wallpaper.sh | `$wallpaper_path` | External sync (e.g., lockscreen) |
+| `wallpaper-change` | set-wallpaper | `$wallpaper_path` | External sync (e.g., lockscreen) |
 | `dark-mode-change` | darkman scripts | `dark/light` | Web app themes |
-| `pre-maintenance` | system-maintenance.sh | none | Backup preparation |
-| `post-maintenance` | system-maintenance.sh | `success/failure` | Validation, cleanup |
+| `pre-maintenance` | system-maintenance | none | Backup preparation |
+| `post-maintenance` | system-maintenance | `success/failure` | Validation, cleanup |
 | `menu-extend` | system-menu | `options`/`handle <choice>` | Super+Space custom entries |
 | `idle-change` | hypridle listener 1 | `timeout`/`resume` | Idle threshold reached / activity resumed. **`resume` fires on any input, BEFORE authentication** — not an unlock signal |
 | `lock-change` | hypridle `on_lock_cmd`/`on_unlock_cmd` | `lock`/`unlock` | True session lock/unlock (authenticated) |
@@ -81,59 +81,61 @@ fi
 **Purpose**: Hyprland desktop utilities
 **Dependencies**: hyprctl, notify-send, jaq (JSON)
 
-**Naming**: scripts are extensionless and directly executable (the `.sh` suffixes below are illustrative — actual files have none, e.g. `launch-or-focus`, not `launch-or-focus.sh`).
+**Naming**: scripts are extensionless and directly executable (the `.sh` suffixes below are illustrative — actual files have none, e.g. `launch-or-focus`, not `launch-or-focus`).
 
 **UI Pattern**:
 - **All desktop utilities** use `notify-send` for user feedback (keybinding-triggered, minimal overhead)
 - **No gum-ui library usage** in desktop scripts (background utilities pattern)
 
 **Window Management**:
-- `launch-or-focus.sh` - Single-instance apps (focus if exists, launch if not)
+- `launch-or-focus` - Single-instance apps (focus if exists, launch if not)
   - Integration: `Super+E` → dolphin
-  - Pattern: `launch-or-focus.sh dolphin` or `launch-or-focus.sh btop "ghostty -e btop"`
+  - Pattern: `launch-or-focus dolphin` or `launch-or-focus btop "ghostty -e btop"`
   - Algorithm: Query clients → Match class/title → Focus or launch
 
-- `keybindings.sh` - Keybinding reference (`Super+?`)
+- `keybindings` - Keybinding reference (`Super+?`)
 
 **Display & Monitors**:
-- `monitor-switch.sh` - Switch display configs (uses `notify-send`)
-- `monitor-mirror.sh` - Mirror displays (uses `notify-send`)
+- `monitor-switch` - Switch display configs (uses `notify-send`)
+- `monitor-mirror` - Mirror displays (uses `notify-send`)
 - Other monitor utilities - Display management (use `notify-send`)
 
 **Appearance & Style**:
-- `waybar-toggle.sh`, `waybar-style.sh` - Waybar controls (use `notify-send`)
-- `nightlight-toggle.sh`, `nightlight-config.sh` - Blue light filter (use `notify-send`)
-- `workspace-gaps-toggle.sh`, `workspace-gaps-reset.sh` - Gap controls (use `notify-send`)
+- `waybar-toggle`, `waybar-style` - Waybar controls (use `notify-send`)
+- `quickshell-toggle`, `quickshell-menu` - Quickshell bar/surface toggles and the dmenu substrate
+- `nightlight-toggle`, `nightlight-config` - Blue light filter (use `notify-send`)
+- `workspace-gaps-toggle`, `workspace-gaps-reset` - Gap controls (use `notify-send`)
 - `idle-toggle`, `idle-toggle-nolock` - Idle management (use `notify-send`; see `desktop/CLAUDE.md` → Idle & Lock)
 
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
-  - Reloads terminal, waybar, swaync, wofi
+  - Reloads terminal, the bar (Waybar `SIGUSR2`, or Quickshell via `ipc call theme reload`),
+    swaync and wofi — each step skipped when the tool is absent or masked
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 
 **theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
 
-- `theme-apply-firefox.sh` - Firefox userChrome.css theming
+- `theme-apply-firefox` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`
   - Finds Firefox profile dynamically
   - Creates chrome/ directory if needed
   - Requires: `toolkit.legacyUserProfileCustomizations.stylesheets = true` in about:config
 
-- `theme-apply-spotify.sh` - Spotify theme integration
+- `theme-apply-spotify` - Spotify theme integration
   - Maps theme to spicetify color scheme
   - Applies via `spicetify config` + `spicetify apply`
   - Optional: Skips if spicetify-cli not installed
   - Mappings: catppuccin, rosepine, gruvbox, solarized
 
-- `theme-apply-opencode.sh` - opencode TUI theme integration
+- `theme-apply-opencode` - opencode TUI theme integration
   - Creates custom JSON theme files (one per theme)
   - Symlinks current theme to `~/.config/opencode/themes/current.json`
   - Updates opencode.jsonc via jaq: Sets `"theme": "current"`
   - Silent failure if opencode not installed
   - Mappings: semantic variables → opencode properties
 
-- `theme-apply-claude-code.sh` - claude-code CLI theme integration
+- `theme-apply-claude-code` - claude-code CLI theme integration
   - Maps light/dark themes to claude-code theme setting
   - Updates ~/.claude.json via jaq: Sets `"theme": "light"` or `"theme": "dark"`
   - Silent failure if claude-code not installed
@@ -161,7 +163,7 @@ fi
 **Tools**: grim, slurp, satty, swww
 **Integration**: Hyprland bindings, systemd timer
 
-**UI Pattern**: Templates use `{{ includeTemplate "log_*" }}`, `screenshot.sh` uses `notify-send`
+**UI Pattern**: Templates use `{{ includeTemplate "log_*" }}`, `screenshot` uses `notify-send`
 
 **Scripts**:
 - `screenshot` - Smart screenshot with Satty annotation
@@ -174,25 +176,32 @@ fi
 
 ### User Interface Menus
 **Purpose**: Omarchy-inspired hierarchical menu system
-**Entry point**: `Super+Space` → `system-menu.sh`
-**Integration**: Wofi (dmenu mode), menu-helpers.sh library
+**Entry point**: `Super+Space` → `system-menu`
+**Integration**: `desktop/quickshell-menu`, through the `menu-helpers.sh` library
 **Icons**: Material Design glyphs
 
-**UI Pattern**: All menu scripts use `menu-helpers.sh` (wofi + notify-send)
+**UI Pattern**: All menu scripts use `menu-helpers.sh` (picker + notify-send)
+
+🚨 **The renderer is Quickshell, not Wofi.** Since 2026-09-09 `show_menu()` and `confirm()` call
+`desktop/quickshell-menu`, which speaks to `MenuServer.qml` over
+`$XDG_RUNTIME_DIR/quickshell-menu.sock` — a **socket**, not `ipc call`, because a dmenu call has
+to block until the user chooses and an IPC handler returns immediately. **Wofi is the fallback**
+when the socket is unreachable, and the two paths are contract-identical: empty stdout means
+cancelled. See `user-interface/CLAUDE.md`.
 
 **Main menu categories**:
 | Icon | Category | Script | Purpose |
 |------|----------|--------|---------|
-| 󰀻 | Apps | wofi drun | Application launcher |
-| 󰗚 | Learn | `menu-learn.sh` | Help/documentation |
-| 󰈿 | Trigger | `menu-trigger.sh` | Quick actions (Capture, Share, Toggle) |
-| 󰏘 | Style | `menu-style.sh` | Theme/appearance |
-| 󰒓 | Setup | `menu-setup.sh` | System configuration |
-| 󰏓 | Install | `menu-install.sh` | Package installation |
-| 󰩺 | Remove | `menu-remove.sh` | Package removal |
-| 󰚰 | Update | `menu-update.sh` | System updates |
-| 󰋼 | About | `menu-about.sh` | System information |
-| 󰐥 | System | `menu-system.sh` | Power management |
+| 󰀻 | Apps | the Quickshell launcher (`SUPER+D`) | Application launcher |
+| 󰗚 | Learn | `menu-learn` | Help/documentation |
+| 󰈿 | Trigger | `menu-trigger` | Quick actions (Capture, Share, Toggle) |
+| 󰏘 | Style | `menu-style` | Theme/appearance |
+| 󰒓 | Setup | `menu-setup` | System configuration |
+| 󰏓 | Install | `menu-install` | Package installation |
+| 󰩺 | Remove | `menu-remove` | Package removal |
+| 󰚰 | Update | `menu-update` | System updates |
+| 󰋼 | About | `menu-about` | System information |
+| 󰐥 | System | `menu-system` | Power management |
 
 **Submenus** (not top-level): `menu-ai` (AI actions), `utilities-menu` (utility launcher), reached from the categories above.
 
@@ -200,7 +209,7 @@ fi
 
 **Shared utilities**: `menu-helpers.sh` (common functions)
 - Provides `notify()` wrapper around `notify-send` for consistent notifications
-- Provides `show_menu()` function for wofi integration
+- Provides `show_menu()` and `confirm()`, both routed through `desktop/quickshell-menu`
 - All menu-* scripts source this library
 
 ### System Scripts
@@ -308,7 +317,7 @@ name from an earlier PATH entry — the last three were removed 2026-09-14.
 |----------|------------|-----------|
 | **System scripts** | gum-ui library (`ui_*` functions) | CLI tools, interactive, need rich terminal UI |
 | **Desktop utilities** | notify-send | Keybinding-triggered, minimal overhead, native notifications |
-| **Menu scripts** | menu-helpers.sh (wofi + notify-send) | Wofi integration, consistent menu interface |
+| **Menu scripts** | menu-helpers.sh (`quickshell-menu` + notify-send) | One picker surface for every caller; Wofi only as fallback |
 | **Template scripts** | `{{ includeTemplate "log_*" }}` | Chezmoi lifecycle scripts, templated output |
 | **Other utilities** | Varies by context | git-prune-branch uses gum-ui, others as needed |
 
@@ -317,7 +326,7 @@ name from an earlier PATH entry — the last three were removed 2026-09-14.
 **System script (gum-ui library)**:
 ```bash
 #!/usr/bin/env sh
-# Script: system-health.sh
+# Script: system-health
 # Purpose: System health monitoring
 
 if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
@@ -335,7 +344,7 @@ ui_success "All services running"
 **Desktop utility (notify-send)**:
 ```bash
 #!/usr/bin/env sh
-# Script: monitor-switch.sh
+# Script: monitor-switch
 # Purpose: Switch display configuration
 
 if command -v wdisplays >/dev/null 2>&1; then
@@ -348,7 +357,7 @@ fi
 **Menu script (menu-helpers.sh)**:
 ```bash
 #!/usr/bin/env sh
-# Script: menu-update.sh
+# Script: menu-update
 # Purpose: System update menu
 
 . ~/.local/lib/scripts/user-interface/menu-helpers.sh

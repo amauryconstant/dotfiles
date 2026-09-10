@@ -34,7 +34,9 @@ Switching themes via `theme switch <name>` updates the `current` symlink; btop p
 
 Cross-reference hex values against the variant's `waybar.css` `@define-color` declarations.
 
-**Key mappings**: `main_bg` → `@bg-primary`, `main_fg` → `@fg-primary`, `inactive_fg` → `@fg-muted`, box outlines (cpu/mem/net/proc) → distinct accent colors, gradient triplets → semantic gradient (success→warning→error for temp; info→secondary→primary for CPU).
+**Key mappings** — `@`-names are `waybar.css` **CSS** variables, which `btop.theme` cross-references;
+the role-named `colors.sh` set is a separate vocabulary (see `../themes/CLAUDE.md`).
+`main_bg` → `@bg-primary`, `main_fg` → `@fg-primary`, `inactive_fg` → `@fg-muted`, box outlines (cpu/mem/net/proc) → distinct accent colors, gradient triplets → semantic gradient (success→warning→error for temp; info→secondary→primary for CPU).
 
 **Cross-reference command**:
 ```bash

@@ -36,9 +36,41 @@
 
 ---
 
-## Semantic Variable Schema
+## 🚨 Two vocabularies, one palette
 
-**Variables** organized into categories:
+A theme carries its colours **twice**, in two naming systems that nothing translates between,
+because nothing needs to. Confusing them is the standing defect in this directory.
+
+| | `colors.sh` | `waybar.css` · `wofi.css` · `wlogout.css` · `swaync.css.tmpl` |
+|---|---|---|
+| Names | **roles** — `GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5` | **CSS module names** — `@bg-*`, `@fg-*`, `@accent-*` |
+| Count | **18** `readonly` keys | 24 `@define-color` + 4 hover tints |
+| Read by | `gum-ui.sh`, `organize-wallpapers-by-color`, Quickshell `Theme.qml` | GTK CSS only |
+| Renamed | 2026-09-09, to roles | never |
+
+**Rough mapping**, for reading an old note — not a translation layer, and not exact:
+
+| CSS | Role |
+|---|---|
+| `@bg-primary` | `GROUND_BASE` |
+| `@bg-secondary` | `GROUND_RAISED` |
+| `@bg-overlay` | `GROUND_FLOAT` |
+| `@bg-tertiary` | `FILL_INERT` — **the trap tier**, carries no text |
+| `@fg-primary` / `@fg-secondary` / `@fg-muted` | `INK_PRIMARY` / `INK_SECONDARY` / `INK_MUTED` |
+| `@fg-contrast` | `INK_CONTRAST_CANDIDATE` — measured against, never assigned |
+| `@accent-primary` / `@accent-error` / `@accent-warning` / `@accent-success` / `@accent-info` | `SIGNAL_FOCUS` / `SIGNAL_ERROR` / `SIGNAL_WARN` / `SIGNAL_OK` / `SIGNAL_INFO` |
+| `@accent-modification`, `@accent-special`, `@accent-subtle`, `@accent-tertiary`, `@accent-highlight` | **no fixed counterpart.** `IDENTITY_1..5` is an *indexed* slot set — assigned by position, never load-bearing, always redundant with a label — so it does not map name-for-name onto these |
+| `@accent-border`, `@accent-performance`, `@accent-media`, `@accent-secondary`, `@accent-alternative`, `@accent-urgent-secondary` | **no role** — deleted from `colors.sh` on 2026-09-09 for having no consumer |
+
+⚠️ **A section below written in `@`-names is about the CSS files only.** The measured contrast
+tables use role names because they were regenerated from `colors.sh`.
+
+---
+
+## Semantic Variable Schema (CSS files only)
+
+**Variables** organized into categories. **These live in `waybar.css` and its siblings, not in
+`colors.sh`** — see the two-vocabulary note above.
 
 ### Background Hierarchy
 
@@ -96,10 +128,15 @@
 | `@accent-success-hover` | Battery hover | 10% opacity version of accent-success |
 
 These four are declared **only** in each theme's `waybar.css` and `swaync.css.tmpl`. They are
-**not** in `colors.sh`, which holds exactly **24** `readonly` variables — so they are invisible to
+**not** in `colors.sh`, which holds exactly **18** `readonly` role keys — so they are invisible to
 the shell scripts and to Quickshell's `Theme.qml`, both of which read `colors.sh` alone. A QML or
 shell consumer needing a hover tint composites the base accent itself. Do not design against
 these outside GTK CSS.
+
+🚨 **Six `@accent-*` names above have no role counterpart** — `@accent-border`,
+`@accent-performance`, `@accent-media`, `@accent-secondary`, `@accent-alternative` and
+`@accent-urgent-secondary` were deleted from every `colors.sh` on 2026-09-09 for having no
+consumer. They survive in the CSS files; do not reach for them from a shell script or from QML.
 
 ---
 
@@ -205,7 +242,10 @@ hand would not. The other consumers still render the raw ratios.
 - Syntax highlighting patterns
 - Variant adaptation strategies
 
-**Quick lookup**: Each theme directory contains complete semantic variable definitions in `waybar.css`
+**Quick lookup**: `colors.sh` is the **role layer** and the only file two different runtimes read
+(gum-ui and Quickshell). `waybar.css` holds the fullest **CSS** set — 24 `@define-color` plus the
+four hover tints — and is what a new theme is authored from today. The two are edited by hand and
+independently; see the two-vocabulary note at the top.
 
 ---
 
@@ -280,7 +320,7 @@ the yin-yang won.
 **Selection**: `random-wallpaper`, `set-wallpaper`
 **Rotation**: Systemd timer (30 min)
 
-**Organization**: One-time color matching using `organize-wallpapers-by-color.sh`
+**Organization**: One-time color matching using `organize-wallpapers-by-color`
 **Note**: Wallust disabled (static theme colors, not dynamic extraction)
 
 ---
@@ -380,19 +420,25 @@ maintain, but three consequences follow:
 
 ### Contrast in QML
 
-The ban on `@fg-secondary` over `@bg-secondary`/`@bg-tertiary`/`@bg-overlay` applies unchanged.
-The pattern that holds the rule is `bar/BarWidget.qml`'s `grounded` property: rest colour is
-`fgSecondary` on the bar ground, and flips to `fgPrimary` the moment the widget draws a ground of
-its own (hover, pill, tint). A widget that hardcodes either one reintroduces the banned pair on
-half its states.
+The ban applies unchanged, in role names: **`Theme.inkSecondary` on `groundRaised`,
+`groundFloat` or `fillInert`**. The pattern that holds the rule is `bar/BarWidget.qml`'s
+`grounded` property: rest colour is `inkSecondary` on the bar ground, and flips to `inkPrimary`
+the moment the widget draws a ground of its own (hover, pill, tint). A widget that hardcodes
+either one reintroduces the banned pair on half its states.
+
+🚨 **`Theme.fgSecondary`, `Theme.bgSecondary` and the rest do not exist.** Every QML property was
+renamed with the colorset on 2026-09-09 — `groundBase`, `groundRaised`, `groundFloat`,
+`fillInert`, `inkPrimary`, `inkSecondary`, `signalFocus`, `identity1..5`, plus the derived tier
+(`edge`, `hover`, `press`, `select`, `focusRing`, `inkOnSignal`, `scrim`, `fgOnScrim`,
+`disabledOpacity`). A grep written against the old names matches nothing and passes silently.
 
 `mise run lint:theme-contrast` enforces this across all 8 colorsets — **manual-only**, because its
 `PAIRS` table is harvested by hand from the QML and therefore goes stale silently when a widget
 changes a colour. Run it after touching any colour in that tree, and re-harvest the table when
 the tree grows a surface. It covers only the pairs listed in it: a pair the code renders but the
 table omits is invisible (which is how `INK_PRIMARY` on `FILL_INERT` went unmeasured). Harvest by
-reading the **parenting**, not by grepping colour lines — most `Theme.bgSecondary` uses in that
-tree are 1px hairlines, not grounds.
+reading the **parenting**, not by grepping colour lines — most `Theme.groundRaised` uses in that
+tree are 1px hairlines (it is what `Theme.edge` resolves to), not grounds.
 
 Four properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
 `inkOnSignal`, `scrim`, `fgOnScrim` and the `inkSecondary` withdrawal — each because no fixed

@@ -76,7 +76,7 @@ package-manager/
 
 ## Initialization Sequence (CRITICAL)
 
-`STATE_DIR` **must** be defined BEFORE sourcing core modules (executable_package-manager.sh:28-60):
+`STATE_DIR` **must** be defined BEFORE sourcing core modules (executable_package-manager:28-60):
 
 ```
 1. Define SCRIPT_DIR (line 26)

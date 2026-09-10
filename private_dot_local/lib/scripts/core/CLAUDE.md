@@ -183,7 +183,8 @@ updates=$(ui_spin_silent "Checking updates" "checkupdates 2>/dev/null")
 
 **Purpose**: Theme-aware color definitions for CLI tools
 
-**Variables**: semantic variables (ACCENT_*, BG_*, FG_*)
+**Variables**: the 18 role keys of `colors.sh` — `GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`,
+`IDENTITY_1..5`. (`ACCENT_*`/`BG_*`/`FG_*` were renamed away on 2026-09-09 and no longer exist.)
 
 **Usage**:
 ```bash

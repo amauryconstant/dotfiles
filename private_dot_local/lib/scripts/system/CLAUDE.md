@@ -253,11 +253,11 @@ System scripts are directly in PATH (no wrappers). Call them as:
 
 ### Menu System
 
-**Integration**: Called from `menu-update.sh`, `menu-install.sh`
+**Integration**: Called from `menu-update`, `menu-install`
 
 **Example**:
 ```bash
-# menu-update.sh
+# menu-update
 system-maintenance --update
 ```
 

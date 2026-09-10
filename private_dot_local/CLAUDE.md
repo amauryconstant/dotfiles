@@ -74,7 +74,7 @@
 
 - **Fast shell startup**: No library sourcing at login
 - **No wrapper maintenance**: Scripts directly callable
-- **Clean naming**: No .sh extension (e.g., `prune-branch` not `prune-branch.sh`)
+- **Clean naming**: No .sh extension (e.g., `prune-branch` not `prune-branch`)
 - **Category organization**: Scripts in logical subdirectories
 - **Easy discovery**: All scripts in PATH directories
 

@@ -153,12 +153,13 @@ so sixteen `menu-*` scripts converted without an edit of their own.
 All menu-\* scripts source this library. Three functions:
 
 ```bash
-show_menu "Prompt" "option1|option2|option3"  # → Wofi dmenu, returns selection
-confirm "Question?"                             # → Yes/No wofi, returns 0 if Yes
+show_menu "Prompt" "option1|option2|option3"  # → quickshell-menu, returns selection
+confirm "Question?"                             # → Yes/No via quickshell-menu, 0 if Yes
 notify "Title" "Message" [timeout_ms]          # → notify-send wrapper (default 3000ms)
 ```
 
-**Why not gum-ui**: Menu scripts are keypress-triggered background processes; wofi + notify-send is the correct pattern.
+**Why not gum-ui**: Menu scripts are keypress-triggered background processes with no terminal to
+draw in; a graphical picker + notify-send is the correct pattern.
 
 ## Hook Management CLI
 
@@ -204,11 +205,12 @@ and exits, which is how the grouping, ordering and badge are checked without a d
 
 **Template scripts** (`.tmpl` suffix): menu-about.tmpl, menu-ai.tmpl, menu-install.tmpl, menu-setup.tmpl, menu-style.tmpl, menu-update.tmpl, theme-menu.tmpl — chezmoi processes these at `chezmoi apply` time, not at runtime. Template vars are build-time substitutions.
 
-**hook-create/edit/list/test use gum-ui**: Unlike menu scripts (wofi), hook tools are interactive terminal utilities — use gum for rich UI.
+**hook-create/edit/list/test use gum-ui**: Unlike menu scripts (graphical picker), hook tools are interactive terminal utilities — use gum for rich UI.
 
 ## Integration Points
 
 - **Hyprland**: `~/.config/hypr/conf/bindings/system-control.conf` (`Super+Space` → `system-menu`)
-- **Wofi**: menu scripts use wofi dmenu mode (not drun)
+- **Picker**: menu scripts pipe lines to `desktop/quickshell-menu` (dmenu contract — lines in,
+  one line out, empty means cancelled). Wofi `--dmenu` is the fallback, never `drun`
 - **Hook system**: See `dotfiles/CLAUDE.md` for hook architecture
 - **Extra bindings**: See `dotfiles/CLAUDE.md` for extra-bindings.conf

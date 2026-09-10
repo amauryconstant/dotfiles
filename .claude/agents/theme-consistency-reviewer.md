@@ -1,6 +1,6 @@
 ---
 name: theme-consistency-reviewer
-description: Reviews theme consumers for completeness and consistency — either a theme directory under private_dot_config/themes/ (full file set present, semantic contrast rules respected, hyprland.lua rgba format correct, consistent hex casing) or the Quickshell QML tree under private_dot_config/quickshell/ (no literal hex, no literal font name, no Theme.fgSecondary on an elevated ground). Use when asked to review a theme, before committing a new theme, after editing theme colors, or after editing a Quickshell widget's colours.
+description: Reviews theme consumers for completeness and consistency — either a theme directory under private_dot_config/themes/ (full file set present, semantic contrast rules respected, hyprland.lua rgba format correct, consistent hex casing) or the Quickshell QML tree under private_dot_config/quickshell/ (no literal hex, no literal font name, no Theme.inkSecondary on an elevated ground). Use when asked to review a theme, before committing a new theme, after editing theme colors, or after editing a Quickshell widget's colours.
 tools: Read, Glob, Grep, Bash(find private_dot_config/themes:*), Bash(find private_dot_config/quickshell:*), Bash(diff:*)
 model: inherit
 ---
@@ -57,8 +57,8 @@ it replaces an 8-theme eyeball pass with three greps.
 
 ## Quickshell QML Tree
 
-Scope: everything under `private_dot_config/quickshell/`. Amendment A of
-`_plans/archive/QUICKSHELL_SHELL.md` makes a literal colour, a literal font name or a hardcoded glyph
+Scope: everything under `private_dot_config/quickshell/`. The geometry and accent rules in
+`.claude/rules/quickshell-qml.md` make a literal colour, a literal font name or a hardcoded glyph
 **the defect** — every value goes through the `Theme` or `Config` singleton.
 
 ### Literal hex — blocking
@@ -91,41 +91,53 @@ tree cannot drift from `.chezmoidata/globals.yaml`. Flag any quoted family name 
 `"JetBrains Mono"`, `"…Nerd Font"`), and flag a `font.family` bound to anything other than those
 two `Config` properties.
 
-### `Theme.fgSecondary` on an elevated ground — blocking
+### `Theme.inkSecondary` on an elevated ground — blocking
 
-`themes/CLAUDE.md` bans `@fg-secondary` on `@bg-secondary`/`@bg-tertiary`/`@bg-overlay`
-outright: both "secondary" reads at 4.0-4.5:1 and fails WCAG AA. QML gets **no** automatic
-enforcement, so this is the check that earns the reviewer.
+🚨 **Property names changed on 2026-09-09** with the colorset rename. `Theme.fgSecondary`,
+`Theme.bgSecondary`, `Theme.bgTertiary`, `Theme.bgOverlay` and `Theme.accentPrimary` **no longer
+exist** — a grep for them matches nothing and this check passes silently on a defective tree. The
+live names are `inkPrimary`, `inkSecondary`, `groundBase`, `groundRaised`, `groundFloat`,
+`fillInert`, `signalFocus`, `signalError`, `identity1..5`.
+
+`themes/CLAUDE.md` bans the quiet ink on a lit ground outright: both "secondary" reads at
+4.0-4.5:1 and fails WCAG AA. `mise run lint:theme-contrast` covers only the pairs in its
+hand-harvested table, so this is still the check that earns the reviewer.
 
 ```
-grep -rn 'fgSecondary' private_dot_config/quickshell/
+grep -rn 'inkSecondary' private_dot_config/quickshell/
 ```
 
 `dotfiles/bar/BarWidget.qml` is the **reference pattern, not a finding**:
 
 ```qml
 readonly property bool grounded: root.pill || root.tinted || (root.hoverBackground && mouse.containsMouse)
-readonly property color restColor: root.grounded ? Theme.fgPrimary : Theme.fgSecondary
+readonly property color restColor: root.grounded ? Theme.inkPrimary : Theme.inkSecondary
 ```
 
 `restColor` is the only neutral a widget may fall back to. A subclass colouring for a state ends
-its ternary on `root.restColor`; a `Theme.fgSecondary` (or `Theme.fgPrimary`) literal in that
+its ternary on `root.restColor`; a `Theme.inkSecondary` (or `Theme.inkPrimary`) literal in that
 position is the finding.
 
-`fgSecondary` is correct on the **bar's own ground** (`bgPrimary`) and wrong the moment the
+`inkSecondary` is correct on the **bar's own ground** (`groundBase`) and wrong the moment the
 widget draws a ground of its own. So judge each hit by whether a ground is lit under it:
+
+⚠️ `Theme.inkSecondary` is also **withdrawn by measurement** — `Theme.qml` falls it back to
+`inkPrimary` in the three colorsets where it fails 4.5:1 on `groundBase`. That is not a licence
+to use it on a lit ground; the withdrawal is measured against `groundBase` only.
 
 | Hit | Verdict |
 |---|---|
 | a ternary ending on `root.restColor` | ✅ correct — this is the pattern |
-| a `BarWidget` subclass overriding `iconColor`/`labelColor` with a **fixed** `Theme.fgSecondary` rest value | ❌ blocking — the override discards the `grounded` swap, so the banned pair appears on hover |
+| a `BarWidget` subclass overriding `iconColor`/`labelColor` with a **fixed** `Theme.inkSecondary` rest value | ❌ blocking — the override discards the `grounded` swap, so the banned pair appears on hover |
 | the same override on a widget with `pill: true` or `tinted: true` | ❌ blocking, and permanent — that ground is always lit, not just on hover |
-| a `Text` inside a `Rectangle` whose `color` can be `Theme.bgSecondary`/`bgTertiary`/`bgOverlay` | ❌ blocking — trace the enclosing Rectangle's `color` binding, per state |
-| `fgSecondary` on `bgPrimary`, on `"transparent"`, or in `Theme.qml` itself | ✅ correct |
+| a `Text` inside a `Rectangle` whose `color` can be `Theme.groundRaised`/`groundFloat`/`fillInert` | ❌ blocking — trace the enclosing Rectangle's `color` binding, per state |
+| `inkSecondary` on `groundBase`, on `"transparent"`, or in `Theme.qml` itself | ✅ correct |
 
 State-coloured overrides are legitimate and must not be flagged as such: a widget may set
-`accentError`/`accentWarning`/`accentInfo`/`fgMuted`/`accentPrimary` for a **real state** (muted,
-disconnected, low battery, inhibited). What is being checked is only the **rest** branch of that
+`signalError` for a **real state** (muted, disconnected, low battery, inhibited). 🚨 It is the
+**only** semantic colour a bar widget may take — `signalWarn` and `signalInfo` measure under the
+3:1 graphic floor in four of eight colorsets and are drawn nowhere; a state needing more than one
+colour carries its own **glyph**. `INK_MUTED` is not bound in QML at all. What is being checked is only the **rest** branch of that
 expression — the value it falls through to when no state applies.
 
 Report each finding as `file:line`, name the ground it sits on, and give the fix as

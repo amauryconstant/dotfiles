@@ -1,5 +1,10 @@
 # Waybar
 
+**Status**: **fallback bar.** Since `features.quickshell_shell` was enabled, Waybar is deployed
+only when that flag is off — `.chezmoiignore` picks exactly one of
+`hypr/conf.d/{quickshell,waybar}.{lua,conf}`, each carrying its own autostart and `SUPER+B`.
+Retirement (not yet due): `_plans/QUICKSHELL_TOOL_RETIREMENT.md`.
+
 **Location**: `private_dot_config/waybar/`
 **Theme system**: See `../themes/CLAUDE.md` for the semantic variable schema.
 
@@ -7,7 +12,15 @@
 - `config.tmpl` → JSON5 module definitions.
 - Reload after edits: `killall -SIGUSR2 waybar`.
 
-**`waybar.css` is the canonical theme color file**: it holds each variant's `@define-color` hex declarations, which `swaync` (`swaync.css.tmpl`) and `btop` (`btop.theme`) cross-reference. Edit a theme's colors there first.
+**`waybar.css` is the canonical *CSS* theme colour file**: it holds each variant's 24
+`@define-color` declarations plus four hover tints, which `swaync` (`swaync.css.tmpl`) and `btop`
+(`btop.theme`) cross-reference, and it is what a new theme is authored from.
+
+🚨 **It is not the source of truth for the whole system.** `colors.sh` carries the same palette
+under **18 role names** (`GROUND_*`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`) and is the file gum-ui and
+Quickshell's `Theme.qml` actually read. The two are hand-edited independently and nothing
+translates between them — a colour changed here must be changed there too. See
+`../themes/CLAUDE.md` → "Two vocabularies, one palette".
 
 ## Module → semantic color assignments
 
