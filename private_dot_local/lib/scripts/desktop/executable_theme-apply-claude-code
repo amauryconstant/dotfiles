@@ -13,14 +13,12 @@ fi
 
 THEME_NAME=$(basename "$(readlink "$THEME_DIR")")
 
-# Map dotfiles theme to claude-code theme (light/dark)
-case "$THEME_NAME" in
-    catppuccin-latte|rose-pine-dawn|gruvbox-light|solarized-light)
-        CLAUDE_THEME="light"
-        ;;
-    catppuccin-mocha|rose-pine-moon|gruvbox-dark|solarized-dark)
-        CLAUDE_THEME="dark"
-        ;;
+# Map dotfiles theme to claude-code theme (light/dark). The dark/light arm lives
+# in theme-switcher, which is the only place that knows the theme set.
+CLAUDE_THEME=$("${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/theme-switcher" variant "$THEME_NAME")
+
+case "$CLAUDE_THEME" in
+    light | dark) ;;
     *)
         exit 0  # Unknown theme, skip
         ;;

@@ -134,9 +134,13 @@
 - Updates `~/.claude.json` via jaq: Sets `"theme": "light"` or `"theme": "dark"`
 - Silent failure if claude-code not installed
 
-**Theme mappings**:
-- **Light themes** → `"theme": "light"`: catppuccin-latte, rose-pine-dawn, gruvbox-light, solarized-light
-- **Dark themes** → `"theme": "dark"`: catppuccin-mocha, rose-pine-moon, gruvbox-dark, solarized-dark
+**Theme mappings**: `theme-switcher variant "$THEME_NAME"` → `light` / `dark` / `other`.
+
+🚨 **`theme-apply-{gtk,qt,claude-code}` each carried their own copy of that four-slug case arm**
+until 2026-09-10, and `theme-menu` a fourth enumeration. They all ask `theme-switcher` now — an
+`other` answer skips rather than defaulting into a variant, because a wrong answer here themes
+GTK, Qt and Claude Code the wrong way in silence. The darkman `{dark,light}-mode.d` scripts are
+deliberately **not** on it: they map a theme to its counterpart, which is a different question.
 
 **Reload behavior**:
 - Theme applies to new claude-code sessions only
@@ -177,8 +181,9 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 ```bash
 theme switch catppuccin-mocha    # Switch to specific theme
 theme list                        # List all themes
-theme current                     # Show active theme
-theme-menu                        # Interactive menu (Wofi)
+theme current [--slug]            # Show active theme (--slug: directory name)
+theme variant [theme]             # dark | light | other — the ONE classifier
+theme-menu                        # Interactive menu (Quickshell picker)
 ```
 
 **Keybindings**:

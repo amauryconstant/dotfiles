@@ -12,12 +12,15 @@ fi
 
 THEME_NAME=$(basename "$(readlink "$THEME_DIR")")
 
-# Map theme variant to GTK color-scheme preference
-case "$THEME_NAME" in
-    catppuccin-latte|rose-pine-dawn|gruvbox-light|solarized-light)
+# Map theme variant to GTK color-scheme preference. The dark/light arm lives in
+# theme-switcher, which is the only place that knows the theme set.
+VARIANT=$("${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/theme-switcher" variant "$THEME_NAME")
+
+case "$VARIANT" in
+    light)
         COLOR_SCHEME="prefer-light"
         ;;
-    catppuccin-mocha|rose-pine-moon|gruvbox-dark|solarized-dark)
+    dark)
         COLOR_SCHEME="prefer-dark"
         ;;
     *)

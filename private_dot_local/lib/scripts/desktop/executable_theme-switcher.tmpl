@@ -29,7 +29,8 @@ Usage: theme-switcher <command> [theme-name]
 Commands:
     switch <theme-name>    Switch to the specified theme
     list                   List all available themes
-    current                Show the currently active theme
+    current [--slug]       Show the currently active theme (--slug: directory name)
+    variant [theme-name]   Print dark, light or other (default: current theme)
 
 Available themes:
 $(list_themes | sed 's/^/    /')
@@ -47,14 +48,42 @@ list_themes() {
     done | sort
 }
 
-# Get current theme name
-get_current_theme() {
+# Get current theme slug (catppuccin-mocha), or "none"
+get_current_slug() {
     if [ -L "$CURRENT_LINK" ]; then
-        theme=$(readlink "$CURRENT_LINK" | xargs basename)
-        format_theme_name "$theme"
+        readlink "$CURRENT_LINK" | xargs basename
     else
         echo "none"
     fi
+}
+
+# Get current theme name
+get_current_theme() {
+    slug=$(get_current_slug)
+    if [ "$slug" = "none" ]; then
+        echo "none"
+    else
+        format_theme_name "$slug"
+    fi
+}
+
+# Classify a theme as dark or light — the ONE place that knows.
+# theme-apply-gtk, -qt and -claude-code each carried a copy of this arm, and
+# theme-menu a fourth enumeration; they all ask here now.
+# An unrecognised theme answers "other" rather than defaulting into a variant:
+# a wrong answer here silently themes GTK, Qt and Claude Code the wrong way.
+theme_variant() {
+    case "$1" in
+        catppuccin-latte | rose-pine-dawn | gruvbox-light | solarized-light)
+            echo "light"
+            ;;
+        catppuccin-mocha | rose-pine-moon | gruvbox-dark | solarized-dark)
+            echo "dark"
+            ;;
+        *)
+            echo "other"
+            ;;
+    esac
 }
 
 # Validate theme exists
@@ -129,7 +158,10 @@ switch_theme() {
     validate_theme "$theme_name" || return 1
 
     theme_path="$THEMES_DIR/$theme_name"
-    current_theme=$(get_current_theme)
+    # Slug against slug. This compared the FORMATTED name ("Catppuccin Mocha")
+    # against the argument ("catppuccin-mocha"), so the short-circuit never
+    # fired and every re-switch reloaded eleven applications for nothing.
+    current_theme=$(get_current_slug)
 
     # Check if already on this theme
     if [ "$current_theme" = "$theme_name" ]; then
@@ -194,7 +226,18 @@ main() {
             list_themes
             ;;
         current)
-            get_current_theme
+            if [ "$1" = "--slug" ]; then
+                get_current_slug
+            else
+                get_current_theme
+            fi
+            ;;
+        variant)
+            if [ -n "$1" ]; then
+                theme_variant "$1"
+            else
+                theme_variant "$(get_current_slug)"
+            fi
             ;;
         *)
             show_usage
