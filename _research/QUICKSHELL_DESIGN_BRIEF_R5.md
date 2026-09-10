@@ -2,7 +2,20 @@
 
 **For**: Claude Design project `1d494341-deaa-47cb-ac39-32ccb9c23862`
 **Evidence**: `_research/QUICKSHELL_DESIGN_AUDIT.md` — measurements and the full contradiction list.
-**Date**: 2026-09-03
+**Date**: 2026-09-03 · **Status: DELIVERED and ACTED ON, 2026-09-08**
+
+🚨 **This is a brief that was sent, not a specification to implement.** The design project answered
+it by **rewriting itself as fourteen pages** (`Shell-00-Index` … `Shell-13-Accessibility`), which
+is why every artboard id cited below (`pf-a`, `pop-b`, `menu-a`, `ses-b`, `pan-b`, …) is now dead.
+Read it to understand *why* the fourteen-page set says what it says. Never cite an id from it.
+
+**What became of the asks**: the scope law in §1.1 holds and is quoted by the surface inventory;
+clipboard and the picker substrate shipped 2026-09-09; the seven popovers shipped 2026-09-10;
+polkit and the lock screen remain deferred on the safety grounds §1.1 names.
+
+**Current design position**: `_research/QUICKSHELL_DESIGN_AUDIT.md` **Part 5**, which audits the
+fourteen-page set and records this tree's rulings against it. Parts 1–4 of that file audit the
+dead nine-file set and are kept for their measurements only.
 
 Rounds 1–4 are broad, and in places sharper than the implementation they describe. What they lack
 is **internal consistency**, a **behaviour layer**, and **evidence that the colour rulings survive

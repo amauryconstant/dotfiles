@@ -4,6 +4,18 @@
 **Created**: June 2026
 **Verified against quickshell 0.3.1 source, 2026-09-03**
 
+🚨 **HISTORICAL. This is a feasibility study, and the feasibility question is closed** — every
+component below has been replaced by shipped code. Its remaining value is the *left* half of each
+mapping: what Waybar, Wofi, swaync and wlogout actually did, which is what a replacement has to
+keep covering. Do not take a "Feasibility" verdict as work to do; read
+`private_dot_config/quickshell/CLAUDE.md` for how each one was in fact built.
+
+The one gap this document called genuine — **backlight** — was closed by the `Backlight` singleton
+(sysfs via `FileView`, writing through `desktop/brightness-set`).
+
+The four replaced tools are still installed and still configured. Removing them is
+`_plans/QUICKSHELL_TOOL_RETIREMENT.md`, not this file.
+
 > **Scope of the 2026-09-03 pass.** The "What X does" halves were spot-checked against the
 > legacy configs still in `private_dot_config/{waybar,wofi,swaync,wlogout}/` — every line count
 > in this document was wrong, and several behaviours had drifted. The "Quickshell QML mapping"

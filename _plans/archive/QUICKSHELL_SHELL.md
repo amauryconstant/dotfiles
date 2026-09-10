@@ -1,24 +1,53 @@
-# Quickshell Shell — Integration Plan
+# Quickshell Shell — Integration Plan (ARCHIVED)
 
-**Status**: Phases 0, 1, **2**, 2.5, 3, **4**, 5 and **5.5** complete on branch `quickshell`
-(floating bar at Waybar module parity, volume/brightness OSDs, launcher and power menu on the
-primary keys, notification server + centre with swaync masked, auto-hiding dock and workspace
-overview; the two bars are mutually exclusive by config; Hyprland running the Lua entry point
-across a reboot). **Phase 5.5's two surfaces are complete but ship OFF** — `Config.dockEnabled`
-and `Config.overviewEnabled` are both `false`; "complete" here means built and validated, not
-enabled. Only the optional 6 remains. See
-**Amendment A** for the layout language adopted 2026-08-31, **Amendment B** for the 2026-09-01
-design update, **Amendment C** for the colour-mapping correction that landed with Phase 4,
-**Amendment D** for the measured contrast pass that closed Phase 2.5's last exit criterion, and
-**Amendment E** for what reading `Composites.dc.html` settled about Phase 5.5.
+🚨 **This document is FROZEN at 2026-09-03 and is not a roadmap.** It is the record of *why* the
+shell was built the way it was — the phase design, the amendments, and the measurements taken
+along the way. Do not read it for what the shell is now, and do not take a task from it.
+
+**Everything in it is done except the tool retirement, which moved out** to
+`_plans/QUICKSHELL_TOOL_RETIREMENT.md` on 2026-09-11 so that a live decision would stop living
+inside an archive. Phase 6 below is superseded by that file and is stale in one row (Wofi).
+
+**Read instead:**
+
+| For | Read |
+|---|---|
+| what the shell is today | `private_dot_config/quickshell/CLAUDE.md` |
+| what is still not built | `_research/QUICKSHELL_SURFACE_INVENTORY.md` (statuses maintained; it also carries the full reading order) |
+| what is still to be removed | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
+| QML syntax, tooling, runtime traps | `.claude/rules/quickshell-qml.md` |
+| the design's own defects and our rulings | `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 |
+
+**Two things in here are actively misleading if read as current:**
+
+1. **The design it is written against no longer exists.** Amendments A–E cite a nine-file Claude
+   Design set (`f-a`, `bar-a`, `1c`, `1d`, `pop-g`, …). The project was **rewritten as fourteen
+   pages on 2026-09-08** and every one of those artboard ids is dead. The measurements survive;
+   the citations do not.
+2. **Work landed after this froze.** Between 2026-09-08 and 2026-09-11: the shared picker chrome,
+   the dmenu socket substrate, clipboard history, the colorset rename to 18 semantic role keys,
+   the theme menu with brand marks, and the seven bar popovers. None of it is described below.
+
+---
+
+## Status as of the freeze (2026-09-03)
+
+Phases 0, 1, 2, 2.5, 3, 4, 5 and 5.5 complete on branch `quickshell` — floating bar at Waybar
+module parity, volume/brightness OSDs, launcher and power menu on the primary keys, notification
+server + centre with swaync masked, auto-hiding dock and workspace overview; the two bars
+mutually exclusive by config; Hyprland running the Lua entry point across a reboot. **Phase 5.5's
+two surfaces are complete but ship OFF** — `Config.dockEnabled` and `Config.overviewEnabled` are
+both `false`; "complete" there means built and validated, then declined in daily use.
+
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
 `_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
-**Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon
-stay out (Amendment A's canvas draws a lock screen and a clipboard panel; both still declined).
-**Prerequisite work**: none. This plan is deliberately decoupled from the P2
-`colors.toml` item in `_plans/OMARCHY.md` (see "Theming bridge").
+**Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon stayed
+out; the clipboard panel this plan declined was later built (2026-09-09), the lock screen was not.
+**Amendments**: **A** the layout language adopted 2026-08-31 · **B** the 2026-09-01 design update ·
+**C** the colour-mapping correction that landed with Phase 4 · **D** the measured contrast pass ·
+**E** what reading `Composites.dc.html` settled about Phase 5.5.
 
-Created 2026-08-30. Amended 2026-08-31.
+Created 2026-08-30. Amended 2026-08-31. Archived 2026-09-08. Frozen 2026-09-11.
 
 ---
 
@@ -544,6 +573,12 @@ running instance — so a second and third copy of the launch-then-retry dance w
 the only thing gained by separate scripts.
 
 ### Phase 6 — Cleanup of replaced tooling (OPTIONAL)
+
+🚨 **SUPERSEDED by `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (2026-09-11).** Kept here only so the
+phase list reads whole. Two things below are now wrong: the **Wofi** row ("never, on current
+scope") predates the 2026-09-09 picker work that replaced its menu callers, and the
+**`waybar.css` trap** describes a generation chain that never existed — `colors.sh`'s own header
+retracts it. Act on the retirement file, not on this section.
 
 **Not a phase in the sense the others are.** Phases 0–5 are complete without it, and doing
 none of it is a valid end state: the replaced tools cost a package each and a config
@@ -1204,7 +1239,13 @@ throughout. `fgMuted` survives in one place per the same note — the Dismiss bu
 **outline**, because *"borders are foreground-class only"* and a background token cannot carry
 one.
 
-## 5. Clipboard (`pan-b`) — decided: declined
+## 5. Clipboard (`pan-b`) — decided: declined ~~— REVERSED 2026-09-09~~
+
+🚨 **This decline was overturned.** `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 withdrew every
+decline taken on *scope* grounds, and `ClipboardPicker.qml` shipped on 2026-09-09 bound to
+`SUPER+C`. Both premises below also failed: the picker work removed Wofi's menu callers, and the
+shell front-ends `cliphist` rather than duplicating its storage. Kept for the reasoning trail.
+
 
 Amendment A said "revisit after Phase 5"; Amendment B left it "declined by default until a
 decision is made". Deciding it here so it stops resurfacing each amendment: **declined, and not
@@ -1509,8 +1550,10 @@ each because no member of the 24-variable set works everywhere.
 `lint:theme-contrast` gained its own scrim section, since a shade is not a colorset token and
 the `PAIRS` table cannot express one.
 
-## Still open
+## Still open — as judged at the 2026-09-03 freeze
 
-**Phase 6** only — retirement, gated on each replaced tool having *lived* a month, so nothing
-is eligible before roughly 2026-10-01. Plus Phase 2's multi-monitor box, still blocked on the
-desktop.
+**Phase 6** only — retirement, gated on each replaced tool having *lived* a month, so nothing is
+eligible before roughly 2026-10-01. Plus Phase 2's multi-monitor box, still blocked on the desktop.
+
+**Current answer**: retirement moved to `_plans/QUICKSHELL_TOOL_RETIREMENT.md`; everything not
+built is listed in `_research/QUICKSHELL_SURFACE_INVENTORY.md`'s summary. This section is history.

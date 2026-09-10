@@ -2,10 +2,18 @@
 
 **Created**: June 2026 · **Revised**: 2026-08-24 (Omarchy 4.0.0) · **Closed**: 2026-09-01
 **Focus**: Migrating the desktop shell (bar, launcher, notifications, power menu, OSDs, optionally lock) to a custom [Quickshell](https://quickshell.org/) (QtQuick/QML) stack
-**Phase**: Closed. **Approach A** (build our own, Omarchy 4 as design reference) was chosen, and
-phases 0, 1, 2.5 and 3 are shipped — bar at Waybar parity plus volume/brightness OSDs. Live work
-is in `_plans/QUICKSHELL_SHELL.md`; this doc is the exploration record behind the decision, kept
-for its comparison of the alternatives.
+**Phase**: Closed 2026-09-01. **Approach A** (build our own, Omarchy 4 as design reference) was
+chosen and is long since built.
+
+🚨 **This is an exploration record, not a status document.** It is kept for one thing: the
+comparison of the alternatives that were rejected, and the two structural tensions that made the
+decision hard. Every "current stack" table below describes the desktop as it was *before* the
+shell existed. The progress note it used to carry (*"phases 0, 1, 2.5 and 3 are shipped"*) was
+stale within a week and is removed rather than maintained.
+
+For what exists now: `private_dot_config/quickshell/CLAUDE.md`. For what does not:
+`_research/QUICKSHELL_SURFACE_INVENTORY.md`, which also carries the full reading order for these
+documents.
 
 ---
 

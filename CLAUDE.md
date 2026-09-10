@@ -10,7 +10,9 @@ Technical guidance for Claude Code when developing in this repository.
 
 - **Project**: Chezmoi dotfiles repository
 - **Target OS**: Arch Linux (archinstall + Hyprland profile)
-- **Desktop**: Hyprland + Waybar + Wofi
+- **Desktop**: Hyprland + **Quickshell** (bar, launcher, notifications, power menu, popovers,
+  pickers) — `features.quickshell_shell` is **on**. Waybar + Wofi + swaync + wlogout are still
+  installed as the fallback stack; the two bars are mutually exclusive by `.chezmoiignore`
 - **Terminal**: Ghostty (only chezmoi-managed terminal — there is no `private_dot_config/kitty/`)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
 - **Constraint**: Security-first — manual encryption at rest + package supply-chain policy (see `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy")
@@ -223,6 +225,9 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 **Working on the Quickshell bar?**
 → `.claude/rules/quickshell-qml.md` (QML syntax, tooling, validation)
 → `private_dot_config/quickshell/CLAUDE.md` (layout, widget sources, Waybar deviations)
+→ `_research/QUICKSHELL_SURFACE_INVENTORY.md` — **start here for status**: which surfaces exist,
+which do not, and the reading order for the ten Quickshell documents. Most of them are frozen
+records of finished work; taking a task from one is the standing hazard
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)

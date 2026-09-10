@@ -6,7 +6,9 @@ disables subdirectory discovery for every other config, including voxtype's)
 **Gated by**: `features.quickshell_shell` via `.chezmoiignore`
 
 **See**: Root `CLAUDE.md` for core standards
-**See**: `_plans/archive/QUICKSHELL_SHELL.md` for the phase roadmap
+**See**: `_research/QUICKSHELL_SURFACE_INVENTORY.md` for what exists, what does not, and the
+reading order for every Quickshell document. `_plans/archive/QUICKSHELL_SHELL.md` is the frozen
+build record — history, not a roadmap
 **See**: `.claude/rules/hyprland-lua.md` — this file is its counterpart
 
 ---
@@ -408,7 +410,8 @@ never fires. That is why theming is driven by an explicit IPC call.
 
 ## Geometry and the accent rule
 
-Both are Amendment A of `_plans/archive/QUICKSHELL_SHELL.md`, and both live in exactly one place.
+Both originate in Amendment A of the frozen `_plans/archive/QUICKSHELL_SHELL.md` (which cites a
+design set that no longer exists), and both live in exactly one place here.
 
 **Geometry** is the scale in `Config.qml.tmpl`, and a widget never writes a radius, a
 spacing, a font size or an animation duration of its own.

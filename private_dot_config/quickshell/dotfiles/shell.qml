@@ -16,7 +16,7 @@ import QtQuick
 
 // Root scope. Deliberately thin: it wires IPC and fans the bar out over the
 // screens, and owns no widget of its own.
-// Roadmap: _plans/archive/QUICKSHELL_SHELL.md
+// What is built and what is not: _research/QUICKSHELL_SURFACE_INVENTORY.md
 ShellRoot {
     // theme-switcher calls this after swapping the themes/current symlink:
     //   quickshell -c dotfiles ipc call theme reload

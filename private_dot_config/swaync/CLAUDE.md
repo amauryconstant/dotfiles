@@ -19,7 +19,7 @@
   `hypr/conf/bindings/system-control.{lua,conf}.tmpl` swings back to `swaync-client`. Do not
   unmask by hand; the flag and the binding would then disagree.
 - **Kept, not removed**: this config, the 8 per-theme `swaync.css.tmpl` files and the package
-  all stay. Retirement is Phase 6 of `_plans/archive/QUICKSHELL_SHELL.md`, gated on the replacement
+  all stay. Retirement is `_plans/QUICKSHELL_TOOL_RETIREMENT.md`, gated on the replacement
   having lived a month — masked is the reversible state, deleted is not.
 - **Purpose**: Notification daemon with persistent control center panel (the repo's only notification daemon — no dunst)
 - **Toggle**: `Super+Shift+N` → `swaync-client --toggle-panel`

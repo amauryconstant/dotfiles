@@ -1,7 +1,10 @@
 # Quickshell QML API Reference
 **Source**: Vendored upstream at `_ai/quickshell/` (git.outfoxxed.me/quickshell/quickshell, LGPL-3)
-**Created**: June 2026
+**Created**: June 2026 · **Corrected three times; last 2026-09-03**
 **Purpose**: API reference for building custom Quickshell desktop shell components (bar, launcher, notifications, etc.)
+**Status**: **LIVE reference.** Not a plan and not a record — it describes the installed
+`quickshell 0.3.1` and should be corrected in place when it is found wrong. Runtime *behaviours*
+(as opposed to API shapes) are in `.claude/rules/quickshell-qml.md`.
 
 🚨 **Corrected 2026-09-01.** This doc was written from an incomplete API picture and several of
 its names were wrong: no singleton is auto-available, and `StatusNotifier`/`NetworkManager`/

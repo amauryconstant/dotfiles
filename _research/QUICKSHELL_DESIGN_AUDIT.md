@@ -1,7 +1,9 @@
 # Quickshell design audit — rounds 1–4, and the round-5 rewrite
 
-**Date**: 2026-09-03, extended 2026-09-08 · **Source**: Claude Design project
+**Date**: 2026-09-03, extended 2026-09-08 and 2026-09-10 · **Source**: Claude Design project
 `1d494341-deaa-47cb-ac39-32ccb9c23862`.
+**Status**: **Part 5 is LIVE** — it is where a ruling against the current fourteen-page design gets
+recorded, and it is maintained. Parts 1–4 are historical.
 
 🚨 **Parts 1–4 below audit the NINE-file set, which no longer exists.** The project was rewritten
 as **fourteen pages**, `Shell-00-Index` … `Shell-13-Accessibility`. Every artboard id those parts

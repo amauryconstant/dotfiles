@@ -1,8 +1,32 @@
 # Desktop shell — surface inventory
 
-**Date**: 2026-09-03
+**Date**: 2026-09-03 · **Statuses refreshed**: 2026-09-11
 **Purpose**: the complete list of surfaces a desktop shell owns here, described by *what they are
 made of* and *how they must behave* — not by how they are drawn or built.
+
+🚨 **This is the only forward-looking Quickshell document.** Every other Quickshell file under
+`_plans/` and `_research/` is a record of work already done or a decision already taken — see the
+reading order below. What remains to be *built* is here; what remains to be *removed* is
+`_plans/QUICKSHELL_TOOL_RETIREMENT.md`.
+
+**The per-surface descriptions below are as written on 2026-09-03; only the `Status` lines are
+maintained.** A constraint an entry states was true when written and may have been answered by the
+implementation since — the status line says so where it was.
+
+| Document | What it is | Read it for |
+|---|---|---|
+| `private_dot_config/quickshell/CLAUDE.md` | **live** | what the shell is today, and why each departure |
+| `.claude/rules/quickshell-qml.md` | **live** | QML syntax, tooling, measured runtime traps |
+| `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 | **live** | the fourteen-page design's defects and this tree's rulings |
+| `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, thrice corrected |
+| **this file** | **live** | which surfaces exist, which do not |
+| `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | the one open piece of work in the original plan |
+| `_plans/archive/QUICKSHELL_SHELL.md` | frozen 2026-09-03 | why a phase was built the way it was |
+| `_research/QUICKSHELL_DESKTOP_RESEARCH.md` | closed 2026-09-01 | why Quickshell, and the alternatives rejected |
+| `_research/QUICKSHELL_COMPONENT_MAPPING.md` | historical | what the replaced tools did |
+| `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` | delivered 2026-09-08 | what was asked of the design, before the rewrite |
+| `_research/QUICKSHELL_DESIGN_AUDIT.md` Parts 1–4 | historical | measurements only — every artboard id is dead |
+
 **For**: the design system. Every entry is something the design must eventually specify; nothing
 here prescribes a layout, a component name, or an API.
 
@@ -145,7 +169,9 @@ the primary input; the pointer is secondary.
 appear or change while the launcher is open. Icons may be missing for some entries. Non-application
 modes are a separate component, below.
 
-**Status**: Shipped (application mode only).
+**Status**: Shipped. Application search plus two prefix modes — `:` runs a command in a
+terminal, `=` evaluates through `qalc`. An older mockup's five modes were declined; two is the
+whole set.
 
 ### 7. Generic list picker
 
@@ -166,7 +192,10 @@ not a screen: how a title is shown, how long lines behave, how a list too long t
 an empty filter result says, and how a confirmation variant differs from a list variant. Callers
 today style themselves individually; that must collapse into one specified surface with variants.
 
-**Status**: Not built.
+**Status**: Shipped 2026-09-09. `MenuPicker.qml` on the shared `PickerSurface` chrome, fed by
+`MenuServer.qml` over `$XDG_RUNTIME_DIR/quickshell-menu.sock` and called by
+`desktop/quickshell-menu`. A socket rather than IPC because a dmenu call must block; the wrapper
+keeps a Wofi fallback path. Rich items (glyph, subtitle, payload) landed 2026-09-10.
 
 ### 8. Hierarchical system menu
 
@@ -182,7 +211,9 @@ is largely a *navigation model* layered on component 7, plus the rule for how a 
 drawn against it rather than an invented one. Depth is at most three. Some leaves are destructive
 (power, package removal) and need a confirmation step that the launcher path does not have.
 
-**Status**: Not built.
+**Status**: Partial. The tree works — `user-interface/system-menu` and its `menu-*` scripts
+navigate it one level per picker call. What is not built is design page 10's **native nested**
+menu, where the navigation model lives in the shell rather than in the calling script.
 
 ### 9. Keybindings reference
 
@@ -196,7 +227,9 @@ design question is legibility at density, not interaction.
 mixed — and want a distinct treatment from the descriptions beside them. The list is generated, so
 its length and content change without notice.
 
-**Status**: Not built.
+**Status**: Shipped as a list, not as a document. `desktop/keybindings` formats the binding set and
+pipes it through the picker. The density treatment this entry asks for is unaddressed — a picker row
+is not a reference page.
 
 ### 10. Theme picker
 
@@ -208,7 +241,9 @@ its length and content change without notice.
 design should say what the transition looks like, and whether the picker survives it. A preview
 must not imply a colour is available that the theme does not define.
 
-**Status**: Not built.
+**Status**: Shipped 2026-09-10. `user-interface/theme-menu` on the picker, with a per-theme brand
+mark; themes with no brand mark take a tinted glyph chip instead. The picker does not survive the
+switch — it closes on selection, and the shell repaints with no transition.
 
 ### 11. Display and monitor profile picker
 
@@ -236,7 +271,8 @@ arrives while the desktop is still assembling itself.
 should decide whether this is a picker or an interrupt; it is currently drawn as a picker but
 behaves like one of the few things the shell asks the user unprompted.
 
-**Status**: Not built.
+**Status**: Shipped as a picker. `desktop/session-prompt` asks through the generic picker. The
+picker-or-interrupt question this entry raises is still unanswered — it was inherited, not decided.
 
 ### 13. Colour-temperature control
 
@@ -249,7 +285,8 @@ than a list. Changing it has an immediate, whole-screen visual effect.
 preview inside this surface is lying by definition, and the design should acknowledge that rather
 than fight it.
 
-**Status**: Not built.
+**Status**: Shipped as a picker of preset values (`desktop/nightlight-config`), not as the
+continuous control this entry describes. `PopoverSlider` now exists and would serve it.
 
 ### 14. Audio device picker
 
@@ -262,7 +299,8 @@ the surface is open.
 meaningless to a human. This may be a variant of the audio popover (component 20) rather than a
 separate surface — the design should rule on that rather than leaving both.
 
-**Status**: Not built.
+**Status**: Shipped **inside the audio popover**, which is the ruling this entry asked for: one row
+per sink, with the input below it. There is no separate device-picker surface and none is wanted.
 
 ### 15. Screenshot and recording control
 
@@ -291,7 +329,9 @@ selection, so history, capacity, eviction and persistence across restarts are al
 with no default to inherit. Clipboard content is frequently sensitive — passwords pass through it —
 so the design must state a policy for previewing and for whether history survives a lock.
 
-**Status**: Not built.
+**Status**: Shipped 2026-09-09. `ClipboardPicker.qml` over `cliphist`, `SUPER+C`. Storage stays
+cliphist's, so the ownership question this entry raises was answered by *not* taking it: capacity,
+eviction and lock behaviour are cliphist's, not the shell's.
 
 ### 17. Power and session menu
 
@@ -354,7 +394,12 @@ cover everything that panel would have. They are the only summoned surfaces anch
 point rather than centred, and the anchoring is what makes them read as belonging to their widget.
 Each must have a meaningful state for "the underlying service is absent".
 
-**Status**: Partial — one hover tooltip exists; the seven popovers do not.
+**Status**: Shipped 2026-09-10. Seven payloads on one chrome (`BarPopover`), two open modes —
+pointer (no grab, closes on losing the pointer) and the `SUPER+P` submap (`HyprlandFocusGrab`, focus
+ring). The **set differs from this entry**: audio, network, bluetooth, calendar, media, **meters**,
+**power**. Battery folded into power; notifications kept the centre it already had. They removed the
+bar's last four shell-outs. Departures from design page 06 are measured in
+`_research/QUICKSHELL_DESIGN_AUDIT.md` §5.5.
 
 ---
 
@@ -501,15 +546,34 @@ branching into two designs.
 
 ## Summary
 
+**As of 2026-09-11.** Two of the 16 shipped surfaces (dock, workspace overview) ship **off** —
+built, tried in daily use, declined.
+
 | Class | Surfaces | Shipped | Partial | Not built | Deferred |
 |---|---|---|---|---|---|
 | Persistent | 2 | 2 | — | — | — |
 | Ambient | 3 | 2 | 1 | — | — |
-| Summoned | 15 | 4 | 1 | 10 | — |
+| Summoned | 15 | 12 | 1 | 2 | — |
 | Interrupt | 3 | — | — | 1 | 2 |
 | Foundation | 7 | — | — | — | — |
-| **Total** | **30** | **8** | **2** | **11** | **2** |
+| **Total** | **30** | **16** | **2** | **3** | **2** |
 
-The bulk of the remaining work is **class 3**, and most of it is one component: the generic list
-picker (7) and the menu navigation model on top of it (8) together account for eighteen existing
-callers. Designing that contract well retires more of this list than any other single decision.
+The 2026-09-03 reading — that the generic list picker (7) and the menu model on it (8) were the
+bulk of the work — held: building the picker on 2026-09-09 closed eight entries in one change,
+because eighteen scripts already spoke dmenu.
+
+**What is left, in full:**
+
+| # | Surface | State |
+|---|---|---|
+| 5 | Mode and state indicators | Partial — the states are drawn, the shared vocabulary is not |
+| 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
+| 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
+| 15 | Screenshot and recording control | Not built. Nothing in the replaced stack had it either |
+| 21 | Authentication dialog | Deferred, weakly — one polkit agent per session, and a crash leaves none. Returns with a crash-recovery story. `Quickshell.Services.Polkit` exists and is verified |
+| 22 | Lock screen | Deferred — a crash in a lock surface needs a TTY to escape. `WlSessionLock` + `PamContext` both exist |
+| 23 | Greeter | Not built, no decision recorded |
+
+Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries
+ask for: a keybinding document, a login interrupt and a continuous control respectively. Improving
+one is optional work, not a gap.

@@ -199,7 +199,7 @@ PanelWindow {
 
                     // Kept against the artboard, which draws no indicator: a
                     // dock that cannot show what is running is a strictly worse
-                    // SUPER+D. See Amendment E in _plans/archive/QUICKSHELL_SHELL.md.
+                    // SUPER+D. Amendment E in the frozen _plans/archive/QUICKSHELL_SHELL.md.
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.horizontalCenter: parent.horizontalCenter

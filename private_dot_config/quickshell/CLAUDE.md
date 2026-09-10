@@ -3,7 +3,9 @@
 **Location**: `private_dot_config/quickshell/dotfiles/` → `~/.config/quickshell/dotfiles/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md`
-**Roadmap**: `_plans/archive/QUICKSHELL_SHELL.md`
+**What is left to build**: `_research/QUICKSHELL_SURFACE_INVENTORY.md` (also the reading order for every Quickshell doc)
+**What is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md`
+**How it got here (frozen 2026-09-03, not a roadmap)**: `_plans/archive/QUICKSHELL_SHELL.md`
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
