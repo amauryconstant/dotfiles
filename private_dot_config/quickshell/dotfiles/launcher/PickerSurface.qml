@@ -30,6 +30,15 @@ import QtQuick
 //   mono          title in terminalFont -- content that will be pasted verbatim
 //   elideMiddle   for a path, whose identifying half is its tail
 //   subtitleError subtitle in signalError, for a failure reported in place
+//   badge         short right-aligned meta text -- the trailing slot, which the
+//                 return mark takes over while the row is selected
+//   header        a section label rather than a row: no tint, no hit target,
+//                 and the cursor steps straight over it
+//
+// 🚨 A section marker is a ROW, not a second model. A parallel "sections" list
+// would have to be re-indexed against the filtered rows on every keystroke;
+// as a row it filters with everything else and the only extra rule is that the
+// cursor may not land on it.
 PanelWindow {
     id: root
 
@@ -77,7 +86,7 @@ PanelWindow {
 
     function open(): void {
         queryInput.text = "";
-        root.selected = 0;
+        root.selected = root.firstSelectable();
         root.visible = true;
         queryInput.forceActiveFocus();
         root.opened();
@@ -109,10 +118,37 @@ PanelWindow {
         }
     }
 
+    function isHeader(i: int): bool {
+        return (root.model[i]?.header ?? false) === true;
+    }
+
+    // The first row the cursor is allowed to sit on. 0 when there is none, so a
+    // list that is only headers -- or empty -- still has a defined selection.
+    function firstSelectable(): int {
+        for (let i = 0; i < root.model.length; i++) {
+            if (!root.isHeader(i))
+                return i;
+        }
+        return 0;
+    }
+
+    // Steps `delta` SELECTABLE rows, skipping headers rather than counting
+    // them: an arrow press moves the cursor one row the user can see it on, and
+    // a header at the end of the list must not swallow the keypress.
     function moveSelection(delta: int): void {
         if (list.count === 0)
             return;
-        root.selected = Math.max(0, Math.min(root.selected + delta, list.count - 1));
+        const step = delta < 0 ? -1 : 1;
+        let at = root.selected;
+        for (let remaining = Math.abs(delta); remaining > 0; remaining--) {
+            let next = at + step;
+            while (next >= 0 && next < list.count && root.isHeader(next))
+                next += step;
+            if (next < 0 || next >= list.count)
+                break;
+            at = next;
+        }
+        root.selected = at;
     }
 
     color: "transparent"
@@ -283,7 +319,9 @@ PanelWindow {
 
                         required property int index
                         required property var modelData
-                        readonly property bool current: row.index === root.selected
+                        readonly property bool header: (row.modelData.header ?? false) === true
+                        readonly property bool current: !row.header && row.index === root.selected
+                        readonly property string badge: row.modelData.badge ?? ""
                         readonly property string iconSource: row.modelData.iconSource ?? ""
                         readonly property string subtitle: row.modelData.subtitle ?? ""
 
@@ -291,14 +329,20 @@ PanelWindow {
                         // glyph AND a return mark: three carriers, because the
                         // tint alone reaches only 1.10-1.98 on its own ground.
                         color: row.current ? Theme.select : "transparent"
-                        // One line is a menu row, two is a launcher row. The
-                        // data decides, so neither consumer sets a height.
-                        height: row.subtitle === "" ? Config.rowH : Config.launcherRowHeight
+                        // One line is a menu row, two is a launcher row, and a
+                        // section label is neither. The data decides, so no
+                        // consumer sets a height.
+                        height: row.header ? Config.menuSectionHeight : (row.subtitle === "" ? Config.rowH : Config.launcherRowHeight)
                         radius: Config.radiusChip
                         width: ListView.view.width
 
                         MouseArea {
                             anchors.fill: parent
+                            // A header is not a target: hovering one must not
+                            // move the cursor, and clicking one must fall
+                            // through to nothing rather than accept a row the
+                            // keyboard cannot reach.
+                            enabled: !row.header
                             hoverEnabled: true
 
                             onClicked: {
@@ -308,6 +352,20 @@ PanelWindow {
                             onEntered: root.selected = row.index
                         }
 
+                        // The section label. Meta type on the panel ground, no
+                        // ground of its own: it separates, it is not a control.
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: Config.padTight
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Theme.inkSecondary
+                            font.family: Config.guiFont
+                            font.pixelSize: Config.fontMeta
+                            font.weight: Font.Medium
+                            text: row.header ? (row.modelData.title ?? "") : ""
+                            visible: row.header
+                        }
+
                         Item {
                             id: iconTile
 
@@ -315,7 +373,7 @@ PanelWindow {
                             anchors.leftMargin: Config.padTight - 2
                             anchors.verticalCenter: parent.verticalCenter
                             height: Config.launcherIconSize
-                            visible: row.iconSource !== "" || (row.modelData.glyph ?? "") !== ""
+                            visible: !row.header && (row.iconSource !== "" || (row.modelData.glyph ?? "") !== "")
                             width: Config.launcherIconSize
 
                             IconImage {
@@ -341,10 +399,11 @@ PanelWindow {
                         Column {
                             anchors.left: iconTile.visible ? iconTile.right : parent.left
                             anchors.leftMargin: Config.padTight
-                            anchors.right: enterHint.left
+                            anchors.right: trailing.left
                             anchors.rightMargin: Config.gap
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 3
+                            visible: !row.header
 
                             Text {
                                 color: Theme.inkPrimary
@@ -370,17 +429,22 @@ PanelWindow {
                             }
                         }
 
+                        // One trailing slot, two jobs: the return mark on the
+                        // selected row, a badge on any other. Two elements
+                        // would have to negotiate the same 12px of right edge
+                        // and the title column would have to anchor to
+                        // whichever happened to be visible.
                         Text {
-                            id: enterHint
+                            id: trailing
 
                             anchors.right: parent.right
                             anchors.rightMargin: Config.padTight
                             anchors.verticalCenter: parent.verticalCenter
-                            color: Theme.signalFocus
+                            color: row.current ? Theme.signalFocus : Theme.inkSecondary
                             font.family: Config.terminalFont
                             font.pixelSize: Config.fontMeta
-                            text: "↵"
-                            visible: row.current
+                            text: row.current ? "↵" : row.badge
+                            visible: !row.header && trailing.text !== ""
                         }
                     }
 

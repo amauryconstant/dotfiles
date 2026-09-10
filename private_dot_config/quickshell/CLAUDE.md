@@ -164,6 +164,11 @@ delegate reads a small row contract:
 | `mono` | title in `terminalFont` — content that will be pasted verbatim |
 | `elideMiddle` | for a path, whose identifying half is its tail |
 | `subtitleError` | subtitle in `signalError`, for a failure reported in place |
+| `badge` | short right-aligned meta text. **One trailing slot**: the `↵` mark takes it over while the row is selected, so a badge and the mark can never collide, and the title column has one thing to anchor against |
+| `header` | a section label instead of a row — `menuSectionHeight` 24, no tint, no hit target, and `moveSelection` steps straight over it. A section is a ROW, not a parallel list: a separate model would need re-indexing against the filtered rows on every keystroke |
+
+🚨 **A `current` marker belongs in `badge`, never in a `subtitle`.** A subtitle is what decides
+row height, so marking one row that way makes it 48 against its neighbours' 34 and the list steps.
 
 **Esc is configurable**: `escapeClears` (default true) is the launcher's two-step Esc. `MenuPicker`
 sets it false — there the query is incidental and Esc means the blocked caller gets nothing.
@@ -196,6 +201,30 @@ Four things that each broke it once, all now load-bearing in the wrapper:
 
 **With nothing matching, Return answers with the TYPED TEXT.** That is dmenu's contract, not a
 nicety: `menu-install` asks for a package name by handing the picker an empty list.
+
+### Rich items — `quickshell-menu --json`
+
+An item may be an **object** instead of a string, which is how a caller reaches the row contract
+above rather than packing glyph, state and payload into one label:
+
+```json
+{"prompt": "Select Theme", "items": [
+  {"header": true, "title": "LIGHT"},
+  {"title": "Rose Pine Dawn", "glyph": "", "badge": "current", "payload": "rose-pine-dawn"}]}
+```
+
+`MenuServer.normalise()` turns both shapes into one row: a plain string becomes
+`{title: s, payload: s}`, so the sixteen `show_menu()` callers, their `case` statements and
+`menu-install`'s empty-list free-text prompt are all untouched.
+
+🚨 **`payload` is what the caller is answered with, and it is NOT in the search haystack** —
+`MenuPicker` matches on `title` and `subtitle` only. That is the whole point: before this,
+`theme-menu` shipped its slug through the picker as a visible `|rose-pine-dawn` suffix that the
+user read and the fuzzy match hit.
+
+The Wofi fallback flattens what it cannot draw: headers dropped, glyph pasted back in front of
+the title, payload recovered afterwards by exact display text. `theme-menu` is the only caller
+using the JSON form today.
 
 ## Clipboard — `clipboard/ClipboardPicker.qml`
 

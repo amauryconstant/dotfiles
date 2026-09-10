@@ -27,6 +27,10 @@ Singleton {
     // A list row: popover, menu, notification centre. The launcher's rows are
     // taller because they carry two lines — see launcherRowHeight.
     readonly property int rowH: 34
+    // A section label inside a list, not a row: it carries fontMeta text, has
+    // no hit target and cannot be selected, so it is off the row scale and owes
+    // nothing to hitMin.
+    readonly property int menuSectionHeight: 24
     // 🚨 A pointer fact, not a density preference, so it does NOT scale with
     // anything else here. A widget whose paint is smaller than this still
     // claims 32 of pointer space; chips sit `gap` apart, so two 32px hit areas

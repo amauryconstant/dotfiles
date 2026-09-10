@@ -2,7 +2,17 @@
 
 # Script: theme-menu
 # Purpose: Interactive theme selector
-# Requirements: Arch Linux, quickshell-menu, theme-switcher
+# Requirements: Arch Linux, quickshell-menu, theme-switcher, jaq
+# Usage: theme-menu [--print-items]
+#
+# Rows are sent as JSON objects rather than as one packed string per line, so
+# the glyph lands in the picker's icon column, the current theme is marked with
+# a badge instead of a shifting "✓ " prefix, and the slug travels as `payload`
+# where the user never sees it and the fuzzy match never hits it. See
+# desktop/quickshell-menu for the item shape.
+#
+# --print-items writes the item JSON and exits: the grouping, the ordering and
+# the badge are testable without a display.
 
 # Source environment to get SCRIPTS_DIR
 if [ -f "$HOME/.config/shell/env" ]; then
@@ -13,73 +23,99 @@ fi
 SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}"
 
 THEMES_DIR="$HOME/.config/themes"
-CURRENT_LINK="$THEMES_DIR/current"
+THEME_SWITCHER="$SCRIPTS_DIR/desktop/theme-switcher"
+TAB=$(printf '\t')
 
-# Get current theme name
-if [ -L "$CURRENT_LINK" ]; then
-    CURRENT_THEME=$(readlink "$CURRENT_LINK" | xargs basename)
-else
-    CURRENT_THEME="none"
-fi
+CURRENT_THEME=$("$THEME_SWITCHER" current --slug)
 
-# Build theme list with current indicator and variant info
-THEME_LIST=""
-for theme_dir in "$THEMES_DIR"/*; do
-    [ -d "$theme_dir" ] || continue
-    theme=$(basename "$theme_dir")
-    [ "$theme" = "current" ] && continue
-
-    # Map each theme variant to unique Material Design icon
-    case "$theme" in
+# Map each theme variant to a unique Material Design glyph. Presentation, so it
+# stays here — unlike the dark/light arm, which theme-switcher owns.
+theme_glyph() {
+    case "$1" in
         catppuccin-latte)
-            icon="󰛊"  # md-coffee_outline
+            printf '󰛊' # md-coffee_outline
             ;;
         catppuccin-mocha)
-            icon="󰅶"  # md-coffee
+            printf '󰅶' # md-coffee
             ;;
         rose-pine-dawn)
-            icon="" # md-weather-sunrise
+            printf '' # md-weather-sunrise
             ;;
         rose-pine-moon)
-            icon="󰖚"  # md-weather-sunset
+            printf '󰖚' # md-weather-sunset
             ;;
         gruvbox-light)
-            icon=""  # nf-md-tree
+            printf '' # nf-md-tree
             ;;
         gruvbox-dark)
-            icon="󰹩"  # nf-md-tree_outline
+            printf '󰹩' # nf-md-tree_outline
             ;;
         solarized-light)
-            icon=""  # fa-sun
+            printf '' # fa-sun
             ;;
         solarized-dark)
-            icon=""  # fa-moon
+            printf '' # fa-moon
             ;;
         *)
-            icon="󰏘"  # md-palette
+            printf '󰏘' # md-palette
             ;;
     esac
+}
 
-    # Add current indicator
-    if [ "$theme" = "$CURRENT_THEME" ]; then
-        prefix="✓ "
-    else
-        prefix="  "
-    fi
+# One tab-separated row per theme: variant, glyph, display name, slug, badge.
+theme_rows() {
+    for theme_dir in "$THEMES_DIR"/*; do
+        [ -d "$theme_dir" ] || continue
+        theme=$(basename "$theme_dir")
+        [ "$theme" = "current" ] && continue
 
-    # Extract display name (titlecase with spaces)
-    display_name=$(echo "$theme" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
+        badge=""
+        [ "$theme" = "$CURRENT_THEME" ] && badge="current"
 
-    THEME_LIST="${THEME_LIST}${prefix}${icon} ${display_name}|${theme}\n"
-done
+        printf '%s\t%s\t%s\t%s\t%s\n' \
+            "$("$THEME_SWITCHER" variant "$theme")" \
+            "$(theme_glyph "$theme")" \
+            "$(echo "$theme" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')" \
+            "$theme" \
+            "$badge"
+    done | sort -t"$TAB" -k3,3
+}
 
-# Show menu and get selection
-# This one does not source menu-helpers.sh, so it names the picker itself.
-SELECTED=$(printf "%b" "$THEME_LIST" |
-    "${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/quickshell-menu" --prompt "Select Theme" |
-    cut -d'|' -f2)
+# The rows grouped under a section label, dark first. A variant with no themes
+# contributes nothing, so a trimmed-down themes directory cannot leave an empty
+# heading behind.
+build_items() {
+    rows=$(theme_rows)
 
-# Switch to selected theme
+    for variant in dark light other; do
+        group=$(printf '%s\n' "$rows" | awk -F'\t' -v v="$variant" '$1 == v')
+        [ -n "$group" ] || continue
+
+        printf 'header\t\t%s\t\t\n' "$(printf '%s' "$variant" | tr '[:lower:]' '[:upper:]')"
+        printf '%s\n' "$group"
+    done | jaq -R -s -c '
+        [ split("\n")[]
+          | select(length > 0)
+          | split("\t")
+          | if .[0] == "header"
+            then {header: true, title: .[2]}
+            else {glyph: .[1], title: .[2], payload: .[3], badge: .[4]}
+            end ]'
+}
+
+ITEMS=$(build_items)
+
+if [ "$1" = "--print-items" ]; then
+    printf '%s\n' "$ITEMS"
+    exit 0
+fi
+
+# This one does not source menu-helpers.sh: show_menu() is the plain-string
+# path, and these rows are objects.
+SELECTED=$(printf '%s' "$ITEMS" |
+    "$SCRIPTS_DIR/desktop/quickshell-menu" --json --prompt "Select Theme")
+
+# Switch to selected theme — the answer is the payload, so it is already a slug.
 if [ -n "$SELECTED" ]; then
-    "$SCRIPTS_DIR/desktop/theme-switcher" switch "$SELECTED"
+    "$THEME_SWITCHER" switch "$SELECTED"
 fi

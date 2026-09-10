@@ -182,9 +182,20 @@ Opens `~/.config/dotfiles/extra-bindings.conf` in `$EDITOR` and calls `hyprctl r
 
 ## theme-menu
 
-Interactive Wofi-based theme selector. Template script (`.tmpl`) — uses chezmoi template var for current theme indicator.
+Interactive theme selector. **The one caller that does not use `show_menu()`**: it sends JSON
+objects through `quickshell-menu --json`, so the theme glyph lands in the picker's icon column,
+the active theme carries a `badge` instead of a `✓ ` prefix that shifted every other title, and
+the slug travels as `payload` — invisible, and out of the fuzzy-match haystack. Rows are grouped
+under `DARK` / `LIGHT` section headers.
 
-**Usage**: `theme-menu` or via Style menu
+**`show_menu()` stays plain-string.** A caller that wants a glyph column calls `quickshell-menu`
+directly, as this one does; the pipe-delimited option list has no room for a second field.
+
+🚨 **The dark/light arm lives in `desktop/theme-switcher` (`variant <theme>`)**, not here — it
+was copied in four places. `theme-menu` owns the glyph map, which is presentation.
+
+**Usage**: `theme-menu [--print-items]` or via Style menu. `--print-items` writes the item JSON
+and exits, which is how the grouping, ordering and badge are checked without a display.
 
 ## Non-Obvious Patterns
 
