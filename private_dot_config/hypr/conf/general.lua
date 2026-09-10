@@ -9,8 +9,8 @@
 hl.config({
 	general = {
 		-- Gaps ------------------------------------------------------------
-		gaps_in = 4, -- Space between windows (px)
-		gaps_out = 8, -- Space between windows and screen edges (px)
+		gaps_in = 2, -- Space between windows (px)
+		gaps_out = 4, -- Space between windows and screen edges (px; == Quickshell barInset)
 
 		-- Borders ---------------------------------------------------------
 		border_size = 2, -- Thickness of window borders (px; 0 disables)

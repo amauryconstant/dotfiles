@@ -11,10 +11,16 @@ import QtQuick
 // 🚨 The bar floats (Amendment A): inset on every side, rounded, hairline
 // border. `exclusiveZone` is set explicitly because ExclusionMode.Auto only
 // reserves the margins of edges that are actually anchored — the bottom is
-// not, so Auto would reserve just the height and windows would sit under the
-// bar. Reserving exactly the bar's own bottom edge (height + top inset, no
-// more) leaves Hyprland's own gaps_out as the only gap below the bar, so it
-// matches every other window-to-window and window-to-edge gap.
+// not, so Auto would reserve more than the bar occupies.
+//
+// 🚨 The compositor ADDS the margin: an exclusive zone is measured from the
+// surface's own edge, so Hyprland reserves `margins.top + exclusiveZone`.
+// Verified live 2026-09-10 — a 4 margin with a 44 zone gave `hyprctl monitors`
+// reserved=48, four PAST the bar's own bottom edge. So `barHeight + barInset`
+// counts the inset twice on purpose: the gap below the bar comes out as
+// barInset + gaps_out (8), deliberately double the 4 the bar's side edges get.
+// Chosen by eye over the symmetric `barHeight` alone — the bar reads as
+// separated from the windows rather than as one more tile among them.
 PanelWindow {
     id: root
 

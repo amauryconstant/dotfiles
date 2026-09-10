@@ -45,13 +45,17 @@ Singleton {
     readonly property int motionSlow: 180
     readonly property int motionEnter: 220
 
-    // The bar floats: it is 40 tall, inset 8 on every side — matching
-    // Hyprland's gaps_out (general.conf) so the bar's edges line up with every
-    // window's — and reserves 40 + 8. Waybar's 30px full-bleed bar cannot
-    // coexist with that, which is why this restructure is what ends the
-    // Phase 1 A/B.
+    // The bar floats: it is 40 tall, inset 4 on every side — matching
+    // Hyprland's gaps_out (conf/general.lua) so the bar's edges line up with
+    // every window's. Waybar's 30px full-bleed bar cannot coexist with that,
+    // which is why this restructure is what ends the Phase 1 A/B.
+    //
+    // 🚨 barInset and gaps_out are ONE number in two files, and the gap BELOW
+    // the bar is barInset + gaps_out (8) — the compositor adds the margin on
+    // top of the exclusive zone, see Bar.qml. So changing one without the other
+    // both misaligns the bar's side edges and moves the gap under it.
     readonly property int barHeight: 40
-    readonly property int barInset: 8
+    readonly property int barInset: 4
     // Icon buttons at rest, and the height of a workspace pill.
     readonly property int chipSize: 26
     readonly property int pillHeight: 24

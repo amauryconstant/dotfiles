@@ -136,9 +136,32 @@ source for the codepoints; its output is the thing to transcribe.
 
 🚨 **`ExclusionMode.Auto` only reserves the margins of edges that are actually anchored.**
 A floating bar is anchored `left`/`right`/`top` with a margin on all four sides, so Auto
-reserves `height + topMargin` and windows tile *under* the bottom inset. Set `exclusiveZone`
-explicitly to `barHeight + inset * 2`; assigning it also switches the mode to
-`ExclusionMode.Normal`, which is what you want. See `bar/Bar.qml`.
+reserves more than the bar occupies. Assigning `exclusiveZone` also switches the mode to
+`ExclusionMode.Normal`, which is what you want.
+
+🚨 **The compositor ADDS the margin, so the zone is not the bar's bottom edge.** An
+exclusive zone is measured from the surface's own edge, so Hyprland reserves
+`margins.top + exclusiveZone`. Verified live 2026-09-10: `margins.top` 4 with a zone of 44
+gave `hyprctl monitors` `reserved=[0,48,0,0]` — four PAST the bar's own bottom edge, not at
+it. `barHeight` alone is what reserves exactly the bottom edge and leaves `gaps_out` as the
+only gap below the bar.
+
+This tree deliberately does **not** do that: `exclusiveZone` is `barHeight + barInset`, so
+the inset is counted twice and the gap under the bar is `barInset + gaps_out` (8) against
+the 4 its side edges get. Both were rendered and compared on 2026-09-10 and the asymmetric
+one was chosen — the bar reads as separated from the windows rather than as one more tile.
+So a symmetric-looking `barHeight` here is a *change*, not a fix. See `bar/Bar.qml`.
+
+Check it against the compositor, never against the QML: `hyprctl monitors -j` for `reserved`,
+`hyprctl layers` for the bar's own `xywh`, and `hyprctl clients -j` for the first tiled
+window's `at` — which is inside the 2px border, so it reads `gaps_out + border_size`.
+
+🚨 **`barInset` and `gaps_out` are one number in two files** — `Config.qml.tmpl` and
+`hypr/conf/general.lua` (plus its `.conf` twin). The inset is what aligns the bar's side
+edges with every window's, and per the paragraph above the gap under the bar is
+`barInset + gaps_out`, so neither the top gap nor the bottom one can be changed from the
+QML side alone. Both are 4 today; `gaps_in` is half that, keeping the screen-edge gap equal
+to the window-to-window gap.
 
 🚨 **A `PopupWindow` anchored to an item covers that item at the default `edges`.**
 `PopupAnchorState` defaults to `edges = Top | Left`, `gravity = Bottom | Right`
@@ -374,7 +397,7 @@ for chips and rows, `radiusPanel` 12 for surfaces, `radiusPill` 999. The four-st
 tree used to carry (plus a fifth at 14 on the power tiles and a sixth at 6 on tooltips) was
 inventing distinctions no surface needs — a tooltip and a chip are the same kind of thing.
 Spacing is `gap` 8 and `padTight`/`pad`/`padLoose` 12/16/24; `rowH` 34 is a list row and
-`launcherRowHeight` 48 is a two-line one. `barHeight` 40, `barInset` 8, `chipSize` 26,
+`launcherRowHeight` 48 is a two-line one. `barHeight` 40, `barInset` 4, `chipSize` 26,
 `pillHeight` 24.
 
 🚨 **`hitMin` 32 does not scale with anything.** It is a pointer fact, not a density
