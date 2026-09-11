@@ -6,12 +6,25 @@
 local home = os.getenv("HOME")
 local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
 
+-- Drop cached modules so `hyprctl reload` picks up edits (require() caches in
+-- package.loaded). conf.d uses bare names — require_all clears those.
+for name in pairs(package.loaded) do
+	for _, root in ipairs({ "conf", "themes", "dotfiles", "monitors" }) do
+		if name == root or name:sub(1, #root + 1) == root .. "." then
+			package.loaded[name] = nil
+			break
+		end
+	end
+end
+
 -- Resolve require() for conf modules, hyprsplit, themes, and dotfiles extension.
+-- Rebuild from a pristine copy; this file re-runs on every reload.
+_G.__hypr_base_package_path = _G.__hypr_base_package_path or package.path
 package.path = table.concat({
 	config .. "/hypr/?.lua",
 	config .. "/hypr/?/init.lua",
 	config .. "/?.lua",
-	package.path,
+	_G.__hypr_base_package_path,
 }, ";")
 
 local require_all = require("conf.require_all")
@@ -19,7 +32,7 @@ require("conf.helpers") -- defines global o.*
 
 -- Monitors
 {{ if eq .chassisType "desktop" }}
-require_all.if_exists(config .. "/hypr/monitors.lua", "monitors")  -- HyprDynamicMonitors output (~/.config/hypr/monitors.lua)
+require_all.if_exists(config .. "/hypr/monitors.lua", "monitors", { reload = true }) -- HyprDynamicMonitors output (~/.config/hypr/monitors.lua)
 {{ end }}
 require("conf.monitor") -- laptop fallback / auto-detect
 
@@ -33,17 +46,17 @@ require("conf.animations")
 require("conf.autostart")
 
 -- Theme border-color override (must load after conf.general)
-require_all.if_exists(config .. "/themes/current/hyprland.lua", "themes.current.hyprland")
+require_all.if_exists(config .. "/themes/current/hyprland.lua", "themes.current.hyprland", { reload = true })
 
 -- Keybindings (find+sort, all 11 files)
-require_all.files(config .. "/hypr/conf/bindings", "conf.bindings")
+require_all.files(config .. "/hypr/conf/bindings", "conf.bindings", { reload = true })
 
 -- Window rules
 require("conf.windowrules")
 
 -- conf.d overrides (literal dot in dir name → add to package.path, load bare names)
 package.path = config .. "/hypr/conf.d/?.lua;" .. package.path
-require_all.files(config .. "/hypr/conf.d", nil)
+require_all.files(config .. "/hypr/conf.d", nil, { reload = true })
 
 -- User extension point (empty by default)
-require_all.if_exists(config .. "/dotfiles/extra-bindings.lua", "dotfiles.extra-bindings")
+require_all.if_exists(config .. "/dotfiles/extra-bindings.lua", "dotfiles.extra-bindings", { reload = true })
