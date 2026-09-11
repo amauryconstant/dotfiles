@@ -19,6 +19,8 @@ return {
         splitbelow = true,   -- new horizontal splits open below
         undofile = true,     -- persist undo history across sessions
         undolevels = 10000,  -- large undo history (VS Code-like)
+        -- terminal title: cwd only (default %t leaks toggleterm buffer names like "30892:lazygit ;#toggleterm#101")
+        titlestring = "nvim: %{fnamemodify(getcwd(), ':t')}",
       },
     },
     mappings = {
