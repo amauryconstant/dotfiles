@@ -32,9 +32,9 @@ _check_aur_cached() {
 		fi
 	fi
 
-	# Not in cache or stale - query AUR
+	# Not in cache or stale - query (official repos + AUR, matches batch path's paru -Si)
 	local result
-	if timeout 5 paru -Si --aur "$package" &>/dev/null; then
+	if timeout 5 paru -Si "$package" &>/dev/null; then
 		result="exists"
 	else
 		result="not_found"
