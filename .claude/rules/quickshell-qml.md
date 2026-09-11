@@ -298,10 +298,27 @@ Two facts behind it, both measured:
   and the one directory-triggered reload can land mid-apply, re-reading files that have not
   been replaced yet. (The mid-apply ordering is inference; the stale generation is not.)
 
-So an apply that changes this tree ends with **`quickshell -c dotfiles kill`** and a relaunch
-through `desktop/quickshell-toggle`, which starts the shell without toggling the surface off.
-Never trust the reload, and never verify by looking at the files — verify with
+The watcher is therefore **off in the deployed shell**: `quickshell.service` sets
+`Environment=QS_DISABLE_FILE_WATCHER=1` (`qmlglobal.cpp:67`), the same call Omarchy makes in
+`bin/omarchy-launch-shell` for the same reason — an upgrade rewriting the tree must not reload
+against a half-written one. The facts above are why it is off, not a behaviour to work around.
+
+So an apply that changes this tree ends with **`systemctl --user restart quickshell.service`**,
+which is now the only reload path. Never verify by looking at the files — verify with
 `quickshell -c dotfiles ipc show` (is the new target there?) or `hyprctl layers`.
+
+🚨 **Nothing else may launch the shell.** A bare `quickshell -c dotfiles` is unsupervised, and a
+second one racing the unit is worse than none. `desktop/quickshell-toggle` starts the unit
+(`reset-failed` first, since a shell that exhausted `StartLimitBurst` refuses `start` at exactly
+the moment the user has no bar left to ask with). `quickshell -c dotfiles kill` is a *restart* now,
+not a stop — `Restart=always` brings it back in 2s, because a clean exit still leaves the desktop
+with no bar, no launcher and no notification daemon.
+
+Quickshell also re-execs **itself** from its signal handlers (`src/crash/handler.cpp:148-156`), so
+an ordinary segfault never reaches systemd. The unit exists for what that cannot cover: Qt leaving
+through `_exit()` on a lost Wayland connection, a crash within 10s of launch (its own crash-loop
+guard calls `exit(-1)` instead of relaunching, `src/launch/main.cpp:68`), `SIGKILL`, and a QML tree
+that fails to load at all.
 
 🚨 **`ScreencopyView` needs a RENDERED window, and `captureFrame()` needs a ready context.**
 Both failures are quiet. Put the view anywhere that is not actually being painted — inside a

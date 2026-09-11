@@ -25,6 +25,10 @@ services:
       enabled: true
       start: true
       requires_command: hypridle
+    - name: quickshell.service # desktop shell; its ConditionPathExists keeps it inert on the Waybar branch
+      enabled: true
+      start: true
+      requires_command: quickshell
     - name: llama-swap.service
       enabled: true
       start: false

@@ -17,7 +17,16 @@
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
   Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
   history. **2026-09-10**: the seven bar popovers (page 06). Page 10's *native nested* menu is
-  designed and **not built**
+  designed and **not built**. **2026-09-12**: supervision — the shell is a systemd user unit
+- 🚨 **It runs as `quickshell.service`, and nothing else may launch it.** `systemctl --user
+  restart quickshell.service` is the reload path; `chezmoi apply` does not reload anything, and
+  the file watcher is off in the unit on purpose. `quickshell -c dotfiles kill` is a restart, not
+  a stop (`Restart=always`, 2s). Quickshell re-execs itself on a crash *signal*
+  (`src/crash/handler.cpp`), so the unit is there for what that cannot reach — `_exit()` on a lost
+  Wayland connection, a crash inside 10s of launch, `SIGKILL`, a QML tree that will not load. The
+  budget is 5 restarts per 60s, then `failed`; `SUPER+B` (`desktop/quickshell-toggle`) clears it
+  and starts again, which is the only route back once the bar, the launcher **and the notification
+  daemon** are all gone with it. See `.claude/rules/quickshell-qml.md`
 - 🚨 **Colours are SEMANTIC ROLES, all the way down.** `themes/*/colors.sh` was renamed on
   2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
   six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a

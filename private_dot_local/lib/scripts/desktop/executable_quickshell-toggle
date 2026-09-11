@@ -83,9 +83,15 @@ if shell_running; then
     exit $?
 fi
 
-# setsid detaches from the Hyprland dispatcher's transient shell, so the shell
-# outlives the keypress that started it.
-setsid quickshell -c "$CONFIG" >/dev/null 2>&1 &
+# Through systemd, never a bare launch: a shell started any other way is
+# unsupervised, which is the whole point of quickshell.service.
+#
+# reset-failed first. Once the unit exhausts StartLimitBurst (5 restarts in
+# 60s) systemd refuses `start` until the failure is cleared -- and at that
+# moment there is no bar, no launcher and no notification daemon left, so this
+# keybinding is the only route back.
+systemctl --user reset-failed quickshell.service 2>/dev/null || true
+systemctl --user start quickshell.service
 
 # Report the state actually reached. Polling rather than a flat sleep: startup
 # is usually well under a second, but a cold theme read can push it out.

@@ -1,0 +1,44 @@
+[Unit]
+Description=Quickshell desktop shell (bar, OSD, launcher, notifications)
+Documentation=https://quickshell.org/docs/
+# Started with the graphical session, not default.target: a service started
+# before Hyprland's dbus-update-activation-environment runs snapshots an env
+# without WAYLAND_DISPLAY/HYPRLAND_INSTANCE_SIGNATURE, and the shell's Hyprland
+# module then binds to nothing. graphical-session.target is already ordered
+# After=wayland-session-waitenv.service under uwsm ("Wait for WAYLAND_DISPLAY
+# and other variables"), so this ordering alone is enough — no env probe, which
+# would leave the shell down with no retry if it lost the race.
+After=graphical-session.target
+# The session going down stops this unit instead of restarting it, which is what
+# Omarchy's bin/omarchy-launch-shell needs an explicit compositor_alive() probe
+# for: a relaunch into a tearing-down session burns the attempt budget.
+PartOf=graphical-session.target
+# Inert on the Waybar branch: .chezmoiignore drops .config/quickshell when
+# features.quickshell_shell is off, so the condition fails and the unit is
+# skipped rather than restart-looping. This is what keeps "flip the flag and
+# apply" the whole rollback, with no second gate to keep in sync.
+ConditionPathExists=%h/.config/quickshell/dotfiles/shell.qml
+# Omarchy's give-up budget (5 relaunches per rolling 60s), as directives.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# NOT -d: it forks and setsid()s, so Type=simple would see the parent exit.
+# NOT -n either: --no-duplicate exits 0, which Restart=always would spin on.
+ExecStart=/usr/bin/quickshell -c dotfiles
+# chezmoi replaces files by rename, which a per-file watch does not survive, and
+# a directory-triggered reload can land mid-apply on a half-written tree.
+# Restarting this unit is now the only reload path, so the watcher is dead
+# weight that can only misfire. See .claude/rules/quickshell-qml.md.
+Environment=QS_DISABLE_FILE_WATCHER=1
+# always, not on-failure: a clean exit still leaves the user with no bar, no
+# launcher and no notification daemon. Quickshell re-execs itself from its own
+# signal handlers (src/crash/handler.cpp), so this covers what that cannot —
+# Qt leaving through _exit() on a lost Wayland connection, a crash within 10s of
+# launch (its own crash-loop guard exits instead of relaunching), and SIGKILL.
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

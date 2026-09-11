@@ -58,4 +58,7 @@ o.exec_on_start("sleep 5 && ~/.local/lib/scripts/core/hook-runner session-start"
 --   DO NOT add o.exec_on_start("swaync"); conflicts with SystemdService=.
 -- HyprDynamicMonitors    : systemctl --user enable hyprdynamicmonitors-prepare.service
 -- hyprwhenthen           : systemctl --user enable hyprwhenthen.service
+-- Quickshell shell       : systemctl --user enable quickshell.service — supervised because it
+--   owns the bar, the OSD, the launcher AND org.freedesktop.Notifications, so an unsupervised
+--   exec_on_start loses all of them at once. Reload with `systemctl --user restart`.
 -- ============================================================================

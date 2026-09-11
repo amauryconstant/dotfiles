@@ -11,7 +11,11 @@
 -- Roadmap: _plans/archive/QUICKSHELL_SHELL.md
 -- ============================================================================
 
-o.exec_on_start("quickshell -c dotfiles")
+-- NOT autostarted here. The shell owns org.freedesktop.Notifications on top of
+-- the bar, the OSD and the launcher, so an unsupervised exec_on_start leaves
+-- the desktop without all of them the moment it dies. It runs as
+-- systemd/user/quickshell.service instead:
+--   systemctl --user restart quickshell.service   (the only reload path)
 
 -- Goes through the script, not a raw `ipc call`: IPC only reaches a RUNNING
 -- instance, so a direct binding silently did nothing whenever the bar was

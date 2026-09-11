@@ -1,6 +1,6 @@
 # Desktop shell — surface inventory
 
-**Date**: 2026-09-03 · **Statuses refreshed**: 2026-09-11
+**Date**: 2026-09-03 · **Statuses refreshed**: 2026-09-12
 **Purpose**: the complete list of surfaces a desktop shell owns here, described by *what they are
 made of* and *how they must behave* — not by how they are drawn or built.
 
@@ -420,7 +420,11 @@ displacing the existing one — and a crash then leaves *none*, breaking every p
 until the shell restarts. Deferred until the shell has a crash-recovery story; keep designing it.
 The identity-choice case is a real branch the current drawings assume away.
 
-**Status**: Deferred, weakly. Design work should continue.
+**Status**: Deferred, weakly. Design work should continue. **The stated blocker is answered**
+as of 2026-09-12: the shell runs as `quickshell.service`, `Restart=always` with a 5-per-60s budget,
+and `SUPER+B` clears a spent budget. Omarchy v4 ships its polkit agent as an in-process Quickshell
+plugin (`shell/plugins/polkit/`, `keepLoaded: true`), so the shape is proven — what remains open is
+this entry's own identity-choice branch.
 
 ### 22. Lock screen
 
@@ -435,7 +439,13 @@ most likely to be seen at a glance from across a room.
 The design must decide how much is shown on a locked screen — every notification preview is a
 privacy decision. Multi-monitor behaviour needs a rule: one prompt or one per screen.
 
-**Status**: Deferred.
+**Status**: Deferred — and `Restart=always` alone makes this one WORSE, not better. `ext-session-lock`
+outlives its client, so a restarted shell comes back holding no lock and the session sits behind
+Hyprland's failsafe with nothing to authenticate against. Omarchy needs three pieces for that:
+`allow_session_lock_restore` in the compositor config, a stranded-lock probe that reads
+`solitaryBlockedBy` from `hyprctl -j monitors` (`bin/omarchy-hyprland-session-locked`), and a
+re-lock step in its restart path (`bin/omarchy-restart-shell`) that refuses to restart a *live*
+locker while recovering a stranded one. That is the prerequisite for this entry, not supervision.
 
 ### 23. Greeter
 

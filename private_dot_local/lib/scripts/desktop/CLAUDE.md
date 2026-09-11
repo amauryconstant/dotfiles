@@ -215,7 +215,10 @@ theme-menu                        # Interactive menu (Quickshell picker)
 ## Appearance & Style
 
 **Bar**: `quickshell-toggle` (bar, launcher, power, notifications, clipboard, overview, popovers)
-— the active shell. `waybar-toggle`, `waybar-style` drive the fallback bar
+— the active shell. `waybar-toggle`, `waybar-style` drive the fallback bar.
+🚨 `quickshell-toggle` **starts `quickshell.service`**, never a bare `quickshell` — a shell
+launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
+because that is exactly the state in which the user has no bar left to ask with
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
 **Night light**: nightlight-toggle, nightlight-config
 **Workspace gaps**: workspace-gaps-toggle, workspace-gaps-reset
