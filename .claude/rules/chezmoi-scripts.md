@@ -66,7 +66,7 @@
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
-| sync_packages | Package sync (Arch + Flatpak) | First install AND `packages.yaml` changes |
+| sync_packages | Package sync (Arch + Flatpak); also auto-seeds the AUR supply-chain trust DB on the first successful sync (bootstrap → established, equivalent to `package-manager approve --seed`) | First install AND `packages.yaml` changes |
 
 **Timing**: Runs BEFORE file application (ensures packages exist for config scripts)
 

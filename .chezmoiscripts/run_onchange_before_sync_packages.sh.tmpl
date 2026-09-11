@@ -260,6 +260,39 @@ else
 fi
 
 # ============================================================
+# Supply-chain tripwire: auto-seed trust DB on first successful sync
+# ============================================================
+# TRIPWIRE_BOOTSTRAP (computed above, before any package changed) let every
+# AUR package through trust-on-first-use so fresh provisioning wasn't
+# bricked. Now that those exact packages installed cleanly, record their
+# build-file hashes — the same transition 'package-manager approve --seed'
+# performs manually, run automatically exactly once. Only fires when this
+# run started in bootstrap mode, so it never re-seeds (and silently
+# approves) a legitimately new or changed package on an already-seeded host.
+
+if [ "$TRIPWIRE_BOOTSTRAP" -eq 1 ] && [ -n "$AUR_PKGS" ]; then
+    {{ includeTemplate "log_step" "Seeding AUR supply-chain trust database (first sync)..." }}
+    mkdir -p "$(dirname "$TRIPWIRE_DB")/pkgbuilds"
+    [ -f "$TRIPWIRE_DB" ] || echo "approved: {}" >"$TRIPWIRE_DB"
+    SEEDED_COUNT=0
+    for pkg in $AUR_PKGS; do
+        case "$pkg" in
+            *-debug) continue ;;
+        esac
+        blob=$(_tripwire_blob "$pkg")
+        [ -z "$blob" ] && continue
+        hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
+        ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        printf '%s\n' "$blob" >"$(dirname "$TRIPWIRE_DB")/pkgbuilds/$pkg.snapshot"
+        NAME="$pkg" HASH="$hash" TS="$ts" yq eval -i \
+            '.approved[env(NAME)].hash = env(HASH) | .approved[env(NAME)].at = env(TS)' \
+            "$TRIPWIRE_DB"
+        SEEDED_COUNT=$((SEEDED_COUNT + 1))
+    done
+    {{ includeTemplate "log_success" "Seeded $SEEDED_COUNT AUR package(s) into the trust database" }}
+fi
+
+# ============================================================
 # Install Flatpak packages
 # ============================================================
 

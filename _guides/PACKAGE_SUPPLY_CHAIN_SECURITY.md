@@ -38,9 +38,11 @@ package appears on a seeded host), the build is **held** and a diff is printed:
 3. If suspicious: do **not** approve. Investigate the package's AUR page / maintainer history first.
 
 Bootstrap note: on a fresh machine (unseeded hash DB) AUR packages install trust-on-first-use so
-provisioning isn't bricked. Run `package-manager approve --seed` **once after deploy** to record
-current build files and switch to enforcing mode. Re-seed if the hash recipe (`_tripwire_fetch`)
-ever changes.
+provisioning isn't bricked. `run_onchange_before_sync_packages.sh.tmpl` auto-seeds the DB itself
+right after the first successful sync — the same effect as `package-manager approve --seed`, run
+once automatically instead of by hand. Only fires while the DB is still unseeded, so it never
+re-seeds (and silently approves) a package on an already-established host. Re-seed manually with
+`package-manager approve --seed` if the hash recipe (`_tripwire_fetch`) ever changes.
 
 ## Signature policy
 

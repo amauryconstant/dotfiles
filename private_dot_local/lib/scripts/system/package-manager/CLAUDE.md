@@ -224,7 +224,9 @@ packages:
 the build); `sync-pacman.sh` `_sync_handle_downgrade` (gate AUR downgrades); and the self-contained
 `run_onchange_before_sync_packages.sh.tmpl` (inline gate sharing the same DB — it cannot source lib/,
 runs before file application). **The inline blob recipe must stay byte-identical to
-`_tripwire_fetch`** or hashes diverge and every AUR package falsely reads as "changed".
+`_tripwire_fetch`** or hashes diverge and every AUR package falsely reads as "changed". That same
+script also auto-seeds the DB inline (mirrors `_tripwire_seed`, keep byte-identical for the same
+reason) — see the bootstrap-aware paragraph below.
 
 **New-package gate (bootstrap-aware)**: `_tripwire_is_bootstrap` distinguishes two states.
 - **Bootstrap** = DB file absent OR `.approved` empty → trust-on-first-use (fresh-machine
@@ -232,9 +234,13 @@ runs before file application). **The inline blob recipe must stay byte-identical
 - **Established** = DB seeded (non-empty) → an AUR package absent from the DB is genuinely NEW and is
   **BLOCKED** until `package-manager approve <pkg>` (same UX as a changed PKGBUILD). This closes the
   "add a package to `packages.yaml` → builds unreviewed" hole on any provisioned machine.
-Run `package-manager approve --seed` **once after deploy** to record current build files of installed
-AUR packages (`pacman -Qmq`, excl. `*-debug`) — this is also what flips the host from bootstrap to
-established. **Re-seed after any change to the hash recipe** (`_tripwire_fetch`) — old hashes go stale.
+`run_onchange_before_sync_packages.sh.tmpl` auto-seeds the DB itself right after the first
+successful sync completes in bootstrap mode (same effect as `package-manager approve --seed`, run
+once automatically instead of by hand) — this is what flips the host from bootstrap to established.
+It only fires while `TRIPWIRE_BOOTSTRAP` was true at the start of that run, so it never re-seeds
+(and silently approves) a package on an already-established host. Run `package-manager approve
+--seed` manually to **re-seed after any change to the hash recipe** (`_tripwire_fetch`) — old
+hashes go stale — or on a host that was provisioned before this auto-seed existed.
 
 **Trust-tier install split**: official/chaotic packages (`pacman -Si` hit) install via
 `pacman -S --needed --noconfirm` (no local PKGBUILD); only true AUR builds through paru
