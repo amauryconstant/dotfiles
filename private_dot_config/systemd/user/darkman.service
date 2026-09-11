@@ -2,6 +2,11 @@
 Description=darkman daemon for solar-based theme switching
 Documentation=man:darkman(1)
 After=graphical-session.target
+# Started with the graphical session, not default.target: a service started
+# before Hyprland's dbus-update-activation-environment runs snapshots an env
+# without WAYLAND_DISPLAY/HYPRLAND_INSTANCE_SIGNATURE, and every reload the
+# transition scripts fire (hyprctl reload, quickshell ipc) then fails silently.
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
@@ -10,4 +15,4 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
