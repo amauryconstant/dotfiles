@@ -386,6 +386,18 @@ reactive for free. `heuristicLookup()` is also weaker than it sounds: it is `byI
 an exact `StartupWMClass` match, nothing more, so `ghostty` does **not** find
 `com.mitchellh.ghostty.desktop` and `org.xfce.thunar` does not find `thunar.desktop`.
 
+🚨 **`HyprlandToplevel.lastIpcObject` is EMPTY for every window opened after the shell
+started.** It is only filled by a `clients` fetch — `connection.cpp:92` at startup,
+`refreshToplevels()`, and the `configreloaded` event. The `openwindow` handler parses the class
+out of the event (`connection.cpp:459`) and then throws it away: `updateInitial()` takes address,
+title and workspace only and never touches `bLastIpcObject`. So `lastIpcObject.class` reads `""`
+for the rest of the session and a glyph keyed off it draws its fallback — which looked exactly
+like "the bar is right after a reload and wrong after a boot". Read `toplevel.wayland.appId`
+instead: same string (verified against `hyprctl clients` for firefox, ghostty and slack),
+reactive, no IPC round trip, though it arrives a beat after the window. Measured 2026-09-11 with
+a bare probe config — a window opened while it ran reported `class=""`, `appId=com.mitchellh.ghostty`.
+Geometry (`at`/`size`) has no such substitute and is stale for the same reason.
+
 🚨 **`HyprlandMonitor.width`/`height` are PHYSICAL pixels; window `at`/`size` are LOGICAL.**
 `ipc/monitor.cpp:41` copies them verbatim out of the `hyprctl monitors` JSON, so the trap
 `hyprland-lua.md` records for shell scripts applies identically in QML. Anything projecting a
