@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+# Script: run_once_after_004_clone_wallpapers_repo.sh.tmpl
+# Purpose: Clone the wallpapers repo (theming source for random-wallpaper / theme rotation)
+# Requirements: GitLab SSH key already decrypted (private_dot_ssh/encrypted_private_gitlab.age)
+# Execution: Runs AFTER file application, BEFORE 005_enable_user_timers — that
+#            script's first wallpaper-cycle trigger needs this repo to already
+#            exist. Numbered 004 deliberately (existing 004-011 shifted to
+#            005-012 to make room) rather than appended at the end, where the
+#            ordering would have been wrong.
+
+{{ includeTemplate "log_start" "Cloning wallpapers repository..." }}
+
+set -euo pipefail
+
+WALLPAPERS_DIR="$HOME/.config/wallpapers"
+SSH_KEY="$HOME/.ssh/gitlab"
+REPO_SSH="git@gitlab.com:amoconst/wallpapers.git"
+
+# Idempotency: skip if already cloned
+if [ -d "$WALLPAPERS_DIR" ]; then
+    {{ includeTemplate "log_success" "Wallpapers repo already present at ~/.config/wallpapers, skipping" }}
+    {{ includeTemplate "log_complete" "Wallpapers clone check complete" }}
+    exit 0
+fi
+
+# Check if SSH key exists (encrypted key is decrypted by chezmoi during file application)
+if [ ! -f "$SSH_KEY" ]; then
+    {{ includeTemplate "log_warning" "GitLab SSH key not found at ~/.ssh/gitlab" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "Theming (random-wallpaper, theme rotation) needs the wallpapers repo." }}
+    {{ includeTemplate "log_info" "Once the SSH key is available, clone it manually:" }}
+    {{ includeTemplate "log_info" "  git clone git@gitlab.com:amoconst/wallpapers.git ~/.config/wallpapers" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_skip" "Skipping wallpapers clone - SSH key not ready" }}
+    exit 0
+fi
+
+# Verify SSH key permissions
+chmod 600 "$SSH_KEY" 2>/dev/null || true
+
+# Verify SSH key is configured and working (explicitly specify key to avoid config dependency)
+{{ includeTemplate "log_step" "Verifying SSH key access to GitLab..." }}
+
+if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -T git@gitlab.com 2>&1 | grep -qiE "welcome|successfully authenticated"; then
+    {{ includeTemplate "log_success" "SSH key authenticated successfully with GitLab" }}
+else
+    {{ includeTemplate "log_warning" "SSH key not configured or not added to GitLab yet" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_info" "Once SSH access works, clone the wallpapers repo manually:" }}
+    {{ includeTemplate "log_info" "  git clone git@gitlab.com:amoconst/wallpapers.git ~/.config/wallpapers" }}
+    {{ includeTemplate "log_info" "" }}
+    {{ includeTemplate "log_skip" "Skipping wallpapers clone - SSH not ready" }}
+    exit 0
+fi
+
+{{ includeTemplate "log_step" "Cloning wallpapers repository..." }}
+
+if git clone "$REPO_SSH" "$WALLPAPERS_DIR"; then
+    {{ includeTemplate "log_success" "Wallpapers repository cloned to ~/.config/wallpapers" }}
+else
+    {{ includeTemplate "log_error" "Failed to clone wallpapers repository" }}
+    {{ includeTemplate "log_info" "Retry manually: git clone git@gitlab.com:amoconst/wallpapers.git ~/.config/wallpapers" }}
+    exit 1
+fi
+
+{{ includeTemplate "log_complete" "Wallpapers repository ready" }}

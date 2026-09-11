@@ -34,9 +34,11 @@
 3. **File application**
    - Chezmoi applies configs
 
-4. **`run_once_after_*`** (001-007, 009-011, 999)
-   - 001-007, 009-011: Configuration tasks
-   - 007: **Hyprland config validation** (post-install safety check)
+4. **`run_once_after_*`** (001-008, 010-012, 999)
+   - 001-003: Configuration tasks
+   - 004: Clone wallpapers repo via SSH (theming source) — must precede 005, whose initial wallpaper-cycle trigger needs the repo already present
+   - 005-008, 010-011: Configuration tasks
+   - 008: **Hyprland config validation** (post-install safety check)
    - 999: SSH remote switch
 
 5. **`run_onchange_after_*`** (hash-based, any order)
@@ -77,14 +79,17 @@
 | 001 | configure_developer_tools | CLI generation, git tools |
 | 002 | configure_system_services | System services (Docker, etc.) |
 | 003 | setup_network_printer | Network printer |
-| 004 | enable_user_timers | Enable systemd timers (wallpaper, health, backup) |
-| 005 | configure_boot_system | Boot system (Plymouth, GRUB) |
-| 006 | setup_darkman | Darkman solar auto-theme service |
-| 007 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
-| 009 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |
-| 010 | setup_optional_services | Voxtype STT + Restic home backup init (skips if not installed) |
-| 011 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
+| 004 | clone_wallpapers_repo | Clone `~/.config/wallpapers` via SSH (theming source for random-wallpaper); must run before 005, whose initial wallpaper-cycle trigger needs the repo present |
+| 005 | enable_user_timers | Enable systemd timers (wallpaper, health, backup) |
+| 006 | configure_boot_system | Boot system (Plymouth, GRUB) |
+| 007 | setup_darkman | Darkman solar auto-theme service |
+| 008 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
+| 010 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |
+| 011 | setup_optional_services | Voxtype STT + Restic home backup init (skips if not installed) |
+| 012 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
 | 999 | switch_to_ssh_remote | SSH remote switch |
+
+**Renumbering note (2026-09-11)**: 004-011 shifted to 005-012 to insert `clone_wallpapers_repo` at 004 with correct ordering. Renumbering an already-executed `run_once_*` script makes chezmoi treat it as new — all 8 shifted scripts (005-012) re-run once on the next `chezmoi apply` on any machine that had already provisioned under the old numbering. All are idempotent (checked individually before this change): `configure_boot_system` (006) guards every step and skips the `mkinitcpio -P` rebuild when nothing changed; `migrate_xdg_directories` (012) no-ops when source directories are already migrated; the rest re-enable/re-check already-satisfied state.
 
 ### run_onchange_after_*
 

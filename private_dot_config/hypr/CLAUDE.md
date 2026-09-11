@@ -90,7 +90,7 @@ $inactiveBorder = rgba(6e6a86aa)  # muted (fg-muted semantic)
 
 `hyprctl reload`. ⚠️ `Super+Shift+R` is documented as the reload key in `hyprland.conf.tmpl` and
 `dotfiles/extra-bindings.conf`, but **no such binding exists** anywhere in the repo — verified with
-`grep -rE 'bind[a-z]* *= *[^,]*, *R,' private_dot_config/`. Either add it or drop the claim. `post_install` script `run_once_after_007_validate_hyprland_config` validates config after apply. Live-test a value without reloading via `hyprctl keyword general:gaps_in 5`.
+`grep -rE 'bind[a-z]* *= *[^,]*, *R,' private_dot_config/`. Either add it or drop the claim. `post_install` script `run_once_after_008_validate_hyprland_config` validates config after apply. Live-test a value without reloading via `hyprctl keyword general:gaps_in 5`.
 
 ## Integration Points
 
