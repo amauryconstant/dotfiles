@@ -257,7 +257,8 @@ packages:
       conflicts: []
       post_install_hook: ""
       packages:
-        - llama.cpp-bin # llama.cpp with NVIDIA CUDA acceleration
+        - llama-cpp # llama.cpp inference (official repo; llama.cpp-bin AUR pkg deleted upstream, superseded by this)
+        - ggml-cuda # NVIDIA CUDA backend for llama-cpp (dlopen'd at runtime, official repo)
         - llama-swap-bin # on-demand multi-model proxy (AUR, binary)
 
     # ============================================================
