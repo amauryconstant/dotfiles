@@ -26,6 +26,15 @@ hl.config({
 		-- hover_icon_on_border = true,
 	},
 
+	-- Misc ----------------------------------------------------------------
+	misc = {
+		-- ext-session-lock outlives its client: when a locker dies the compositor
+		-- keeps the failsafe up and refuses a replacement, which then needs a TTY
+		-- to clear. This lets a fresh locker re-acquire the existing lock instead.
+		-- desktop/session-locked detects that case; desktop/immediate-lock acts on it.
+		allow_session_lock_restore = true,
+	},
+
 	-- Dwindle layout (binary tree tiling) ---------------------------------
 	-- https://wiki.hypr.land/Configuring/Dwindle-Layout/
 	dwindle = {

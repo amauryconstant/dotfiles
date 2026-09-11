@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+# Script: session-locked
+# Purpose: Report whether the compositor holds an ext-session-lock
+# Requirements: Arch Linux, hyprctl, jaq
+# Usage: session-locked  (no output; the answer is the exit status)
+#
+# Exit: 0 locked · 1 unlocked · 2 undetermined
+#
+# Hyprland reports no lock state directly. An active ext-session-lock is one of
+# the reasons a monitor cannot go solitary, so it shows up as LOCK in
+# solitaryBlockedBy -- and it STAYS there once the lock's client has died, which
+# is the case worth detecting: a stranded lock leaves the session behind the
+# compositor's failsafe with nothing to authenticate against.
+#
+# Undetermined is a real third answer, not an error. Hyprland stops at the first
+# blocking reason, so a monitor that has no workspace yet reports WORKSPACE and
+# never gets as far as the lock -- a missing LOCK there means the question was
+# never asked. Callers that branch only on success treat 2 as unlocked; a caller
+# that retries (the shell's stranded-lock probe) must not treat it as an answer.
+#
+# Adapted from Omarchy's bin/omarchy-hyprland-session-locked.
+
+monitors=$(hyprctl -j monitors 2>/dev/null) || exit 2
+
+state=$(printf '%s' "$monitors" | jaq '
+  def blockers: .solitaryBlockedBy // [];
+  def readable: blockers | index("WORKSPACE") | not;
+
+  if   any(.[]; blockers | index("LOCK")) then 0
+  elif any(.[]; readable)                 then 1
+  else                                         2
+  end
+' 2>/dev/null)
+
+case "$state" in
+0 | 1) exit "$state" ;;
+*) exit 2 ;;
+esac

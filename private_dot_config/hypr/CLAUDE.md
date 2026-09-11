@@ -29,13 +29,21 @@
 | `plugins.conf` | hyprsplit / plugin config | ❌ No |
 | `environment.conf.tmpl` | Env vars (NVIDIA, Qt/GTK, XDG) | ✅ Yes |
 | `input.conf` | Keyboard, mouse, touchpad | ❌ No |
-| `general.conf` | Layout, gaps, borders, colors | ❌ No |
+| `general.conf` | Layout, gaps, borders, colors, **`misc`** | ❌ No |
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
 | `animations.conf` | Animation curves, timing | ❌ No |
 | `windowrules.conf` | Per-app window behavior | ❌ No |
 | `autostart.conf` | Startup apps (nextcloud, awww, keyring, polkit). **No status bar** — see `conf.d/` below | ❌ No |
 
 `helpers.lua`, `require_all.lua` are Lua-layer infrastructure (inactive).
+
+🚨 **`general` carries the tree's only `misc` block, and it holds one setting:
+`allow_session_lock_restore = true`.** An `ext-session-lock` outlives its client, so a locker that
+dies leaves the compositor's failsafe up and, by default, Hyprland *refuses* a replacement client —
+the session is then unauthenticatable without a TTY. With the option on, a fresh locker re-acquires
+the existing lock. Two consequences, both already handled: `desktop/session-locked` is how that
+stranded state is detected, and `desktop/immediate-lock` had to move from `pidof` to a `flock`,
+because the compositor now accepts the second locker a lost race would spawn.
 
 **Keybinding files** (`conf/bindings/`, sourced by `hyprland.conf`):
 

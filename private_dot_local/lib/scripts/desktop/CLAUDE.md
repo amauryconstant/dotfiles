@@ -320,6 +320,26 @@ lid close suspends the machine unlocked. The inhibitor leaves `before_sleep_cmd`
 **`immediate-lock`** is the single lock entry point (`Super+L`, wlogout, system menu, and
 hypridle's `lock_cmd`). `grace` is a hyprlock **CLI flag** since 0.9.6, not a config key.
 
+🚨 **Its re-entrancy guard is a `flock`, not `pidof hyprlock`.** `hypr/conf/general` now
+sets `misc:allow_session_lock_restore`, so the compositor *accepts* a second locker where it used
+to reject one. A check-then-act guard that loses its race therefore displaces a live lock screen
+out from under whoever is typing into it. The lock file is `$XDG_RUNTIME_DIR/immediate-lock.lock`;
+the descriptor is inherited by the exec'd hyprlock and released only when it exits, so the window
+is closed rather than narrowed. Proven by a stand-in run: held → second invocation exits 0
+having run nothing; released → it runs.
+
+**`session-locked`** answers whether the compositor holds an `ext-session-lock`, by exit status
+only: **0** locked · **1** unlocked · **2** undetermined. Hyprland exposes no lock state, so it
+reads `LOCK` out of `solitaryBlockedBy` in `hyprctl -j monitors` — which stays set after the lock's
+*client* dies, and that stranded case is the one worth detecting: the session then sits behind the
+compositor's failsafe with nothing to authenticate against.
+
+⚠️ **2 is a real third answer, not an error.** Hyprland stops at the first blocking reason, so a
+monitor with no workspace yet reports `WORKSPACE` and never reaches the lock — a missing `LOCK`
+there means the question was never asked. A caller that branches only on success may treat 2 as
+unlocked; a caller that *retries* must not treat it as an answer. Adapted from Omarchy's
+`bin/omarchy-hyprland-session-locked`.
+
 **`idle-sleep`** asks logind `CanSuspendThenHibernate` at runtime rather than trusting
 `boot.hibernation.enabled` — `suspend-then-hibernate` fails outright where hibernation is
 unavailable, leaving the laptop awake and draining. This machine currently answers `"na"`
