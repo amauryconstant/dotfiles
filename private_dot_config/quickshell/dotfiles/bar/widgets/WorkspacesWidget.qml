@@ -112,7 +112,19 @@ BarWidget {
                         font.pixelSize: Config.glyphRow
                         // Subordinate to the number it annotates.
                         opacity: 0.75
-                        text: Config.windowGlyph(button.topWindow?.lastIpcObject?.class ?? "")
+                        // 🚨 The class comes from the WAYLAND handle, never
+                        // from lastIpcObject. Hyprland's `openwindow` event
+                        // carries the class but quickshell drops it —
+                        // connection.cpp calls updateInitial(address, title,
+                        // workspace) and never touches lastIpcObject, which is
+                        // only filled by a `clients` fetch at startup or on
+                        // refreshToplevels(). So every window opened after the
+                        // shell started drew the fallback glyph until the bar
+                        // was reloaded. `wayland.appId` is the same string
+                        // (verified against hyprctl clients for firefox,
+                        // ghostty and slack) and is reactive; it arrives a beat
+                        // after the window, so the fallback shows briefly.
+                        text: Config.windowGlyph(button.topWindow?.wayland?.appId ?? "")
                         visible: button.hasWindows
                     }
                 }

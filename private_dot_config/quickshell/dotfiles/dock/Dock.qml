@@ -155,7 +155,10 @@ PanelWindow {
                     // `thunar` matches `thunar`, from one key either way. Same
                     // rule Config.windowGlyphs already uses for the bar pills.
                     readonly property string classKey: tile.modelData.split(".").pop().toLowerCase()
-                    readonly property var windows: [...Hyprland.toplevels.values].filter(t => (t.lastIpcObject?.class ?? "").toLowerCase().includes(tile.classKey))
+                    // appId, not lastIpcObject.class: the latter is only
+                    // populated by a `clients` fetch, so a window opened after
+                    // the shell started never matches. See WorkspacesWidget.
+                    readonly property var windows: [...Hyprland.toplevels.values].filter(t => (t.wayland?.appId ?? "").toLowerCase().includes(tile.classKey))
                     readonly property string iconSource: tile.entry ? Quickshell.iconPath(tile.entry.icon, true) : ""
 
                     height: Config.dockHeight - Config.dockPad

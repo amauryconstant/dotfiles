@@ -116,7 +116,10 @@ Rectangle {
                         color: Theme.inkPrimary
                         font.family: Config.guiFont
                         font.pixelSize: Config.fontBody * root.detail
-                        text: Config.windowGlyph(win.ipc?.class ?? "")
+                        // appId, not ipc.class — see WorkspacesWidget. The
+                        // geometry above has no such substitute and stays on
+                        // lastIpcObject.
+                        text: Config.windowGlyph(win.modelData?.wayland?.appId ?? "")
                     }
 
                     Text {
