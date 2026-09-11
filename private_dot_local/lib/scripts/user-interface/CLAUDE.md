@@ -35,6 +35,111 @@ Routes `Super+Space` → Wofi dmenu → category script.
 
 **menu-extend hook**: Unknown choices from system-menu are delegated to `~/.config/dotfiles/hooks/menu-extend` (see `dotfiles/CLAUDE.md`).
 
+## Icon Reference
+
+**Criteria**: Material Design (`md-`) primary, outlined variants preferred (Wofi visibility), emoji fallback only if no MD icon fits. Select via `/nerdfonts-search` skill (glyph data: `.claude/skills/nerdfonts-search/references/glyphnames.json`).
+
+### Trigger Menu (menu-trigger)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Capture | 󰄀 | md-camera |
+| Share | 󰒖 | md-share |
+| Toggle | 󰔡 | md-toggle-switch |
+
+**Capture submenu**: 󰹑 md-selection (Smart) · 󰩭 md-selection-drag (Region) · 󰖲 md-window-maximize (Window) · 󰍹 md-monitor (Fullscreen) · 󰨸 md-clipboard-arrow-down (→ Clipboard) · 󰻂 md-record-circle (Screen Record) · 󰕾 md-microphone (+ Audio) · 󰴱 md-eyedropper (Color Picker)
+
+**Share submenu**: 󰈔 md-file-send (File) · 󰨸 md-clipboard-arrow-up (Clipboard)
+
+**Toggle submenu**: 󰛨 md-weather-night (Nightlight) · 󰌾 md-lock (Idle Lock) · 󰘯 md-monitor-dashboard (Waybar) · 󰝘 md-grid-large (Workspace Gaps)
+
+### Style Menu (menu-style)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Switch Theme | 󰔎 | md-theme-light-dark |
+| Wallpaper (Random) | 󰸉 | md-image-multiple |
+| Wallpaper (Set) | 󰋩 | md-image |
+| Edit Hyprland Config | 󰒓 | md-cog |
+
+**Config submenu**: 󰍹 md-monitor (Monitor) · 󱃾 md-application-variable (Environment) · 󰌌 md-keyboard (Input) · 󰒓 md-cog (General) · 󰐮 md-palette-swatch (Decoration) · 󰫢 md-animation (Animations) · 󰌑 md-keyboard-settings (Bindings) · 󰖲 md-window-maximize (Window Rules) · 󰐊 md-application-cog (Autostart)
+
+### Learn Menu (menu-learn)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Keybindings | 󰌌 | md-keyboard |
+| Hyprland Wiki | 󰗚 | md-book-open |
+| Arch Wiki | 󰣇 | md-arch |
+| Chezmoi Docs | 󰈙 | md-file-document |
+| GitHub (Dotfiles) | 󰊤 | md-github |
+
+### Setup Menu (menu-setup)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Audio (PulseAudio) | 󰕾 | md-volume-high |
+| Audio Output Switch | 󰓃 | md-swap-horizontal |
+| Network (WiFi) | 󰖩 | md-wifi |
+| Bluetooth | 󰂯 | md-bluetooth |
+| Power Profile | 󰁹 | md-battery-charging |
+| Displays | 󰍹 | md-monitor |
+| Edit Keybindings | 󰌑 | md-keyboard-settings |
+| Input Devices | 󰖳 | md-mouse |
+
+**Power Profile submenu**: 󰓅 md-speedometer (Performance) · 󰗑 md-scale-balance (Balanced) · 󰁼 md-battery-plus (Power Saver)
+
+### Install Menu (menu-install)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Install Package | 󰏗 | md-package-variant-closed |
+| AI Models (Ollama) | 󰚩 | md-robot |
+| Development Tools | 󰙵 | md-code-braces |
+| Code Editors | 󰘐 | md-application-edit |
+
+**Ollama submenu**: 󰇚 md-download (Pull) · 󰉖 md-format-list-bulleted (List) · 󰆴 md-delete (Remove)
+**Dev Tools submenu**: 󰡨 md-docker · 󱘗 md-language-rust · 󰌠 md-language-python (mise) · 󰎙 md-nodejs (mise) · 󰟓 md-language-go (mise)
+**Code Editors submenu**: 󰨞 md-microsoft-visual-studio-code (VSCode/VSCodium) · 󰕷 md-vim (Neovim Config) · 󱓥 md-dna (Helix)
+
+### Remove Menu (menu-remove)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Remove Package | 󰏖 | md-package-down |
+| Clean Package Cache | 󰃬 | md-broom |
+| Remove Orphans | 󰩺 | md-trash-can |
+| Clean Home Cache | 󰃨 | md-folder-remove |
+
+### Update Menu (menu-update)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| System Update (topgrade) | 󰚰 | md-update |
+| Config Refresh (chezmoi) | 󰑓 | md-refresh |
+| Firmware Update | 󰣐 | md-chip |
+| Sync Time | 󰅐 | md-clock-outline |
+| Update Mirrorlist | 󰒋 | md-mirror |
+
+**Firmware submenu**: 󰋗 md-help-circle (Check) · 󰇚 md-download (Download) · 󰁯 md-arrow-up-bold-circle (Install) · 󰾰 md-devices (Show Devices)
+
+### System Menu (menu-system)
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| Lock | 󰌾 | md-lock |
+| Suspend | 󰤄 | md-power-sleep |
+| Restart | 󰜉 | md-restart |
+| Shutdown | 󰐥 | md-power-off |
+
+### Universal
+
+| Entry | Icon | Glyph Name |
+|-------|------|------------|
+| ← Back | 󰁍 | md-arrow-left |
+
+**Test icon rendering**: `echo "󰀻 Apps|󰗚 Learn|󰈿 Trigger" | tr '|' '\n' | wofi --dmenu`
+
 ## menu-helpers.sh Library
 
 All menu-\* scripts source this library. Three functions:
