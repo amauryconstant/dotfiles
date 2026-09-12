@@ -476,6 +476,12 @@ displacing exactly what the `flock` had just been added to prevent. `session-loc
 both conditions (compositor locked **and** the lock file free), and the QML rules *itself* out
 first with `locked || lockRequested`, since an in-process locker holds no lock file.
 
+**The recovery is measured, not argued.** 2026-09-12, locked session, `systemctl --user kill -s
+SIGKILL quickshell.service` from a TTY: SIGKILL at 13:04:15 (`status=9/KILL`), restart **2s**
+later, `Configuration Loaded` in the same second, and the re-drawn prompt authenticated at
+13:04:22 through `quickshell[9139]: pam.subprocess … config "hyprlock"` — this shell's own
+`PamContext`, not the hyprlock binary. The failsafe was never what the user faced.
+
 **What page `Shell-12-Deferred` settled**, read for the first time on 2026-09-12: nothing ambient
 is drawn — no notification presence, no media, no battery, because "a lock screen that shows
 message previews unlocks the user's mail for anyone walking past", which is stricter than the
