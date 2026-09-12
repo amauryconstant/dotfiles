@@ -368,6 +368,26 @@ takes no lock file, so a caller that can itself be the locker rules that out fir
 failsafe for seconds, self-inflicted. No answer at all means no shell to strand, which is the
 recovery case and must proceed. `reset-failed` first, like `quickshell-toggle`.
 
+🚨 **`before_sleep_cmd` must BLOCK until the lock is real, and `loginctl lock-session` does
+not.** hypridle holds the logind **delay** inhibitor (`systemd-inhibit --list`: *"Hypridle wants
+to delay sleep until it's before_sleep handling is done"*) only until that command returns — and
+`lock-session` returns the instant the signal is sent, before hypridle has even run `lock_cmd`.
+So the inhibitor was released with nothing drawn, and the machine could suspend with the lock
+still on its way. One frame of desktop on resume is the whole failure.
+
+**`lock-before-sleep`** is `before_sleep_cmd` now: `loginctl lock-session`, then poll
+`session-locked` until the **compositor** confirms — route-agnostic, so it reads the same whether
+the Quickshell surface or hyprlock got there. Budget 4s against logind's `InhibitDelayMaxUSec`
+(5s here; read it with `busctl get-property org.freedesktop.login1 /org/freedesktop/login1
+org.freedesktop.login1.Manager InhibitDelayMaxUSec`). On timeout it returns anyway — logind is
+about to force the suspend, so waiting longer makes the lock later, not surer, and blocking
+forever would leave the machine awake with the lid shut. Verified against stubs: 470ms when the
+lock lands on the 5th poll, 4378ms when it never does.
+
+⚠️ **No inhibitor of our own.** Omarchy needs `omarchy-sleep-lock.service`
+(`systemd-inhibit --what=sleep --mode=delay`) because its shell has no hypridle to borrow one
+from. Here hypridle already holds it, so a second holder would be a second thing to keep in step.
+
 **`idle-sleep`** asks logind `CanSuspendThenHibernate` at runtime rather than trusting
 `boot.hibernation.enabled` — `suspend-then-hibernate` fails outright where hibernation is
 unavailable, leaving the laptop awake and draining. This machine currently answers `"na"`
