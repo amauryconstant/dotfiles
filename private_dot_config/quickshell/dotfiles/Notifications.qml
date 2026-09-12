@@ -76,7 +76,7 @@ Singleton {
         const out = [];
         const byApp = {};
         for (const n of root.history) {
-            const key = n.appName || n.desktopEntry || "?";
+            const key = root.appKey(n);
             if (byApp[key] !== undefined) {
                 out[byApp[key]].rest.push(n);
                 continue;
@@ -108,6 +108,28 @@ Singleton {
                 });
         }
         return expanded;
+    }
+
+    // 🚨 `notify-send` reports ITS OWN name as appName, so timeshift, the
+    // pacman hooks and every script in this repo all arrive as "notify-send" —
+    // one useless label, and one group swallowing unrelated senders. The
+    // `desktop-entry` hint is the sender's real identity and wins wherever it
+    // is supplied.
+    //
+    // Resolved off the MODEL, never DesktopEntries.byId(): that is a plain
+    // function call, so a binding on it never re-evaluates when the entry set
+    // rescans.
+    function entryFor(notification: var): var {
+        const id = notification.desktopEntry ?? "";
+        return id ? DesktopEntries.applications.values.find(e => e.id === id) : null;
+    }
+
+    function appLabel(notification: var): string {
+        return root.entryFor(notification)?.name || notification.desktopEntry || notification.appName || "unknown";
+    }
+
+    function appKey(notification: var): string {
+        return notification.desktopEntry || notification.appName || "?";
     }
 
     function clearAll(): void {

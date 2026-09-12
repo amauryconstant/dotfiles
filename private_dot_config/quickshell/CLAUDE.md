@@ -625,6 +625,23 @@ hiding one behind a count saves a card and costs the message, so a pair is expan
 that size — a screenshot notification that stalls the shell for a 4K decode is worse than no
 thumbnail — and falls back to the glyph on a failed decode.
 
+🚨 **The card classifies the identity string itself, because a failed icon lookup renders a
+MAGENTA CHECKERBOARD rather than failing.** `image` and `appIcon` each carry any of three things —
+a decoded pixmap, a theme icon name, or a bare path — and quickshell wraps the last two as
+`image://icon/<it>` alike. `iconimageprovider.cpp`'s `missingPixmap` then *succeeds* with a
+checkerboard, so `status === Image.Ready` is not a resolution test. `NotificationCard`'s
+`rawIdentity`/`imageSource`/`iconSource` unwrap the prefix, send a path to the thumbnail as
+`file://` and check every name through `Quickshell.iconPath(name, true)`, which does answer `""`.
+Live cases: timeshift's `notify-send -i gtk-dialog-info` (a legacy GTK stock name no current
+theme carries) and a screenshot tool's `-i /tmp/…png`, both of which drew the checkerboard.
+
+🚨 **`notify-send` reports ITS OWN name as `appName`.** So timeshift, the pacman hooks and every
+script in this repo arrived labelled `NOTIFY-SEND` — and grouped into one stack, since the key
+was `appName`. The `desktop-entry` hint is the sender's real identity; `Notifications.appLabel()`
+resolves it through `DesktopEntries` for the label (off the **model**, never `byId()`), and
+`appKey()` is `desktopEntry || appName` for grouping. The same entry is the second chance for the
+icon when the name a sender passed resolves to nothing.
+
 🚨 **DND and the undismissed queue now survive a RESTART**, in
 `~/.local/state/quickshell/notifications.json` via `FileView` (which creates the parent directory
 on write). They are the only two things in this shell that persist: one the user set deliberately,

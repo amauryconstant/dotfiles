@@ -45,6 +45,42 @@ Rectangle {
 
     readonly property bool critical: root.notification.urgency === NotificationUrgency.Critical
 
+    // 🚨 The identity a sender supplies can be a decoded pixmap, a theme icon
+    // NAME, or a bare filesystem path — and quickshell hands all three over in
+    // the same two properties: an `image-path` hint or an app_icon that is not
+    // a file: URL is wrapped as image://icon/<it> either way. The icon provider
+    // then answers a MAGENTA CHECKERBOARD for anything it cannot resolve
+    // (`iconimageprovider.cpp` missingPixmap) rather than failing, and that
+    // loads as Image.Ready — so gating on load status alone DRAWS the
+    // checkerboard instead of falling back to the chip. Live case: timeshift
+    // sends `notify-send -i gtk-dialog-info`, a legacy GTK stock name no
+    // current icon theme carries.
+    //
+    // So classify first, and check every name through iconPath(.., true),
+    // which is the only reliable "does this resolve" answer.
+    readonly property string rawIdentity: {
+        const s = root.notification.image || root.notification.appIcon || "";
+        return s.startsWith("image://icon/") ? s.slice(13) : s;
+    }
+    // A real picture: a pixmap the server already decoded, or a file on disk.
+    readonly property string imageSource: {
+        const s = root.rawIdentity;
+        if (s.startsWith("/"))
+            return "file://" + s;
+        return /^(file:|image:|https?:)/.test(s) ? s : "";
+    }
+    // Otherwise a theme name, with the sender's desktop entry as the second
+    // chance — the name passed is often junk while the entry's icon is right.
+    readonly property string iconSource: {
+        if (root.imageSource)
+            return "";
+        const checked = root.rawIdentity ? Quickshell.iconPath(root.rawIdentity, true) : "";
+        if (checked)
+            return checked;
+        const entryIcon = Notifications.entryFor(root.notification)?.icon ?? "";
+        return entryIcon ? Quickshell.iconPath(entryIcon, true) : "";
+    }
+
     // The hairline is what makes a toast read as a card over an arbitrary
     // wallpaper — without it the popup is a bare rounded rect. Same tier as
     // every other border in this tree. Critical takes it in signalError, which
@@ -103,7 +139,7 @@ Rectangle {
                             anchors.fill: parent
                             asynchronous: true
                             fillMode: Image.PreserveAspectCrop
-                            source: root.notification.image
+                            source: root.imageSource
                             // 🚨 Decoded AT thumbnail size. A screenshot
                             // notification that stalls the shell for a full 4K
                             // decode is worse than no thumbnail at all.
@@ -115,7 +151,7 @@ Rectangle {
                         IconImage {
                             anchors.centerIn: parent
                             implicitSize: Config.notifIconSize + 4
-                            source: root.notification.appIcon ? Quickshell.iconPath(root.notification.appIcon, true) : ""
+                            source: root.iconSource
                             visible: !identity.hasImage && !root.critical && source !== ""
                         }
 
@@ -125,7 +161,7 @@ Rectangle {
                             font.family: Config.guiFont
                             font.pixelSize: Config.glyphRow
                             text: root.critical ? Config.notifCriticalGlyph : Config.notifGlyphs.notification
-                            visible: !identity.hasImage && (root.critical || !root.notification.appIcon)
+                            visible: !identity.hasImage && (root.critical || root.iconSource === "")
                         }
                     }
                 }
@@ -139,7 +175,7 @@ Rectangle {
                     font.letterSpacing: 0.4
                     font.pixelSize: Config.fontMeta
                     font.weight: Font.Medium
-                    text: root.notification.appName || root.notification.desktopEntry || "unknown"
+                    text: Notifications.appLabel(root.notification)
                 }
 
                 // Group count. Present only when siblings were collapsed into

@@ -253,6 +253,16 @@ goes 100x out if this is missed.
 **`Quickshell.Io/Socket` is a UNIX socket** — its only address property is `path`. There is no
 TCP support, so anything speaking to a TCP service (kanata's port 5829) goes through a `Process`.
 
+🚨 **An unresolvable icon renders a MAGENTA CHECKERBOARD that loads as `Image.Ready`.**
+`iconimageprovider.cpp`'s `missingPixmap` paints a black/magenta 2x2 and returns it as a normal
+pixmap, so a status gate cannot tell a missing icon from a loaded one — the fallback never fires
+and the checkerboard is what the user sees. `Quickshell.iconPath(name, true)` is the reliable
+test (it answers `""`), and `Quickshell.hasThemeIcon(name)` agrees; verified both false for
+`gtk-dialog-info` and for any absolute path. Note also that an `image-path` hint or an `app_icon`
+that is not a `file:` URL is wrapped as `image://icon/<it>` **whether it is a theme name or a
+path**, so a real file reaches the icon provider and fails there: unwrap the prefix and hand a
+path to `Image` as `file://` instead. See `notifications/NotificationCard.qml`.
+
 🚨 **A notification's popup timeout must never call `expire()` or `dismiss()`.** Both destroy
 the `Notification`, which removes it from `trackedNotifications` — the history a notification
 centre exists to show. So a toast auto-hiding would silently empty the centre. Popup lifetime
