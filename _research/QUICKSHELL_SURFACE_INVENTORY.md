@@ -21,6 +21,7 @@ implementation since — the status line says so where it was.
 | `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, thrice corrected |
 | **this file** | **live** | which surfaces exist, which do not |
 | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | the one open piece of work in the original plan |
+| `_research/QUICKSHELL_GREETER.md` | closed 2026-09-12 | why §23 is not built, and what would reopen it |
 | `_plans/archive/QUICKSHELL_SHELL.md` | frozen 2026-09-03 | why a phase was built the way it was |
 | `_research/QUICKSHELL_DESKTOP_RESEARCH.md` | closed 2026-09-01 | why Quickshell, and the alternatives rejected |
 | `_research/QUICKSHELL_COMPONENT_MAPPING.md` | historical | what the replaced tools did |
@@ -151,7 +152,13 @@ them: the strongest relaxation of normal behaviour wins the indicator.
 **Constraints**: some of these states are composed from independent switches — clearing one does
 not necessarily restore the default — so an indicator cannot imply a single three-way mode.
 
-**Status**: Partial. The states exist and some are shown; there is no shared vocabulary for them.
+**Status**: **Shipped 2026-09-12.** Five indicators share `bar/Bar.qml`'s `gStatus` group, each
+drawn only while active, ordered by how far the state departs from normal — the ranking this entry
+asks for, fixed rather than most-recent-first. Night light and screen recording were added in the
+same change; neither had ever been drawn, and `screenrecord` had been signalling a Waybar module
+that never existed. The shared vocabulary is: the glyph carries the state, no mode takes a colour
+(only `signalError` clears 3:1 in all eight colorsets, and none of these is a fault). See
+`private_dot_config/quickshell/CLAUDE.md` → Mode indicators.
 
 ---
 
@@ -506,7 +513,11 @@ lifecycle — it runs before there is a session at all.
 scope. If it is, it shares almost all of the lock screen's visual language and should be designed
 alongside it rather than separately.
 
-**Status**: Not built, no decision recorded.
+**Status**: **Not built — decision recorded 2026-09-12**: SDDM stays, a greeter is out of scope.
+Quickshell *can* do it (`Quickshell.Services.Greetd` is a real greetd client, distinct from
+`WlSessionLock`), and Omarchy — having replaced its whole shell with Quickshell — still logs in
+through SDDM at v4.0.3. Facts, cost, and the named condition that would reopen it:
+`_research/QUICKSHELL_GREETER.md`.
 
 ---
 
@@ -625,11 +636,11 @@ because eighteen scripts already spoke dmenu.
 
 | # | Surface | State |
 |---|---|---|
-| 5 | Mode and state indicators | Partial — the states are drawn, the shared vocabulary is not |
+| 5 | Mode and state indicators | **Shipped 2026-09-12** — ranking is fixed-order, glyph-carried; night light and recording newly drawn |
 | 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
 | 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
 | 15 | Screenshot and recording control | Not built. Nothing in the replaced stack had it either |
-| 23 | Greeter | Not built, no decision recorded |
+| 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/QUICKSHELL_GREETER.md`) |
 
 Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries
 ask for: a keybinding document, a login interrupt and a continuous control respectively. Improving

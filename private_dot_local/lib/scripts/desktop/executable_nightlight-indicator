@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+# Script: nightlight-indicator
+# Purpose: Waybar custom module showing blue-light-filter state
+# Returns: JSON for Waybar (empty text when the filter is off)
+#
+# A mode indicator, in the sense of surface §5: visible only while the state
+# is active, invisible otherwise. The state is nightlight-toggle's own runtime
+# marker rather than a temperature read-back, for the reason that script
+# documents at length — `hyprctl hyprsunset identity` leaves the read-back
+# unchanged, so temperature alone cannot tell "filter on" from "identity".
+#
+# 🚨 Glyph is md-weather_sunset (U+F059A), NOT omarchy's U+F050E. Theirs is a
+# moon-and-sun with a SLASH through it, which reads as "disabled" — fine for
+# them because their indicator draws in both states and the tooltip carries
+# which one, wrong here because this only draws when the filter is ON. It also
+# has to stay clear of BacklightWidget's ramp, which is the moon-phase series
+# (md-brightness_1..4) sitting a few chips to the left.
+
+MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nightlight-on"
+TEMP_FILE="$HOME/.local/state/dotfiles/nightlight-temp"
+
+if [ ! -f "$MARKER" ]; then
+    echo '{"text": ""}'
+    exit 0
+fi
+
+TEMP=""
+if [ -f "$TEMP_FILE" ]; then
+    read -r TEMP < "$TEMP_FILE" 2>/dev/null
+fi
+case "$TEMP" in
+    '' | *[!0-9]*) TOOLTIP="Blue light filter on" ;;
+    *) TOOLTIP="Blue light filter on (${TEMP}K)" ;;
+esac
+
+printf '{"text": "󰖚", "tooltip": "%s", "class": "active"}\n' "$TOOLTIP"

@@ -386,8 +386,58 @@ running instance.
 | Network, Bluetooth, Battery | `Networking`, `Bluetooth`, `UPower` — laptop only |
 | Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
 | Meters | the `Meters` singleton (`/proc/stat` + `/proc/meminfo` via `FileView` on a 2s timer) — **new**, Waybar had no cpu/memory module here |
-| Kanata, Voxtype, Idle | existing scripts, via `WaybarJsonSource` |
+| Kanata, Voxtype, Idle, NightLight, Recording | existing scripts, via `WaybarJsonSource` |
 | Notification | the `Notifications` singleton — Phase 4 cut the last `swaync-client` call out of the tree |
+
+## Mode indicators (surface §5)
+
+Five widgets share the `gStatus` group in `bar/Bar.qml`: Recording, Idle, Voxtype, Kanata,
+NightLight. Each draws only while its state is active, so at rest the group is empty and the
+separator before it collapses with it.
+
+🚨 **The order is fixed, and it is a ranking, not an arrangement.** Surface §5 asks that "the
+strongest relaxation of normal behaviour wins the indicator", so the group runs strongest first:
+the screen is being captured > the machine will not lock or sleep > the microphone is live > the
+keys are remapped > the colours are shifted. Omarchy's
+`shell/plugins/bar/widgets/Indicators.qml` instead reorders itself, putting the most recently
+activated nearest the clock; that is rejected here because these appear and disappear on their
+own, and a set that also *reorders* itself has to be re-read from scratch every time any one of
+them changes.
+
+**The glyph is the whole carrier.** No mode indicator takes a colour, because only `signalError`
+clears 3:1 in all eight colorsets and none of these states is a fault — `IdleWidget`'s
+hypridle-is-down case is the single exception, and it is genuinely an error. Colouring a state
+that merely departs from normal would make it *less* visible, not more.
+
+**Two of the five were added on 2026-09-12** and neither state was drawn anywhere before:
+
+- **NightLight** reads `nightlight-toggle`'s own `$XDG_RUNTIME_DIR/nightlight-on` marker through
+  `desktop/nightlight-indicator`. 🚨 Its glyph is `md-weather_sunset` (U+F059A), **not** omarchy's
+  U+F050E, which is a moon-and-sun with a slash through it: that reads as *disabled*, which is
+  fine for them (their indicator draws in both states) and backwards here. It also has to stay
+  clear of `BacklightWidget`'s ramp, which is the moon-phase series sitting a few chips to its
+  left.
+- **Recording** reads `/tmp/screenrecord_$USER.pid` through `desktop/recording-indicator`, and
+  clicking it runs `desktop/screenrecord` — the same toggle the keybinding runs, so there is no
+  second code path that could disagree about state. This is also the reachable stop affordance
+  surface §15 asks for.
+  - 🚨 **The elapsed time ticks in QML from a start epoch the script reports once**, not by
+    re-running the script every second. That epoch is the PID file's *mtime*, so a shell restart
+    mid-recording still shows the true elapsed time; a timestamp captured when the widget first
+    noticed would restart at zero. The label is `monoLabel` because it changes width every second
+    and a proportional face would reflow the bar as it counts.
+
+**They are read on demand, not polled**, so the toggles have to say when they have flipped
+something: `quickshell -c dotfiles ipc call indicators refresh`. `nightlight-toggle` does it from
+an `EXIT` trap (it has three exit paths including an early one) and `screenrecord` does it on both
+start and stop. That call **replaced `pkill -RTMIN+8 waybar`**, which `screenrecord` had been
+firing on every start and stop since long before the bar changed — no module in either bar had
+ever listened to it. A 30s timer remains as the safety net, the same arrangement `IdleWidget` has
+with `idle-toggle`.
+
+The `indicators` IPC target is deliberately separate from `idle`: two scripts already call `idle`
+by name, and a target that silently grew to mean "everything" would be a worse lie than one extra
+handler.
 
 ## OSD (Phase 3)
 

@@ -26,8 +26,10 @@ if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     kill "$recording_pid"
     rm -f "$PID_FILE"
 
-    # Signal waybar to update (if configured)
-    pkill -RTMIN+8 waybar 2>/dev/null
+    # Tell the bar the recording is over. This replaced `pkill -RTMIN+8
+    # waybar`, which had had no listener in either bar since the shell changed
+    # — no waybar module ever read that signal.
+    quickshell -c dotfiles ipc call indicators refresh >/dev/null 2>&1 || true
 
     saved_file=""
     [ -f "$PATH_FILE" ] && read -r saved_file < "$PATH_FILE"
@@ -105,12 +107,13 @@ recording_pid=$!
 echo "$recording_pid" > "$PID_FILE"
 echo "$output_file" > "$PATH_FILE"
 
-# Signal waybar to show recording indicator (if configured)
-pkill -RTMIN+8 waybar 2>/dev/null
+# Tell the bar to show the recording indicator (see the stop path above for
+# why this is not `pkill -RTMIN+8 waybar` any more).
+quickshell -c dotfiles ipc call indicators refresh >/dev/null 2>&1 || true
 
 # Notify user
 if [ "$WITH_AUDIO" = true ]; then
-    notify-send "🎬 Screen Recording" "Recording started with audio\nPress Super+R to stop" -t 3000
+    notify-send "🎬 Screen Recording" "Recording started with audio\nClick the bar indicator, or ALT+SHIFT+Print, to stop" -t 3000
 else
-    notify-send "🎬 Screen Recording" "Recording started\nPress Super+R to stop" -t 3000
+    notify-send "🎬 Screen Recording" "Recording started\nClick the bar indicator, or ALT+SHIFT+Print, to stop" -t 3000
 fi

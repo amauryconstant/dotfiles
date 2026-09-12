@@ -19,6 +19,12 @@
 
 TEMP_FILE="$HOME/.local/state/dotfiles/nightlight-temp"
 MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nightlight-on"
+
+# The bar's night-light indicator reads the marker on demand rather than
+# polling, so every exit path has to say that something changed — including
+# the early `exit 0` in the cold-start branch below. A trap is one line and
+# cannot be forgotten when a fourth branch is added.
+trap 'quickshell -c dotfiles ipc call indicators refresh >/dev/null 2>&1 || true' EXIT
 DEFAULT_TEMP=4000
 
 # Warm temperature chosen via nightlight-config, falling back to the default.

@@ -54,6 +54,15 @@ PanelWindow {
         idle.refresh();
     }
 
+    // Every mode indicator at once, for `ipc call indicators refresh`. Each
+    // one is a one-shot script read on demand rather than a poll, so the
+    // toggles have to say when they have flipped something.
+    function refreshIndicators(): void {
+        idle.refresh();
+        nightLight.refresh();
+        recording.refresh();
+    }
+
     // `keyboard` is what separates the two open modes of design page 03: by
     // pointer there is no grab at all, by binding the popover grabs the
     // keyboard and draws a focus ring. The IPC target passes true; a widget
@@ -234,18 +243,36 @@ PanelWindow {
             group: gStatus
         }
 
+        // 🚨 Mode indicators, ordered by how far the state departs from normal
+        // — surface §5's "the strongest relaxation of normal behaviour wins".
+        // The order is FIXED, not most-recent-first as omarchy's
+        // `shell/plugins/bar/widgets/Indicators.qml` does it: these appear and
+        // disappear on their own, and a set that also reorders itself has to
+        // be re-read from scratch every time one of them changes.
+        //
+        // Strongest first: the screen is being captured > the machine will not
+        // lock or sleep > the microphone is live > the keys are remapped > the
+        // colours are shifted.
         Row {
             id: gStatus
 
             spacing: Config.gap / 2
 
-            KanataWidget {}
+            RecordingWidget {
+                id: recording
+            }
 
             IdleWidget {
                 id: idle
             }
 
             VoxtypeWidget {}
+
+            KanataWidget {}
+
+            NightLightWidget {
+                id: nightLight
+            }
         }
 
         BarSeparator {

@@ -57,6 +57,20 @@ ShellRoot {
         }
     }
 
+    // The same arrangement for every other mode indicator (surface §5), called
+    // by nightlight-toggle and screenrecord after they flip state. Kept apart
+    // from `idle` rather than folded into it: the idle target predates this,
+    // two scripts already call it by name, and a target that silently grew to
+    // mean "everything" would be a worse lie than one extra handler.
+    IpcHandler {
+        target: "indicators"
+
+        function refresh(): void {
+            for (const bar of barVariants.instances)
+                bar.refreshIndicators();
+        }
+    }
+
     // SUPER+D, from hypr/conf.d/quickshell.lua, via quickshell-toggle. Took
     // the primary key on 2026-09-01; the Wofi binding is GATED OFF on the same
     // flag rather than shadowed, because duplicate binds stack in Hyprland.

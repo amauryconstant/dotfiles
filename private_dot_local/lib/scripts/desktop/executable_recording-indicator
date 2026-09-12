@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+# Script: recording-indicator
+# Purpose: Waybar custom module showing screen-recording state
+# Returns: JSON for Waybar (empty text when nothing is recording)
+#
+# Surface §15 requires the running state to be REACHABLE to stop, and until
+# 2026-09-12 nothing rendered it at all: screenrecord fired `pkill -RTMIN+8
+# waybar` on start and stop and no module in either bar ever listened.
+#
+# `alt` carries the recording's start epoch rather than a formatted duration,
+# so the widget can tick the elapsed time in QML without re-running this
+# script every second. The start time is the PID file's mtime, which survives
+# a shell restart mid-recording — a timestamp captured when the widget first
+# noticed would not.
+
+PID_FILE="/tmp/screenrecord_$USER.pid"
+
+recording_pid() {
+    [ -f "$PID_FILE" ] || return 1
+    read -r pid < "$PID_FILE" 2>/dev/null || return 1
+    [ -n "$pid" ] || return 1
+    kill -0 "$pid" 2>/dev/null
+}
+
+if ! recording_pid; then
+    echo '{"text": ""}'
+    exit 0
+fi
+
+STARTED=$(stat -c %Y "$PID_FILE" 2>/dev/null) || STARTED=""
+case "$STARTED" in
+    '' | *[!0-9]*) STARTED=0 ;;
+esac
+
+printf '{"text": "󰻂", "alt": "%s", "tooltip": "Screen recording in progress — click to stop", "class": "active"}\n' "$STARTED"
