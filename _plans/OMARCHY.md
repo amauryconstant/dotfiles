@@ -84,7 +84,7 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 
 - [x] Audited 2026-09-13 — **structurally already correct, and the file's own header documents both traps.** `Notifications.qml` sets `tracked = true` explicitly on every notification; the popup timeout removes the entry from its own `popups` list and calls neither `expire()` nor `dismiss()`; and `transient` is implemented by *filtering* `trackedNotifications` rather than by leaving it untracked, which is the corollary the rules require
 - [x] The race class itself is designed out: hide deadlines are held **by notification id and ticked by one shared Timer**, not by a `Timer` inside each popup delegate. The delegates' model is a JS array that Qt rebuilds wholesale, so per-delegate timers would restart on every change and pin the oldest toast up — which is the shape of the upstream bug
-- [ ] One live check still outstanding: burst N notifications, let the popups expire, open the centre and confirm the count is still N. Deferred — the session locked mid-pass and a restart is refused while the lock is held
+- [x] Confirmed live 2026-09-13: five `notify-send -t 1500` toasts, popups left to expire, unread count on the bell went 66 → 71. Every popup that timed out kept its history entry, which is the behaviour the upstream fix restores
 
 ---
 

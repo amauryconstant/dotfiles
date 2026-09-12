@@ -232,6 +232,13 @@ Found while wiring it: **every `󰁍 Back` row in six of those scripts had been 
 `system-menu.sh` — a name chezmoi has never produced. 18 such paths were corrected in the same
 pass; see `user-interface/CLAUDE.md`.
 
+Verified live 2026-09-13 against the deployed shell: a request carrying `breadcrumb` and `back`
+draws the trail before the prompt and the `← back` hint in the footer; a second request while one
+picker is open is refused immediately (exit 1, no queueing); killing the caller closes the surface
+through `aborted` rather than leaving it waiting on a socket nobody reads. The Left/Backspace
+keypress itself is the one part not machine-checkable here — no input is injected into the live
+session.
+
 ### 9. Keybindings reference
 
 **Made of**: the full binding set, grouped by modifier or by category, each row a key combination
