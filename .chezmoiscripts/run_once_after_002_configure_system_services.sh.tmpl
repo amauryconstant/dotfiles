@@ -76,7 +76,7 @@ fi
 {{ end }}
 
 # ============================================================================
-# SECTION 1: ADDITIONAL CORE SERVICE CONFIGURATION (Bluetooth, NVIDIA Power)
+# SECTION 1: ADDITIONAL CORE SERVICE CONFIGURATION (Bluetooth, DDC/CI)
 # ============================================================================
 
 echo ""
@@ -96,34 +96,6 @@ else
     {{ includeTemplate "log_skip" "Blueman not installed, skipping configuration" }}
 fi
 
-{{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
-
-# Enable NVIDIA power management services (for laptops with NVIDIA GPU)
-# These services handle suspend/resume/hibernate for NVIDIA GPUs
-# Only enable if NVIDIA GPU is detected
-if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
-    {{ includeTemplate "log_info" "NVIDIA GPU detected - enabling power management services" }}
-
-    NVIDIA_SERVICES=(
-        "nvidia-suspend.service"
-        "nvidia-hibernate.service"
-        "nvidia-resume.service"
-    )
-
-    for service in "${NVIDIA_SERVICES[@]}"; do
-        if systemctl list-unit-files "$service" >/dev/null 2>&1; then
-            sudo systemctl enable "$service"
-            {{ includeTemplate "log_success" "$service enabled" }}
-        else
-            {{ includeTemplate "log_warning" "$service not found - ensure NVIDIA drivers are installed" }}
-        fi
-    done
-
-    {{ includeTemplate "log_success" "NVIDIA power management services configured" }}
-else
-    {{ includeTemplate "log_skip" "No NVIDIA GPU detected - skipping NVIDIA power management" }}
-fi
-
 {{ includeTemplate "log_step" "Configuring DDC/CI (external monitor brightness)..." }}
 
 # i2c-dev exposes /dev/i2c-* so ddcutil can talk to external monitors over DDC/CI.
@@ -138,7 +110,7 @@ if command -v ddcutil >/dev/null 2>&1; then
 
     I2C_UDEV_FILE="/etc/udev/rules.d/45-ddcutil-i2c.rules"
     I2C_UDEV_RULE='KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"'
-    if [ ! -f "$I2C_UDEV_FILE" ] || ! grep -qF "$I2C_UDEV_RULE" "$I2C_UDEV_FILE"; then
+    if [ ! -f "$I2C_UDEV_FILE" ] || ! sudo grep -qF "$I2C_UDEV_RULE" "$I2C_UDEV_FILE"; then
         echo "$I2C_UDEV_RULE" | sudo tee "$I2C_UDEV_FILE" > /dev/null
         sudo udevadm control --reload-rules
         sudo udevadm trigger
@@ -293,7 +265,7 @@ else
     sudo mkdir -p /etc/NetworkManager/conf.d
 
     # Configure NetworkManager to use iwd instead of wpa_supplicant
-    sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<EOF
+    sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null <<'EOF'
 [device]
 wifi.backend=iwd
 EOF
@@ -382,10 +354,6 @@ echo "Core Services Configured:"
 echo "  ✓ Docker (socket activation, user added to docker group)"
 echo "  ✓ Bluetooth (enabled and active)"
 echo "  ✓ NetworkManager with iwd backend (WiFi)"
-
-if lspci | grep -i 'vga\|3d\|display' | grep -iq nvidia; then
-    echo "  ✓ NVIDIA power management (suspend/resume)"
-fi
 
 if command -v tailscale >/dev/null 2>&1; then
     echo ""
