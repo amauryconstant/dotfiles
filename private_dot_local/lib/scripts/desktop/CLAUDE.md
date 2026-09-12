@@ -219,6 +219,7 @@ theme-menu                        # Interactive menu (Quickshell picker)
 🚨 `quickshell-toggle` **starts `quickshell.service`**, never a bare `quickshell` — a shell
 launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
 because that is exactly the state in which the user has no bar left to ask with
+**Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
 **Night light**: nightlight-toggle, nightlight-config
 **Workspace gaps**: workspace-gaps-toggle, workspace-gaps-reset
@@ -320,6 +321,13 @@ lid close suspends the machine unlocked. The inhibitor leaves `before_sleep_cmd`
 **`immediate-lock`** is the single lock entry point (`Super+L`, wlogout, system menu, and
 hypridle's `lock_cmd`). `grace` is a hyprlock **CLI flag** since 0.9.6, not a config key.
 
+**It has two routes, chosen at RUNTIME**: the Quickshell lock surface (§22) when
+`quickshell -c dotfiles ipc call lock lock` answers `ok`, hyprlock otherwise. Runtime rather than
+a `.tmpl` branch on purpose — if the shell is down, its restart budget is spent, or its QML tree
+will not load, `Super+L` must still lock the screen. ⚠️ `ipc call` **exits 0 even when it fails**,
+so the route is decided by the answer, never the status; `missing-pam` falls through too, because
+hyprlock reads the same `/etc/pam.d/hyprlock` and will report the real problem in its own UI.
+
 🚨 **Its re-entrancy guard is a `flock`, not `pidof hyprlock`.** `hypr/conf/general` now
 sets `misc:allow_session_lock_restore`, so the compositor *accepts* a second locker where it used
 to reject one. A check-then-act guard that loses its race therefore displaces a live lock screen
@@ -339,6 +347,26 @@ monitor with no workspace yet reports `WORKSPACE` and never reaches the lock —
 there means the question was never asked. A caller that branches only on success may treat 2 as
 unlocked; a caller that *retries* must not treat it as an answer. Adapted from Omarchy's
 `bin/omarchy-hyprland-session-locked`.
+
+🚨 **`session-locked` is NOT "is the lock stranded", and conflating the two displaces a live lock
+screen.** It is equally true while hyprlock is running, and `allow_session_lock_restore` means a
+second client is now *accepted* rather than refused. Measured 2026-09-12: the Quickshell lock's
+recovery ran `session-locked`, got 0 while hypridle's hyprlock was up, concluded orphan, and took
+a second lock on top of a live one — the exact failure the `flock` above exists to prevent.
+
+**`session-lock-stranded`** is that question, and the only place that defines it: `session-locked`
+says locked **and** the `immediate-lock` lock file is free. **0** stranded · **1** not stranded
+(unlocked, *or* a live locker owns it) · **2** undetermined, passed straight through.
+⚠️ It answers about lockers **other than the caller** — the Quickshell surface is in-process and
+takes no lock file, so a caller that can itself be the locker rules that out first, which is what
+`lock/LockScreen.qml`'s `locked || lockRequested` guard does before it ever runs this.
+
+**`quickshell-restart`** is THE restart path for the shell, replacing a bare
+`systemctl --user restart quickshell.service`. It asks `ipc call lock status` and refuses while
+`secure` or `requested` — restarting a shell that holds the session lock drops the
+`ext-session-lock` client while the compositor still holds the lock, so the user waits behind the
+failsafe for seconds, self-inflicted. No answer at all means no shell to strand, which is the
+recovery case and must proceed. `reset-failed` first, like `quickshell-toggle`.
 
 **`idle-sleep`** asks logind `CanSuspendThenHibernate` at runtime rather than trusting
 `boot.hibernation.enabled` — `suspend-then-hibernate` fails outright where hibernation is

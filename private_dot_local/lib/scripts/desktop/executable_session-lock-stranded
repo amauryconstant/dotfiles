@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+
+# Script: session-lock-stranded
+# Purpose: Report whether the compositor holds an ext-session-lock that NO LIVE
+#          LOCKER owns
+# Requirements: Arch Linux, hyprctl, jaq, flock (util-linux)
+# Usage: session-lock-stranded  (no output; the answer is the exit status)
+#
+# Exit: 0 stranded · 1 not stranded · 2 undetermined
+#
+# 🚨 `session-locked` alone is NOT this question, and treating it as if it were
+# displaces a live lock screen. It answers "does the compositor hold a lock",
+# which is true both when a locker is running and when one died leaving the
+# failsafe up -- and misc:allow_session_lock_restore means a second client is
+# now ACCEPTED rather than refused, so acting on the first answer takes the
+# screen out from under whoever is typing into the running locker. Measured
+# 2026-09-12: a shell restart while hypridle's hyprlock was up did exactly that.
+#
+# The second condition is the lock file `immediate-lock` already uses. Its
+# descriptor is inherited by the exec'd locker and released only when that
+# process exits, so a HELD lock file means a live locker and a FREE one means
+# nothing is holding the compositor's lock open.
+#
+# ⚠️ It answers about lockers OTHER than the caller. The Quickshell lock surface
+# takes no lock file -- it is in-process, and its own state is a better guard
+# than a file -- so a caller that can itself be the locker must rule that out
+# first, the way lock/LockScreen.qml does before it ever runs this.
+#
+# ⚠️ 2 is a real third answer, inherited from session-locked: Hyprland stops at
+# the first blocking reason, so a monitor with no workspace yet reports
+# WORKSPACE and the lock is never reached. A retrying caller must not accept it.
+
+DIR=$(dirname -- "$0")
+
+"$DIR/session-locked"
+state=$?
+
+case "$state" in
+1) exit 1 ;;
+0) ;;
+*) exit 2 ;;
+esac
+
+LOCKFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/immediate-lock.lock"
+
+exec 9>"$LOCKFILE" || exit 2
+flock -n 9 || exit 1
+
+exit 0

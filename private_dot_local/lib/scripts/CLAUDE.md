@@ -103,6 +103,7 @@ fi
 **Appearance & Style**:
 - `waybar-toggle`, `waybar-style` - Waybar controls (use `notify-send`)
 - `quickshell-toggle`, `quickshell-menu` - Quickshell bar/surface toggles and the dmenu substrate
+- `quickshell-restart` - restart the shell; refuses while the session lock is live
 - `nightlight-toggle`, `nightlight-config` - Blue light filter (use `notify-send`)
 - `workspace-gaps-toggle`, `workspace-gaps-reset` - Gap controls (use `notify-send`)
 - `idle-toggle`, `idle-toggle-nolock` - Idle management (use `notify-send`; see `desktop/CLAUDE.md` → Idle & Lock)
@@ -150,7 +151,9 @@ fi
 - `battery-status` - Battery/power status (Waybar custom module / notify)
 - `idle-indicator`, `idle-toggle`, `idle-toggle-nolock` - idle mode state + toggles
 - `idle-sleep` - sleep the system, hibernating when logind reports it available
-- `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`)
+- `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`).
+  Routes to the Quickshell lock surface at runtime, hyprlock when the shell cannot answer
+- `session-locked`, `session-lock-stranded` - is the compositor locked / is that lock an orphan
 - `screenrecord` - Screen recording
 - `system-settings` - Launch system settings
 - `voice-meeting` - meeting voice helper

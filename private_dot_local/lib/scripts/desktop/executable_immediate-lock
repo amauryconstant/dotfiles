@@ -2,23 +2,36 @@
 
 # Script: immediate-lock
 # Purpose: Lock the screen immediately (single entry point for all lock triggers)
-# Requirements: Arch Linux, hyprlock, flock (util-linux)
+# Requirements: Arch Linux, quickshell OR hyprlock, flock (util-linux)
 #
-# Used by Super+L, wlogout, the system menu, and hypridle's lock_cmd. grace is a
-# CLI flag in hyprlock 0.9.6, no longer a config key.
+# Used by Super+L, wlogout, the system menu, and hypridle's lock_cmd.
+#
+# Two routes, chosen at RUNTIME rather than by a template branch: the Quickshell
+# lock surface (§22) when the shell answers, hyprlock otherwise. Runtime on
+# purpose -- if the shell is down, its restart budget is spent, or its QML tree
+# will not load, Super+L must still lock the screen. `grace` is a hyprlock CLI
+# flag since 0.9.6, no longer a config key.
+#
+# 🚨 `quickshell ipc call` exits 0 EVEN WHEN IT FAILS: a target that does not
+# exist prints "Target not found." and still returns 0. So the route is decided
+# by the ANSWER, never the exit status -- the same rule quickshell-toggle's
+# shell_running() follows. Anything but "ok" falls through to hyprlock,
+# "missing-pam" included: hyprlock reads the same /etc/pam.d/hyprlock and will
+# report the real problem in its own UI rather than leaving the screen unlocked.
 #
 # 🚨 The re-entrancy guard is a LOCK FILE, not `pidof hyprlock`. Since
 # hypr/conf/general sets misc:allow_session_lock_restore, the compositor accepts
 # a second locker where it used to refuse one -- so a check-then-act guard that
 # loses its race now displaces a live lock screen out from under whoever is
-# typing into it, instead of the second client simply being rejected. flock
-# closes that window: the descriptor is inherited by the exec'd hyprlock and
-# released only when it exits.
+# typing into it. flock closes that window: the descriptor is inherited by the
+# exec'd hyprlock and released only when it exits. On the Quickshell route it is
+# released as this script exits, which is correct -- the shell's own lock state
+# is the guard from there on, and a second call just gets "ok" back.
 #
 # That same compositor option is what makes a STRANDED lock recoverable: an
 # ext-session-lock outlives its client, so a killed locker leaves the session
 # behind Hyprland's failsafe. The lock file is gone with the dead process, so
-# this script proceeds and hyprlock re-acquires the existing lock. Ask
+# this script proceeds and the new locker re-acquires the existing lock. Ask
 # `desktop/session-locked` whether that is the situation; it is not consulted
 # here because the action is the same either way.
 
@@ -26,5 +39,9 @@ LOCKFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/immediate-lock.lock"
 
 exec 9>"$LOCKFILE" || exit 1
 flock -n 9 || exit 0
+
+if [ "$(quickshell -c dotfiles ipc call lock lock 2>/dev/null)" = ok ]; then
+    exit 0
+fi
 
 exec hyprlock --grace 0

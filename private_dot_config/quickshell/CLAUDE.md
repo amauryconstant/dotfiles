@@ -17,9 +17,13 @@
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
   Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
   history. **2026-09-10**: the seven bar popovers (page 06). Page 10's *native nested* menu is
-  designed and **not built**. **2026-09-12**: supervision — the shell is a systemd user unit
-- 🚨 **It runs as `quickshell.service`, and nothing else may launch it.** `systemctl --user
-  restart quickshell.service` is the reload path; `chezmoi apply` does not reload anything, and
+  designed and **not built**. **2026-09-12**: supervision (the shell is a systemd user unit),
+  then the two surfaces page 12 had deferred on it — the polkit dialog (§21) and the lock
+  screen (§22). Every surface in the fourteen-page design now exists or is a recorded refusal
+- 🚨 **It runs as `quickshell.service`, and nothing else may launch it.**
+  `desktop/quickshell-restart` is the reload path — it wraps `systemctl --user restart` in a
+  refusal while the session lock is live, because restarting then drops the `ext-session-lock`
+  client while the compositor still holds the lock; `chezmoi apply` does not reload anything, and
   the file watcher is off in the unit on purpose. `quickshell -c dotfiles kill` is a restart, not
   a stop (`Restart=always`, 2s). Quickshell re-execs itself on a crash *signal*
   (`src/crash/handler.cpp`), so the unit is there for what that cannot reach — `_exit()` on a lost
@@ -36,6 +40,26 @@
   instead. It is an **interrupt**: no toggle, no IPC target, no keybinding — its visibility is the
   agent's `isActive` and nothing else. Escape cancels, Return submits, Tab cycles identities when
   polkit offers more than one (the branch §21 called out as assumed away)
+- 🚨 **The shell draws the lock screen** (`lock/LockScreen.qml` + `lock/LockContent.qml`,
+  surface §22, added 2026-09-12), gated on `features.quickshell_lock`. Unlike the two flags above
+  **nothing is displaced**: `desktop/immediate-lock` asks the running shell and falls back to
+  hyprlock at RUNTIME, so `SUPER+L` locks the screen with the flag off, with the shell down, or
+  with its restart budget spent. PAM is `/etc/pam.d/hyprlock`, borrowed from the package — no
+  root write and no installer script. The `lock` IPC target is registered either way and answers
+  `"disabled"`, so a switched-off feature stays distinguishable from a broken wiring
+  — **Background is the WALLPAPER**, read per output from `awww query` and dimmed by
+  `Config.lockDimOpacity` (0.7, the knob for legible text over an arbitrary image). Not a blurred
+  desktop screenshot, which is what hyprlock drew here (`path = screenshot`, `blur_passes = 3`):
+  that puts window shapes and colours in front of whoever is at the machine, and a wallpaper is
+  already public. Not flat black either — **black is what the failsafe looks like**, and a lock
+  indistinguishable from a crashed one teaches the user to read a real fault as normal
+- 🚨 **A stranded lock is recovered; a LIVE one must not be touched.** `ext-session-lock` outlives
+  its client, so a shell that restarts while locked comes back holding nothing while the
+  compositor still holds the failsafe. `misc:allow_session_lock_restore` lets the fresh client
+  re-acquire it, driven by `desktop/session-lock-stranded`. That probe is *two* conditions on
+  purpose — the compositor is locked **and** `immediate-lock`'s lock file is free. Asking only
+  the first took a second lock on top of a running hyprlock on 2026-09-12, which is the same
+  displacement the `flock` was added to prevent
 - 🚨 **Colours are SEMANTIC ROLES, all the way down.** `themes/*/colors.sh` was renamed on
   2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
   six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a
@@ -93,7 +117,7 @@
   *"Configuration Loaded"* while the live generation is the pre-apply one — chezmoi replaces
   files by rename, which a per-file watch does not survive, and the watcher compares content
   rather than mtime so `touch` does nothing either. Finish an apply with
-  `quickshell -c dotfiles kill && quickshell-toggle bar`, and verify with
+  `quickshell-restart`, and verify with
   `quickshell -c dotfiles ipc show`, never by looking at the deployed files
 - **Lint**: `mise run lint:qml` · **Format**: `mise run format:qml`
 
@@ -113,6 +137,10 @@ decision; each is also commented at its site. Everything **not** listed here fol
 | **02** three density columns | default 13 only | The only thing that could select a column is the system menu, which is not built. Two unreachable columns are dead configuration |
 | **04** a named width-breakpoint overflow order | **not built** | No output this repo drives is narrow enough to fire it, so it could be neither observed nor tested. The parts that *do* fire are built: the title's pixel bound and the tray's 8-item cap. See the ponytail note in `Config.qml.tmpl` |
 | **07** inline reply | not built | Needs `x-kde-reply` plumbing; out of the agreed scope |
+| **12** the lock returns when "the lock process can be supervised independently of the rest of the shell" | in-shell, recovered rather than isolated | Hyprland's failsafe is **opaque**, so a crashed locker is ugly and never insecure. `Restart=always` plus `allow_session_lock_restore` plus `session-lock-stranded` turns that into ~2s of failsafe and then a prompt, and hyprlock stays as the runtime fallback for a shell that cannot come back at all. A second always-running instance buys isolation the failure mode does not need |
+| **12** the lock draws nothing behind its content | the dimmed wallpaper | The page's own mock is a near-black card, which is also exactly what Hyprland's failsafe renders — so the drawn design makes a crashed locker and a working one look alike. The wallpaper is public, costs one `awww query`, and leaks nothing the page forbids |
+| **12** the lock's failure line in `signal-error` | `fgOnScrim` | Measured on the scrim: 3.87 (latte), 3.84 (gruvbox-light), under the 4.5 text owes. Page 12 requires the colour be "paired with words, never colour alone", so the words carry it. Row in `lint:theme-contrast` |
+| **12** the date drawn at 12px, called "meta" in the prose | `fontMeta` (11) | The prose names the role; page 02 is what fixes what a role is worth. A surface page contradicting a foundation page is a defect in the design |
 | — | dock and overview kept, dormant and untouched | Neither has a page in the new set; both already `false` and declined in daily use |
 
 Rulings, contradictions and every measurement behind these: `_research/QUICKSHELL_DESIGN_AUDIT.md`
@@ -136,6 +164,10 @@ dotfiles/
 │   └── Launcher.qml       # app launcher + `:` run and `=` calc (design page 05)
 ├── menu/MenuPicker.qml    # what every `show_menu` call in this repo now draws
 ├── clipboard/ClipboardPicker.qml  # cliphist history (design page 11)
+├── polkit/PolkitDialog.qml        # the authentication dialog (design page 12) — an INTERRUPT
+├── lock/
+│   ├── LockScreen.qml     # WlSessionLock, PAM, stranded-lock recovery — draws nothing
+│   └── LockContent.qml    # clock, date, one field, one line (design page 12)
 ├── power/PowerMenu.qml    # power / session menu (design page 09)
 ├── dock/Dock.qml          # auto-hiding dock, one PER SCREEN — DORMANT, no page in the current design
 ├── overview/

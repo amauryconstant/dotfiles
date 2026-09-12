@@ -25,3 +25,9 @@ features:
   # agent that hypr/conf/autostart used to start unconditionally.
   quickshell_polkit:
     enabled: true
+  # In-shell lock screen (surface §22). Separate from quickshell_shell for the
+  # same reason as notifications and polkit, but with a gentler failure mode:
+  # desktop/immediate-lock routes at RUNTIME, so with this off — or with the
+  # shell down, or its restart budget spent — SUPER+L still locks via hyprlock.
+  quickshell_lock:
+    enabled: true

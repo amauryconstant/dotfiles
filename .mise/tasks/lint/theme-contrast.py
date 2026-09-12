@@ -260,6 +260,18 @@ for name in names:
         failures.append(("SIGNAL_FOCUS", "SCRIM", name, ratio, 3.0))
     print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}{'  !' if ratio < 3.0 else ''}")
 
+# The lock screen (surface §22) reports a failed password inline. Design page 12
+# draws that line in signal-error; this measures whether it could be. It is NOT
+# a BANNED row because SCRIM is a shade rather than a colorset key, so the table
+# above cannot express it — same reason fgOnScrim is measured here.
+print()
+print("signalError as TEXT on the scrim — the lock screen's failure line.")
+print("NOT drawn: two colorsets miss 4.5:1, so the line stays fgOnScrim and the")
+print("words carry the failure, which page 12 requires of it anyway.")
+for name in names:
+    ratio = contrast(themes[name]["SIGNAL_ERROR"], BLACK)
+    print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}{'  !' if ratio < 4.5 else ''}")
+
 print()
 print("fgOnAccent — Theme.qml picks the better of INK_CONTRAST_CANDIDATE / GROUND_BASE per theme:")
 for name in names:

@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+# Script: quickshell-restart
+# Purpose: Restart the Quickshell shell, refusing while the session is locked
+# Requirements: Arch Linux, quickshell, jaq, systemd
+# Usage: quickshell-restart
+#
+# THE restart path. `chezmoi apply` does not reliably reload a running shell --
+# the watcher is off in the unit on purpose (QS_DISABLE_FILE_WATCHER=1) and
+# chezmoi replaces files by rename, which a per-file watch does not survive --
+# so an apply that touches the QML tree ends here.
+#
+# 🚨 Why not a bare `systemctl --user restart`: restarting the shell while it
+# holds the session lock DROPS the ext-session-lock client while the compositor
+# still holds the lock. The session then sits behind Hyprland's failsafe until
+# the shell comes back and its stranded-lock recovery re-acquires it -- seconds
+# of a session the user cannot type into, self-inflicted. So ask first.
+#
+# 🚨 `quickshell ipc call` exits 0 even when it fails, so the answer is read
+# rather than the exit status. No answer at all means no shell to strand: that
+# is the recovery case, and it must proceed. `secure` is the compositor's own
+# view, `requested` covers the window where the lock was asked for and the
+# compositor has not answered yet.
+
+CONFIG=dotfiles
+
+status=$(quickshell -c "$CONFIG" ipc call lock status 2>/dev/null)
+
+if printf '%s' "$status" | jaq -e '.secure or .requested' >/dev/null 2>&1; then
+    echo "quickshell-restart: session is locked, refusing" >&2
+    notify-send "󰕮 Quickshell" "Session is locked — not restarting" -t 3000
+    exit 1
+fi
+
+# reset-failed first, for the same reason quickshell-toggle does it: a shell
+# that exhausted StartLimitBurst refuses `restart` at exactly the moment there
+# is no bar left to ask with.
+systemctl --user reset-failed quickshell.service 2>/dev/null || true
+exec systemctl --user restart quickshell.service

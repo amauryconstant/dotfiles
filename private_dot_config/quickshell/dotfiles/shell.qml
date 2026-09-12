@@ -4,6 +4,7 @@ import "bar"
 import "clipboard"
 import "dock"
 import "launcher"
+import "lock"
 import "menu"
 import "notifications"
 import "osd"
@@ -141,6 +142,62 @@ ShellRoot {
         }
     }
 
+    // desktop/immediate-lock calls this BEFORE falling back to hyprlock, so
+    // SUPER+L still locks when the shell is down or its restart budget is
+    // spent. The handler stays registered with the feature off — answering
+    // "disabled" — for the same reason the overview's does: a switched-off
+    // feature must not look like a broken wiring.
+    //
+    // 🚨 `ipc call` exits 0 for a target that does not exist, so the caller
+    // reads the ANSWER. Anything other than "ok" means hyprlock.
+    IpcHandler {
+        target: "lock"
+
+        function isLocked(): string {
+            // qmllint disable missing-property
+            return lockLoader.item ? (lockLoader.item.locked ? "true" : "false") : "disabled";
+            // qmllint enable missing-property
+        }
+
+        function lock(): string {
+            // Loader.item is typed QObject, so the linter cannot see
+            // LockScreen's members through it.
+            // qmllint disable missing-property
+            const svc = lockLoader.item;
+            if (!svc)
+                return "disabled";
+            if (!svc.pamConfigured)
+                return "missing-pam";
+            if (svc.locked)
+                return "ok";
+            return svc.beginLock() ? "ok" : "failed";
+            // qmllint enable missing-property
+        }
+
+        function status(): string {
+            // qmllint disable missing-property
+            const svc = lockLoader.item;
+            if (!svc)
+                return JSON.stringify({
+                    enabled: false
+                });
+            return JSON.stringify({
+                enabled: true,
+                locked: svc.locked,
+                requested: svc.lockRequested,
+                pending: svc.pendingSessionLock,
+                secure: svc.secure,
+                sessionLocked: svc.sessionLocked,
+                authenticating: svc.authenticating,
+                pam: svc.pamConfigured,
+                promptScreen: svc.promptScreenName,
+                wallpaper: svc.wallpaperFor(svc.promptScreenName),
+                realScreens: svc.realScreens().length
+            });
+            // qmllint enable missing-property
+        }
+    }
+
     // One OSD, not one per screen: it follows the focused monitor itself.
     Osd {}
 
@@ -179,6 +236,17 @@ ShellRoot {
         active: Config.polkitOwned
 
         sourceComponent: PolkitDialog {}
+    }
+
+    // Behind a Loader so the WlSessionLock is not constructed with the feature
+    // off. Unlike polkit and notifications nothing is DISPLACED either way —
+    // the fallback is chosen at runtime by desktop/immediate-lock, not here.
+    Loader {
+        id: lockLoader
+
+        active: Config.lockOwned
+
+        sourceComponent: LockScreen {}
     }
 
     // Behind a Loader rather than `visible: false`: with the flag off there is

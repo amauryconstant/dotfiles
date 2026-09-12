@@ -178,6 +178,18 @@ Singleton {
     // the one number the geometry scale does not supply is how wide a panel is.
     readonly property int polkitDialogWidth: 340
 
+    // Lock screen, surface §22. The field width design page 12 draws; like
+    // polkitDialogWidth it is a panel measurement, which the density scale does
+    // not supply. Everything else on that surface comes from the scale.
+    readonly property int lockFieldWidth: 220
+
+    // How far the lock dims the wallpaper it draws. NOT scrimOpacity (0.86):
+    // that value exists to hide a desktop behind a modal, and at it the
+    // wallpaper is barely there. This is the calibration knob for the one thing
+    // a fixed number cannot guarantee -- legible text over an ARBITRARY image.
+    // Raise it if a pale wallpaper ever washes the clock out.
+    readonly property real lockDimOpacity: 0.7
+
     // Dock, design page Shell-04-Bar (dock: no page in the current set). Deliberately OUTSIDE the geometry scale, the same
     // way powerTileRadius is: the scale exists so nested surfaces read as
     // nested, and the dock is a PEER of the bar, not something inside it.
@@ -418,6 +430,15 @@ Singleton {
     // registers it. With the flag off, hypr/conf.d/polkit-gnome deploys the
     // polkit-gnome agent instead and this shell must not construct one.
     readonly property bool polkitOwned: {{ .features.quickshell_polkit.enabled }}
+
+    // Whether this shell draws the lock screen. NOT the same kind of flag as
+    // the two above: nothing is displaced and nothing races, because
+    // desktop/immediate-lock asks the running shell at RUNTIME and falls back
+    // to hyprlock when the answer is not "ok". So this only decides whether the
+    // WlSessionLock is constructed at all; the `lock` IPC target is registered
+    // either way and answers "disabled", which is what keeps a switched-off
+    // feature distinguishable from a broken wiring.
+    readonly property bool lockOwned: {{ .features.quickshell_lock.enabled }}
 
     function brightnessGlyph(percent: int): string {
         return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];

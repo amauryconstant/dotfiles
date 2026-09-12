@@ -30,6 +30,8 @@ build record — history, not a roadmap
 | `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
 | `dotfiles/dock/Dock.qml` | Auto-hiding dock. One window **per screen**, hot-edge reveal |
 | `dotfiles/polkit/PolkitDialog.qml` | The polkit authentication dialog. Raised by the **system**: no toggle, no IPC target, visibility is the agent's `isActive` |
+| `dotfiles/lock/LockScreen.qml` | The session lock: `WlSessionLock`, PAM, stranded-lock recovery. Non-visual, behind a `Loader` on `Config.lockOwned` |
+| `dotfiles/lock/LockContent.qml` | What the lock draws, once per output. Clock, date, one field, one line — and deliberately nothing that reads a state |
 | `dotfiles/overview/*.qml` | Workspace carousel and its card. One window, follows the focused monitor |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
@@ -122,6 +124,7 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 | `Type "DeviceType::Enum" ... not found` | Networking's qmltypes records the enum unqualified; qmllint cannot match it to the module's own exported element |
 | `Type "DBusMenuHandle" ... not found` | Not exposed declaratively; unavoidable when reading `SystemTrayItem.menu` |
 | `Type "AuthFlow" of property "flow" not found` | Polkit's `AuthFlow` is a real type with a documented API, but it carries no `QML_ELEMENT`, so nothing declares it. Unavoidable when reading `PolkitAgent.flow`. See `polkit/PolkitDialog.qml` |
+| `Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found` | `Process.exited(qint32, QProcess::ExitStatus)` (`io/process.hpp:221`) carries a second argument whose Qt type nothing declares to qmllint, so the handler cannot compile even when it only binds the first. Unavoidable when reading an exit code; suppress `signal-handler-parameters`. See `lock/LockScreen.qml` |
 | `unknown grouped property scope margins` + `Type margins is used but it is not resolved` | `PanelWindow.margins` is a `Margins` gadget from the same `Quickshell._Window` indirection as the window itself. The block form `margins { left: ... }` is unresolvable; the dotted form still warns, so suppress `unqualified` and `unresolved-type` over those lines. See `bar/Bar.qml` |
 | `Unused import` on `import "../../"` | A singleton reached **only** from inside a template literal (`` `${Config.scriptsDir}/…` ``) is not traced, so the import that makes it resolvable reads as unused. Suppress `unused-imports` over that one import. See `bar/widgets/KanataWidget.qml` |
 | `No type found for property "edges"` | `PopupAnchor.edges`/`gravity` are `Edges::Flags`, unresolvable across the module split. Suppress inline with `missing-type` — the defaults are **not** usable, see below |
@@ -268,6 +271,22 @@ emits `authenticationFailed` on the flow, so the dialog stays up and only the fi
 Nothing in the QML may destroy the flow on a failure — cancelling is `cancelAuthenticationRequest()`
 and nothing else.
 
+🚨 **"Is the compositor locked" is NOT "is the lock stranded", and acting on the first
+displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock is
+running, and `misc:allow_session_lock_restore` means a second client is now *accepted* rather
+than refused — which is the whole reason `immediate-lock`'s guard had to become a `flock`.
+Measured 2026-09-12: `lock/LockScreen.qml` ran `session-locked` at startup, got 0 while
+hypridle's hyprlock was up, concluded orphan, and took a second lock on top of a live one. The
+probe is `desktop/session-lock-stranded` (locked **and** the lock file free); the QML rules
+*itself* out first with `locked || lockRequested`, because the in-process locker takes no lock
+file and so cannot be seen by one.
+
+⚠️ **A restart while the shell holds the lock strands the session on purpose.** Use
+`desktop/quickshell-restart`, which asks `ipc call lock status` and refuses on `secure` or
+`requested`. A bare `systemctl --user restart quickshell.service` drops the `ext-session-lock`
+client while the compositor still holds the lock, and the recovery above then has to clean up
+after a self-inflicted wound.
+
 🚨 **Constructing `NotificationServer` is what claims `org.freedesktop.Notifications`**, and a
 bus name has exactly one owner. There is no "advertise nothing" configuration — the only way
 not to own notifications is not to construct the server, which is why it sits behind a
@@ -317,8 +336,8 @@ The watcher is therefore **off in the deployed shell**: `quickshell.service` set
 `bin/omarchy-launch-shell` for the same reason — an upgrade rewriting the tree must not reload
 against a half-written one. The facts above are why it is off, not a behaviour to work around.
 
-So an apply that changes this tree ends with **`systemctl --user restart quickshell.service`**,
-which is now the only reload path. Never verify by looking at the files — verify with
+So an apply that changes this tree ends with **`desktop/quickshell-restart`** (which wraps
+`systemctl --user restart quickshell.service` in the lock guard below), the only reload path. Never verify by looking at the files — verify with
 `quickshell -c dotfiles ipc show` (is the new target there?) or `hyprctl layers`.
 
 🚨 **Nothing else may launch the shell.** A bare `quickshell -c dotfiles` is unsupervised, and a
@@ -672,7 +691,8 @@ ground, `fg-muted` is allowed.
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
 `bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
-`notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`. List them live with
+`notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`, `lock.lock()`,
+`lock.isLocked()`, `lock.status()`. List them live with
 `quickshell ipc --pid <pid> show`.
 
 🚨 **The menu picker is deliberately NOT here.** A dmenu call must BLOCK until the user chooses,

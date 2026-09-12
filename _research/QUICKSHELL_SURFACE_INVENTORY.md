@@ -451,32 +451,43 @@ most likely to be seen at a glance from across a room.
 The design must decide how much is shown on a locked screen — every notification preview is a
 privacy decision. Multi-monitor behaviour needs a rule: one prompt or one per screen.
 
-**Status**: Deferred — and `Restart=always` alone makes this one WORSE, not better. `ext-session-lock`
-outlives its client, so a restarted shell comes back holding no lock and the session sits behind
-Hyprland's failsafe with nothing to authenticate against. Omarchy needs three pieces for that:
-`allow_session_lock_restore` in the compositor config, a stranded-lock probe that reads
-`solitaryBlockedBy` from `hyprctl -j monitors` (`bin/omarchy-hyprland-session-locked`), and a
-re-lock step in its restart path (`bin/omarchy-restart-shell`) that refuses to restart a *live*
-locker while recovering a stranded one. That is the prerequisite for this entry, not supervision.
-
-**Two of those three landed 2026-09-12**, ahead of the surface and independently of it — the same
-hole was already open under hyprlock, where a killed locker left the session behind the failsafe
-with no way back except a TTY:
+**Status**: **Shipped 2026-09-12** (`lock/LockScreen.qml` + `lock/LockContent.qml`, behind
+`features.quickshell_lock`). The deferral was never about supervision: `Restart=always` alone made
+this entry WORSE, because `ext-session-lock` outlives its client, so a restarted shell came back
+holding no lock while the session sat behind Hyprland's failsafe with nothing to authenticate
+against. Three pieces answered that, all now present:
 
 - `misc:allow_session_lock_restore = true` in `hypr/conf/general.{lua,conf}` — the tree's only
-  `misc` block.
-- `desktop/session-locked`, the stranded-lock probe, answering by exit status alone: 0 locked,
-  1 unlocked, **2 undetermined** (a monitor with no workspace yet never reaches the lock, so a
-  retrying caller must not treat 2 as an answer).
-- Consequence, already handled: `desktop/immediate-lock` moved from `pidof hyprlock` to a `flock`,
-  because the compositor now *accepts* the second locker that a lost race would spawn.
+  `misc` block. The compositor accepts a replacement client instead of refusing one.
+- `desktop/session-locked`, answering by exit status alone: 0 locked, 1 unlocked, **2
+  undetermined** (a monitor with no workspace yet never reaches the lock, so a retrying caller
+  must not treat 2 as an answer) — and `desktop/session-lock-stranded` on top of it, which is
+  the question the recovery actually asks.
+- `desktop/quickshell-restart`, which refuses while `lock status` reports `secure` or `requested`.
 
-What remains for this entry is the third piece — a restart path that refuses a **live** locker
-while recovering a **stranded** one — plus the surface itself. The runtime is present in 0.3.1:
-`WlSessionLock`/`WlSessionLockSurface` (one surface per screen, engine-instantiated) and
-`PamContext`, which can borrow the hyprlock package's own `/etc/pam.d/hyprlock` rather than
-installing a PAM file of its own. Design page `Shell-12-Deferred` covers this surface and has
-never been read; read it before drawing anything.
+Consequence already handled in the same pass: `desktop/immediate-lock` moved from
+`pidof hyprlock` to a `flock`, because the compositor now *accepts* the second locker a lost race
+would spawn.
+
+🚨 **The probe that recovers a stranded lock must ALSO prove no locker is alive.** Measured
+2026-09-12 the hard way: `session-locked` alone returned 0 while hypridle's hyprlock was up, the
+recovery read that as an orphan, and the shell took a second lock on top of a live one —
+displacing exactly what the `flock` had just been added to prevent. `session-lock-stranded` is
+both conditions (compositor locked **and** the lock file free), and the QML rules *itself* out
+first with `locked || lockRequested`, since an in-process locker holds no lock file.
+
+**What page `Shell-12-Deferred` settled**, read for the first time on 2026-09-12: nothing ambient
+is drawn — no notification presence, no media, no battery, because "a lock screen that shows
+message previews unlocks the user's mail for anyone walking past", which is stricter than the
+"presence only" this entry proposed above. Every output is covered; the field appears on the
+focused one alone. No Esc, ever. A failure clears the field and reports inline but **does not
+count down publicly**.
+
+**The one departure**: page 12 asks for a lock process supervised independently of the shell. This
+tree recovers instead of isolating — the failsafe is opaque, so a crashed locker is ugly rather
+than insecure, and `Restart=always` plus lock restore plus the stranded probe turns it into ~2s
+of failsafe followed by a prompt. `desktop/immediate-lock` keeps hyprlock as the runtime fallback
+for a shell that cannot come back at all. Recorded in `quickshell/CLAUDE.md`'s departures table.
 
 ### 23. Greeter
 
@@ -587,17 +598,18 @@ branching into two designs.
 
 ## Summary
 
-**As of 2026-09-12.** Two of the 17 shipped surfaces (dock, workspace overview) ship **off** —
-built, tried in daily use, declined.
+**As of 2026-09-12.** Two of the 18 shipped surfaces (dock, workspace overview) ship **off** —
+built, tried in daily use, declined. **Nothing is deferred any more**: §21 and §22, the two the
+design's own page 12 held back on safety, both landed on the supervision that arrived the same day.
 
 | Class | Surfaces | Shipped | Partial | Not built | Deferred |
 |---|---|---|---|---|---|
 | Persistent | 2 | 2 | — | — | — |
 | Ambient | 3 | 2 | 1 | — | — |
 | Summoned | 15 | 12 | 1 | 2 | — |
-| Interrupt | 3 | 1 | — | 1 | 1 |
+| Interrupt | 3 | 2 | — | 1 | — |
 | Foundation | 7 | — | — | — | — |
-| **Total** | **30** | **17** | **2** | **3** | **1** |
+| **Total** | **30** | **18** | **2** | **3** | — |
 
 The 2026-09-03 reading — that the generic list picker (7) and the menu model on it (8) were the
 bulk of the work — held: building the picker on 2026-09-09 closed eight entries in one change,
@@ -611,7 +623,6 @@ because eighteen scripts already spoke dmenu.
 | 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
 | 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
 | 15 | Screenshot and recording control | Not built. Nothing in the replaced stack had it either |
-| 22 | Lock screen | Deferred — a crash in a lock surface needs a TTY to escape. Two of the three prerequisites landed 2026-09-12 (`allow_session_lock_restore`, `desktop/session-locked`); the restart guard and the surface itself remain. `WlSessionLock` + `PamContext` both exist |
 | 23 | Greeter | Not built, no decision recorded |
 
 Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries
