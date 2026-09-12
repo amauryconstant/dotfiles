@@ -439,6 +439,24 @@ The `indicators` IPC target is deliberately separate from `idle`: two scripts al
 by name, and a target that silently grew to mean "everything" would be a worse lie than one extra
 handler.
 
+## Capture (surface §15)
+
+🚨 **There is no QML region selector here, and there will not be one.** §15 requires the surface to
+stay out of its own capture, and Quickshell has no mechanism for that — no `excludeFromCapture` on
+`PanelWindow`, `WlrLayershell` or `ProxyWindowBase`, anywhere in the source. Omarchy, on the same
+stack, reached the same place: its only capture QML is a bar indicator, with region select and
+recording left in shell scripts driving `slurp`. Ours stay in `media/screenshot`,
+`media/capture-region.sh`, `media/capture-qr`, `media/capture-text-extraction` and
+`desktop/screenrecord`, on `wayfreeze` + `slurp` + `grim` + `gpu-screen-recorder`.
+
+What the shell owns is the two halves that *are* surfaces: the recording indicator with its stop
+affordance (see Mode indicators above) and `media/capture-menu`, a picker over the same eight
+scripts the Print-key chords run. No capture path has a second implementation.
+
+`CTRL ALT SHIFT + Print` opens the menu. That chord previously ran the **identical**
+`screenrecord --with-audio` command as `ALT SHIFT + Print` while being labelled "Fullscreen
+recording" — `screenrecord` has no fullscreen flag, so the two bindings did the same thing.
+
 ## OSD (Phase 3)
 
 `osd/Osd.qml`, one window, instantiated once in `shell.qml`. **Nothing triggers it** — no

@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+
+# Script: capture-menu
+# Purpose: Pick a capture mode from the Quickshell picker
+# Requirements: Arch Linux, quickshell-menu (falls back to wofi)
+# Bound to: CTRL ALT SHIFT + Print
+#
+# Surface §15 wants the capture modes discoverable. They already all exist as
+# scripts with Print-key chords; what was missing is a way to reach them
+# without remembering ten of them. So this is a picker over the SAME scripts
+# the bindings run — no second implementation of any capture path.
+#
+# 🚨 Deliberately NOT a full-screen QML region selector. Quickshell cannot
+# keep a surface out of its own capture (no excludeFromCapture exists on
+# PanelWindow, WlrLayershell or ProxyWindowBase anywhere in the source), and
+# omarchy — running the same stack — kept slurp too: its only QML piece is a
+# bar indicator. Region select stays with wayfreeze + slurp + grim.
+
+SCRIPTS_DIR="$HOME/.local/lib/scripts"
+
+CHOICE=$(
+    cat <<'MENU_EOF' | "$SCRIPTS_DIR/desktop/quickshell-menu" --json --prompt "Capture"
+[
+  {"title": "Region", "subtitle": "Select an area, then annotate", "glyph": "󰆞", "payload": "region"},
+  {"title": "Window", "subtitle": "Snap the selection to a window", "glyph": "󰖯", "payload": "windows"},
+  {"title": "Whole screen", "subtitle": "The focused output", "glyph": "󰹑", "payload": "fullscreen"},
+  {"title": "Smart", "subtitle": "Snaps to the window under the pointer if the selection is tiny", "glyph": "󰁨", "payload": "smart"},
+  {"title": "Region to clipboard", "subtitle": "Straight to the clipboard, no editor", "glyph": "󰅇", "payload": "clipboard"},
+  {"title": "QR code", "subtitle": "Decode a QR in a region to the clipboard", "glyph": "󰐲", "payload": "qr"},
+  {"title": "Text (OCR)", "subtitle": "Extract text from a region to the clipboard", "glyph": "󱄽", "payload": "ocr"},
+  {"title": "Record screen", "subtitle": "Start or stop a recording with audio", "glyph": "󰑋", "payload": "record"}
+]
+MENU_EOF
+)
+
+[ -n "$CHOICE" ] || exit 0
+
+case "$CHOICE" in
+    region | windows | fullscreen | smart)
+        exec "$SCRIPTS_DIR/media/screenshot" "$CHOICE"
+        ;;
+    clipboard)
+        exec "$SCRIPTS_DIR/media/screenshot" smart clipboard
+        ;;
+    qr)
+        exec "$SCRIPTS_DIR/media/capture-qr"
+        ;;
+    ocr)
+        exec "$SCRIPTS_DIR/media/capture-text-extraction"
+        ;;
+    record)
+        exec "$SCRIPTS_DIR/desktop/screenrecord" --with-audio
+        ;;
+    *)
+        exit 1
+        ;;
+esac

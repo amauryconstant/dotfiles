@@ -19,12 +19,11 @@ o.bind("SUPER + SHIFT + Print", "Fullscreen screenshot", "~/.local/lib/scripts/m
 -- Screen recording with audio (toggle)
 o.bind("ALT + SHIFT + Print", "Screen recording with audio", "~/.local/lib/scripts/desktop/screenrecord --with-audio")
 
--- Fullscreen recording with audio (toggle)
-o.bind(
-	"CTRL + ALT + SHIFT + Print",
-	"Fullscreen recording with audio",
-	"~/.local/lib/scripts/desktop/screenrecord --with-audio"
-)
+-- Capture menu. This chord used to run the identical
+-- `screenrecord --with-audio` command as ALT + SHIFT + Print while claiming to
+-- be "Fullscreen recording" — the script has no fullscreen flag, so the two
+-- bindings did the same thing.
+o.bind("CTRL + ALT + SHIFT + Print", "Capture menu", "~/.local/lib/scripts/media/capture-menu")
 
 -- Region/window screenshot without smart-snap
 o.bind("SUPER + CTRL + Print", "Region screenshot", "~/.local/lib/scripts/media/screenshot region")

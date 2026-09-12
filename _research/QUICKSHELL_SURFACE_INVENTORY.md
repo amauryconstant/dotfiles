@@ -322,7 +322,27 @@ into a persistent indicator (component 5) that must be reachable to stop.
 across all of it. It must also stay out of its own capture. There is no surface for this at all
 today, in any tool being replaced.
 
-**Status**: Not built.
+**Status**: **Partially shipped 2026-09-12, and the unbuilt half is a ruling rather than a gap.**
+
+🚨 **The full-screen region overlay is deliberately not built.** This entry's own constraint — "it
+must stay out of its own capture" — has no mechanism: no `excludeFromCapture` or equivalent exists
+anywhere in Quickshell, on `PanelWindow`, `WlrLayershell` or `ProxyWindowBase`. And omarchy, running
+the same stack, did not build one either: its only QML piece is
+`shell/plugins/bar/indicators/ScreenRecording.qml`, while region select and recording stay in
+`bin/omarchy-capture-screenrecording`, on the same slurp + PID-sidecar architecture ours already
+uses. Region select stays with `wayfreeze` + `slurp` + `grim`.
+
+What shipped is the rest of the entry:
+
+- **The running state with a reachable stop affordance** — `RecordingWidget`, in the bar's mode
+  indicator group (§5), reading `/tmp/screenrecord_$USER.pid`, elapsed time ticking from that
+  file's mtime, click to stop. Before this, `screenrecord` signalled a Waybar module that never
+  existed.
+- **The mode choice** — `media/capture-menu` on the shared picker: region, window, whole screen,
+  smart, region-to-clipboard, QR, OCR, record. It invokes the same scripts the Print-key chords
+  run, so no capture path has a second implementation. Bound to `CTRL ALT SHIFT + Print`, which
+  until now ran the *identical* command as `ALT SHIFT + Print` while claiming to be "Fullscreen
+  recording".
 
 ### 16. Clipboard history
 
@@ -639,7 +659,7 @@ because eighteen scripts already spoke dmenu.
 | 5 | Mode and state indicators | **Shipped 2026-09-12** — ranking is fixed-order, glyph-carried; night light and recording newly drawn |
 | 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
 | 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
-| 15 | Screenshot and recording control | Not built. Nothing in the replaced stack had it either |
+| 15 | Screenshot and recording control | **Partial by ruling 2026-09-12** — indicator + mode picker shipped; the region overlay is declined (nothing can keep a surface out of its own capture, and omarchy declined it too) |
 | 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/QUICKSHELL_GREETER.md`) |
 
 Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries
