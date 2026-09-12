@@ -264,8 +264,30 @@ which may make the picker's own monitor disappear.
 identity is not a port name — the same physical display can arrive on a different connector — so
 the design must not lean on "DP-1" as a label a user recognises.
 
-**Status**: Not built.
+**Status**: **Shipped 2026-09-12 as an OUTPUT picker, with the profile picker declined and the
+reason recorded.**
 
+🚨 **A saved-profile picker cannot be built.** `hyprdynamicmonitors` selects a profile by matching
+EDID descriptions and offers no way to force one: `run` auto-selects, `freeze --profile-name` goes
+the other way (live state → new profile), and there is no `apply`/`switch` subcommand and no IPC
+socket. The only lever is editing `config.toml` and restarting the daemon. Omarchy's shell has no
+analogue either — `shell/plugins/panels/monitor/` is a live brightness/scale/enable-per-output
+panel, not a profile picker.
+
+So `desktop/display-menu` picks over **the outputs themselves**, which is reachable: each row is an
+output, titled by its EDID description with the port, mode, scale and focus as the subtitle —
+honouring this entry's constraint that the user must not be asked to recognise "DP-1". Selecting an
+output enables or disables it; disabling the *last* enabled output is refused outright, because
+that is a black screen with no way back that does not involve a TTY. The last row opens wdisplays
+through `monitor-switch`.
+
+It replaces the old "Displays" menu entry, which duplicated `monitor-switch`'s body inline and
+launched wdisplays without ever showing what was connected — `monitor-switch` itself picks nothing
+and never did, despite the name.
+
+**If the profile picker is wanted later**, the cheapest path is writing the chosen profile's
+`hyprconfigs/*.lua` straight to the daemon's own `destination` (`~/.config/hypr/monitors.lua`) and
+reloading; the honest path is an upstream `apply` subcommand.
 ### 12. Session save and restore prompt
 
 **Made of**: a prompt naming a saved window session and how many windows it holds, with a restore
@@ -658,7 +680,7 @@ because eighteen scripts already spoke dmenu.
 |---|---|---|
 | 5 | Mode and state indicators | **Shipped 2026-09-12** — ranking is fixed-order, glyph-carried; night light and recording newly drawn |
 | 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
-| 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
+| 11 | Display and monitor profile picker | **Shipped 2026-09-12 as an output picker** — the *profile* half is declined, because hyprdynamicmonitors exposes no way to force a profile |
 | 15 | Screenshot and recording control | **Partial by ruling 2026-09-12** — indicator + mode picker shipped; the region overlay is declined (nothing can keep a surface out of its own capture, and omarchy declined it too) |
 | 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/QUICKSHELL_GREETER.md`) |
 

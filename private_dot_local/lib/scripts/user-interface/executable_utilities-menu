@@ -14,7 +14,7 @@ CHOICE=$(show_menu "Utilities" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰕾 Audio (PulseAudio)")
         pavucontrol &

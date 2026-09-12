@@ -14,7 +14,7 @@ CHOICE=$(show_menu "Style" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰔎 Switch Theme")
         # Scripts here are extensionless; the ".sh" this used to call has not
@@ -27,7 +27,7 @@ case "$CHOICE" in
         fi
         ;;
     "󰸉 Wallpaper (Random)")
-        "$SCRIPTS_DIR/media/random-wallpaper.sh"
+        "$SCRIPTS_DIR/media/random-wallpaper"
         ;;
     "󰋩 Wallpaper (Set)")
         # List wallpapers from current theme and let user choose
@@ -44,7 +44,7 @@ case "$CHOICE" in
                 sed "s|$WALLPAPER_DIR/||" | \
                 "$MENU_PICKER" --prompt "Select Wallpaper")
             if [ -n "$WALLPAPER" ]; then
-                "$SCRIPTS_DIR/media/set-wallpaper.sh" "$WALLPAPER_DIR/$WALLPAPER"
+                "$SCRIPTS_DIR/media/set-wallpaper" "$WALLPAPER_DIR/$WALLPAPER"
             fi
         else
             notify "󰋩 Wallpaper" "No theme selected or wallpaper directory not found"
@@ -57,7 +57,7 @@ case "$CHOICE" in
 
         case "$CONFIG_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-style.sh"
+                "$SCRIPTS_DIR/user-interface/menu-style"
                 ;;
             "󰍹 Monitor")
                 {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/monitor.conf

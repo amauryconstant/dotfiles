@@ -14,13 +14,13 @@ CHOICE=$(show_menu "Setup" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰕾 Audio (PulseAudio)")
         pavucontrol &
         ;;
     "󰓃 Audio Output Switch")
-        "$SCRIPTS_DIR/desktop/audio-switch.sh"
+        "$SCRIPTS_DIR/desktop/audio-switch"
         ;;
     "󰖩 Network (WiFi)")
         {{ .globals.applications.terminal }} -e nmtui
@@ -37,7 +37,7 @@ case "$CHOICE" in
 
             case "$PROFILE_CHOICE" in
                 "󰁍 Back")
-                    "$SCRIPTS_DIR/user-interface/menu-setup.sh"
+                    "$SCRIPTS_DIR/user-interface/menu-setup"
                     ;;
                 "󰓅 Performance")
                     powerprofilesctl set performance
@@ -57,14 +57,12 @@ case "$CHOICE" in
         fi
         ;;
     "󰍹 Displays")
-        # Launch display configuration tool
-        if command -v wdisplays >/dev/null 2>&1; then
-            wdisplays &
-        elif command -v nwg-displays >/dev/null 2>&1; then
-            nwg-displays &
-        else
-            notify "󰍹 Displays" "No display configuration tool found\nInstall wdisplays or nwg-displays"
-        fi
+        # The outputs themselves, on the picker (surface §11). This used to
+        # duplicate monitor-switch's body inline, so the same "launch
+        # wdisplays" logic existed in two places and neither showed the user
+        # what was actually connected. display-menu still offers wdisplays as
+        # its last row, through monitor-switch.
+        "$SCRIPTS_DIR/desktop/display-menu"
         ;;
     "󰌑 Edit Keybindings")
         {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/bindings.conf

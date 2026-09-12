@@ -14,7 +14,7 @@ CHOICE=$(show_menu "Update" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰚰 Full System Update")
         # Runs: package-manager update + firmware + git + cleanup
@@ -43,7 +43,7 @@ case "$CHOICE" in
 
             case "$FW_CHOICE" in
                 "󰁍 Back")
-                    "$SCRIPTS_DIR/user-interface/menu-update.sh"
+                    "$SCRIPTS_DIR/user-interface/menu-update"
                     ;;
                 "󰋗 Check for Updates")
                     {{ .globals.applications.terminal }} -e sh -c "fwupdmgr refresh; fwupdmgr get-updates; read -p 'Press Enter to continue...'"

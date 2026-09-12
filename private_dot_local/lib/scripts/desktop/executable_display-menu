@@ -1,0 +1,94 @@
+#!/usr/bin/env sh
+
+# Script: display-menu
+# Purpose: List the connected outputs and enable/disable one
+# Requirements: Arch Linux, hyprctl, jaq, quickshell-menu (falls back to wofi)
+# Bound to: menu-setup -> Displays
+#
+# Surface §11. That entry asks for a picker over saved monitor *profiles*, and
+# that cannot be built: hyprdynamicmonitors selects a profile by matching EDID
+# descriptions and exposes no way to force one — `run` auto-selects, `freeze`
+# goes the other way (live state -> new profile), and there is no `apply`
+# subcommand and no IPC socket. So this picks over the OUTPUTS THEMSELVES,
+# which is the part that is reachable, and is also what omarchy's own shell
+# settled on (shell/plugins/panels/monitor/ is a live per-display panel, not a
+# profile picker).
+#
+# 🚨 Identity is the EDID description, never the port. The same physical
+# display arrives on a different connector after a cable swap, which is the
+# whole reason hyprdynamicmonitors matches on description — so "DP-1" is shown
+# as a detail, never as the thing the user is asked to recognise.
+
+SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}"
+# shellcheck source=/dev/null
+. "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
+
+MONITORS=$(hyprctl monitors all -j 2>/dev/null) || MONITORS=""
+if [ -z "$MONITORS" ]; then
+    notify "󰍹 Displays" "Could not read the monitor list from hyprctl"
+    exit 1
+fi
+
+ENABLED_COUNT=$(printf '%s' "$MONITORS" | jaq -r '[.[] | select((.disabled // false) | not)] | length')
+
+ITEMS=$(printf '%s' "$MONITORS" | jaq -c --arg mon "󰍹" --arg off "󰶐" '
+    [ .[] | {
+        title: (if (.description // "") == "" then .name else .description end),
+        subtitle: (
+            if (.disabled // false) then
+                "\(.name) · disabled"
+            else
+                "\(.name) · \(.width)x\(.height)@\(.refreshRate | floor) · scale \(.scale)"
+                + (if .focused then " · focused" else "" end)
+            end
+        ),
+        glyph: (if (.disabled // false) then $off else $mon end),
+        badge: (if .focused then "focused" else "" end),
+        payload: .name
+    } ]')
+
+# One trailing action: the graphical arrangement editor, which is what the old
+# monitor-switch was in its entirety.
+ITEMS=$(printf '%s' "$ITEMS" | jaq -c --arg cog "󰒓" '. + [{
+    title: "Display settings",
+    subtitle: "Arrange, scale and rotate in wdisplays",
+    glyph: $cog,
+    payload: "__settings"
+}]')
+
+CHOICE=$(printf '%s' "$ITEMS" | "$SCRIPTS_DIR/desktop/quickshell-menu" --json --prompt "Displays")
+[ -n "$CHOICE" ] || exit 0
+
+if [ "$CHOICE" = "__settings" ]; then
+    exec "$SCRIPTS_DIR/desktop/monitor-switch"
+fi
+
+# Hyprland accepts any output name we just read back, but the value still
+# reaches a `hyprctl keyword` argument, so it is checked rather than trusted --
+# the same class of fix omarchy's v4.0.1 device-name-as-Lua bug called for.
+case "$CHOICE" in
+    '' | *[!A-Za-z0-9._:-]*)
+        notify "󰍹 Displays" "Refusing an output name with unexpected characters"
+        exit 1
+        ;;
+esac
+
+IS_DISABLED=$(printf '%s' "$MONITORS" | jaq -r --arg n "$CHOICE" '.[] | select(.name == $n) | (.disabled // false)')
+
+if [ "$IS_DISABLED" = "true" ]; then
+    hyprctl keyword monitor "$CHOICE,preferred,auto,auto" >/dev/null 2>&1
+    notify "󰍹 Displays" "$CHOICE enabled"
+    exit 0
+fi
+
+# 🚨 Never leave the session with no output. Disabling the last enabled one is
+# a black screen with no way back that does not involve a TTY.
+if [ "$ENABLED_COUNT" -le 1 ]; then
+    notify "󰍺 Displays" "$CHOICE is the only enabled output — refusing to disable it"
+    exit 1
+fi
+
+if confirm "Disable $CHOICE?"; then
+    hyprctl keyword monitor "$CHOICE,disable" >/dev/null 2>&1
+    notify "󰶐 Displays" "$CHOICE disabled"
+fi

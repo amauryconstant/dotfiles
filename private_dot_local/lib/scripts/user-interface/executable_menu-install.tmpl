@@ -14,12 +14,12 @@ CHOICE=$(show_menu "Install" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰏗 Install Package")
         # Interactive package installation
-        if [ -f "$SCRIPTS_DIR/system/package-manager.sh" ]; then
-            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager.sh" install
+        if [ -f "$SCRIPTS_DIR/system/package-manager" ]; then
+            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager" install
         else
             # Fallback to simple search and install
             # An empty list: the picker answers with the typed text, which is
@@ -42,7 +42,7 @@ case "$CHOICE" in
 
             case "$MODEL_CHOICE" in
                 "󰁍 Back")
-                    "$SCRIPTS_DIR/user-interface/menu-install.sh"
+                    "$SCRIPTS_DIR/user-interface/menu-install"
                     ;;
                 "󰉖 List Models")
                     if [ -d "$MODELS_DIR" ]; then
@@ -78,7 +78,7 @@ case "$CHOICE" in
 
         case "$DEV_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-install.sh"
+                "$SCRIPTS_DIR/user-interface/menu-install"
                 ;;
             "󰡨 Docker")
                 if confirm "Install Docker?"; then
@@ -112,7 +112,7 @@ case "$CHOICE" in
 
         case "$EDITOR_CHOICE" in
             "󰁍 Back")
-                "$SCRIPTS_DIR/user-interface/menu-install.sh"
+                "$SCRIPTS_DIR/user-interface/menu-install"
                 ;;
             "󰨞 VSCode")
                 if confirm "Install Visual Studio Code?"; then

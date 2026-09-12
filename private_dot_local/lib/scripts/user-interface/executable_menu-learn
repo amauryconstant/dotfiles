@@ -14,10 +14,10 @@ CHOICE=$(show_menu "Learn" "$OPTIONS")
 
 case "$CHOICE" in
     "󰁍 Back")
-        "$SCRIPTS_DIR/user-interface/system-menu.sh"
+        "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰌌 Keybindings")
-        "$SCRIPTS_DIR/desktop/keybindings.sh"
+        "$SCRIPTS_DIR/desktop/keybindings"
         ;;
     "󰗚 Hyprland Wiki")
         firefox "https://wiki.hyprland.org" &

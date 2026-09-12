@@ -203,6 +203,19 @@ and exits, which is how the grouping, ordering and badge are checked without a d
 
 **menu-helpers.sh keeps .sh extension**: It's a sourced library, not an executed script. Don't rename it.
 
+🚨 **Nothing else keeps a `.sh` extension, and 18 call sites said otherwise until 2026-09-12.**
+chezmoi strips `executable_` and `.tmpl` but adds nothing, so the deployed scripts are
+`system-menu`, `menu-setup`, `audio-switch`, `random-wallpaper` — never `*.sh`. Every `󰁍 Back`
+row in `menu-install`, `menu-learn`, `menu-setup`, `menu-style`, `menu-update` and
+`utilities-menu` pointed at `system-menu.sh`, which has never existed, so **Back did nothing at
+all** — the path failed, the script exited, and the menu simply closed. The same held for
+`keybindings.sh`, `audio-switch.sh`, `package-manager.sh`, `random-wallpaper.sh` and
+`set-wallpaper.sh`.
+
+The failure is silent by construction: a menu leaf that exits looks exactly like a menu leaf that
+ran. When adding a call site, check the deployed name (`ls ~/.local/lib/scripts/<category>/`),
+not the source name.
+
 **Template scripts** (`.tmpl` suffix): menu-about.tmpl, menu-ai.tmpl, menu-install.tmpl, menu-setup.tmpl, menu-style.tmpl, menu-update.tmpl, theme-menu.tmpl — chezmoi processes these at `chezmoi apply` time, not at runtime. Template vars are build-time substitutions.
 
 **hook-create/edit/list/test use gum-ui**: Unlike menu scripts (graphical picker), hook tools are interactive terminal utilities — use gum for rich UI.
