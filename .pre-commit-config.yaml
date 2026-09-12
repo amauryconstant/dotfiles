@@ -1,9 +1,9 @@
 repos:
 - repo: local
   hooks:
-  - id: chezmoi-destroy
-    name: Chezmoi destroy staged deletions
-    entry: mise run destroy:staged
+  - id: chezmoi-orphans
+    name: Report chezmoi targets orphaned by staged deletions
+    entry: mise run chezmoi:orphans
     language: system
     pass_filenames: false
     always_run: true
