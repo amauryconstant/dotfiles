@@ -431,6 +431,39 @@ with the opposite outcome per consumer:
 Neither script revokes a prior grant: an existing membership survives every `chezmoi apply`.
 Removing it live is `sudo gpasswd -d $USER input` + re-login.
 
+### 🚨 One unknown target aborts the whole pacman batch
+
+`packages.yaml`'s `delete:` list is handed to `paru -Rns` in a single call. pacman resolves every
+target before it does anything, and **one unresolvable target discards the entire transaction** —
+proven non-destructively on the same resolution path:
+
+```
+$ pacman -Sp definitely-not-a-real-package-xyz bash
+error: target not found: definitely-not-a-real-package-xyz     # bash is NOT resolved
+$ pacman -Sp bash
+file:///var/cache/pacman/pkg/bash-5.3.15-1-x86_64.pkg.tar.zst
+```
+
+That made the delete path dead for most of this repo's life, and silent with it, because the call
+carried `2>/dev/null || true` and the success line printed unconditionally:
+
+| Date | What landed |
+|---|---|
+| 2025-10-29 | `yay` joins the delete list — and is uninstalled around the same time, so the list already carries an unresolvable target |
+| 2025-11-12 | `kitty-shell-integration`, `kitty-terminfo` join it |
+| 2025-12-04 | the removal call gains `2>/dev/null \|\| true`, hiding the error |
+| 2025-12-22 | the NVIDIA cleanup unconditionally appends three `nvidia-580xx-*` names that are never installed on the modern-driver path — from here every run is guaranteed ≥3 unresolvable targets |
+
+Found 2026-09-13: both kitty packages were still installed, ten months after being listed.
+
+**The delete list is now filtered to installed packages before paru sees it**, and stderr is no
+longer discarded. The orphan removal below it had the same silencing (though not the same
+unknown-target risk — `paru -Qtdq` only reports installed packages) and now reports failure too.
+
+**The install path is deliberately left alone.** It batches the same way, so one typo'd package
+name in `packages.yaml` does block all ~200 installs — but it `exit 1`s, so the apply stops and
+says so. Loud is the right behaviour there; the bug was only ever the silence.
+
 ---
 
 ## Backup System

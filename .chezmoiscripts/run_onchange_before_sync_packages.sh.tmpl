@@ -375,8 +375,15 @@ ORPHANS=$(paru -Qtdq 2>/dev/null || true)
 if [ -n "$ORPHANS" ]; then
     ORPHAN_COUNT=$(echo "$ORPHANS" | grep -c '^' || echo 0)
     {{ includeTemplate "log_step" "Removing $ORPHAN_COUNT orphaned packages..." }}
-    echo "$ORPHANS" | xargs -r paru -Rns --noconfirm 2>/dev/null || true
-    {{ includeTemplate "log_success" "Orphaned packages removed" }}
+    # Same silencing bug as the delete list above, milder: orphans come from
+    # `paru -Qtdq` so they are all installed and no unknown target can abort
+    # the batch — but a removal blocked by a dependency still printed
+    # "Orphaned packages removed" and moved on.
+    if echo "$ORPHANS" | xargs -r paru -Rns --noconfirm; then
+        {{ includeTemplate "log_success" "Orphaned packages removed" }}
+    else
+        {{ includeTemplate "log_warning" "Some orphans could not be removed — see the output above" }}
+    fi
 else
     {{ includeTemplate "log_success" "No orphaned packages found" }}
 fi
