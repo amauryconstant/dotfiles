@@ -173,6 +173,11 @@ Singleton {
     readonly property int powerColumnGap: 30
     readonly property int powerAvatarSize: 34
 
+    // Polkit dialog, surface §21. Same width as the launcher and a
+    // notification card: this is another panel of stacked full-width rows, and
+    // the one number the geometry scale does not supply is how wide a panel is.
+    readonly property int polkitDialogWidth: 340
+
     // Dock, design page Shell-04-Bar (dock: no page in the current set). Deliberately OUTSIDE the geometry scale, the same
     // way powerTileRadius is: the scale exists so nested surfaces read as
     // nested, and the dock is a PEER of the bar, not something inside it.
@@ -406,6 +411,13 @@ Singleton {
     // exactly the state the rollback exists to avoid. See
     // .chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl.
     readonly property bool notificationsOwned: {{ .features.quickshell_notifications.enabled }}
+
+    // 🚨 Whether this shell owns the polkit authentication agent. Same kind of
+    // exclusivity as notificationsOwned and load-bearing for the same reason: a
+    // session may have exactly ONE agent, and merely CONSTRUCTING PolkitAgent
+    // registers it. With the flag off, hypr/conf.d/polkit-gnome deploys the
+    // polkit-gnome agent instead and this shell must not construct one.
+    readonly property bool polkitOwned: {{ .features.quickshell_polkit.enabled }}
 
     function brightnessGlyph(percent: int): string {
         return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];

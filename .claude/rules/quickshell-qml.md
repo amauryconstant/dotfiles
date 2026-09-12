@@ -29,6 +29,7 @@ build record — history, not a roadmap
 | `dotfiles/clipboard/ClipboardPicker.qml` | cliphist history |
 | `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
 | `dotfiles/dock/Dock.qml` | Auto-hiding dock. One window **per screen**, hot-edge reveal |
+| `dotfiles/polkit/PolkitDialog.qml` | The polkit authentication dialog. Raised by the **system**: no toggle, no IPC target, visibility is the agent's `isActive` |
 | `dotfiles/overview/*.qml` | Workspace carousel and its card. One window, follows the focused monitor |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
@@ -120,6 +121,7 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 | `Type "BluetoothAdapter" ... not found` | `Quickshell/Bluetooth/qmldir` omits `depends Quickshell`, which Pipewire, SystemTray and Networking all declare |
 | `Type "DeviceType::Enum" ... not found` | Networking's qmltypes records the enum unqualified; qmllint cannot match it to the module's own exported element |
 | `Type "DBusMenuHandle" ... not found` | Not exposed declaratively; unavoidable when reading `SystemTrayItem.menu` |
+| `Type "AuthFlow" of property "flow" not found` | Polkit's `AuthFlow` is a real type with a documented API, but it carries no `QML_ELEMENT`, so nothing declares it. Unavoidable when reading `PolkitAgent.flow`. See `polkit/PolkitDialog.qml` |
 | `unknown grouped property scope margins` + `Type margins is used but it is not resolved` | `PanelWindow.margins` is a `Margins` gadget from the same `Quickshell._Window` indirection as the window itself. The block form `margins { left: ... }` is unresolvable; the dotted form still warns, so suppress `unqualified` and `unresolved-type` over those lines. See `bar/Bar.qml` |
 | `Unused import` on `import "../../"` | A singleton reached **only** from inside a template literal (`` `${Config.scriptsDir}/…` ``) is not traced, so the import that makes it resolvable reads as unused. Suppress `unused-imports` over that one import. See `bar/widgets/KanataWidget.qml` |
 | `No type found for property "edges"` | `PopupAnchor.edges`/`gravity` are `Edges::Flags`, unresolvable across the module split. Suppress inline with `missing-type` — the defaults are **not** usable, see below |
@@ -253,6 +255,18 @@ the `Notification`, which removes it from `trackedNotifications` — the history
 centre exists to show. So a toast auto-hiding would silently empty the centre. Popup lifetime
 is a separate list with its own timers in `Notifications.qml`; only a real dismissal destroys
 anything.
+
+🚨 **Constructing `PolkitAgent` is what REGISTERS the agent, and a session may have
+exactly one.** Same shape as the notification server below, and the same consequence: the only
+way not to own polkit is not to construct it, which is why the whole dialog sits behind a
+`Loader { active: Config.polkitOwned }`. With the flag off, `hypr/conf.d/polkit-gnome.{lua,conf}`
+deploys and polkit-gnome keeps the session. `path` is deliberately unset — the binary's own
+default (`/org/quickshell/Polkit`) is as good as any, and naming one only invites drift.
+
+⚠️ **A failure does NOT end the flow.** Quickshell starts a fresh PAM session automatically and
+emits `authenticationFailed` on the flow, so the dialog stays up and only the field is cleared.
+Nothing in the QML may destroy the flow on a failure — cancelling is `cancelAuthenticationRequest()`
+and nothing else.
 
 🚨 **Constructing `NotificationServer` is what claims `org.freedesktop.Notifications`**, and a
 bus name has exactly one owner. There is no "advertise nothing" configuration — the only way

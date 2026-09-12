@@ -27,9 +27,10 @@ o.exec_on_start("nextcloud --background")
 -- Gnome Keyring - Secret storage for WiFi/SSH/GPG (needed by nmtui/NetworkManager)
 o.exec_on_start("eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)")
 
--- Polkit Authentication Agent - GUI privilege elevation
--- polkit-gnome (stable) over hyprpolkitagent (Qt platform plugin crashes)
-o.exec_on_start("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
+-- NOTE: the polkit agent is NOT started here. A session may have exactly one,
+-- and the Quickshell shell ships its own (dotfiles/polkit/PolkitDialog.qml), so
+-- the two are mutually exclusive -- like the status bar above. .chezmoiignore
+-- deploys conf.d/polkit-gnome.lua only when features.quickshell_polkit is off.
 
 -- Clipboard History Manager - watch clipboard, store items in history db
 o.exec_on_start("wl-paste --watch ~/.local/lib/scripts/media/clipboard-store")

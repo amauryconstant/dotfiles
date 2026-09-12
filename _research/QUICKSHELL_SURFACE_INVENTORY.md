@@ -420,11 +420,23 @@ displacing the existing one — and a crash then leaves *none*, breaking every p
 until the shell restarts. Deferred until the shell has a crash-recovery story; keep designing it.
 The identity-choice case is a real branch the current drawings assume away.
 
-**Status**: Deferred, weakly. Design work should continue. **The stated blocker is answered**
-as of 2026-09-12: the shell runs as `quickshell.service`, `Restart=always` with a 5-per-60s budget,
-and `SUPER+B` clears a spent budget. Omarchy v4 ships its polkit agent as an in-process Quickshell
-plugin (`shell/plugins/polkit/`, `keepLoaded: true`), so the shape is proven — what remains open is
-this entry's own identity-choice branch.
+**Status**: **Shipped** 2026-09-12 — `quickshell/dotfiles/polkit/PolkitDialog.qml`, gated on
+`features.quickshell_polkit` (its own flag: displacing a session-exclusive agent is a separate
+decision from running the bar, exactly as `quickshell_notifications` is for swaync). polkit-gnome
+moved out of the shared `hypr/conf/autostart.*` into `hypr/conf.d/polkit-gnome.{lua,conf}`, which
+deploys only when the flag is off.
+
+The stated blocker was answered first: the shell runs as `quickshell.service`, `Restart=always`
+with a 5-per-60s budget, and `SUPER+B` clears a spent budget — so a crashed agent is a ~2s gap
+rather than a session with none.
+
+**The identity-choice branch is built**, not assumed away: `AuthFlow.identities` /
+`selectedIdentity` exist in 0.3.1, group entities are filtered out (a group has no password of its
+own), the chip row collapses at one identity, and Tab cycles. Omarchy's own agent ignores them.
+
+Constraints that turned out to matter, both now in `.claude/rules/quickshell-qml.md`: constructing
+`PolkitAgent` is what registers it, and a failure does **not** end the flow — Quickshell starts a
+fresh PAM session and the dialog must stay up.
 
 ### 22. Lock screen
 
@@ -446,6 +458,25 @@ Hyprland's failsafe with nothing to authenticate against. Omarchy needs three pi
 `solitaryBlockedBy` from `hyprctl -j monitors` (`bin/omarchy-hyprland-session-locked`), and a
 re-lock step in its restart path (`bin/omarchy-restart-shell`) that refuses to restart a *live*
 locker while recovering a stranded one. That is the prerequisite for this entry, not supervision.
+
+**Two of those three landed 2026-09-12**, ahead of the surface and independently of it — the same
+hole was already open under hyprlock, where a killed locker left the session behind the failsafe
+with no way back except a TTY:
+
+- `misc:allow_session_lock_restore = true` in `hypr/conf/general.{lua,conf}` — the tree's only
+  `misc` block.
+- `desktop/session-locked`, the stranded-lock probe, answering by exit status alone: 0 locked,
+  1 unlocked, **2 undetermined** (a monitor with no workspace yet never reaches the lock, so a
+  retrying caller must not treat 2 as an answer).
+- Consequence, already handled: `desktop/immediate-lock` moved from `pidof hyprlock` to a `flock`,
+  because the compositor now *accepts* the second locker that a lost race would spawn.
+
+What remains for this entry is the third piece — a restart path that refuses a **live** locker
+while recovering a **stranded** one — plus the surface itself. The runtime is present in 0.3.1:
+`WlSessionLock`/`WlSessionLockSurface` (one surface per screen, engine-instantiated) and
+`PamContext`, which can borrow the hyprlock package's own `/etc/pam.d/hyprlock` rather than
+installing a PAM file of its own. Design page `Shell-12-Deferred` covers this surface and has
+never been read; read it before drawing anything.
 
 ### 23. Greeter
 
@@ -556,7 +587,7 @@ branching into two designs.
 
 ## Summary
 
-**As of 2026-09-11.** Two of the 16 shipped surfaces (dock, workspace overview) ship **off** —
+**As of 2026-09-12.** Two of the 17 shipped surfaces (dock, workspace overview) ship **off** —
 built, tried in daily use, declined.
 
 | Class | Surfaces | Shipped | Partial | Not built | Deferred |
@@ -564,9 +595,9 @@ built, tried in daily use, declined.
 | Persistent | 2 | 2 | — | — | — |
 | Ambient | 3 | 2 | 1 | — | — |
 | Summoned | 15 | 12 | 1 | 2 | — |
-| Interrupt | 3 | — | — | 1 | 2 |
+| Interrupt | 3 | 1 | — | 1 | 1 |
 | Foundation | 7 | — | — | — | — |
-| **Total** | **30** | **16** | **2** | **3** | **2** |
+| **Total** | **30** | **17** | **2** | **3** | **1** |
 
 The 2026-09-03 reading — that the generic list picker (7) and the menu model on it (8) were the
 bulk of the work — held: building the picker on 2026-09-09 closed eight entries in one change,
@@ -580,8 +611,7 @@ because eighteen scripts already spoke dmenu.
 | 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
 | 11 | Display and monitor profile picker | Not built. `desktop/monitor-switch` is still a gum terminal prompt |
 | 15 | Screenshot and recording control | Not built. Nothing in the replaced stack had it either |
-| 21 | Authentication dialog | Deferred, weakly — one polkit agent per session, and a crash leaves none. Returns with a crash-recovery story. `Quickshell.Services.Polkit` exists and is verified |
-| 22 | Lock screen | Deferred — a crash in a lock surface needs a TTY to escape. `WlSessionLock` + `PamContext` both exist |
+| 22 | Lock screen | Deferred — a crash in a lock surface needs a TTY to escape. Two of the three prerequisites landed 2026-09-12 (`allow_session_lock_restore`, `desktop/session-locked`); the restart guard and the surface itself remain. `WlSessionLock` + `PamContext` both exist |
 | 23 | Greeter | Not built, no decision recorded |
 
 Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries

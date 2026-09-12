@@ -27,6 +27,15 @@
   budget is 5 restarts per 60s, then `failed`; `SUPER+B` (`desktop/quickshell-toggle`) clears it
   and starts again, which is the only route back once the bar, the launcher **and the notification
   daemon** are all gone with it. See `.claude/rules/quickshell-qml.md`
+- 🚨 **The shell owns the polkit agent** (`polkit/PolkitDialog.qml`, surface §21, added
+  2026-09-12 on top of that supervision — the inventory deferred it until a crash-recovery story
+  existed, because a crashed agent leaves the session with NONE and every privileged action then
+  fails with no prompt). A session may have exactly one agent and **constructing `PolkitAgent`
+  registers it**, so the dialog sits behind `Loader { active: Config.polkitOwned }`, gated on
+  `features.quickshell_polkit`. Flipping that off deploys `hypr/conf.d/polkit-gnome.{lua,conf}`
+  instead. It is an **interrupt**: no toggle, no IPC target, no keybinding — its visibility is the
+  agent's `isActive` and nothing else. Escape cancels, Return submits, Tab cycles identities when
+  polkit offers more than one (the branch §21 called out as assumed away)
 - 🚨 **Colours are SEMANTIC ROLES, all the way down.** `themes/*/colors.sh` was renamed on
   2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
   six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a

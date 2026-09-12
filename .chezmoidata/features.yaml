@@ -18,3 +18,10 @@ features:
   # Flipping it back unmasks swaync and restores its SUPER+SHIFT+N binding.
   quickshell_notifications:
     enabled: true
+  # Polkit authentication agent. Separate from quickshell_shell for the same
+  # reason as notifications: a session may have exactly one agent, so running
+  # the bar must not imply displacing the existing one. Flipping it back
+  # deploys hypr/conf.d/polkit-gnome again, which restores the polkit-gnome
+  # agent that hypr/conf/autostart used to start unconditionally.
+  quickshell_polkit:
+    enabled: true
