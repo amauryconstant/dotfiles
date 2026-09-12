@@ -1,6 +1,10 @@
 [settings]
 experimental = true
 idiomatic_version_file_enable_tools = ["python"]
+# `mise up` prunes superseded installs, INCLUDING the directory a live session is
+# executing from — so an upgrade can delete the tool running the upgrade. Omarchy
+# turned this off globally in v4.0.3. Prune deliberately with `mise prune` instead.
+upgrade.auto_prune = false
 
 [settings.python]
 uv_venv_auto = true

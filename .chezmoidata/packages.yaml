@@ -373,7 +373,6 @@ packages:
       post_install_hook: ""
       packages:
         - cups # UNIX printing system
-        - cups-pdf # PDF virtual printer
         - cups-pk-helper # CUPS PolicyKit integration
         - system-config-printer # Printer setup GUI
         - sane # Scanner access library
@@ -387,5 +386,6 @@ packages:
   # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
   delete:
     - yay # Replaced by paru
+    - cups-pdf # Dropped 2026-09-12 — GTK/Qt print dialogs offer print-to-PDF without the virtual queue
     - kitty-shell-integration
     - kitty-terminfo

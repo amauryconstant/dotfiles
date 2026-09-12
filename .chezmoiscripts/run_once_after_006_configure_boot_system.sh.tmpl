@@ -749,7 +749,12 @@ for preset_file in /etc/mkinitcpio.d/*.preset; do
     # Preserve ALL_kver from existing preset
     all_kver=$(sudo grep "^ALL_kver=" "$preset_file" | head -1)
 
-    # Write the new UKI-configured preset
+    # Write the new UKI-configured preset.
+    # 🚨 Deliberately UNQUOTED heredoc — it interpolates ${preset_name},
+    # ${all_kver} (read back from the existing preset), ${uki_path} and
+    # ${UKI_SPLASH}, all script-derived. Nothing here comes from $HOME or from
+    # any user-supplied name. A heredoc to a root-owned destination is quoted
+    # unless it documents what it expands, like this one.
     sudo tee "$preset_file" > /dev/null <<PRESET_EOF
 # mkinitcpio preset file for the '${preset_name}' package
 # Modified by chezmoi boot system configuration for UKI support

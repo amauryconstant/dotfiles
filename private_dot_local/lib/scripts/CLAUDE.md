@@ -485,6 +485,22 @@ ui_info "Processing..."
 ❌ Add cross-platform compatibility (target-specific)
 ❌ Partial execution without `set -euo pipefail` in multi-step scripts
 
+### Privileged heredocs
+
+**A heredoc written to a root-owned destination is quoted (`<<'EOF'`) unless it documents what it
+expands.** An unquoted delimiter expands the *writing* shell's variables into a file that later
+runs, or is read, as root — so anything reaching that heredoc from outside the script (a `$HOME`
+path, a device name from USB descriptors, a user-supplied name) becomes root-context content.
+Omarchy added a repo-wide scanner for this class in v4.0.2 after the same shape produced a code
+execution bug in `omarchy-toggle-input-device`.
+
+Both sites here are correct and neither is an accident:
+
+- `run_once_after_002_configure_system_services.sh.tmpl` (NetworkManager `wifi_backend.conf`) is
+  quoted — it expands nothing, so quoting is free.
+- `run_once_after_006_configure_boot_system.sh.tmpl` (mkinitcpio UKI preset) is deliberately
+  unquoted and carries a comment naming its four interpolations, all script-derived.
+
 ### Trust Execution Order
 
 Scripts execute: `run_once_before_*` → file application → `run_once_after_*` → `run_onchange_*`

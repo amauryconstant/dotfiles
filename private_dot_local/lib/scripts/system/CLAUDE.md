@@ -412,6 +412,25 @@ by `services.yaml`'s `docker.socket` entry (`user_groups: [docker]`), applied vi
 we deliberately keep it — single-user desktop, accepted risk. Revoke manually if ever needed:
 `sudo gpasswd -d $USER docker` + reboot.
 
+**`input` group (keylogging-equivalent, granted only to a real consumer)**: membership of `input`
+grants read access to `/dev/input/event*` — enough for any unprivileged process to log the whole
+session's keystrokes and synthesize input. Omarchy withdrew its blanket grant in v4.0.2 and
+migrated existing installs to strip it unless a consumer needs it; we take the same position,
+with the opposite outcome per consumer:
+
+- **Voxtype: grant removed** (2026-09-12). `private_dot_config/voxtype/config.toml.tmpl` sets
+  `hotkey.enabled = false` — the Hyprland `SUPER+T` binding drives recording — so voxtype never
+  opens an evdev device here and the grant was dead weight.
+  `run_onchange_after_configure_voxtype.sh.tmpl` no longer grants it. Re-enabling voxtype's own
+  hotkey means granting `input` again, deliberately.
+- **Kanata: grant kept.** It grabs evdev devices directly; without `input` the laptop's keyboard
+  remapping breaks. Already correctly scoped — `run_once_after_011_setup_optional_services.sh.tmpl`
+  grants it only behind `features.kanata.enabled`, a `chassisType` laptop gate, and a
+  `command -v kanata` guard, which is exactly the predicate Omarchy moved to.
+
+Neither script revokes a prior grant: an existing membership survives every `chezmoi apply`.
+Removing it live is `sudo gpasswd -d $USER input` + re-login.
+
 ---
 
 ## Backup System

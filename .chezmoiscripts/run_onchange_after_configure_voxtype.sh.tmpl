@@ -24,17 +24,23 @@ else
     VOXTYPE_DATA="$HOME/.local/share/voxtype"
 
     # ------------------------------------------------------------------------
-    # Input group (required for evdev hotkeys / device access)
+    # 🚨 NO input group grant here, deliberately.
+    #
+    # Membership of `input` grants read access to /dev/input/event*, which is
+    # keylogging the whole session and synthesizing input — root-adjacent, from
+    # any unprivileged process. Omarchy withdrew its blanket grant in v4.0.2 for
+    # exactly this reason, keeping it only where a consumer genuinely opens an
+    # evdev device.
+    #
+    # Voxtype is not such a consumer HERE: voxtype/config.toml.tmpl sets
+    # `hotkey.enabled = false` because the Hyprland SUPER+T binding drives
+    # recording, so the built-in evdev hotkey never opens a device. Kanata is,
+    # and keeps its grant in run_once_after_011 behind a `command -v kanata`
+    # guard.
+    #
+    # Turning voxtype's own hotkey back on means granting `input` again — and
+    # accepting that consequence, not rediscovering it here.
     # ------------------------------------------------------------------------
-    {{- $username := .chezmoi.username }}
-    {{ includeTemplate "log_step" "Checking input group membership..." }}
-    if id -nG {{ $username }} | grep -qw input; then
-        {{ includeTemplate "log_skip" "User already in input group" }}
-    else
-        sudo usermod -aG input {{ $username }}
-        {{ includeTemplate "log_success" "User added to input group" }}
-        {{ includeTemplate "log_warning" "Logout/login required for group change" }}
-    fi
 
     # ------------------------------------------------------------------------
     # Engine + GPU variant selection (idempotent, version- and CPU-aware)
