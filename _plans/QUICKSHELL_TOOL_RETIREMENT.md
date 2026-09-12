@@ -47,10 +47,6 @@ weaker, but still an ordering constraint:
 So: **removing `waybar.css` is a docs-and-skill change, not just a file deletion.** Do it in the
 same commit as the Waybar package, or not at all.
 
-⚠️ `themes/CLAUDE.md` is itself behind — it still describes a 24-variable `colors.sh` and the
-old module-named scheme, both superseded by the 2026-09-09 rename to 18 role keys. Fix that
-before leaning on it for any of the above.
-
 ## Per-tool checklist
 
 - [ ] `packages.yaml` entry removed; `package-manager sync --prune` reviewed **before** running

@@ -88,6 +88,43 @@ Because `identity` leaves the read-back unchanged, temperature alone cannot dist
 
 ---
 
+### QML `Text` renders foreign strings without an explicit `textFormat` (v4.0.2) — P1
+
+**What**: Omarchy's notification body rendered as `StyledText`, so an `<img src="http://…">` in a notification caused an unauthenticated HTTP GET with no user action — and the `/<img[^>]*>/gi` strip they had operated on substrings, so `<im<img src="…decoy">g src="…beacon">` was *rewritten into* a live tag. Qt's default is `Text.AutoText`, which runs `Qt.mightBeRichText()` and switches to rich text by itself, so no `StyledText` is needed to reach the same beacon.
+**Target files**: `private_dot_config/quickshell/dotfiles/bar/BarWidget.qml`, `notifications/NotificationCard.qml`, `launcher/PickerSurface.qml`, `polkit/PolkitDialog.qml`, `.claude/rules/quickshell-qml.md`
+
+- [x] `textFormat: Text.PlainText` on `BarWidget.qml`'s `labelText` — one edit covers the window title, the media title and every other widget label, since no widget declares its own label `Text` *(done 2026-09-12)*
+- [x] Same on `NotificationCard` `appName`, the `PickerSurface` row title/subtitle, and `PolkitDialog`'s message + identity chips *(done 2026-09-12)*
+- [x] **Audited exhaustively rather than spot-fixed**: all 83 unformatted `Text` elements read against their actual bindings, tracing through the shared components to every consumer. **18 can carry a foreign string** and now pin `PlainText` — 8 shared sites (`BarWidget` label, `BarTooltip` body, `PopoverRow` label, `BarPopover` footer, `PickerSurface` row title + subtitle, `NotificationCard` app name + action label) and 10 leaf sites (`LockContent` PAM message, 5 in `PolkitDialog`, 3 in `PowerMenu`, `WorkspaceCard` window title) *(done 2026-09-12)*
+- [x] Left the other 65 alone — glyph literals, `qsTr` chrome, numbers, `Qt.formatDateTime` output, workspace ids, output names. The rule is *foreign* text, not every `Text` *(done 2026-09-12)*
+- [x] Rule recorded in `.claude/rules/quickshell-qml.md` under "Runtime behaviours that bite", including why a strip regex is the wrong fix (upstream's `/<img[^>]*>/gi` was bypassable by `<im<img src="decoy">g src="beacon">`) *(done 2026-09-12)*
+- [x] **No scan task** — the audit proved the premise: every `Text.text` in this tree is bound in its own declaration (no `Binding {}`, no alias, no `Component.onCompleted`), so a grep is complete *(confirmed 2026-09-12)*
+
+---
+
+### `cups-pdf` dropped; printing behind polkit (v4.0.2) — P3
+
+**What**: Omarchy withdrew automatic printer discovery entirely (`cups-browsed` uninstalled, idle `implicitclass://` queues removed, package dropped) after hardening it, and replaced `cups-pdf` with `cups-pk-helper` so administration goes through polkit rather than direct privileged access.
+**Target files**: `.chezmoidata/packages.yaml`
+
+- [x] `cups-browsed` is not installed and discovery was never enabled here *(confirmed 2026-09-12)*
+- [x] `cups-pk-helper` already present in `packages.yaml` *(confirmed 2026-09-12)*
+- [x] `cups-pdf` dropped from `packages.yaml` — every GTK/Qt print dialog offers print-to-PDF without the virtual queue. `cups-pk-helper` stays. **Takes effect on the next `package-manager sync --prune`** *(done 2026-09-12)*
+
+---
+
+### Privileged heredoc hygiene (v4.0.2) — P3
+
+**What**: Omarchy added a repo-wide scanner (`test/shell.d/privileged-heredoc-test.sh`, ~30 fixtures) flagging heredocs written to privileged destinations that expand a `$HOME`-derived path. Audited ours: every `sudo tee` heredoc is quoted except two — the NetworkManager `wifi_backend.conf` write (expands nothing at all) and the mkinitcpio UKI preset write (expands `${all_kver}`, `${uki_path}`, `${UKI_SPLASH}`, all script-derived, none `$HOME`-derived). No live defect; the discipline is the part worth borrowing.
+**Target files**: `.chezmoiscripts/run_once_after_002_configure_system_services.sh.tmpl`, `.chezmoiscripts/run_once_after_006_configure_boot_system.sh.tmpl`, `private_dot_local/lib/scripts/CLAUDE.md`
+
+- [x] NetworkManager heredoc delimiter quoted (`<<'EOF'`) — nothing inside it expands *(done 2026-09-12)*
+- [x] UKI preset heredoc left expanding, with a comment naming its four interpolations (`${preset_name}`, `${all_kver}`, `${uki_path}`, `${UKI_SPLASH}`), all script-derived, none `$HOME`-derived *(done 2026-09-12)*
+- [x] Rule stated in `private_dot_local/lib/scripts/CLAUDE.md` → Script Standards *(done 2026-09-12)*
+- ⚠️ Both edits reset chezmoi's run-once state, so `002_configure_system_services` and `006_configure_boot_system` **re-execute on the next apply**. Both are idempotent (006 guards every step and skips the `mkinitcpio -P` rebuild when nothing changed), but 006 is the boot path — apply deliberately, not incidentally
+
+---
+
 ### Persistent Hyprland toggle system (v3.6.0) — P2
 
 **What**: Named flag configs persisted to `~/.local/state/omarchy/toggles/hypr/` and sourced on every `hyprctl reload`. Survives restarts. Powers touchpad toggle, display toggle, etc. v4.0.0 keeps this pattern as `require("default.hypr.toggles")` at the end of the Lua entry point.
@@ -159,6 +196,13 @@ Because `identity` leaves the read-back unchanged, temperature alone cannot dist
 ## Done sub-tasks of items still open in the live plan
 
 The live plan carries the remaining `[ ]` boxes; the work already landed is recorded here.
+
+### Blanket `input` group grant (v4.0.2) — P1
+
+- [x] Voxtype does **not** need `input` here — `private_dot_config/voxtype/config.toml.tmpl` sets `hotkey.enabled = false` ("Hyprland bindings drive recording, not the built-in evdev hotkey"), so it never opens an evdev device. The grant was dead weight *(confirmed 2026-09-12)*
+- [x] Grant removed from `run_onchange_after_configure_voxtype.sh.tmpl`, replaced by a comment saying why, and what re-enabling the hotkey would cost *(done 2026-09-12)*
+- [x] Kanata keeps it, and already had the right predicate — `run_once_after_011` gates on `features.kanata.enabled`, a `chassisType` laptop check **and** `command -v kanata`, which is exactly where omarchy landed. No change *(confirmed 2026-09-12)*
+- [x] Recorded in `system/CLAUDE.md` → Package Security Policy, beside the Docker decision *(done 2026-09-12)*
 
 ### Hyprland Lua config is the forward path (v4.0.0) — P1
 
@@ -232,6 +276,18 @@ Waybar PR #5013 re-check, 2026-08-30: **merged 2026-05-04** into master; latest 
 
 ## Completed
 
+- [x] **Quickshell bug fixes from v4.0.1, audited against our tree** (v4.0.1) — reopened 2026-09-12 when the "their internals" premise expired. Five of seven need no change and two were real:
+  - Closed network panel leaving Wi-Fi scanning on — **clean here**: `bar/popovers/NetworkPopover.qml` binds `scannerEnabled` to the popover's own `shown`, and the bar widget deliberately never turns it on
+  - Bluetooth discovery not stopping on panel close — **clean**: we never start discovery at all
+  - Calendar day names forced to English — **clean**: `bar/popovers/CalendarPopover.qml` uses `Qt.locale().standaloneMonthName`
+  - UTF-16 / mixed UTF-16 / webp clipboard decoding — **N/A**: `clipboard/ClipboardPicker.qml` hands the payload to `cliphist decode | wl-copy` and never decodes in QML; the shell deliberately does not own clipboard storage
+  - Bar sticking in move mode, speed-test dial locale, `o.shell_succeeds()` — **N/A**: no move mode, no speed test, no such helper
+  - Notification popup/history race — **open**, tracked as its own P2 item in the live plan
+- [x] **Notification title and body render as `PlainText`** (v4.0.2) — `notifications/NotificationCard.qml` pins `textFormat: Text.PlainText` on both, so the `<img src>` beacon omarchy patched (and the bypassable strip regex behind it) cannot reach the notification body here *(confirmed 2026-09-12)*
+- [x] **No `SigLevel = Optional TrustAll` anywhere** (v4.0.2) — our `[chaotic-aur]` block in `run_once_before_002_install_package_manager` sets no per-repo `SigLevel`, so it inherits the `Required DatabaseOptional` that same script pins into `[options]` (and repairs on drift) — the end state omarchy's migration had to reach *(confirmed 2026-09-12)*
+- [x] **Browser policy directories are not world-writable** (v4.0.2) — `run_onchange_after_install_extensions` does `sudo mkdir -p /usr/lib/firefox/distribution` (root:root 0755 under root's umask) and `chmod 644` on `policies.json`; omarchy's `chmod a+rw` managed-policy roots have no analogue here *(confirmed 2026-09-12)*
+- [x] **sshd is not enabled** (v4.0.2) — `openssh` is installed for the client only; `systemctl is-enabled sshd.service` reports `disabled` and no server config is chezmoi-managed, so the `PasswordAuthentication no` hardening has no target *(confirmed 2026-09-12)*
+- [x] **`plocate` not installed** (v4.0.3) — the `/etc/updatedb.conf` → systemd drop-in move has nothing here to act on; already skipped at v3.4.2 for the AC-only indexing item *(confirmed 2026-09-12)*
 - [x] **Sticky CWD when opening a new terminal** (v2.0.0, v4.0.0) — `SUPER + Return` launches the terminal with `--working-directory=$(terminal-cwd)`; script at `private_dot_local/lib/scripts/terminal/executable_terminal-cwd` *(confirmed 2026-08-24)*
 - [x] **`fip`/`dip`/`lip` zsh parsing** (v3.4.0, v4.0.0) — v4.0.0 fixed omarchy's bash functions misparsing under zsh; our `ssh-port-forwarding.zsh` is a native zsh rewrite using `(( $# ))` and `for port in "$@"`, unaffected *(confirmed 2026-08-24)*
 - [x] **Clipboard sensitive-content exclusion** (v1.3.1, v4.0.0) — `clipboard-store` wrapper filters by window class/title; v4.0.0's native equivalent adds nothing we lack *(confirmed 2026-08-24)*
@@ -304,6 +360,38 @@ Waybar PR #5013 re-check, 2026-08-30: **merged 2026-05-04** into master; latest 
 - [SKIPPED] **Omarchy shell/acceptance test additions** (v4.0.4) — `omarchy-kernel-migration-test.sh`, `kernel-headers-migration-test.sh`, `limine-defaults-test.sh`, stubbing `pacman`/`sudo`/`limine-mkinitcpio`/`limine-entry-tool`/`omarchy-state`. The one portable *assertion* (`verify_kernel_headers`) is tracked as the P2 health check in the live plan
 - [SKIPPED] **`agents/skills/install-scripts.md` rule** (v4.0.4) — Omarchy agent documentation governing its own install scripts
 
+### v4.0.3 — hardening + AI expansion
+
+- [SKIPPED] **Kitty system-defaults/user-overrides split + `allow_remote_control socket-only`** (v4.0.3) — Kitty is not chezmoi-managed (there is no `private_dot_config/kitty/`), and Ghostty exposes no equivalent escape-sequence remote-control surface to downgrade
+- [SKIPPED] **plocate systemd drop-in replacing `/etc/updatedb.conf` tuning** (v4.0.3) — `plocate` not installed
+- [SKIPPED] **`broadcom-wl` → `broadcom-wl-dkms`** (v4.0.3) — Broadcom BCM4360/BCM4331 hardware not in use
+- [SKIPPED] **Shell plugin capability API (`Plugin*Api`, `omarchy.capabilities`, `AuthServiceStore`)** (v4.0.3) — our Quickshell tree has no plugin system and no third-party code path; every surface in it is repo-owned, so there is no boundary to scope. *Workflow pattern* note: their `keepLoaded` manifest key exists so a hot-reload cannot destroy the service holding the session lock — our equivalent already exists as `desktop/quickshell-restart` refusing to restart on `secure`/`requested`
+- [SKIPPED] **Hermes Desktop/CLI, OpenClaw, T3 Code, Perplexity, Cursor CLI, Muse Code** (v4.0.3) — Omarchy's AI install menu and default-agent system; our AI stack is `ai.yaml` + `menu-ai` + the mise tool list. The `tool_alias`/`bin_path` trick (stopping a bundled Node from shadowing the user's Node on `PATH`) is worth remembering only if we ever install a tool that ships its own runtime
+- [SKIPPED] **Passwordless sudo fail-closed expiry + boot-only tmpfiles cleanup** (v4.0.3) — `omarchy-sudo-passwordless` was skipped at v3.5.0 as a footgun; no passwordless sudoers drop-in exists here to expire
+- [SKIPPED] **fprintd `PATH` pinning, single-transaction fingerprint install, `libfprint-git`** (v4.0.3) — fingerprint setup is handled separately here, already skipped at v3.8.0
+- [SKIPPED] **`omarchy-mise-install` argument-injection guard, `omarchy-remove-preinstalls` wrapper ownership** (v4.0.3) — omarchy's wrapper-generation internals; our mise tools are declared in `config.toml`, never generated from user-supplied names
+- [SKIPPED] **1Password `--force-device-scale-factor=1`** (v4.0.3) — 1Password not installed
+- [SKIPPED] **`force-igpu` sleep-hook mode restore + hybrid-GPU staged install** (v4.0.3) — supergfxd/hybrid GPU not in use; the *staged root-owned install* pattern is folded into the P3 FUSE-suspend-hook item in the live plan instead
+- [SKIPPED] **Legacy icon-font retirement, four new icon glyphs, menu icon consistency** (v4.0.3) — Omarchy branding assets
+- [SKIPPED] **`omarchy plugin` add/update/remove confirmation change** (v4.0.3) — omarchy plugin CLI
+- [SKIPPED] **`updatedb` invocation alignment, security-report credits, test-suite expansion** (v4.0.3) — upstream repo internals
+
+### v4.0.2 — security point release
+
+- [SKIPPED] **`omarchy-theme-set-browser-policy` + browser-policy helper library** (v4.0.2) — a privileged single-purpose writer for omarchy's theme-driven browser `color.json`; we do not theme browser policy files, and the directory-permission half is already correct here (see Completed)
+- [SKIPPED] **Theme-name and web-app-name character restrictions** (v4.0.2) — `omarchy-theme-install` / `omarchy-webapp-install` scope; our themes are repo-owned and there is no web-app installer. The underlying trust boundary is tracked in the P3 theme-install hardening item
+- [SKIPPED] **`rc` package channel + `pacman-rc.conf` repoint** (v4.0.2) — Omarchy release-channel machinery, already skipped at v4.0.0
+- [SKIPPED] **Windows VM mount-boundary rewrite, pinned-inode bind mounts, web console auth** (v4.0.2) — Windows VM out of scope
+- [SKIPPED] **`cups-browsed` hardening (own system user, systemd sandbox, `cups-files.conf`, reserved username)** (v4.0.2) — shipped and then withdrawn upstream in the same release; `cups-browsed` is not installed here
+- [SKIPPED] **`omarchy-asdcontrol` sudoers removal, tzupdate sudoers narrowing** (v4.0.2) — neither helper nor sudoers drop-in exists here
+- [SKIPPED] **Migration runner stdin fd fix, retired-installer artifact cleanup, legacy XCompose + Omarchy 3 power udev rule removal, `docs/migrations.md` policy** (v4.0.2) — Omarchy's migration system; chezmoi is our migration mechanism. The udev finding (a `RUN+=` resolving through a user-owned symlink = root code execution on a power_supply event) is worth *knowing*; we ship no `RUN+=` udev rules, only `MODE`/`GROUP` ones for uinput and i2c
+- [SKIPPED] **Plymouth refresh modes (`--refresh-default`, `--refresh-sddm-default`)** (v4.0.2) — SDDM-coupled; our Plymouth theme is written by `run_onchange_after_update_plymouth_theme`
+- [SKIPPED] **Chromium 151 `require_eula:false` first-run preference** (v4.0.2) — omarchy ships `/usr/lib/chromium/initial_preferences`; we do not manage Chromium's first-run state
+- [SKIPPED] **Apple display brightness cache hardening** (v4.0.2) — Apple external display-specific, already skipped at v3.7.0
+- [SKIPPED] **`printf %q` quoting in launcher wrappers, Desktop Entry string/Exec escaping** (v4.0.2) — `omarchy-install-app` / `-font` / `-webapp` have no equivalents; we install from `packages.yaml` and write no generated `.desktop` files from user input
+- [SKIPPED] **scp-style theme URL parsing, `omarchy-plymouth-reset` exit status, `omarchy-provision-owner` autologin heredoc, Codex usage `-a on-request`, upgrade-ordering fixes** (v4.0.2) — omarchy-script-internal fixes with no local counterpart
+- [SKIPPED] **QML `textFormat` scanner as a test suite** (v4.0.2) — the *finding* is recorded under Closed items; the ~30-file scanner and its fixtures are upstream test infrastructure
+
 ### v4.0.1 — security patch backports
 
 - [SKIPPED] **FIDO2 authfile symlink/ownership fix** (v4.0.1) — no FIDO2 setup in this repo (`omarchy-setup-security-fido2` has no equivalent here); nothing to patch
@@ -311,14 +399,15 @@ Waybar PR #5013 re-check, 2026-08-30: **merged 2026-05-04** into master; latest 
 - [SKIPPED] **Privileged DNS helper PATH pinning** (v4.0.1) — `omarchy-dns` has no equivalent; DNS is managed via NetworkManager/iwd directly, no passwordless root sudoers helper in this repo
 - [SKIPPED] **Video title forging Download Video command** (v4.0.1) — no yt-dlp/download-video wrapper in this repo
 - [SKIPPED] **`omarchy plugin-add` transport-helper guard** (v4.0.1) — our only plugin install (hyprsplit via hyprpm) is pinned to a fixed fork/commit in a lifecycle script, not a user-supplied URL at runtime
-- [SKIPPED] **Quickshell-specific bug fixes** (v4.0.1) — race conditions in notification popup/history, bar sticking in move mode, closed network/Bluetooth panels leaving scans running, `o.shell_succeeds()`, UTF-16 clipboard/webp decoding, calendar day names, speed-test locale — all Quickshell (`omarchy-shell`) internals, already out of scope per the v4.0.0 shell-replacement skip below
+- [x] **Quickshell-specific bug fixes** (v4.0.1) — **reopened and audited 2026-09-12**, no longer skippable as "their internals": these are our surfaces. See the Completed section for the per-fix findings.
 - [SKIPPED] **Windows VM Docker Compose hardening** (v4.0.1) — Windows VM out of scope
 - [SKIPPED] **`psmouse` ISO finalizer fix** (v4.0.1) — Omarchy installer/ISO scope
 
 ### v4.0.0 "Quattro" — architectural rewrite
 
-- [SKIPPED] **Quickshell desktop shell (`omarchy-shell`)** (v4.0.0) — replaces Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg and polkit-gnome with one QML process (175 files). We use Waybar + Wofi + swaync + hyprlock/hypridle deliberately; wholesale replacement is not on the table. `quickshell` itself is already installed for the voxtype OSD. *Workflow patterns* worth noting for our own tooling: the event-driven (non-polling) status model, and the shell reading a single declarative layout file
-  - 🚨 **"Skipped" here means their artifact, not the idea.** Since 2026-08-30 we build our own Quickshell shell — see `_plans/QUICKSHELL_SHELL.md`, where phases 0, 1, 2.5 and 3 are shipped (bar at Waybar parity, volume/brightness OSDs) behind `features.quickshell_shell`. Their source at `~/Projects/_external/omarchy/shell/` is read as a structural reference; the ALPM-guarded packages and the plugin registry stay skipped. Do not read this row as "never".
+- [SKIPPED] **`omarchy-shell` as an artifact** (v4.0.0) — their QML process, ALPM-guarded packages and plugin registry. We build our own; theirs is not installed.
+  - 🚨 **Their SOURCE is a comparison target, and this row is not a reason to skip anything shell-shaped.** Since 2026-08-30 we run our own Quickshell shell (`private_dot_config/quickshell/dotfiles/`, behind `features.quickshell_shell`); the build record is `_plans/archive/QUICKSHELL_SHELL.md` and the live status is `_research/QUICKSHELL_SURFACE_INVENTORY.md`. Omarchy's is **183 QML files at `shell/`** in the checkout at v4.0.3 — `shell/Ui/`, `shell/plugins/bar/`, `shell/plugins/bar/indicators/`, `shell/plugins/panels/`, `shell/plugins/notifications/` — read with `git -C ~/Projects/_external/omarchy show <tag>:shell/<path>`. A fix they make to a surface we also ship belongs in the live plan.
+  - **Deliberately not vendored into `_ai/`.** The researcher agent already reads it in place from the checkout, so a subtree would duplicate 1.6 MB for no new access. See `_guides/VENDORED_SUBTREES.md`.
 - [SKIPPED] **Bar plugin system + `shell.json` / `shell.toml`** (v4.0.0) — Quickshell-specific manifest/plugin registry and layout state. Our Waybar config plus the theme system covers the same ground; the `shell.toml` idea of a machine-level style override merged over the theme is *conceptually* interesting but Waybar CSS already allows it
 - [SKIPPED] **Native launcher, menu, notification daemon, clipboard manager, emoji picker, OSDs, lock screen, polkit agent** (v4.0.0) — all Quickshell plugins; each has an established equivalent here (Wofi, swaync, cliphist, swayosd, hyprlock, polkit-gnome)
 - [SKIPPED] **Control panels (Audio / Bluetooth / Network / Display / Power)** (v4.0.0) — Quickshell panels bound to `Super+Ctrl+A/B/W/D/P`. We cover these via `audio-switch`, `blueman-manager`, `nmtui`, `monitor-switch` and `menu-setup`. Note `Super+Ctrl+B` and `Super+Ctrl+W` already match our bindings by coincidence

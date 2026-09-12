@@ -33,8 +33,10 @@ Verified on the real session, not a nested one:
   headless output. Re-check on the desktop profile.
 - **hyprwhenthen float-and-center** — needs a real OAuth popup. The script itself was run by hand
   against a nested instance and produced exactly half the logical monitor.
-- **Media keys on the hyprlock screen**, and a **workspace click on the Quickshell bar** — both
-  need a human at the keyboard.
+- **Media keys on the lock screen**, and a **workspace click on the Quickshell bar** — both
+  need a human at the keyboard. The lock screen this now means is `quickshell/dotfiles/lock/`
+  (shipped 2026-09-12), not hyprlock, which is only the runtime fallback `desktop/immediate-lock`
+  routes to when the shell is down.
 
 `voxtype_suppress` is worth knowing about: voxtype's `pre_output_command` still asks for it, and
 that submap is **deliberately not defined** (both `conf.d/voxtype-submap.{lua,conf}` say so — it is
@@ -96,7 +98,8 @@ net; not a rollback target. The rollback target is the `.chezmoiignore` block.
    - hyprsplit per-monitor workspaces: `SUPER+1..0`, `SUPER+SHIFT+1..0`, `SUPER+ALT+s` swap,
      `SUPER+ALT+g` grab
    - `SUPER+ALT+m` actually crosses monitors (audit finding 3)
-   - Media keys work on the hyprlock screen (audit finding 4)
+   - Media keys work on the lock screen (audit finding 4) — the Quickshell lock since
+     2026-09-12, hyprlock only as the fallback
 
 Before doing this: resolve the `SUPER+ALT+M` double-bind noted in
 `_research/HYPRLAND_LUA_AUDIT.md` (voice's "Toggle meeting transcription" vs

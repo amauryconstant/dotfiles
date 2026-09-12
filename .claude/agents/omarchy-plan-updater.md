@@ -9,11 +9,25 @@ You maintain `_plans/OMARCHY.md` as a living, actionable integration backlog for
 
 ## Dotfiles Context (critical — use to filter recommendations)
 
-- **Desktop**: Hyprland + Waybar + **Wofi** (launcher)
-- **Terminal**: Ghostty (primary), Kitty (baseline)
-- **Theme system**: 8 variants, `private_dot_config/themes/`, 24 semantic variables
+- **Desktop**: Hyprland + **Quickshell** — our own shell tree at `private_dot_config/quickshell/dotfiles/` owns the bar, launcher, notifications, popovers, power menu, pickers, polkit dialog and lock screen. Waybar + Wofi + swaync + wlogout are still installed as the **fallback** stack; the two are mutually exclusive by `.chezmoiignore` on `features.quickshell_shell`
+- **Terminal**: Ghostty — the only chezmoi-managed terminal (there is no `private_dot_config/kitty/`)
+- **Theme system**: 8 variants, `private_dot_config/themes/`, `colors.sh` holds **18 semantic role keys** (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`) since the 2026-09-09 rename
 - **Hooks**: `~/.config/dotfiles/hooks/` (not Omarchy's hook system)
 - **Packages**: `.chezmoidata/packages.yaml`
+
+## Omarchy's own Quickshell shell is comparison material, not out of scope
+
+Since v4.0.0 Omarchy runs a Quickshell shell too, and its **QML source is in the checkout** —
+183 files under `shell/` at v4.0.3 (`shell/Ui/`, `shell/plugins/bar/`,
+`shell/plugins/bar/indicators/`, `shell/plugins/panels/`, `shell/plugins/notifications/`). Read it
+with `git -C ~/Projects/_external/omarchy show <tag>:shell/<path>`.
+
+Earlier revisions of this plan skipped everything shell-shaped on the grounds that we ran Waybar.
+We do not. A Quickshell fix upstream — a notification race, a panel leaving a scan running, a
+`textFormat` defect — now lands on our surfaces and belongs in the plan, not in Skipped.
+
+What stays out of scope is Omarchy's **plugin system** (`manifest.json`, `PluginRegistry`,
+capability APIs): our tree is repo-owned with no third-party code path.
 
 ## Skip Tiers
 
@@ -21,7 +35,7 @@ You maintain `_plans/OMARCHY.md` as a living, actionable integration backlog for
 
 Never add, mark `[SKIPPED]` if already in plan:
 
-- Walker (launcher) — user uses Wofi
+- Walker (launcher) — replaced by our own `quickshell/dotfiles/launcher/`
 - SDDM — different login approach
 - Aether
 - Helium browser
@@ -50,7 +64,7 @@ Examples of concepts worth porting:
    - `ls` in `private_dot_local/bin/` for CLI scripts already present
    - `grep -r` in `private_dot_config/zsh/` for shell functions/aliases
    - `grep -r` in `private_dot_config/hypr/conf/` for Hyprland config (animations, windowrules, etc.)
-   - Check `private_dot_config/waybar/` for Waybar modules when relevant
+   - Check `private_dot_config/quickshell/dotfiles/bar/widgets/` for bar widgets when relevant (and `private_dot_config/waybar/` only for the fallback bar)
 4. **Full rewrite** of the plan (not append): merge new items into P1/P2/P3 sections
 5. **Never rewrite the archive.** `_plans/archive/OMARCHY_COMPLETED.md` is append-only history — read it, don't edit it. When an item in the live plan reaches "every sub-task resolved", append it to the archive's "Closed items" section and drop it from the live plan; the live plan keeps only outstanding work
 6. **Dedup**: don't add items already tracked (any status) — check the archive too, not just the live plan
@@ -61,7 +75,7 @@ Examples of concepts worth porting:
 
 **P1 — High Priority**: Breaking changes requiring action, keybinding conflicts, config format changes, package removals that affect functionality
 
-**P2 — Medium Priority**: New features that align with existing setup (Hyprland utilities, Waybar, shell improvements, package additions worth evaluating)
+**P2 — Medium Priority**: New features that align with existing setup (Hyprland utilities, Quickshell bar widgets and surfaces, shell improvements, package additions worth evaluating)
 
 **P3 — Low Priority / Evaluate**: Minor improvements, new packages to consider, patterns to optionally adopt
 

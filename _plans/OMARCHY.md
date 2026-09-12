@@ -11,7 +11,9 @@ here, and the whole skipped/out-of-scope list. **Read it before adding an item**
 most of Omarchy's surface is already decided, and re-adding a settled item is the
 main failure mode when this plan is rewritten.
 
-> **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself is out of scope (we use Waybar + Wofi + hyprlock/hypridle), but three sub-currents are directly relevant to us: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
+> **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself was skipped at the time (we then ran Waybar + Wofi + hyprlock/hypridle) — **that premise expired on 2026-08-31**, when our own Quickshell tree became the deployed shell and Waybar/Wofi/swaync/wlogout became the fallback stack, mutually exclusive by `.chezmoiignore`. Omarchy's shell QML is now comparison material. Three sub-currents were relevant from the start: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
+>
+> **v4.0.2 / v4.0.3 context**: Two security-hardening point releases. v4.0.2 is almost entirely privilege- and injection-path closure: world-writable browser-policy directories, the blanket `input` group grant removed as an unprivileged-keylogging path, SSH password auth disabled once a key is authorized, automatic CUPS printer discovery withdrawn, `SigLevel = Optional TrustAll` dropped, and a notification `<img>` stripping regex that could be *tricked into building* a live image tag. v4.0.3 adds fail-closed passwordless-sudo expiry, root-owned atomic `system-sleep` hook installs, Kitty remote control down to `socket-only`, a capability-scoped plugin boundary in their shell, and a large AI-agent expansion. Three land on us: **the `input` group we grant in two lifecycle scripts** (confirmed live via `id -nG`), **`Text` elements in our own Quickshell tree rendering foreign strings without an explicit `textFormat`** (Qt's `AutoText` default self-promotes to rich text), and **`mise upgrade.auto_prune`**, still `true` here, which lets `mise up` delete the install dir a running session executes from.
 >
 > **v4.0.1 context**: A security-focused patch backporting fixes from the post-Quattro `quattro` branch — four CVE-class fixes (FIDO2 authfile symlink/ownership, USB/monitor device names executed as Hyprland Lua, theme-install code execution, video-title command forging) plus hardening, and one default-behavior reversal: sudoless Docker group membership is no longer granted automatically. Our divergence from that reversal is a recorded, accepted risk (see the archive).
 >
@@ -20,6 +22,16 @@ main failure mode when this plan is rewritten.
 ---
 
 ## P1 — High Priority
+
+### Blanket `input` group grant (v4.0.2)
+
+**What**: Membership of `input` lets any unprivileged process read `/dev/input/event*` — keylog the whole session and synthesize input. Omarchy deleted `install/hardware/input-group.sh`, dropped it from `install/hardware/all.sh`, and migrated existing installs to strip the membership unless `xpadneo-dkms` or `ydotool` is installed. We granted it in two places: `run_onchange_after_configure_voxtype` and `run_once_after_011_setup_optional_services` (kanata, laptop-gated). **Confirmed live 2026-09-12**: `id -nG` reports `input`. The source-side work is done (see the archive); only the live membership is left.
+**Target files**: none — this is a one-off system change
+**Effort**: Low
+
+- [ ] Live membership still needs a one-off `sudo gpasswd -d $USER input` plus a re-login — an apply alone changes nothing
+
+---
 
 ### Hyprland Lua config is the forward path (v4.0.0)
 
@@ -62,6 +74,31 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 ---
 
 ## P2 — Medium Priority
+
+### Notification popup/history race in our own shell (v4.0.1)
+
+**What**: Omarchy fixed race conditions in notification popup and history handling in its own Quickshell shell. Reopened here on 2026-09-12 when the "their internals" skip expired — we own notifications now (`features.quickshell_notifications`, swaync masked). The shape to check for is the one this tree already documents as its sharpest notification trap: a popup timeout must never call `expire()` or `dismiss()`, because both destroy the `Notification` and remove it from `trackedNotifications` — the history the centre exists to show. Popup lifetime is a separate list with its own timers in `Notifications.qml`.
+**Target files**: `private_dot_config/quickshell/dotfiles/Notifications.qml`, `notifications/NotificationPopups.qml`
+**Effort**: Low
+**Adapt from**: `shell/plugins/notifications/` in the omarchy checkout
+
+- [ ] Audit the popup-lifetime list against `trackedNotifications` — a popup expiring must not shrink the history
+- [ ] Verify by burst: send N notifications, let the popups time out, open the centre and confirm the count is still N
+- [ ] Check the `transient` path specifically — it must be implemented by filtering out of history, never by `tracked = false`
+
+---
+
+### `mise up` can prune the version it is running from (v4.0.3)
+
+**What**: `mise up` deletes superseded installs, including the directory a live session is currently executing from. Omarchy set `mise settings set upgrade.auto_prune false` globally plus a migration for existing installs. **Confirmed live 2026-09-12**: `mise settings get upgrade.auto_prune` returns `true` here, and `private_dot_config/mise/config.toml` already has a `[settings]` block to put it in.
+**Target files**: `private_dot_config/mise/config.toml`
+**Effort**: Low
+
+- [x] Added `upgrade.auto_prune = false` to the existing `[settings]` block, with a comment naming the failure it prevents *(done 2026-09-12)*
+- [ ] Confirm with `mise settings get upgrade.auto_prune` after apply
+- [ ] Prune deliberately instead (`mise prune`) when disk space actually matters
+
+---
 
 ### Running-kernel modules / DKMS header mismatch check (v4.0.4)
 
@@ -140,19 +177,18 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Weather in Waybar, with pinnable location (v3.8.0, v4.0.0)
+### Weather in the bar, with pinnable location (v3.8.0, v4.0.0)
 
-**What**: A `custom/weather` module polls a weather script and shows current conditions in the bar, with a notification binding for the full report. v4.0.0 adds a **forecast panel and a location that can be pinned to a chosen place instead of IP geolocation** — worth building in from the start rather than retrofitting, since IP geolocation is wrong on VPN/Tailscale. The CSS block and config comment are already present in our Waybar files.
-**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`, new `private_dot_local/lib/scripts/desktop/executable_waybar-weather`
+**What**: A `custom/weather` module polls a weather script and shows current conditions in the bar, with a notification binding for the full report. v4.0.0 adds a **forecast panel and a location that can be pinned to a chosen place instead of IP geolocation** — worth building in from the start rather than retrofitting, since IP geolocation is wrong on VPN/Tailscale. The CSS block and config comment are present in the fallback Waybar files, which no longer deploy — this is a Quickshell widget now.
+**Target files**: new `private_dot_config/quickshell/dotfiles/bar/widgets/WeatherWidget.qml` + a popover payload under `bar/popovers/`, new `private_dot_local/lib/scripts/desktop/executable_weather-status`
 **Effort**: Medium
 **Adapt from**: `default/waybar/weather.sh`, `bin/omarchy-weather-location`, `bin/omarchy-weather-status`
 
 - [ ] Implement weather script using `wttr.in` or `open-meteo.com` (local units, icon + temp output)
 - [ ] Support a pinned location from a config file, falling back to IP geolocation only when unset
-- [ ] Uncomment `"custom/weather"` in `modules-center` in `config.tmpl`
-- [ ] Uncomment `#custom-weather` CSS block in `style.css.tmpl` (already present as comment)
+- [ ] Draw it as a `BarWidget` (icon + label), with the forecast as a `BarPopover` payload beside the other seven — no new chrome
 - [ ] Add `Super+Ctrl+Alt+W` binding to show the full weather notification
-- [ ] Set poll interval to 60 seconds in module config; cache the response so a bar restart does not re-hit the API
+- [ ] Poll on a 60s `Timer` and cache the response, so a shell restart does not re-hit the API
 
 ---
 
@@ -362,15 +398,15 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Coding-agent usage widget for Waybar (v4.0.0)
+### Coding-agent usage widget for the bar (v4.0.0)
 
-**What**: A bar widget showing Claude Code / Codex / Fireworks usage stats. Directly applicable — we run Waybar and Claude Code.
-**Target files**: `private_dot_config/waybar/config.tmpl`, `private_dot_config/waybar/style.css.tmpl`, `private_dot_local/lib/scripts/ai/`
+**What**: A bar widget showing Claude Code / Codex / Fireworks usage stats. Directly applicable — we run Claude Code. Omarchy's own QML is readable at `shell/plugins/agents/` in the checkout.
+**Target files**: new `private_dot_config/quickshell/dotfiles/bar/widgets/AgentUsageWidget.qml`, `private_dot_local/lib/scripts/ai/`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-agent-usage-claude`, `bin/omarchy-agent-usage-codex`
 
 - [ ] Check what usage data Claude Code exposes locally (config/state dir) vs requiring an API call
-- [ ] Implement a `custom/agent-usage` module with a sane poll interval (usage data changes slowly — 5 min, not 60s)
+- [ ] Implement it as a `BarWidget` with a sane poll interval (usage data changes slowly — 5 min, not 60s)
 - [ ] Only add if the data source is local; do not poll a paid API from the bar
 
 ---
@@ -378,13 +414,13 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 ### Tailscale exit-node picker (v4.0.0)
 
 **What**: A Tailscale connection control and exit-node picker with Mullvad nodes grouped by country. We have `tailscale` installed and a `network` script category.
-**Target files**: `private_dot_local/lib/scripts/network/`, `private_dot_config/waybar/`
+**Target files**: `private_dot_local/lib/scripts/network/`, `private_dot_config/quickshell/dotfiles/bar/popovers/NetworkPopover.qml`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-install-service-tailscale`
 
-- [ ] Implement a Wofi-driven exit-node picker over `tailscale exit-node list` (or `tailscale status --json`)
+- [ ] Implement the exit-node picker over `tailscale exit-node list` (or `tailscale status --json`), fed to `desktop/quickshell-menu --json` like every other picker caller
 - [ ] Group by country in the picker labels
-- [ ] Optionally surface connection state in Waybar
+- [ ] Optionally surface connection state in `bar/popovers/NetworkPopover.qml`
 
 ---
 
@@ -514,7 +550,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### FUSE filesystem hang on suspend fix (v3.5.0)
+### FUSE filesystem hang on suspend fix (v3.5.0, v4.0.3)
 
 **What**: A `system-sleep` hook lazy-unmounts `gvfsd-fuse` filesystems before suspend/hibernate and restarts `gvfs-daemon.service` on wake.
 **Target files**: `/etc/systemd/system-sleep/` via a lifecycle script
@@ -524,6 +560,8 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [ ] Evaluate if gvfsd-fuse is relevant here (used by Thunar/GNOME Keyring)
 - [ ] If yes: create `run_once_after_setup_fuse_suspend_hook.sh.tmpl`
 - [ ] Hook: lazy-unmount gvfsd-fuse mounts before sleep; restart `gvfs-daemon.service` on wake
+- [ ] If it lands, install it the v4.0.3 way: staged `mktemp` + `install -o root -g root` + `mv -Tf` onto a validated path, never `cp -p` into place — a half-written root-owned sleep hook runs on the next suspend
+- [ ] Read `SYSTEMD_SLEEP_ACTION` rather than the positional `$2` (v4.0.3 fix), and abort on a symlinked state marker
 
 ---
 
@@ -644,4 +682,6 @@ evaluation and the accepted-risk decision on sudoless Docker.
 | v3.8.4 | `_research/omarchy/OMARCHY_v3.8.4.md` | 2026-08-24 |
 | v4.0.0 | `_research/omarchy/OMARCHY_v4.0.0.md` | 2026-08-24 |
 | v4.0.1 | `_research/omarchy/OMARCHY_v4.0.1.md` | 2026-08-30 |
+| v4.0.2 | `_research/omarchy/OMARCHY_v4.0.2.md` | 2026-09-12 |
+| v4.0.3 | `_research/omarchy/OMARCHY_v4.0.3.md` | 2026-09-12 |
 | v4.0.4 | `_research/omarchy/OMARCHY_v4.0.4.md` | 2026-09-17 |
