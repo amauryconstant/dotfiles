@@ -70,6 +70,13 @@ PanelWindow {
     // query is incidental and Esc means "the caller gets nothing".
     property bool escapeClears: true
 
+    // 🚨 A back gesture, NOT a back row. Set true and the surface answers
+    // `back` on Left or Backspace — but only while the query is EMPTY, because
+    // both keys are ordinary text editing in a field that always holds focus.
+    // Esc is deliberately not rebound: leaving a submenu and abandoning the
+    // whole menu are different intents and the caller can tell them apart.
+    property bool backEnabled: false
+
     property int panelWidth: Config.launcherWidth
     property int listPad: Config.launcherListPad
     // The list scrolls past this: page 06's cap, and the reason a payload stays
@@ -87,6 +94,8 @@ PanelWindow {
     // footer says so.
     signal removed
     signal opened
+    // Left or Backspace on an empty query, when `backEnabled`.
+    signal back
 
     function open(): void {
         queryInput.text = "";
@@ -261,6 +270,23 @@ PanelWindow {
                     Keys.onDownPressed: root.moveSelection(1)
                     Keys.onEnterPressed: root.accepted()
                     Keys.onEscapePressed: root.clearOrClose()
+                    // Empty query only — otherwise Backspace is deleting a
+                    // character and Left is moving the caret, which is what the
+                    // user meant both times.
+                    Keys.onLeftPressed: event => {
+                        if (root.backEnabled && queryInput.text === "") {
+                            root.back();
+                            event.accepted = true;
+                        } else {
+                            event.accepted = false;
+                        }
+                    }
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Backspace && root.backEnabled && queryInput.text === "") {
+                            root.back();
+                            event.accepted = true;
+                        }
+                    }
                     Keys.onReturnPressed: root.accepted()
                     Keys.onUpPressed: root.moveSelection(-1)
 

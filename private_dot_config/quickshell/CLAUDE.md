@@ -260,6 +260,33 @@ Four things that each broke it once, all now load-bearing in the wrapper:
 **With nothing matching, Return answers with the TYPED TEXT.** That is dmenu's contract, not a
 nicety: `menu-install` asks for a package name by handing the picker an empty list.
 
+### Navigation — `--breadcrumb` and `--back` (design page 10)
+
+Page 10 asks for the navigation model to live in the shell. It does **not** ask for the *tree* to,
+and the tree stays in the thirteen `menu-*` scripts — moving thirteen scripts' worth of menu
+content into QML would put every future menu change inside the shell for no gain.
+
+Two optional request fields carry the model instead:
+
+| Field | Drawn / does |
+|---|---|
+| `breadcrumb` | prepended to the prompt as `Setup › Displays`, so a submenu says what it is under |
+| `back` | answered on **Left** or **Backspace**, and the footer gains `← back` |
+
+🚨 **`back` is a payload, not a new verb.** It is the string the script's own `󰁍 Back` case arm
+already matches, so a submenu opts in with two extra arguments to `show_menu` and changes nothing
+else. A caller that sends neither field gets exactly the surface it got before.
+
+🚨 **Both keys fire only while the query is EMPTY.** The query field always holds focus, so a bare
+Left is caret movement and a bare Backspace is deleting a character — which is what the user meant
+both times. Esc is deliberately *not* rebound either: leaving a submenu and abandoning the whole
+menu are different intents, and the caller can tell them apart because back answers with a payload
+while cancel answers with nothing.
+
+🚨 **The Back rows stay.** Both fields are ignored on the Wofi fallback path — Wofi has no header
+trail and no key free for the gesture — so a submenu reached while the shell is down would have no
+way back at all if the rows had been removed.
+
 ### Rich items — `quickshell-menu --json`
 
 An item may be an **object** instead of a string, which is how a caller reaches the row contract

@@ -5,6 +5,7 @@
 #          by the Quickshell shell instead of Wofi
 # Requirements: Arch Linux, jaq, openbsd-netcat; wofi for the fallback path
 # Usage: printf 'a\nb\n' | quickshell-menu [--prompt "Title"]
+#            [--breadcrumb "Setup"] [--back "󰁍 Back"]
 #        printf '[{"title":"Dawn","payload":"rose-pine-dawn"}]' |
 #            quickshell-menu --json [--prompt "Title"]
 # Exit:  0 with the chosen line on stdout; 1 and no output when cancelled —
@@ -24,6 +25,18 @@
 # them into the label — see theme-menu, and quickshell/dotfiles/MenuServer.qml
 # for the shape it normalises into.
 #
+# --breadcrumb and --back are design page 10's navigation model, and they move
+# only the NAVIGATION into the shell: the tree stays in the menu-* scripts.
+# --breadcrumb draws before the prompt ("Setup › Displays"); --back is answered
+# on Left or Backspace with an empty query, so a submenu no longer needs to
+# spend a row on 󰁍 Back — though the rows stay, because the value is a payload
+# the script dispatches through the arm it already has.
+#
+# 🚨 Both are IGNORED on the Wofi fallback path. Wofi has no header trail and no
+# key free for the gesture, so a submenu reached while the shell is down keeps
+# its 󰁍 Back row and nothing else changes. That is the reason the rows are kept
+# rather than replaced.
+#
 # 🚨 The Wofi fallback is load-bearing, not politeness. These menus run during
 # first-boot setup and while the shell is being restarted; a picker that hung
 # whenever the bar was down would take system-menu, theme-menu and every
@@ -36,6 +49,11 @@
 
 PROMPT=""
 JSON_MODE=0
+# Optional navigation, ignored by the Wofi fallback (it has neither a header
+# trail nor a key free for it). A caller that omits both gets the surface it
+# always got.
+BREADCRUMB=""
+BACK=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -51,6 +69,22 @@ while [ $# -gt 0 ]; do
         JSON_MODE=1
         shift
         ;;
+    --breadcrumb)
+        BREADCRUMB="$2"
+        shift 2
+        ;;
+    --breadcrumb=*)
+        BREADCRUMB="${1#--breadcrumb=}"
+        shift
+        ;;
+    --back)
+        BACK="$2"
+        shift 2
+        ;;
+    --back=*)
+        BACK="${1#--back=}"
+        shift
+        ;;
     *)
         shift
         ;;
@@ -64,13 +98,15 @@ if [ "$JSON_MODE" -eq 1 ]; then
     # A malformed array is a caller bug, not a cancellation, so it says so on
     # stderr rather than looking like the user pressed Esc.
     if ! REQUEST=$(printf '%s' "$ITEMS" |
-        jaq -c --arg p "$PROMPT" '{prompt:$p, items:.}' 2>/dev/null); then
+        jaq -c --arg p "$PROMPT" --arg c "$BREADCRUMB" --arg b "$BACK" \
+            '{prompt:$p, breadcrumb:$c, back:$b, items:.}' 2>/dev/null); then
         echo "quickshell-menu: --json expects a JSON array on stdin" >&2
         exit 1
     fi
 else
     REQUEST=$(printf '%s\n' "$ITEMS" |
-        jaq -R -s -c --arg p "$PROMPT" '{prompt:$p, items:(rtrimstr("\n") | split("\n"))}')
+        jaq -R -s -c --arg p "$PROMPT" --arg c "$BREADCRUMB" --arg b "$BACK" \
+            '{prompt:$p, breadcrumb:$c, back:$b, items:(rtrimstr("\n") | split("\n"))}')
 fi
 
 # 🚨 The reachability test is the CONNECTION, never `[ -S "$SOCKET" ]`. A shell

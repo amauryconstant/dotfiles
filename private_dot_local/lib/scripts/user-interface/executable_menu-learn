@@ -10,7 +10,7 @@
 # Menu options - Using Material Design icons
 OPTIONS="󰁍 Back|󰌌 Keybindings|󰗚 Hyprland Wiki|󰣇 Arch Wiki|󰈙 Chezmoi Docs|󰊤 GitHub (Dotfiles)"
 
-CHOICE=$(show_menu "Learn" "$OPTIONS")
+CHOICE=$(show_menu "Learn" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")

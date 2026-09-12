@@ -19,6 +19,16 @@ import Quickshell.Io
 //   out  the chosen item, or nothing at all when cancelled
 // The connection closes either way, which is what releases the caller.
 //
+// Two optional request fields carry design page 10's navigation model without
+// moving the TREE into the shell, which stays in the menu-* scripts:
+//   "breadcrumb": "Setup"     -- drawn before the prompt, so a submenu says
+//                                where it is
+//   "back": "󰁍 Back"          -- what to answer on Left or Backspace with an
+//                                empty query. It is a PAYLOAD, so the calling
+//                                script dispatches it through the same `case`
+//                                arm its Back row already uses, and a caller
+//                                that omits it behaves exactly as before.
+//
 // An item may also be an OBJECT, which is how a caller reaches the row contract
 // PickerSurface already has instead of packing glyph, state and payload into
 // one string:
@@ -42,6 +52,12 @@ Singleton {
 
     property string prompt: ""
     property list<var> items: []
+    // Where the caller sits in its own tree, and what to answer when the user
+    // goes back. Both optional: a caller that sends neither gets exactly the
+    // surface it got before. `back` is a payload, so the calling script's own
+    // `case` handles it with no new vocabulary.
+    property string breadcrumb: ""
+    property string back: ""
     // One picker at a time. A second request while one is open is refused
     // immediately rather than queued: a menu that appears minutes later,
     // attached to a script that has moved on, is worse than a refusal.
@@ -90,6 +106,8 @@ Singleton {
         root.busy = false;
         root.prompt = "";
         root.items = [];
+        root.breadcrumb = "";
+        root.back = "";
         if (!sock)
             return;
         if (text !== "") {
@@ -124,6 +142,8 @@ Singleton {
                     root.activeSocket = conn;
                     root.busy = true;
                     root.prompt = request.prompt ?? "";
+                    root.breadcrumb = request.breadcrumb ?? "";
+                    root.back = request.back ?? "";
                     root.items = (request.items ?? []).map(i => root.normalise(i)).filter(i => i !== null);
                     root.requested();
                 }

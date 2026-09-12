@@ -218,9 +218,19 @@ is largely a *navigation model* layered on component 7, plus the rule for how a 
 drawn against it rather than an invented one. Depth is at most three. Some leaves are destructive
 (power, package removal) and need a confirmation step that the launcher path does not have.
 
-**Status**: Partial. The tree works — `user-interface/system-menu` and its `menu-*` scripts
-navigate it one level per picker call. What is not built is design page 10's **native nested**
-menu, where the navigation model lives in the shell rather than in the calling script.
+**Status**: **Shipped 2026-09-13** — the navigation model moved into the shell, the tree did not.
+`MenuServer` takes two optional request fields: `breadcrumb`, drawn before the prompt, and `back`,
+answered on Left or Backspace with an empty query. `back` is a *payload*, so each submenu opts in
+with two extra arguments to `show_menu` and dispatches it through the `󰁍 Back` arm it already had.
+
+The tree stays in the thirteen `menu-*` scripts deliberately: page 10 asks for the navigation
+model in the shell, not the content, and moving thirteen scripts' worth of menu into QML would put
+every future menu change inside the shell. The Back rows stay too, because both fields are ignored
+on the Wofi fallback path.
+
+Found while wiring it: **every `󰁍 Back` row in six of those scripts had been dead**, pointing at
+`system-menu.sh` — a name chezmoi has never produced. 18 such paths were corrected in the same
+pass; see `user-interface/CLAUDE.md`.
 
 ### 9. Keybindings reference
 
@@ -679,7 +689,7 @@ because eighteen scripts already spoke dmenu.
 | # | Surface | State |
 |---|---|---|
 | 5 | Mode and state indicators | **Shipped 2026-09-12** — ranking is fixed-order, glyph-carried; night light and recording newly drawn |
-| 8 | Hierarchical system menu | Partial — scripts navigate; page 10's *native nested* menu is not built |
+| 8 | Hierarchical system menu | **Shipped 2026-09-13** — navigation in the shell (breadcrumb + back gesture), tree deliberately left in the scripts |
 | 11 | Display and monitor profile picker | **Shipped 2026-09-12 as an output picker** — the *profile* half is declined, because hyprdynamicmonitors exposes no way to force a profile |
 | 15 | Screenshot and recording control | **Partial by ruling 2026-09-12** — indicator + mode picker shipped; the region overlay is declined (nothing can keep a surface out of its own capture, and omarchy declined it too) |
 | 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/QUICKSHELL_GREETER.md`) |

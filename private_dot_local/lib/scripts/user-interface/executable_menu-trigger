@@ -9,7 +9,7 @@
 
 # Main trigger menu - Using Material Design icons
 MAIN_OPTIONS="󰁍 Back|󰄀 Capture|󰅟 Clipboard|󰒖 Share|󰔡 Toggle"
-CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS")
+CHOICE=$(show_menu "Trigger" "$MAIN_OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")
@@ -18,7 +18,7 @@ case "$CHOICE" in
     "󰄀 Capture")
         # Capture submenu
         CAPTURE_OPTIONS="󰁍 Back|󰹑 Screenshot (Smart)|󰩭 Screenshot (Region)|󰖲 Screenshot (Window)|󰍹 Screenshot (Fullscreen)|󰨸 Screenshot → Clipboard|󰻂 Screen Record|󰕾 Screen Record + Audio|󰴱 Color Picker"
-        CAPTURE_CHOICE=$(show_menu "Capture" "$CAPTURE_OPTIONS")
+        CAPTURE_CHOICE=$(show_menu "Capture" "$CAPTURE_OPTIONS" "Trigger" "󰁍 Back")
 
         case "$CAPTURE_CHOICE" in
             "󰁍 Back")
@@ -52,7 +52,7 @@ case "$CHOICE" in
         ;;
     "󰅟 Clipboard")
         CLIP_OPTIONS="󰁍 Back|󰅟 Clipboard History|󰅢 Clear Clipboard"
-        CLIP_CHOICE=$(show_menu "Clipboard" "$CLIP_OPTIONS")
+        CLIP_CHOICE=$(show_menu "Clipboard" "$CLIP_OPTIONS" "Trigger" "󰁍 Back")
         case "$CLIP_CHOICE" in
             "󰁍 Back") "$SCRIPTS_DIR/user-interface/menu-trigger" ;;
             "󰅟 Clipboard History") "$SCRIPTS_DIR/desktop/quickshell-toggle" clipboard ;;
@@ -61,7 +61,7 @@ case "$CHOICE" in
     "󰒖 Share")
         # Share submenu (placeholder for future file sharing)
         SHARE_OPTIONS="󰁍 Back|󰈔 Share File"
-        SHARE_CHOICE=$(show_menu "Share" "$SHARE_OPTIONS")
+        SHARE_CHOICE=$(show_menu "Share" "$SHARE_OPTIONS" "Trigger" "󰁍 Back")
 
         case "$SHARE_CHOICE" in
             "󰁍 Back")
@@ -75,7 +75,7 @@ case "$CHOICE" in
     "󰔡 Toggle")
         # Toggle submenu
         TOGGLE_OPTIONS="󰁍 Back|󰛨 Nightlight|󰔎 Nightlight Temperature|󰌾 Idle Lock|󰘯 Waybar|󰝘 Workspace Gaps"
-        TOGGLE_CHOICE=$(show_menu "Toggle" "$TOGGLE_OPTIONS")
+        TOGGLE_CHOICE=$(show_menu "Toggle" "$TOGGLE_OPTIONS" "Trigger" "󰁍 Back")
 
         case "$TOGGLE_CHOICE" in
             "󰁍 Back")

@@ -10,7 +10,7 @@
 # Menu options - Using Material Design icons
 OPTIONS="󰁍 Back|󰕾 Audio (PulseAudio)|󰓃 Audio Output Switch|󰖩 Network (WiFi)|󰂯 Bluetooth|󰁹 Power Profile|󰍹 Displays|󰌑 Edit Keybindings|󰖳 Input Devices|󰁢 Home Backup"
 
-CHOICE=$(show_menu "Setup" "$OPTIONS")
+CHOICE=$(show_menu "Setup" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")
@@ -33,7 +33,7 @@ case "$CHOICE" in
         if command -v powerprofilesctl >/dev/null 2>&1; then
             CURRENT=$(powerprofilesctl get)
             PROFILE_OPTIONS="󰁍 Back|󰓅 Performance|󰗑 Balanced|󰁼 Power Saver"
-            PROFILE_CHOICE=$(show_menu "Power Profile (Current: $CURRENT)" "$PROFILE_OPTIONS")
+            PROFILE_CHOICE=$(show_menu "Power Profile (Current: $CURRENT)" "$PROFILE_OPTIONS" "Setup" "󰁍 Back")
 
             case "$PROFILE_CHOICE" in
                 "󰁍 Back")

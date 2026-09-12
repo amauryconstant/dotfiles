@@ -10,7 +10,7 @@
 # Menu options
 OPTIONS="󰁍 Back|󰏗 Install Package|󰚩 AI Models (llama.cpp)|󰙵 Development Tools|󰘐 Code Editors"
 
-CHOICE=$(show_menu "Install" "$OPTIONS")
+CHOICE=$(show_menu "Install" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")
@@ -38,7 +38,7 @@ case "$CHOICE" in
 
         if command -v llama-server >/dev/null 2>&1; then
             MODEL_OPTIONS="󰁍 Back|󰉖 List Models|󰋛 Server Status"
-            MODEL_CHOICE=$(show_menu "llama.cpp" "$MODEL_OPTIONS")
+            MODEL_CHOICE=$(show_menu "llama.cpp" "$MODEL_OPTIONS" "Install" "󰁍 Back")
 
             case "$MODEL_CHOICE" in
                 "󰁍 Back")
@@ -74,7 +74,7 @@ case "$CHOICE" in
     "󰙵 Development Tools")
         # Common dev tool installation
         DEV_OPTIONS="󰁍 Back|󰡨 Docker|󱘗 Rust Toolchain|󰌠 Python (mise)|󰎙 Node.js (mise)|󰟓 Go (mise)"
-        DEV_CHOICE=$(show_menu "Development Tools" "$DEV_OPTIONS")
+        DEV_CHOICE=$(show_menu "Development Tools" "$DEV_OPTIONS" "Install" "󰁍 Back")
 
         case "$DEV_CHOICE" in
             "󰁍 Back")
@@ -108,7 +108,7 @@ case "$CHOICE" in
     "󰘐 Code Editors")
         # Editor installation
         EDITOR_OPTIONS="󰁍 Back|󰨞 VSCode|󰨞 VSCodium|󰕷 Neovim Config|󱓥 Helix"
-        EDITOR_CHOICE=$(show_menu "Code Editors" "$EDITOR_OPTIONS")
+        EDITOR_CHOICE=$(show_menu "Code Editors" "$EDITOR_OPTIONS" "Install" "󰁍 Back")
 
         case "$EDITOR_CHOICE" in
             "󰁍 Back")

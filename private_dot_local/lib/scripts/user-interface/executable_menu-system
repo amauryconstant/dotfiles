@@ -12,7 +12,7 @@
 # Menu options - Using Material Design icons
 OPTIONS="󰁍 Back|󰌾 Lock|󰤄 Suspend|󰜉 Restart|󰐥 Shutdown"
 
-CHOICE=$(show_menu "System" "$OPTIONS")
+CHOICE=$(show_menu "System" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")

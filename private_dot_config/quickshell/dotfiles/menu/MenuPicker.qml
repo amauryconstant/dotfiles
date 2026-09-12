@@ -39,14 +39,18 @@ PickerSurface {
     readonly property int rowCount: root.matches.filter(i => !i.header).length
     readonly property int totalCount: MenuServer.items.filter(i => !i.header).length
 
+    backEnabled: MenuServer.back !== ""
     counter: root.rowCount === root.totalCount ? String(root.totalCount) : `${root.rowCount}/${root.totalCount}`
     escapeClears: false
-    footerLeft: "↑↓ move · ↵ select · esc cancel"
+    footerLeft: root.backEnabled ? "↑↓ move · ↵ select · ← back · esc cancel" : "↑↓ move · ↵ select · esc cancel"
     headerGlyph: Config.menuGlyph
     // MenuServer normalises every item into the row contract, so there is
     // nothing to remap here.
     model: root.matches
-    placeholder: MenuServer.prompt
+    // The trail, when the caller sent one. `›` rather than a second header
+    // line: the prompt already names where you are, and a submenu only needs
+    // to say what it is under.
+    placeholder: MenuServer.breadcrumb !== "" ? `${MenuServer.breadcrumb} › ${MenuServer.prompt}` : MenuServer.prompt
 
     // 🚨 With nothing matching, Return answers with the TYPED TEXT. That is
     // dmenu's contract, not a nicety: menu-install asks for a package name by
@@ -66,6 +70,14 @@ PickerSurface {
     // Covers Esc, a click outside, and the window being hidden any other way.
     // The caller is blocked on this connection, so every path out of the
     // surface has to answer it.
+    // Going back is an ANSWER, not a cancellation: the caller is blocked either
+    // way, and it dispatches this payload through the same `case` arm its Back
+    // row uses. The surface closes because the parent script opens the next
+    // one — one picker at a time is MenuServer's rule.
+    onBack: {
+        MenuServer.respond(MenuServer.back);
+        root.close();
+    }
     onCancelled: MenuServer.respond("")
     onMatchesChanged: root.selected = root.firstSelectable()
 

@@ -10,7 +10,7 @@
 # Menu options - Using Material Design icons
 OPTIONS="󰁍 Back|󰔎 Switch Theme|󰸉 Wallpaper (Random)|󰋩 Wallpaper (Set)|󰒓 Edit Hyprland Config"
 
-CHOICE=$(show_menu "Style" "$OPTIONS")
+CHOICE=$(show_menu "Style" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")
@@ -53,7 +53,7 @@ case "$CHOICE" in
     "󰒓 Edit Hyprland Config")
         # Submenu for config files
         CONFIG_OPTIONS="󰁍 Back|󰍹 Monitor|󱃾 Environment|󰌌 Input|󰒓 General|󰐮 Decoration|󰫢 Animations|󰌑 Bindings|󰖲 Window Rules|󰐊 Autostart"
-        CONFIG_CHOICE=$(show_menu "Edit Config" "$CONFIG_OPTIONS")
+        CONFIG_CHOICE=$(show_menu "Edit Config" "$CONFIG_OPTIONS" "Style" "󰁍 Back")
 
         case "$CONFIG_CHOICE" in
             "󰁍 Back")

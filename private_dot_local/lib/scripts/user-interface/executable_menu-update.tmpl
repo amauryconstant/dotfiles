@@ -10,7 +10,7 @@
 # Menu options
 OPTIONS="󰁍 Back|󰚰 Full System Update|󰑓 Config Refresh (chezmoi)|󰦖 Package Sync Only|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
 
-CHOICE=$(show_menu "Update" "$OPTIONS")
+CHOICE=$(show_menu "Update" "$OPTIONS" "Menu" "󰁍 Back")
 
 case "$CHOICE" in
     "󰁍 Back")
@@ -39,7 +39,7 @@ case "$CHOICE" in
     "󰣐 Firmware Update")
         if command -v fwupdmgr >/dev/null 2>&1; then
             FW_OPTIONS="󰁍 Back|󰋗 Check for Updates|󰇚 Download Updates|󰁯 Install Updates|󰾰 Show Devices"
-            FW_CHOICE=$(show_menu "Firmware Update" "$FW_OPTIONS")
+            FW_CHOICE=$(show_menu "Firmware Update" "$FW_OPTIONS" "Update" "󰁍 Back")
 
             case "$FW_CHOICE" in
                 "󰁍 Back")
