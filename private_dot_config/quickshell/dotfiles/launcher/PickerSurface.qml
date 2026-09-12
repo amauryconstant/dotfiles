@@ -436,6 +436,7 @@ PanelWindow {
                                 font.family: (row.modelData.mono ?? false) ? Config.terminalFont : Config.guiFont
                                 font.pixelSize: Config.fontBody
                                 text: row.modelData.title ?? ""
+                                textFormat: Text.PlainText
                                 width: parent.width
                             }
 
@@ -447,6 +448,7 @@ PanelWindow {
                                 font.family: Config.guiFont
                                 font.pixelSize: Config.fontMeta
                                 text: row.subtitle
+                                textFormat: Text.PlainText
                                 visible: row.subtitle !== ""
                                 width: parent.width
                             }

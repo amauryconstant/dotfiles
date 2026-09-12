@@ -153,6 +153,7 @@ Item {
                 font.pixelSize: Config.fontMeta
                 horizontalAlignment: Text.AlignHCenter
                 text: root.failureMessage !== "" ? root.failureMessage : qsTr("Enter password to unlock")
+                textFormat: Text.PlainText
                 width: parent.width
                 wrapMode: Text.WordWrap
             }

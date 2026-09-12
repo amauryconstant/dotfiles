@@ -184,6 +184,7 @@ PanelWindow {
                         font.family: Config.terminalFont
                         font.pixelSize: Config.fontBody
                         text: root.identity.substring(0, 1).toUpperCase() || "?"
+                        textFormat: Text.PlainText
                     }
                 }
 
@@ -198,6 +199,7 @@ PanelWindow {
                         font.family: Config.guiFont
                         font.pixelSize: Config.fontBody
                         text: root.identity
+                        textFormat: Text.PlainText
                     }
 
                     Text {
@@ -206,6 +208,7 @@ PanelWindow {
                         font.pixelSize: Config.fontMeta
                         opacity: 0.8
                         text: root.uptime
+                        textFormat: Text.PlainText
                     }
                 }
             }

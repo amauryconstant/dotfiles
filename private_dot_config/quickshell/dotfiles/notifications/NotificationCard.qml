@@ -176,6 +176,7 @@ Rectangle {
                     font.pixelSize: Config.fontMeta
                     font.weight: Font.Medium
                     text: Notifications.appLabel(root.notification)
+                    textFormat: Text.PlainText
                 }
 
                 // Group count. Present only when siblings were collapsed into
@@ -295,6 +296,7 @@ Rectangle {
                         font.pixelSize: Config.fontBody - 1
                         font.weight: Font.Medium
                         text: action.modelData.text
+                        textFormat: Text.PlainText
                     }
 
                     MouseArea {

@@ -303,6 +303,7 @@ PopupWindow {
                     font.family: Config.terminalFont
                     font.pixelSize: Config.fontMeta
                     text: root.footerRight
+                    textFormat: Text.PlainText
                 }
 
                 // Where it launches, launching closes the popover. Where

@@ -108,6 +108,7 @@ Item {
             font.family: root.monoLabel ? Config.terminalFont : Config.guiFont
             font.pixelSize: Config.fontBody
             text: root.label
+            textFormat: Text.PlainText
             visible: root.label !== ""
             width: root.labelMaxWidth > 0 ? Math.min(implicitWidth, root.labelMaxWidth) : implicitWidth
         }

@@ -78,6 +78,7 @@ Item {
             font.family: Config.guiFont
             font.pixelSize: Config.fontBody
             text: root.label
+            textFormat: Text.PlainText
             width: Math.min(implicitWidth, root.width - Config.padLoose * 2)
         }
     }

@@ -56,6 +56,7 @@ PopupWindow {
             font.family: root.monospace ? Config.terminalFont : Config.guiFont
             font.pixelSize: Config.fontBody
             text: root.text
+            textFormat: Text.PlainText
         }
     }
 }

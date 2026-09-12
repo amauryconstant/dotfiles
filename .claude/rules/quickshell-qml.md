@@ -21,7 +21,9 @@ build record — history, not a roadmap
 | `dotfiles/qmldir` | Declares the singletons. **Load-bearing** — see below |
 | `dotfiles/{Theme,Config,Backlight,Notifications,Meters,MenuServer}.qml*` | Singletons. `Config` is `.tmpl`, the other five are not |
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
+| `dotfiles/bar/{BarPopover,PopoverRow,PopoverSlider}.qml` | The popover chrome: header/body/footer + anchoring and grabs, the 34 row every list-shaped payload draws, and the only control taking both drag and wheel |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
+| `dotfiles/bar/popovers/*.qml` | The seven payloads — one per bar widget that owns one |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
 | `dotfiles/launcher/PickerSurface.qml` | The chrome the launcher, the menu and the clipboard share. Consumers supply **data**, never a delegate — see below |
 | `dotfiles/launcher/Launcher.qml` | App launcher: ranking, `:` run, `=` calc |
@@ -29,6 +31,7 @@ build record — history, not a roadmap
 | `dotfiles/clipboard/ClipboardPicker.qml` | cliphist history |
 | `dotfiles/notifications/*.qml` | The card (shared), the popup stack (one window per screen) and the centre |
 | `dotfiles/dock/Dock.qml` | Auto-hiding dock. One window **per screen**, hot-edge reveal |
+| `dotfiles/power/PowerMenu.qml` | The power / session menu (design page 09) |
 | `dotfiles/polkit/PolkitDialog.qml` | The polkit authentication dialog. Raised by the **system**: no toggle, no IPC target, visibility is the agent's `isActive` |
 | `dotfiles/lock/LockScreen.qml` | The session lock: `WlSessionLock`, PAM, stranded-lock recovery. Non-visual, behind a `Loader` on `Config.lockOwned` |
 | `dotfiles/lock/LockContent.qml` | What the lock draws, once per output. Clock, date, one field, one line — and deliberately nothing that reads a state |
@@ -132,6 +135,30 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 ---
 
 ## Runtime behaviours that bite
+
+🚨 **`Text` defaults to `Text.AutoText`, and `AutoText` SELF-PROMOTES to rich text.** Qt runs
+`Qt.mightBeRichText()` on the string and switches format by itself — no `StyledText`, no opt-in.
+Rich text then **fetches `<img src="http://…">`**, so any `Text` rendering a string this repo did
+not author is an unauthenticated outbound GET waiting for a sender to notice. The reachable path
+here was the shared `BarWidget` label, which carries the **window title** and the **MPRIS track
+title**: a web page setting `document.title = '<img src="http://…">'` makes the bar beacon.
+Omarchy shipped the same class and patched it in v4.0.2 (`shell/plugins/notifications/`), after
+its own `/<img[^>]*>/gi` strip turned out to be bypassable — `<im<img src="decoy">g src="beacon">`
+is *rewritten into* a live tag by a substring strip. Do not strip; declare the format.
+
+**The rule is foreign text, not every `Text`.** 18 of this tree's 83 unformatted `Text` elements
+could carry a foreign string and now pin `textFormat: Text.PlainText`; the other 65 are glyph
+literals, `qsTr` chrome, numbers, `Qt.formatDateTime` output, workspace ids and output names, and
+are deliberately left alone. Foreign means: Hyprland window titles and app ids, MPRIS metadata,
+notification summary/body/appName/action labels, clipboard entries, `.desktop` fields, tray titles
+and tooltips, SSIDs, Bluetooth and PipeWire device names, polkit and PAM message text, and any
+`Process` stdout.
+
+The check is a grep, not a linter — every `Text.text` in this tree is bound in its own
+declaration (no `Binding {}`, no alias, no `Component.onCompleted` assignment), so
+`grep -n 'text:' <file>` against that list finds every site. Upstream ships a scanner
+(`test/shell.d/qml-text-format-scan.py`); it is not vendored, because a guard nobody runs is worse
+than the grep.
 
 🚨 **A Nerd Font glyph literal can be authored as an empty string, silently.** It has
 happened twice in this tree: `WorkspacesWidget`'s five state glyphs and `BacklightWidget`'s
@@ -701,8 +728,8 @@ ground, `fg-muted` is allowed.
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
 `bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
-`notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`, `lock.lock()`,
-`lock.isLocked()`, `lock.status()`. List them live with
+`notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`,
+`popover.toggle(id)`, `lock.lock()`, `lock.isLocked()`, `lock.status()`. List them live with
 `quickshell ipc --pid <pid> show`.
 
 🚨 **The menu picker is deliberately NOT here.** A dmenu call must BLOCK until the user chooses,

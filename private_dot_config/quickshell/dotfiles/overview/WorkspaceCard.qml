@@ -132,6 +132,7 @@ Rectangle {
                         // the pair themes/CLAUDE.md bans outright.
                         opacity: 0.75
                         text: win.modelData?.title ?? ""
+                        textFormat: Text.PlainText
                         width: parent.width - Config.padTight * root.detail
                     }
                 }

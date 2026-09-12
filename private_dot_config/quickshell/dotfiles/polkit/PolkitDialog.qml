@@ -160,6 +160,7 @@ PanelWindow {
                     // the surface must show verbatim from the system" — the
                     // same applies to the action description.
                     text: root.flow?.message ?? ""
+                    textFormat: Text.PlainText
                     width: parent.width - (appIcon.visible ? appIcon.width + Config.padTight : 0)
                     wrapMode: Text.WordWrap
                 }
@@ -174,6 +175,7 @@ PanelWindow {
                 font.family: Config.terminalFont
                 font.pixelSize: Config.fontMeta
                 text: root.flow?.actionId ?? ""
+                textFormat: Text.PlainText
                 width: parent.width
             }
 
@@ -220,6 +222,7 @@ PanelWindow {
                             font.family: Config.guiFont
                             font.pixelSize: Config.fontMeta
                             text: chip.modelData.displayName || chip.modelData.string
+                            textFormat: Text.PlainText
                         }
                     }
                 }
@@ -274,6 +277,7 @@ PanelWindow {
                         font.family: Config.guiFont
                         font.pixelSize: Config.fontBody
                         text: root.flow?.inputPrompt || qsTr("Password")
+                        textFormat: Text.PlainText
                         visible: password.text === "" && !password.activeFocus
                     }
                 }
@@ -293,6 +297,7 @@ PanelWindow {
                 font.family: Config.guiFont
                 font.pixelSize: Config.fontMeta
                 text: root.flow?.supplementaryMessage ?? ""
+                textFormat: Text.PlainText
                 visible: text !== ""
                 width: parent.width
                 wrapMode: Text.WordWrap
