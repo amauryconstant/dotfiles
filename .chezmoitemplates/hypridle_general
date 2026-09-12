@@ -6,15 +6,20 @@
 # leaving these armed, so closing the lid still locks. Killing hypridle
 # disarmed lock-on-suspend entirely.
 #
-# 🚨 before_sleep_cmd must BLOCK until the lock is real. hypridle holds the
-# logind delay inhibitor only until this command returns, and `loginctl
-# lock-session` returns the instant the signal is sent -- so using it directly
-# released the inhibitor while nothing was drawn, and the machine could suspend
-# with the lock still on its way. desktop/lock-before-sleep does the same thing
-# and then waits for the compositor to confirm, inside logind's 5s budget.
+# 🚨 inhibit_sleep = 3 is what makes lock-before-suspend RELIABLE, and no script
+# can substitute for it. hypridle SPAWNS before_sleep_cmd and releases the
+# logind delay inhibitor in the same instant -- measured 2026-09-12:
+#   Executing .../lock-before-sleep / Process Created with pid 13271
+#   Releasing the sleep inhibitor!
+# both at 13:11:18 -- so a before_sleep_cmd that waits for the lock is waiting
+# after the inhibitor is already gone. Mode 3 instead holds the inhibitor until
+# the compositor reports the session LOCKED (Hypridle.cpp: onLocked() calls
+# uninhibitSleep(), onUnlocked() calls inhibitSleep()), which is the same fact a
+# script could only poll for, held by the thing that owns the inhibitor.
 general {
     lock_cmd = ~/.local/lib/scripts/desktop/immediate-lock  # Single lock entry point (re-entrancy guarded)
-    before_sleep_cmd = ~/.local/lib/scripts/desktop/lock-before-sleep  # Locks, then WAITS for it
+    before_sleep_cmd = loginctl lock-session                # Lock before suspend
+    inhibit_sleep = 3                                      # Hold sleep until LOCKED, not until spawned
     # Display back on, then re-enumerate audio. Every resume leaks one orphaned
     # PipeWire sink node (its device.id points at a device that no longer
     # exists); after 17 suspends this laptop had 18 nodes all named
@@ -28,7 +33,11 @@ general {
     # True session lock/unlock events. Unlike a listener's on-resume (which fires
     # the instant the mouse moves, BEFORE authentication), on_unlock_cmd only
     # fires once the user has actually authenticated.
-    # NOTE: setting inhibit_sleep = 3 would disable both of these — leave default.
+    # ⚠️ inhibit_sleep = 3 does NOT disable these, despite how hypridle's own
+    # warning reads. That warning is guarded by `if (!m_sWaylandState.lockNotifier)`
+    # and is about a compositor MISSING hyprland-lock-notify-v1. Hyprland has it,
+    # and the journal proves it: "Wayland session got locked" is the event that
+    # fires them, and onLocked() spawns on_lock_cmd whatever the inhibit mode is.
     on_lock_cmd = ~/.local/lib/scripts/core/hook-runner lock-change lock
     on_unlock_cmd = ~/.local/lib/scripts/core/hook-runner lock-change unlock
 }

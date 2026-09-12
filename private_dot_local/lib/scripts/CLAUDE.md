@@ -154,7 +154,6 @@ fi
 - `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`).
   Routes to the Quickshell lock surface at runtime, hyprlock when the shell cannot answer
 - `session-locked`, `session-lock-stranded` - is the compositor locked / is that lock an orphan
-- `lock-before-sleep` - hypridle's `before_sleep_cmd`: lock, then wait for the compositor to confirm
 - `screenrecord` - Screen recording
 - `system-settings` - Launch system settings
 - `voice-meeting` - meeting voice helper

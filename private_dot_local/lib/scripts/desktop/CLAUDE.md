@@ -368,25 +368,34 @@ takes no lock file, so a caller that can itself be the locker rules that out fir
 failsafe for seconds, self-inflicted. No answer at all means no shell to strand, which is the
 recovery case and must proceed. `reset-failed` first, like `quickshell-toggle`.
 
-🚨 **`before_sleep_cmd` must BLOCK until the lock is real, and `loginctl lock-session` does
-not.** hypridle holds the logind **delay** inhibitor (`systemd-inhibit --list`: *"Hypridle wants
-to delay sleep until it's before_sleep handling is done"*) only until that command returns — and
-`lock-session` returns the instant the signal is sent, before hypridle has even run `lock_cmd`.
-So the inhibitor was released with nothing drawn, and the machine could suspend with the lock
-still on its way. One frame of desktop on resume is the whole failure.
+🚨 **Lock-before-suspend is `inhibit_sleep = 3`, and no script can substitute for it.**
+hypridle **spawns** `before_sleep_cmd` and releases the logind delay inhibitor in the same
+instant — measured 2026-09-12, all at 13:11:18:
 
-**`lock-before-sleep`** is `before_sleep_cmd` now: `loginctl lock-session`, then poll
-`session-locked` until the **compositor** confirms — route-agnostic, so it reads the same whether
-the Quickshell surface or hyprlock got there. Budget 4s against logind's `InhibitDelayMaxUSec`
-(5s here; read it with `busctl get-property org.freedesktop.login1 /org/freedesktop/login1
-org.freedesktop.login1.Manager InhibitDelayMaxUSec`). On timeout it returns anyway — logind is
-about to force the suspend, so waiting longer makes the lock later, not surer, and blocking
-forever would leave the machine awake with the lid shut. Verified against stubs: 470ms when the
-lock lands on the 5th poll, 4378ms when it never does.
+```
+Executing ~/.local/lib/scripts/desktop/lock-before-sleep
+Process Created with pid 13271
+Releasing the sleep inhibitor!
+```
+
+So a `before_sleep_cmd` that polls until the lock appears is polling *after* the inhibitor is
+already gone. `inhibit_sleep = 3` makes hypridle hold it until the compositor reports the session
+locked instead: `Hypridle.cpp` `onLocked()` calls `uninhibitSleep()` and `onUnlocked()` calls
+`inhibitSleep()`. Same fact a script could only poll for, held by the thing that owns the
+inhibitor. The log line changes from `Sleep inhibition enabled` to **`Sleep inhibition enabled -
+inhibiting until the wayland session gets locked`** — that is how to check the mode is live.
+
+⚠️ **It does NOT disable `on_lock_cmd`/`on_unlock_cmd`**, despite hypridle's own warning text
+saying so. That warning is guarded by `if (!m_sWaylandState.lockNotifier)` and is about a
+compositor **missing** `hyprland-lock-notify-v1`. Hyprland has it — `Wayland session got locked`
+in the journal is the event, and it is what spawns `on_lock_cmd` regardless of the inhibit mode.
+This tree carried the opposite claim as a NOTE in `.chezmoitemplates/hypridle_general` until
+2026-09-12, and it was a misreading of that one string.
 
 ⚠️ **No inhibitor of our own.** Omarchy needs `omarchy-sleep-lock.service`
-(`systemd-inhibit --what=sleep --mode=delay`) because its shell has no hypridle to borrow one
-from. Here hypridle already holds it, so a second holder would be a second thing to keep in step.
+(`systemd-inhibit --what=sleep --mode=delay`) because its shell has no hypridle; here the daemon
+holds one already and a second holder would be a second thing to keep in step. The 5s ceiling is
+logind's `InhibitDelayMaxUSec`, unchanged either way — past it the machine suspends regardless.
 
 **`idle-sleep`** asks logind `CanSuspendThenHibernate` at runtime rather than trusting
 `boot.hibernation.enabled` — `suspend-then-hibernate` fails outright where hibernation is
