@@ -136,7 +136,12 @@ packages:
       post_install_hook: ""
       packages:
         - ghostty # Modern GPU terminal
-        - kitty # Baseline terminal emulator
+        # Baseline terminal emulator, kept as the fallback if Ghostty breaks.
+        # kitty-shell-integration and kitty-terminfo are HARD DEPENDENCIES of
+        # it: listing either under `delete:` while this line stands makes the
+        # removal transaction unsatisfiable, which is what it was from
+        # 2026-02-03 to 2026-09-13. Remove all three together or none.
+        - kitty
         - starship # Fast customizable shell prompt
         - zsh # POSIX shell with advanced features
         - zsh-antidote # Fast zsh plugin manager
@@ -387,5 +392,3 @@ packages:
   # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
   delete:
     - yay # Replaced by paru
-    - kitty-shell-integration
-    - kitty-terminfo
