@@ -55,7 +55,7 @@ voxtype-bin auto-upgraded to **0.7.5**. v0.7.0 renamed/split every binary and re
 ### Features enabled
 
 - **OSD overlay**: `[osd] frontend = "quickshell"` — waveform + engine status (`quickshell` pkg + `voxtype setup quickshell`).
-- **Streaming**: `[parakeet] streaming_chunk_secs / streaming_left_context_secs / streaming_right_context_secs`; toggle binding has a matching stop entry inside `voxtype_recording` submap.
+- **Streaming**: `[parakeet] streaming_chunk_secs / streaming_left_context_secs / streaming_right_context_secs`; the toggle binding both starts and stops (no submap — see `hypr/conf/bindings/voice.conf.tmpl`).
 - **Cohere multilingual**: `[cohere] model = "cohere-transcribe-q4f16"` (download is interactive-only via `voxtype setup model`).
 - **Meeting mode**: `[meeting]` + `[meeting.diarization] backend = "ml"` (ECAPA-TDNN) + `[meeting.summary] backend = "ollama"`.
 - **Filler-word filtering**: `[text] filter_filler_words = true`.

@@ -243,10 +243,6 @@ All use `notify-send` for user feedback.
 **zoom-cursor**: cursor magnifier
 **voice-meeting**: meeting voice helper
 **recover-workspaces**: re-assign orphaned windows to workspaces
-**hypr-submap**: enter a Hyprland submap by name. Exists only because voxtype's
-`output.*_command` hooks are undocumented on whether they run through a shell, and the Lua
-dispatch form survives `sh -c` only if quoted and naive argv splitting only if *not* quoted —
-routing through a wrapper keeps the hook a plain whitespace-separated command
 
 🚨 **Every `hyprctl dispatch` in this directory takes the Lua form** (`hl.dsp.*`) since the
 2026-09-01 cutover. Lua mode splices the request verbatim into `return hl.dispatch(...)`, so a

@@ -220,7 +220,11 @@ All 30 sites converted to `hl.dsp.*`. Three did not survive as straight substitu
    after the fix: exactly 236x251 of a 472x502 logical monitor. The laptop runs scale 1 so it
    would have hidden this; the desktop profile's 3840x2160 at scale 1.25 would not.
 
-**One site did not become a dispatch string at all.** voxtype's
+**One site did not become a dispatch string at all.** *(Superseded 2026-09-13: the voxtype
+submap was removed outright — it stayed latched for the whole transcription, killing every other
+keybinding for 1-10s after each dictation, because voxtype has no post-recording hook. The
+`hypr-submap` wrapper went with it. The reasoning below is kept as the record of why the wrapper
+existed.)* voxtype's
 `output.{pre_recording,pre_output,post_output}_command` hooks are undocumented on whether they run
 through a shell, and the Lua call survives `sh -c` only if quoted and naive argv splitting only if
 *not* quoted. They now call `desktop/hypr-submap <name>`, a wrapper that keeps the hook a plain

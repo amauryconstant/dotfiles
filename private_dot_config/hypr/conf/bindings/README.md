@@ -94,13 +94,16 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 
 ### Voice dictation (`voice.conf.tmpl`)
 
-Recording switches to the `voxtype_recording` submap (`../../conf.d/voxtype-submap.conf`) so
-modifiers can't interfere. Parakeet bindings are **desktop-only** — gated
-`{{ if ne .chassisType "laptop" }}` because the laptop is Cohere-only (RAM).
+No submap is used: modifier interference is voxtype's own `wait_for_modifier_release`.
+A submap would stay latched for the whole transcription (voxtype has no post-recording hook),
+killing every other keybinding for 1-10s after each dictation. Parakeet bindings are
+**desktop-only** — gated `{{ if ne .chassisType "laptop" }}` because the laptop is
+Cohere-only (RAM).
 
 | Keys | Action |
 |------|--------|
 | `SUPER+T` | Cohere push-to-talk (default, multilingual) |
+| `SUPER+SHIFT+T` | Cancel dictation (discard recording/transcription) |
 | `SUPER+ALT+T` | Parakeet streaming toggle *(desktop)* |
 | `SUPER+CTRL+T` | Parakeet push-to-talk *(desktop)* |
 | `SUPER+CTRL+M` | Meeting transcription toggle |

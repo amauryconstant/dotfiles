@@ -11,9 +11,10 @@
 #
 # Engine on SUPER+T is omitted on purpose → uses config default (engine = "cohere").
 #
-# NOTE: recording start switches to the `voxtype_recording` submap (see
-# ../../conf.d/voxtype-submap.conf) to neutralise modifier interference. The
-# streaming toggle therefore has a matching stop binding inside that submap.
+# NOTE: no submap is used. Modifier interference is handled by voxtype's own
+# `wait_for_modifier_release` (see ../../../voxtype/config.toml.tmpl); a submap
+# would stay latched for the whole transcription (voxtype has no post-recording
+# hook), killing every other keybinding for 1-10s after each dictation.
 #
 # NOTE: laptop is RAM-constrained and configured for Cohere-only STT (q4f16) —
 # see ../../../voxtype/config.toml.tmpl. The two Parakeet bindings below are
@@ -26,6 +27,9 @@
 # so no wrapper is needed to restart a stopped daemon.
 bindd  = SUPER, T, Start voice dictation (Cohere), exec, voxtype record start
 binddr = SUPER, T, Stop voice dictation (Cohere), exec, voxtype record stop
+
+# Cancel: discard the recording/transcription instead of pasting it
+bindd  = SUPER SHIFT, T, Cancel voice dictation, exec, voxtype record cancel
 
 {{ if ne .chassisType "laptop" -}}
 # Parakeet — streaming dictation, toggle (live incremental text, English) — desktop only

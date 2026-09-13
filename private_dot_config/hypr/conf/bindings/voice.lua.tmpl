@@ -11,8 +11,10 @@
 --
 -- binddr (stop on key release) → o.bind(..., { release = true }).
 -- Parakeet binds are desktop-only: laptop is RAM-constrained, Cohere-only.
--- NOTE: recording start switches to the `voxtype_recording` submap (see
--- ../../conf.d/voxtype-submap.lua) to neutralise modifier interference.
+-- NOTE: no submap is used. Modifier interference is handled by voxtype's own
+-- `wait_for_modifier_release` (see ../../../voxtype/config.toml.tmpl); a submap
+-- would stay latched for the whole transcription (voxtype has no post-recording
+-- hook), killing every other keybinding for 1-10s after each dictation.
 --
 -- NOTE: laptop is RAM-constrained and configured for Cohere-only STT (q4f16) —
 -- see ../../../voxtype/config.toml.tmpl. The two Parakeet bindings below are
@@ -25,6 +27,9 @@
 -- so no wrapper is needed to restart a stopped daemon.
 o.bind("SUPER + T", "Start voice dictation (Cohere)", "voxtype record start")
 o.bind("SUPER + T", "Stop voice dictation (Cohere)", "voxtype record stop", { release = true })
+
+-- Cancel: discard the recording/transcription instead of pasting it
+o.bind("SUPER + SHIFT + T", "Cancel voice dictation", "voxtype record cancel")
 
 {{ if ne .chassisType "laptop" -}}
 -- Parakeet — streaming dictation, toggle (live incremental text, English) — desktop only
