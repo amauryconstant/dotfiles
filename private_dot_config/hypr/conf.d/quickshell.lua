@@ -61,6 +61,9 @@ hl.define_submap("popovers", function()
 	popover("M", "media")
 	popover("E", "meters")
 	popover("W", "power")
+	-- T for temperature: N is taken by network, and the widget this opens is
+	-- only on the bar while the filter is on, so the key is the reliable route.
+	popover("T", "nightlight")
 
 	hl.bind("ESCAPE", hl.dsp.submap("reset"))
 end)

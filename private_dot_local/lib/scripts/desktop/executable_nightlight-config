@@ -3,7 +3,8 @@
 # Script: nightlight-config
 # Purpose: Choose the blue light filter temperature (hyprsunset)
 # Requirements: Arch Linux, hyprsunset, hyprctl, quickshell-menu
-# Reachable from: menu-trigger Toggle submenu
+# Usage: nightlight-config [KELVIN]
+# Reachable from: menu-trigger Toggle submenu, and the shell night-light popover
 #
 # Sets the warm preference read by nightlight-toggle, and applies it now.
 # See nightlight-toggle for why hyprctl *output* is checked rather than its
@@ -12,7 +13,28 @@
 TEMP_FILE="$HOME/.local/state/dotfiles/nightlight-temp"
 MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/nightlight-on"
 
-if [ ! -x "$HOME/.local/lib/scripts/desktop/quickshell-menu" ]; then
+# With a KELVIN argument the picker is skipped and the success notification
+# is suppressed: the caller is then a slider, the screen colour IS the
+# feedback, and one toast per drag step would bury the notification centre.
+# Failures still speak -- a slider that silently does nothing is worse.
+TEMP=""
+QUIET=""
+if [ $# -gt 0 ]; then
+    case "$1" in
+        '' | *[!0-9]*)
+            printf 'usage: nightlight-config [KELVIN 1000-20000]\n' >&2
+            exit 2
+            ;;
+    esac
+    if [ "$1" -lt 1000 ] || [ "$1" -gt 20000 ]; then
+        printf 'usage: nightlight-config [KELVIN 1000-20000]\n' >&2
+        exit 2
+    fi
+    TEMP=$1
+    QUIET=1
+fi
+
+if [ -z "$TEMP" ] && [ ! -x "$HOME/.local/lib/scripts/desktop/quickshell-menu" ]; then
     notify-send "󰛨 Nightlight" "no menu picker available for configuration" -t 2000
     exit 1
 fi
@@ -28,26 +50,28 @@ wait_for_hyprsunset() {
     return 1
 }
 
-CHOICE=$(printf '%s\n' \
-    "6500K (Daylight)" \
-    "6000K (Cool)" \
-    "5500K (Neutral)" \
-    "5000K (Warm)" \
-    "4500K (Warmer)" \
-    "4000K (Evening)" \
-    "3500K (Night)" |
-    "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Color Temperature")
+if [ -z "$TEMP" ]; then
+    CHOICE=$(printf '%s\n' \
+        "6500K (Daylight)" \
+        "6000K (Cool)" \
+        "5500K (Neutral)" \
+        "5000K (Warm)" \
+        "4500K (Warmer)" \
+        "4000K (Evening)" \
+        "3500K (Night)" |
+        "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "Color Temperature")
 
-# Dismissed the picker
-[ -n "$CHOICE" ] || exit 0
+    # Dismissed the picker
+    [ -n "$CHOICE" ] || exit 0
 
-TEMP=${CHOICE%%K*}
-case "$TEMP" in
-    '' | *[!0-9]*)
-        notify-send "󰛨 Nightlight" "Unrecognised temperature choice" -t 2000
-        exit 1
-        ;;
-esac
+    TEMP=${CHOICE%%K*}
+    case "$TEMP" in
+        '' | *[!0-9]*)
+            notify-send "󰛨 Nightlight" "Unrecognised temperature choice" -t 2000
+            exit 1
+            ;;
+    esac
+fi
 
 # Persist as the warm preference nightlight-toggle turns on with
 mkdir -p "$(dirname "$TEMP_FILE")"
@@ -66,7 +90,7 @@ fi
 
 if [ "$(hyprctl hyprsunset temperature 2>/dev/null)" = "$TEMP" ]; then
     : >"$MARKER"
-    notify-send "󰛨 Nightlight" "Temperature set to ${TEMP}K" -t 2000
+    [ -n "$QUIET" ] || notify-send "󰛨 Nightlight" "Temperature set to ${TEMP}K" -t 2000
 else
     notify-send "󰛨 Nightlight" "Failed to set temperature (${TEMP}K saved)" -t 2000
 fi

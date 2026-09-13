@@ -373,6 +373,18 @@ Singleton {
     readonly property int meterWarnPercent: 80
     readonly property int meterCriticalPercent: 90
 
+    // The night-light slider's range and its notch. 3500-6500 is exactly the
+    // span the preset list in desktop/nightlight-config already offered, so a
+    // continuous control reaches nothing the picker could not; 100K is a step
+    // the eye can just tell apart. The script accepts 1000-20000 and keeps
+    // validating that, because it is also reachable from a shell.
+    readonly property int nightlightMinK: 3500
+    readonly property int nightlightMaxK: 6500
+    readonly property int nightlightStepK: 100
+    // What the slider shows before the preference file has been read, and the
+    // same value nightlight-toggle falls back to.
+    readonly property int nightlightDefaultK: 4000
+
     // 🚨 Written from explicit codepoints, never pasted. A Nerd Font glyph
     // literal can be authored as an empty string — valid QML, valid string,
     // nothing rendered and no error anywhere — and it has shipped that way in
@@ -381,6 +393,12 @@ Singleton {
     // carried by the glyph CHANGING plus its tint, never by a title colour:
     // signalError as text measures 2.81 at worst and is banned.
     // md-memory(0xf035b) — the bar's single load readout.
+    // md-weather_sunset(0xf059a) — the night-light popover's own glyph, the
+    // same one desktop/nightlight-indicator draws in the bar. NOT omarchy's
+    // 0xf050e, which is slashed and reads as "disabled".
+    // md-weather_sunny(0xf0599) — the row that turns the filter off.
+    readonly property string nightlightGlyph: "󰖚"
+    readonly property string nightlightOffGlyph: "󰖙"
     readonly property string meterGlyph: "󰍛"
     readonly property string notifCriticalGlyph: "󰀦"
     // fa-picture_o(0xf03e) — the placeholder when an image payload fails to

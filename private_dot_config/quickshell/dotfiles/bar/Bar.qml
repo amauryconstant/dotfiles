@@ -41,6 +41,7 @@ PanelWindow {
             media: pMedia,
             meters: pMeters,
             network: pNetwork,
+            nightlight: pNightLight,
             power: pPower
         })
 
@@ -272,6 +273,10 @@ PanelWindow {
 
             NightLightWidget {
                 id: nightLight
+
+                popoverOpen: root.openPopover === "nightlight"
+
+                onPopoverRequested: root.togglePopover("nightlight", false)
             }
         }
 
@@ -349,6 +354,18 @@ PanelWindow {
 
         onDismissed: {
             if (root.openPopover === "meters")
+                root.openPopover = "";
+        }
+    }
+
+    NightLightPopover {
+        id: pNightLight
+
+        anchorHovered: nightLight.hovered
+        anchorItem: nightLight
+
+        onDismissed: {
+            if (root.openPopover === "nightlight")
                 root.openPopover = "";
         }
     }

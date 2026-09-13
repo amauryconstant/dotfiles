@@ -4,7 +4,7 @@
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
 # Usage: quickshell-toggle [bar|launcher|power|notifications|overview|clipboard]
-#        quickshell-toggle popover <audio|network|bluetooth|calendar|media|meters|power>
+#        quickshell-toggle popover <audio|network|bluetooth|calendar|media|meters|power|nightlight>
 #        (default: bar)
 # Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
 #           SUPER+grave (overview)
@@ -23,17 +23,17 @@
 CONFIG=dotfiles
 TARGET=${1:-bar}
 # Only the popover target takes one, and it is which popover: the IPC handler
-# is `popover toggle <id>` rather than seven separate targets, because they are
-# one surface with seven payloads.
+# is `popover toggle <id>` rather than eight separate targets, because they are
+# one surface with eight payloads.
 ARG=${2:-}
 
 case "$TARGET" in
 bar | launcher | power | notifications | overview | clipboard) ;;
 popover)
     case "$ARG" in
-    audio | network | bluetooth | calendar | media | meters | power) ;;
+    audio | network | bluetooth | calendar | media | meters | power | nightlight) ;;
     *)
-        echo "quickshell-toggle: popover needs an id (audio|network|bluetooth|calendar|media|meters|power)" >&2
+        echo "quickshell-toggle: popover needs an id (audio|network|bluetooth|calendar|media|meters|power|nightlight)" >&2
         exit 2
         ;;
     esac
