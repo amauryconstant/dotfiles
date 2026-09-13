@@ -9,7 +9,7 @@
 ## Quick Reference
 
 - **UI pattern**: Mixed — tailscale + network-info + wifi-switch use gum-ui; vpn-toggle + vpn-switch use notify-send/fzf
-- **CLI alias**: `ts` → `tailscale.sh` (via `bin/executable_ts` wrapper)
+- **CLI alias**: `ts` → `tailscale.sh` (via the `bin/symlink_ts` symlink — `tailscale.sh` reads no `$0`, so it is transparent)
 
 ## Scripts
 

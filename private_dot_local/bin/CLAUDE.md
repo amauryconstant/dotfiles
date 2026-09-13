@@ -1,4 +1,4 @@
-# CLI Wrappers - Claude Code Reference
+# bin/ - Claude Code Reference
 
 **Location**: `/home/amaury/.local/share/chezmoi/private_dot_local/bin/`
 **Parent**: See `../CLAUDE.md` for CLI architecture overview
@@ -6,114 +6,48 @@
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
-## ⚠️ DEPRECATION NOTICE
+## 🚨 No delegating wrappers
 
-**Most wrappers removed** — new architecture: scripts directly in PATH (no wrappers needed)
-- Scripts named without .sh extension
-- All script directories added to PATH
-- Direct execution: `prune-branch`, `screenshot`, `system-health`, `hypr-session`
+Every `lib/scripts/` category is already in PATH (`private_dot_config/shell/env`), so a wrapper
+that only re-execs a script in PATH earns nothing — it just shadows the same name from an
+earlier PATH entry. The last three (`ts`, `unzip`, `package-manager`) were removed 2026-09-14;
+their targets now resolve directly:
 
-**Remaining wrappers**:
-- `executable_package-manager` - Complex setup wrapper (module sourcing, state initialization)
-- `executable_ts` - Tailscale helper with subcommand routing
-- `executable_unzip` - Compatibility wrapper (unzip → unar)
-- `executable_mmdc` - Mermaid CLI shim (`mmdc` flags → `mmdr`)
-- `executable_firefox` - NVIDIA egl-wayland2 workaround (shadows `/usr/bin/firefox`; `firefox-esr` symlinks to it)
+| Command | Resolves to |
+|---|---|
+| `unzip` | `~/.local/lib/scripts/utils/unzip` |
+| `package-manager` | `~/.local/lib/scripts/system/package-manager/package-manager` |
+| `ts` | `~/.local/bin/ts` → `../lib/scripts/network/tailscale.sh` (symlink, not a wrapper) |
 
-**For new scripts**: Don't create wrappers — add directly to `lib/scripts/` without .sh extension
+**For new scripts**: add to `lib/scripts/{category}/` as `executable_<name>` (no `.sh`).
+Nothing in bin/ is needed to make it callable.
 
-## Quick Reference
+## What bin/ is for
 
-- **Purpose**: Special-case executable wrappers
-- **Pattern**: Complex setup, subcommand routing, or compatibility needs only
-- **Naming**: `executable_*` (chezmoi convention)
-- **Templates**: NO templates in bin/ (static only)
+Only two cases justify a file here:
 
-## Lazy-Loading Pattern
+1. **Overriding a system command** — the name must win over `/usr/bin`.
+2. **Translating an incompatible CLI** — real argument rewriting, not pass-through.
 
-**Standard wrapper structure**:
-```bash
-#!/usr/bin/env bash
+A pure rename is neither: use `symlink_<name>` holding the relative target path.
 
-# Description: [purpose]
-# Target: ~/.local/bin/[name]
+## Contents
 
-SCRIPT_PATH="$SCRIPTS_DIR/category/script.sh"
+| File | Kind | Why it exists |
+|---|---|---|
+| `executable_firefox` | wrapper | NVIDIA egl-wayland2 workaround; shadows `/usr/bin/firefox`. Rebuilds the EGL platform config dir per launch. See the header comment — it is the record for `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
+| `symlink_firefox-esr` | symlink → `firefox` | **Load-bearing**: `executable_firefox` branches on `${0##*/}` to pick `firefox-esr`'s binary. Not a convenience alias |
+| `executable_mmdc` | wrapper | Mermaid CLI shim — real flag translation (`-i/-o/--width/--height` → `mmdr`, format inferred from the output extension, `-b/-t/-s` dropped) |
+| `symlink_ts` | symlink → `../lib/scripts/network/tailscale.sh` | Short name for the Tailscale helper (`ts up`, `ts down`, `ts status`). `tailscale.sh` reads no `$0`, so the symlink is transparent |
 
-# Source UI library on demand
-if [ -f "$UI_LIB" ]; then
-    . "$UI_LIB"
-else
-    echo "Error: UI library not found at $UI_LIB" >&2
-    exit 1
-fi
+## Why no templates
 
-# Execute actual script
-if [ -f "$SCRIPT_PATH" ]; then
-    "$SCRIPT_PATH" "$@"
-else
-    echo "Error: Script not found at $SCRIPT_PATH" >&2
-    exit 1
-fi
-```
-
-## Why No Templates
-
-**Chezmoi naming**:
-- `executable_*` → Becomes executable (chmod +x)
-- `*.tmpl` → Template processed
-
-**Problem**: `executable_name.tmpl`
-- Would be processed as template
-- Adds overhead to CLI invocation
-- Defeats lazy-loading purpose
-
-**Solution**: Static wrappers in bin/, templates in lib/
-
-**Benefits**:
-- Fast invocation (no template processing)
-- Simple wrapper code
-- All complexity in lib/ (where templates allowed)
-
-## Available Wrappers
-
-| Executable | Purpose | Reason for wrapper |
-|------------|---------|-------------------|
-| `executable_package-manager` | Package management CLI | Complex module sourcing + state initialization |
-| `executable_ts` | Tailscale helper (`ts up`, `ts down`, `ts status`) | Subcommand routing to `network/tailscale` |
-| `executable_unzip` | `unzip` → `unar` compatibility shim | Some tools expect `unzip`; maps args to `unar` equivalents |
-| `executable_mmdc` | Mermaid CLI shim | Translates `mmdc` flags to `mmdr`-compatible flags |
-
-**unzip mapping**: `-q` → `-q`, `-d DIR` → `-o DIR`, `-o` → `-f`
-
-## Environment Variables
-
-**Required** (set in `.zstyles`):
-- `SCRIPTS_DIR` - Path to `~/.local/lib/scripts/`
-- `UI_LIB` - Path to `~/.local/lib/scripts/core/gum-ui.sh`
-
-**Why required**:
-- Wrappers depend on these paths
-- Zephyr sets them at shell startup
-- Available to all processes
-
-## Error Handling
-
-**Wrapper validates**:
-1. UI library exists (`$UI_LIB`)
-2. Implementation script exists (`$SCRIPT_PATH`)
-
-**Failure modes**:
-- Missing UI library → Error message + exit 1
-- Missing script → Error message + exit 1
-- Script execution error → Propagates exit code
-
-## When to Add a Wrapper
-
-Only add to bin/ if the script needs **complex initialization before executing** (like `package-manager`) or must **override a system command** (like `unzip`). For everything else, add directly to `lib/scripts/{category}/` without .sh extension.
+**Chezmoi naming**: `executable_*` → mode 755; `*.tmpl` → template-processed.
+A `executable_name.tmpl` would be both, adding template rendering to something that needs none.
+Keep bin/ static; templates live in `lib/scripts/` (e.g. `desktop/executable_theme-switcher.tmpl`).
 
 ## Integration Points
 
-- **lib/scripts/**: Implementation scripts (50+ files, directly in PATH)
-- **Zephyr**: Environment variables (SCRIPTS_DIR, UI_LIB)
-- **PATH**: `~/.local/bin` in PATH via Zephyr
+- **`lib/scripts/`**: every implementation, directly in PATH
+- **PATH + `SCRIPTS_DIR`/`UI_LIB`**: exported by `private_dot_config/shell/env`; PATH order is
+  set by the `prepath` zstyle in `private_dot_config/zsh/dot_zstyles` (`~/.local/bin` first)

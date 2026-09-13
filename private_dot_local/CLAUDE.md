@@ -27,13 +27,11 @@
 
 ```
 ~/.local/
-├── bin/                    # special wrappers (in PATH)
-│   ├── executable_package-manager    # Complex setup wrapper
-│   ├── executable_ts                 # Tailscale subcommand router
-│   ├── executable_unzip              # Compatibility wrapper (unzip → unar)
-│   ├── executable_mmdc               # Mermaid CLI shim (mmdc → mmdr)
+├── bin/                    # overrides + CLI shims only (in PATH)
+│   ├── executable_mmdc               # Mermaid CLI shim (mmdc flags → mmdr)
 │   ├── executable_firefox            # NVIDIA egl-wayland2 workaround (shadows /usr/bin/firefox)
-│   └── symlink_firefox-esr           # → executable_firefox
+│   ├── symlink_firefox-esr           # → firefox (load-bearing: dispatches on $0)
+│   └── symlink_ts                    # → ../lib/scripts/network/tailscale.sh
 └── lib/scripts/            # scripts directly in PATH, by category
     ├── core/               # gum-ui.sh, hook-runner, state-manager.sh
     ├── ai/                 # llama-models
@@ -111,11 +109,13 @@ ui_info "Checking system status..."
 
 ## Environment Variables
 
-**Set in** `.zstyles` (Zephyr plugin):
-```zsh
-zstyle ':zephyr:plugin:environment' 'SCRIPTS_DIR' "$HOME/.local/lib/scripts"
-zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-ui.sh"
+**Exported in** `private_dot_config/shell/env` (POSIX, so every shell gets them — not zsh-only):
+```sh
+export SCRIPTS_DIR="$HOME/.local/lib/scripts"
+export UI_LIB="$SCRIPTS_DIR/core/gum-ui.sh"
 ```
+
+PATH order is separate: the `prepath` zstyle in `private_dot_config/zsh/dot_zstyles`.
 
 **Used by**:
 - Scripts for UI library location
@@ -125,12 +125,17 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 
 **Kept for specific reasons**:
 
-| Command | Wrapper | Reason |
-|---------|---------|--------|
-| `package-manager` | `bin/executable_package-manager` | Complex setup (module sourcing, state initialization) |
-| `ts` | `bin/executable_ts` | Tailscale helper with subcommand routing to `network/tailscale` |
-| `unzip` | `bin/executable_unzip` | Compatibility wrapper (unzip → unar) |
+| Command | File | Reason |
+|---------|------|--------|
+| `firefox` | `bin/executable_firefox` | Overrides `/usr/bin/firefox` — NVIDIA egl-wayland2 workaround |
+| `firefox-esr` | `bin/symlink_firefox-esr` | Same wrapper, dispatched via `${0##*/}` |
 | `mmdc` | `bin/executable_mmdc` | Mermaid CLI shim (translates `mmdc` flags to `mmdr`) |
+| `ts` | `bin/symlink_ts` | Short name for `network/tailscale.sh` — a symlink, not a wrapper |
+
+🚨 **A wrapper that only re-execs a script already in PATH is not a reason.** `ts`, `unzip` and
+`package-manager` were such wrappers and were removed 2026-09-14; `unzip` and `package-manager`
+now resolve straight to `lib/scripts/utils/` and `lib/scripts/system/package-manager/`. See
+`bin/CLAUDE.md`.
 
 **All other commands**: Call scripts directly (no wrappers needed)
 
@@ -155,7 +160,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `launch-or-focus` | `desktop/launch-or-focus` | Single-instance apps |
 | `hypr-session` | `desktop/hypr-session` | Hyprland session management |
 | `prune-branch` | `git/prune-branch` | Branch cleanup |
-| `ts` | `bin/executable_ts` → `network/tailscale.sh` | Tailscale helper (one of the few real wrappers) |
+| `ts` | `bin/symlink_ts` → `network/tailscale.sh` | Tailscale helper (short name via symlink) |
 
 ## Subdirectories with CLAUDE.md
 
