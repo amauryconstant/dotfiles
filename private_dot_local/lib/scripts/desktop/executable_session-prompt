@@ -3,6 +3,21 @@
 # Script: session-prompt.sh
 # Purpose: Prompt user to restore saved Hyprland session (default slot)
 # Requirements: Arch Linux, quickshell-menu, notify-send, jaq
+#
+# Two shapes, on purpose. A fresh session is ONE yes/no question the machine
+# asks unprompted five seconds into a login, so it is a notification with two
+# actions -- an interrupt, which is what it is. A stale default is a chooser
+# over every saved slot, so it stays a picker, which is what a picker is for.
+#
+# 🚨 `-t 0` is load-bearing: the shell's popupTimeout() treats 0 as "never
+# expire" (Notifications.qml), matching swaync's timeout-critical. The default
+# 5s would put a question on screen for less time than it takes to read it, and
+# an expired popup moves to the notification centre where its actions still
+# work -- so the answer is not lost either way, only delayed.
+#
+# `-A` implies --wait and prints the chosen action's NAME to stdout; a dismissed
+# or undeliverable notification prints nothing, which is the same "skip" the
+# picker's empty answer meant.
 
 SESSION_FILE="$HOME/.local/state/dotfiles/hyprland-session.json"
 SESSIONS_DIR="$HOME/.local/state/dotfiles"
@@ -81,13 +96,17 @@ if [[ "$session_age" -le "$max_age" ]]; then
 
     # Build window class summary (e.g. "ghostty ×3, code ×1")
     summary=$(jaq -r '[.clients[].class] | group_by(.) | map("\(.[0]) ×\(length)") | join(", ")' "$SESSION_FILE" 2>/dev/null || echo "")
+    # Title names the session, body lists what is in it: a card has two lines,
+    # unlike the picker prompt this replaced, which had to fold both into one.
     prompt_text="Session '$slot' from $formatted_time"
-    [[ -n "$summary" ]] && prompt_text="$prompt_text — $summary"
 
-    choice=$(printf 'Restore session (%s windows)\nSkip' "$window_count" |
-        "$HOME/.local/lib/scripts/desktop/quickshell-menu" --prompt "$prompt_text")
+    # No desktop-entry hint: nothing ships Hyprland.desktop here, and a hint
+    # that resolves to nothing still becomes the grouping key. -a is enough.
+    choice=$(notify-send --wait -t 0 -a session-restore \
+        -A "restore=Restore $window_count windows" -A "skip=Skip" \
+        "$prompt_text" "$summary" 2>/dev/null)
 
-    if [[ "$choice" = "Restore session ($window_count windows)" ]]; then
+    if [[ "$choice" = "restore" ]]; then
         log_info "session-prompt: user chose to restore slot=$slot"
         "$HOME/.local/lib/scripts/desktop/session-restore" "$slot" &
     else

@@ -98,7 +98,14 @@ Variants {
                     // A toast's actions are a mis-click waiting to happen: it
                     // is about to vanish from under the pointer. The centre is
                     // where you act on a notification.
-                    showActions: false
+                    //
+                    // 🚨 Except when it is NOT about to vanish. popupTimeout()
+                    // answers 0 for Critical and for an explicit `-t 0`, which
+                    // is a question the machine asked and is holding open --
+                    // desktop/session-prompt is one. Sending the user to the
+                    // centre to answer a card that is already on screen is the
+                    // worse failure, so the rule follows its own reason.
+                    showActions: Notifications.popupTimeout(card.modelData) === 0
                     width: parent.width
 
                     onDismissed: Notifications.dismiss(card.modelData)
@@ -106,8 +113,16 @@ Variants {
                     // Click dismisses the popup only, keeping the notification
                     // in history — the whole reason popup lifetime is separate
                     // from the server's tracking.
+                    //
+                    // 🚨 z: -1, the same rule BarWidget's catch-all follows: a
+                    // shared MouseArea declared after the content sits ABOVE
+                    // every child's, so this one swallowed the action buttons'
+                    // clicks. Under the content, a child MouseArea wins where
+                    // one exists and the event still reaches here elsewhere,
+                    // because Rectangle and Text accept no mouse events.
                     MouseArea {
                         anchors.fill: parent
+                        z: -1
 
                         onClicked: Notifications.hidePopup(card.modelData)
                     }
