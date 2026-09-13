@@ -12,11 +12,22 @@ import QtQuick
 // WaybarJsonSource — two files and eleven lines of arithmetic do not need a
 // process, and a process would have to be respawned on every tick.
 //
-// ponytail: CPU and memory only. The design's readout is "the highest of CPU,
-// memory and temperature", but a temperature is not a percentage until someone
-// picks the threshold it is a percentage OF, and this repo has never named a
-// hwmon path or a critical value. Add the third source when a machine actually
-// needs it; the `highest` binding below is where it goes.
+// Temperature was the third source the design asks for and was missing until
+// 2026-09-13, on the grounds that it is not a percentage until something names
+// the threshold it is a percentage OF. The hardware names it: every driver that
+// exposes temp1_input beside a temp1_crit (or temp1_max) has declared its own
+// ceiling, so the percentage is the hardware's, not an invented constant. A
+// sensor with no ceiling is skipped rather than given a default.
+//
+// 🚨 hwmon numbering is NOT stable across boots and FileView cannot glob, so
+// the directory is resolved ONCE by a one-shot process that matches on `name`.
+// A path baked in at apply time would point at a different chip after a reboot.
+//
+// 🚨 Temperature does NOT join `highest`. Measured on this machine at idle: the
+// CPU package sits at 78 of a 100 degree ceiling, which is 78% while load and
+// memory are well under it. Feeding that into `highest` would pin the bar's one
+// number to the thermometer for the life of the session and turn a load readout
+// into a temperature readout. The popover draws it; the bar does not.
 Singleton {
     id: root
 
@@ -26,6 +37,19 @@ Singleton {
     // Seconds since boot, for the meters popover. Not a percentage and never
     // on the bar: it is context for the two numbers that are.
     property int uptime: 0
+
+    // Degrees C, and the ceiling the driver itself declares. -1 until the
+    // resolver answers; 0 on a machine with no usable sensor, which is the
+    // desktop chassis and anything whose driver is not in the list below.
+    property int temperature: -1
+    property int tempCeiling: 0
+    property string tempInputPath: ""
+    property string tempCeilingPath: ""
+
+    readonly property bool hasTemperature: root.temperature >= 0 && root.tempCeiling > 0
+    // The percentage the bands and the fill read, expressed against the
+    // driver's own ceiling rather than a number this repo picked.
+    readonly property int tempPercent: root.hasTemperature ? Math.round(100 * root.temperature / root.tempCeiling) : 0
 
     // What the bar draws. One number, never two: a second permanent readout
     // beside the battery is exactly the noise the accent rule exists to stop.
@@ -73,6 +97,15 @@ Singleton {
             root.memory = Math.round(100 * (1 - available / total));
     }
 
+    // "<input path> <ceiling path>", or nothing at all.
+    function readSensorPaths(line: string): void {
+        const parts = line.trim().split(" ");
+        if (parts.length !== 2)
+            return;
+        root.tempInputPath = parts[0];
+        root.tempCeilingPath = parts[1];
+    }
+
     function readUptime(text: string): void {
         root.uptime = Math.floor(Number(text.trim().split(/\s+/)[0]) || 0);
     }
@@ -108,6 +141,38 @@ Singleton {
         onLoaded: root.readMemory(meminfo.text())
     }
 
+    // millidegrees in the file, degrees everywhere above it.
+    FileView {
+        id: tempInput
+
+        path: root.tempInputPath
+        printErrors: false
+
+        onLoaded: root.temperature = Math.round(Number(tempInput.text().trim()) / 1000)
+    }
+
+    // Read once: a thermal ceiling is a property of the chip, not a reading.
+    FileView {
+        id: tempCeilingFile
+
+        path: root.tempCeilingPath
+        printErrors: false
+
+        onLoaded: root.tempCeiling = Math.round(Number(tempCeilingFile.text().trim()) / 1000)
+    }
+
+    // One shot at startup. Preference order is CPU-package drivers only --
+    // acpitz is a chassis sensor with no ceiling of its own, and a fan
+    // controller reporting 30 degrees is not what "the machine is hot" means.
+    Process {
+        running: true
+        command: ["sh", "-c", "for w in coretemp k10temp zenpower; do for d in /sys/class/hwmon/hwmon*; do [ \"$(cat \"$d/name\" 2>/dev/null)\" = \"$w\" ] || continue; [ -r \"$d/temp1_input\" ] || continue; for c in temp1_crit temp1_max; do [ -r \"$d/$c\" ] && { echo \"$d/temp1_input $d/$c\"; exit 0; }; done; done; done"]
+
+        stdout: SplitParser {
+            onRead: line => root.readSensorPaths(line)
+        }
+    }
+
     FileView {
         id: uptimeFile
 
@@ -127,6 +192,8 @@ Singleton {
             stat.reload();
             meminfo.reload();
             uptimeFile.reload();
+            if (root.tempInputPath !== "")
+                tempInput.reload();
         }
     }
 }

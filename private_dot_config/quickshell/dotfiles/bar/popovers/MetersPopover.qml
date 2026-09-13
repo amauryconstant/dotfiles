@@ -8,9 +8,10 @@ import QtQuick
 // a no-op even when it was opened from the submap. Fills animate at motionFast,
 // digits never.
 //
-// ponytail: no temperature row. Meters.qml records why — a temperature is not a
-// percentage until someone names the hwmon path and the threshold it is a
-// percentage OF. Add the row when a machine needs it.
+// The temperature row draws only where a CPU-package driver declares its own
+// ceiling — see Meters.qml. It is the one row whose readout is not a percentage:
+// degrees are what a temperature is read in, while the fill and the bands still
+// run on the percentage of that ceiling, which is what "hot" means here.
 BarPopover {
     id: root
 
@@ -25,6 +26,9 @@ BarPopover {
 
         property string label: ""
         property int value: 0
+        // The percentage drives the fill and the bands; this is what the eye
+        // reads. They coincide for CPU and memory and do not for a temperature.
+        property string readoutText: `${meterRow.value}%`
 
         readonly property bool critical: meterRow.value >= Config.meterCriticalPercent
         readonly property bool warning: meterRow.value >= Config.meterWarnPercent
@@ -67,7 +71,7 @@ BarPopover {
                 color: Theme.inkPrimary
                 font.family: Config.terminalFont
                 font.pixelSize: Config.fontBody
-                text: `${meterRow.value}%`
+                text: meterRow.readoutText
             }
         }
 
@@ -105,6 +109,13 @@ BarPopover {
     MeterRow {
         label: qsTr("Memory")
         value: Meters.memory
+    }
+
+    MeterRow {
+        label: qsTr("Temperature")
+        readoutText: `${Meters.temperature}°C`
+        value: Meters.tempPercent
+        visible: Meters.hasTemperature
     }
 
     PopoverRow {
