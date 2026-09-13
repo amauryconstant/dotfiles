@@ -32,5 +32,11 @@ bindd = SUPER SHIFT, N, Notification center, exec, swaync-client --toggle-panel
 {{ end -}}
 
 # Keybinding cheatsheet: Super + /
-# Displays all active keybindings dynamically from hyprctl
+# Both routes read the same hyprctl output; only the drawing differs. The shell
+# draws a document, which is what surface 9 asks for; the script's own picker
+# stays as the fallback, because with the shell down there is nothing else.
+{{ if .features.quickshell_shell.enabled -}}
+bindd = SUPER, slash, Keybinding help, exec, ~/.local/lib/scripts/desktop/quickshell-toggle keybindings
+{{ else -}}
 bindd = SUPER, slash, Keybinding help, exec, ~/.local/lib/scripts/desktop/keybindings
+{{ end -}}

@@ -6,7 +6,8 @@
 # Automatically categorizes by dispatcher type and formats for easy reading.
 #
 # Dependencies: hyprctl, jaq (jq-compatible), quickshell-menu, awk
-# Usage: Run directly or bind to a key (e.g., Super + /)
+# Usage: keybindings            -- show the sheet in the picker (fallback path)
+#        keybindings --json     -- emit the rows the shell's document draws
 # ============================================================================
 
 # ============================================================================
@@ -59,10 +60,14 @@ map_key_symbol() {
         "XF86MonBrightnessDown") echo "󰃞" ;;
 
         # Arrow keys → Icons
-        "left") echo "" ;;
-        "right") echo "" ;;
-        "up") echo "" ;;
-        "down") echo "" ;;
+        # 🚨 These four were EMPTY STRINGS until 2026-09-13 -- valid shell, valid
+        # strings, nothing rendered and no error anywhere. Third instance of that
+        # trap in this repo. Written from explicit codepoints:
+        # md-arrow_left(0xf004d) right(0xf0054) up(0xf005d) down(0xf0045).
+        "left") echo "󰁍" ;;
+        "right") echo "󰁔" ;;
+        "up") echo "󰁝" ;;
+        "down") echo "󰁅" ;;
 
         # Mouse buttons
         "mouse:272") echo "󰍽 Left" ;;
@@ -84,8 +89,37 @@ map_key_symbol() {
 # Category Mapping
 # ============================================================================
 # Maps Hyprland dispatcher names to user-friendly categories
+# 🚨 Under the Lua config provider EVERY bind reports dispatcher `__lua` and an
+# arg that is a table index, so the dispatcher table below classifies all 115 of
+# them as "Other Bindings". What Lua does give is a real `description` on every
+# bind (o.bind folds it in), so that string is what gets classified instead.
+# Keep both: the .conf branch still exists, and hyprctl is the only source here.
+category_from_description() {
+    case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+        *workspace* | *scratchpad*) echo "Workspaces" ;;
+        *focus* | *"move window"* | *resize* | *swap* | *float* | *fullscreen* | *"close window"* | *pseudo* | *split* | *pop*) echo "Windows" ;;
+        *shrink* | *expand* | *"in group"* | *"other monitor"* | *"rogue windows"* | *picture-in-picture*) echo "Windows" ;;
+        *volume* | *mute* | *brightness* | *play* | *track* | *player* | *media*) echo "Media and Hardware" ;;
+        *audio* | *pause* | *touchpad* | *bluetooth* | *wifi* | *battery* | *lid*) echo "Media and Hardware" ;;
+        *screenshot* | *record* | *capture* | *"qr"* | *"text extraction"*) echo "Capture" ;;
+        *theme* | *wallpaper* | *nightlight* | *"night light"* | *gaps* | *bar* | *waybar*) echo "Appearance" ;;
+        *"dark mode"* | *"monitor switcher"* | *zoom* | *"color picker"*) echo "Appearance" ;;
+        *launch* | *terminal* | *browser* | *"file manager"* | *launcher* | *menu* | *clipboard*) echo "Applications" ;;
+        *lock* | *idle* | *power* | *exit* | *reload* | *sleep* | *suspend*) echo "System Control" ;;
+        *notification* | *"keybinding help"* | *"activity monitor"* | *settings*) echo "System Control" ;;
+        *dictation* | *voice* | *voxtype* | *kanata* | *layer*) echo "Input" ;;
+        *) echo "Other Bindings" ;;
+    esac
+}
+
 get_category() {
     local dispatcher="$1"
+    local description="$2"
+
+    if [ "$dispatcher" = "__lua" ]; then
+        category_from_description "$description"
+        return
+    fi
 
     case "$dispatcher" in
         "exec") echo "Execute Commands" ;;
@@ -179,10 +213,10 @@ if [ -z "$bindings_json" ] || [ "$bindings_json" = "[]" ]; then
 fi
 
 # Process JSON with jaq: Extract and format each binding
-# Output format: category|modmask|key|dispatcher|arg
+# Output format: modmask|key|dispatcher|arg|description
 processed=$(echo "$bindings_json" | jaq -r '.[] |
     select(.submap == "" or .submap == "default") |
-    "\(.modmask)|\(.key)|\(.dispatcher)|\(.arg)"' 2>/dev/null)
+    "\(.modmask)|\(.key)|\(.dispatcher)|\(.arg)|\(.description // "")"' 2>/dev/null)
 
 if [ -z "$processed" ]; then
     echo "Error: Failed to process keybindings with jaq"
@@ -191,7 +225,7 @@ fi
 
 # Transform into categorized, formatted output
 output=""
-while IFS='|' read -r modmask key dispatcher arg; do
+while IFS='|' read -r modmask key dispatcher arg declared; do
     # Skip empty or invalid entries
     [ -z "$dispatcher" ] && continue
 
@@ -201,11 +235,15 @@ while IFS='|' read -r modmask key dispatcher arg; do
     # Map key to symbol
     key_symbol=$(map_key_symbol "$key")
 
-    # Get category
-    category=$(get_category "$dispatcher")
+    # A declared description always wins: it is what the binding says about
+    # itself, while get_description below is a guess from the command line.
+    if [ -n "$declared" ]; then
+        description="$declared"
+    else
+        description=$(get_description "$dispatcher" "$arg")
+    fi
 
-    # Get description
-    description=$(get_description "$dispatcher" "$arg")
+    category=$(get_category "$dispatcher" "$description")
 
     # Build keybinding string
     if [ -n "$mods" ]; then
@@ -219,6 +257,17 @@ while IFS='|' read -r modmask key dispatcher arg; do
 done << EOF
 $processed
 EOF
+
+# 🚨 --json is the shell's source, and it stops here on purpose: everything
+# above -- the hyprctl query and the four translators -- is the part worth
+# sharing, and everything below is a fixed-width table that only a monospace
+# picker can render. The shell draws its own document from these rows.
+if [ "${1:-}" = "--json" ]; then
+    printf '%b' "$output" |
+        jaq -R -s 'split("\n") | map(select(length > 0) | split("§§") |
+            {category: .[0], keys: .[1], description: .[2]})'
+    exit 0
+fi
 
 # Sort and group by category using awk
 formatted=$(echo -e "$output" | awk -F '§§' '

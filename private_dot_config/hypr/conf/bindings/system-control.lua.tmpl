@@ -21,4 +21,11 @@ o.bind("SUPER + SHIFT + N", "Notification center", "~/.local/lib/scripts/desktop
 {{ else -}}
 o.bind("SUPER + SHIFT + N", "Notification center", "swaync-client --toggle-panel")
 {{ end -}}
+-- Both routes read the same hyprctl output; only the drawing differs. The shell
+-- draws a document, which is what surface 9 asks for; the script's own picker
+-- stays as the fallback, because with the shell down there is nothing else.
+{{ if .features.quickshell_shell.enabled -}}
+o.bind("SUPER + slash", "Keybinding help", "~/.local/lib/scripts/desktop/quickshell-toggle keybindings")
+{{ else -}}
 o.bind("SUPER + slash", "Keybinding help", "~/.local/lib/scripts/desktop/keybindings")
+{{ end -}}

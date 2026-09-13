@@ -178,6 +178,17 @@ Singleton {
     // the one number the geometry scale does not supply is how wide a panel is.
     readonly property int polkitDialogWidth: 340
 
+    // Keybindings sheet, surface §9. A panel measurement again, and the one
+    // surface here that is a DOCUMENT rather than a chooser: 115 rows have to
+    // be scannable, so it is two columns wide rather than a 340 list. Capped
+    // rather than fixed -- it takes the lesser of this and the output, so a
+    // short list does not draw a mostly-empty panel.
+    readonly property int sheetWidth: 900
+    readonly property real sheetMaxHeightFraction: 0.82
+    // The chord column. Fixed so every description starts on the same x in
+    // both columns, which is the whole reason a table beats a list here.
+    readonly property int sheetKeysWidth: 190
+
     // Lock screen, surface §22. Panel measurements, which the density scale
     // does not supply -- like polkitDialogWidth.
     //

@@ -3,7 +3,7 @@
 # Script: quickshell-toggle
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
-# Usage: quickshell-toggle [bar|launcher|power|notifications|overview|clipboard]
+# Usage: quickshell-toggle [bar|launcher|power|notifications|overview|clipboard|keybindings]
 #        quickshell-toggle popover <audio|network|bluetooth|calendar|media|meters|power|nightlight>
 #        (default: bar)
 # Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
@@ -28,7 +28,7 @@ TARGET=${1:-bar}
 ARG=${2:-}
 
 case "$TARGET" in
-bar | launcher | power | notifications | overview | clipboard) ;;
+bar | launcher | power | notifications | overview | clipboard | keybindings) ;;
 popover)
     case "$ARG" in
     audio | network | bluetooth | calendar | media | meters | power | nightlight) ;;
@@ -39,7 +39,7 @@ popover)
     esac
     ;;
 *)
-    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications|overview|clipboard|popover <id>)" >&2
+    echo "quickshell-toggle: unknown target '$TARGET' (bar|launcher|power|notifications|overview|clipboard|keybindings|popover <id>)" >&2
     exit 2
     ;;
 esac

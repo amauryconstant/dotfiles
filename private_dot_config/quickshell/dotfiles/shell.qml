@@ -4,6 +4,7 @@ import "bar"
 import "clipboard"
 import "dock"
 import "launcher"
+import "keybindings"
 import "lock"
 import "menu"
 import "notifications"
@@ -96,6 +97,14 @@ ShellRoot {
     }
 
     // SUPER+SHIFT+Q, taken from wlogout the same way and on the same day.
+    IpcHandler {
+        target: "keybindings"
+
+        function toggle(): string {
+            return sheet.toggle();
+        }
+    }
+
     IpcHandler {
         target: "power"
 
@@ -228,6 +237,10 @@ ShellRoot {
     // power menu are modals you summoned, so they belong where you are looking.
     Launcher {
         id: launcher
+    }
+
+    KeybindingsSheet {
+        id: sheet
     }
 
     PowerMenu {
