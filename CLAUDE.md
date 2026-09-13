@@ -227,7 +227,7 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 surface, and why each departure
 → `.claude/rules/quickshell-qml.md` (QML syntax, tooling, measured runtime traps)
 → `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **the ONLY open Quickshell plan**
-→ `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected four times)
+→ `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected five times)
 
 🚨 **The build closed on 2026-09-13 and nine of the eleven Quickshell documents are now in
 `_research/archive/` or `_plans/archive/`.** They are evidence — measurements, rulings, what each

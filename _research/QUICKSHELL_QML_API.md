@@ -1,6 +1,6 @@
 # Quickshell QML API Reference
 **Source**: Vendored upstream at `_ai/quickshell/` (git.outfoxxed.me/quickshell/quickshell, LGPL-3)
-**Created**: June 2026 · **Corrected three times; last 2026-09-03**
+**Created**: June 2026 · **Corrected five times; last 2026-09-13**
 **Purpose**: API reference for building custom Quickshell desktop shell components (bar, launcher, notifications, etc.)
 **Status**: **LIVE reference.** Not a plan and not a record — it describes the installed
 `quickshell 0.3.1` and should be corrected in place when it is found wrong. Runtime *behaviours*
@@ -69,6 +69,16 @@ on and none of which this doc mentioned at all:
 | The `Quickshell` singleton itself | `Quickshell.execDetached()` is the process launcher and is called by eight shipped widgets; `Quickshell.screens` appears in two examples here having never been introduced; `Quickshell.iconPath()` is how a tray or notification icon *name* becomes a URL | `core/qmlglobal.hpp`; `bar/widgets/*.qml` |
 | `SystemTrayItem.activate()`, `.secondaryActivate()`, `.scroll(delta, horizontal)` | the Services table listed only `display()`, yet a tray widget is unusable without the other three — the shipped `bar/widgets/TrayWidget.qml:69,61,71` calls all of them | `services/status_notifier/item.hpp:130-136` |
 | The whole `Quickshell.Io` module | listed in the module table and then never documented, though `IpcHandler` is what the theme bridge and every toggle script talk to, and `FileView` is what `Theme.qml` parses `colors.sh` with | `io/ipchandler.hpp:123-232`, `io/process.hpp`, `io/fileview.hpp` |
+
+🚨 **Fifth pass, 2026-09-13.** Re-read against the closed shell, which by then rendered 21
+surfaces. No error found, and the split with `.claude/rules/quickshell-qml.md` — API shapes here,
+runtime behaviours there — still holds. Two more **omissions**, both of the same kind as the three
+above: named nowhere here, depended on by six shipped files each.
+
+| Missing | Why it matters | Evidence |
+|---|---|---|
+| `Quickshell.env(name)` | the only way to reach `$HOME` or `$XDG_RUNTIME_DIR` from QML, so it is how every absolute path in this tree is built — `Theme.qml:186` finds `colors.sh` with it, `Config.qml.tmpl:451` defines `scriptsDir` with it, and `MenuServer.qml:124` places its socket. It returns **null** for an unset variable rather than erroring | `core/qmlglobal.hpp:184-185` |
+| `StdioCollector.streamFinished` and its `text`/`data`/`waitForEnd` | the type was named as "the whole output at exit" and its actual interface never was, leaving the working idiom unwritten. `waitForEnd` defaults **true**, so the buffer is empty until the process exits and `dataChanged` is the wrong signal to read it from — `Backlight.qml:31`, `power/PowerMenu.qml:304`, `clipboard/ClipboardPicker.qml:122`, `launcher/Launcher.qml:186`, `lock/LockScreen.qml:350` and `keybindings/KeybindingsSheet.qml:123` all read `this.text` from `onStreamFinished` | `io/datastream.hpp:95-124` |
 
 The `Quickshell` and `Quickshell.Io` sections below were added to close those. One fact found
 while writing them is worth promoting here, because it explains a symptom
@@ -686,6 +696,7 @@ MouseArea {
 |---|---|
 | `screens` | `list<ShellScreen>` — `name`, `model`, `serialNumber`, `x`/`y`/`width`/`height`, `devicePixelRatio`. The model a `Variants` iterates for one window per monitor |
 | `execDetached(argv)` | Fire-and-forget launch, argv list. The overload also accepts a `ProcessContext` for env/cwd. Use this, not `Qt.openUrl` — and use `Process` instead when you need the output |
+| `env(name)` | An environment variable as a string, and **null when it is not set** (`core/qmlglobal.hpp:185`) — so `` `${Quickshell.env("HOME")}/…` `` yields the literal `null/…` rather than failing. Six shipped files build a path with it; `Config.scriptsDir` is the one every script call routes through |
 | `iconPath(name)`, `iconPath(name, fallback)`, `hasThemeIcon(name)` | Resolve an XDG icon *name* (what `SystemTrayItem.icon` and `Notification.appIcon` give you) to something `Image.source` can load |
 | `reload(hard)` | Reload the config from QML |
 | `shellDir`, `configDir`, `dataDir`, `stateDir`, `cacheDir` | Plus `shellPath()`/`configPath()`/`dataPath()`/`statePath()`/`cachePath()` to join onto them |
@@ -729,6 +740,24 @@ Process {
     stdout: SplitParser { onRead: line => root.layer = line }
 }
 ```
+
+`StdioCollector` is the other half of that decision — the whole output rather than a line at a
+time — and it is what six surfaces here read a script's output with:
+
+```qml
+Process {
+    command: [`${Config.scriptsDir}/desktop/keybindings`, "--json"]
+    running: true
+    // `waitForEnd` defaults TRUE, so `text` and `data` hold nothing until the
+    // process exits: read them from `streamFinished`, never `dataChanged`.
+    // `this` inside the handler is the COLLECTOR, not the Process.
+    stdout: StdioCollector { onStreamFinished: root.rows = JSON.parse(this.text) }
+}
+```
+
+Its whole surface is `text` (a string), `data` (an `ArrayBuffer`), `waitForEnd`, and the
+`streamFinished` signal (`io/datastream.hpp:95-124`). Set `waitForEnd: false` to watch the buffer
+grow through `dataChanged`; leave it alone for anything that has to parse the output as a unit.
 
 `signal(sig)`, `write(data)` (needs `stdinEnabled`) and `startDetached()` are the other
 invokables; `workingDirectory`, `environment` and `clearEnvironment` shape the environment.
