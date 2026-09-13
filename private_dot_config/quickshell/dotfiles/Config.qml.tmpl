@@ -178,10 +178,19 @@ Singleton {
     // the one number the geometry scale does not supply is how wide a panel is.
     readonly property int polkitDialogWidth: 340
 
-    // Lock screen, surface §22. The field width design page 12 draws; like
-    // polkitDialogWidth it is a panel measurement, which the density scale does
-    // not supply. Everything else on that surface comes from the scale.
-    readonly property int lockFieldWidth: 220
+    // Lock screen, surface §22. Panel measurements, which the density scale
+    // does not supply -- like polkitDialogWidth.
+    //
+    // 🚨 The lock is the one FULL-SCREEN surface, and the scale is calibrated
+    // for a 40px bar and 340px panels. Design page 12's 220x34 field reads as a
+    // popover control dropped onto a 1920x1080 ground: correct against the
+    // scale, wrong against the surface. So the field is sized for the surface
+    // it is on, and the clock takes a step above fontDisplay for the same
+    // reason -- there is no other display-sized thing on screen to be
+    // consistent with. Everything else there still comes from the scale.
+    readonly property int lockFieldWidth: 360
+    readonly property int lockFieldHeight: 56
+    readonly property int lockClockSize: 72
 
     // How far the lock dims the wallpaper it draws. NOT scrimOpacity (0.86):
     // that value exists to hide a desktop behind a modal, and at it the

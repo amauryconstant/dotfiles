@@ -65,7 +65,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Theme.fgOnScrim
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontDisplay
+                font.pixelSize: Config.lockClockSize
                 font.weight: Font.DemiBold
                 text: Qt.formatDateTime(clock.date, "HH:mm")
             }
@@ -75,9 +75,11 @@ Item {
                 color: Theme.fgOnScrim
                 font.family: Config.guiFont
                 // Page 12's prose calls the date meta; its mockup draws it at
-                // the body step. Page 02 is what fixes what a role is worth, so
-                // the role name wins over the drawing.
-                font.pixelSize: Config.fontMeta
+                // the body step. Both are read against the density scale, and
+                // on a full-screen ground the meta step is not a quiet role,
+                // it is an unreadable one. The date takes the display step the
+                // clock used to have, which keeps the two a rank apart.
+                font.pixelSize: Config.fontDisplay
                 text: Qt.formatDateTime(clock.date, "dddd d MMMM")
             }
         }
@@ -92,8 +94,8 @@ Item {
                 border.color: password.activeFocus ? Theme.focusRing : Theme.edge
                 border.width: Config.hairline
                 color: Theme.groundBase
-                height: Config.rowH
-                radius: Config.radiusChip
+                height: Config.lockFieldHeight
+                radius: Config.radiusPanel
                 width: parent.width
 
                 Row {
@@ -106,7 +108,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.inkSecondary
                         font.family: Config.guiFont
-                        font.pixelSize: Config.glyphRow
+                        font.pixelSize: Config.glyphOsd
                         text: "󰀄"
                     }
 
@@ -121,12 +123,12 @@ Item {
                         enabled: root.inputEnabled
                         focus: true
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontBody
+                        font.pixelSize: Config.fontDisplay
                         height: parent.height
                         selectedTextColor: Theme.inkOnSignal
                         selectionColor: Theme.signalFocus
                         verticalAlignment: TextInput.AlignVCenter
-                        width: parent.width - parent.spacing - Config.glyphRow
+                        width: parent.width - parent.spacing - Config.glyphOsd
 
                         cursorDelegate: Rectangle {
                             color: Theme.signalFocus
@@ -150,7 +152,7 @@ Item {
             Text {
                 color: Theme.fgOnScrim
                 font.family: Config.guiFont
-                font.pixelSize: Config.fontMeta
+                font.pixelSize: Config.fontTitle
                 horizontalAlignment: Text.AlignHCenter
                 text: root.failureMessage !== "" ? root.failureMessage : qsTr("Enter password to unlock")
                 textFormat: Text.PlainText
