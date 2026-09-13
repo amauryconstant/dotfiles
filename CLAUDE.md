@@ -59,6 +59,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ```
 ~/.local/share/chezmoi/
 ├── .claude/rules/          # Cross-cutting docs (chezmoi-data/scripts/templates/modify-entries, hyprland-lua)
+├── .caveman/               # Caveman plugin: repo-local `defaultMode` (Claude Code SessionStart hook)
 ├── .chezmoidata/           # Template data (packages, colors, globals)
 ├── _guides/                # Operational procedures and setup guides
 ├── _research/              # Technology investigation and decision records
