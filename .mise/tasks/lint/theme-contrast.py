@@ -47,6 +47,17 @@ ACCEPTED = {
     ("INK_PRIMARY", "GROUND_FLOAT", "solarized-dark"): "solarized base0 by design",
     ("INK_PRIMARY", "GROUND_FLOAT", "solarized-light"): "solarized base00 by design",
     ("INK_PRIMARY", "GROUND_BASE", "solarized-light"): "solarized base00 by design",
+    # The same property, seen through a tinted pill (see COMPOSITES). The tint
+    # costs ~0.45 on top of a pair that is already under the floor untinted --
+    # solarized-light's plain pill is 3.64 -- and no alpha recovers it: the
+    # limit as alpha -> 0 is INK_PRIMARY on GROUND_BASE, 4.13 there. Measured
+    # 2026-09-13; a swap of the two solarized inks was measured too and still
+    # misses (4.39 on GROUND_RAISED light, 4.49 on the warn tint dark).
+    ("INK_PRIMARY", "SIGNAL_WARN@18%/GROUND_BASE", "solarized-light"): "solarized base00 by design",
+    ("INK_PRIMARY", "SIGNAL_WARN@18%/GROUND_BASE", "solarized-dark"): "solarized base0 by design",
+    ("INK_PRIMARY", "SIGNAL_ERROR@18%/GROUND_BASE", "solarized-light"): "solarized base00 by design",
+    ("INK_PRIMARY", "SIGNAL_ERROR@18%/GROUND_BASE", "solarized-dark"): "solarized base0 by design",
+    ("INK_PRIMARY", "SIGNAL_ERROR@14%/GROUND_BASE", "solarized-light"): "solarized base00 by design",
     # 🚨 NO accent role clears 3:1 in all eight colorsets, and gruvbox-light is
     # the worst case for every one of them. That measurement IS the reason the
     # design makes everything load-bearing foreground-class and leaves accent as
@@ -73,7 +84,7 @@ ACCEPTED = {
 PAIRS = [
     # --- text, floor 4.5
     ("INK_PRIMARY", "GROUND_BASE", 4.5, "OSD readout, launcher row name and zero-match line, panel headers and titles"),
-    ("INK_PRIMARY", "GROUND_RAISED", 4.5, "BarWidget grounded, occupied workspace pill, meter and battery pills, PowerMenu tile label + avatar"),
+    ("INK_PRIMARY", "GROUND_RAISED", 4.5, "BarWidget grounded and hovered, occupied workspace pill, the two pills UNTINTED, PowerMenu tile label + avatar"),
     ("INK_PRIMARY", "GROUND_FLOAT", 4.5, "NotificationCard, every string on it"),
     ("INK_SECONDARY_EFF", "GROUND_BASE", 4.5, "BarWidget rest colour, clock date, empty workspace pill, launcher second line + footer + placeholder, centre empty state + footer"),
 
@@ -100,15 +111,29 @@ PAIRS = [
 
 # Pairs the design BANS. Measured on purpose: the reason a rule exists is the
 # number, and deleting the row leaves the next reader free to reintroduce it.
-# None of these is drawn anywhere in the tree.
+# None of these is drawn FLAT anywhere in the tree. SIGNAL_WARN and SIGNAL_ERROR
+# are each drawn as a ~15% tint under a pill's number, which is a ground rather
+# than a graphic and has its own floor -- see COMPOSITES below.
 BANNED = [
     ("INK_PRIMARY", "FILL_INERT", 4.5, "no text on fill-inert. This is the 1.67 that moved the occupied workspace pill onto GROUND_RAISED"),
     ("FILL_INERT", "GROUND_RAISED", 3.0, "design page 06 calls this the slider's 'one legal use' of fill-inert; it is under the 3:1 that page 13 sets for a graphic, so the popover slider fills with SIGNAL_FOCUS instead — the same ruling the OSD already took"),
     ("INK_MUTED", "GROUND_BASE", 4.5, "INK_MUTED is retired: banned as text, and under 3:1 as an outline. There is no successor token"),
     ("SIGNAL_ERROR", "GROUND_BASE", 4.5, "signal-error is never a TEXT colour. The notification title and the urgent workspace number both moved off it"),
-    ("SIGNAL_WARN", "GROUND_BASE", 3.0, "not drawn as a graphic either: 2.05 in rose-pine-dawn. The battery band and the dictation state carry glyphs instead"),
+    ("SIGNAL_WARN", "GROUND_BASE", 3.0, "not drawn as a graphic either: 2.05 in rose-pine-dawn. The battery band and the dictation state carry glyphs instead; its ONE site is the meter pill tint in COMPOSITES"),
     ("SIGNAL_INFO", "GROUND_BASE", 3.0, "same, at 2.80: charging and streaming are distinct glyphs, not tinted ones"),
     ("SIGNAL_OK", "GROUND_BASE", 3.0, "no green anywhere in this shell — a healthy system is neutral, not green"),
+]
+
+# 🚨 A tinted ground is a COMPOSITE, not a token, so no PAIRS row can express
+# it -- luminance() parses #rrggbb and the table is flat token-vs-token. That is
+# why no run measured these until 2026-09-13, while two pills have shipped a
+# tinted ground since Phase 2.5.
+#
+# (ink, (signal, alpha, ground under it), minimum, where it renders)
+COMPOSITES = [
+    ("INK_PRIMARY", ("SIGNAL_WARN", 0.18, "GROUND_BASE"), 4.5, "meter pill, warn band -- bar/widgets/MetersWidget.qml"),
+    ("INK_PRIMARY", ("SIGNAL_ERROR", 0.18, "GROUND_BASE"), 4.5, "meter pill, critical band -- same ternary"),
+    ("INK_PRIMARY", ("SIGNAL_ERROR", 0.14, "GROUND_BASE"), 4.5, "battery pill, <=10% and discharging -- bar/widgets/BatteryWidget.qml"),
 ]
 
 SHORT = {
@@ -136,6 +161,11 @@ def luminance(hexstr):
 def contrast(a, b):
     la, lb = luminance(a), luminance(b)
     return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def blend(fg, bg, alpha):
+    """fg at `alpha` over an opaque bg -- what Qt.alpha() actually paints."""
+    return "#" + "".join(f"{round(int(fg[i:i + 2], 16) * alpha + int(bg[i:i + 2], 16) * (1 - alpha)):02x}" for i in (1, 3, 5))
 
 
 themes = {}
@@ -180,7 +210,30 @@ for fg, bg, minimum, where in PAIRS:
     print(f"{'':<44}  {where}")
 
 print()
-print("BANNED pairs — measured so a rule keeps its evidence. None of these is drawn.")
+print("COMPOSITED grounds — a signal tint over a ground, and the ink on top of it.")
+print("Not expressible as a PAIRS row; measured with the same blend Qt.alpha paints.")
+for fg, (signal, alpha, under), minimum, where in COMPOSITES:
+    label = f"{signal}@{round(alpha * 100)}%/{under}"
+    # Display only: the full role names do not fit the column the other tables use.
+    shown = label.replace("SIGNAL_", "").replace("GROUND_", "")
+    cells = []
+    for name in names:
+        colours = themes[name]
+        if fg not in colours or signal not in colours or under not in colours:
+            cells.append("     MISS")
+            continue
+        ratio = contrast(colours[fg], blend(colours[signal], colours[under], alpha))
+        bad = ratio < minimum
+        accepted = (fg, label, name) in ACCEPTED
+        if bad and not accepted:
+            failures.append((fg, label, name, ratio, minimum))
+        cells.append(f"{'!' if bad and not accepted else '~' if bad else ' '}{ratio:8.2f}")
+    print(f"{fg + ' on ' + shown:<40}{minimum:>4}  " + "".join(cells))
+    print(f"{'':<44}  {where}")
+
+print()
+print("BANNED pairs — measured so a rule keeps its evidence. None is drawn FLAT;")
+print("the two pill tints above are the only sites either signal role has.")
 for fg, bg, minimum, why in BANNED:
     worst, worst_theme = 99.0, ""
     for name in names:
@@ -219,13 +272,11 @@ print()
 print("disabledOpacity — lowest 5% step of INK_SECONDARY over GROUND_BASE clearing 3.0:")
 for name in names:
     colours = themes[name]
-    fgc = tuple(int(colours["INK_SECONDARY"][i:i + 2], 16) for i in (1, 3, 5))
-    bgc = tuple(int(colours["GROUND_BASE"][i:i + 2], 16) for i in (1, 3, 5))
     chosen = None
     for step in range(12, 21):
         alpha = step / 20
-        blend = "#" + "".join(f"{round(f * alpha + b * (1 - alpha)):02x}" for f, b in zip(fgc, bgc))
-        if contrast(blend, colours["GROUND_BASE"]) >= 3.0:
+        blended = blend(colours["INK_SECONDARY"], colours["GROUND_BASE"], alpha)
+        if contrast(blended, colours["GROUND_BASE"]) >= 3.0:
             chosen = alpha
             break
     if chosen is None:
