@@ -5,9 +5,14 @@ execute until the user is certain they want to drop zellij.** The coexistence
 trial (Phase 1–2) is already live; this doc holds the destructive Phase 3–4 that
 were intentionally deferred.
 
-Full rationale + research: `~/.config/claude/plans/lauch-a-subagent-tasked-mellow-seal.md`.
 Working preference driving the gating: keep the old tool functional until committed
 (coexistence over replace-and-delete).
+
+> **2026-09-13**: the original rationale file
+> (`~/.config/claude/plans/lauch-a-subagent-tasked-mellow-seal.md`) **no longer exists**.
+> The reasoning that survives is what this document states plus
+> `_research/TERMINAL_AGENT_RUNTIME.md`, which re-derives the whole-layer decision
+> against the agent workload. Read that before executing Phase 4.
 
 ---
 
@@ -41,6 +46,9 @@ File: `private_dot_config/nvim/lua/plugins/user.lua`
 - Replace `swaits/zellij-nav.nvim` block (L3–16) with `mrjones2014/smart-splits.nvim`,
   keeping the same `<c-h/j/k/l>` mappings. smart-splits auto-detects the multiplexer,
   so it works with **both** zellij and Ghostty splits — safe to swap before Phase 4.
+  It also supports **herdr** (`multiplexer_integration = 'herdr'`), so this swap is
+  no-regret under every option in `_research/TERMINAL_AGENT_RUNTIME.md`. Detection is
+  by `$TERM_PROGRAM`; pin the value explicitly if nesting confuses it.
 - Consider sourcing via `community.lua` (AstroCommunity) to match the repo's plugin
   convention instead of a raw spec.
 
@@ -85,12 +93,44 @@ Cutover checklist. Do all together once the user commits.
 
 ## What is lost at cutover (accepted)
 
-- Live detach/reattach — unused (workflow rebuilds from scratch).
+- ~~Live detach/reattach — unused (workflow rebuilds from scratch).~~
+  🚨 **Corrected 2026-09-13: this was false.** `zellij a <session>` was in regular use.
+  It also became load-bearing after this plan was written: coding agents run unattended
+  across projects, and for a process you walked away from, "rebuild from scratch" is
+  data loss rather than a neutral default. Ghostty cannot replace it —
+  `window-save-state` is macOS-only, so the Phase 4 end state has **no** session
+  persistence on Linux at all. This is not a reason to keep zellij (see below), but it
+  is no longer an accepted loss without a replacement for the agent case.
+  Evidence: `_research/TERMINAL_AGENT_RUNTIME.md` Part 2.
 - chpwd auto session-switching — cosmetic.
 - Zellij status/tab bar — Ghostty has a native tab bar only.
 - Declarative KDL layouts — replaced by nvim toggleterm + ad-hoc Ghostty splits.
   The old `monitoring.kdl` (btop + journalctl + shell) becomes an ad-hoc Ghostty
   split arrangement, or btop via Ghostty's `quick-terminal` dropdown.
+
+## The agent layer is a separate question (2026-09-13)
+
+Phase 4 removes zellij. It does **not** answer where coding agents live, and that
+question was not in scope when this plan was written.
+
+`_research/TERMINAL_AGENT_RUNTIME.md` examines Herdr (v0.9.0, Apache-2.0) as an
+agent-layer candidate at source level. Summary as it bears on this plan:
+
+- **It does not compete with Ghostty.** Herdr runs inside a terminal emulator, and
+  vendors `libghostty-vt` as its VT engine — so panes inside it parse exactly as
+  Ghostty does, and the Kitty graphics protocol works (unlike inside zellij).
+- **It does not change Phase 4.** If adopted it would be scoped to agent panes only;
+  interactive work stays on Ghostty splits + nvim exactly as planned here.
+- **It does not rescue the persistence loss corrected above.** This laptop suspends,
+  and agents die with it regardless of multiplexer. Only idle-inhibit discipline or a
+  remote host answers that.
+- **What it does answer** is the measured pain: agent state is currently discovered by
+  cycling Ghostty tabs by hand.
+
+**Ordering, if Herdr is adopted**: Herdr first, Phase 4 after. Zellij costs nothing
+sitting idle, and this plan's own principle is coexistence over replace-and-delete.
+
+---
 
 ## Cutover verification
 
