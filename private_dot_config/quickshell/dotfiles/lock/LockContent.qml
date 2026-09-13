@@ -171,10 +171,21 @@ Item {
     // and can only be escaped from a TTY. onPromptVisibleChanged does not fire
     // for a surface constructed with the prompt already on it, which is the
     // ordinary case: the lock is taken before the content exists.
-    Component.onCompleted: {
+    //
+    // 🚨 And the claim is DEFERRED, always. A child's Component.onCompleted runs
+    // before its window exists: ProxyWindowBase reparents the content item into
+    // the real QQuickWindow in completeWindow() (`window/proxywindow.cpp:242`),
+    // which only runs when the SURFACE completes -- after every child of it.
+    // forceActiveFocus() on a windowless item is silently dropped, and the lock
+    // then comes up with the field unfocused and the first password typed into
+    // nothing. Omarchy defers the same call for the same reason
+    // (`shell/plugins/lock/LockView.qml`).
+    function claimFocus(): void {
         if (root.promptVisible)
             password.forceActiveFocus();
     }
+
+    Component.onCompleted: Qt.callLater(root.claimFocus)
 
     // A failure clears the field and puts the caret back in it; the message
     // stays until the next attempt replaces it.
@@ -182,11 +193,11 @@ Item {
         if (root.failureMessage === "")
             return;
         password.text = "";
-        password.forceActiveFocus();
+        Qt.callLater(root.claimFocus);
     }
     onPromptVisibleChanged: {
         if (root.promptVisible)
-            password.forceActiveFocus();
+            Qt.callLater(root.claimFocus);
         else
             password.text = "";
     }
