@@ -593,9 +593,26 @@ the idle inhibitor's second state, the unread bell and three dictation states al
 their own **glyph**, which is what they should always have carried. `signalInfo` and `signalOk` are bound in
 `Theme.qml` and drawn nowhere. `signalWarn` has exactly one site, and it is not a glyph:
 `MetersWidget` tints its pill's **ground** with it at 18%. That is a different job with a
-different floor — and the number on that tinted ground measures **3.19** at worst
-(solarized-light, the critical band), under the 4.5 text owes. **Open, with three candidate fixes
-and no decision**: `_plans/QUICKSHELL_OPEN_WORK.md`.
+different floor, and `mise run lint:theme-contrast` measures both tints (and the battery's
+14% one) as **composites** — a `Qt.alpha` ground is not a token, so no `PAIRS` row could
+express it and no run measured either until 2026-09-13.
+
+🚨 **The tinted pill's number is 3.19 at worst (solarized-light, critical) and that is
+ACCEPTED, not a defect to fix.** Three facts settle it, all measured 2026-09-13: the
+**untinted** pill is already 3.64 in that theme and was already excused as a colorset
+property; no alpha recovers it, because the limit as alpha → 0 is `INK_PRIMARY` on
+`GROUND_BASE` = **4.13** there; and swapping the two solarized inks — the obvious palette fix
+— reaches 4.39 on `GROUND_RAISED` in solarized-light and 4.49 on the warn tint in
+solarized-dark, so it still misses while demoting Solarized's own body value to the quiet
+role. Six of eight themes clear 4.5 with margin (worst 5.21, latte). The tint is also
+load-bearing: a `signalError` **glyph** on a pill cannot replace it, because that pair is
+2.81 on `groundRaised` in solarized-dark — which is why `PowerMenu` moved its tiles off that
+tier.
+
+`signalInfo` and `signalOk` stay **bound and undrawn**. Deleting them would save two lines
+and break the rule `themes/*/colors.sh` states in its own header — the five SIGNAL roles stay
+mutually separable in every theme — so a role model with three roles is a worse thing to own
+than two unspent ones.
 
 `labelColor` is split from `iconColor` so the glyph can carry a state while the number it
 annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
