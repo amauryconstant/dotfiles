@@ -140,6 +140,10 @@
       "Bash(age:*)"
     ]
   },
+  "env": {
+    "PONYTAIL_DEFAULT_MODE": "full",
+    "PONYTAIL_SUBAGENT_MATCHER": "^(?!.*(investigator|reviewer|researcher|explore|guide|statusline|plan-updater))"
+  },
   "hooks": {
     "PreToolUse": [
       {
