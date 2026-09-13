@@ -19,7 +19,7 @@
 | `hypridle.service` | service | Idle/lock daemon. `ExecStart` reads `HYPRIDLE_CONF`, defaulted via `Environment=` and overridden by the optional `EnvironmentFile=-%t/hypridle-mode.env` that `idle-toggle-nolock` writes (later directive wins). See `lib/scripts/desktop/CLAUDE.md` → Idle & Lock | `services.yaml` user_services → `after_002` |
 | `llama-swap.service.tmpl` | service | llama-swap on-demand multi-model LLM proxy (`:8080`, parents `llama-server` subprocesses) | `services.yaml` user_services → `after_002` (gated on `llama-swap` present) |
 | `llama-server.service.tmpl` | service | **Phase-0 fallback** (single static model), `enabled: false` — superseded by `llama-swap` | `services.yaml` (disabled; flip to re-enable) |
-| `kanata.service` | service | Kanata keyboard remapper (port 5829, `~/.config/kanata/kanata.kbd`) | `after_010`, gated on `features.kanata.enabled` + **laptop** chassis + `uinput` module |
+| `kanata.service` | service | Kanata keyboard remapper (port 5829, `~/.config/kanata/kanata.kbd`) | `run_onchange_after_configure_kanata`, gated on `features.kanata.enabled` + **laptop** chassis + `uinput` module |
 | `voxtype.service.d/` | drop-in | Voxtype GPU config override | `after_010` |
 | `app-blueman@autostart.service.d/`, `app-nm-applet@autostart.service.d/` | drop-in | Suppress tray icons on **desktop** chassis | static (`{{ if eq .chassisType "desktop" }}`) |
 

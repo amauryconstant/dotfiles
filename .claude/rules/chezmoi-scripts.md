@@ -85,7 +85,7 @@
 | 007 | setup_darkman | Darkman solar auto-theme service |
 | 008 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
 | 010 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |
-| 011 | setup_optional_services | Voxtype STT + Restic home backup init (skips if not installed) |
+| 011 | setup_optional_services | Restic home backup init (skips if not installed) |
 | 012 | migrate_xdg_directories | Migrate legacy `~/.npm` etc. to XDG locations |
 | 999 | switch_to_ssh_remote | SSH remote switch |
 
@@ -99,6 +99,7 @@
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | configure_notifications | Masks/unmasks swaync so exactly one daemon owns `org.freedesktop.Notifications` | `features.quickshell_shell` or `features.quickshell_notifications` changes |
+| configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |

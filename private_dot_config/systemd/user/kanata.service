@@ -2,6 +2,12 @@
 Description=Kanata keyboard remapper
 Documentation=https://github.com/jtroo/kanata
 After=graphical-session.target
+# Cap the retry loop. Default 5 starts / 10s never trips here (RestartSec=5 plus
+# ~2.3s of runtime keeps every window under 2 starts), so a persistent failure —
+# e.g. missing `input` group after a relogin — retried 2111 times, flooding the
+# journal and churning libinput add/remove events in the Hyprland log.
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
