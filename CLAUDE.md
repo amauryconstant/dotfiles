@@ -222,12 +222,13 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 **Working on backups?**
 → `private_dot_local/lib/scripts/system/CLAUDE.md` (Timeshift integration)
 
-**Working on the Quickshell bar?**
+**Working on the Quickshell shell?** (the bar is one of its 18 shipped surfaces)
 → `.claude/rules/quickshell-qml.md` (QML syntax, tooling, validation)
 → `private_dot_config/quickshell/CLAUDE.md` (layout, widget sources, Waybar deviations)
 → `_research/QUICKSHELL_SURFACE_INVENTORY.md` — **start here for status**: which surfaces exist,
-which do not, and the reading order for the ten Quickshell documents. Most of them are frozen
-records of finished work; taking a task from one is the standing hazard
+which do not, and the reading order for all eleven Quickshell documents. Only six are live; the
+rest are frozen records of finished work, and taking a task from one is the standing hazard. Four
+moved to `_research/archive/` on 2026-09-13 for exactly that reason
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)

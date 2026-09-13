@@ -1,6 +1,6 @@
 # Desktop shell — surface inventory
 
-**Date**: 2026-09-03 · **Statuses refreshed**: 2026-09-12
+**Date**: 2026-09-03 · **Statuses refreshed**: 2026-09-13
 **Purpose**: the complete list of surfaces a desktop shell owns here, described by *what they are
 made of* and *how they must behave* — not by how they are drawn or built.
 
@@ -8,6 +8,11 @@ made of* and *how they must behave* — not by how they are drawn or built.
 `_plans/` and `_research/` is a record of work already done or a decision already taken — see the
 reading order below. What remains to be *built* is here; what remains to be *removed* is
 `_plans/QUICKSHELL_TOOL_RETIREMENT.md`.
+
+**Four of those records moved to `_research/archive/` on 2026-09-13** — the desktop research, the
+component mapping, design brief R5 and the greeter decision. Nothing in them changed; they are
+closed rather than maintained, and the reading order below carries their new paths. `live` in that
+table means *corrected in place when found wrong*, and only six of the eleven are.
 
 **The per-surface descriptions below are as written on 2026-09-03; only the `Status` lines are
 maintained.** A constraint an entry states was true when written and may have been answered by the
@@ -21,19 +26,19 @@ implementation since — the status line says so where it was.
 | `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, thrice corrected |
 | **this file** | **live** | which surfaces exist, which do not |
 | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | the one open piece of work in the original plan |
-| `_research/QUICKSHELL_GREETER.md` | closed 2026-09-12 | why §23 is not built, and what would reopen it |
+| `_research/archive/QUICKSHELL_GREETER.md` | closed 2026-09-12 | why §23 is not built, and what would reopen it |
 | `_plans/archive/QUICKSHELL_SHELL.md` | frozen 2026-09-03 | why a phase was built the way it was |
-| `_research/QUICKSHELL_DESKTOP_RESEARCH.md` | closed 2026-09-01 | why Quickshell, and the alternatives rejected |
-| `_research/QUICKSHELL_COMPONENT_MAPPING.md` | historical | what the replaced tools did |
-| `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` | delivered 2026-09-08 | what was asked of the design, before the rewrite |
+| `_research/archive/QUICKSHELL_DESKTOP_RESEARCH.md` | closed 2026-09-01 | why Quickshell, and the alternatives rejected |
+| `_research/archive/QUICKSHELL_COMPONENT_MAPPING.md` | historical | what the replaced tools did |
+| `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` | delivered 2026-09-08 | what was asked of the design, before the rewrite |
 | `_research/QUICKSHELL_DESIGN_AUDIT.md` Parts 1–4 | historical | measurements only — every artboard id is dead |
 
 **For**: the design system. Every entry is something the design must eventually specify; nothing
 here prescribes a layout, a component name, or an API.
 
-**Derived from**: `_research/QUICKSHELL_COMPONENT_MAPPING.md` (what each replaced tool does),
+**Derived from**: `_research/archive/QUICKSHELL_COMPONENT_MAPPING.md` (what each replaced tool does),
 `_research/QUICKSHELL_QML_API.md` (what the runtime can express), the script inventory under
-`private_dot_local/lib/scripts/`, and `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 (scope law).
+`private_dot_local/lib/scripts/`, and `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 (scope law).
 
 **Scope law**: the shell replaces the desktop shell wholesale. A surface stays out only for a
 **technical or safety** reason, and that reason must name the condition that brings it back.
@@ -555,6 +560,18 @@ message previews unlocks the user's mail for anyone walking past", which is stri
 focused one alone. No Esc, ever. A failure clears the field and reports inline but **does not
 count down publicly**.
 
+**Two defects found the first time it was actually locked into, both fixed 2026-09-13:**
+
+- **The field came up unfocused** and the first password went nowhere — a focus claim made from a
+  child's `Component.onCompleted`, which runs before the window it would focus into exists. All
+  three claim edges now defer through one `claimFocus()`. The general rule, and the line of
+  `proxywindow.cpp` behind it, is in `.claude/rules/quickshell-qml.md`.
+- **It was drawn at popover scale.** The density scale is calibrated for a 40px bar and 340px
+  panels, so page 12's 220x34 field is correct against the scale and wrong against the surface —
+  the lock is the one full-screen thing this shell draws. `lockFieldWidth` 360, `lockFieldHeight`
+  56 and `lockClockSize` 72 are panel measurements in `Config.qml.tmpl`, beside `polkitDialogWidth`;
+  the date moved up to `fontDisplay` for the same reason, keeping it a rank below the clock.
+
 **The one departure**: page 12 asks for a lock process supervised independently of the shell. This
 tree recovers instead of isolating — the failsafe is opaque, so a crashed locker is ugly rather
 than insecure, and `Restart=always` plus lock restore plus the stranded probe turns it into ~2s
@@ -576,7 +593,7 @@ alongside it rather than separately.
 Quickshell *can* do it (`Quickshell.Services.Greetd` is a real greetd client, distinct from
 `WlSessionLock`), and Omarchy — having replaced its whole shell with Quickshell — still logs in
 through SDDM at v4.0.3. Facts, cost, and the named condition that would reopen it:
-`_research/QUICKSHELL_GREETER.md`.
+`_research/archive/QUICKSHELL_GREETER.md`.
 
 ---
 
@@ -674,7 +691,7 @@ branching into two designs.
 
 ## Summary
 
-**As of 2026-09-12.** Two of the 18 shipped surfaces (dock, workspace overview) ship **off** —
+**As of 2026-09-13.** Two of the 18 shipped surfaces (dock, workspace overview) ship **off** —
 built, tried in daily use, declined. **Nothing is deferred any more**: §21 and §22, the two the
 design's own page 12 held back on safety, both landed on the supervision that arrived the same day.
 
@@ -699,7 +716,7 @@ because eighteen scripts already spoke dmenu.
 | 8 | Hierarchical system menu | **Shipped 2026-09-13** — navigation in the shell (breadcrumb + back gesture), tree deliberately left in the scripts |
 | 11 | Display and monitor profile picker | **Shipped 2026-09-12 as an output picker** — the *profile* half is declined, because hyprdynamicmonitors exposes no way to force a profile |
 | 15 | Screenshot and recording control | **Partial by ruling 2026-09-12** — indicator + mode picker shipped; the region overlay is declined (nothing can keep a surface out of its own capture, and omarchy declined it too) |
-| 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/QUICKSHELL_GREETER.md`) |
+| 23 | Greeter | **Closed** — decision recorded 2026-09-12, SDDM stays (`_research/archive/QUICKSHELL_GREETER.md`) |
 
 Surfaces 9, 12 and 13 are shipped but landed as *picker calls*, which is thinner than their entries
 ask for: a keybinding document, a login interrupt and a continuous control respectively. Improving

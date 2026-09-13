@@ -519,7 +519,7 @@ replaced tool does.
 **Still the completeness checklist.** As of 2026-09-03 the shell's scope is a *full* desktop-shell
 replacement, not a bar port, so the coverage table above is the reference for what remains to be
 owned — including the pieces previously declined on scope grounds (clipboard, system menu, lock
-screen). See `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1.
+screen). See `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1.
 
 For those three, 0.3.1 already ships the primitives, so none of them is a research question:
 

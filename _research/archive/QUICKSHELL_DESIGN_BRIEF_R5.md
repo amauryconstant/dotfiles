@@ -241,7 +241,7 @@ The audit reads as a critique. These are right, and several are sharper than the
 
 **Tier 1 — required (17 files)**
 
-`_research/QUICKSHELL_DESIGN_BRIEF_R5.md` · `_research/QUICKSHELL_DESIGN_AUDIT.md` ·
+`_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` · `_research/QUICKSHELL_DESIGN_AUDIT.md` ·
 `_plans/QUICKSHELL_SHELL.md` (Amendments A–E: the decision history every §2.1 contradiction traces
 back to) · `private_dot_config/themes/CLAUDE.md` (**the most important upload after this brief** —
 semantic schema, contrast law, measured per-theme ratios) · `private_dot_config/themes/*/colors.sh`
@@ -251,7 +251,7 @@ stops the design specifying what cannot be built).
 **Tier 2 — the scope expansion (7 files).** The design drew clipboard, system menu, lock screen and
 polkit *speculatively*, without the documentation of what it replaces.
 
-`_research/QUICKSHELL_COMPONENT_MAPPING.md` (the completeness checklist) ·
+`_research/archive/QUICKSHELL_COMPONENT_MAPPING.md` (the completeness checklist) ·
 `private_dot_local/lib/scripts/user-interface/CLAUDE.md` (**the real `system-menu`; `menu-a`
 invented one**) · `private_dot_local/lib/scripts/desktop/CLAUDE.md` (theme switcher, idle & lock,
 session) · `private_dot_config/{wofi,wlogout,swaync,waybar}/CLAUDE.md` (the module→semantic tables
@@ -271,7 +271,7 @@ Lock section) · `private_dot_config/quickshell/CLAUDE.md` (what is built) ·
 which is what stops the eight being treated as interchangeable palettes, and where Solarized's
 body-text choice is explained on its own terms · `themes/style-guide-generator.md`.
 
-**Optional**: `_research/QUICKSHELL_DESKTOP_RESEARCH.md` (only its theming-philosophy section is
+**Optional**: `_research/archive/QUICKSHELL_DESKTOP_RESEARCH.md` (only its theming-philosophy section is
 live; the rest is closed exploration). `_plans/QUICKSHELL_DESIGN_PROMPT.md` — useful as history,
 **risky as input**: it contains round instructions the agent could re-execute. Mark superseded.
 

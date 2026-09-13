@@ -1,6 +1,6 @@
 # Quickshell design audit — rounds 1–4, and the round-5 rewrite
 
-**Date**: 2026-09-03, extended 2026-09-08 and 2026-09-10 · **Source**: Claude Design project
+**Date**: 2026-09-03, extended 2026-09-08, 2026-09-10 and 2026-09-13 · **Source**: Claude Design project
 `1d494341-deaa-47cb-ac39-32ccb9c23862`.
 **Status**: **Part 5 is LIVE** — it is where a ruling against the current fourteen-page design gets
 recorded, and it is maintained. Parts 1–4 are historical.
@@ -11,7 +11,7 @@ cite (`f-a`, `bar-a`, `pop-g`, `st-b`, `pf-a`, `comp-a`, `comp-b`, `pan-a`, `1a`
 They are kept because the *measurements* are still valid and several of them are why the current
 code looks the way it does — not because the files they cite can still be opened. **Part 5 is the
 current set.**
-**Rulings that act on this**: `_research/QUICKSHELL_DESIGN_BRIEF_R5.md`. This document is the
+**Rulings that act on this**: `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md`. This document is the
 **evidence**; the brief is the decisions.
 
 **Method**: every contrast pair the new rounds introduce was recomputed against all **8**
@@ -259,8 +259,9 @@ pairs the design introduces are invisible until they ship. The one it should alr
 
 # Part 5 — the fourteen-page rewrite (2026-09-08)
 
-**Source**: `Shell-00-Index` … `Shell-13-Accessibility`, read in full except page 12 (polkit and
-lock screen), which the index marks deferred on safety and which nothing implemented depends on.
+**Source**: `Shell-00-Index` … `Shell-13-Accessibility`. Read in full — page 12 (polkit and the
+lock screen) was the one gap, because the index marks it deferred on safety and nothing implemented
+depended on it; it was read on 2026-09-12 when both surfaces were built, and its rulings are §5.6.
 
 The rewrite is a genuine improvement on the nine-file set: it replaces module-named colour tokens
 with a **role system**, states a **behaviour law**, and carries its own **worst-of-eight contrast
@@ -302,14 +303,32 @@ menu, which is not built.
 
 ## 5.4 — Still open
 
-1. **Solarized's `FG_PRIMARY`** — Part 4.2's finding, which page 13 independently confirms and
-   calls a colorset bug. Unfixed: it belongs to `themes/*/colors.sh`, not to any consumer.
+1. **Solarized's `INK_PRIMARY`** (`FG_PRIMARY` before the rename) — Part 4.2's finding, which page
+   13 independently confirms and calls a colorset bug. Re-measured 2026-09-13, unchanged: **4.13**
+   light and **4.75** dark on their own `GROUND_BASE`, while each set's `INK_SECONDARY` measures
+   better (4.99 / 5.61). Unfixed, and deliberately so: it belongs to `themes/*/colors.sh`, not to
+   any consumer, and `Theme.qml` already withdraws the *secondary* ink by measurement where it
+   fails — there is no equivalent escape for the primary, which is by definition the fallback.
 2. ~~**The colorset rename.**~~ **Done 2026-09-09** (commit `60cd3300`): the colorsets carry the
    18 role names themselves, `Theme.qml` reads the key of the same name, and six keys with no
    consumer were deleted.
-3. **`signal-warn` / `signal-info` have no legal graphic use left.** Both are under 3:1 on their own
-   ground in four of eight, so nothing in the shell draws them; they sit in `Theme.qml` bound and
-   unused. Either a future surface finds a ground they clear, or the palette owes them one.
+3. **`signal-info` and `signal-ok` have no legal use left; `signal-warn` found one.** All three are
+   under 3:1 on their own ground in four of eight, so none is drawn as a graphic — but
+   `MetersWidget.qml` spends `signalWarn` as an **18% ground tint** under the load number, which is
+   a different job with a different floor. `signalInfo` and `signalOk` remain bound in `Theme.qml`
+   and drawn nowhere. Either a future surface finds a ground they clear, or the palette owes them
+   one.
+4. 🚨 **New, 2026-09-13 — the meter pill's own number is under the text floor when it matters.**
+   `MetersWidget` tints its pill 18% `signalWarn` at the warn band and 18% `signalError` at the
+   critical band, over `groundBase`; the number on it is `inkPrimary`, because a pill is a grounded
+   widget. Composited and measured across all eight: worst **3.19** (solarized-light, the critical
+   tint) and **3.46** (solarized-light, warn), against the 4.5 text owes. The widget's own comment
+   says the tint exists so "a percentage has to stay readable at exactly the moment it is worth
+   reading" — which is the requirement it misses. It went unseen because
+   `.mise/tasks/lint/theme-contrast.py` harvests `INK_PRIMARY` / `GROUND_RAISED` for "meter and
+   battery pills" and the tinted grounds are not in its `PAIRS` table at all. Fixing it is a choice
+   between a lighter tint, a different ink, or moving the band onto the glyph as the battery's did
+   — not recorded here as decided.
 
 ## 5.5 — Page 06 rulings (2026-09-10, when the popovers were built)
 
@@ -329,3 +348,21 @@ popovers are specified to close on a click outside, with no keyboard grab. Under
 there is no mechanism that does both — `PopupWindow.grabFocus` fails outright on a layer parent
 and `HyprlandFocusGrab` takes the keyboard. Pointer mode therefore closes on losing the pointer
 instead. Measurements and the exact Qt errors are in `.claude/rules/quickshell-qml.md`.
+
+## 5.6 — Page 12 rulings (2026-09-12 and 2026-09-13, when polkit and the lock were built)
+
+Page 12 was the deferred page; reading it closed the last two Interrupt surfaces. It is the
+**strictest** page in the set, and on the one question that matters most it is stricter than the
+surface inventory was — which is the right direction for a page about a locked screen.
+
+| # | Page 12 says | Ruling | Why |
+|---|---|---|---|
+| 5.6a | Nothing ambient is drawn on the lock — no notification presence, no media, no battery, because *"a lock screen that shows message previews unlocks the user's mail for anyone walking past"* | **Adopted, over our own entry.** `LockContent.qml` draws a clock, a date, one field and one line, and reads no state at all | Surface §22 had proposed "presence only". Page 12 is stricter and correct: presence of a mail notification is itself information about the user |
+| 5.6b | Every output is covered; the field appears on the focused one alone. No Esc, ever. A failure clears the field and reports inline but **does not count down publicly** | **Adopted verbatim** | A public attempt counter tells a shoulder-surfer how much budget is left |
+| 5.6c | The lock process is supervised **independently of the shell** | **Departed from.** This tree *recovers* instead of isolating | `Restart=always` + `misc:allow_session_lock_restore` + the `session-lock-stranded` probe turn a killed locker into ~2s of Hyprland failsafe followed by a real prompt — measured 2026-09-12 under `SIGKILL`. The failsafe is opaque, so the failure is ugly rather than insecure, and `desktop/immediate-lock` keeps hyprlock as the runtime fallback for a shell that cannot come back at all |
+| 5.6d | The password field is **220x34** | **Rejected as a measurement, accepted as a role.** 360x56, with the clock at 72 and the date at `fontDisplay` | Every other number in the set is read against a density scale calibrated for a 40px bar and 340px panels. The lock is the one full-screen surface, so the scale's "field" and this surface's field are not the same object — 220x34 renders as a popover control dropped onto a 1920x1080 ground. Found 2026-09-13, the first time the lock was actually typed into |
+| 5.6e | The identity-choice branch, on the polkit dialog, is drawn as a single fixed identity | **Built as the branch it actually is.** `AuthFlow.identities` / `selectedIdentity` exist in 0.3.1; group entities are filtered out, the chip row collapses at one identity, Tab cycles | Omarchy's own agent ignores this too. It is rare, not hypothetical, and the page assuming it away is the same class of gap as page 06 assuming a `power-profiles-daemon` that is not installed (5.5d) |
+
+**One defect the page did not cause but the page's numbers hid**: the field came up unfocused, so
+the first password went nowhere. That is a Quickshell lifecycle trap, not a design question, and it
+is recorded in `.claude/rules/quickshell-qml.md`.

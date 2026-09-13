@@ -40,7 +40,7 @@ two surfaces are complete but ship OFF** — `Config.dockEnabled` and `Config.ov
 both `false`; "complete" there means built and validated, then declined in daily use.
 
 **Decision**: Approach **A** (build our own, Omarchy 4 as design reference) — confirmed from
-`_research/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
+`_research/archive/QUICKSHELL_DESKTOP_RESEARCH.md`, which left the approach leaning but unchosen.
 **Scope**: bar → OSDs → notifications → launcher/power menu. Lock screen and idle daemon stayed
 out; the clipboard panel this plan declined was later built (2026-09-09), the lock screen was not.
 **Amendments**: **A** the layout language adopted 2026-08-31 · **B** the 2026-09-01 design update ·
@@ -100,7 +100,7 @@ not compile as written.
 | 16 | `quickshell ipc` defaults to config name **`default`** when `--config` is absent. Ours is `dotfiles`, and voxtype runs a second instance, so every IPC call must name its config | `quickshell --help`, Config Selection: *"If `--config` is not passed, 'default' will be assumed."* |
 | 17 | **`.chezmoidata/` files cannot be templates.** A `.tmpl` suffix is a hard error (`.tmpl: unknown format`, exit 1, whole tree fails); `{{ }}` inside a plain data file is emitted **literally**. Gating conditions must live in the *consumer* (or in `.chezmoiignore`, which is templated) | throwaway source dir + `chezmoi data --source` |
 
-**Consequences for `_research/QUICKSHELL_COMPONENT_MAPPING.md`** — three of its four
+**Consequences for `_research/archive/QUICKSHELL_COMPONENT_MAPPING.md`** — three of its four
 "Integration Challenges" are void:
 
 - *"No `exec-persistent` analog"* → `Process { stdout: SplitParser { onRead: … } }` is an
@@ -641,8 +641,8 @@ Per tool, the checklist is the same:
 
 - `_research/QUICKSHELL_QML_API.md` — module URIs, singleton names, the "no import needed"
   claim, the `Quickshell.Io` omission (facts #1–#4, #7)
-- `_research/QUICKSHELL_COMPONENT_MAPPING.md` — three of four Integration Challenges are void
-- `_research/QUICKSHELL_DESKTOP_RESEARCH.md` — Approach A is chosen; status is no longer
+- `_research/archive/QUICKSHELL_COMPONENT_MAPPING.md` — three of four Integration Challenges are void
+- `_research/archive/QUICKSHELL_DESKTOP_RESEARCH.md` — Approach A is chosen; status is no longer
   "exploration only"
 - `_plans/OMARCHY.md` — P1 Lua item gains the route-around; the v4.0.0 shell skip gains a
   pointer here so "skipped" is not read as "never"
@@ -1241,7 +1241,7 @@ one.
 
 ## 5. Clipboard (`pan-b`) — decided: declined ~~— REVERSED 2026-09-09~~
 
-🚨 **This decline was overturned.** `_research/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 withdrew every
+🚨 **This decline was overturned.** `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` §1.1 withdrew every
 decline taken on *scope* grounds, and `ClipboardPicker.qml` shipped on 2026-09-09 bound to
 `SUPER+C`. Both premises below also failed: the picker work removed Wofi's menu callers, and the
 shell front-ends `cliphist` rather than duplicating its storage. Kept for the reasoning trail.

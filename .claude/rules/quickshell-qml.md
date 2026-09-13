@@ -458,6 +458,16 @@ Verified by driving the pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x =
 held continuously from a bottom-centre entry, onto a tile, and across a far-left entry at
 x=120 against a panel spanning only x≈815–1104.
 
+🚨 **`forceActiveFocus()` from a child's `Component.onCompleted` is SILENTLY DROPPED.** The
+child completes before its window exists: `ProxyWindowBase::completeWindow()` reparents the content
+item into the real `QQuickWindow` at `window/proxywindow.cpp:242`, and that runs when the *surface*
+completes — after every child of it. An item with no window cannot take focus and nothing reports
+the failure. The surface simply comes up with its field unfocused, so the first thing typed goes
+nowhere; on the lock screen that is the password. Defer every focus claim through
+`Qt.callLater(claimFocus)` — one function, called from each claim edge, never `forceActiveFocus()`
+inline. Found 2026-09-13 on `lock/LockContent.qml`; omarchy defers the same call for the same
+reason (`shell/plugins/lock/LockView.qml`).
+
 🚨 **`escape` is an ILLEGAL METHOD NAME and qmllint does not catch it.** A
 `function escape(): void {…}` on a `PanelWindow` renders, formats and lints clean —
 `mise run lint:qml` passed on it — and then the engine refuses the whole file at LOAD time with
@@ -529,10 +539,20 @@ preference: a widget whose paint is 26 still claims 32 of pointer space. `BarWid
 areas on adjacent 26px chips are 34 apart.
 
 **Type is six steps and four glyph sizes, and nothing outside them is drawn**: `fontMeta` 11,
-`fontBody` 12, `fontTitle` 14, `fontDisplay` 20 (the OSD readout, its only use), with glyphs
+`fontBody` 12, `fontTitle` 14, `fontDisplay` 20 (the OSD readout and the lock's date), with glyphs
 at `glyphRow` 13, `glyphBar` 16, `glyphOsd` 28, `glyphTile` 32. QML's `font.pixelSize` is an
 **integer**, so the design's half-pixel steps round here — meta 10.5 → 11, title 13.5 → 14.
 That is a QML constraint, not a reading of the design.
+
+🚨 **The scale is calibrated for a 40px bar and 340px panels, and the LOCK is the one
+full-screen surface.** Page 12's 220x34 field is correct against the scale and wrong against
+the surface — at 1920x1080 it reads as a popover control dropped onto a wall. So the lock
+carries panel measurements of its own in `Config.qml.tmpl`, beside `polkitDialogWidth` and for
+the same reason (the scale does not supply how wide a panel is): `lockFieldWidth` 360,
+`lockFieldHeight` 56, and `lockClockSize` 72 — the one type size outside the six steps, taken
+because there is no other display-sized thing on that screen to be consistent with. Everything
+else the lock draws still comes from the scale. This is the exception, not a licence: a surface
+that is not full-screen has no claim to one.
 
 **Motion is three durations**: `motionFast` 120 (hover and press tints, meter fills),
 `motionSlow` 180 (reflow, pill travel, OSD fade-out), `motionEnter` 220 (arrival). Never
@@ -569,8 +589,12 @@ gruvbox-light, and `SIGNAL_INFO` at **2.80–3.31** in the light sets — under 
 owes, so a state drawn in either was *less* visible than the same state drawn neutral. Only
 `SIGNAL_ERROR` clears 3:1 everywhere (worst 3.25, on `GROUND_BASE`). The battery's low band,
 the idle inhibitor's second state, the unread bell and three dictation states all moved onto
-their own **glyph**, which is what they should always have carried. `signalWarn`, `signalInfo`
-and `signalOk` are bound in `Theme.qml` and drawn nowhere.
+their own **glyph**, which is what they should always have carried. `signalInfo` and `signalOk` are bound in
+`Theme.qml` and drawn nowhere. `signalWarn` has exactly one site, and it is not a glyph:
+`MetersWidget` tints its pill's **ground** with it at 18%. That is a different job with a
+different floor — and the number on that tinted ground measures **3.19** at worst
+(solarized-light, the critical band), under the 4.5 text owes. Open, recorded as
+`_research/QUICKSHELL_DESIGN_AUDIT.md` §5.4.4.
 
 `labelColor` is split from `iconColor` so the glyph can carry a state while the number it
 annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
