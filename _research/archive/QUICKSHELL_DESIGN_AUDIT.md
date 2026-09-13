@@ -2,8 +2,12 @@
 
 **Date**: 2026-09-03, extended 2026-09-08, 2026-09-10 and 2026-09-13 · **Source**: Claude Design project
 `1d494341-deaa-47cb-ac39-32ccb9c23862`.
-**Status**: **Part 5 is LIVE** — it is where a ruling against the current fourteen-page design gets
-recorded, and it is maintained. Parts 1–4 are historical.
+**Status**: **ARCHIVED 2026-09-13.** Part 5 was the live half — where a ruling against the current
+fourteen-page design got recorded — and it is complete: §5.6 closed page 12, the last page anything
+was owed against. The open items §5.4 carried are now `_plans/QUICKSHELL_OPEN_WORK.md`; the
+measurements behind them stay here, because a ruling without its evidence is an opinion. Parts 1–4
+were always historical. A future ruling against the design belongs in a new record, not appended
+here.
 
 🚨 **Parts 1–4 below audit the NINE-file set, which no longer exists.** The project was rewritten
 as **fourteen pages**, `Shell-00-Index` … `Shell-13-Accessibility`. Every artboard id those parts
@@ -301,7 +305,7 @@ tiles rather than five (hibernate works here); Lock still pre-selected; the OSD 
 density column rather than three, because the only thing that could select a column is the system
 menu, which is not built.
 
-## 5.4 — Still open
+## 5.4 — Still open *(carried forward 2026-09-13 to `_plans/QUICKSHELL_OPEN_WORK.md`, which is where a decision goes; the measurements stay here)*
 
 1. **Solarized's `INK_PRIMARY`** (`FG_PRIMARY` before the rename) — Part 4.2's finding, which page
    13 independently confirms and calls a colorset bug. Re-measured 2026-09-13, unchanged: **4.13**

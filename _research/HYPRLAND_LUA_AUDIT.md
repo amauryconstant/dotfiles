@@ -81,7 +81,7 @@ runnable recipe lives in `_guides/HYPRLAND_LUA_CUTOVER.md`, which is where it ge
 
 Second, separate audit. The 2026-08-30 pass above is **config-side only** — the 21
 `.conf`/`.lua` pairs. Our own scripts and app configs call `hyprctl dispatch` with legacy
-dispatch strings, and none of that was in scope. `_plans/QUICKSHELL_SHELL.md` Phase 2 carried
+dispatch strings, and none of that was in scope. `_plans/archive/QUICKSHELL_SHELL.md` Phase 2 carried
 the question as *inference, not verified*. It is now verified.
 
 ## Verdict: the legacy form **breaks**. Every site must be converted before cutover.

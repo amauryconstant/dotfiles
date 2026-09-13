@@ -222,13 +222,18 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 **Working on backups?**
 → `private_dot_local/lib/scripts/system/CLAUDE.md` (Timeshift integration)
 
-**Working on the Quickshell shell?** (the bar is one of its 18 shipped surfaces)
-→ `.claude/rules/quickshell-qml.md` (QML syntax, tooling, validation)
-→ `private_dot_config/quickshell/CLAUDE.md` (layout, widget sources, Waybar deviations)
-→ `_research/QUICKSHELL_SURFACE_INVENTORY.md` — **start here for status**: which surfaces exist,
-which do not, and the reading order for all eleven Quickshell documents. Only six are live; the
-rest are frozen records of finished work, and taking a task from one is the standing hazard. Four
-moved to `_research/archive/` on 2026-09-13 for exactly that reason
+**Working on the Quickshell shell?** (the bar is one of its 21 shipped surfaces)
+→ `private_dot_config/quickshell/CLAUDE.md` — **start here**: what the shell is today, surface by
+surface, and why each departure
+→ `.claude/rules/quickshell-qml.md` (QML syntax, tooling, measured runtime traps)
+→ `_plans/QUICKSHELL_OPEN_WORK.md` (one defect, two open questions, some optional work) and
+`_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **between them, everything still open**
+→ `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected four times)
+
+🚨 **The build closed on 2026-09-13 and eight of the eleven Quickshell documents are now in
+`_research/archive/` or `_plans/archive/`.** They are evidence — measurements, rulings, what each
+surface is made of — not backlogs. Taking a task from one is the standing hazard, which is why the
+two plans above exist.
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)

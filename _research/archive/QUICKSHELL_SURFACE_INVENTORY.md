@@ -4,15 +4,29 @@
 **Purpose**: the complete list of surfaces a desktop shell owns here, described by *what they are
 made of* and *how they must behave* — not by how they are drawn or built.
 
-🚨 **This is the only forward-looking Quickshell document.** Every other Quickshell file under
-`_plans/` and `_research/` is a record of work already done or a decision already taken — see the
-reading order below. What remains to be *built* is here; what remains to be *removed* is
-`_plans/QUICKSHELL_TOOL_RETIREMENT.md`.
+🚨 **ARCHIVED 2026-09-13. This was written as the backlog and it stopped being one.** It listed
+what a shell must own and what was left to build; recounting it entry by entry on 2026-09-13 found
+**21 of the 23 surfaces shipped**, §15's region overlay and §23's greeter both recorded refusals,
+and nothing at all waiting to be picked up (see the Summary — the table that said 18/2/3 had simply
+not been recounted since §8 and §11 landed).
 
-**Four of those records moved to `_research/archive/` on 2026-09-13** — the desktop research, the
-component mapping, design brief R5 and the greeter decision. Nothing in them changed; they are
-closed rather than maintained, and the reading order below carries their new paths. `live` in that
-table means *corrected in place when found wrong*, and only six of the eleven are.
+Its value now is the **left half** of every entry: what a surface is *made of*, how it must
+*behave*, and which of its constraints are facts rather than preferences. That is design knowledge
+and it does not expire. The Status lines are a build record.
+
+**Where the live content went, on the day this was archived:**
+
+| Question | Read |
+|---|---|
+| What is this shell, surface by surface, and why each departure | `private_dot_config/quickshell/CLAUDE.md` |
+| What is still open | `_plans/QUICKSHELL_OPEN_WORK.md` — one contrast defect, two open questions, optional work |
+| What is left to remove | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
+| QML syntax, tooling, measured runtime traps | `.claude/rules/quickshell-qml.md` |
+| The quickshell 0.3.1 API | `_research/QUICKSHELL_QML_API.md` — the last live research doc |
+
+Every other Quickshell file is a record of work already done or a decision already taken. **Seven
+of the twelve** are now under `_research/archive/` or `_plans/archive/`; the reading order below
+carries their paths and is correct **as of 2026-09-13** rather than maintained.
 
 **The per-surface descriptions below are as written on 2026-09-03; only the `Status` lines are
 maintained.** A constraint an entry states was true when written and may have been answered by the
@@ -20,18 +34,19 @@ implementation since — the status line says so where it was.
 
 | Document | What it is | Read it for |
 |---|---|---|
-| `private_dot_config/quickshell/CLAUDE.md` | **live** | what the shell is today, and why each departure |
+| `private_dot_config/quickshell/CLAUDE.md` | **live** | what the shell is today, and why each departure. **Start here** |
 | `.claude/rules/quickshell-qml.md` | **live** | QML syntax, tooling, measured runtime traps |
-| `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 | **live** | the fourteen-page design's defects and this tree's rulings |
-| `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, thrice corrected |
-| **this file** | **live** | which surfaces exist, which do not |
-| `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | the one open piece of work in the original plan |
+| `_plans/QUICKSHELL_OPEN_WORK.md` | **live** | the contrast defect, the open questions, the optional work |
+| `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | what is left to remove, per tool |
+| `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, corrected four times |
+| **this file** | archived 2026-09-13 | what each of the 30 surfaces is made of, and what it shipped as |
+| `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 | archived 2026-09-13 | the fourteen-page design's defects and this tree's rulings, incl. §5.6 on page 12 |
 | `_research/archive/QUICKSHELL_GREETER.md` | closed 2026-09-12 | why §23 is not built, and what would reopen it |
 | `_plans/archive/QUICKSHELL_SHELL.md` | frozen 2026-09-03 | why a phase was built the way it was |
 | `_research/archive/QUICKSHELL_DESKTOP_RESEARCH.md` | closed 2026-09-01 | why Quickshell, and the alternatives rejected |
 | `_research/archive/QUICKSHELL_COMPONENT_MAPPING.md` | historical | what the replaced tools did |
 | `_research/archive/QUICKSHELL_DESIGN_BRIEF_R5.md` | delivered 2026-09-08 | what was asked of the design, before the rewrite |
-| `_research/QUICKSHELL_DESIGN_AUDIT.md` Parts 1–4 | historical | measurements only — every artboard id is dead |
+| `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Parts 1–4 | historical | measurements only — every artboard id is dead |
 
 **For**: the design system. Every entry is something the design must eventually specify; nothing
 here prescribes a layout, a component name, or an API.
@@ -470,7 +485,7 @@ pointer (no grab, closes on losing the pointer) and the `SUPER+P` submap (`Hyprl
 ring). The **set differs from this entry**: audio, network, bluetooth, calendar, media, **meters**,
 **power**. Battery folded into power; notifications kept the centre it already had. They removed the
 bar's last four shell-outs. Departures from design page 06 are measured in
-`_research/QUICKSHELL_DESIGN_AUDIT.md` §5.5.
+`_research/archive/QUICKSHELL_DESIGN_AUDIT.md` §5.5.
 
 ---
 
@@ -691,24 +706,31 @@ branching into two designs.
 
 ## Summary
 
-**As of 2026-09-13.** Two of the 18 shipped surfaces (dock, workspace overview) ship **off** —
-built, tried in daily use, declined. **Nothing is deferred any more**: §21 and §22, the two the
-design's own page 12 held back on safety, both landed on the supervision that arrived the same day.
+🚨 **As of 2026-09-13 the build is closed: 21 of the 23 surfaces are shipped, and the other two
+are rulings rather than gaps.** Recounted entry by entry on 2026-09-13 — the previous table said
+18 / 2 / 3 and had not been recounted since §8 and §11 landed. Two of the 21 (dock, workspace
+overview) ship **off**: built, tried in daily use, declined. **Nothing is deferred any more**:
+§21 and §22, the two the design's own page 12 held back on safety, both landed on the supervision
+that arrived the same day.
 
-| Class | Surfaces | Shipped | Partial | Not built | Deferred |
-|---|---|---|---|---|---|
-| Persistent | 2 | 2 | — | — | — |
-| Ambient | 3 | 2 | 1 | — | — |
-| Summoned | 15 | 12 | 1 | 2 | — |
-| Interrupt | 3 | 2 | — | 1 | — |
-| Foundation | 7 | — | — | — | — |
-| **Total** | **30** | **18** | **2** | **3** | — |
+| Class | Surfaces | Shipped | Partial by ruling | Declined |
+|---|---|---|---|---|
+| Persistent | 2 | 2 | — | — |
+| Ambient | 3 | 3 | — | — |
+| Summoned | 15 | 14 | 1 (§15) | — |
+| Interrupt | 3 | 2 | — | 1 (§23) |
+| Foundation | 7 | — | — | — |
+| **Total** | **30** | **21** | **1** | **1** |
+
+There is no **Deferred** column any more and no **Not built** one: every entry that was either is
+now shipped, or is a decision with its reason recorded. The one piece of Quickshell work still
+genuinely open is in `_plans/QUICKSHELL_TOOL_RETIREMENT.md`, and it is *removal*, not building.
 
 The 2026-09-03 reading — that the generic list picker (7) and the menu model on it (8) were the
 bulk of the work — held: building the picker on 2026-09-09 closed eight entries in one change,
 because eighteen scripts already spoke dmenu.
 
-**What is left, in full:**
+**The five entries that closed last, in full:**
 
 | # | Surface | State |
 |---|---|---|

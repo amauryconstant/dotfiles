@@ -13,10 +13,10 @@ inside an archive. Phase 6 below is superseded by that file and is stale in one 
 | For | Read |
 |---|---|
 | what the shell is today | `private_dot_config/quickshell/CLAUDE.md` |
-| what is still not built | `_research/QUICKSHELL_SURFACE_INVENTORY.md` (statuses maintained; it also carries the full reading order) |
+| what is still not built | `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (statuses maintained; it also carries the full reading order) |
 | what is still to be removed | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
 | QML syntax, tooling, runtime traps | `.claude/rules/quickshell-qml.md` |
-| the design's own defects and our rulings | `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 |
+| the design's own defects and our rulings | `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 |
 
 **Two things in here are actively misleading if read as current:**
 
@@ -1556,4 +1556,4 @@ the `PAIRS` table cannot express one.
 eligible before roughly 2026-10-01. Plus Phase 2's multi-monitor box, still blocked on the desktop.
 
 **Current answer**: retirement moved to `_plans/QUICKSHELL_TOOL_RETIREMENT.md`; everything not
-built is listed in `_research/QUICKSHELL_SURFACE_INVENTORY.md`'s summary. This section is history.
+built is listed in `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md`'s summary. This section is history.

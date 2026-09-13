@@ -6,9 +6,10 @@ disables subdirectory discovery for every other config, including voxtype's)
 **Gated by**: `features.quickshell_shell` via `.chezmoiignore`
 
 **See**: Root `CLAUDE.md` for core standards
-**See**: `_research/QUICKSHELL_SURFACE_INVENTORY.md` for what exists, what does not, and the
-reading order for every Quickshell document. `_plans/archive/QUICKSHELL_SHELL.md` is the frozen
-build record — history, not a roadmap
+**See**: `private_dot_config/quickshell/CLAUDE.md` for what the shell is today, and
+`_plans/QUICKSHELL_OPEN_WORK.md` + `_plans/QUICKSHELL_TOOL_RETIREMENT.md` for everything still open.
+`_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each of the 30 surfaces is made of) and
+`_plans/archive/QUICKSHELL_SHELL.md` (the build record) are history, not roadmaps
 **See**: `.claude/rules/hyprland-lua.md` — this file is its counterpart
 
 ---
@@ -593,8 +594,8 @@ their own **glyph**, which is what they should always have carried. `signalInfo`
 `Theme.qml` and drawn nowhere. `signalWarn` has exactly one site, and it is not a glyph:
 `MetersWidget` tints its pill's **ground** with it at 18%. That is a different job with a
 different floor — and the number on that tinted ground measures **3.19** at worst
-(solarized-light, the critical band), under the 4.5 text owes. Open, recorded as
-`_research/QUICKSHELL_DESIGN_AUDIT.md` §5.4.4.
+(solarized-light, the critical band), under the 4.5 text owes. **Open, with three candidate fixes
+and no decision**: `_plans/QUICKSHELL_OPEN_WORK.md`.
 
 `labelColor` is split from `iconColor` so the glyph can carry a state while the number it
 annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
@@ -700,7 +701,7 @@ geometry; **03** behaviour. A surface page states only its own departures from t
 number found on a surface page that contradicts a foundation page is a **defect in the
 design**, not a local override. There have been four such, all catalogued.
 
-🚨 **Read `_research/QUICKSHELL_DESIGN_AUDIT.md` Part 5 before implementing anything from a
+🚨 **Read `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 before implementing anything from a
 page.** It records where the fourteen-page set contradicts itself, where its numbers are
 wrong, and which of this tree's departures are deliberate. Parts 1–4 audit the dead nine-file
 set and are kept for their measurements only.

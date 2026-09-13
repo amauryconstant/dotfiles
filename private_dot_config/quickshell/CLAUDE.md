@@ -3,9 +3,13 @@
 **Location**: `private_dot_config/quickshell/dotfiles/` → `~/.config/quickshell/dotfiles/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md`
-**What is left to build**: `_research/QUICKSHELL_SURFACE_INVENTORY.md` (also the reading order for every Quickshell doc)
-**What is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md`
-**How it got here (frozen 2026-09-03, not a roadmap)**: `_plans/archive/QUICKSHELL_SHELL.md`
+**What is still open**: `_plans/QUICKSHELL_OPEN_WORK.md` (one contrast defect, two open questions,
+some optional work) · **what is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md`
+**Nothing is left to build** — the build closed 2026-09-13, 21 of 23 surfaces shipped and the other
+two are recorded refusals
+**History, not roadmaps**: `_plans/archive/QUICKSHELL_SHELL.md` (the build record),
+`_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each surface is made of),
+`_research/archive/QUICKSHELL_DESIGN_AUDIT.md` (every measurement and ruling)
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
@@ -13,7 +17,7 @@
 
 - **Status**: Phases 2, 2.5, 3, 4, 5 and 5.5 complete, then realigned 2026-09-08 against the
   **rewritten fourteen-page design** (`Shell-00-Index` … `Shell-13-Accessibility`; the nine-file
-  set every older note cites no longer exists). Floating bar (40 tall, inset 8, reserving 48),
+  set every older note cites no longer exists). Floating bar (40 tall, inset 4, reserving 44),
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
   Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
   history. **2026-09-10**: the seven bar popovers (page 06). Page 10's *native nested* menu is
@@ -140,11 +144,11 @@ decision; each is also commented at its site. Everything **not** listed here fol
 | **12** the lock returns when "the lock process can be supervised independently of the rest of the shell" | in-shell, recovered rather than isolated | Hyprland's failsafe is **opaque**, so a crashed locker is ugly and never insecure. `Restart=always` plus `allow_session_lock_restore` plus `session-lock-stranded` turns that into ~2s of failsafe and then a prompt, and hyprlock stays as the runtime fallback for a shell that cannot come back at all. A second always-running instance buys isolation the failure mode does not need |
 | **12** the lock draws nothing behind its content | the dimmed wallpaper | The page's own mock is a near-black card, which is also exactly what Hyprland's failsafe renders — so the drawn design makes a crashed locker and a working one look alike. The wallpaper is public, costs one `awww query`, and leaks nothing the page forbids |
 | **12** the lock's failure line in `signal-error` | `fgOnScrim` | Measured on the scrim: 3.87 (latte), 3.84 (gruvbox-light), under the 4.5 text owes. Page 12 requires the colour be "paired with words, never colour alone", so the words carry it. Row in `lint:theme-contrast` |
-| **12** the date drawn at 12px, called "meta" in the prose | `fontMeta` (11) | The prose names the role; page 02 is what fixes what a role is worth. A surface page contradicting a foundation page is a defect in the design |
+| **12** the field at 220x34, the date at the meta step | 360x56, clock `lockClockSize` (72), date `fontDisplay` | **Revised 2026-09-13**, the first time the lock was typed into. The density scale is calibrated for a 40px bar and 340px panels; the lock is the one FULL-SCREEN surface, so page 12's numbers are right against the scale and wrong against the surface. Was `fontMeta` on the same reasoning that page 02 fixes what a role is worth — true, and beside the point when the ground is 1920x1080 |
 | — | dock and overview kept, dormant and untouched | Neither has a page in the new set; both already `false` and declined in daily use |
 
-Rulings, contradictions and every measurement behind these: `_research/QUICKSHELL_DESIGN_AUDIT.md`
-Part 5.
+Rulings, contradictions and every measurement behind these: `_research/archive/QUICKSHELL_DESIGN_AUDIT.md`
+Part 5 (§5.6 is page 12's). Archived 2026-09-13 — still the evidence, no longer a backlog.
 
 ## Layout
 

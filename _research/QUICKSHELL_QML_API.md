@@ -10,7 +10,7 @@
 its names were wrong: no singleton is auto-available, and `StatusNotifier`/`NetworkManager`/
 `PipeWire` do not exist under those names. The corrections below are verified against the
 installed `quickshell 0.3.1` **and** against the shipped bar in
-`private_dot_config/quickshell/dotfiles/`, which is running code. `_plans/QUICKSHELL_SHELL.md`
+`private_dot_config/quickshell/dotfiles/`, which is running code. `_plans/archive/QUICKSHELL_SHELL.md`
 "Verified facts" #1-#4 and #7 record how each was checked.
 
 🚨 **Corrected again 2026-09-03.** The 2026-09-01 pass fixed the prose and left the **code
@@ -621,7 +621,7 @@ A `QML_ELEMENT` you instantiate; it registers as the session's polkit agent.
 
 ### `AuthFlow` (`polkit/flow.hpp`) — one authentication request
 
-| Member | Kind | Maps to the `pf-d` artboard |
+| Member | Kind | Maps to design page 12 |
 |---|---|---|
 | `message` | string | polkit's own reason string, unedited |
 | `actionId` | string | the mono action-id line (`org.freedesktop.systemd1.manage-units`) |
@@ -637,14 +637,16 @@ A `QML_ELEMENT` you instantiate; it registers as the session's polkit agent.
 | `submit(value)` | invokable | `flow.hpp:95` |
 | `cancelAuthenticationRequest()` | invokable | `flow.hpp:97` |
 
-The design's `pf-d` maps onto this almost exactly — including the supplementary error line and
-the action id. The one artboard gap is `identities`: polkit may offer a **choice of user**, and
-`pf-d` assumes a single implicit one.
+**Shipped 2026-09-12** as `quickshell/dotfiles/polkit/PolkitDialog.qml`; the notes below are
+kept because they are API facts, not a plan. The design maps onto this API almost exactly. Its
+one gap is `identities`: polkit may offer a **choice of user**, and the page assumes a single
+implicit one — built here as the real branch, see `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` §5.6e.
+(The `pf-d` artboard this paragraph used to cite died in the 2026-09-08 design rewrite.)
 
-**The real risk is not the API, it is exclusivity**: a polkit session has one agent. Adopting
-this means unregistering `polkit-gnome` (`hypr/conf/autostart.lua:32`), and a crash in the
-Quickshell agent then leaves no agent at all — every privileged action fails until the shell is
-restarted. That, not the D-Bus work, is what the deferral has to weigh.
+**The risk was never the API, it is exclusivity**: a polkit session has one agent. `polkit-gnome`
+no longer starts from `hypr/conf/autostart.*` at all — it moved to `hypr/conf.d/polkit-gnome.{lua,conf}`,
+which `.chezmoiignore` deploys only when `features.quickshell_polkit` is off. A crash in the
+Quickshell agent leaves none, which `Restart=always` answers in ~2s.
 
 ### `PamContext` (`pam/qml.hpp`)
 
@@ -1067,10 +1069,10 @@ ShellRoot {
 
 ---
 
-## Next Steps (for implementation planning)
+## All five "next steps" this doc used to carry are shipped
 
-1. **Theming bridge** — generate a QML `Colors` singleton from `themes/current/colors.sh` on theme switch.
-2. **Component structure** — modular QML (bar, launcher, notifications separately, each reloadable).
-3. **Hyprland IPC depth** — workspace icons, window counts, active indicator patterns.
-4. **Service integration** — wire audio/battery/notifications into the bar.
-5. **Prototype** — build a minimal bar alongside Waybar to validate the pattern.
+Theming bridge (`Theme.qml` parses `colors.sh` at runtime), modular components, Hyprland IPC
+depth, service integration and the prototype-beside-Waybar all landed between 2026-08-31 and
+2026-09-12. The shell is the deployed one; Waybar is the fallback. This document is now a
+**reference only** — what exists is `private_dot_config/quickshell/CLAUDE.md`, what does not is
+`_research/archive/QUICKSHELL_SURFACE_INVENTORY.md`.

@@ -29,7 +29,7 @@ a hibernate tile). Measured, three of the roles this table uses fail the 3:1 gra
 light ground — `@accent-tertiary` 2.60 (rose-pine-dawn), `@accent-alternative` 2.47 (latte),
 `@accent-subtle` 2.34 (latte). Treat the table above as **wlogout's** mapping only; the
 Quickshell power menu is not a port of it. Unresolved — see
-`_research/QUICKSHELL_DESIGN_AUDIT.md` §1.13.
+`_research/archive/QUICKSHELL_DESIGN_AUDIT.md` §1.13.
 
 ## Contrast rule
 
