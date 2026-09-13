@@ -3,11 +3,13 @@
 **Location**: `private_dot_config/quickshell/dotfiles/` → `~/.config/quickshell/dotfiles/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md`
-**What is still open**: `_plans/QUICKSHELL_OPEN_WORK.md` (one contrast defect, two open questions,
-some optional work) · **what is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md`
+**What is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the only open Quickshell plan
 **Nothing is left to build** — the build closed 2026-09-13, 21 of 23 surfaces shipped and the other
-two are recorded refusals
+two are recorded refusals. The three that had shipped THINNER than their entry described (§9
+keybindings, §12 session prompt, §13 colour temperature) were finished the same day, along with
+the meters payload's missing temperature
 **History, not roadmaps**: `_plans/archive/QUICKSHELL_SHELL.md` (the build record),
+`_plans/archive/QUICKSHELL_OPEN_WORK.md` (the contrast rulings and what closing them found),
 `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each surface is made of),
 `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` (every measurement and ruling)
 
@@ -20,7 +22,7 @@ two are recorded refusals
   set every older note cites no longer exists). Floating bar (40 tall, inset 4, reserving 44),
   volume/brightness OSD, launcher, power menu, notification server + centre, and Hyprland on the
   Lua entry point. **2026-09-09**: the shared picker chrome, the dmenu substrate and clipboard
-  history. **2026-09-10**: the seven bar popovers (page 06). Page 10's *native nested* menu is
+  history. **2026-09-10**: the seven bar popovers (page 06), an eighth on 2026-09-13. Page 10's *native nested* menu is
   designed and **not built**. **2026-09-12**: supervision (the shell is a systemd user unit),
   then the two surfaces page 12 had deferred on it — the polkit dialog (§21) and the lock
   screen (§22). Every surface in the fourteen-page design now exists or is a recorded refusal
@@ -100,7 +102,7 @@ two are recorded refusals
 - 🚨 **`PowerMenu.qml` holds the tree's only `hyprctl dispatch`** (log out). Under the Lua config
   provider it must be `hl.dsp.exit()`, never the legacy `exit` — it was the 30th call site the
   cutover audit had missed, because it postdates that inventory
-- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power|notifications|overview|clipboard]`
+- **Toggle**: `desktop/quickshell-toggle [bar|launcher|power|notifications|overview|clipboard|keybindings]`
   — `SUPER+B` (bar), `SUPER+D` (launcher), `SUPER+SHIFT+Q` (power menu), `SUPER+SHIFT+N`
   (notifications), `SUPER+C` (clipboard), `SUPER+grave` (overview). One script for all of them:
   IPC only reaches a *running* instance, so every binding needs the same launch-then-retry dance
@@ -172,6 +174,7 @@ dotfiles/
 ├── lock/
 │   ├── LockScreen.qml     # WlSessionLock, PAM, stranded-lock recovery — draws nothing
 │   └── LockContent.qml    # clock, date, one field, one line (design page 12)
+├── keybindings/KeybindingsSheet.qml  # the keybindings DOCUMENT (surface §9) — not a chooser
 ├── power/PowerMenu.qml    # power / session menu (design page 09)
 ├── dock/Dock.qml          # auto-hiding dock, one PER SCREEN — DORMANT, no page in the current design
 ├── overview/
@@ -181,7 +184,7 @@ dotfiles/
 │   ├── NotificationCard.qml     # THE card — shared by the centre and the popups
 │   ├── NotificationPopups.qml   # toast stack, one window PER SCREEN
 │   └── NotificationCentre.qml   # the 340-wide panel (design page 07)
-├── bar/popovers/*.qml     # the seven payloads — one per bar widget that owns one
+├── bar/popovers/*.qml     # the eight payloads — one per bar widget that owns one
 └── bar/
     ├── BarPopover.qml     # the shared popover chrome: header, body slot, footer, anchoring, grabs
     ├── PopoverRow.qml     # the 34 row shared by every list-shaped payload
@@ -337,7 +340,8 @@ screenshots apart.
 
 ## Popovers (design page 06)
 
-Seven payloads on one chrome: **audio, network, bluetooth, calendar, media, meters, power**,
+Eight payloads on one chrome: **audio, network, bluetooth, calendar, media, meters, power,
+nightlight**,
 each anchored under the bar widget that owns it. They are what removed the last four
 shell-outs from the bar — `pavucontrol`, `nmtui`, `blueman-manager` and `btop` all moved from
 the click to the footer, where the design puts the "escape hatch".
@@ -377,7 +381,7 @@ chrome's is `dismissed`.
 output vanishing takes its bar, its popovers and its coordinator with it. `Bar.togglePopover(id,
 keyboard)` closes whatever is open before opening the next.
 
-**Widgets raise, `Bar` decides.** Each of the seven declares `popoverRequested` and `Bar` relays
+**Widgets raise, `Bar` decides.** Each of the eight declares `popoverRequested` and `Bar` relays
 it — the same shape `LauncherWidget` and `NotificationWidget` already had. `Bar` also binds
 `popoverOpen` back onto the widget, which keeps its chip lit and **suppresses its tooltip**: a
 tooltip hanging over the popover it opened describes the widget twice and covers the payload.
@@ -392,7 +396,7 @@ Departures from page 06, each measured:
 |---|---|---|
 | Slider fill `fill-inert` on a `ground-raised` track — "the one legal use of that tier" | fill `signalFocus` | The pair measures **1.15–1.3** (worst rose-pine-dawn) against page 13's own 3:1 graphic floor. Same ruling the OSD already took; both pairs are lint rows |
 | Thumb hairline `accent-border` | `Theme.edge` | That key was deleted from all 8 colorsets on 2026-09-09 for having no consumer, and page 13 lists it as *compositor decoration measured only so nobody re-adopts it* |
-| Meters payload includes temperature | CPU, memory, uptime | `Meters.qml` records it: a temperature is not a percentage until someone names the hwmon path and the threshold it is a percentage OF |
+| Meters payload includes temperature | CPU, memory, **temperature**, uptime — added 2026-09-13 | The blocker was that a temperature is not a percentage until something names the ceiling. The DRIVER names it: `temp1_crit` (or `temp1_max`) beside `temp1_input`, resolved by matching `name` over coretemp / k10temp / zenpower, because hwmon numbering is not stable across boots and `FileView` cannot glob. 🚨 It does **not** join `Meters.highest` — idle is 52 of a 100 °C ceiling while load and memory sit far below, so it would pin the bar's one number to the thermometer for the session |
 | Power payload includes a profile control | absent | `power-profiles-daemon` is not installed, and `PowerProfiles.profile` answers "Balanced" anyway with no daemon — the row would state a profile that is not real. Page 03: a control that would do nothing is removed |
 | Meter fill takes the warn/error ramp | the band is a **word** (`warn` / `critical`), the fill goes `signalError` only at critical | `signalWarn` is 2.05 in rose-pine-dawn and banned as a graphic here; a band nobody can see is not a band |
 
@@ -402,8 +406,10 @@ Departures from page 06, each measured:
 The calendar's footer carries today's date instead, because it launches nothing.
 
 **Keyboard**: `SUPER+P` enters the `popovers` submap in `hypr/conf.d/quickshell.{lua,conf}`;
-`a n b c m e w` pick audio / network / bluetooth / calendar / media / meters / power, Esc leaves.
-One top-level key rather than seven, and every key goes through
+`a n b c m e w t` pick audio / network / bluetooth / calendar / media / meters / power /
+nightlight, Esc leaves. 🚨 `t` is the reliable route to the night-light popover: the widget it
+anchors to is a MODE INDICATOR and is only on the bar while the filter is on.
+One top-level key rather than eight, and every key goes through
 `quickshell-toggle popover <id>` for the same reason every other binding does: IPC only reaches a
 running instance.
 

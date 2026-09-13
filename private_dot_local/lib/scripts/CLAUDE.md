@@ -93,7 +93,7 @@ fi
   - Pattern: `launch-or-focus dolphin` or `launch-or-focus btop "ghostty -e btop"`
   - Algorithm: Query clients → Match class/title → Focus or launch
 
-- `keybindings` - Keybinding reference (`Super+?`)
+- `keybindings` - Keybinding data (`--json`) and fallback sheet (`Super+/`)
 
 **Display & Monitors**:
 - `monitor-switch` - Switch display configs (uses `notify-send`)

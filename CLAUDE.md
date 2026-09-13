@@ -226,14 +226,13 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 → `private_dot_config/quickshell/CLAUDE.md` — **start here**: what the shell is today, surface by
 surface, and why each departure
 → `.claude/rules/quickshell-qml.md` (QML syntax, tooling, measured runtime traps)
-→ `_plans/QUICKSHELL_OPEN_WORK.md` (one defect, two open questions, some optional work) and
-`_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **between them, everything still open**
+→ `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **the ONLY open Quickshell plan**
 → `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected four times)
 
-🚨 **The build closed on 2026-09-13 and eight of the eleven Quickshell documents are now in
+🚨 **The build closed on 2026-09-13 and nine of the eleven Quickshell documents are now in
 `_research/archive/` or `_plans/archive/`.** They are evidence — measurements, rulings, what each
 surface is made of — not backlogs. Taking a task from one is the standing hazard, which is why the
-two plans above exist.
+retirement plan above is kept separate.
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)

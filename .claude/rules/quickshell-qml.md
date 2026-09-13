@@ -7,9 +7,11 @@ disables subdirectory discovery for every other config, including voxtype's)
 
 **See**: Root `CLAUDE.md` for core standards
 **See**: `private_dot_config/quickshell/CLAUDE.md` for what the shell is today, and
-`_plans/QUICKSHELL_OPEN_WORK.md` + `_plans/QUICKSHELL_TOOL_RETIREMENT.md` for everything still open.
-`_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each of the 30 surfaces is made of) and
-`_plans/archive/QUICKSHELL_SHELL.md` (the build record) are history, not roadmaps
+`_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the removal work, and the only open Quickshell plan.
+`_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each of the 30 surfaces is made of),
+`_plans/archive/QUICKSHELL_SHELL.md` (the build record) and
+`_plans/archive/QUICKSHELL_OPEN_WORK.md` (the contrast rulings, closed the day it was written)
+are history, not roadmaps
 **See**: `.claude/rules/hyprland-lua.md` — this file is its counterpart
 
 ---
@@ -24,7 +26,7 @@ disables subdirectory discovery for every other config, including voxtype's)
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/{BarPopover,PopoverRow,PopoverSlider}.qml` | The popover chrome: header/body/footer + anchoring and grabs, the 34 row every list-shaped payload draws, and the only control taking both drag and wheel |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
-| `dotfiles/bar/popovers/*.qml` | The seven payloads — one per bar widget that owns one |
+| `dotfiles/bar/popovers/*.qml` | The eight payloads — one per bar widget that owns one |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
 | `dotfiles/launcher/PickerSurface.qml` | The chrome the launcher, the menu and the clipboard share. Consumers supply **data**, never a delegate — see below |
 | `dotfiles/launcher/Launcher.qml` | App launcher: ranking, `:` run, `=` calc |
@@ -36,6 +38,7 @@ disables subdirectory discovery for every other config, including voxtype's)
 | `dotfiles/polkit/PolkitDialog.qml` | The polkit authentication dialog. Raised by the **system**: no toggle, no IPC target, visibility is the agent's `isActive` |
 | `dotfiles/lock/LockScreen.qml` | The session lock: `WlSessionLock`, PAM, stranded-lock recovery. Non-visual, behind a `Loader` on `Config.lockOwned` |
 | `dotfiles/lock/LockContent.qml` | What the lock draws, once per output. Clock, date, one field, one line — and deliberately nothing that reads a state |
+| `dotfiles/keybindings/KeybindingsSheet.qml` | The keybindings reference (surface §9) — the one summoned surface that is a DOCUMENT, not a chooser. Fed by `desktop/keybindings --json` |
 | `dotfiles/overview/*.qml` | Workspace carousel and its card. One window, follows the focused monitor |
 
 Only files that genuinely need template data get `.tmpl`. Chassis gating is **one property**
@@ -769,7 +772,7 @@ ground, `fg-muted` is allowed.
 ## IPC
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
-`bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `notifications.toggle()`,
+`bar.toggle()`, `launcher.toggle()`, `power.toggle()`, `keybindings.toggle()`, `notifications.toggle()`,
 `notifications.dnd()`, `clipboard.toggle()`, `overview.toggle()`,
 `popover.toggle(id)`, `lock.lock()`, `lock.isLocked()`, `lock.status()`. List them live with
 `quickshell ipc --pid <pid> show`.

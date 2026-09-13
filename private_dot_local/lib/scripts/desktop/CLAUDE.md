@@ -199,7 +199,9 @@ theme-menu                        # Interactive menu (Quickshell picker)
 - Integration: `Super+E` → dolphin
 - Pattern: `launch-or-focus dolphin` or `launch-or-focus btop "ghostty -e btop"`
 
-**keybindings**: Keybinding reference (`Super+?`)
+**keybindings**: Keybinding data and fallback sheet (`Super+/`). `--json` feeds the shell's
+`keybindings/KeybindingsSheet.qml` document; with no argument it draws its own picker, which is
+what `Super+/` reaches when the shell is down
 
 ---
 
@@ -214,14 +216,15 @@ theme-menu                        # Interactive menu (Quickshell picker)
 
 ## Appearance & Style
 
-**Bar**: `quickshell-toggle` (bar, launcher, power, notifications, clipboard, overview, popovers)
+**Bar**: `quickshell-toggle` (bar, launcher, power, notifications, clipboard, overview, keybindings, popovers)
 — the active shell. `waybar-toggle`, `waybar-style` drive the fallback bar.
 🚨 `quickshell-toggle` **starts `quickshell.service`**, never a bare `quickshell` — a shell
 launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
 because that is exactly the state in which the user has no bar left to ask with
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
-**Night light**: nightlight-toggle, nightlight-config
+**Night light**: nightlight-toggle, nightlight-config (`nightlight-config [KELVIN]` skips the
+picker and stays quiet — that is the path the shell's night-light slider drives)
 **Workspace gaps**: workspace-gaps-toggle, workspace-gaps-reset
 **Idle management**: idle-toggle, idle-toggle-nolock (see "Idle & Lock" below)
 
