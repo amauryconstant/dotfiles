@@ -8,10 +8,10 @@
 
 ## Quick Reference
 
-- **Purpose**: Lazy-loaded script implementations for CLI wrappers
+- **Purpose**: Every user-level script implementation
 - **Target**: `~/.local/lib/scripts/`
 - **Categories**: logical groupings by domain
-- **Integration**: Sourced by `~/.local/bin/executable_*` wrappers
+- **Integration**: each category is in PATH — scripts are called by bare name, no wrapper
 - **Template safety**: Only lib/ scripts can be templates (bin/ static)
 
 ## Directory Structure
@@ -109,10 +109,10 @@ fi
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
   - Reloads terminal, waybar, swaync, wofi
-  - Calls the `theme-apply-*` scripts (below) for extended app coverage
+  - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 
-**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-zellij`. Details for a few:
+**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-zellij`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
 
 - `theme-apply-firefox.sh` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`
@@ -288,35 +288,15 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 
 **See**: `core/CLAUDE.md` for full UI library reference
 
-## CLI Wrapper Integration
+## No CLI wrappers
 
-**Wrapper pattern** (`bin/executable_*`):
-```bash
-#!/usr/bin/env bash
-SCRIPT_PATH="$SCRIPTS_DIR/category/script.sh"
+🚨 **Do not add a `bin/` wrapper for a script here.** Every category directory is in PATH
+(`private_dot_config/zsh/dot_zstyles` `prepath`), so `executable_<name>` is callable as `<name>`
+the moment it is applied. A wrapper that re-execs a script already in PATH only shadows the same
+name from an earlier PATH entry — the last three were removed 2026-09-14.
 
-# Source UI library on demand
-if [ -f "$UI_LIB" ]; then
-    . "$UI_LIB"
-else
-    echo "Error: UI library not found at $UI_LIB" >&2
-    exit 1
-fi
-
-# Execute actual script
-if [ -f "$SCRIPT_PATH" ]; then
-    "$SCRIPT_PATH" "$@"
-else
-    echo "Error: Script not found" >&2
-    exit 1
-fi
-```
-
-**Benefits**:
-- Fast shell startup (no library sourcing)
-- Reduced memory footprint
-- Clean CLI interface
-- Easy discovery via `commands` function
+`bin/` is for overriding a system command (`firefox`) or translating an incompatible CLI
+(`mmdc`). A pure rename is a `symlink_<name>`, not a script. See `../../bin/CLAUDE.md`.
 
 ## Script Standards
 

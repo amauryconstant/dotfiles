@@ -163,7 +163,9 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
 2. Reloads core apps (Hyprland, Waybar, Swaync, Ghostty)
-3. Calls theme-apply scripts (Firefox, Spotify, opencode, claude-code, gtk, qt, neovim, zellij)
+3. Runs every `theme-apply-*` in this directory (glob loop, not an enumerated list — a new apply
+   script wires itself by existing). Each is independent: reads `themes/current`, writes to its
+   own app, reads no other's output, so glob order is fine
 4. Triggers `theme-change` user hook
 5. Updates wallpaper randomly from theme collection
 6. Sends desktop notification

@@ -136,31 +136,14 @@ switch_theme() {
     # Reload applications
     reload_applications
 
-    # Apply theme to additional applications
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-firefox" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-spotify" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-spotify" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-opencode" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-opencode" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-claude-code" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-zellij" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-zellij" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-neovim" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-neovim" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-gtk" 2>/dev/null || true
-    fi
-    if [ -f "$HOME/.local/lib/scripts/desktop/theme-apply-qt" ]; then
-        "$HOME/.local/lib/scripts/desktop/theme-apply-qt" 2>/dev/null || true
-    fi
+    # Apply theme to additional applications. Every theme-apply-* in the
+    # directory runs: each reads ~/.config/themes/current itself and writes to
+    # its own app, so they are independent and order does not matter. A new
+    # apply script wires itself by existing.
+    for apply in "$HOME/.local/lib/scripts/desktop"/theme-apply-*; do
+        [ -x "$apply" ] || continue
+        "$apply" 2>/dev/null || true
+    done
 
     # Call user hook
     if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then
