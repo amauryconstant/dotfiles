@@ -10,7 +10,7 @@
 
 - **Entry point**: `system-menu` (keybinding: `Super+Space`)
 - **Library**: `menu-helpers.sh` (sourced by all menu scripts)
-- **Hook tools**: `dotfiles-hook-create`, `dotfiles-hook-edit`, `dotfiles-hook-list`, `dotfiles-hook-test`
+- **Hook tools**: `hook-create`, `hook-edit`, `hook-list`, `hook-test`
 - **Extra bindings**: `dotfiles-bindings-edit`
 - **UI pattern**: `menu-helpers.sh` (show_menu + notify) — NOT gum-ui
 
@@ -158,10 +158,10 @@ Four tools that use gum-ui (not menu-helpers.sh — these are interactive termin
 
 | Command | Purpose | Output |
 |---------|---------|--------|
-| `dotfiles-hook-create` | Interactive generator → creates executable hook file | `~/.config/dotfiles/hooks/{name}` |
-| `dotfiles-hook-list` | Show all hook points + installed hooks | Terminal (gum table) |
-| `dotfiles-hook-edit` | Open installed hook in `$EDITOR` | Editor launch |
-| `dotfiles-hook-test` | Run hook with default test args | Shows output + exit code |
+| `hook-create` | Interactive generator → creates executable hook file | `~/.config/dotfiles/hooks/{name}` |
+| `hook-list` | Show all hook points + installed hooks | Terminal (gum table) |
+| `hook-edit` | Open installed hook in `$EDITOR` | Editor launch |
+| `hook-test` | Run hook with default test args | Shows output + exit code |
 
 **Hook locations**: `~/.config/dotfiles/hooks/` (chezmoi-managed, always present)
 

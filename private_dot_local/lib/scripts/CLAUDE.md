@@ -23,6 +23,7 @@
 │   ├── hook-runner     # User hook execution engine
 │   └── state-manager.sh # State management library
 ├── desktop/            # Hyprland utilities
+├── ai/                 # Local LLM model management
 ├── media/              # Wallpaper, screenshots
 ├── system/             # Maintenance, health
 ├── terminal/           # CWD preservation
@@ -68,8 +69,8 @@ fi
 | `session-start` | autostart.conf | none | Hyprland session startup |
 
 **Hook discovery**:
-- CLI: `dotfiles-hook-list` (shows available + installed hooks)
-- CLI: `dotfiles-hook-create` (interactive hook template generator)
+- CLI: `hook-list` (shows available + installed hooks)
+- CLI: `hook-create` (interactive hook template generator)
 - CLI: `hook-edit [name]` (edit installed hook in `$EDITOR`)
 - CLI: `hook-test [name]` (run hook with default test args, shows output + exit code)
 - Debug: `HOOK_DEBUG=1 hook-runner <name>` (logs to `~/.local/state/dotfiles/hook.log`)
@@ -195,7 +196,7 @@ fi
 
 **Submenus** (not top-level): `menu-ai` (AI actions), `utilities-menu` (utility launcher), reached from the categories above.
 
-**Hook tooling** (also in `user-interface/`): `hook-create`, `hook-edit`, `hook-list`, `hook-test` (exposed as `dotfiles-hook-*`), `dotfiles-bindings-edit` — see `dotfiles/CLAUDE.md`.
+**Hook tooling** (also in `user-interface/`): `hook-create`, `hook-edit`, `hook-list`, `hook-test`, `dotfiles-bindings-edit` — see `dotfiles/CLAUDE.md`.
 
 **Shared utilities**: `menu-helpers.sh` (common functions)
 - Provides `notify()` wrapper around `notify-send` for consistent notifications
@@ -224,7 +225,8 @@ fi
 | Category | Purpose | Scripts |
 |----------|---------|---------|
 | `core/` | Foundation libraries | `gum-ui.sh`, `hook-runner`, `state-manager.sh` |
-| `terminal/` | Terminal utilities | `regen-zsh-plugins`, `terminal-cwd`, `zellij-sessionizer.tmpl` |
+| `terminal/` | Terminal utilities | `regen-zsh-plugins`, `terminal-cwd`, `zellij-sessionizer.tmpl`, `ghostty-sessionizer.tmpl` |
+| `ai/` | Local LLM tooling | `llama-models` (see `ai/CLAUDE.md`) |
 | `network/` | Network tools | `tailscale.sh`, `network-info`, `vpn-toggle`, `vpn-switch`, `wifi-switch` |
 | `git/` | Git utilities | `prune-branch` |
 | `utils/` | General utilities | `dotfiles-debug`, `firefox-debug-trace`, `reorder-json`, `unzip` |
@@ -253,14 +255,16 @@ fi
 - Example: `executable_package-manager`
 
 **Implementation** (in `lib/`):
-- Pattern: `*.sh` (static) or `*.sh.tmpl` (template)
+- Pattern: `executable_<name>` — **no `.sh` extension** (scripts are in PATH, called by bare name)
 - Category subdirectories
-- Example: `system/package-manager.sh`
+- Example: `system/executable_system-health` → `system-health`
+- Exception: sourced libraries keep `.sh` (`core/gum-ui.sh`, `core/state-manager.sh`, `user-interface/menu-helpers.sh`)
+- Exception: `system/package-manager/` is a **directory** (executable + `commands/`, `core/`, `operations/`, `packages/` modules), not a single script
 
 **Templates**:
 - Only in lib/ subdirectories
-- Use Go template syntax
-- Example: `core/colors.sh.tmpl`
+- Pattern: `executable_<name>.tmpl` → `<name>` (there are no `*.sh.tmpl` scripts in lib/)
+- Example: `desktop/executable_theme-switcher.tmpl`, `terminal/executable_ghostty-sessionizer.tmpl`
 
 ## Gum UI Library Sourcing
 

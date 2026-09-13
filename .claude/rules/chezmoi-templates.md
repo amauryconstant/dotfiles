@@ -40,7 +40,12 @@
 | `log_complete` | "🎉 message" | Script complete |
 
 **Utility Templates**:
-- (Currently none - placeholder for future)
+
+| Template | Used By | Purpose |
+|----------|---------|---------|
+| `hypridle_general` | `hypr/hypridle.conf.tmpl`, `hypr/hypridle-nolock.conf.tmpl` | Shared `general {}` block so the two idle modes cannot drift on safety-critical settings (`before_sleep_cmd`) |
+
+NVIDIA driver selection is **not** a template include — `run_onchange_before_sync_packages.sh.tmpl` inlines the `yq` module toggle directly from `.nvidiaDriverType`.
 
 ---
 

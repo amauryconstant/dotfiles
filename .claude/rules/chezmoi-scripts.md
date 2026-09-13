@@ -99,6 +99,7 @@
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
+| configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |
 

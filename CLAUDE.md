@@ -58,7 +58,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 
 ```
 ~/.local/share/chezmoi/
-├── .claude/rules/          # Cross-cutting documentation (chezmoi-data, scripts, templates)
+├── .claude/rules/          # Cross-cutting docs (chezmoi-data/scripts/templates/modify-entries, hyprland-lua)
 ├── .chezmoidata/           # Template data (packages, colors, globals)
 ├── _guides/                # Operational procedures and setup guides
 ├── _research/              # Technology investigation and decision records
@@ -66,7 +66,10 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── _ai/                    # Vendored upstream sources (git subtree) — API reference, not our code
 ├── .chezmoiscripts/        # Lifecycle scripts (run_once_*, run_onchange_*)
 ├── .chezmoitemplates/      # Reusable includes (log_*)
-├── .scripts/               # Repository utilities (merge-driver)
+├── .scripts/               # Repository utilities (merge-driver, merge-guard)
+├── .mise/                  # Lint/format tasks + pre-commit hook entrypoints
+├── .chezmoiexternal.yaml   # Externally-fetched assets
+├── archives/               # Retired configs (KDE, VSCode) — not deployed
 ├── private_dot_config/     # XDG config (hypr, waybar, wofi, zsh, etc.)
 │   ├── dotfiles/           # Hook system
 │   └── themes/             # Theme system
@@ -95,6 +98,22 @@ chezmoi_modify_manager --help-syntax     # modify_manager directives are non-obv
 
 Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed state. For a clobbered generator: `git checkout HEAD -- <path>`. For merge conflicts see `private_dot_config/git/CLAUDE.md`; for the template merge driver see `.scripts/CLAUDE.md`.
 
+### Lint & Format (mise)
+
+`mise` owns every linter/formatter and installs the pre-commit hook (`[tools]` postinstall).
+
+```bash
+mise run lint       # sh + yaml + lua (+ lua-tmpl) + md
+mise run format     # same set, write mode
+mise run verify     # format, then lint
+mise run lint:hypr-lua   # manual only — needs Hyprland binary + deployed ~/.config/hypr
+mise run chezmoi:orphans # targets orphaned by staged deletions
+```
+
+Scope is deliberately narrow: `lint:md` covers `**/opencode/**` only, `lint:yaml` covers `.chezmoidata/` only. `format:lua` is `*.lua` only — templates are check-only (rendering discards the template actions).
+
+Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellcheck), `lint:chezmoi-sources` (generator marker-loss vs HEAD + `chezmoi cat` render + gitleaks), `lint:lua-staged`, `lint:json-staged`, `lint:yaml-staged`.
+
 ---
 
 ## Documentation Location Map
@@ -122,6 +141,7 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 | `chezmoi-scripts.md` | Lifecycle scripts (run_once_*, run_onchange_*), execution order, script types |
 | `chezmoi-templates.md` | Template system, log templates, Go template syntax, validation |
 | `chezmoi-modify-entries.md` | `modify_*` entries — the two kinds (modify_manager vs native modify-template), merge safety, directive/validation reference |
+| `hyprland-lua.md` | Hyprland Lua config — `hl`/`o` globals, theme/monitor profile patterns, rgba format, stylua + `--verify-config` validation |
 
 ### Repository Utilities
 
@@ -177,6 +197,10 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 
 **Working on lifecycle scripts?**
 → `.claude/rules/chezmoi-scripts.md` (execution order, script types)
+
+**Working on Hyprland Lua config?**
+→ `.claude/rules/hyprland-lua.md` (globals, formatting, validation tasks)
+→ `private_dot_config/hypr/CLAUDE.md` (Hyprland overview)
 
 **Working on themes?**
 → `private_dot_config/themes/CLAUDE.md` (semantic variables, app integration)

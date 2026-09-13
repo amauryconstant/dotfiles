@@ -31,14 +31,17 @@
 │   ├── executable_package-manager    # Complex setup wrapper
 │   ├── executable_ts                 # Tailscale subcommand router
 │   ├── executable_unzip              # Compatibility wrapper (unzip → unar)
-│   └── executable_mmdc               # Mermaid CLI shim (mmdc → mmdr)
+│   ├── executable_mmdc               # Mermaid CLI shim (mmdc → mmdr)
+│   ├── executable_firefox            # NVIDIA egl-wayland2 workaround (shadows /usr/bin/firefox)
+│   └── symlink_firefox-esr           # → executable_firefox
 └── lib/scripts/            # scripts directly in PATH, by category
     ├── core/               # gum-ui.sh, hook-runner, state-manager.sh
+    ├── ai/                 # llama-models
     ├── desktop/            # Hyprland utilities, theme-apply-*
     ├── media/              # screenshot, wallpaper, clipboard-store
     ├── network/            # tailscale, vpn-toggle, wifi-switch
     ├── system/             # maintenance, health, backup, rotate-age-key, rotate-ssh-key
-    ├── terminal/           # regen-zsh-plugins, terminal-cwd, zellij-sessionizer
+    ├── terminal/           # regen-zsh-plugins, terminal-cwd, zellij-sessionizer, ghostty-sessionizer
     ├── user-interface/     # system-menu, menu-*, hook tools
     ├── utils/              # dotfiles-debug, firefox-debug-trace, reorder-json, unzip
     └── git/                # prune-branch
@@ -139,10 +142,10 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 |---------|-----------------|---------|
 | `system-health` | `system/system-health` | Health monitoring |
 | `system-maintenance` | `system/system-maintenance` | System maintenance |
-| `system-troubleshoot` | `system/troubleshoot` | Diagnostic tool |
+| `troubleshoot` | `system/troubleshoot` | Diagnostic tool |
 | `dotfiles-debug` | `utils/dotfiles-debug` | System debug report |
-| `dotfiles-hook-create` | `user-interface/hook-create` | Create hook template |
-| `dotfiles-hook-list` | `user-interface/hook-list` | List hooks |
+| `hook-create` | `user-interface/hook-create` | Create hook template |
+| `hook-list` | `user-interface/hook-list` | List hooks |
 | `regen-zsh-plugins` | `terminal/regen-zsh-plugins` | Zsh plugin bundle |
 | `rotate-ssh-key` | `system/rotate-ssh-key` | SSH key pair rotation |
 | `rotate-age-key` | `system/rotate-age-key` | age master encryption key rotation |
@@ -152,7 +155,7 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 | `launch-or-focus` | `desktop/launch-or-focus` | Single-instance apps |
 | `hypr-session` | `desktop/hypr-session` | Hyprland session management |
 | `prune-branch` | `git/prune-branch` | Branch cleanup |
-| `ts` | `network/tailscale` | Tailscale helper |
+| `ts` | `bin/executable_ts` → `network/tailscale.sh` | Tailscale helper (one of the few real wrappers) |
 
 ## Subdirectories with CLAUDE.md
 
@@ -160,7 +163,15 @@ zstyle ':zephyr:plugin:environment' 'UI_LIB' "$HOME/.local/lib/scripts/core/gum-
 1. `lib/scripts/` - Script library overview, **UI pattern standards by category**
 2. `lib/scripts/core/` - Gum UI library (system scripts only)
 3. `lib/scripts/system/` - System tools (UI library adopters)
-4. `bin/` - CLI wrapper patterns
+4. `lib/scripts/system/package-manager/` - Package manager module internals
+5. `lib/scripts/desktop/` - Hyprland utilities
+6. `lib/scripts/user-interface/` - Menu system + hook tools
+7. `lib/scripts/media/` - Screenshots, wallpaper
+8. `lib/scripts/network/` - Tailscale, VPN, wifi
+9. `lib/scripts/ai/` - Local LLM model management
+10. `bin/` - CLI wrapper patterns
+
+**No CLAUDE.md** (small, self-evident): `git/`, `terminal/`, `utils/`
 
 **Key insight**: UI library primarily used by system CLI tools, not desktop utilities
 

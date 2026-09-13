@@ -14,8 +14,8 @@
 - **Location**: `~/.config/dotfiles/hooks/`
 - **Pattern**: Silent hook execution without modifying core scripts
 - **Hook Points**: theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, menu-extend, idle-change, lock-change, session-start
-- **Discovery**: `dotfiles-hook-list` CLI
-- **Creation**: `dotfiles-hook-create` CLI
+- **Discovery**: `hook-list` CLI
+- **Creation**: `hook-create` CLI
 - **Debug**: `HOOK_DEBUG=1 hook-runner <name> [args]` → logs to `~/.local/state/dotfiles/hook.log`
 
 ---
@@ -101,7 +101,7 @@ esac
 
 ## Authoring hooks
 
-- Discover/scaffold with `dotfiles-hook-list` / `dotfiles-hook-create`; hooks land in `~/.config/dotfiles/hooks/<hook-name>` (chezmoi-tracked, synced across machines).
+- Discover/scaffold with `hook-list` / `hook-create`; hooks land in `~/.config/dotfiles/hooks/<hook-name>` (chezmoi-tracked, synced across machines).
 - A hook is an executable matching the hook name. Must `exit 0` even when skipping (a non-zero exit is swallowed by hook-runner but the convention keeps intent clear), guard on the target app being installed, and stay non-interactive (runs silently). Hooks run **synchronously** after the triggering operation.
 - Example shape — a `theme-change` hook maps `$1` (theme name) to an app's theme and patches its config if that app is installed (`case "$1" in catppuccin-mocha) … esac`).
 
@@ -132,7 +132,7 @@ bindd = SUPER SHIFT, F1, My description, exec, my-script
 ## Integration Points
 
 **Hook runner**: `~/.local/lib/scripts/core/hook-runner`
-**CLI tools**: `dotfiles-hook-list`, `dotfiles-hook-create`, `dotfiles-bindings-edit`
+**CLI tools**: `hook-list`, `hook-create`, `dotfiles-bindings-edit`
 **Core scripts**: See `private_dot_local/lib/scripts/CLAUDE.md`
 **Theme system**: See `themes/CLAUDE.md`
 **Package manager**: See `private_dot_local/lib/scripts/system/CLAUDE.md`
