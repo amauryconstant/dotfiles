@@ -135,6 +135,16 @@ Item {
                             width: 2
                         }
 
+                        // Root-cause fix for focus drifting off the field: any
+                        // loss of active focus while the field is visible and
+                        // enabled reclaims it immediately, instead of relying
+                        // on each caller of claimFocus() to cover every path
+                        // that can steal it.
+                        onActiveFocusChanged: {
+                            if (!password.activeFocus && root.promptVisible && root.inputEnabled)
+                                Qt.callLater(root.claimFocus);
+                        }
+
                         // 🚨 No Keys.onEscapePressed. Page 12: this is "the only
                         // surface with no Esc" — a lock a keystroke can dismiss
                         // is not a lock.
