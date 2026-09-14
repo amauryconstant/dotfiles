@@ -49,6 +49,23 @@ Item {
         color: Qt.alpha(Theme.scrim, Config.lockDimOpacity)
     }
 
+    // 🚨 Every click anywhere on the surface claims the field, because the
+    // field's own hit target is SMALLER than the box the user aims at: the
+    // TextInput is inset by the glyph and two padTight margins, so a click on
+    // the visible rounded rectangle lands on the Rectangle or the Row and does
+    // nothing at all. That is the "click it three times" symptom, and it has
+    // nothing to do with the focus claims below. Omarchy carries the same
+    // catch-all for the same reason (`shell/plugins/lock/LockView.qml`).
+    //
+    // Declared BEFORE the content so it sits UNDER it: the TextInput still
+    // takes its own clicks for caret placement and selection, and a later
+    // sibling would consume them instead.
+    MouseArea {
+        anchors.fill: parent
+
+        onClicked: root.claimFocus()
+    }
+
     // The scrim is dark in all eight colorsets, so a light theme's own inks are
     // simply not on it. Everything here takes fgOnScrim and separates by size
     // and weight instead — the same ruling notification cards took, and the
@@ -115,16 +132,25 @@ Item {
                     TextInput {
                         id: password
 
+                        activeFocusOnPress: true
                         clip: true
                         color: Theme.inkPrimary
                         // No reveal toggle, by design: the only thing it could
                         // reveal is a password on a screen anyone can see.
                         echoMode: TextInput.Password
-                        enabled: root.inputEnabled
                         focus: true
                         font.family: Config.terminalFont
                         font.pixelSize: Config.fontDisplay
                         height: parent.height
+                        // 🚨 readOnly, NOT enabled. A DISABLED QQuickItem drops
+                        // active focus, so binding enabled to inputEnabled threw
+                        // the focus away on every PAM check and the field came
+                        // back dead — one wrong password and the lock stopped
+                        // accepting keys until something happened to re-claim
+                        // it. readOnly blocks editing and keeps the focus, which
+                        // is why Omarchy carries both properties rather than
+                        // gating on enabled alone.
+                        readOnly: !root.inputEnabled
                         selectedTextColor: Theme.inkOnSignal
                         selectionColor: Theme.signalFocus
                         verticalAlignment: TextInput.AlignVCenter
@@ -135,13 +161,14 @@ Item {
                             width: 2
                         }
 
-                        // Root-cause fix for focus drifting off the field: any
-                        // loss of active focus while the field is visible and
-                        // enabled reclaims it immediately, instead of relying
-                        // on each caller of claimFocus() to cover every path
-                        // that can steal it.
+                        // The catch-all: ANY loss of active focus while the
+                        // prompt is up reclaims it, rather than each path that
+                        // can steal focus needing its own claimFocus() caller.
+                        // Deliberately not gated on inputEnabled — a field that
+                        // is merely read-only still has to hold the focus, or
+                        // the keystrokes after a check go nowhere.
                         onActiveFocusChanged: {
-                            if (!password.activeFocus && root.promptVisible && root.inputEnabled)
+                            if (!password.activeFocus && root.promptVisible)
                                 Qt.callLater(root.claimFocus);
                         }
 
