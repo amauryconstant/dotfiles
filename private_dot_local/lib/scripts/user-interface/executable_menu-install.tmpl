@@ -18,8 +18,8 @@ case "$CHOICE" in
         ;;
     "󰏗 Install Package")
         # Interactive package installation
-        if [ -f "$SCRIPTS_DIR/system/package-manager" ]; then
-            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager" install
+        if [ -f "$SCRIPTS_DIR/system/package-manager/package-manager" ]; then
+            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager/package-manager" install
         else
             # Fallback to simple search and install
             # An empty list: the picker answers with the typed text, which is
