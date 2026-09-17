@@ -16,7 +16,8 @@ A complete, automated desktop environment for Arch Linux with dynamic theming, i
 - **Hyprland Compositor**: Wayland-native tiling with modular configuration
 - **Smart Wallpapers**: 30-minute automatic rotation, theme-organized collections
 - **Unified Interface**: Hierarchical menu system (`Super+Space`) for all system functions
-- **Adaptive UI**: 13+ applications auto-theme (desktop: Hyprland, Waybar, Wofi, Dunst, Ghostty; CLI: bat, btop, starship, yazi; plus Firefox, VSCode)
+- **Quickshell Shell**: QML desktop shell — bar, launcher, notifications, power menu, popovers, lock screen
+- **Adaptive UI**: 13+ applications auto-theme (desktop: Hyprland, Quickshell, Ghostty; CLI: bat, btop, starship, yazi, lazygit, broot, zellij; plus Firefox)
 
 ### System Management
 
@@ -98,7 +99,7 @@ package-manager      # Package management
 ```bash
 Super+Space          # Hierarchical menu system
 Super+Return         # Terminal
-Super+D              # App launcher (Wofi)
+Super+D              # App launcher (Quickshell)
 Print                # Screenshot + annotation (Satty)
 random-wallpaper     # Change wallpaper + theme
 ```
@@ -118,7 +119,7 @@ commands | grep <term>      # Search commands
 |-----|----------|-------------|
 | `Super+N` | Nightlight | Blue light filter (6000K ↔ 4000K) |
 | `Super+I` | Idle inhibit | Presentation mode (disable lock) |
-| `Super+B` | Waybar | Show/hide status bar |
+| `Super+B` | Status bar | Show/hide Quickshell bar |
 | `Super+G` | Gaps | Toggle gaps/borders (immersive mode) |
 | `Super+A` | Audio output | Cycle available outputs |
 
