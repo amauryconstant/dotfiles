@@ -1,13 +1,15 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-08-30 (through v4.0.1).
+Last updated: 2026-09-17 (through v4.0.4).
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
 
 > **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself is out of scope (we use Waybar + Wofi + hyprlock/hypridle), but three sub-currents are directly relevant to us: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
 >
 > **v4.0.1 context**: A security-focused patch backporting fixes from the post-Quattro `quattro` branch — four CVE-class fixes (FIDO2 authfile symlink/ownership, USB/monitor device names executed as Hyprland Lua, theme-install code execution, video-title command forging) plus hardening, and one default-behavior reversal: **sudoless Docker group membership is no longer granted automatically**, because it is root-equivalent. Our `services.yaml` still grants it unconditionally — tracked as new P1 below. The device-name-as-Lua fix also lands directly on two of our own *not-yet-implemented* backlog items (touchpad toggle, clamshell handling) that were adapted from the exact scripts that had the bug.
+>
+> **v4.0.4 context**: A kernel-packaging release — Omarchy replaces the stock Arch `linux` kernel with its own `linux-omarchy` package, retires the Dell XPS Panther Lake `linux-ptl` special case, and rewrites Limine's `BOOT_ORDER`. All of that is Omarchy/OPR/Limine scope and skipped. The one transferable current is the *second* change: **matching kernel headers for the running kernel become a base-system guarantee**, stripped out of every individual DKMS installer, backed by a new `verify_kernel_headers` acceptance check. Both halves land on us — our `linux-headers` sit inside the disabled `graphics_drivers_legacy` module (P3), and we have no running-kernel/reboot-required signal at all, a gap confirmed live on this machine (P2).
 
 ---
 
@@ -116,6 +118,21 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 ---
 
 ## P2 — Medium Priority
+
+### Running-kernel modules / DKMS header mismatch check (v4.0.4)
+
+**What**: Omarchy added an acceptance check asserting that `/usr/lib/modules/$(uname -r)/pkgbase` names the supported kernel, that `<kernel>-headers` is installed, and that `.../build/include/config/kernel.release` equals the running release. What it really catches is the state where a kernel upgrade has landed but the machine has not rebooted — DKMS then builds against a kernel that is not running, and module loads fail.
+**Confirmed live here (2026-09-17)**: `linux` is `7.2.6.arch2-1` while `uname -r` reports `7.2.4-arch1-2`, and `/usr/lib/modules/7.2.4-arch1-2/` no longer exists — the upgrade deleted it. Any module not already resident cannot load until reboot. Nothing in the repo surfaces this: `system-health --check` covers disk, failed user units and load average only, and no reboot-required signal exists anywhere in `lib/scripts/` or Waybar.
+**Target files**: `private_dot_local/lib/scripts/system/executable_system-health`
+**Effort**: Low
+**Adapt from**: `test/acceptance.d/system-test.sh` → `verify_kernel_headers`
+
+- [ ] Add to the `--check` branch: `notify-send` when `/usr/lib/modules/$(uname -r)` is missing or its `pkgbase` package version no longer matches the running release (kernel upgraded, reboot pending)
+- [ ] Add the same as a `--brief` line (running vs installed kernel), so it is visible on demand and not only from the timer
+- [ ] Assert `<kernel>-headers` + `build/include/config/kernel.release` **only when `dkms` is installed** — headers are deliberately absent on the pre-built `nvidia-open` path (see the P3 item below), so an unconditional assertion would fire permanently
+- [ ] Keep it advisory: never block, never auto-reboot — `--check` runs unattended from `system-health-check.timer`
+
+---
 
 ### NVIDIA GPU detection via sysfs instead of lspci (v4.0.0)
 
@@ -292,6 +309,18 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 ---
 
 ## P3 — Low Priority / Evaluate
+
+### Kernel headers owned by `base`, not by the NVIDIA legacy module (v4.0.4)
+
+**What**: Omarchy made matching kernel headers a base-system guarantee and stripped `linux-headers` from every individual DKMS installer (`omarchy-pkg-add linux-headers <driver>` → `omarchy-pkg-add <driver>`), so DKMS scripts install only their driver. Our `packages.yaml` has the inverse coupling: `dkms`, `linux-headers` and `linux-lts-headers` live **only** inside `graphics_drivers_legacy` (`enabled: false` here), while `base` carries `linux` + `linux-lts`. On the modern `nvidia-open` (pre-built) path none of the three are installed — verified: `pacman -Q dkms linux-headers linux-lts-headers` all report "not found" — and `package-manager sync --prune` would remove them if they ever appeared. Correct today and a real disk saving, but it means the first DKMS package added for any *other* reason (`v4l2loopback` for a virtual camera, `ddcci-dkms`, VirtualBox) fails to build with no obvious cause.
+**Target files**: `.chezmoidata/packages.yaml`
+**Effort**: Low
+
+- [ ] Decide the policy explicitly: keep headers driver-coupled (status quo, saves disk) or promote `dkms` + `linux-headers` + `linux-lts-headers` into `base` so any future DKMS package builds unattended
+- [ ] If any non-NVIDIA DKMS package is ever added, move the three into `base` in that same change rather than duplicating them into a second module
+- [ ] Keep `linux-lts-headers` paired with `linux-lts` either way — both kernels are installed, so a single-kernel header set would silently skip module builds for the fallback kernel
+
+---
 
 ### Apps launched in their own systemd scopes with oomd (v4.0.0)
 
@@ -779,6 +808,13 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ## Skipped / Out of Scope
 
+### v4.0.4 — kernel packaging
+
+- [SKIPPED] **`linux-omarchy` kernel replacing stock `linux`** (v4.0.4) — Omarchy's own kernel package; we run stock `linux` + `linux-lts` from `[core]`, booted via systemd-ukify. The migration (`1789325478.sh`), its machine-wide marker under `/var/lib/omarchy/migrations/`, the `OMARCHY_KERNEL_REBUILD_MARKER` override and the explicit `reboot-required` flag are all Omarchy migration machinery, on top of an OPR-only package
+- [SKIPPED] **Header-repair migration `1789444024.sh`** (v4.0.4) — installs `<kernel>-headers` for whichever of `linux-omarchy`/`linux-t2` is present; both kernels are out of scope, and the underlying *idea* (base system guarantees headers) is tracked as the P3 item above
+- [SKIPPED] **Omarchy shell/acceptance test additions** (v4.0.4) — `omarchy-kernel-migration-test.sh`, `kernel-headers-migration-test.sh`, `limine-defaults-test.sh`, stubbing `pacman`/`sudo`/`limine-mkinitcpio`/`limine-entry-tool`/`omarchy-state`. The one portable *assertion* (`verify_kernel_headers`) is tracked as the P2 health check above
+- [SKIPPED] **`agents/skills/install-scripts.md` rule** (v4.0.4) — Omarchy agent documentation governing its own install scripts
+
 ### v4.0.1 — security patch backports
 
 - [SKIPPED] **FIDO2 authfile symlink/ownership fix** (v4.0.1) — no FIDO2 setup in this repo (`omarchy-setup-security-fido2` has no equivalent here); nothing to patch
@@ -857,7 +893,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [SKIPPED] **`omarchy-launch-browser`/`omarchy-launch-webapp`** (v2.0.0) — Omarchy-specific launcher scripts
 - [SKIPPED] **Chaotic-AUR** (v1.6.2) — already in packages.yaml; keep/remove decision is independent
 - [SKIPPED] **`omarchy-menu` / Walker menu system** (v1.11.0+) — Walker-specific; covered by our Wofi system-menu on `Super+Space`
-- [SKIPPED] **T1/T2 MacBook support** (v3.0.0, v4.0.0) — not applicable hardware
+- [SKIPPED] **T1/T2 MacBook support** (v3.0.0, v4.0.0, v4.0.4) — not applicable hardware; v4.0.4 exempts T2 Macs from the `linux-omarchy` kernel swap and keeps `linux-t2`
 - [SKIPPED] **Omarchy Chromium fork** (v2.0.0) — uses upstream Chromium
 - [SKIPPED] **`~/.config/omarchy/extensions/menu.sh`** (v3.3.0, v3.4.0) — Omarchy-specific extension point
 - [SKIPPED] **Hyprland tiling group keybindings** (v3.1.0) — `Super+G` stays as gap toggle; group navigate covered by `Super+Ctrl+H/L`
@@ -890,9 +926,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [SKIPPED] **Copilot key remapping via makima** (v3.4.2, v3.5.0, v3.5.1) — hardware-specific; makima removed entirely in v3.5.1
 - [SKIPPED] **`Super+Shift+Return` browser shortcut** (v3.4.2) — we already have `Super+W` for browser
 - [SKIPPED] **`plocate` AC-only indexing** (v3.4.2) — `plocate` not in our packages
-- [SKIPPED] **Intel Panther Lake/Arc/PTL GPU fixes, thermald, intel-lpmd, media driver/VPL** (v3.4.2–v3.8.0) — Intel-specific, NVIDIA setup here
+- [SKIPPED] **Intel Panther Lake/Arc/PTL GPU fixes, thermald, intel-lpmd, media driver/VPL** (v3.4.2–v3.8.0, v4.0.4) — Intel-specific, NVIDIA setup here; v4.0.4 retires the `linux-ptl` kernel and its `zz-dell-xps-panther-lake.conf` Limine drop-in, closing the special case entirely
 - [SKIPPED] **`wayfreeze-git` migration cleanup** (v3.4.2) — `wayfreeze-git` still in our packages (intentional)
-- [SKIPPED] **Limine bootloader cmdline / Direct Boot** (v3.4.2–v3.7.1, v4.0.0) — not using Limine
+- [SKIPPED] **Limine bootloader cmdline / Direct Boot** (v3.4.2–v3.7.1, v4.0.0, v4.0.4) — not using Limine; v4.0.4's `BOOT_ORDER` rewrite in `/etc/default/limine` + `omarchy-defaults.conf` has no analogue under systemd-ukify
 - [SKIPPED] **LM Studio downgrade fix** (v3.4.2) — LM Studio not in our packages
 - [SKIPPED] **wireless-regdb** (v2.1.1) — no 6GHz hardware detected
 - [SKIPPED] **impala TUI** — depends directly on the `iwd` binary, incompatible with our NM+iwd backend setup; v4.0.0 removes it upstream too
@@ -1000,3 +1036,4 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 | v3.8.4 | `_research/omarchy/OMARCHY_v3.8.4.md` | 2026-08-24 |
 | v4.0.0 | `_research/omarchy/OMARCHY_v4.0.0.md` | 2026-08-24 |
 | v4.0.1 | `_research/omarchy/OMARCHY_v4.0.1.md` | 2026-08-30 |
+| v4.0.4 | `_research/omarchy/OMARCHY_v4.0.4.md` | 2026-09-17 |
