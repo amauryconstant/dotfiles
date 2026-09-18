@@ -19,11 +19,11 @@ prettier = "latest"
 "npm:playwright" = { version = "latest", postinstall = "playwright install" }
 
 # AI Tools
-herdr = "latest"
+"herdr" = "latest"
 "claude-code" = "latest"
-"npm:opencode-ai" = "latest"
+"opencode" = "latest"
 "npm:@fission-ai/openspec" = "latest"
-"github:AlexsJones/llmfit" = "latest"
+"llmfit" = "latest"
 "github:arimxyer/models" = "latest"
 "pipx:claude-monitor" = "latest"
 "npm:ccusage" = "latest"
@@ -33,7 +33,6 @@ herdr = "latest"
 "pipx:posting" = "latest"
 awscli = "latest"
 "github:abhixdd/ghgrab" = "latest"
-
 
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"
