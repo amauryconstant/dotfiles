@@ -21,6 +21,11 @@
   "type" "local"
   "command" (list "docker" "run" "-i" "--rm" "mcp/fetch")
 ) -}}
+{{- $_ := set $mcp "caveman" (dict
+  "type" "local"
+  "command" (list (joinPath .chezmoi.homeDir ".caveman" "bin" "caveman-mcp"))
+  "enabled" true
+) -}}
 {{- $_ := set $config "mcp" $mcp -}}
 
 {{- /* Tool Toggles */ -}}
@@ -35,7 +40,7 @@
 {{- $_ := set $config "permission" (dict "skill" $skills) -}}
 
 {{- /* Plugins */ -}}
-{{- $plugins := list "secret-cloak" -}}
+{{- $plugins := list "secret-cloak" "./plugins/caveman/plugin.js" -}}
 {{- $_ := set $config "plugin" $plugins -}}
 
 {{- /* Runtime-managed: "theme" - managed by theme-apply-opencode.sh */ -}}
