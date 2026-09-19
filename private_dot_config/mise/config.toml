@@ -28,6 +28,7 @@ prettier = "latest"
 "pipx:claude-monitor" = "latest"
 "npm:ccusage" = "latest"
 "npm:@caveman-ai/cli" = { version = "latest", postinstall = "caveman setup --install; command -v opencode >/dev/null 2>&1 && caveman enable opencode || true" }
+"aqua:runkids/skillshare" = "latest"
 
 # CLIs
 "github:1jehuang/mermaid-rs-renderer" = "latest"
