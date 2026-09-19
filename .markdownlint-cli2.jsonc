@@ -1,7 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint-cli2/v0.22.0/schema/markdownlint-cli2-config-schema.json",
   "gitignore": true,
-  "ignores": [".opencode/", "_ai/"],
+  "ignores": [
+    ".opencode/",
+    "_ai/",
+    "**/private_agents/**",
+    "**/private_plugins/**",
+    "**/commands/private_caveman*.md",
+    "**/skills/private_caveman*/**",
+    "**/skills/private_cavecrew/**"
+  ],
   "showFound": false,
   "fix": true
 }
