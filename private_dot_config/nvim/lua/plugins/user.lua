@@ -1,26 +1,12 @@
 ---@type LazySpec
 return {
-  -- Seamless navigation between Neovim splits and Zellij panes (Ctrl+h/j/k/l)
-  -- At Neovim's edge, automatically crosses into the adjacent Zellij pane
-  {
-    "swaits/zellij-nav.nvim",
-    lazy = true,
-    event = "VeryLazy",
-    keys = {
-      { "<c-h>", "<cmd>ZellijNavigateLeft<cr>", silent = true, desc = "Navigate left (Nvim/Zellij)" },
-      { "<c-j>", "<cmd>ZellijNavigateDown<cr>", silent = true, desc = "Navigate down (Nvim/Zellij)" },
-      { "<c-k>", "<cmd>ZellijNavigateUp<cr>", silent = true, desc = "Navigate up (Nvim/Zellij)" },
-      { "<c-l>", "<cmd>ZellijNavigateRight<cr>", silent = true, desc = "Navigate right (Nvim/Zellij)" },
-    },
-    opts = {},
-  },
-  -- Inline image rendering. Kitty graphics protocol outside Zellij; sixel
-  -- inside Zellij (awaiting Ghostty 1.4+ sixel support for full rendering).
+  -- Inline image rendering via the Kitty graphics protocol, which Ghostty
+  -- implements. Sixel is not an option: Ghostty will never support it.
   {
     "3rd/image.nvim",
     lazy = false,
     opts = {
-      backend = vim.env.ZELLIJ ~= nil and "sixel" or "kitty",
+      backend = "kitty",
       integrations = {},
       max_width_window_percentage = 50,
       window_overlap_clear_enabled = true,

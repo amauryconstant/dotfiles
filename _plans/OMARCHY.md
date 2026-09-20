@@ -3,7 +3,7 @@
 Living actionable backlog. Updated by `/omarchy-changes`.
 Last updated: 2026-09-17 (through v4.0.4).
 
-**Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope
+**Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope · `[REOPENED]` was skipped, premise no longer holds
 
 > **v4.0.0 context**: Omarchy "Quattro" replaced its entire desktop shell (Waybar, Walker, Mako, SwayOSD, hyprlock, hypridle, swaybg, polkit-gnome) with a single Quickshell process, converted all Hyprland config to Lua, rewrote the theme schema from ANSI-indexed to 24-key semantic, and moved its internals from a git checkout into Arch packages. The shell replacement itself is out of scope (we use Waybar + Wofi + hyprlock/hypridle), but three sub-currents are directly relevant to us: **Hyprland Lua config for 0.56**, **the semantic colorset + template-rendered app themes**, and a batch of **script-level bug fixes that also exist verbatim in our ported scripts**.
 >
@@ -800,7 +800,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [x] **Screen recording with audio** (v2.1.1) — `ALT+SHIFT+Print` and `CTRL+ALT+SHIFT+Print` added to `screenshots.conf` *(done 2026-03-05)*
 - [x] **`eff` + `ff` aliases** (v3.4.0) — Added to `aliases.zsh` *(done 2026-03-05)*
 - [x] **SSH port forwarding `fip`/`dip`/`lip`** (v3.4.0) — Added to `ssh-port-forwarding.zsh` (`dip` = disconnect, not dynamic) *(done 2026-03-05)*
-- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added *(done 2026-03-05)* — **superseded**: replaced by zellij
+- [x] **Tmux integration** (v3.4.0) — Package added, `tmux.conf` created, `t` alias + `tdl`/`tdlm`/`tsl` functions added *(done 2026-03-05)* — **superseded twice**: replaced by zellij, then by native Ghostty splits + Neovim (2026-09-21)
 - [x] **Waybar idle-lock indicator** (v3.4.0) — `idle-indicator` script + Waybar module + CSS; DND already covered by `custom/swaync` *(done 2026-03-05)*
 - [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
 
@@ -840,8 +840,8 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 - [SKIPPED] **Menu extensions as JSONC (`omarchy-menu.jsonc`)** (v4.0.0) — replaces the removed `menu.sh`; both are Omarchy menu extension points
 - [SKIPPED] **Deferred first-boot provisioning, LUKS re-keying, factory reset, dual-boot install** (v4.0.0) — installer/ISO scope
 - [SKIPPED] **`foot` as default terminal** (v3.8.0, v4.0.0) — Ghostty is primary, Kitty is the baseline; no third terminal. Alacritty likewise skipped
-- [SKIPPED] **`herdr` multiplexer** (v4.0.0) — we use zellij; `hdl`/`hds`/`hdlm`/`hsl` helpers and its keybindings viewer are herdr-specific
-- [SKIPPED] **tmux pane bindings, window titles, extkeys, tab moves, zoom flag** (v3.8.3, v4.0.0) — using zellij, not tmux
+- [REOPENED] **`herdr` multiplexer** (v4.0.0) — **reopened 2026-09-21**: skipped originally because we used zellij, and zellij is now removed. Evaluated at source level in `_research/TERMINAL_AGENT_RUNTIME.md` as an agent-pane layer (it vendors `libghostty-vt`, so it does not compete with Ghostty). Its `hdl`/`hds`/`hdlm`/`hsl` helpers and keybindings viewer are herdr-specific and would only follow adoption
+- [SKIPPED] **tmux pane bindings, window titles, extkeys, tab moves, zoom flag** (v3.8.3, v4.0.0) — no multiplexer; panes are native Ghostty splits + Neovim
 - [SKIPPED] **Omawrite / Omacalc / Omacut / Tensaku / `ttfx`** (v4.0.0) — Omarchy first-party apps replacing Typora, GNOME Calculator, Satty and terminaltexteffects. Tensaku and the Omacut *trim* concept are tracked separately in P3; the rest are out of scope
 - [SKIPPED] **Chromium extensions (yt-dlp download, WhatsApp slim, Google Meet PiP)** (v4.0.0) — Firefox is the primary browser
 - [SKIPPED] **Moonlight / Sunshine streaming client** (v4.0.0) — gaming scope

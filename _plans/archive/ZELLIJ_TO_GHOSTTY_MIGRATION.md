@@ -1,5 +1,27 @@
 # Zellij → Ghostty Migration (Deferred Steps)
 
+**Status**: ✅ COMPLETE — Phase 4 executed 2026-09-21. **Archived**: 2026-09-21.
+
+Zellij is gone: config, layouts, themes, completions, `zdl`/`zj`, the
+`zellij-sessionizer` launcher and the package itself. `Super+O` now opens
+`ghostty-sessionizer`; splits are native Ghostty, the secondary pane lives in
+Neovim.
+
+**Phase 3 was dropped, not done.** `smart-splits.nvim` turned out to be
+unnecessary — AstroNvim already maps `<C-H/J/K/L>` to `<C-w>hjkl`, and Ghostty
+splits navigate on `ctrl+alt+arrows`, so the two keysets never collide.
+`zellij-nav.nvim` was deleted and nothing replaced it. Revisit only if
+nvim-edge → Ghostty-split crossing is wanted.
+
+**🚨 Still open — the session-persistence gap.** This plan's own "What is lost at
+cutover" correction below stands, and the cutover did **not** resolve it. There
+is now no session persistence on Linux at all: a closed window kills whatever ran
+in it, including unattended coding agents. Accepted knowingly; the replacement is
+an open question tracked in `_research/TERMINAL_AGENT_RUNTIME.md` (herdr, or a
+remote host) and reopened in `_plans/OMARCHY.md`.
+
+---
+
 Backlog for finishing the zellij → native-Ghostty migration. **Gated: do not
 execute until the user is certain they want to drop zellij.** The coexistence
 trial (Phase 1–2) is already live; this doc holds the destructive Phase 3–4 that

@@ -39,7 +39,7 @@
     ├── media/              # screenshot, wallpaper, clipboard-store
     ├── network/            # tailscale, vpn-toggle, wifi-switch
     ├── system/             # maintenance, health, backup, rotate-age-key, rotate-ssh-key
-    ├── terminal/           # regen-zsh-plugins, terminal-cwd, zellij-sessionizer, ghostty-sessionizer
+    ├── terminal/           # regen-zsh-plugins, terminal-cwd, ghostty-sessionizer
     ├── user-interface/     # system-menu, menu-*, hook tools
     ├── utils/              # dotfiles-debug, firefox-debug-trace, reorder-json, unzip
     └── git/                # prune-branch

@@ -37,6 +37,6 @@ done
 echo ""
 echo "Not checked here (name-agnostic, no registration needed):"
 echo "  theme-apply-opencode (light/dark via *latte*|*light*|*dawn* glob, not exact-name),"
-echo "  theme-apply-firefox, theme-apply-neovim, theme-apply-zellij (file-presence/symlink based, no theme-name branching)"
+echo "  theme-apply-firefox, theme-apply-neovim (file-presence/symlink based, no theme-name branching)"
 
 exit $status

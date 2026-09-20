@@ -23,7 +23,7 @@ cp -r private_dot_config/themes/<base>/ private_dot_config/themes/<new-name>/
 bash scripts/check-theme-files.sh <new-name>
 ```
 
-Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardcoded list — `themes/CLAUDE.md`'s documented file set has already drifted from reality once (`zellij.kdl` and `wallpapers/README.md` exist in every theme dir but aren't in the doc's list), so a real directory is the only trustworthy source of truth. Right after a `cp -r` this should report a clean match; re-run after any file additions/removals.
+Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardcoded list — `themes/CLAUDE.md`'s documented file set has drifted from reality before, so a real directory is the only trustworthy source of truth. Right after a `cp -r` this should report a clean match; re-run after any file additions/removals.
 
 ## Step 3: Recolor semantic variables
 
@@ -62,7 +62,7 @@ Five scripts hardcode exact theme names in `case` arms and will silently no-op (
 bash scripts/check-registrations.sh <new-name>
 ```
 
-Reports ✅/❌ per file across: `theme-apply-gtk`, `theme-apply-claude-code`, `theme-apply-spotify`, `theme-apply-qt` (all `case "$THEME_NAME" in ...`), `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark`-suffixed pairs may already resolve generically, check the script's own logic), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap dir creation only). `theme-apply-opencode`, `-firefox`, `-neovim`, `-zellij` are name-agnostic and need no change.
+Reports ✅/❌ per file across: `theme-apply-gtk`, `theme-apply-claude-code`, `theme-apply-spotify`, `theme-apply-qt` (all `case "$THEME_NAME" in ...`), `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark`-suffixed pairs may already resolve generically, check the script's own logic), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap dir creation only). `theme-apply-opencode`, `-firefox`, `-neovim` are name-agnostic and need no change.
 
 ## Step 8: Validate
 

@@ -5,7 +5,7 @@
 **Purpose**: Decide what owns the terminal layer and what owns the agent layer, now that coding agents changed the requirement the 2026 Ghostty migration was planned against.
 **Status**: Research complete. No integration performed. Decision pending.
 
-**See**: `_plans/ZELLIJ_TO_GHOSTTY_MIGRATION.md` (the plan this amends) · `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy"
+**See**: `_plans/archive/ZELLIJ_TO_GHOSTTY_MIGRATION.md` (the plan this amends) · `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy"
 
 ---
 
@@ -31,7 +31,7 @@ They are not interchangeable, and the third is not a multiplexer in the sense th
 | Herdr's advantage is persistence | **False.** Its persistence is comparable to Zellij's for the case that matters. |
 | Herdr's advantage is agent state detection | **True**, and it is the only driver that survives scrutiny. |
 | Detection is a protocol integration | **False.** It is screen-scraping of rendered TUI chrome, updated over the network. |
-| `_plans/ZELLIJ_TO_GHOSTTY_MIGRATION.md:88` "detach/reattach — unused" | **False.** `zellij a <session>` was in use. The plan records an incorrect premise. |
+| `_plans/archive/ZELLIJ_TO_GHOSTTY_MIGRATION.md` → "What is lost at cutover": "detach/reattach — unused" | **False.** `zellij a <session>` was in use. The plan records an incorrect premise. |
 
 ---
 

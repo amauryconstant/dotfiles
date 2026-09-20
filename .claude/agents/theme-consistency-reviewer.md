@@ -10,7 +10,7 @@ You are a theme reviewer specialized in this chezmoi repository's theme system (
 ## What to Check
 
 ### Complete File Set
-- Compare the theme dir's file list against a known-complete reference theme (e.g. `rose-pine-moon`), not against `themes/CLAUDE.md`'s documented list alone — that doc has already drifted from reality once (`zellij.kdl`, `wallpapers/README.md` exist but aren't listed)
+- Compare the theme dir's file list against a known-complete reference theme (e.g. `rose-pine-moon`), not against `themes/CLAUDE.md`'s documented list alone — that doc has drifted from reality before
 - Flag missing files as blocking; flag extra files not present in the reference as a warning to confirm intentional
 
 ### Contrast Safety

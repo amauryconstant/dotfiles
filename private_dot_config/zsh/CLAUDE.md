@@ -59,8 +59,6 @@ Auto-sourced in `dot_zshrc` (alphabetical order, ignores `~*` files):
 | `chezmoi-aliases.zsh`     | Chezmoi shortcuts (cmapply, cmedit, cmadd, etc.)        |
 | `dot-expansion-fix.zsh`   | Compatibility shim for Zephyr dot-expansion ZLE widget  |
 | `ssh-port-forwarding.zsh` | SSH port-forward helpers                                |
-| `zellij-completions.zsh`  | Zellij completion wiring                                |
-| `zellij-layouts.zsh.tmpl` | Zellij layout helpers (templated)                       |
 
 **Adding snippets**: Drop `*.zsh` file in `dot_zshrc.d/` — auto-sourced next shell.
 

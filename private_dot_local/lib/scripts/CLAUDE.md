@@ -112,7 +112,7 @@ fi
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 
-**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-zellij`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
+**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
 
 - `theme-apply-firefox.sh` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`
@@ -225,7 +225,7 @@ fi
 | Category | Purpose | Scripts |
 |----------|---------|---------|
 | `core/` | Foundation libraries | `gum-ui.sh`, `hook-runner`, `state-manager.sh` |
-| `terminal/` | Terminal utilities | `regen-zsh-plugins`, `terminal-cwd`, `zellij-sessionizer.tmpl`, `ghostty-sessionizer.tmpl` |
+| `terminal/` | Terminal utilities | `regen-zsh-plugins`, `terminal-cwd`, `ghostty-sessionizer.tmpl` |
 | `ai/` | Local LLM tooling | `llama-models` (see `ai/CLAUDE.md`) |
 | `network/` | Network tools | `tailscale.sh`, `network-info`, `vpn-toggle`, `vpn-switch`, `wifi-switch` |
 | `git/` | Git utilities | `prune-branch` |

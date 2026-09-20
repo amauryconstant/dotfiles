@@ -13,8 +13,7 @@
 | `SUPER+D` | Application launcher (Wofi drun) |
 | `SUPER+E` | File manager (Thunar, launch-or-focus) |
 | `SUPER+W` | Web browser (Firefox) |
-| `SUPER+O` | Neovim session picker (Ghostty + Zellij) |
-| `SUPER+SHIFT+O` | Neovim workspace picker (Ghostty-native, no Zellij) |
+| `SUPER+O` | Neovim workspace picker (Ghostty) |
 | `SUPER+C` | Clipboard history |
 | `SUPER+SHIFT+C` | Delete from clipboard history |
 

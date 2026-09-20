@@ -3,9 +3,9 @@
 #
 # Diffs a theme dir's file list against a reference theme dir, rather than a
 # hardcoded list — private_dot_config/themes/CLAUDE.md's documented file set
-# has already drifted from reality once (zellij.kdl and wallpapers/README.md
-# exist in every theme dir but aren't in the doc's list), so a live reference
-# theme is the only trustworthy source of truth.
+# has drifted from reality before (it listed zellij.kdl for months after the
+# file was removed), so a live reference theme is the only trustworthy source
+# of truth.
 set -euo pipefail
 
 theme="${1:?usage: check-theme-files.sh <theme-name> [reference-theme]}"

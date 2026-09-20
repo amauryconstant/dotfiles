@@ -1,6 +1,0 @@
-#!/usr/bin/env sh
-# Script: theme-apply-zellij
-# Purpose: Symlink Zellij theme from current theme to zellij themes dir
-
-mkdir -p "$HOME/.config/zellij/themes"
-ln -sf "$HOME/.config/themes/current/zellij.kdl" "$HOME/.config/zellij/themes/default.kdl"

@@ -23,7 +23,7 @@
 
 **Per-theme files** (each theme dir is a complete set):
 - **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`, `dunst.conf` (vestigial — no dunst installed; safe to ignore)
-- **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `zellij.kdl`, `opencode.json`
+- **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` (uppercase var mirror, sourced by gum-ui — see Shell Script Integration below)
 - **Docs**: `STYLE-GUIDE.md`
 
@@ -276,7 +276,7 @@ echo "${ACCENT_PRIMARY}Primary color${FG_PRIMARY}"
 `theme-switcher` (in `lib/scripts/desktop/`) drives the full switch:
 1. Update `~/.config/themes/current` symlink
 2. Reload core apps (Hyprland, Waybar, Swaync, terminal, wofi)
-3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim, zellij (each silently skips if its app is absent)
+3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim (each silently skips if its app is absent)
 4. Trigger the `theme-change` user hook: `hook-runner theme-change $theme_name`
 
 Per-script behavior (e.g. Firefox needs `toolkit.legacyUserProfileCustomizations.stylesheets = true`) is documented in `lib/scripts/desktop/CLAUDE.md`.

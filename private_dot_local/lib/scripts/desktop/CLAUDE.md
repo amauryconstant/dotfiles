@@ -151,7 +151,6 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 - `theme-apply-gtk` — GTK theme/color-scheme
 - `theme-apply-qt` — Qt (qt5ct/qt6ct)
 - `theme-apply-neovim` — Neovim colorscheme
-- `theme-apply-zellij` — Zellij theme (`~/.config/themes/{variant}/zellij.kdl`)
 
 ---
 
