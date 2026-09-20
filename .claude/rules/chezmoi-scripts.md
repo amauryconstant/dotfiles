@@ -112,11 +112,43 @@
 - **First install**: Script runs (no prior hash) → installs all packages
 - **Updates**: Script re-runs when `packages.yaml` changes (hash-triggered sync)
 
-**Package manager integration**: Calls `package-manager sync --prune`
-- Handles Arch and Flatpak packages
-- Respects version constraints
-- Handles conflicts
-- Validates packages
+**Self-contained, by design**: the script shells out to `pacman`/`paru`/`flatpak` directly and
+**never calls `package-manager`** — it runs BEFORE file application, when `lib/scripts` is not yet
+on disk. Its own header says so.
+
+🚨 **Deleting a package from `packages.install` does NOT uninstall it.** The script installs what
+is declared and never prunes, so a package dropped from the list just stops being installed on new
+machines; every machine that already has it keeps it. **Retiring a package is a manual
+`paru -Rns <pkg>`.**
+
+`packages.delete` is **not** that mechanism. It is one-time migration cleanup — carrying a
+now-wrong package off a machine that was provisioned before the change (`yay` before paru, the
+kitty entries at the KDE→GTK migration). It is a poor fit for ongoing retirement: the hash covers
+all of `.packages`, so the block re-runs on *every* packages.yaml edit and no entry ever expires,
+making the list an unbounded denylist that will silently re-remove a package you deliberately
+reinstall.
+
+The block **filters to what is installed** before calling `paru -Rns`, and that guard is
+load-bearing: pacman aborts the whole transaction on one unknown target, so a single spent entry
+used to stop every other removal while `2>/dev/null || true` reported success. That is exactly what
+happened — `yay` went absent, and `kitty-shell-integration`/`kitty-terminfo` then sat on the list
+from 2025-11-12 until 2026-09-21 without being removed. With the filter in place a spent entry is
+harmless, so entries can stay as a record of the migration they came from.
+
+### Retiring a package
+
+Two manual steps, in order:
+
+```sh
+# 1. drop it from .chezmoidata/packages.yaml (declarative source of truth)
+# 2. remove it from this machine:
+package-manager sync --prune
+```
+
+`sync --prune` diffs `packages.yaml` against `~/.local/state/package-manager/package-state.yaml`,
+prints every package installed but no longer declared, and asks before removing anything
+(`_sync_prune_orphans`). `package-manager update` — and therefore topgrade — runs it too, so a
+retirement also surfaces on the normal update path. Step 1 alone uninstalls nothing.
 
 **See**: `private_dot_local/lib/scripts/system/CLAUDE.md` for package-manager details
 

@@ -328,18 +328,36 @@ fi
 # Remove unwanted packages
 # ============================================================
 
-if [ "$DELETE_COUNT" -gt 0 ]; then
-    {{ includeTemplate "log_step" "Removing $DELETE_COUNT unwanted packages..." }}
+# 🚨 Filter to what is ACTUALLY INSTALLED first. pacman aborts the WHOLE
+# transaction on a single unknown target ("target not found: yay"), so one
+# already-removed entry on the delete list stopped every other removal — and
+# `2>/dev/null || true` swallowed the error, so the script reported success
+# while removing nothing. Found 2026-09-13: kitty-shell-integration and
+# kitty-terminfo had been on the list for months and were still installed,
+# because `yay` sits above them and was uninstalled long ago.
+INSTALLED_TO_DELETE=""
+for pkg in $DELETE_PACKAGES; do
+    if pacman -Qq "$pkg" >/dev/null 2>&1; then
+        INSTALLED_TO_DELETE="$INSTALLED_TO_DELETE $pkg"
+    fi
+done
+INSTALLED_TO_DELETE=$(echo "$INSTALLED_TO_DELETE" | tr -s ' ' | sed 's/^ //')
+INSTALLED_DELETE_COUNT=$(echo "$INSTALLED_TO_DELETE" | tr ' ' '\n' | grep -c '[^[:space:]]' || true)
 
-    # Remove packages
-    # -Rns: Remove package, dependencies, and config files
-    # --noconfirm: Non-interactive
-    # || true: Continue even if packages don't exist
-    echo "$DELETE_PACKAGES" | xargs paru -Rns --noconfirm 2>/dev/null || true
+if [ -n "$INSTALLED_TO_DELETE" ]; then
+    {{ includeTemplate "log_step" "Removing $INSTALLED_DELETE_COUNT unwanted packages (of $DELETE_COUNT listed)..." }}
 
-    {{ includeTemplate "log_success" "Package cleanup complete" }}
+    # -Rns: remove the package, its now-unneeded dependencies, and its config.
+    # stderr is NOT discarded: a removal that fails for a real reason (a
+    # dependency still needs it) has to be visible, which is exactly what the
+    # old `2>/dev/null` hid.
+    if echo "$INSTALLED_TO_DELETE" | xargs -r paru -Rns --noconfirm; then
+        {{ includeTemplate "log_success" "Package cleanup complete" }}
+    else
+        {{ includeTemplate "log_warning" "Some packages could not be removed — see the output above" }}
+    fi
 else
-    {{ includeTemplate "log_skip" "No packages to remove" }}
+    {{ includeTemplate "log_skip" "No listed packages are installed — nothing to remove" }}
 fi
 
 # ============================================================

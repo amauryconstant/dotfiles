@@ -104,8 +104,11 @@ Cutover checklist. Do all together once the user commits.
   chpwd auto session-rename). Optionally leave a thin `ws` alias for the launcher.
 - `private_dot_local/lib/scripts/terminal/executable_zellij-sessionizer.tmpl`.
 - `alias zj='zellij'` in `dot_zshrc.d/aliases.zsh` (L30).
-- `- zellij` in `.chezmoidata/packages.yaml` (~L171) → `run_onchange_before_sync_packages`
-  prunes the package on next apply.
+- `- zellij` in `.chezmoidata/packages.yaml` (~L171). ⚠️ **Corrected 2026-09-21**: this said the
+  sync script "prunes the package on next apply". It does not — it installs what is declared and
+  never prunes, so dropping the install entry left `zellij 0.45.1-1` installed. `packages.delete`
+  is not the answer either (one-time migration cleanup, and broken by a stale `yay` entry).
+  Uninstalling is `package-manager sync --prune`, which lists it as an orphan and prompts.
 
 **Docs**
 - Update refs in `private_dot_config/zsh/CLAUDE.md`, `private_dot_local/lib/scripts/CLAUDE.md`,
