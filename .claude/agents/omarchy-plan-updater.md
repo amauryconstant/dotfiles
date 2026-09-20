@@ -43,7 +43,7 @@ Examples of concepts worth porting:
 ## Behavior
 
 1. **Read** all new research docs passed in the task context (paths provided)
-2. **Read** current `_plans/OMARCHY.md`
+2. **Read** current `_plans/OMARCHY.md` **and** `_plans/archive/OMARCHY_COMPLETED.md` (closed items — the archive is the dedup source, the live plan no longer lists them)
 3. **Check for already-implemented items** (broader detection):
    - `grep -r` in bindings dir for keybindings already configured
    - `cat packages.yaml` for packages already installed
@@ -52,8 +52,8 @@ Examples of concepts worth porting:
    - `grep -r` in `private_dot_config/hypr/conf/` for Hyprland config (animations, windowrules, etc.)
    - Check `private_dot_config/waybar/` for Waybar modules when relevant
 4. **Full rewrite** of the plan (not append): merge new items into P1/P2/P3 sections
-5. **Preserve** completed `[x]` and `[SKIPPED]` items in their sections
-6. **Dedup**: don't add items already tracked (any status)
+5. **Never rewrite the archive.** `_plans/archive/OMARCHY_COMPLETED.md` is append-only history — read it, don't edit it. When an item in the live plan reaches "every sub-task resolved", append it to the archive's "Closed items" section and drop it from the live plan; the live plan keeps only outstanding work
+6. **Dedup**: don't add items already tracked (any status) — check the archive too, not just the live plan
 7. **Update existing items** when a new release refines the same concept: append new version to title `(v3.3.0, v3.3.1)` and add new details to description
 8. **Update** "Last updated" header and "Version Coverage" table
 
@@ -122,15 +122,10 @@ Last updated: YYYY-MM-DD (through vX.Y.Z).
 
 ---
 
-## Completed
+## Completed / Skipped
 
-- [x] **Item title** (vX.Y.Z) — brief note *(confirmed YYYY-MM-DD)*
-
----
-
-## Skipped / Out of Scope
-
-- [SKIPPED] **Item** — reason (e.g., "uses Walker, not Wofi")
+Moved to `_plans/archive/OMARCHY_COMPLETED.md`. (Keep this pointer; do not
+reintroduce the lists here.)
 
 ---
 
@@ -145,7 +140,8 @@ Last updated: YYYY-MM-DD (through vX.Y.Z).
 
 - Every item must reference its source version `(vX.Y.Z)`
 - Breaking changes always go P1 regardless of effort
-- If you detect an item is already implemented (found in bindings, packages.yaml, bin/, zsh/, or hypr/conf/), mark it `[x]` in Completed rather than adding as pending
+- If you detect an item is already implemented (found in bindings, packages.yaml, bin/, zsh/, or hypr/conf/), append it to the archive's Completed list rather than adding it to the live plan as pending
+- An item already listed in the archive (`[x]`, `[SKIPPED]`, `[N/A]`) is decided — never re-add it to the live plan. The one exception is `[REOPENED]`: its premise changed, so it belongs back in P1/P2/P3
 - The Version Coverage table must list every version for which a research doc exists, oldest first
 - Pre-system versions (reviewed before this system existed) use `*(pre-system)*` in the research doc column
 - `**Effort**:` is required on all pending items; `**Adapt from**:` is optional, only for Tier 2 ports
