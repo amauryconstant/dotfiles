@@ -5,8 +5,14 @@ set -euo pipefail
 #
 # 🚨 REPORTS, never removes. Deleting from $HOME unattended, inside a hook the
 # user did not ask to run, is not a pre-commit hook's job -- the orphan is
-# harmless until someone decides otherwise, and `chezmoi destroy` is one command
-# away. Never blocks the commit either: exit 0 is unconditional.
+# harmless until someone decides otherwise, and `rm` is one command away. Never
+# blocks the commit either: exit 0 is unconditional.
+#
+# 🚨 The command printed at the end is `rm`, NOT `chezmoi destroy`. `destroy`
+# only acts on MANAGED targets, and by the time this hook runs the source entry
+# is already deleted -- so chezmoi answers `<target>: not managed` and removes
+# nothing. This printed `chezmoi destroy` until 2026-09-21, when running it
+# against 17 real orphans deleted zero of them.
 #
 # 🚨 `chezmoi target-path` STATS the source file, so it fails on exactly the
 # case this hook exists for -- the source is already gone from the worktree.
@@ -61,7 +67,8 @@ done
 echo "Orphaned deployed files (source deleted, target still present):"
 printf '  %s\n' "${orphans[@]}"
 echo
-echo "Remove them with:"
-printf '  chezmoi destroy'
+echo "Remove them with (one line -- a wrapped paste runs each fragment as its"
+echo "own command), then delete any directory it empties:"
+printf '  rm -f'
 printf ' %q' "${orphans[@]}"
 echo
