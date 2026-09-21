@@ -1,7 +1,15 @@
 # Voice STT Implementation Plan
 
 **Last revised**: 2026-06-17
-**Status**: ✅ Operational on voxtype 0.7.x (repaired + upgraded)
+**Archived**: 2026-09-21
+**Status**: ✅ Done — archived as a historical record.
+
+> ⚠️ Describes voxtype **0.7.x** on the desktop. Since archiving, voxtype reached **1.0.1**
+> and the repo moved on: Cohere is the SUPER+T default, bindings/config are chassis-gated
+> (laptop = Cohere q4f16 only), and model unloading is native (`cohere.on_demand_loading`)
+> rather than the custom idle-unload timer described nowhere below. Current behaviour lives in
+> `private_dot_config/{voxtype,waybar,hypr}/`, `private_dot_config/systemd/user/CLAUDE.md`
+> and `private_dot_local/lib/scripts/desktop/CLAUDE.md`.
 
 ---
 
