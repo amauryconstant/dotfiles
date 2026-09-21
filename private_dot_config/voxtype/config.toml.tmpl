@@ -21,6 +21,11 @@ engine = "cohere"  # default engine; per-recording override via --model <name> (
 enabled = false  # Hyprland bindings drive recording, not the built-in evdev hotkey
 
 [audio]
+# "default" follows the system default source, which is now safe to trust: the
+# WirePlumber drop-in stops a Bluetooth headset ever offering a microphone
+# (private_dot_config/wireplumber/CLAUDE.md). Before it, connecting the XM4 made
+# the default source an A2DP card with no mic — every recording captured digital
+# silence AND killed the playback sink.
 device = "default"
 sample_rate = 16000
 # Safety backstop shared by ALL recording modes (push-to-talk + streaming toggle —
@@ -73,6 +78,13 @@ modifier_release_timeout_ms = 750
 [output.notification]
 on_recording_start = false
 on_transcription = true
+
+# Reject silence-only recordings instead of transcribing them. Off by default
+# upstream, which is how a dead capture device came back as a short plausible
+# transcript rather than an error. Silero is downloaded by
+# run_onchange_after_configure_voxtype.
+[vad]
+enabled = true
 
 [text]
 spoken_punctuation = true     # "period" → "."

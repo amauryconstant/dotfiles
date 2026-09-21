@@ -22,6 +22,7 @@
 | `shell/` | POSIX shell layer + Zephyr patterns | ✅ Yes |
 | `zsh/` | Zsh-specific config (antidote, plugins, functions) | ✅ Yes |
 | `systemd/user/` | User services | ✅ Yes |
+| `wireplumber/` | PipeWire session policy (Bluetooth profile, device defaults) | ✅ Yes |
 | `Nextcloud/` | Nextcloud client | ✅ Yes |
 | `git/` | Git config | ✅ Yes |
 | `themes/` | Theme system | ✅ Yes |
