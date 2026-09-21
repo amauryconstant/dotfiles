@@ -224,8 +224,6 @@ All use `notify-send` for user feedback.
 **window-pop**: toggle a window to/from a floating "pop" state
 **zoom-cursor**: cursor magnifier
 **voice-meeting**: meeting voice helper
-**voxtype-record**: wraps `voxtype record` for Hyprland bindings — restarts the daemon (writing a loading marker) if `voxtype-idle-unload.timer` stopped it, waits for its socket before forwarding
-**voxtype-waybar-status**: `custom/voxtype` waybar exec-persistent source — wraps `voxtype status --follow` and layers a synthetic "loading" state from voxtype-record's marker (voxtype has no native loading state)
 **recover-workspaces**: re-assign orphaned windows to workspaces
 
 **Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).

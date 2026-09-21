@@ -322,15 +322,13 @@
   // --------------------------------------------------------------------------
   // Voxtype Voice Dictation Status
   // --------------------------------------------------------------------------
-  // States: idle | recording | streaming | transcribing | stopped | loading
-  // voxtype-waybar-status wraps `voxtype status --follow` (event-driven, no
-  // polling) and layers "loading" on top -- voxtype-idle-unload.timer stops
-  // the daemon after 30min idle, and voxtype-record restarts it on demand;
-  // "loading" covers the model-load window in between (voxtype itself has
-  // no native state for this -- see systemd/user/CLAUDE.md).
+  // States: idle | recording | streaming | transcribing | stopped
+  // `voxtype status --follow` is event-driven (no polling). The daemon stays up
+  // and unloads its model at idle itself (cohere.on_demand_loading), so there is
+  // no restart window to report.
   // stopped = daemon down → mic-off glyph (visible so failures aren't silent); click restarts
   "custom/voxtype": {
-    "exec": "~/.local/lib/scripts/desktop/voxtype-waybar-status",
+    "exec": "voxtype status --follow --format json",
     "exec-persistent": true,
     "return-type": "json",
     "format": "{icon}",
@@ -339,7 +337,6 @@
       "recording":    "󰑋",
       "streaming":    "󱜠",
       "transcribing": "󰔮",
-      "loading":      "󰝲",
       "stopped":      "󰍭"
     },
     "tooltip": true,

@@ -21,21 +21,18 @@
 # ============================================================================
 
 # Cohere — default engine, push-to-talk (multilingual, daily driver)
-# "voxtype-record" (not "voxtype record") wraps start/toggle so the daemon
-# restarts transparently if voxtype-idle-unload.timer stopped it (see
-# systemd/user/CLAUDE.md). Stop doesn't need this — it only fires after a
-# successful start, so the daemon is already running.
-# Full path required: Hyprland's exec dispatcher doesn't see the zsh PATH
-# that adds ~/.local/lib/scripts/desktop (see other bindings in this repo).
-bindd  = SUPER, T, Start voice dictation (Cohere), exec, ~/.local/lib/scripts/desktop/voxtype-record start
+# `voxtype record start` talks to a daemon that is always running: the model is
+# loaded on demand and unloaded at idle by voxtype itself (cohere.on_demand_loading),
+# so no wrapper is needed to restart a stopped daemon.
+bindd  = SUPER, T, Start voice dictation (Cohere), exec, voxtype record start
 binddr = SUPER, T, Stop voice dictation (Cohere), exec, voxtype record stop
 
 {{ if ne .chassisType "laptop" -}}
 # Parakeet — streaming dictation, toggle (live incremental text, English) — desktop only
-bindd  = SUPER ALT, T, Toggle streaming dictation (Parakeet), exec, ~/.local/lib/scripts/desktop/voxtype-record toggle
+bindd  = SUPER ALT, T, Toggle streaming dictation (Parakeet), exec, voxtype record toggle
 
 # Parakeet — fast English-only push-to-talk — desktop only
-bindd  = SUPER CTRL, T, Start voice dictation (Parakeet), exec, ~/.local/lib/scripts/desktop/voxtype-record start --model parakeet-tdt-0.6b-v3
+bindd  = SUPER CTRL, T, Start voice dictation (Parakeet), exec, voxtype record start --model parakeet-tdt-0.6b-v3
 binddr = SUPER CTRL, T, Stop voice dictation (Parakeet), exec, voxtype record stop
 
 {{ end -}}

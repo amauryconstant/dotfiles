@@ -46,19 +46,25 @@ on_demand_loading = true  # load model only when recording starts
 model = "parakeet-tdt-0.6b-v3"  # primary engine (SUPER+T)
 # Cache-aware streaming (SUPER+ALT+T toggle). Streaming auto-uses the unified
 # streaming model (parakeet-unified-en-0.6b) when toggled.
+# NOTE: voxtype 1.0 adds `streaming = true` here, but it *forces* toggle activation
+# for every Parakeet recording — that would break the SUPER+CTRL+T push-to-talk
+# binding. Left unset on purpose; the tuning keys below still apply.
 streaming_chunk_secs = 0.5
 streaming_left_context_secs = 2.0
 streaming_right_context_secs = 0.5
 {{- end }}
 
 [cohere]
+# on_demand_loading (voxtype 1.0): load the model at recording start, unload at
+# idle. Frees ~2.4 GB between dictations and replaces the voxtype-idle-unload
+# timer + voxtype-record wrapper this repo used to carry. Cold load ~3s.
+on_demand_loading = true
 # q4f16 on laptop (RAM-constrained, Cohere-only STT); fp16 on desktop (unchanged default)
 model = "{{ if eq .chassisType "laptop" }}cohere-transcribe-q4f16{{ else }}cohere-transcribe-fp16{{ end }}"  # DEFAULT engine (SUPER+T), #1 Open ASR, multilingual
 
 [output]
 mode = "clipboard"  # "type" (auto-insert), "clipboard" (safe), "paste", "file"
 fallback_to_clipboard = true
-type_delay_ms = 0
 auto_submit = false  # don't send Enter after transcription
 # Modifier-release guard (v0.7.2): stop held modifiers corrupting typed output
 wait_for_modifier_release = true
@@ -85,16 +91,11 @@ enabled = true
 frontend = "quickshell"  # QML-native OSD (v0.7.5); requires `quickshell` + `voxtype setup quickshell`
 top_margin = 0.85        # swayosd-aligned fractional position
 
-# Meeting mode (SUPER+ALT+M): continuous transcription + Ollama summaries (v0.6.0+)
+# Meeting mode (SUPER+ALT+M): continuous transcription + speaker attribution.
+# Summaries are CLI-only since 1.0 (`voice-meeting summarize <id>` → Ollama);
+# the old [meeting.summary] block and chunk_duration_secs left the config surface.
 [meeting]
 enabled = true
-chunk_duration_secs = 30
 
 [meeting.diarization]
 enabled = true
-backend = "ml"  # ONNX speaker-embedding clustering (ECAPA-TDNN); "simple" = mic-vs-loopback
-
-[meeting.summary]
-backend = "ollama"  # local AI summaries via Ollama service
-ollama_url = "http://localhost:11434"
-ollama_model = "llama3.2"
