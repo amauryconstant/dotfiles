@@ -424,18 +424,21 @@ running instance.
 | Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
 | Meters | the `Meters` singleton (`/proc/stat` + `/proc/meminfo` via `FileView` on a 2s timer) — **new**, Waybar had no cpu/memory module here |
 | Kanata, Voxtype, Idle, NightLight, Recording | existing scripts, via `WaybarJsonSource` |
+| Microphone | `Pipewire.defaultAudioSource` — draws only when the source is muted; clicks through `desktop/mic-mute` so the ThinkPad LED stays in step |
 | Notification | the `Notifications` singleton — Phase 4 cut the last `swaync-client` call out of the tree |
 
 ## Mode indicators (surface §5)
 
-Five widgets share the `gStatus` group in `bar/Bar.qml`: Recording, Idle, Voxtype, Kanata,
-NightLight. Each draws only while its state is active, so at rest the group is empty and the
+Six widgets share the `gStatus` group in `bar/Bar.qml`: Recording, Idle, Voxtype, Microphone,
+Kanata, NightLight. Each draws only while its state is active, so at rest the group is empty and the
 separator before it collapses with it.
 
 🚨 **The order is fixed, and it is a ranking, not an arrangement.** Surface §5 asks that "the
 strongest relaxation of normal behaviour wins the indicator", so the group runs strongest first:
 the screen is being captured > the machine will not lock or sleep > the microphone is live > the
-keys are remapped > the colours are shifted. Omarchy's
+microphone is muted > the keys are remapped > the colours are shifted. Live outranks muted
+because dictation is something happening to the room and muted is something not happening; the
+two are mutually exclusive in practice, so the pair never draws twice. Omarchy's
 `shell/plugins/bar/widgets/Indicators.qml` instead reorders itself, putting the most recently
 activated nearest the clock; that is rejected here because these appear and disappear on their
 own, and a set that also *reorders* itself has to be re-read from scratch every time any one of

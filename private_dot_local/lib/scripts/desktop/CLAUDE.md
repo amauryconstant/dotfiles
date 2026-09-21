@@ -234,7 +234,8 @@ All use `notify-send` for user feedback.
 
 ## Other Utilities
 
-**audio-switch**: Audio device switching
+**audio-switch**: Audio device switching (sinks; `wpctl set-default` persists, `pactl` does not)
+**mic-mute**: Toggle the default source's mute + the ThinkPad `platform::micmute` LED — bound to `XF86AudioMicMute` and clicked by the Quickshell MicrophoneWidget
 **battery-status**: Battery/power status output
 **screenrecord**: Screen recording
 **system-settings**: Launch system settings

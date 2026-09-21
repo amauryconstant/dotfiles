@@ -252,8 +252,12 @@ PanelWindow {
         // be re-read from scratch every time one of them changes.
         //
         // Strongest first: the screen is being captured > the machine will not
-        // lock or sleep > the microphone is live > the keys are remapped > the
-        // colours are shifted.
+        // lock or sleep > the microphone is live > the microphone is muted >
+        // the keys are remapped > the colours are shifted.
+        //
+        // Live outranks muted: dictation is something happening to the room,
+        // muted is something not happening. They are also mutually exclusive in
+        // practice, so the pair never draws twice.
         Row {
             id: gStatus
 
@@ -268,6 +272,8 @@ PanelWindow {
             }
 
             VoxtypeWidget {}
+
+            MicrophoneWidget {}
 
             KanataWidget {}
 

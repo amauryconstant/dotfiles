@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+
+# Script: mic-mute
+# Purpose: Toggle the default capture source's mute, and mirror it onto the
+#          ThinkPad mic-mute LED
+# Requirements: wireplumber (wpctl), brightnessctl (LED only, laptops)
+# Bound to: XF86AudioMicMute (media-keys.conf) + the Quickshell MicrophoneWidget
+#
+# wpctl, not pamixer: the sink bindings in media-keys use pamixer, but the
+# source side wants wpctl for the same reason audio-switch gives — wpctl writes
+# through WirePlumber, so the choice survives a logout.
+#
+# The widget shells out to this script rather than writing `audio.muted`
+# directly so the LED can never disagree with the mute state.
+
+LED=/sys/class/leds/platform::micmute
+
+wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle >/dev/null 2>&1 || exit 1
+
+if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED; then
+    led_value=1
+else
+    led_value=0
+fi
+
+# Desktops have no such LED; the node's absence is the only check needed.
+if [ -e "$LED/brightness" ] && command -v brightnessctl >/dev/null 2>&1; then
+    brightnessctl --device="platform::micmute" set "$led_value" >/dev/null 2>&1 || true
+fi

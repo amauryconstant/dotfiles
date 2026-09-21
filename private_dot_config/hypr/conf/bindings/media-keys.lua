@@ -11,6 +11,10 @@ o.bind("XF86AudioRaiseVolume", "Volume up", "pamixer -i 5", { locked = true, rep
 o.bind("XF86AudioLowerVolume", "Volume down", "pamixer -d 5", { locked = true, repeating = true })
 o.bind("XF86AudioMute", "Toggle mute", "pamixer -t", { locked = true, repeating = true })
 
+-- Microphone mute (wpctl via the mic-mute script, which also drives the
+-- ThinkPad mic-mute LED). Repeat is meaningless for a toggle.
+o.bind("XF86AudioMicMute", "Toggle microphone mute", "~/.local/lib/scripts/desktop/mic-mute", { locked = true })
+
 -- Brightness control — internal backlight (laptop) or external monitor via DDC/CI (desktop)
 o.bind(
 	"XF86MonBrightnessUp",

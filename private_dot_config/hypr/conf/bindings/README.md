@@ -115,6 +115,7 @@ Flags: `l` = works while locked (hyprlock), `e` = repeats on hold.
 | Keys | Bind type | Action |
 |------|-----------|--------|
 | `XF86AudioRaiseVolume` / `LowerVolume` / `Mute` | `bindeld` | Volume via pamixer |
+| `XF86AudioMicMute` | `bindld` | Microphone mute via `desktop/mic-mute` (wpctl + ThinkPad LED) |
 | `XF86MonBrightnessUp` / `Down` | `bindeld` | Brightness via brightnessctl |
 | `XF86AudioPlay` / `Pause` / `Next` / `Prev` | `bindld` | Playback via playerctl (MPRIS) |
 
