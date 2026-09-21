@@ -77,10 +77,7 @@ else
     icon=""
 fi
 
-# Send OSD notification if swayosd is available
-if command -v swayosd-client >/dev/null 2>&1; then
-    swayosd-client --output-volume "$volume" --output-name "$sink_info"
-else
-    # Fallback to regular notification
-    notify-send "$icon Audio Output" "$sink_info\nVolume: ${volume}%" -t 3000
-fi
+# The swayosd branch that used to sit here was dead: the Quickshell shell owns
+# the OSD now, swayosd-server is not running and swayosd is not in packages.yaml,
+# so switching sinks silently reported nothing.
+notify-send "$icon Audio Output" "$sink_info\nVolume: ${volume}%" -t 3000
