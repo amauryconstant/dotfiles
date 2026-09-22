@@ -35,6 +35,7 @@
 | `jj/` | Jujutsu VCS config | ✅ Yes |
 | `dotfiles/` | Hook system + extra bindings | ✅ Yes |
 | `opencode/` | opencode TUI config (theme-managed, `modify_opencode.jsonc`) | ❌ No |
+| `claude/` | Claude Code config (`create_private_settings.json` — seed only; caveman owns the live file) | ❌ No |
 | `bat/` | Syntax highlighting (symlink-only, themed) | ❌ No |
 | `broot/` | File tree (conf.hjson + verbs.hjson + theme symlink) | ❌ No |
 | `lazygit/` | Git TUI (symlink-only, themed) | ❌ No |

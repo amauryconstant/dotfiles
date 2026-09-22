@@ -50,6 +50,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 | `encrypted_*` | Age-encrypted | `encrypted_key.txt.age` → `key.txt` |
 | `executable_*` | Executable | `executable_script` → `script` (755) |
 | `modify_*` | chezmoi_modify_manager | `modify_app.conf.tmpl` → managed |
+| `create_*` | Write once, never update | `create_settings.json` → seed only |
 | `run_once_*` | Run once | Setup scripts |
 | `run_onchange_*` | Hash-triggered | Content-driven scripts |
 | `*.tmpl` | Template | `config.tmpl` → `config` (processed) |
