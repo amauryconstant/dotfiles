@@ -21,11 +21,7 @@
   "type" "local"
   "command" (list "docker" "run" "-i" "--rm" "mcp/fetch")
 ) -}}
-{{- $_ := set $mcp "caveman" (dict
-  "type" "local"
-  "command" (list (joinPath .chezmoi.homeDir ".caveman" "bin" "caveman-mcp"))
-  "enabled" true
-) -}}
+{{- /* "caveman" MCP: owned by `caveman enable opencode` in ~/.config/opencode/opencode.json (merged by opencode before this file) — do NOT set it here, or `caveman disable` cannot remove it */ -}}
 {{- $_ := set $config "mcp" $mcp -}}
 
 {{- /* Tool Toggles */ -}}
