@@ -1,2 +1,10 @@
 [Context]
 devices=!all;
+
+# Tray icon: Electron 43.4.1+/44.0.x owns org.freedesktop.StatusNotifierItem-<pid>-<n>
+# before registering, and the sandbox refuses the name unless granted — no icon.
+# <pid> is Slack's PID inside the sandbox (4). Fixed upstream in Electron 44.3.0
+# (electron/electron#53213, #53641) — drop this once Slack ships it
+# (grep -ao 'Electron/[0-9.]*' in /app/extra/slack).
+[Session Bus Policy]
+org.freedesktop.StatusNotifierItem-4-1=own
