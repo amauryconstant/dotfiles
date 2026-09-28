@@ -1,5 +1,5 @@
 ;; kanata.kbd — Workman keyboard layout for ANSI laptop
-;; Default layer: Workman (remaps QWERTY physical positions to Workman output)
+;; Default layer: base (passthrough). Toggle to workman via kanata-layer-toggle.
 ;;
 ;; Key remapping summary:
 ;;   Row 1 (QWERTY): w→d  e→r  r→w  t→b  y→j  u→f  i→u  o→p  p→;
@@ -34,21 +34,20 @@
   rl lrld
 )
 
-(deflayer workman
-  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
-  tab  q    d    r    w    b    j    f    u    p    ;    [    ]    \
-  bspc a    s    h    t    g    y    n    e    o    i    '    ret
-  lsft z    x    m    c    v    k    l    ,    .    /    rsft
-  lctl lmet lalt           spc            ralt @rl  rctl
-)
-
-;; Skeleton layer — full passthrough, no remapping.
-;; Reserved for future use: per-app layer switching, gaming mode, etc.
-;; Activate with: (layer-switch base) or (layer-while-held base) in a defalias.
+;; Default layer — full passthrough, no remapping. First deflayer in file is
+;; kanata's default layer, so this one loads active on start.
 (deflayer base
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _              _              _    _    _
+)
+
+(deflayer workman
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    d    r    w    b    j    f    u    p    ;    [    ]    \
+  bspc a    s    h    t    g    y    n    e    o    i    '    ret
+  lsft z    x    m    c    v    k    l    ,    .    /    rsft
+  lctl lmet lalt           spc            ralt @rl  rctl
 )
