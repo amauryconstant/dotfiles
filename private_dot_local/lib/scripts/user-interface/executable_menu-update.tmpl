@@ -34,7 +34,7 @@ case "$CHOICE" in
         ;;
     "󰦖 Package Sync Only")
         # Only sync to packages.yaml (no updates to other packages)
-        {{ .globals.applications.terminal }} -e sh -c "{{ .chezmoi.homeDir }}/.local/bin/package-manager sync --prune; read -p 'Press Enter to continue...'"
+        {{ .globals.applications.terminal }} -e sh -c "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager/package-manager sync --prune; read -p 'Press Enter to continue...'"
         ;;
     "󰣐 Firmware Update")
         if command -v fwupdmgr >/dev/null 2>&1; then

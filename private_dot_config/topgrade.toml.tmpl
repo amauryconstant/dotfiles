@@ -28,6 +28,9 @@ disable = [
     "system",    # Disable pacman/paru (handled by package-manager)
     "flatpak",   # Disable flatpak (handled by package-manager)
     "vim",
+    "mise",      # Step always runs `mise self-update`, fatal on pacman-built mise (see [commands])
+    "claude_code", # claude-code is a mise tool; `mise upgrade` owns its version
+    "chezmoi",   # `chezmoi update` applies without diff review; git_repos pulls, apply stays manual
 ]
 
 # Package managers configuration
@@ -56,15 +59,15 @@ arguments = "--rebase --autostash --prune"
 
 # Pre-update commands (run before any updates)
 [pre_commands]
-"Package Update (package-manager)" = "{{ .chezmoi.homeDir }}/.local/bin/package-manager update"
+"Package Update (package-manager)" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager/package-manager update"
 
 # Custom commands for system-specific maintenance
 [commands]
-# Update antidote-managed Zsh plugins
-"Antidote plugin update" = "zsh -c 'source /usr/share/zsh-antidote/antidote.zsh && antidote update'"
+# Update mise tools (replaces built-in step: mise itself is updated by pacman)
+"mise" = "mise plugins update && mise upgrade --yes && mise prune --yes"
 # Post-update system status
 "Post-update system status" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/system-health --brief"
 # Check for unmanaged packages (installed outside dotfiles)
-"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/bin/package-manager merge --dry-run"
+"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager/package-manager merge --dry-run"
 # Remove orphaned packages (safe version - checks for orphans before attempting removal)
 "Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"
