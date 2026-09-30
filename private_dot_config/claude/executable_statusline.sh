@@ -37,15 +37,12 @@ config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 # ccp launches `claude --settings <merged profiles>`; no stdin field carries that path, so ccp
 # exports it. Absent it, the base settings are in effect and there is no profile to name.
 settings="${CCP_SETTINGS:-$config_dir/settings.json}"
-if [ -n "${CCP_SETTINGS:-}" ]; then
-  profile=${CCP_SETTINGS##*/.merged-}
-  line="$line  $(printf '\033[38;5;111m[%s]\033[0m' "${profile%.json}")"
-fi
 
 # Several plugin versions can linger in the cache, so resolve the badge through installPath
 # rather than globbing. Being installed says nothing about being enabled, and a ccp profile can
 # turn a plugin off, so gate each badge on the settings actually in force.
 installed="$config_dir/plugins/installed_plugins.json"
+badges="" shown=" "
 for entry in \
   'ponytail@ponytail|hooks/ponytail-statusline.sh' \
   'caveman@caveman|src/hooks/caveman-statusline.sh'
@@ -64,7 +61,19 @@ do
   # Badge scripts read session_id from the same JSON to resolve per-session state; without it
   # caveman falls back to a machine-wide flag and every window shows the last mode set anywhere.
   out=$(bash "$badge" <<<"$input" 2>/dev/null || true)
-  if [ -n "$out" ]; then line="$line  $out"; fi
+  if [ -n "$out" ]; then badges="$badges  $out"; shown="$shown${id%%@*} "; fi
 done
 
-printf '%s' "$line"
+# Name the ccp profile, minus any part already announced by its plugin's own badge: `ccp ponytail`
+# would otherwise read [ponytail] [PONYTAIL]. Profiles merge as a+b, so filter per part.
+if [ -n "${CCP_SETTINGS:-}" ]; then
+  profile=${CCP_SETTINGS##*/.merged-}
+  tag=""
+  IFS=+ read -ra parts <<<"${profile%.json}"
+  for p in "${parts[@]}"; do
+    case "$shown" in *" $p "*) ;; *) tag="${tag:+$tag+}$p" ;; esac
+  done
+  if [ -n "$tag" ]; then line="$line  $(printf '\033[38;5;111m[%s]\033[0m' "$tag")"; fi
+fi
+
+printf '%s' "$line$badges"
