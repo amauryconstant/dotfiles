@@ -2,7 +2,8 @@
 # Launch Claude Code with merged settings profiles, optionally under a separate account
 # (-a NAME -> CLAUDE_CONFIG_DIR=~/.config/claude-NAME: own login/history/plugins; profiles and
 # base settings still come from ~/.config/claude; --new required to create a not-yet-existing one)
-# -C/--caveman launches through `caveman claude` (args pass through to claude untouched). Uppercase
+# -C/--caveman launches through `caveman claude` (args pass through to claude untouched); without
+# it the session talks to Anthropic directly even though settings.json carries caveman's route. Uppercase
 # on purpose: before `--`, a lowercase -c would silently swallow a mistyped claude --continue.
 
 ccp() {
@@ -60,8 +61,15 @@ ccp() {
 
   local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
   profile_files=("${profile_files[@]/%/.json}")
+  # caveman's native integration writes its proxy route into the base settings.json, so every
+  # merge would inherit it and -C would change nothing. Without -C, point a caveman route back at
+  # Anthropic; a profile's own backend (glm, minimax) is left alone. It must be overridden, not
+  # deleted: claude still reads the base file itself, and only a --settings value outranks it.
   local merged
-  merged=$(cat "$base_settings" "${profile_files[@]}" | jaq -s 'reduce .[] as $item ({}; . * $item)') \
+  merged=$(cat "$base_settings" "${profile_files[@]}" | jaq -s --argjson caveman "$use_caveman" '
+    reduce .[] as $item ({}; . * $item)
+    | if ($caveman | not) and ((.env.ANTHROPIC_BASE_URL // "") | test("^http://(127\\.0\\.0\\.1|localhost):[0-9]+/w/"))
+      then .env.ANTHROPIC_BASE_URL = "https://api.anthropic.com" else . end') \
     || { echo "Failed to merge profiles" >&2; return 1; }
   print -r -- "$merged" >| "$tmpfile"
 

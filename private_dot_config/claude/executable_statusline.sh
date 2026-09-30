@@ -19,13 +19,17 @@ if [ -n "$branch" ]; then line="$line ($branch)"; fi
 # computed at Anthropic list price and therefore wrong. Name the backend instead. The caveman
 # route (loopback `/w/<agent>`, written into settings.json by its native integration) relays to
 # Anthropic, so the estimate holds there; flag only a dead listener, where every request fails.
+# `ccp` without -C sets the explicit Anthropic URL to override that route, so it counts as direct.
 url=${ANTHROPIC_BASE_URL:-}
 host=${url#*://}
 host=${host%%/*}
 case "$url" in
-  '' | http://127.0.0.1:*/w/* | http://localhost:*/w/*)
+  '' | https://api.anthropic.com | https://api.anthropic.com/*)
     line="$line | \$$(printf '%.2f' "$cost")"
-    if [ -n "$url" ] && [ -z "$(ss -Hltn "sport = :${host##*:}" 2>/dev/null)" ]; then
+    ;;
+  http://127.0.0.1:*/w/* | http://localhost:*/w/*)
+    line="$line | \$$(printf '%.2f' "$cost")"
+    if [ -z "$(ss -Hltn "sport = :${host##*:}" 2>/dev/null)" ]; then
       line="$line $(printf '\033[31m[proxy down]\033[0m')"
     fi
     ;;
