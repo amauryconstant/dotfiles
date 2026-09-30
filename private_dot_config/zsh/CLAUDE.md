@@ -70,7 +70,7 @@ Autoloaded via Zephyr `zfunctions` plugin:
 | ------------------- | ------------------------------------------------------------------------------ |
 | `br`                | broot wrapper (executes shell commands produced by broot)                      |
 | `clip`              | Copy content to clipboard without storing in clipboard history                  |
-| `ccp`               | Launch Claude Code with merged settings profiles (`ccp glm -- -p`; `ccp -a alt ponytail` = separate account via `~/.config/claude-alt`, `--new` to create it); exports `CCP_SETTINGS` for statusline |
+| `ccp`               | Launch Claude Code with merged settings profiles (`ccp glm -- -p`; `ccp -a alt ponytail` = separate account via `~/.config/claude-alt`, `--new` to create it; `-C` = launch via `caveman claude`, which passes `--settings` through); exports `CCP_SETTINGS` for statusline. A future opencode twin would merge profiles into `OPENCODE_CONFIG_CONTENT` — `caveman opencode` deep-merges its routing into an existing value rather than replacing it |
 | `commands`          | List all custom CLI tools with descriptions                                    |
 | `debug-zsh-startup` | Startup time profiling utility                                                 |
 | `rm-empty-dirs`     | Remove empty directories under a path                                          |
