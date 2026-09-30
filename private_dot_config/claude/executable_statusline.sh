@@ -16,13 +16,21 @@ fi
 line="$model | ${dir##*/}"
 if [ -n "$branch" ]; then line="$line ($branch)"; fi
 # A profile can point at a third-party backend, where the client-side cost estimate is
-# computed at Anthropic list price and therefore wrong. Name the backend instead.
-if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
-  host=${ANTHROPIC_BASE_URL#*://}
-  line="$line | ${host%%/*}"
-else
-  line="$line | \$$(printf '%.2f' "$cost")"
-fi
+# computed at Anthropic list price and therefore wrong. Name the backend instead. The caveman
+# route (loopback `/w/<agent>`, written into settings.json by its native integration) relays to
+# Anthropic, so the estimate holds there; flag only a dead listener, where every request fails.
+url=${ANTHROPIC_BASE_URL:-}
+host=${url#*://}
+host=${host%%/*}
+case "$url" in
+  '' | http://127.0.0.1:*/w/* | http://localhost:*/w/*)
+    line="$line | \$$(printf '%.2f' "$cost")"
+    if [ -n "$url" ] && [ -z "$(ss -Hltn "sport = :${host##*:}" 2>/dev/null)" ]; then
+      line="$line $(printf '\033[31m[proxy down]\033[0m')"
+    fi
+    ;;
+  *) line="$line | $host" ;;
+esac
 
 config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
