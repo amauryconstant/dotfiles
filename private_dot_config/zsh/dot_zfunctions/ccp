@@ -1,5 +1,7 @@
 # Zsh function: ccp
-# Launch Claude Code with merged settings profiles
+# Launch Claude Code with merged settings profiles, optionally under a separate account
+# (-a NAME -> CLAUDE_CONFIG_DIR=~/.config/claude-NAME: own login/history/plugins; profiles and
+# base settings still come from ~/.config/claude; --new required to create a not-yet-existing one)
 
 ccp() {
   local CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/claude"
@@ -8,17 +10,29 @@ ccp() {
   local profile_names=()
   local claude_args=()
   local parsing_profiles=true
+  local account="" allow_new=false
 
-  for arg in "$@"; do
-    if [[ "$arg" == "--" ]]; then
+  while (( $# )); do
+    if ! $parsing_profiles; then
+      claude_args+=("$1")
+    elif [[ "$1" == "--" ]]; then
       parsing_profiles=false
-      continue
+    elif [[ "$1" == -n || "$1" == --new ]]; then
+      allow_new=true
+    elif [[ "$1" == -a || "$1" == --account ]]; then
+      account="${2:-}"
+      [[ -z "$account" ]] && echo "ccp: $1 needs an account name" >&2 && return 1
+      [[ "$account" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "ccp: invalid account name: $account" >&2; return 1; }
+      shift
+    else
+      profile_names+=("$1")
     fi
-    if $parsing_profiles; then profile_names+=("$arg"); else claude_args+=("$arg"); fi
+    shift
   done
 
-  if [[ ${#profile_names[@]} -eq 0 ]]; then
-    echo "Usage: ccp <profile> [profile2...] [-- <claude args>]"
+  if [[ ${#profile_names[@]} -eq 0 && -z "$account" ]]; then
+    echo "Usage: ccp [-a <account> [--new]] <profile> [profile2...] [-- <claude args>]"
+    echo "       ccp -a <account>    (account only, base settings)"
     echo ""
     echo "Available profiles:"
     ls "$CLAUDE_PROFILES_DIR"/*.json 2>/dev/null | xargs -n1 basename | sed 's/\.json$//'
@@ -30,6 +44,7 @@ ccp() {
   done
 
   local merged_name="${(j:+:)profile_names}"
+  merged_name="${merged_name:-base}"
   local tmpfile="${CLAUDE_CONFIG_DIR}/profiles/.merged-${merged_name}.json"
 
   local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
@@ -40,5 +55,14 @@ ccp() {
   print -r -- "$merged" >| "$tmpfile"
 
   # CCP_SETTINGS lets the statusline name the profile and read its effective settings.
-  CCP_SETTINGS="$tmpfile" claude --settings "$tmpfile" "${claude_args[@]}"
+  # The config dir override is an env prefix so it applies to this one process only.
+  local account_dir="$CLAUDE_CONFIG_DIR"
+  if [[ -n "$account" ]]; then
+    account_dir="${XDG_CONFIG_HOME:-$HOME/.config}/claude-${account}"
+    if [[ ! -d "$account_dir" ]] && ! $allow_new; then
+      echo "ccp: unknown account '$account' ($account_dir missing); add --new to create it" >&2
+      return 1
+    fi
+  fi
+  CLAUDE_CONFIG_DIR="$account_dir" CCP_SETTINGS="$tmpfile" claude --settings "$tmpfile" "${claude_args[@]}"
 }
