@@ -35,6 +35,7 @@ prettier = "latest"
 "pipx:posting" = "latest"
 awscli = "latest"
 "github:abhixdd/ghgrab" = "latest"
+gh = "latest"
 
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"
