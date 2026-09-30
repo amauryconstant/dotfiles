@@ -13,8 +13,7 @@
     "context7@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "caveman@caveman": true,
-    "ponytail@ponytail": true
+    "caveman@caveman": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -27,12 +26,6 @@
       "source": {
         "source": "github",
         "repo": "JuliusBrussee/caveman"
-      }
-    },
-    "ponytail": {
-      "source": {
-        "source": "github",
-        "repo": "DietrichGebert/ponytail"
       }
     }
   },
