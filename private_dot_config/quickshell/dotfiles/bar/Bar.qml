@@ -273,7 +273,11 @@ PanelWindow {
 
             VoxtypeWidget {}
 
-            MicrophoneWidget {}
+            // Its panel is the audio one, which carries the input slider; the
+            // popover still hangs under the speaker widget it belongs to.
+            MicrophoneWidget {
+                onPopoverRequested: root.togglePopover("audio", false)
+            }
 
             KanataWidget {}
 

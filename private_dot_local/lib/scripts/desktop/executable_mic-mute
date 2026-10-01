@@ -5,6 +5,7 @@
 #          ThinkPad mic-mute LED
 # Requirements: wireplumber (wpctl), brightnessctl (LED only, laptops)
 # Bound to: XF86AudioMicMute (media-keys.conf) + the Quickshell MicrophoneWidget
+#           and the audio popover's input mute
 #
 # wpctl, not pamixer: the sink bindings in media-keys use pamixer, but the
 # source side wants wpctl for the same reason audio-switch gives — wpctl writes

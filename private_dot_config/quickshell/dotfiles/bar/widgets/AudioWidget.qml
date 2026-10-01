@@ -3,9 +3,10 @@ import "../../"
 import Quickshell.Services.Pipewire
 import QtQuick
 
-// Waybar's pulseaudio module. Volume and mute are native; the left click opens
-// the audio popover (design page Shell-06-Popovers), which is where the device
-// list lives and where pavucontrol is named as the escape hatch.
+// Waybar's pulseaudio module. Volume and mute are native. Left click mutes,
+// right click opens the audio popover (design page Shell-06-Popovers), which is
+// where the device list lives and where pavucontrol is named as the escape
+// hatch.
 BarWidget {
     id: root
 
@@ -42,6 +43,7 @@ BarWidget {
     // used to sit here, is retired — banned as text and under 3:1 as a graphic.
     // A failed service is the one state that does take colour.
     iconColor: root.failed ? Theme.signalError : root.restColor
+    clickHint: root.failed ? "" : qsTr("L mute · R panel · M next output · scroll volume")
     label: root.failed ? qsTr("audio") : ""
     tooltipText: root.failed ? qsTr("PipeWire is not running\nsystemctl --user restart pipewire wireplumber") : root.sink ? `${root.sink.description}\nVolume: ${Math.round(root.volume * 100)}%${root.muted ? " (muted)" : ""}` : ""
 
@@ -62,12 +64,16 @@ BarWidget {
             root.sink.audio.volume = Math.max(0, Math.min(1, value));
     }
 
-    onClicked: root.popoverRequested()
-    onMiddleClicked: root.nextSink()
-    onRightClicked: {
+    // A failed service has nothing to mute, so the left click falls back to
+    // the panel, which is where the restart command is named.
+    onClicked: {
         if (root.sink?.audio)
             root.sink.audio.muted = !root.sink.audio.muted;
+        else
+            root.popoverRequested();
     }
+    onMiddleClicked: root.nextSink()
+    onRightClicked: root.popoverRequested()
     onScrolledDown: root.setVolume(root.volume - Config.volumeStep)
     onScrolledUp: root.setVolume(root.volume + Config.volumeStep)
 

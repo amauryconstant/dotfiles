@@ -77,4 +77,5 @@ BarWidget {
     signal popoverRequested
 
     onClicked: root.popoverRequested()
+    onRightClicked: root.popoverRequested()
 }

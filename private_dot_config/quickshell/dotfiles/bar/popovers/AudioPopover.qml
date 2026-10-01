@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import "../"
 import "../../"
+import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
 
@@ -32,6 +33,24 @@ BarPopover {
         return Config.volumeGlyphs[2];
     }
 
+    function actionsFor(node: PwNode): var {
+        if (!node?.audio)
+            return [];
+        const actions = [];
+        if (node.id !== root.sink?.id)
+            actions.push({
+                label: qsTr("Set as output"),
+                glyph: Config.menuGlyphs.select,
+                run: () => root.selectDevice(node)
+            });
+        actions.push({
+            label: node.audio.muted ? qsTr("Unmute") : qsTr("Mute"),
+            glyph: node.audio.muted ? Config.menuGlyphs.unmute : Config.menuGlyphs.mute,
+            run: () => root.toggleMute(node)
+        });
+        return actions;
+    }
+
     function selectDevice(node: PwNode): void {
         if (!node || node.id === root.sink?.id)
             return;
@@ -43,6 +62,17 @@ BarPopover {
     function setSinkVolume(value: real): void {
         if (root.sink?.audio)
             root.sink.audio.volume = Math.max(0, Math.min(1, value));
+    }
+
+    // The SOURCE goes through mic-mute, never the property: the script is what
+    // keeps the ThinkPad mic-mute LED in step (see MicrophoneWidget.qml).
+    function toggleMute(node: PwNode): void {
+        if (!node?.audio)
+            return;
+        if (node.id === root.source?.id)
+            Quickshell.execDetached([`${Config.scriptsDir}/desktop/mic-mute`]);
+        else
+            node.audio.muted = !node.audio.muted;
     }
 
     function setSourceVolume(value: real): void {
@@ -112,6 +142,7 @@ BarPopover {
         property real value: 0
 
         signal moved(real value)
+        signal muteToggled
 
         spacing: Config.gap - 2
         width: parent ? parent.width : 0
@@ -130,14 +161,27 @@ BarPopover {
             }
 
             // The number is the carrier: the accent fill under it is decoration
-            // and never states the value on its own.
+            // and never states the value on its own. A click on it mutes, the
+            // same act as a left click on the bar widget.
             Text {
+                id: readout
+
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.inkPrimary
                 font.family: Config.terminalFont
                 font.pixelSize: Config.fontBody
                 text: valueRow.muted ? qsTr("muted") : `${Math.round(valueRow.value * 100)}%`
+            }
+
+            // The paint is a word; the pointer gets hitMin of it.
+            MouseArea {
+                anchors.centerIn: readout
+                cursorShape: Qt.PointingHandCursor
+                height: Config.hitMin
+                width: Math.max(Config.hitMin, readout.width)
+
+                onClicked: valueRow.muteToggled()
             }
         }
 
@@ -166,6 +210,7 @@ BarPopover {
         visible: !root.failed
 
         onMoved: v => root.setSinkVolume(v)
+        onMuteToggled: root.toggleMute(root.sink)
     }
 
     Text {
@@ -194,6 +239,8 @@ BarPopover {
             dimmed: root.busy && root.switching?.id !== deviceRow.modelData.id
             glyph: root.deviceGlyph(deviceRow.modelData)
             label: deviceRow.modelData.description ?? deviceRow.modelData.name
+            menu: root.rowMenu
+            menuActions: root.actionsFor(deviceRow.modelData)
             selected: deviceRow.modelData.id === root.sink?.id
             showRing: deviceRow.cursor
             status: root.switching?.id === deviceRow.modelData.id ? qsTr("switching") : ""
@@ -210,5 +257,6 @@ BarPopover {
         visible: !root.failed && root.source !== null
 
         onMoved: v => root.setSourceVolume(v)
+        onMuteToggled: root.toggleMute(root.source)
     }
 }

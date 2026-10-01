@@ -27,7 +27,14 @@ BarWidget {
     // qmllint enable unresolved-type
     readonly property var wifi: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
 
+    readonly property bool wifiOn: Networking.wifiEnabled
+
+    clickHint: Networking.wifiHardwareEnabled ? qsTr("L Wi-Fi on/off · R panel") : qsTr("R panel")
     icon: {
+        // Wired with the radio off still reports the wired route below; only
+        // "nothing at all, by choice" takes the off glyph.
+        if (!root.active && !root.wifiOn)
+            return Config.wifiOffGlyph;
         if (!root.active)
             return Config.noNetworkGlyph;
         if (!root.isWifi)
@@ -41,8 +48,11 @@ BarWidget {
     }
     // Connected is the resting state and stays neutral; no route at all is a
     // fault worth colouring, which is the accent rule's "state only" clause.
-    iconColor: root.active ? root.restColor : Theme.signalError
+    // The radio switched off is a choice, not a fault, so it stays neutral.
+    iconColor: root.active || !root.wifiOn ? root.restColor : Theme.signalError
     tooltipText: {
+        if (!root.active && !root.wifiOn)
+            return "Wi-Fi off";
         if (!root.active)
             return "Disconnected\nNo network interface available";
         if (root.isWifi && root.wifi)
@@ -56,5 +66,13 @@ BarWidget {
 
     signal popoverRequested
 
-    onClicked: root.popoverRequested()
+    // A hard rfkill block cannot be lifted from here, so the click then opens
+    // the panel instead of doing nothing.
+    onClicked: {
+        if (Networking.wifiHardwareEnabled)
+            Networking.wifiEnabled = !Networking.wifiEnabled;
+        else
+            root.popoverRequested();
+    }
+    onRightClicked: root.popoverRequested()
 }

@@ -13,12 +13,16 @@ PopupWindow {
     id: root
 
     required property Item anchorItem
+    // The click hint, under the text in the meta step. It is chrome this repo
+    // authored, so it needs no PlainText pin — but it still gets one, because
+    // it shares a Text type with `text`, which is foreign.
+    property string hint: ""
     property bool monospace: false
     required property string text
 
     color: "transparent"
-    implicitHeight: label.implicitHeight + 12
-    implicitWidth: label.implicitWidth + 20
+    implicitHeight: content.implicitHeight + 12
+    implicitWidth: content.implicitWidth + 20
 
     // 🚨 `edges`/`gravity` MUST be set. The defaults are `Top | Left` /
     // `Bottom | Right` (popupanchor.hpp), and with `anchor.item` set the anchor
@@ -47,16 +51,31 @@ PopupWindow {
         radius: Config.radiusChip
 
         // themes/CLAUDE.md: fg-primary on an elevated surface, never
-        // fg-secondary. bgOverlay is elevated.
-        Text {
-            id: label
+        // fg-secondary — the hint included. groundFloat is elevated, so the
+        // hint is set apart by size alone.
+        Column {
+            id: content
 
             anchors.centerIn: parent
-            color: Theme.inkPrimary
-            font.family: root.monospace ? Config.terminalFont : Config.guiFont
-            font.pixelSize: Config.fontBody
-            text: root.text
-            textFormat: Text.PlainText
+            spacing: Config.gap / 2
+
+            Text {
+                color: Theme.inkPrimary
+                font.family: root.monospace ? Config.terminalFont : Config.guiFont
+                font.pixelSize: Config.fontBody
+                text: root.text
+                textFormat: Text.PlainText
+                visible: root.text !== ""
+            }
+
+            Text {
+                color: Theme.inkPrimary
+                font.family: Config.terminalFont
+                font.pixelSize: Config.fontMeta
+                text: root.hint
+                textFormat: Text.PlainText
+                visible: root.hint !== ""
+            }
         }
     }
 }

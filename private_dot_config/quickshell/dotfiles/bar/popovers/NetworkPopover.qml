@@ -34,14 +34,53 @@ BarPopover {
         return rest.slice().sort((a, b) => (b.known - a.known) || (b.signalStrength - a.signalStrength));
     }
     readonly property var connectedNetwork: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
-    // The connected row takes keyboard index 0 when there is one, so the list
-    // below starts after it.
-    readonly property int listOffset: root.connectedNetwork ? 1 : 0
+    // A hard rfkill block cannot be lifted from software, so the switch row
+    // is drawn only where flipping it would do something.
+    readonly property bool radioSwitchable: Networking.wifiHardwareEnabled && root.wifiDevice !== null
+    // Keyboard order is the drawing order: the radio switch, the connected
+    // row, then the list.
+    readonly property int radioRow: root.radioSwitchable ? 1 : 0
+    readonly property int listOffset: root.radioRow + (root.connectedNetwork ? 1 : 0)
     readonly property bool busy: (root.connectedNetwork?.stateChanging ?? false) || root.networks.some(n => n.stateChanging)
 
     function bars(strength: real): string {
         // 🚨 signalStrength is a 0..1 fraction, not the 0..100 nmcli prints.
         return Config.wifiGlyphs[Math.min(4, Math.floor((strength ?? 0) * 4))];
+    }
+
+    // A row's right-click menu: its left-click act spelled out, then what the
+    // left click cannot reach.
+    function actionsFor(network: var): var {
+        if (!network)
+            return [];
+        const actions = [];
+        if (network.connected)
+            actions.push({
+                label: qsTr("Disconnect"),
+                glyph: Config.menuGlyphs.disconnect,
+                run: () => root.toggle(network)
+            });
+        else
+            actions.push({
+                label: network.known ? qsTr("Connect") : qsTr("Connect in nm-connection-editor"),
+                glyph: Config.menuGlyphs.connect,
+                run: () => root.toggle(network)
+            });
+        // Forgetting deletes the saved secret, so the network becomes unknown
+        // and joining it again goes through nm-connection-editor.
+        if (network.known)
+            actions.push({
+                label: qsTr("Forget"),
+                glyph: Config.menuGlyphs.forget,
+                destructive: true,
+                run: () => network.forget()
+            });
+        actions.push({
+            label: qsTr("Edit in nm-connection-editor"),
+            glyph: Config.menuGlyphs.open,
+            run: () => root.runEscapeHatch()
+        });
+        return actions;
     }
 
     // A click on the connected network drops it; a click on any other joins it.
@@ -68,12 +107,14 @@ BarPopover {
     footerCommand: ["nm-connection-editor"]
     footerLeft: root.keyboardMode ? qsTr("↑↓ move · ↵ connect / disconnect") : ""
     footerRight: "nm-connection-editor"
-    glyph: root.active ? root.isWifi ? root.bars(root.connectedNetwork?.signalStrength ?? 0) : Config.wiredGlyph : Config.noNetworkGlyph
+    glyph: root.active ? root.isWifi ? root.bars(root.connectedNetwork?.signalStrength ?? 0) : Config.wiredGlyph : Networking.wifiEnabled ? Config.noNetworkGlyph : Config.wifiOffGlyph
     navCount: root.listOffset + root.networks.length
     title: qsTr("Network")
 
     onActivated: index => {
-        if (index < root.listOffset)
+        if (index < root.radioRow)
+            Networking.wifiEnabled = !Networking.wifiEnabled;
+        else if (index < root.listOffset)
             root.toggle(root.connectedNetwork);
         else if (index - root.listOffset < root.networks.length)
             root.toggle(root.networks[index - root.listOffset]);
@@ -88,14 +129,29 @@ BarPopover {
         when: root.wifiDevice !== null && root.isWifi
     }
 
+    // The radio switch the widget's left click also flips, so the panel can
+    // say which way it is set.
+    PopoverRow {
+        badge: Networking.wifiEnabled ? qsTr("on") : qsTr("off")
+        cursor: root.keyboardMode && root.selected === 0
+        glyph: Networking.wifiEnabled ? Config.wifiGlyphs[4] : Config.wifiOffGlyph
+        label: qsTr("Wi-Fi")
+        showRing: cursor
+        visible: root.radioSwitchable
+
+        onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
+    }
+
     PopoverRow {
         glyph: root.isWifi ? root.bars(root.connectedNetwork?.signalStrength ?? 0) : Config.wiredGlyph
         label: root.isWifi ? root.connectedNetwork?.name ?? qsTr("Wireless") : qsTr("Wired")
         badge: root.active?.address ?? ""
-        cursor: root.keyboardMode && root.listOffset === 1 && root.selected === 0
+        cursor: root.keyboardMode && root.connectedNetwork !== null && root.selected === root.radioRow
         // Only a wifi network can be dropped from here: a wired route has no
         // list to come back from, so its row stays inert.
         dimmed: root.busy && !(root.connectedNetwork?.stateChanging ?? false)
+        menu: root.rowMenu
+        menuActions: root.actionsFor(root.connectedNetwork)
         selected: true
         showRing: cursor
         status: root.connectedNetwork?.stateChanging ? qsTr("disconnecting") : ""
@@ -145,6 +201,8 @@ BarPopover {
             dimmed: root.busy && !networkRow.modelData.stateChanging
             glyph: root.bars(networkRow.modelData.signalStrength)
             label: networkRow.modelData.name
+            menu: root.rowMenu
+            menuActions: root.actionsFor(networkRow.modelData)
             showRing: networkRow.cursor
             status: networkRow.modelData.stateChanging ? qsTr("connecting") : ""
 

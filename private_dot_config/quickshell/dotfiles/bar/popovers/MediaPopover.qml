@@ -57,9 +57,16 @@ BarPopover {
         onTriggered: root.player?.positionChanged()
     }
 
+    // A click on the title brings the player's window forward, where the
+    // player says it can be raised.
     PopoverRow {
         glyph: "󰝚"
         label: root.player?.trackTitle ?? qsTr("Nothing playing")
+
+        onClicked: {
+            if (root.player?.canRaise)
+                root.player.raise();
+        }
     }
 
     PopoverRow {
@@ -136,11 +143,26 @@ BarPopover {
         }
     }
 
+    // Seekable where the player allows it: the same slider as volume, so a
+    // control looks like a control. A player that cannot seek keeps the
+    // read-only bar below, because a thumb that moves nothing is a lie.
+    PopoverSlider {
+        step: 10 / Math.max(1, root.player?.length ?? 1)
+        value: root.progress
+        visible: (root.player?.canSeek ?? false) && (root.player?.lengthSupported ?? false) && (root.player?.length ?? 0) > 0
+        width: parent.width
+
+        onMoved: v => {
+            if (root.player)
+                root.player.position = v * root.player.length;
+        }
+    }
+
     Rectangle {
         color: Theme.groundRaised
         height: Config.popSliderTrack
         radius: Config.radiusPill
-        visible: (root.player?.lengthSupported ?? false) && (root.player?.length ?? 0) > 0
+        visible: !(root.player?.canSeek ?? false) && (root.player?.lengthSupported ?? false) && (root.player?.length ?? 0) > 0
         width: parent.width
 
         Rectangle {

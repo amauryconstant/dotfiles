@@ -56,6 +56,8 @@ PopupWindow {
     // Split from `visible` so the arrival animation has something to run from:
     // the window maps first, then this flips one event loop later.
     property bool revealed: false
+    // The rows' right-click menu. Payload rows take it as `menu: root.rowMenu`.
+    readonly property alias rowMenu: rowMenu
     property int selected: -1
     property bool shown: false
     property string title: ""
@@ -74,6 +76,7 @@ PopupWindow {
     signal stepped(int delta)
 
     function close(): void {
+        rowMenu.hide();
         root.shown = false;
         root.revealed = false;
         root.keyboardMode = false;
@@ -189,28 +192,45 @@ PopupWindow {
         // Keys handlers need a focused ITEM — a window is not one. Focus is
         // taken only in keyboard mode, so a pointer-opened popover cannot
         // swallow anything even if a grab existed.
+        //
+        // 🚨 While the row menu is up it owns every key: Escape closes the
+        // MENU, never the popover under it, and the arrows move its cursor.
         Item {
             anchors.fill: parent
             focus: root.keyboardMode
 
-            Keys.onBacktabPressed: root.move(-1)
-            Keys.onDownPressed: root.move(1)
-            Keys.onEnterPressed: root.activated(root.selected)
-            Keys.onEscapePressed: root.close()
-            Keys.onLeftPressed: root.stepped(-1)
+            Keys.onBacktabPressed: rowMenu.visible ? rowMenu.move(-1) : root.move(-1)
+            Keys.onDownPressed: rowMenu.visible ? rowMenu.move(1) : root.move(1)
+            Keys.onEnterPressed: rowMenu.visible ? rowMenu.run(rowMenu.cursor) : root.activated(root.selected)
+            Keys.onEscapePressed: rowMenu.visible ? rowMenu.hide() : root.close()
+            Keys.onLeftPressed: {
+                if (!rowMenu.visible)
+                    root.stepped(-1);
+            }
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_PageUp)
-                    root.paged(-1);
-                else if (event.key === Qt.Key_PageDown)
-                    root.paged(1);
-                else
+                if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
+                    if (rowMenu.visible)
+                        rowMenu.hide();
+                    else
+                        rowMenu.keyRequested();
+                } else if (rowMenu.visible) {
                     return;
+                } else if (event.key === Qt.Key_PageUp) {
+                    root.paged(-1);
+                } else if (event.key === Qt.Key_PageDown) {
+                    root.paged(1);
+                } else {
+                    return;
+                }
                 event.accepted = true;
             }
-            Keys.onReturnPressed: root.activated(root.selected)
-            Keys.onRightPressed: root.stepped(1)
-            Keys.onTabPressed: root.move(1)
-            Keys.onUpPressed: root.move(-1)
+            Keys.onReturnPressed: rowMenu.visible ? rowMenu.run(rowMenu.cursor) : root.activated(root.selected)
+            Keys.onRightPressed: {
+                if (!rowMenu.visible)
+                    root.stepped(1);
+            }
+            Keys.onTabPressed: rowMenu.visible ? rowMenu.move(1) : root.move(1)
+            Keys.onUpPressed: rowMenu.visible ? rowMenu.move(-1) : root.move(-1)
         }
 
         Column {
@@ -321,6 +341,13 @@ PopupWindow {
                     onClicked: root.runEscapeHatch()
                 }
             }
+        }
+
+        // Last child, so it stacks over the body and the footer alike.
+        ContextMenu {
+            id: rowMenu
+
+            anchors.fill: parent
         }
     }
 }

@@ -20,13 +20,19 @@ BarWidget {
     // is nothing for a colour to distinguish. signalError is reserved for a
     // failure, and a deliberately muted mic is not one.
     iconColor: root.restColor
+    clickHint: qsTr("L unmute · R audio panel")
     tooltipText: qsTr("Microphone muted")
     visible: root.muted
+
+    signal popoverRequested
 
     // Via the script, never `source.audio.muted = false` — the script is what
     // keeps the ThinkPad mic-mute LED in step. omarchy's Microphone.qml writes
     // the property directly and its LED desyncs from the widget as a result.
     onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/mic-mute`])
+    // The audio popover carries the input slider, so it is this widget's
+    // panel too; Bar.qml anchors it under the speaker widget.
+    onRightClicked: root.popoverRequested()
 
     // 🚨 Pipewire node properties stay unbound unless a tracker holds the node.
     // Reading source.properties is deliberately avoided here: doing so while

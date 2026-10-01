@@ -154,6 +154,10 @@ Singleton {
     // where the surface traps the keyboard, which for a popover means only when
     // it was opened from the submap rather than by pointer.
     readonly property int popRingWidth: 2
+    // A row's right-click menu (bar/ContextMenu.qml). Wide enough for the
+    // longest label it carries, "Edit in nm-connection-editor", and well under
+    // popMinW so it never reaches both edges of the surface it is drawn in.
+    readonly property int contextMenuWidth: 220
     // 🚨 Pointer-opened popovers take NO keyboard grab, so nothing tells the
     // shell about a click landing elsewhere -- see BarPopover.qml. Losing the
     // pointer is therefore the close signal, and it needs the same slack the
@@ -374,6 +378,29 @@ Singleton {
     readonly property var wifiGlyphs: ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"]
     readonly property string wiredGlyph: "󰈀"
     readonly property string noNetworkGlyph: "󰖪"
+    // md-wifi_strength_off_outline(0xf092e): the radio switched off by choice.
+    // Not md-wifi_off, which is noNetworkGlyph above — off is not a fault, so
+    // the two must not share a glyph.
+    readonly property string wifiOffGlyph: "󰤮"
+    // md-bluetooth(0xf00af) and md-bluetooth_off(0xf00b2). The widget stays in
+    // the bar while the adapter is off, because left click is what turns it on.
+    readonly property string bluetoothGlyph: "󰂯"
+    readonly property string bluetoothOffGlyph: "󰂲"
+    // Row context-menu actions (bar/ContextMenu.qml), one glyph per verb so a
+    // verb reads the same in every surface that offers it. md-link(0xf0337),
+    // md-link_off(0xf0338), md-trash_can_outline(0xf0a7a),
+    // md-open_in_new(0xf03cc), md-check(0xf012c), md-volume_off(0xf0581),
+    // md-volume_high(0xf057e), md-close(0xf0156).
+    readonly property var menuGlyphs: ({
+            connect: "󰌷",
+            disconnect: "󰌸",
+            forget: "󰩺",
+            open: "󰏌",
+            select: "󰄬",
+            mute: "󰖁",
+            unmute: "󰕾",
+            dismiss: "󰅖"
+        })
     // md-brightness_1..7 -- a seven-step ramp because that is how many the icon
     // set actually has.
     readonly property var brightnessGlyphs: ["󰃚", "󰃛", "󰃜", "󰃝", "󰃞", "󰃟", "󰃠"]

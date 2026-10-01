@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import "../"
+import "../bar"
 import Quickshell
 import Quickshell.Services.Notifications
 import Quickshell.Widgets
@@ -40,8 +41,54 @@ Rectangle {
     // Popups have no actions row: the pointer is not reliably over a toast
     // that is about to vanish, and a mis-click on Dismiss loses the message.
     property bool showActions: true
+    // Set by the centre only. With it, a left click on the card invokes the
+    // sender's `default` action (or dismisses, where there is none) and a
+    // right click opens this menu. Popups keep their own click: hide the toast.
+    property ContextMenu menu: null
 
     signal dismissed
+
+    // The action a sender means by "the notification itself was clicked" —
+    // Slack's opens the thread. Freedesktop names it `default`.
+    readonly property var defaultAction: root.notification.actions.find(a => a.identifier === "default") ?? null
+    // Where the card itself is clickable, the default action is the click, so
+    // a button repeating it would offer the same act twice.
+    readonly property var buttonActions: root.menu ? root.notification.actions.filter(a => a.identifier !== "default") : root.notification.actions
+
+    function activate(): void {
+        if (root.defaultAction) {
+            root.defaultAction.invoke();
+            // resident asks to survive its own action, as with the buttons.
+            if (root.notification.resident)
+                return;
+        }
+        root.dismissed();
+    }
+
+    function menuActions(): var {
+        const actions = [];
+        if (root.defaultAction)
+            actions.push({
+                label: qsTr("Open"),
+                glyph: Config.menuGlyphs.open,
+                run: () => root.activate()
+            });
+        for (const action of root.buttonActions)
+            actions.push({
+                label: action.text,
+                run: () => {
+                    action.invoke();
+                    if (!root.notification.resident)
+                        root.dismissed();
+                }
+            });
+        actions.push({
+            label: qsTr("Dismiss"),
+            glyph: Config.menuGlyphs.dismiss,
+            run: () => root.dismissed()
+        });
+        return actions;
+    }
 
     readonly property bool critical: root.notification.urgency === NotificationUrgency.Critical
 
@@ -268,7 +315,7 @@ Rectangle {
             x: Config.padTight
 
             Repeater {
-                model: root.notification.actions
+                model: root.buttonActions
 
                 Rectangle {
                     id: action
@@ -427,5 +474,24 @@ Rectangle {
         running: true
 
         onTriggered: age.refresh()
+    }
+
+    // The centre's card click. 🚨 z: -1, the rule BarWidget and the popup stack
+    // follow: declared after the content it would sit ABOVE every child's
+    // MouseArea and swallow the buttons' clicks. Under the content, a button
+    // wins where one exists and the card takes the click everywhere else.
+    MouseArea {
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        enabled: root.menu !== null
+        z: -1
+
+        onClicked: event => {
+            if (event.button === Qt.RightButton)
+                root.menu.show(root, root.menuActions(), false);
+            else
+                root.activate();
+        }
     }
 }

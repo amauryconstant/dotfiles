@@ -57,6 +57,11 @@ Item {
     // Calendars and device lists only line up in a fixed-pitch font.
     property bool tooltipMonospace: false
     property string tooltipText: ""
+    // What each button does, as one line under the tooltip — e.g.
+    // "L mute · R panel · M next output". The bar's click grammar (left acts,
+    // right opens the panel, middle is the secondary act) is only learnable if
+    // the widget states its own share of it.
+    property string clickHint: ""
 
     signal clicked
     signal middleClicked
@@ -155,8 +160,9 @@ Item {
 
     BarTooltip {
         anchorItem: root
+        hint: root.clickHint
         monospace: root.tooltipMonospace
         text: root.tooltipText
-        visible: mouse.containsMouse && root.tooltipText !== "" && !root.popoverOpen
+        visible: mouse.containsMouse && (root.tooltipText !== "" || root.clickHint !== "") && !root.popoverOpen
     }
 }

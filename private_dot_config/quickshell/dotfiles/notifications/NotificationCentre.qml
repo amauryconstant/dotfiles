@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import "../"
+import "../bar"
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -17,6 +18,7 @@ PanelWindow {
     id: root
 
     function close(): void {
+        cardMenu.hide();
         root.visible = false;
     }
 
@@ -52,7 +54,8 @@ PanelWindow {
         anchors.fill: parent
         focus: true
 
-        Keys.onEscapePressed: root.close()
+        // Escape closes the card menu first, the centre only once it is gone.
+        Keys.onEscapePressed: cardMenu.visible ? cardMenu.hide() : root.close()
     }
 
     MouseArea {
@@ -223,6 +226,7 @@ PanelWindow {
 
                             required property var modelData
 
+                            menu: cardMenu
                             notification: card.modelData.lead
                             rest: card.modelData.rest
                             width: parent.width
@@ -280,10 +284,19 @@ PanelWindow {
                         font.family: Config.terminalFont
                         font.pixelSize: Config.fontMeta
                         font.weight: Font.Medium
-                        text: qsTr("click → dismiss")
+                        text: qsTr("click → open · right → actions")
                     }
                 }
             }
         }
+    }
+
+    // Over the whole window, so a card near the bottom can open its menu
+    // upward past the panel's edge, and a click anywhere else closes the menu
+    // without closing the centre.
+    ContextMenu {
+        id: cardMenu
+
+        anchors.fill: parent
     }
 }

@@ -25,6 +25,7 @@ BarWidget {
     tooltipText: root.hovered ? root.monthGrid(clock.date) : ""
 
     onClicked: root.popoverRequested()
+    onRightClicked: root.popoverRequested()
 
     function monthGrid(now: date): string {
         const year = now.getFullYear();

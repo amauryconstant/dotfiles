@@ -17,6 +17,12 @@ Item {
     id: root
 
     property string badge: ""
+    // What a right click on this row offers, in ContextMenu's shape. Empty
+    // means the right button does nothing here.
+    property var menuActions: []
+    // The host surface's menu. Set by the payload, never found: the row cannot
+    // know which surface it is drawn in.
+    property ContextMenu menu: null
     // A row whose sibling is mid-operation. Page 03: disabled is opacity, never
     // a token swap, and it exists in exactly this one situation.
     property bool dimmed: false
@@ -31,6 +37,11 @@ Item {
     property bool selected: false
 
     signal clicked
+
+    function openMenu(keyboard: bool): void {
+        if (root.menu && root.menuActions.length > 0)
+            root.menu.show(root, root.menuActions, keyboard);
+    }
 
     height: Config.rowH
     implicitHeight: Config.rowH
@@ -102,10 +113,26 @@ Item {
     MouseArea {
         id: mouse
 
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         anchors.fill: parent
         enabled: !root.dimmed
         hoverEnabled: true
 
-        onClicked: root.clicked()
+        onClicked: event => {
+            if (event.button === Qt.RightButton)
+                root.openMenu(false);
+            else
+                root.clicked();
+        }
+    }
+
+    // The Menu key reaches the row under the keyboard cursor, and only it.
+    Connections {
+        function onKeyRequested(): void {
+            root.openMenu(true);
+        }
+
+        enabled: root.cursor && !root.dimmed
+        target: root.menu
     }
 }

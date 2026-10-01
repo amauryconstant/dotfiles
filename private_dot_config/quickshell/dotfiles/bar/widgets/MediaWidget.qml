@@ -35,13 +35,16 @@ BarWidget {
     // Same rule as the window title: a pixel bound, not Waybar's dynamic-len
     // 35 characters.
     labelMaxWidth: Config.titleMaxW
+    clickHint: qsTr("L play/pause · R panel · M next · scroll volume")
     tooltipText: root.player ? `${root.player.identity}\n${root.player.trackTitle}\n${root.player.trackArtist} - ${root.player.trackAlbum}` : ""
 
     signal popoverRequested
 
-    onClicked: root.popoverRequested()
-    onMiddleClicked: root.player?.previous()
-    onRightClicked: root.player?.next()
+    // Previous lives in the popover's transport row: left and right now carry
+    // the grammar, and of the two skips, next is the one reached for blind.
+    onClicked: root.player?.togglePlaying()
+    onMiddleClicked: root.player?.next()
+    onRightClicked: root.popoverRequested()
     onScrolledDown: {
         if (root.player?.volumeSupported)
             root.player.volume = Math.max(0, root.player.volume - Config.volumeStep);

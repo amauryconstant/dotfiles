@@ -381,7 +381,8 @@ chrome's is `dismissed`.
 output vanishing takes its bar, its popovers and its coordinator with it. `Bar.togglePopover(id,
 keyboard)` closes whatever is open before opening the next.
 
-**Widgets raise, `Bar` decides.** Each of the eight declares `popoverRequested` and `Bar` relays
+**Widgets raise, `Bar` decides.** Each of the eight declares `popoverRequested` (raised on right
+click, and on left click where the widget has no act — see Click grammar) and `Bar` relays
 it — the same shape `LauncherWidget` and `NotificationWidget` already had. `Bar` also binds
 `popoverOpen` back onto the widget, which keeps its chip lit and **suppresses its tooltip**: a
 tooltip hanging over the popover it opened describes the widget twice and covers the payload.
@@ -412,6 +413,61 @@ anchors to is a MODE INDICATOR and is only on the bar while the filter is on.
 One top-level key rather than eight, and every key goes through
 `quickshell-toggle popover <id>` for the same reason every other binding does: IPC only reaches a
 running instance.
+
+## Click grammar (2026-10-01)
+
+One rule for every widget and every panel row, so a button means the same thing everywhere.
+The tray already followed it (`activate` / menu / `secondaryActivate`); the rest of the bar was
+brought in line.
+
+| Button | Bar widget | Panel row |
+|---|---|---|
+| Left | the widget's act; the panel only where there is no act | the row's act |
+| Right | the panel (where none exists, the widget keeps its old secondary) | the row's context menu |
+| Middle | a secondary act, where one exists | — |
+| Scroll | a continuous value | — |
+
+| Widget | Left | Right | Middle | Scroll |
+|---|---|---|---|---|
+| Audio | mute (panel when PipeWire is down) | panel | next sink | volume |
+| Microphone (muted only) | unmute, via `mic-mute` | audio panel | — | — |
+| Media | play/pause | panel | next | player volume |
+| Network | Wi-Fi radio on/off (panel under a hard rfkill block) | panel | — | — |
+| Bluetooth | adapter power | panel | — | — |
+| Night light (on only) | off, via `nightlight-toggle` | panel | — | — |
+| Clock, Battery, Meters | panel | panel | — | — |
+
+**The exception is the notification bell**, kept as it was by the user's choice (left centre,
+right DND, middle clear all): the centre is what the bell is for. Idle, Kanata, Recording,
+Voxtype, Launcher, Tray and Workspaces have no panel and are unchanged.
+
+`BarWidget.clickHint` puts the widget's share of the rule on the tooltip's last line. Set it
+wherever left and right differ; the three panel-only widgets leave it empty.
+
+🚨 **Two old rulings reversed by this, on purpose.** Bluetooth "off is absence": the widget now
+stays while the adapter is off, with `Config.bluetoothOffGlyph`, because left click is the only
+way back on. Night light "a chip that both opens a surface and acts is the shape a user cannot
+undo by looking": the left/right split is what resolves it.
+
+**`bar/ContextMenu.qml` is an `Item` overlaid on its host, never a window** — a popup parented to
+a popover parented to a layer surface stacks the grab failures above. Hosts: `BarPopover` (as
+`rowMenu`, so rows set `menu: root.rowMenu`) and `NotificationCentre`. Rows own their actions
+(`PopoverRow.menuActions`, `[{ label, glyph, run, destructive }]`); the host owns the one menu.
+Its catcher swallows any click outside the panel, closing the menu and nothing else. Keyboard:
+Menu or Shift+F10 opens the cursor row's menu, and while it is up it owns every key, so Esc
+closes the menu before the popover. Destructive items (Forget) take `signalError` on the glyph
+only. Verb glyphs are `Config.menuGlyphs`.
+
+What the menus offer: network rows Connect/Disconnect, Forget (known only), Edit; Bluetooth rows
+Connect/Disconnect, Forget, Open blueman; audio devices Set as output, Mute/Unmute. Network and
+Bluetooth panels lead with their radio switch row. The audio readout (`42%` / `muted`) is a mute
+toggle. The media progress bar is a `PopoverSlider` where `canSeek`, and the title row raises
+the player where `canRaise`.
+
+**Notification centre**: left click on a card runs the sender's `default` action, which
+Freedesktop names `default` and Slack uses to open the thread. With no such action it dismisses.
+Right click lists every action plus Dismiss. `default` is dropped from the buttons there so it
+is not offered twice. Popups are unchanged: a click hides the toast.
 
 ## Widget → source
 

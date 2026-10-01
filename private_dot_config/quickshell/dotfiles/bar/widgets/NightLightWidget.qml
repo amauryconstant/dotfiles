@@ -4,6 +4,7 @@ import "../"
 // qmllint disable unused-imports
 import "../../"
 // qmllint enable unused-imports
+import Quickshell
 import QtQuick
 
 // Mode indicator (surface §5). Until 2026-09-12 the blue-light filter was the
@@ -17,6 +18,7 @@ import QtQuick
 BarWidget {
     id: root
 
+    clickHint: qsTr("L off · R panel")
     icon: source.text
     tooltipText: source.tooltip
     // Off is the normal case, and normal shows nothing.
@@ -28,11 +30,10 @@ BarWidget {
         source.refresh();
     }
 
-    // The click opens the popover rather than toggling, because the popover is
-    // only reachable while the filter is on and carries the off row itself. A
-    // chip that both opens a surface and performs an action is the one shape a
-    // user cannot undo by looking.
-    onClicked: root.popoverRequested()
+    // The widget only draws while the filter is on, so its act is turning it
+    // off — which also removes the widget. Turning it on stays SUPER+N.
+    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/nightlight-toggle`])
+    onRightClicked: root.popoverRequested()
 
     WaybarJsonSource {
         id: source
