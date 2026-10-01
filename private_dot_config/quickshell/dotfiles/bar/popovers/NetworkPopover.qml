@@ -34,34 +34,49 @@ BarPopover {
         return rest.slice().sort((a, b) => (b.known - a.known) || (b.signalStrength - a.signalStrength));
     }
     readonly property var connectedNetwork: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
+    // The connected row takes keyboard index 0 when there is one, so the list
+    // below starts after it.
+    readonly property int listOffset: root.connectedNetwork ? 1 : 0
+    readonly property bool busy: (root.connectedNetwork?.stateChanging ?? false) || root.networks.some(n => n.stateChanging)
 
     function bars(strength: real): string {
         // 🚨 signalStrength is a 0..1 fraction, not the 0..100 nmcli prints.
         return Config.wifiGlyphs[Math.min(4, Math.floor((strength ?? 0) * 4))];
     }
 
-    function connect(network: var): void {
-        if (!network || network.connected)
+    // A click on the connected network drops it; a click on any other joins it.
+    function toggle(network: var): void {
+        if (!network || network.stateChanging)
             return;
+        if (network.connected) {
+            network.disconnect();
+            return;
+        }
         // An unknown network needs credentials, which this surface does not
         // collect — the escape hatch is where that happens.
         if (!network.known) {
             root.runEscapeHatch();
             return;
         }
-        network.connectWithSettings();
+        // 🚨 `connect()`, not `connectWithSettings()`: the latter needs one of
+        // `nmSettings` as its argument and returns silently on anything else,
+        // so calling it bare connected nothing. `connect()` lets NetworkManager
+        // pick the saved profile.
+        network.connect();
     }
 
     footerCommand: ["nm-connection-editor"]
-    footerLeft: root.keyboardMode ? qsTr("↑↓ move · ↵ connect") : ""
+    footerLeft: root.keyboardMode ? qsTr("↑↓ move · ↵ connect / disconnect") : ""
     footerRight: "nm-connection-editor"
     glyph: root.active ? root.isWifi ? root.bars(root.connectedNetwork?.signalStrength ?? 0) : Config.wiredGlyph : Config.noNetworkGlyph
-    navCount: root.networks.length
+    navCount: root.listOffset + root.networks.length
     title: qsTr("Network")
 
     onActivated: index => {
-        if (index >= 0 && index < root.networks.length)
-            root.connect(root.networks[index]);
+        if (index < root.listOffset)
+            root.toggle(root.connectedNetwork);
+        else if (index - root.listOffset < root.networks.length)
+            root.toggle(root.networks[index - root.listOffset]);
     }
 
     // Scanning costs power and is only worth it while the list is on screen —
@@ -77,8 +92,16 @@ BarPopover {
         glyph: root.isWifi ? root.bars(root.connectedNetwork?.signalStrength ?? 0) : Config.wiredGlyph
         label: root.isWifi ? root.connectedNetwork?.name ?? qsTr("Wireless") : qsTr("Wired")
         badge: root.active?.address ?? ""
+        cursor: root.keyboardMode && root.listOffset === 1 && root.selected === 0
+        // Only a wifi network can be dropped from here: a wired route has no
+        // list to come back from, so its row stays inert.
+        dimmed: root.busy && !(root.connectedNetwork?.stateChanging ?? false)
         selected: true
+        showRing: cursor
+        status: root.connectedNetwork?.stateChanging ? qsTr("disconnecting") : ""
         visible: root.active !== null
+
+        onClicked: root.toggle(root.connectedNetwork)
     }
 
     PopoverRow {
@@ -104,7 +127,7 @@ BarPopover {
     ListView {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
-        currentIndex: root.selected
+        currentIndex: root.selected - root.listOffset
         height: Math.min(contentHeight, root.bodyMaxHeight - Config.rowH * 2)
         model: root.networks
         width: parent.width
@@ -116,16 +139,16 @@ BarPopover {
             required property var modelData
 
             badge: networkRow.modelData.known ? qsTr("known") : ""
-            cursor: root.keyboardMode && root.selected === networkRow.index
+            cursor: root.keyboardMode && root.selected === root.listOffset + networkRow.index
             // Page 03: an operation in flight reports in the row that started
             // it and its SIBLINGS disable for the duration.
-            dimmed: root.networks.some(n => n.stateChanging) && !networkRow.modelData.stateChanging
+            dimmed: root.busy && !networkRow.modelData.stateChanging
             glyph: root.bars(networkRow.modelData.signalStrength)
             label: networkRow.modelData.name
             showRing: networkRow.cursor
             status: networkRow.modelData.stateChanging ? qsTr("connecting") : ""
 
-            onClicked: root.connect(networkRow.modelData)
+            onClicked: root.toggle(networkRow.modelData)
         }
     }
 }
