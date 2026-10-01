@@ -36,11 +36,16 @@ validation_failed=0
 managed_targets=$(chezmoi managed --path-style=absolute 2>/dev/null || true)
 
 # has_marker <content> <marker-kind>
+#
+# Pattern matching, never `printf | grep -q`: grep -q (and head) exit on the
+# first match, printf then takes SIGPIPE, and under pipefail the pipeline
+# returns 141 — a FOUND marker reported as lost. Measured on a 30KB
+# Config.qml.tmpl: 130 false "lost its Go template syntax" in 200 runs.
 has_marker() {
 	case "$2" in
-	shebang) printf '%s' "$1" | head -n 1 | grep -q '^#!/usr/bin/env chezmoi_modify_manager' ;;
-	modify-template) printf '%s' "$1" | grep -q 'chezmoi:modify-template' ;;
-	template) printf '%s' "$1" | grep -q '{{' ;;
+	shebang) [[ ${1%%$'\n'*} == '#!/usr/bin/env chezmoi_modify_manager'* ]] ;;
+	modify-template) [[ $1 == *'chezmoi:modify-template'* ]] ;;
+	template) [[ $1 == *'{{'* ]] ;;
 	esac
 }
 
