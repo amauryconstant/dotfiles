@@ -18,6 +18,6 @@ BarWidget {
     tooltipText: `Brightness: ${Backlight.percent}%`
     visible: Config.isLaptop && Backlight.available
 
-    onScrolledDown: Quickshell.execDetached([`${Config.scriptsDir}/desktop/brightness-set`, "down"])
-    onScrolledUp: Quickshell.execDetached([`${Config.scriptsDir}/desktop/brightness-set`, "up"])
+    onScrolledDown: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/brightness-set`, "down"]))
+    onScrolledUp: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/brightness-set`, "up"]))
 }

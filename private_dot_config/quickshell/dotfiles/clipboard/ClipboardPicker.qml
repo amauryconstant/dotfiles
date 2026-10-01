@@ -97,7 +97,7 @@ PickerSurface {
             return;
         // Positional argument rather than interpolation: an id is ours, but the
         // habit is what keeps a shell command safe.
-        Quickshell.execDetached(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", entry.id]);
+        Quickshell.execDetached(Config.detach.concat(["sh", "-c", 'cliphist decode "$1" | wl-copy', "sh", entry.id]));
         root.close();
     }
     // Shift+Delete, and no confirmation: page 11's one unguarded destructive
@@ -106,7 +106,7 @@ PickerSurface {
         const entry = root.matches[root.selected];
         if (!entry)
             return;
-        Quickshell.execDetached(["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", entry.line]);
+        Quickshell.execDetached(Config.detach.concat(["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "sh", entry.line]));
         // The delete is a separate process, so the list is re-read rather than
         // patched locally -- what cliphist holds is the only truth about it.
         reloadDelay.restart();

@@ -95,7 +95,7 @@ PanelWindow {
     // them, so it goes through sh rather than being split into an argv.
     function run(action: var): void {
         root.close();
-        Quickshell.execDetached(["sh", "-c", action.command]);
+        Quickshell.execDetached(Config.detach.concat(["sh", "-c", action.command]));
     }
 
     function activateKey(text: string): bool {

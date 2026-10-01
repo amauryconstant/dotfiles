@@ -47,7 +47,7 @@ BarWidget {
     }
     tooltipText: source.tooltip
 
-    onClicked: Quickshell.execDetached(["systemctl", "--user", "restart", "voxtype"])
+    onClicked: Quickshell.execDetached(Config.detach.concat(["systemctl", "--user", "restart", "voxtype"]))
 
     WaybarJsonSource {
         id: source

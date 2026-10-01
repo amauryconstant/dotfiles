@@ -122,14 +122,14 @@ PickerSurface {
         if (root.prefix === ":") {
             if (!root.term)
                 return;
-            Quickshell.execDetached([Config.terminal, "-e", "sh", "-c", root.term]);
+            Quickshell.execDetached(Config.detach.concat([Config.terminal, "-e", "sh", "-c", root.term]));
             root.close();
             return;
         }
         if (root.prefix === "=") {
             // Copies, launches nothing — an expression has no process.
             if (root.calcResult)
-                Quickshell.execDetached(["wl-copy", "--", root.calcResult]);
+                Quickshell.execDetached(Config.detach.concat(["wl-copy", "--", root.calcResult]));
             root.close();
             return;
         }
@@ -137,7 +137,10 @@ PickerSurface {
         if (!entry)
             return;
         try {
-            entry.execute();
+            Quickshell.execDetached({
+                command: Config.detach.concat(entry.command),
+                workingDirectory: entry.workingDirectory
+            });
         } catch (e) {
             root.launchError = String(e.message ?? e);
             return;

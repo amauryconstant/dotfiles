@@ -70,7 +70,7 @@ BarPopover {
         if (!node?.audio)
             return;
         if (node.id === root.source?.id)
-            Quickshell.execDetached([`${Config.scriptsDir}/desktop/mic-mute`]);
+            Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/mic-mute`]));
         else
             node.audio.muted = !node.audio.muted;
     }

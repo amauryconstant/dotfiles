@@ -24,7 +24,7 @@ BarWidget {
     // absence of any layer line is the same signal, without the extra poll.
     visible: source.text !== ""
 
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/kanata-layer-toggle`])
+    onClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/kanata-layer-toggle`]))
 
     WaybarJsonSource {
         id: source

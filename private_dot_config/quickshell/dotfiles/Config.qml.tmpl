@@ -478,6 +478,19 @@ Singleton {
     // at runtime like Theme's colors.sh path rather than baked in by the
     // template, so the rendered QML stays free of an absolute home path.
     readonly property string scriptsDir: `${Quickshell.env("HOME")}/.local/lib/scripts`
+    // 🚨 The prefix for EVERY Quickshell.execDetached, and for launching a
+    // DesktopEntry (never `.execute()`). A detached child is detached from the
+    // process, not from the cgroup: it stays in quickshell.service's, and
+    // `systemctl restart` kills the whole control group. Measured 2026-10-01:
+    // firefox opened from the launcher sat in the unit's cgroup
+    // (`systemd-cgls --user-unit quickshell.service`) and died on every
+    // desktop/quickshell-restart — as would hyprsunset or a recording started
+    // from the bar. A transient scope moves the child out before it execs.
+    //
+    // systemd-run rather than `uwsm app`: same effect, 18 ms against 210, and
+    // the slice is the one `uwsm app` would pick. `Process` children are the
+    // opposite case — the shell's own readers — and are meant to die with it.
+    readonly property list<string> detach: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=app-graphical.slice", "--"]
 
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.

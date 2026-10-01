@@ -60,7 +60,7 @@ BarPopover {
 
     onActivated: index => {
         if (index === 1)
-            Quickshell.execDetached([`${Config.scriptsDir}/desktop/nightlight-toggle`]);
+            Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/nightlight-toggle`]));
     }
     onStepped: delta => {
         if (root.selected === 0)
@@ -109,7 +109,7 @@ BarPopover {
         showRing: root.keyboardMode && root.selected === 1
 
         onClicked: {
-            Quickshell.execDetached([`${Config.scriptsDir}/desktop/nightlight-toggle`]);
+            Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/nightlight-toggle`]));
             root.close();
         }
     }
@@ -120,7 +120,7 @@ BarPopover {
         interval: Config.motionSlow
 
         onTriggered: {
-            Quickshell.execDetached([`${Config.scriptsDir}/desktop/nightlight-config`, String(root.pendingK)]);
+            Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/nightlight-config`, String(root.pendingK)]));
             root.pendingK = 0;
         }
     }

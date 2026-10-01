@@ -25,8 +25,8 @@ BarWidget {
         source.refresh();
     }
 
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/idle-toggle`])
-    onRightClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/idle-toggle-nolock`])
+    onClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/idle-toggle`]))
+    onRightClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/idle-toggle-nolock`]))
 
     WaybarJsonSource {
         id: source

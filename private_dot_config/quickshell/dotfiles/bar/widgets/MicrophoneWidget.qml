@@ -29,7 +29,7 @@ BarWidget {
     // Via the script, never `source.audio.muted = false` — the script is what
     // keeps the ThinkPad mic-mute LED in step. omarchy's Microphone.qml writes
     // the property directly and its LED desyncs from the widget as a result.
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/mic-mute`])
+    onClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/mic-mute`]))
     // The audio popover carries the input slider, so it is this widget's
     // panel too; Bar.qml anchors it under the speaker widget.
     onRightClicked: root.popoverRequested()

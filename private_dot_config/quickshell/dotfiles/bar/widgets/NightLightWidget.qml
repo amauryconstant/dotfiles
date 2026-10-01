@@ -32,7 +32,7 @@ BarWidget {
 
     // The widget only draws while the filter is on, so its act is turning it
     // off — which also removes the widget. Turning it on stays SUPER+N.
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/nightlight-toggle`])
+    onClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/nightlight-toggle`]))
     onRightClicked: root.popoverRequested()
 
     WaybarJsonSource {

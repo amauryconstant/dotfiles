@@ -45,7 +45,7 @@ BarWidget {
 
     // screenrecord is a toggle, so the stop affordance is the same script the
     // keybinding runs — no second code path that could disagree about state.
-    onClicked: Quickshell.execDetached([`${Config.scriptsDir}/desktop/screenrecord`])
+    onClicked: Quickshell.execDetached(Config.detach.concat([`${Config.scriptsDir}/desktop/screenrecord`]))
 
     WaybarJsonSource {
         id: source

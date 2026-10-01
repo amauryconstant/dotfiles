@@ -109,7 +109,7 @@ PopupWindow {
 
     function runEscapeHatch(): void {
         if (root.footerCommand)
-            Quickshell.execDetached(root.footerCommand);
+            Quickshell.execDetached(Config.detach.concat(root.footerCommand));
         root.close();
     }
 

@@ -394,6 +394,16 @@ through `_exit()` on a lost Wayland connection, a crash within 10s of launch (it
 guard calls `exit(-1)` instead of relaunching, `src/launch/main.cpp:68`), `SIGKILL`, and a QML tree
 that fails to load at all.
 
+🚨 **`execDetached` detaches the PROCESS, not the CGROUP.** Everything the shell spawns stays in
+`quickshell.service`'s cgroup, and a unit restart kills the whole control group — so every app
+opened from the launcher died on each `desktop/quickshell-restart` (measured 2026-10-01: firefox
+listed under `systemd-cgls --user-unit quickshell.service`). Every `Quickshell.execDetached`
+therefore takes `Config.detach` as its prefix (a `systemd-run --user --scope` into
+`app-graphical.slice`), and a `DesktopEntry` launches as
+`execDetached({ command: Config.detach.concat(entry.command), workingDirectory })`, never
+`.execute()`. Audit: `grep -rn 'execDetached\|\.execute()'` must show `Config.detach` on every
+hit. `Process` children are the shell's own readers and are meant to die with it.
+
 🚨 **`ScreencopyView` needs a RENDERED window, and `captureFrame()` needs a ready context.**
 Both failures are quiet. Put the view anywhere that is not actually being painted — inside a
 bare `Item` under `ShellRoot`, say — and no recording context is ever created, so `hasContent`

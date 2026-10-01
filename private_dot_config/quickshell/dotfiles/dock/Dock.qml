@@ -227,8 +227,11 @@ PanelWindow {
                         onClicked: {
                             if (tile.windows.length > 0)
                                 tile.windows[0].workspace?.activate();
-                            else
-                                tile.entry?.execute();
+                            else if (tile.entry)
+                                Quickshell.execDetached({
+                                    command: Config.detach.concat(tile.entry.command),
+                                    workingDirectory: tile.entry.workingDirectory
+                                });
                         }
                     }
                 }
