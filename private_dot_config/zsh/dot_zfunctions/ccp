@@ -1,8 +1,9 @@
 # Zsh function: ccp
 # Launch Claude Code with merged settings profiles, optionally under a separate account
 # (-a NAME -> CLAUDE_CONFIG_DIR=~/.config/claude-NAME: own login/history/plugins; profiles and
-# base settings still come from ~/.config/claude, with the account's own settings.json layered
-# between them; --new required to create a not-yet-existing one)
+# base settings still come from ~/.config/claude, with the account's live settings.json and its
+# ccp-only overrides in ~/.config/claude/accounts/NAME.json layered between them; --new required
+# to create an account that has neither)
 # -C/--caveman launches through `caveman claude` (args pass through to claude untouched); without
 # it the session talks to Anthropic directly even though settings.json carries caveman's route. Uppercase
 # on purpose: before `--`, a lowercase -c would silently swallow a mistyped claude --continue.
@@ -10,6 +11,7 @@
 ccp() {
   local CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/claude"
   local CLAUDE_PROFILES_DIR="${CLAUDE_CONFIG_DIR}/profiles"
+  local CLAUDE_ACCOUNTS_DIR="${CLAUDE_CONFIG_DIR}/accounts"
   local base_settings="${CLAUDE_CONFIG_DIR}/settings.json"
   local profile_names=()
   local claude_args=()
@@ -59,7 +61,7 @@ ccp() {
   local account_dir="$CLAUDE_CONFIG_DIR"
   if [[ -n "$account" ]]; then
     account_dir="${XDG_CONFIG_HOME:-$HOME/.config}/claude-${account}"
-    if [[ ! -d "$account_dir" ]] && ! $allow_new; then
+    if [[ ! -d "$account_dir" && ! -f "$CLAUDE_ACCOUNTS_DIR/$account.json" ]] && ! $allow_new; then
       echo "ccp: unknown account '$account' ($account_dir missing); add --new to create it" >&2
       return 1
     fi
@@ -75,14 +77,19 @@ ccp() {
   # merge would inherit it and -C would change nothing. Without -C, point a caveman route back at
   # Anthropic; a profile's own backend (glm, minimax) is left alone. It must be overridden, not
   # deleted: claude still reads the base file itself, and only a --settings value outranks it.
-  # Layers: base settings.json, then the account's own settings.json, then each profile in order.
-  # claude reads the account file itself as user settings, which --settings outranks, so without
-  # this layer base would beat the account. Objects deep-merge and scalars from a later layer win;
+  # Layers: base settings.json, the account's live settings.json, accounts/NAME.json, then each
+  # profile in order. claude reads the live account file itself as user settings, which --settings
+  # outranks, so without that layer base would beat what /config writes there. accounts/NAME.json
+  # holds the account's declared overrides; claude never reads it, so a "$reset" in it cannot leak
+  # the way one in the live file would. Objects deep-merge and scalars from a later layer win;
   # arrays concatenate and dedupe (Claude's own scope semantics), unless a layer's array starts
   # with "$reset", which drops what it inherits. "$reset" is ccp's, stripped here.
   local merged
   local account_settings=()
-  [[ -n "$account" && -f "$account_dir/settings.json" ]] && account_settings=("$account_dir/settings.json")
+  if [[ -n "$account" ]]; then
+    [[ -f "$account_dir/settings.json" ]] && account_settings+=("$account_dir/settings.json")
+    [[ -f "$CLAUDE_ACCOUNTS_DIR/$account.json" ]] && account_settings+=("$CLAUDE_ACCOUNTS_DIR/$account.json")
+  fi
   merged=$(cat "$base_settings" "${account_settings[@]}" "${profile_files[@]}" | jaq -s --argjson caveman "$use_caveman" '
     def uniq: reduce .[] as $x ([]; if (map(select(. == $x)) | length) > 0 then . else . + [$x] end);
     def dm($a; $b):

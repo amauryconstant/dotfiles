@@ -25,6 +25,7 @@
   },
   "autoMode": {
     "soft_deny": [
+      "$reset",
       "$defaults",
       "Dispatching deploy-production.yml or deploy-functions.yml, or any deploy to the Firebase project ringstone-web-prod, without the user asking for that deploy in this session",
       "Editing, moving, deleting or deploying any public marketing-site file (static/, static/Downloadables/, the root images/ folder, the public hosting target, www.ringstonetech.com): the owner gates the public site",
@@ -33,6 +34,7 @@
       "Deleting any file or folder under Utilities/: finished files move to that folder's DONE/ instead"
     ],
     "environment": [
+      "$reset",
       "### Org-wide",
       "**Organization**: RingStone (GitHub org RingStone)",
       "**Source control**: github.com/RingStone/ringstone-site, default branch main; work goes through branches and stacked PRs",
