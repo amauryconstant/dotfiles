@@ -69,14 +69,19 @@ do
 done
 
 # Name the ccp profile, minus any part already announced by its plugin's own badge: `ccp ponytail`
-# would otherwise read [ponytail] [PONYTAIL]. Profiles merge as a+b, so filter per part.
+# would otherwise read [ponytail] [PONYTAIL]. Profiles merge as a+b, so filter per part. `ccp -a`
+# appends @account, which is split off first so it cannot defeat the filter, then always shown.
 if [ -n "${CCP_SETTINGS:-}" ]; then
   profile=${CCP_SETTINGS##*/.merged-}
+  profile=${profile%.json}
+  acct=""
+  case "$profile" in *@*) acct=${profile##*@} profile=${profile%@*} ;; *) ;; esac
   tag=""
-  IFS=+ read -ra parts <<<"${profile%.json}"
+  IFS=+ read -ra parts <<<"$profile"
   for p in "${parts[@]}"; do
     case "$shown" in *" $p "*) ;; *) tag="${tag:+$tag+}$p" ;; esac
   done
+  if [ -n "$acct" ]; then tag="${tag:+$tag@}$acct"; fi
   if [ -n "$tag" ]; then line="$line  $(printf '\033[38;5;111m[%s]\033[0m' "$tag")"; fi
 fi
 

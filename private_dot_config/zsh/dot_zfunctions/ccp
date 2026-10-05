@@ -1,7 +1,8 @@
 # Zsh function: ccp
 # Launch Claude Code with merged settings profiles, optionally under a separate account
 # (-a NAME -> CLAUDE_CONFIG_DIR=~/.config/claude-NAME: own login/history/plugins; profiles and
-# base settings still come from ~/.config/claude; --new required to create a not-yet-existing one)
+# base settings still come from ~/.config/claude, with the account's own settings.json layered
+# between them; --new required to create a not-yet-existing one)
 # -C/--caveman launches through `caveman claude` (args pass through to claude untouched); without
 # it the session talks to Anthropic directly even though settings.json carries caveman's route. Uppercase
 # on purpose: before `--`, a lowercase -c would silently swallow a mistyped claude --continue.
@@ -55,26 +56,6 @@ ccp() {
     [[ ! -f "${CLAUDE_PROFILES_DIR}/${p}.json" ]] && echo "Profile not found: $p" >&2 && return 1
   done
 
-  local merged_name="${(j:+:)profile_names}"
-  merged_name="${merged_name:-base}"
-  local tmpfile="${CLAUDE_CONFIG_DIR}/profiles/.merged-${merged_name}.json"
-
-  local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
-  profile_files=("${profile_files[@]/%/.json}")
-  # caveman's native integration writes its proxy route into the base settings.json, so every
-  # merge would inherit it and -C would change nothing. Without -C, point a caveman route back at
-  # Anthropic; a profile's own backend (glm, minimax) is left alone. It must be overridden, not
-  # deleted: claude still reads the base file itself, and only a --settings value outranks it.
-  local merged
-  merged=$(cat "$base_settings" "${profile_files[@]}" | jaq -s --argjson caveman "$use_caveman" '
-    reduce .[] as $item ({}; . * $item)
-    | if ($caveman | not) and ((.env.ANTHROPIC_BASE_URL // "") | test("^http://(127\\.0\\.0\\.1|localhost):[0-9]+/w/"))
-      then .env.ANTHROPIC_BASE_URL = "https://api.anthropic.com" else . end') \
-    || { echo "Failed to merge profiles" >&2; return 1; }
-  print -r -- "$merged" >| "$tmpfile"
-
-  # CCP_SETTINGS lets the statusline name the profile and read its effective settings.
-  # The config dir override is an env prefix so it applies to this one process only.
   local account_dir="$CLAUDE_CONFIG_DIR"
   if [[ -n "$account" ]]; then
     account_dir="${XDG_CONFIG_HOME:-$HOME/.config}/claude-${account}"
@@ -83,5 +64,40 @@ ccp() {
       return 1
     fi
   fi
+
+  local merged_name="${(j:+:)profile_names}"
+  merged_name="${merged_name:-base}${account:+@$account}"
+  local tmpfile="${CLAUDE_CONFIG_DIR}/profiles/.merged-${merged_name}.json"
+
+  local profile_files=("${profile_names[@]/#/${CLAUDE_PROFILES_DIR}/}")
+  profile_files=("${profile_files[@]/%/.json}")
+  # caveman's native integration writes its proxy route into the base settings.json, so every
+  # merge would inherit it and -C would change nothing. Without -C, point a caveman route back at
+  # Anthropic; a profile's own backend (glm, minimax) is left alone. It must be overridden, not
+  # deleted: claude still reads the base file itself, and only a --settings value outranks it.
+  # Layers: base settings.json, then the account's own settings.json, then each profile in order.
+  # claude reads the account file itself as user settings, which --settings outranks, so without
+  # this layer base would beat the account. Objects deep-merge and scalars from a later layer win;
+  # arrays concatenate and dedupe (Claude's own scope semantics), unless a layer's array starts
+  # with "$reset", which drops what it inherits. "$reset" is ccp's, stripped here.
+  local merged
+  local account_settings=()
+  [[ -n "$account" && -f "$account_dir/settings.json" ]] && account_settings=("$account_dir/settings.json")
+  merged=$(cat "$base_settings" "${account_settings[@]}" "${profile_files[@]}" | jaq -s --argjson caveman "$use_caveman" '
+    def uniq: reduce .[] as $x ([]; if (map(select(. == $x)) | length) > 0 then . else . + [$x] end);
+    def dm($a; $b):
+      if ($a|type) == "object" and ($b|type) == "object" then
+        reduce ($b|keys[]) as $k ($a; .[$k] = dm($a[$k]; $b[$k]))
+      elif ($a|type) == "array" and ($b|type) == "array" then
+        if ($b|.[0]?) == "$reset" then $b[1:] else $a + $b | uniq end
+      else $b end;
+    reduce .[] as $item ({}; dm(.; $item))
+    | if ($caveman | not) and ((.env.ANTHROPIC_BASE_URL // "") | test("^http://(127\\.0\\.0\\.1|localhost):[0-9]+/w/"))
+      then .env.ANTHROPIC_BASE_URL = "https://api.anthropic.com" else . end') \
+    || { echo "Failed to merge profiles" >&2; return 1; }
+  print -r -- "$merged" >| "$tmpfile"
+
+  # CCP_SETTINGS lets the statusline name the profile and read its effective settings.
+  # The config dir override is an env prefix so it applies to this one process only.
   CLAUDE_CONFIG_DIR="$account_dir" CCP_SETTINGS="$tmpfile" "${launcher[@]}" --settings "$tmpfile" "${claude_args[@]}"
 }
