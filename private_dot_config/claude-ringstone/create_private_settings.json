@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "blockReadsOutsideWorkingDirectories": true,
+    "additionalDirectories": [
+      "/home/amaury/.config/claude-ringstone",
+      "/home/amaury/.config/claude/profiles"
+    ]
+  },
+  "model": "opusplan",
+  "advisorModel": "opus",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-sonnet-5-5": {
+      "effortLevel": "high"
+    }
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": false,
+    "context7@claude-plugins-official": false,
+    "claude-md-management@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": false
+  },
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Dispatching deploy-production.yml or deploy-functions.yml, or any deploy to the Firebase project ringstone-web-prod, without the user asking for that deploy in this session",
+      "Editing, moving, deleting or deploying any public marketing-site file (static/, static/Downloadables/, the root images/ folder, the public hosting target, www.ringstonetech.com): the owner gates the public site",
+      "git push to main, or any force push that is not --force-with-lease: work lands through a branch and a PR, and stacked branches are rebased then pushed with lease",
+      "Writing to production Firestore or any production shared resource (Slack, Toggl, Pipedrive, Drive) from a local shell",
+      "Deleting any file or folder under Utilities/: finished files move to that folder's DONE/ instead"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: RingStone (GitHub org RingStone)",
+      "**Source control**: github.com/RingStone/ringstone-site, default branch main; work goes through branches and stacked PRs",
+      "**Cloud provider(s)**: Google Cloud / Firebase. Staging project ringstone-staging (hosting targets ringstone-staging and ringstone-demo); production project ringstone-web-prod (hosting targets ringstone-web-prod = public site, ringstone-os = the OS)",
+      "**CI/CD deploy targets**: GitHub Actions. A push to main deploys staging; deploy-production.yml and deploy-functions.yml deploy production",
+      "**Secrets management**: GitHub Actions secrets and Google Secret Manager; local copies live only in Utilities/Hazem Private/, which is never read, copied or printed",
+      "**Sensitive data locations & audiences**: production Firestore holds real people and pay data; staging holds fake people only, and the two never mix. .credentials.json and .claude.json in /home/amaury/.config/claude-ringstone/ and /home/amaury/.config/claude/ hold Claude Code account credentials: never read, copy, print or render them",
+      "**Sensitive remote targets**: anything named ringstone-web-prod, ringstone-os, prod or production, and www.ringstonetech.com",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development on the RingStone site and OS (Firebase hosting, Cloud Functions, Node and Python tooling managed by mise, pnpm and uv)",
+      "**Trusted repo**: /home/amaury/Projects/_ringstone/ringstone-site and its remote github.com/RingStone/ringstone-site",
+      "**Org-specific CLIs**: mise, pnpm, uv, gh, firebase, gcloud, node, python",
+      "Routine mise, pnpm, uv, gh (read, branch, PR) and test-suite operations in this repo are routine, not sensitive"
+    ]
+  },
+  "theme": "dark-ansi"
+}
