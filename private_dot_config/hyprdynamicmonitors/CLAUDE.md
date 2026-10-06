@@ -1,6 +1,6 @@
 # HyprDynamicMonitors
 
-Desktop monitor profile manager. Two user services (`hyprdynamicmonitors-prepare.service` runs before Hyprland, `hyprdynamicmonitors.service` is the daemon) — both enabled by `run_once_before_008`, not manually. Emits `~/.config/hypr/monitors.conf`, which `hyprland.conf` sources.
+Desktop monitor profile manager. Two user services (`hyprdynamicmonitors-prepare.service` runs before Hyprland, `hyprdynamicmonitors.service` is the daemon) — both enabled by `run_once_after_002` from `.chezmoidata/services.yaml`, not manually. Emits `~/.config/hypr/monitors.conf`, which `hyprland.conf` sources.
 
 - TUI: `hyprdynamicmonitors tui` (edit profiles, Tab to Profile view). Validate: `hyprdynamicmonitors validate`.
 - After manual `config.toml` edits: `systemctl --user restart hyprdynamicmonitors`.

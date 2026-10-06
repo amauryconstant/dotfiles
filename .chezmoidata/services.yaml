@@ -25,6 +25,20 @@ services:
       enabled: true
       start: true
       requires_command: hypridle
+    # Monitor automation. Were enabled by run_once_before_008, which ran BEFORE
+    # packages and files existed on a fresh machine and aborted the apply.
+    - name: hyprdynamicmonitors-prepare.service # pre-session profile render (graphical-session-pre.target)
+      enabled: true
+      start: false
+      requires_command: hyprdynamicmonitors
+    - name: hyprdynamicmonitors.service
+      enabled: true
+      start: true
+      requires_command: hyprdynamicmonitors
+    - name: hyprwhenthen.service # event-driven window rules (OAuth popups etc.)
+      enabled: true
+      start: true
+      requires_command: hyprwhenthen
     - name: quickshell.service # desktop shell; its ConditionPathExists keeps it inert on the Waybar branch
       enabled: true
       start: true

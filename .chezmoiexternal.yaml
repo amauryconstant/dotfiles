@@ -12,3 +12,23 @@
   pull:
     args:
       - "--ff-only"  # Only fast-forward pulls (avoid merge conflicts)
+
+# hyprsplit Lua library — require("hyprsplit"); hyprland.lua adds
+# ~/.config/hypr/?/init.lua to package.path. Was cloned by
+# run_once_before_008, which ran before packages were installed and aborted a
+# fresh `chezmoi init --apply`. As an external it lands with the other files,
+# before run_once_after_008 validates the config that requires it.
+# No refreshPeriod on purpose: clone when missing, update only on
+# `chezmoi apply -R` -- a compositor library should not move on a routine apply.
+# An existing checkout keeps its own origin (git pull), see
+# _guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md for which fork and why.
+".config/hypr/hyprsplit":
+  type: "git-repo"
+  url: "https://github.com/cryeprecision/hyprsplit"
+  clone:
+    args:
+      - "--depth"
+      - "1"
+  pull:
+    args:
+      - "--ff-only"

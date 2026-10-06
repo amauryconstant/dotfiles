@@ -1,6 +1,6 @@
 # hyprwhenthen — Window Event Automation
 
-Reacts to Hyprland events (`windowtitlev2`, `openwindow`, …) to drive dynamic window behavior. Runs as the `hyprwhenthen.service` user unit (enabled by `run_once_before_008`). Upstream: https://github.com/fiffeek/hyprwhenthen
+Reacts to Hyprland events (`windowtitlev2`, `openwindow`, …) to drive dynamic window behavior. Runs as the `hyprwhenthen.service` user unit (enabled by `run_once_after_002` from `.chezmoidata/services.yaml`). Upstream: https://github.com/fiffeek/hyprwhenthen
 
 ## Deployed config
 

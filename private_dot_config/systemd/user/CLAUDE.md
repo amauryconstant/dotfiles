@@ -12,8 +12,8 @@
 | `system-health-check.{service,timer}` | timer | Health monitoring every 15 min | `after_004` |
 | `session-autosave.{service,timer}` | timer | Hyprland session autosave every 15 min | `after_004` |
 | `home-backup.{service,timer}` | timer | Restic home backup daily 9am | `after_010` (Restic feature) |
-| `hyprdynamicmonitors.service` + `-prepare.service` | service | Monitor profile daemon + pre-Hyprland prep | `before_008` |
-| `hyprwhenthen.service` | service | Event-driven window automation | `before_008` |
+| `hyprdynamicmonitors.service` + `-prepare.service` | service | Monitor profile daemon + pre-Hyprland prep | `after_002` (`services.yaml`) |
+| `hyprwhenthen.service` | service | Event-driven window automation | `after_002` (`services.yaml`) |
 | `darkman.service` | service | Solar auto theme switching | `after_006` |
 | `quickshell.service` | service | Desktop shell — bar, OSD, launcher, pickers **and `org.freedesktop.Notifications`**. Supervised because one process owns all of them; see "Non-obvious details" | `services.yaml` user_services → `after_002` |
 | `hypridle.service` | service | Idle/lock daemon. `ExecStart` reads `HYPRIDLE_CONF`, defaulted via `Environment=` and overridden by the optional `EnvironmentFile=-%t/hypridle-mode.env` that `idle-toggle-nolock` writes (later directive wins). See `lib/scripts/desktop/CLAUDE.md` → Idle & Lock | `services.yaml` user_services → `after_002` |

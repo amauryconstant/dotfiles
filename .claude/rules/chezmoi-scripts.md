@@ -21,12 +21,12 @@
 
 ## Execution Order
 
-1. **`run_once_before_*`** (000-008)
+1. **`run_once_before_*`** (000-007)
    - 000: System prerequisites
    - 001: **Hyprland session validation** (prevents crashes)
    - 002-006: Setup tasks
    - 007: Default theme structure (BEFORE file application — configs reference `~/.config/themes/current/`)
-   - 008: Hyprland plugins + monitor automation services
+   - (008 retired 2026-10-06: hyprsplit is a `.chezmoiexternal.yaml` git-repo, monitor services are in `services.yaml` — it ran before packages and aborted fresh installs)
 
 2. **`run_onchange_before_*`** (sync_packages)
    - Runs on first install AND package changes
@@ -62,7 +62,6 @@
 | 005 | instantiate_encryption_key | Encryption key setup |
 | 006 | install_chezmoi_modify_manager | chezmoi_modify_manager install |
 | 007 | setup_default_theme | Theme directory structure + symlinks (must run before file application) |
-| 008 | setup_hyprland_plugins | hyprsplit via hyprpm + HyprDynamicMonitors/hyprwhenthen services |
 
 ### run_onchange_before_*
 
