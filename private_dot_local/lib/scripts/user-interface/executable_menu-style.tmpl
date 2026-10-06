@@ -63,7 +63,7 @@ case "$CHOICE" in
                 {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/monitor.conf
                 ;;
             "󱃾 Environment")
-                {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/environment.conf
+                {{ .globals.applications.terminal }} -e $EDITOR ~/.local/share/chezmoi/private_dot_config/uwsm/env.tmpl
                 ;;
             "󰌌 Input")
                 {{ .globals.applications.terminal }} -e $EDITOR ~/.config/hypr/conf/input.conf

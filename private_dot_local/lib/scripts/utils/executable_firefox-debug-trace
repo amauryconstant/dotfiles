@@ -313,8 +313,8 @@ generate_text_report() {
             echo "  3. PDF hardware acceleration (new in FF149)"
             echo
             echo "RECOMMENDATION"
-            echo "  Try adding to environment.conf:"
-            echo "    env = MOZ_XDG_DESKTOP_PORTAL,0"
+            echo "  Try adding to ~/.config/uwsm/env (uwsm/env.tmpl in chezmoi):"
+            echo "    export MOZ_XDG_DESKTOP_PORTAL=0"
         fi
 
         echo
@@ -386,13 +386,13 @@ generate_markdown_report() {
             echo
             echo "### Recommended Workaround"
             echo
-            echo 'Add to `~/.config/hypr/conf/environment.conf`:'
+            echo 'Add to `~/.config/uwsm/env` (`private_dot_config/uwsm/env.tmpl` in chezmoi):'
             echo
             echo '```bash'
-            echo 'env = MOZ_XDG_DESKTOP_PORTAL,0'
+            echo 'export MOZ_XDG_DESKTOP_PORTAL=0'
             echo '```'
             echo
-            echo 'Then restart Hyprland or source the config.'
+            echo 'Then log out and back in.'
         else
             echo "No hangs detected - issue may be intermittent or resolved."
         fi

@@ -29,7 +29,7 @@
 |------|---------|-----------|
 | `monitor.conf.tmpl` | Display settings (resolution, scaling, position) | ✅ Yes |
 | `plugins.conf` | hyprsplit / plugin config | ❌ No |
-| `environment.conf.tmpl` | Env vars (NVIDIA, Qt/GTK, XDG) | ✅ Yes |
+| `environment.conf` | Empty pointer — session env lives in `uwsm/env.tmpl` (reaches systemd units too) | ❌ No |
 | `input.conf` | Keyboard, mouse, touchpad | ❌ No |
 | `general.conf` | Layout, gaps, borders, colors, **`misc`** | ❌ No |
 | `decoration.conf` | Visual effects (blur, shadows, rounding) | ❌ No |
@@ -75,9 +75,9 @@ Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/environment.conf.tmpl`, `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the wlogout `SUPER+SHIFT+Q`, same gate).
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the wlogout `SUPER+SHIFT+Q`, same gate).
 
-Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/environment.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
+Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 

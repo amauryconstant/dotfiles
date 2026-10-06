@@ -1,0 +1,14 @@
+-- ============================================================================
+-- Environment Variables — moved to ~/.config/uwsm/env
+-- ============================================================================
+-- Session environment lives in private_dot_config/uwsm/env.tmpl, which uwsm
+-- sources before Hyprland starts and exports to BOTH the compositor and the
+-- systemd user manager. hl.env() here reached only Hyprland's own children, so
+-- quickshell.service — and every app its launcher spawns via systemd-run —
+-- ran without MOZ_ENABLE_WAYLAND, GDK_BACKEND, ELECTRON_*, or the desktop's
+-- NVIDIA variables (measured 2026-10-06).
+--
+-- Kept as an empty module because hyprland.lua requires it. Do not add hl.env()
+-- calls back: a second copy drifts. A session started WITHOUT uwsm gets none of
+-- this — and no graphical-session.target either, which autostart warns about.
+-- ============================================================================
