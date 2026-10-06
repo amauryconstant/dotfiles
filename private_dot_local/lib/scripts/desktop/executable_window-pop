@@ -13,8 +13,9 @@ addr="address:$(hyprctl activewindow -j | jq -r .address)"
 # .width/.height are PHYSICAL pixels while window geometry is LOGICAL, so the
 # scale has to come out before any percentage is taken.
 monitor_info=$(hyprctl monitors -j | jq -r 'map(select(.focused))[0]')
-width=$(echo "$monitor_info" | jq -r '.width / .scale * 30 / 100 | floor')
-height=$(echo "$monitor_info" | jq -r '.height / .scale * 30 / 100 | floor')
+# The mode's axes, before rotation: an odd .transform (90/270) swaps them.
+width=$(echo "$monitor_info" | jq -r '(if .transform % 2 == 1 then .height else .width end) / .scale * 30 / 100 | floor')
+height=$(echo "$monitor_info" | jq -r '(if .transform % 2 == 1 then .width else .height end) / .scale * 30 / 100 | floor')
 
 # Apply transformations atomically. Under the Lua config provider each --batch
 # fragment is spliced verbatim into `return hl.dispatch(...)`, so every one

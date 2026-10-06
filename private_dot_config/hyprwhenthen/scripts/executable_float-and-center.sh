@@ -8,7 +8,11 @@ MONITOR=$(hyprctl clients -j | jq -r --arg a "$ADDRESS" 'map(select(.address == 
 [ -n "$MONITOR" ] || exit 0
 # .width/.height are PHYSICAL pixels; window geometry is LOGICAL, so divide by
 # .scale first. Missing that made "50%" render as the whole monitor.
-DIMS=$(hyprctl monitors -j | jq -r --argjson m "$MONITOR" 'map(select(.id == $m))[0] | "\(.width / .scale / 2 | floor) \(.height / .scale / 2 | floor)"')
+# They are also the MODE's axes, before rotation: an odd .transform (90/270,
+# flipped or not -- the desktop's portrait BenQ is 1) swaps them on screen.
+DIMS=$(hyprctl monitors -j | jq -r --argjson m "$MONITOR" 'map(select(.id == $m))[0]
+    | (if .transform % 2 == 1 then [.height, .width] else [.width, .height] end) as [$w, $h]
+    | "\($w / .scale / 2 | floor) \($h / .scale / 2 | floor)"')
 [ -n "$DIMS" ] || exit 0
 WIDTH=${DIMS% *}
 HEIGHT=${DIMS#* }
