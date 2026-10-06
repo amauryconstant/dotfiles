@@ -296,6 +296,7 @@ packages:
         - pamixer # PulseAudio/PipeWire mixer CLI
         - pavucontrol # PipeWire mixer GUI — the audio popover's escape hatch (per-app streams)
         - brightnessctl # Screen brightness controller
+        - upower # Battery/power D-Bus service — Quickshell battery widget + power popover (was only a waybar-git dep)
         - ddcutil # External monitor brightness via DDC/CI (no internal backlight)
         - playerctl # MPRIS media player controller
         - blueman # GTK Bluetooth manager GUI
@@ -321,7 +322,7 @@ packages:
         - hyprdrover # Rust-based session management for Hyprland
         - wtype # Wayland keyboard simulation (voxtype dependency)
         - voxtype-bin # Speech-to-text dictation (AUR)
-        - quickshell # QML shell — drives voxtype waveform OSD overlay (official extra)
+        - quickshell # QML desktop shell (bar, launcher, notifications, lock) + voxtype OSD (official extra)
         - kanata-bin # Software keyboard remapper — Workman layout on laptop (AUR)
 
     desktop_gui_apps:
