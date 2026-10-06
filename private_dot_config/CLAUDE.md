@@ -27,7 +27,8 @@
 | `git/` | Git config | ✅ Yes |
 | `themes/` | Theme system | ✅ Yes |
 | `waybar/` | Status bar | ✅ Yes |
-| `quickshell/` | Quickshell shell (bar) — gated, replacing Waybar | ✅ Yes |
+| `quickshell/` | Quickshell desktop shell — the active one (Waybar stack is the fallback) | ✅ Yes |
+| `uwsm/` | Session environment (`env.tmpl`) — exported to Hyprland AND systemd units | ❌ No |
 | `wofi/` | Application launcher | ✅ Yes |
 | `wlogout/` | Power menu | ✅ Yes |
 | `swaync/` | Notification daemon | ✅ Yes |
@@ -49,7 +50,7 @@
 ## Desktop Environment
 
 ### Hyprland Compositor (`hypr/`)
-- Modular config in `conf/` (each `.conf` now has a parallel `.lua` — Lua migration in progress)
+- Modular config in `conf/`; the `.lua` tree is live (cutover 2026-09-01), `.conf` twins kept as fallback
 - Templates: `hyprland.{conf,lua}.tmpl`, `hyprlock.conf.tmpl`, `hypridle{,-nolock}.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`, `conf/bindings/voice.{conf,lua}.tmpl`
 - Theme integration via `source ~/.config/themes/current/hyprland.conf`
 

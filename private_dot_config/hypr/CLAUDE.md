@@ -21,9 +21,9 @@
 
 **The polkit agent lives in `conf.d/` too, on its own flag.** A session may have exactly one agent, and the Quickshell shell ships one (`quickshell/dotfiles/polkit/PolkitDialog.qml`), so `conf.d/polkit-gnome.{lua,conf}` deploys only when `features.quickshell_polkit` is **off**. Its own flag rather than `quickshell_shell`, for the same reason `quickshell_notifications` is separate: running the bar and displacing a session-exclusive D-Bus agent are separate decisions. That line used to sit unconditionally in `conf/autostart.*`, which **both** branches load.
 
-**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 56px, which Waybar's full-bleed bar cannot stack with. Shell docs: `private_dot_config/quickshell/CLAUDE.md`.
+**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 44px, which Waybar's full-bleed bar cannot stack with. Shell docs: `private_dot_config/quickshell/CLAUDE.md`.
 
-**Base config files** (`conf/`, each `.conf` shadowed by an inactive `.lua`):
+**Base config files** (`conf/`, each `.conf` twinned by the `.lua` that is live since the 2026-09-01 cutover):
 
 | File | Purpose | Template? |
 |------|---------|-----------|
@@ -37,7 +37,7 @@
 | `windowrules.conf` | Per-app window behavior | ❌ No |
 | `autostart.conf` | Startup apps (nextcloud, awww, keyring). **No status bar and no polkit agent** — both are branch decisions, see `conf.d/` below | ❌ No |
 
-`helpers.lua`, `require_all.lua` are Lua-layer infrastructure (inactive).
+`helpers.lua`, `require_all.lua` are Lua-layer infrastructure (live).
 
 🚨 **`general` carries the tree's only `misc` block, and it holds one setting:
 `allow_session_lock_restore = true`.** An `ext-session-lock` outlives its client, so a locker that

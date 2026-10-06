@@ -35,8 +35,8 @@ else
     # Voxtype is not such a consumer HERE: voxtype/config.toml.tmpl sets
     # `hotkey.enabled = false` because the Hyprland SUPER+T binding drives
     # recording, so the built-in evdev hotkey never opens a device. Kanata is,
-    # and keeps its grant in run_once_after_011 behind a `command -v kanata`
-    # guard.
+    # and keeps its grant in run_onchange_after_configure_kanata (laptop only,
+    # behind a `command -v kanata` guard).
     #
     # Turning voxtype's own hotkey back on means granting `input` again — and
     # accepting that consequence, not rediscovering it here.

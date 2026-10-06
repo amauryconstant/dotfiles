@@ -29,22 +29,32 @@ Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardc
 
 Full 24-variable schema (Background: `@bg-primary/secondary/tertiary/overlay`; Foreground: `@fg-primary/secondary/muted/contrast`; 8 Core + 8 Extended accents; 4 hover variants) is defined in `themes/CLAUDE.md`. Start with `waybar.css` — it's the most complete single-file reference — then propagate the same hex values into every other file in the theme dir.
 
+**`colors.sh` is a second vocabulary, and the one Quickshell and the shell scripts read**: semantic ROLE keys, not CSS names — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
+
 ## Step 4: Pick palette + check contrast (mandatory)
 
 **Rule**: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` for all text/icons. `@fg-secondary` on an elevated surface fails WCAG AA (4.5:1) on several existing themes.
 
 Compute the contrast ratio of your `@fg-secondary` against your `@bg-secondary`. If it's below 4.5:1, document the theme as "Use PRIMARY only" in its `STYLE-GUIDE.md`, following the precedent already set by Catppuccin Latte, Rose Pine Dawn, Rose Pine Moon, and Solarized Light (see the ratio table in `themes/CLAUDE.md`).
 
+Then run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across every colorset, including the new one. Manual-only, so it is not part of `mise run lint`.
+
 ## Step 5: `hyprland.lua` format
 
+An override module that calls `hl.config()` for effect — a file that `return`s a table loads and silently does nothing:
+
 ```lua
-return {
-  activeBorder   = "rgba(HEXee)",
-  inactiveBorder = "rgba(HEXee)",
-}
+hl.config({
+	general = {
+		col = {
+			active_border = "rgba(HEXee)", -- accent-border semantic
+			inactive_border = "rgba(HEXaa)", -- fg-muted semantic
+		},
+	},
+})
 ```
 
-6-digit hex, 2-digit alpha, no `#` prefix. See `.claude/rules/hyprland-lua.md`.
+8 hex digits (`rrggbbaa`), no `#`, tabs (stylua). See `.claude/rules/hyprland-lua.md`.
 
 ## Step 6: `swaync.css.tmpl`
 

@@ -6,7 +6,7 @@
 -- .chezmoidata files cannot be templates.
 --
 -- Mutually exclusive with conf.d/quickshell.lua: the Quickshell bar floats
--- (40 tall, inset 8, reserving 56) and Waybar's 30px full-bleed bar cannot
+-- (40 tall, inset 4, reserving 44) and Waybar's 30px full-bleed bar cannot
 -- stack with it. That exclusivity is what lets both drop-ins claim SUPER+B.
 --
 -- Location: ~/.config/waybar/config and ~/.config/waybar/style.css

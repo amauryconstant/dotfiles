@@ -46,8 +46,8 @@ All 21 `.conf`/`.lua` pairs compared semantically — 9 in `conf/`, 11 in `conf/
 **Open, not part of the four**: `SUPER+ALT+M` is bound twice — `conf/bindings/voice.{conf,lua}`
 binds it to "Toggle meeting transcription", and `conf/bindings/workspace-management.{conf,lua}`
 binds it to the monitor move from finding 3. Both sets carry the collision identically, so it is
-not `.conf`/`.lua` drift, but it is a real conflict to resolve before or during cutover — tracked
-in `_plans/OMARCHY.md`.
+not `.conf`/`.lua` drift, but it is a real conflict. **Resolved:** meeting transcription moved to
+`SUPER+CTRL+M`.
 
 ## Verified prerequisites
 

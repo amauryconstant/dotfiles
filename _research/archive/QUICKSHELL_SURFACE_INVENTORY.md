@@ -19,7 +19,7 @@ and it does not expire. The Status lines are a build record.
 | Question | Read |
 |---|---|
 | What is this shell, surface by surface, and why each departure | `private_dot_config/quickshell/CLAUDE.md` |
-| What is still open | `_plans/QUICKSHELL_OPEN_WORK.md` — one contrast defect, two open questions, optional work |
+| What is still open | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (`_plans/archive/QUICKSHELL_OPEN_WORK.md` is closed) |
 | What is left to remove | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
 | QML syntax, tooling, measured runtime traps | `.claude/rules/quickshell-qml.md` |
 | The quickshell 0.3.1 API | `_research/QUICKSHELL_QML_API.md` — the last live research doc |
@@ -36,7 +36,7 @@ implementation since — the status line says so where it was.
 |---|---|---|
 | `private_dot_config/quickshell/CLAUDE.md` | **live** | what the shell is today, and why each departure. **Start here** |
 | `.claude/rules/quickshell-qml.md` | **live** | QML syntax, tooling, measured runtime traps |
-| `_plans/QUICKSHELL_OPEN_WORK.md` | **live** | the contrast defect, the open questions, the optional work |
+| `_plans/archive/QUICKSHELL_OPEN_WORK.md` | archived | the contrast rulings, closed the day they were written |
 | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | what is left to remove, per tool |
 | `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, corrected four times |
 | **this file** | archived 2026-09-13 | what each of the 30 surfaces is made of, and what it shipped as |

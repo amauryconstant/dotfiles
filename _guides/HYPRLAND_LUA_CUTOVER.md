@@ -39,8 +39,9 @@ Verified on the real session, not a nested one:
   routes to when the shell is down.
 
 `voxtype_suppress` is worth knowing about: voxtype's `pre_output_command` still asks for it, and
-that submap is **deliberately not defined** (both `conf.d/voxtype-submap.{lua,conf}` say so — it is
-only needed for `mode = "type"`, and this config is clipboard mode). So that one hook call is a
+that submap is **deliberately not defined** (the former `conf.d/voxtype-submap.{lua,conf}` said so —
+both are gone, removed via `.chezmoiremove` — it is only needed for `mode = "type"`, and this config
+is clipboard mode). So that one hook call is a
 no-op that returns `error: … submap doesn't exist` into `/dev/null`. Unchanged from the legacy
 form, which was equally a no-op.
 
@@ -101,10 +102,8 @@ net; not a rollback target. The rollback target is the `.chezmoiignore` block.
    - Media keys work on the lock screen (audit finding 4) — the Quickshell lock since
      2026-09-12, hyprlock only as the fallback
 
-Before doing this: resolve the `SUPER+ALT+M` double-bind noted in
-`_research/HYPRLAND_LUA_AUDIT.md` (voice's "Toggle meeting transcription" vs
-workspace-management's monitor move) — it's identical in both `.conf` and `.lua`, so cutover alone
-won't surface it, but it's a real conflict.
+The `SUPER+ALT+M` double-bind noted in `_research/HYPRLAND_LUA_AUDIT.md` is resolved: meeting
+transcription moved to `SUPER+CTRL+M` (`conf/bindings/voice.{lua,conf}.tmpl`).
 
 ## Rollback
 

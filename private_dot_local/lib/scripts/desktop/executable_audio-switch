@@ -78,6 +78,6 @@ else
 fi
 
 # The swayosd branch that used to sit here was dead: the Quickshell shell owns
-# the OSD now, swayosd-server is not running and swayosd is not in packages.yaml,
-# so switching sinks silently reported nothing.
+# the OSD now and swayosd-server is not running (the package is still declared,
+# unused), so switching sinks silently reported nothing.
 notify-send "$icon Audio Output" "$sink_info\nVolume: ${volume}%" -t 3000
