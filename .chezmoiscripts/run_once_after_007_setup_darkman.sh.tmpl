@@ -27,7 +27,7 @@ if [ ! -f "$HOME/.local/lib/scripts/desktop/theme-switcher" ]; then
 
     # Configure but don't start
     systemctl --user daemon-reload
-    systemctl --user enable {{ $darkmanService }}
+    systemctl --user reenable {{ $darkmanService }}
 
     {{ includeTemplate "log_complete" "Darkman configured (manual start required)" }}
     exit 0
@@ -39,7 +39,11 @@ fi
 systemctl --user daemon-reload
 
 {{ includeTemplate "log_step" (printf "Enabling %s" $darkmanService) }}
-systemctl --user enable {{ $darkmanService }}
+# reenable, not enable: the unit's WantedBy moved from default.target to
+# graphical-session.target, and `enable` leaves the old default.target.wants
+# link in place -- darkman then still starts before the Wayland environment
+# exists. reenable drops every install link and recreates them from [Install].
+systemctl --user reenable {{ $darkmanService }}
 
 {{ includeTemplate "log_step" (printf "Starting %s" $darkmanService) }}
 systemctl --user start {{ $darkmanService }}
