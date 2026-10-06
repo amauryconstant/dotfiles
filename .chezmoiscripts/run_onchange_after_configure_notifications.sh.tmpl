@@ -45,15 +45,43 @@ else
     {{ includeTemplate "log_success" "swaync masked — Quickshell's NotificationServer takes the bus name" }}
 fi
 
-# The shell has to be running to claim the name it was just handed. It is
-# started by hypr/conf.d/quickshell.lua, so on a fresh install it may not be up
-# yet; that is fine, this only nudges an already-running session.
-ipc_targets=$(quickshell -c dotfiles ipc show 2>/dev/null || true)
+# dunst is the other D-Bus-activatable daemon an archinstall profile may bring
+# (its dunstrc is what run_once_before_000 backs up). Left activatable, any
+# notification sent in a shell restart gap starts it, and it then holds the
+# name for the rest of the session. Masking an absent unit is harmless. Not
+# unmasked on the way back: dunst was retired on its own (3de54e6d), not for
+# Quickshell.
+systemctl --user mask dunst.service >/dev/null 2>&1 || true
 
-if grep -q '^target notifications$' <<<"$ipc_targets"; then
-    {{ includeTemplate "log_info" "Quickshell notification handler is live" }}
+# Who actually holds the name. NOT the IPC target list: shell.qml registers the
+# `notifications` target whether or not its server won the name, so that check
+# passed while swaync still owned it. Matched on the UNIT, not the process name
+# -- voxtype runs a second Quickshell instance.
+notifications_owner() {
+    busctl --user status org.freedesktop.Notifications 2>/dev/null \
+        | sed -n 's/^UserUnit=//p' || true
+}
+
+# The server is built once, at shell startup. On a machine coming from swaync,
+# run_once_after_002 started the shell earlier in this same apply, while swaync
+# still held the name -- so the shell runs without it until restarted.
+if systemctl --user is-active --quiet quickshell.service; then
+    if [[ "$(notifications_owner)" != quickshell.service ]]; then
+        {{ includeTemplate "log_step" "Restarting Quickshell so it can claim the bus name..." }}
+        # Refuses while the session is locked; the warning below covers that.
+        "$HOME/.local/lib/scripts/desktop/quickshell-restart" || true
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            [[ "$(notifications_owner)" == quickshell.service ]] && break
+            sleep 0.5
+        done
+    fi
+    if [[ "$(notifications_owner)" == quickshell.service ]]; then
+        {{ includeTemplate "log_success" "Quickshell owns org.freedesktop.Notifications" }}
+    else
+        {{ includeTemplate "log_warning" "Quickshell does not own org.freedesktop.Notifications yet -- log out and back in" }}
+    fi
 else
-    {{ includeTemplate "log_warning" "Quickshell is not running the notifications handler yet — restart the shell or log in again" }}
+    {{ includeTemplate "log_info" "Quickshell not running -- it claims the bus name when the session starts it" }}
 fi
 {{ else }}
 unit_state=$(systemctl --user is-enabled swaync.service 2>/dev/null || true)
