@@ -115,6 +115,26 @@
 - Delta integration via git config inheritance
 - See: `jj/CLAUDE.md`
 
+**Claude Code ringstone account** (`claude/accounts/ringstone.json`, layered by `ccp -a ringstone`):
+- **No `permissions.blockReadsOutsideWorkingDirectories`**: under it, any Bash command touching a
+  path outside the repo skips the auto-mode classifier and prompts. Reads outside the repo are
+  therefore open, and the `deny` list is the fence — keep it complete (credentials, history,
+  keyrings, rbw cache, browser profiles, CLI auth dirs)
+- Denies are **per account**: the personal account and plain `claude` have none, by choice
+- **Bash sandbox** (`sandbox.*`): Read/Edit deny rules feed its `denyRead`/`denyWrite`, so
+  `cat ~/.ssh/...` is blocked too. Needs `bubblewrap` + `socat` (`packages.yaml`);
+  `failIfUnavailable` refuses to launch without them
+- **No `additionalDirectories`**: they become sandbox **write** roots — plugins, shell snapshots and
+  the `--settings` file would be writable from sandboxed Bash
+- `excludedCommands` use Bash permission-rule syntax: `gh:*`, not `gh` (exact match only). Excluded:
+  credential CLIs (ssh git ops, gh, firebase, gcloud, docker) and the emulator tests — sandboxed
+  node cannot reach the host's `127.0.0.1` emulator
+- `allowWrite` is download caches only (`~/.cache/{pnpm,uv}`, pnpm store) — never all of `~/.cache`
+  (zsh `.zwc`, antidote, paru PKGBUILDs) or install/state dirs (mise `trusted-configs` gates code
+  execution). A new violation: cache → `allowWrite`, anything else → `excludedCommands`
+- Friction: a compound command is sandboxed unless **every** part is excluded, so
+  `git commit && git push` fails at the push
+
 **CLI tools** (themed):
 - **bat**: Syntax highlighting via `~/.config/bat/config` symlink
 - **broot**: File tree skin via `~/.config/broot/skin.hjson` symlink

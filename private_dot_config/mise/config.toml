@@ -24,7 +24,7 @@ prettier = "latest"
 
 # AI Tools
 "herdr" = "latest"
-"claude-code" = "latest"
+"claude-code" = "latest" # sandbox deps bubblewrap + socat live in .chezmoidata/packages.yaml
 "opencode" = "latest"
 "npm:@fission-ai/openspec" = "latest"
 "llmfit" = "latest"

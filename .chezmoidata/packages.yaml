@@ -249,6 +249,12 @@ packages:
         - lazygit # Terminal UI for git commands
         - lazydocker # Terminal UI for docker management
         - mkcert # Local HTTPS development certificates
+        # Claude Code Bash sandbox (ringstone account sets sandbox.failIfUnavailable).
+        # Here, not beside claude-code in mise/config.toml: neither ships binaries (bubblewrap's
+        # GitHub releases are source tarballs, socat has no official GitHub repo), and the sandbox
+        # boundary should come from signed official-repo builds, not a third-party mirror.
+        - bubblewrap # Filesystem/namespace isolation; was only a flatpak dependency
+        - socat # Sandbox network proxy bridge
 
     # ============================================================
     # AI / LLM
