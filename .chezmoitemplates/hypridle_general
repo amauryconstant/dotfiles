@@ -20,7 +20,7 @@ general {
     lock_cmd = ~/.local/lib/scripts/desktop/immediate-lock  # Single lock entry point (re-entrancy guarded)
     before_sleep_cmd = loginctl lock-session                # Lock before suspend
     inhibit_sleep = 3                                      # Hold sleep until LOCKED, not until spawned
-    # Display back on, then re-enumerate audio. Every resume leaks one orphaned
+    # Display back on, then (laptop only) re-enumerate audio. Every resume leaks one orphaned
     # PipeWire sink node (its device.id points at a device that no longer
     # exists); after 17 suspends this laptop had 18 nodes all named
     # alsa_output.pci-0000_00_1f.3.analog-stereo. Quickshell resolves the
@@ -28,7 +28,9 @@ general {
     # duplicate comes first and the OSD then tracks a node nothing ever changes
     # — volume keys look dead while pamixer is in fact moving the real sink.
     # Restarting wireplumber destroys its objects and rebuilds a clean registry.
-    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'; systemctl --user restart wireplumber
+    # Measured on the laptop only; on the desktop a restart would just cut any
+    # stream playing across the suspend.
+    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'{{ if eq .chassisType "laptop" }}; systemctl --user restart wireplumber{{ end }}
 
     # True session lock/unlock events. Unlike a listener's on-resume (which fires
     # the instant the mouse moves, BEFORE authentication), on_unlock_cmd only

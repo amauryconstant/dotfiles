@@ -265,7 +265,7 @@ real sink all along. The symptom reads as *"the volume keys do nothing"*, and ev
 tests clean. Diagnose with `wpctl status` (the live default carries `*`) or
 `pw-dump | jq '.[] | select(.info.props["media.class"]=="Audio/Sink")'`; `systemctl --user restart
 wireplumber` destroys the orphans. The leak is swept on every resume by `after_sleep_cmd` in
-`.chezmoitemplates/hypridle_general`.
+`.chezmoitemplates/hypridle_general` — on the laptop only, where it was measured (chassis-gated).
 
 **`WifiNetwork.signalStrength` is a 0..1 fraction too.** Same trap, different module: `nmcli`
 reports 61, the property reads 0.61. A `/ 25` banding written for a percentage pins the index at

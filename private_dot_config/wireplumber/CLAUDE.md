@@ -9,7 +9,7 @@
 ## Quick Reference
 
 - **Purpose**: PipeWire session policy — the only audio *policy* this repo owns
-- **File**: `wireplumber.conf.d/50-audio-defaults.conf` (drop-in; merged alphabetically over `/usr/share/wireplumber/wireplumber.conf`)
+- **Files**: `wireplumber.conf.d/50-audio-defaults.conf` (every machine) and `51-bluetooth-laptop.conf` (laptop only — `.chezmoiignore` drops it on the desktop, which uses a wired/USB mic and keeps upstream's headset autoswitch). Drop-ins merge alphabetically over `/usr/share/wireplumber/wireplumber.conf`; both set `wireplumber.settings`, and 0.5 merges the objects
 - **Format**: SPA-JSON, not Lua. WirePlumber 0.5 moved settings into `wireplumber.settings`
 - **Templates**: `/usr/share/doc/wireplumber/examples/wireplumber.conf.d/*.conf` — the authoritative key list, shipped with the package
 - **Verify a key exists**: `grep -n '<key>' /usr/share/wireplumber/wireplumber.conf` (the schema block at ~:948 carries every settable name, its type and its default)
@@ -34,7 +34,7 @@ captures digital silence (`pw-record` gives `rms 0.0, peak 0`), and whatever was
 for good, because the sink it was attached to no longer exists. voxtype's `pause_media` then
 has nothing to resume onto, which reads as "voxtype broke Spotify".
 
-The drop-in turns the autoswitch off. The headset stops advertising a mic at all, so nothing
+The laptop drop-in (`51-bluetooth-laptop.conf`) turns the autoswitch off. The headset stops advertising a mic at all, so nothing
 can reach for HFP and playback stays on LDAC.
 
 **Escalation if a phantom source ever survives**: trim the roles instead —
