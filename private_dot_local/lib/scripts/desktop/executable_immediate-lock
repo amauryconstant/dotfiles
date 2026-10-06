@@ -40,7 +40,15 @@ LOCKFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/immediate-lock.lock"
 exec 9>"$LOCKFILE" || exit 1
 flock -n 9 || exit 0
 
-if [ "$(quickshell -c dotfiles ipc call lock lock 2>/dev/null)" = ok ]; then
+# 🚨 Bounded: a shell that is alive but hung never answers, and without the
+# timeout this blocked forever while holding the flock -- no hyprlock, every
+# later lock attempt exiting 0 on the held lock, and hypridle's inhibit_sleep=3
+# only holding suspend for logind's InhibitDelayMaxSec (5 s), after which the
+# machine sleeps UNLOCKED. 1 s, not more: a healthy answer takes ~35 ms, and
+# hyprlock needs the rest of that 5 s to map at 4K. If the shell later resumes
+# it still runs the queued call; with allow_session_lock_restore its lock then
+# replaces hyprlock's rather than stacking on it.
+if [ "$(timeout 1 quickshell -c dotfiles ipc call lock lock 2>/dev/null)" = ok ]; then
     exit 0
 fi
 

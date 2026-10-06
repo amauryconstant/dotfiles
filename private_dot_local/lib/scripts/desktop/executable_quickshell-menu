@@ -126,7 +126,19 @@ fi
 # one, and `$(...)` has already stripped the newline jaq wrote. Without it the
 # request is never parsed, the shell never answers, and nc waits forever —
 # there is no timeout anywhere in this path.
-if RESULT=$(printf '%s\n' "$REQUEST" | nc -U "$SOCKET" 2>/dev/null); then
+#
+# 🚨 Nor can there be one on nc: it legitimately waits for as long as the user
+# takes to choose. A shell that is alive but HUNG would accept the connection
+# and never answer, so liveness is probed first through the IPC socket, which
+# answers in ~35 ms (measured 2026-10-06) when the event loop runs. Only a
+# timeout (124) counts as hung; "No running instances" returns at once, and nc
+# then fails into the fallback as before.
+shell_responsive() {
+    timeout 1 quickshell -c dotfiles ipc show >/dev/null 2>&1
+    [ $? -ne 124 ]
+}
+
+if shell_responsive && RESULT=$(printf '%s\n' "$REQUEST" | nc -U "$SOCKET" 2>/dev/null); then
     [ -n "$RESULT" ] || exit 1
     printf '%s\n' "$RESULT"
     exit 0
