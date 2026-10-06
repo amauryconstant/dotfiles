@@ -32,6 +32,15 @@ o.exec_on_start("eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,p
 -- the two are mutually exclusive -- like the status bar above. .chezmoiignore
 -- deploys conf.d/polkit-gnome.lua only when features.quickshell_polkit is off.
 
+-- Session-type guard. Outside uwsm, graphical-session.target is never reached,
+-- so quickshell, hypridle, darkman and the monitor daemons never start, and
+-- uwsm/env (the whole session environment) was never sourced. hyprctl notify,
+-- not notify-send: in that session nothing owns org.freedesktop.Notifications.
+o.exec_on_start(
+	'[ -n "$UWSM_FINALIZE_VARNAMES" ] || hyprctl notify 0 30000 0 '
+		.. '"Not a uwsm session: no bar, idle lock or notifications. Log out and pick Hyprland (uwsm-managed)."'
+)
+
 -- Clipboard History Manager - watch clipboard, store items in history db
 o.exec_on_start("wl-paste --watch ~/.local/lib/scripts/media/clipboard-store")
 

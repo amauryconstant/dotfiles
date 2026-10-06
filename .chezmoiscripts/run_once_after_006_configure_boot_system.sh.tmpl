@@ -458,10 +458,36 @@ EOF
 
     {{ includeTemplate "log_step" "Verify Hyprland session availability" }}
 
-    if [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
-        {{ includeTemplate "log_success" "Hyprland Wayland session available" }}
-    elif [ -f /usr/share/wayland-sessions/hyprland-uwsm.desktop ]; then
+    # uwsm first, and the plain entry is only a warning: everything this repo
+    # runs as a user unit (quickshell, hypridle, darkman, hyprdynamicmonitors,
+    # hyprwhenthen) is WantedBy=graphical-session.target, which only the uwsm
+    # session reaches -- and the session environment lives in uwsm/env. The
+    # plain hyprland.desktop session comes up with no bar, no idle lock and no
+    # notification daemon (swaync is masked when Quickshell owns the name).
+    UWSM_SESSION=/usr/share/wayland-sessions/hyprland-uwsm.desktop
+    if [ -f "$UWSM_SESSION" ]; then
         {{ includeTemplate "log_success" "Hyprland UWSM-managed session available" }}
+
+        # Pre-select it at the greeter. SDDM 0.21 has no DefaultSession key;
+        # with RememberLastSession the greeter reads [Last] Session= from its
+        # state file. Seed it only when the file does not exist yet (fresh
+        # install) -- never override a choice or rewrite SDDM's other keys --
+        # and as sddm:sddm, because the greeter reads it as that user.
+        SDDM_STATE=/var/lib/sddm/state.conf
+        if sudo test -f "$SDDM_STATE" && sudo grep -q '^Session=' "$SDDM_STATE"; then
+            remembered=$(sudo sed -n 's/^Session=//p' "$SDDM_STATE" | head -1)
+            if [ "$remembered" = "$UWSM_SESSION" ] || [ "$remembered" = hyprland-uwsm.desktop ]; then
+                {{ includeTemplate "log_skip" "SDDM already remembers the uwsm session" }}
+            else
+                {{ includeTemplate "log_warning" "SDDM remembers '$remembered' -- pick 'Hyprland (uwsm-managed)' at the next login" }}
+            fi
+        elif sudo test -d /var/lib/sddm && ! sudo test -e "$SDDM_STATE"; then
+            printf '[Last]\nSession=%s\n' "$UWSM_SESSION" \
+                | sudo install -o sddm -g sddm -m 600 /dev/stdin "$SDDM_STATE"
+            {{ includeTemplate "log_success" "SDDM will pre-select the uwsm session" }}
+        fi
+    elif [ -f /usr/share/wayland-sessions/hyprland.desktop ]; then
+        {{ includeTemplate "log_warning" "Only the plain Hyprland session exists -- install uwsm; without it no graphical-session.target unit starts" }}
     else
         {{ includeTemplate "log_error" "No Hyprland Wayland session found" }}
         {{ includeTemplate "log_info" "Available sessions:" }}
