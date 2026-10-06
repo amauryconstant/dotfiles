@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_desktop_shell.sh.tmpl
+# Purpose: Make features.quickshell_shell a two-way switch between Quickshell and Waybar
+# Requirements: Arch Linux, systemd user session
+#
+# WHY a script at all: .chezmoiignore decides which drop-ins DEPLOY, but chezmoi
+# never deletes a target that becomes ignored. Flipping the flag off therefore
+# left conf.d/quickshell.* loaded by Hyprland's conf.d glob AND
+# quickshell/dotfiles/shell.qml satisfying quickshell.service's
+# ConditionPathExists -- two bars, and two daemons racing for
+# org.freedesktop.Notifications. This script removes the side that is off.
+# (.chezmoiremove cannot do it: chezmoi skips remove entries that are ignored,
+# and these paths are ignored exactly when they have to go.)
+#
+# WHY run_onchange (not run_once): same reason as configure_notifications -- the
+# flag is a two-way switch, and a run_once script could only ever go one way.
+#
+# 🚨 ORDER: this sorts before run_onchange_after_configure_notifications, and has
+# to. Turning the shell off must stop it -- releasing the notification bus name --
+# before that script starts swaync.
+#
+# Only removes what chezmoi itself deployed from the other branch; the flag
+# going back on redeploys it all. Warns about a re-login only when something
+# actually changed, so a first run on an already-converted machine is silent.
+# Hash: {{ printf "shell=%s polkit=%s" (.features.quickshell_shell | toJson) (.features.quickshell_polkit | toJson) }}
+
+{{ includeTemplate "log_start" "Configuring desktop shell (Quickshell vs Waybar)..." }}
+
+set -euo pipefail
+
+HYPR_CONFD="$HOME/.config/hypr/conf.d"
+changed=false
+
+remove_stale() {
+    for f in "$@"; do
+        if [ -e "$f" ]; then
+            rm -rf -- "$f"
+            {{ includeTemplate "log_success" "Removed stale $f" }}
+            changed=true
+        fi
+    done
+}
+
+{{ if .features.quickshell_shell.enabled }}
+if [ "$(systemctl --user is-enabled quickshell.service 2>/dev/null || true)" != enabled ]; then
+    systemctl --user enable quickshell.service
+    {{ includeTemplate "log_success" "quickshell.service enabled" }}
+    changed=true
+else
+    {{ includeTemplate "log_skip" "quickshell.service already enabled" }}
+fi
+
+remove_stale "$HYPR_CONFD/waybar.lua" "$HYPR_CONFD/waybar.conf"
+
+# Only once the replacement is actually up: on a machine coming from Waybar the
+# shell is started by run_once_after_002 in this same apply, but if that start
+# failed, killing Waybar would leave the session with no bar at all.
+if pgrep -x waybar >/dev/null 2>&1; then
+    if systemctl --user is-active --quiet quickshell.service; then
+        pkill -x waybar || true
+        {{ includeTemplate "log_success" "Stopped Waybar -- Quickshell owns the bar" }}
+        changed=true
+    else
+        {{ includeTemplate "log_warning" "quickshell.service is not running -- leaving Waybar up" }}
+    fi
+fi
+{{ if .features.quickshell_polkit.enabled }}
+remove_stale "$HYPR_CONFD/polkit-gnome.lua" "$HYPR_CONFD/polkit-gnome.conf"
+{{ end }}
+{{ else }}
+if systemctl --user is-enabled --quiet quickshell.service 2>/dev/null \
+    || systemctl --user is-active --quiet quickshell.service 2>/dev/null; then
+    # disable --now stops the shell too, which releases the notification bus
+    # name before configure_notifications starts swaync.
+    systemctl --user disable --now quickshell.service
+    {{ includeTemplate "log_success" "quickshell.service stopped and disabled" }}
+    changed=true
+else
+    {{ includeTemplate "log_skip" "quickshell.service already off" }}
+fi
+
+# The dotfiles subdir ONLY: voxtype keeps its own Quickshell config beside it.
+remove_stale "$HYPR_CONFD/quickshell.lua" "$HYPR_CONFD/quickshell.conf" \
+    "$HOME/.config/quickshell/dotfiles"
+{{ end }}
+
+if [ "$changed" = true ]; then
+    {{ includeTemplate "log_warning" "Desktop shell changed -- log out and back in to finish the switch" }}
+fi
+
+{{ includeTemplate "log_complete" "Desktop shell configured" }}

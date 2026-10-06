@@ -83,6 +83,40 @@ if shell_running; then
     exit $?
 fi
 
+# The surfaces that had a tool before the shell replaced them fall back to it
+# when the shell cannot be reached: the flag is off (no shell.qml deployed), or
+# the unit will not come up. Without this, SUPER+D and the system menu's Apps /
+# Clipboard History entries were dead whenever the shell was. Overview and the
+# popovers never had a predecessor, so they only report the failure.
+fallback() {
+    case "$TARGET" in
+    launcher) exec wofi --show drun ;;
+    clipboard)
+        # main's menu-trigger pipeline, verbatim
+        cliphist list | wofi --dmenu | cliphist decode | wl-copy
+        exit $?
+        ;;
+    power) exec wlogout ;;
+    keybindings) exec "$HOME/.local/lib/scripts/desktop/keybindings" ;;
+    notifications)
+        # Only while swaync is actually the daemon; masked, it would activate nothing.
+        if [ "$(systemctl --user is-enabled swaync.service 2>/dev/null)" != masked ]; then
+            exec swaync-client -t -sw
+        fi
+        ;;
+    *) ;;
+    esac
+    return 1
+}
+
+# No deployed tree: the Waybar branch. Starting the unit would only fail its
+# ConditionPathExists, so skip straight to the predecessor tool.
+if [ ! -f "$HOME/.config/quickshell/$CONFIG/shell.qml" ]; then
+    fallback
+    echo "quickshell-toggle: shell not deployed (features.quickshell_shell off)" >&2
+    exit 1
+fi
+
 # Through systemd, never a bare launch: a shell started any other way is
 # unsupervised, which is the whole point of quickshell.service.
 #
@@ -113,4 +147,5 @@ done
 
 echo "quickshell-toggle: failed to start shell" >&2
 notify-send "󰕮 Quickshell" "Failed to start shell" -t 2000
+fallback
 exit 1

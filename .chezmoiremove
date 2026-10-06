@@ -1,0 +1,17 @@
+# Targets whose source was deleted. chezmoi never removes a target just because
+# its source is gone, so without this they linger on every machine provisioned
+# before the deletion. Entries are harmless once spent (absent paths are no-ops)
+# and stay as a record. Flag-gated drop-ins are NOT listed here: chezmoi skips
+# remove entries that are ignored, so run_onchange_after_configure_desktop_shell
+# handles those.
+
+# Voxtype recording submap — replaced by the bar indicator (quickshell branch).
+# Still loaded by the conf.d glob and still defining binds where it survives.
+.config/hypr/conf.d/voxtype-submap.lua
+.config/hypr/conf.d/voxtype-submap.conf
+
+# dunst theme files — dunst retired for swaync, then Quickshell.
+.config/themes/*/dunst.conf
+
+# Wofi keybindings sheet style — the sheet is a Quickshell surface now.
+.config/wofi/keybinds.css

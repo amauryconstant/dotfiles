@@ -41,7 +41,7 @@
    - 008: **Hyprland config validation** (post-install safety check)
    - 999: SSH remote switch
 
-5. **`run_onchange_after_*`** (hash-based, any order)
+5. **`run_onchange_after_*`** (hash-based; alphabetical by name like every phase — `configure_desktop_shell` before `configure_notifications` is load-bearing)
    - Extensions, bat cache, plymouth theme, Timeshift retention
 
 **Trust execution order**: chezmoi runs scripts in order and aborts on the first failure, so a later script can assume earlier ones succeeded — e.g. `002_install_package_manager` provisions paru/yq/gum, so `003+` and all `run_onchange_before` package work assume those binaries exist. Don't re-check prerequisites a numerically-earlier script already guarantees.
@@ -98,6 +98,7 @@
 | configure_timeshift_retention | Timeshift retention + timer config | `globals.timeshift` changes |
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
+| configure_desktop_shell | Two-way Quickshell ⇄ Waybar switch: removes the off side's stale drop-ins (ignored ≠ deleted), enables or stops `quickshell.service`, stops Waybar once the shell is up. Sorts before `configure_notifications`, which needs the shell gone before starting swaync | `features.quickshell_shell` or `features.quickshell_polkit` changes |
 | configure_notifications | Masks/unmasks swaync so exactly one daemon owns `org.freedesktop.Notifications` | `features.quickshell_shell` or `features.quickshell_notifications` changes |
 | configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |

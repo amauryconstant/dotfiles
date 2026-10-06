@@ -42,9 +42,12 @@ private_dot_config/broot/launcher/
 # bar floats (40 tall, inset 4, reserving 44) and Waybar's 30px full-bleed bar
 # cannot stack with that — so autostart and the SUPER+B toggle both live in the
 # drop-in rather than in conf/autostart.* and conf/bindings/desktop-utilities.*.
-# Flipping the flag and running `chezmoi apply` is the whole rollout, and
-# flipping it back is the whole rollback. Both Hyprland entry points glob conf.d
-# and tolerate absence, so an undeployed drop-in is simply never sourced.
+# Both Hyprland entry points glob conf.d and tolerate absence, so an
+# undeployed drop-in is simply never sourced.
+#
+# 🚨 Ignoring is not deleting: a drop-in that WAS deployed stays on disk when
+# its side turns off. run_onchange_after_configure_desktop_shell removes it (and
+# stops/enables quickshell.service), so flag + apply + re-login is the switch.
 #
 # The gate lives here rather than in the drop-ins because a .lua/.conf file
 # cannot carry template actions, and .chezmoidata files cannot be templates
@@ -64,7 +67,9 @@ private_dot_config/broot/launcher/
 # bar and a session-exclusive D-Bus agent are separate decisions, exactly as
 # quickshell_notifications is separate for swaync. The line polkit-gnome.* holds
 # used to live unconditionally in conf/autostart.*, which BOTH branches load.
-{{ if .features.quickshell_polkit.enabled }}
+# Both flags: with the shell off there is no Quickshell agent, whatever
+# quickshell_polkit says, so polkit-gnome has to deploy.
+{{ if and .features.quickshell_shell.enabled .features.quickshell_polkit.enabled }}
 .config/hypr/conf.d/polkit-gnome.lua
 .config/hypr/conf.d/polkit-gnome.conf
 {{ end }}

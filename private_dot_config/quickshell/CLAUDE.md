@@ -85,8 +85,11 @@ the meters payload's missing temperature
   too — those are plain files, so a single line in them cannot be template-gated. The
   `overview` IPC target stays registered either way and answers `"disabled"`, so a broken
   wiring still looks different from a switched-off feature
-- **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` is the whole
-  rollout; flipping back is the whole rollback
+- **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` + re-login is the
+  whole switch, both ways. `.chezmoiignore` alone could not do the rollback — an ignored target
+  is never deleted, so the stale drop-ins and `shell.qml` kept the shell running beside Waybar.
+  `run_onchange_after_configure_desktop_shell` removes the off side's files and enables or
+  stops `quickshell.service`; it sorts before `configure_notifications` on purpose
 - **Second gate**: `features.quickshell_notifications.enabled`, for notifications ONLY.
   Separate because it does something the bar flag does not — it takes
   `org.freedesktop.Notifications` from swaync by MASKING the unit
