@@ -198,8 +198,8 @@ PanelWindow {
                 font.family: Config.terminalFont
                 font.pixelSize: Config.fontBody
                 selectByMouse: true
-                selectedTextColor: Theme.inkOnSignal
-                selectionColor: Theme.signalFocus
+                selectedTextColor: Theme.inkOnAction
+                selectionColor: Theme.action
 
                 // The field is single-line, so Up/Down and the page keys do
                 // nothing in it -- and they are what a document is scrolled

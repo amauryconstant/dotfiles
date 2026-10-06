@@ -429,7 +429,7 @@ either one reintroduces the banned pair on half its states.
 🚨 **`Theme.fgSecondary`, `Theme.bgSecondary` and the rest do not exist.** Every QML property was
 renamed with the colorset on 2026-09-09 — `groundBase`, `groundRaised`, `groundFloat`,
 `fillInert`, `inkPrimary`, `inkSecondary`, `signalFocus`, `identity1..5`, plus the derived tier
-(`edge`, `hover`, `press`, `select`, `focusRing`, `inkOnSignal`, `scrim`, `fgOnScrim`,
+(`edge`, `hover`, `press`, `select`, `focusRing`, `action`, `inkOnAction`, `scrim`, `fgOnScrim`,
 `disabledOpacity`). A grep written against the old names matches nothing and passes silently.
 
 `mise run lint:theme-contrast` enforces this across all 8 colorsets — **manual-only**, because its
@@ -440,8 +440,9 @@ table omits is invisible (which is how `INK_PRIMARY` on `FILL_INERT` went unmeas
 reading the **parenting**, not by grepping colour lines — most `Theme.groundRaised` uses in that
 tree are 1px hairlines (it is what `Theme.edge` resolves to), not grounds.
 
-Four properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
-`inkOnSignal`, `scrim`, `fgOnScrim` and the `inkSecondary` withdrawal — each because no fixed
+Five properties in `Theme.qml` are **computed per theme** rather than read from the colorset —
+`action` (the accent solved for text on both grounds), `scrim`, `fgOnScrim`, `disabledOpacity` and
+the `inkSecondary` withdrawal — each because no fixed
 token clears its floor in all 8. That is the general pattern: **a colour whose job is defined
 against a ground has to be computed.**
 

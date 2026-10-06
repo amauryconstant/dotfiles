@@ -151,8 +151,8 @@ Item {
                         // is why Omarchy carries both properties rather than
                         // gating on enabled alone.
                         readOnly: !root.inputEnabled
-                        selectedTextColor: Theme.inkOnSignal
-                        selectionColor: Theme.signalFocus
+                        selectedTextColor: Theme.inkOnAction
+                        selectionColor: Theme.action
                         verticalAlignment: TextInput.AlignVCenter
                         width: parent.width - parent.spacing - Config.glyphOsd
 

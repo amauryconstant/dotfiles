@@ -45,7 +45,8 @@ the meters payload's missing temperature
   `features.quickshell_polkit`. Flipping that off deploys `hypr/conf.d/polkit-gnome.{lua,conf}`
   instead. It is an **interrupt**: no toggle, no IPC target, no keybinding — its visibility is the
   agent's `isActive` and nothing else. Escape cancels, Return submits, Tab cycles identities when
-  polkit offers more than one (the branch §21 called out as assumed away)
+  polkit offers more than one (the branch §21 called out as assumed away). Cancel (neutral) and
+  Authenticate (primary) are `ActionButton`s too: until 2026-10-06 the dialog was keyboard-only
 - 🚨 **The shell draws the lock screen** (`lock/LockScreen.qml` + `lock/LockContent.qml`,
   surface §22, added 2026-09-12), gated on `features.quickshell_lock`. Unlike the two flags above
   **nothing is displaced**: `desktop/immediate-lock` asks the running shell and falls back to
@@ -141,7 +142,7 @@ decision; each is also commented at its site. Everything **not** listed here fol
 | **09** nothing pre-selected | Lock pre-selected | Already safe: an accidental Return locks, which is recoverable. It is also wlogout's model, which this menu replaced without smuggling in a behaviour change |
 | **09** 88px tiles | 124px | 88 was drawn for a five-tile row; we have six. Cosmetic, no defect |
 | **08** OSD fill on `fillInert` over a `groundRaised` track | fill `signalFocus`, track `groundRaised` | The design's pair measures ≈**1.3:1**, under its own 3:1 graphic floor |
-| **01** `inkOnSignal` is a fixed binding | computed | Pages 04 and 07 call it computed; the computation's result is provably ≥ the fixed binding in every theme |
+| **01** text on an accent fill is a fixed `GROUND_BASE` | `Theme.action` + `inkOnAction`, the accent SOLVED per theme | Raw `signalFocus` carries text at 3.47 at best (rose-pine-dawn) and is 1.81 against a card in gruvbox-light. Solving the fill instead keeps `GROUND_BASE` as the label and clears 4.5 in all 8. See `.claude/rules/quickshell-qml.md` |
 | **07** timestamp in `inkSecondary` | `inkPrimary` | Page 01's tier table binds `groundFloat` as carrying the primary ink only. Foundation beats surface |
 | **02** three density columns | default 13 only | The only thing that could select a column is the system menu, which is not built. Two unreachable columns are dead configuration |
 | **04** a named width-breakpoint overflow order | **not built** | No output this repo drives is narrow enough to fire it, so it could be neither observed nor tested. The parts that *do* fire are built: the title's pixel bound and the tray's 8-item cap. See the ponytail note in `Config.qml.tmpl` |
@@ -192,6 +193,7 @@ dotfiles/
     ├── BarPopover.qml     # the shared popover chrome: header, body slot, footer, anchoring, grabs
     ├── PopoverRow.qml     # the 34 row shared by every list-shaped payload
     ├── PopoverSlider.qml  # the only control in the shell that takes both drag and the wheel
+    ├── ActionButton.qml   # the one push button; emphasis primary / secondary / neutral
     ├── Bar.qml            # PanelWindow, one per screen, three zones, grouped right side
     ├── BarWidget.qml      # the chip, the accent rule, tooltip, click/scroll plumbing
     ├── BarTooltip.qml     # PopupWindow hover tooltip
@@ -771,8 +773,11 @@ identical silhouette), and every string on a card is `inkPrimary` — the ground
 `groundFloat`, which design page 01's own tier table says carries the primary ink *only*, so
 hierarchy comes from size, weight and mono-vs-sans, never from dimming. Page 07 draws the
 timestamp in `inkSecondary`; the foundation page wins. The one non-`inkPrimary` foreground on a
-card is the secondary action's **outline** — a graphic at 3:1, not text, and page 13 rules it
-`inkSecondary` explicitly (it was 2.18 as the retired muted token).
+card is Dismiss's **outline** — a graphic at 3:1, not text, and page 13 rules it `inkSecondary`
+explicitly (it was 2.18 as the retired muted token). The sender's actions are the card's only
+colour: the first is a `Theme.action` fill, the rest `Theme.action` outlines, Dismiss neutral
+(`bar/ActionButton.qml`). The primary used to be `groundRaised` — 1.00 against the card in five
+themes, read as disabled.
 
 **Timeouts are 5s normal, 3s low, critical never** — shorter than the swaync config they replaced
 (10s/5s), because an expired popup is not gone: it moves to the centre, which is the whole

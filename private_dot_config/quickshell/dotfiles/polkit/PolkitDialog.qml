@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import "../"
+import "../bar"
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Services.Polkit
@@ -111,7 +112,7 @@ PanelWindow {
 
         // Swallows clicks outside the panel WITHOUT dismissing. An interrupt
         // cannot be dismissed by looking away — cancelling is a decision, so it
-        // costs Escape or the Cancel row.
+        // costs Escape or the Cancel button.
         MouseArea {
             anchors.fill: parent
         }
@@ -252,8 +253,8 @@ PanelWindow {
                     focus: true
                     font.family: Config.guiFont
                     font.pixelSize: Config.fontBody
-                    selectedTextColor: Theme.inkOnSignal
-                    selectionColor: Theme.signalFocus
+                    selectedTextColor: Theme.inkOnAction
+                    selectionColor: Theme.action
                     verticalAlignment: TextInput.AlignVCenter
 
                     cursorDelegate: Rectangle {
@@ -309,6 +310,28 @@ PanelWindow {
                 font.pixelSize: Config.fontMeta
                 text: root.identities.length > 1 ? qsTr("Return authenticate · Tab identity · Esc cancel") : qsTr("Return authenticate · Esc cancel")
                 width: parent.width
+            }
+
+            // The pointer route to both decisions. Until these existed the
+            // dialog was keyboard-only, and a hint line naming keys is not a
+            // control. MouseArea takes no focus, so the field keeps it.
+            Row {
+                anchors.right: parent.right
+                spacing: Config.gap
+
+                ActionButton {
+                    emphasis: "neutral"
+                    text: qsTr("Cancel")
+
+                    onActivated: root.cancel()
+                }
+
+                ActionButton {
+                    emphasis: "primary"
+                    text: qsTr("Authenticate")
+
+                    onActivated: root.submit()
+                }
             }
         }
     }

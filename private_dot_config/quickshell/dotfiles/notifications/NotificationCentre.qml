@@ -108,10 +108,10 @@ PanelWindow {
                         text: qsTr("Notifications")
                     }
 
-                    // Accent ground, fgOnAccent text: the one place in this
-                    // panel the accent appears, marking the count.
+                    // Action ground, inkOnAction text: an accent fill that
+                    // carries text is Theme.action, never raw signalFocus.
                     Rectangle {
-                        color: Theme.signalFocus
+                        color: Theme.action
                         height: Config.notifBadgeHeight
                         radius: Config.radiusPill
                         visible: Notifications.unread > 0
@@ -121,7 +121,7 @@ PanelWindow {
                             id: count
 
                             anchors.centerIn: parent
-                            color: Theme.inkOnSignal
+                            color: Theme.inkOnAction
                             font.family: Config.terminalFont
                             font.pixelSize: Config.fontMeta
                             font.weight: Font.DemiBold
@@ -137,52 +137,24 @@ PanelWindow {
                     spacing: Config.gap
 
                     // DND. Same four bell glyphs the bar widget uses, from
-                    // Config — one state, one glyph set, two surfaces.
-                    Rectangle {
-                        color: Notifications.dnd ? Theme.signalFocus : Theme.groundRaised
-                        height: Config.notifActionHeight
-                        radius: Config.radiusChip
-                        width: Config.notifActionHeight
+                    // Config — one state, one glyph set, two surfaces. A
+                    // toggle: neutral off, action-filled on. Its rest ground
+                    // used to be groundRaised, 1.05-1.37 against this panel.
+                    ActionButton {
+                        emphasis: Notifications.dnd ? "primary" : "neutral"
+                        glyph: Notifications.glyph()
 
-                        Text {
-                            anchors.centerIn: parent
-                            color: Notifications.dnd ? Theme.inkOnSignal : Theme.inkPrimary
-                            font.family: Config.guiFont
-                            font.pixelSize: Config.glyphRow
-                            text: Notifications.glyph()
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            onClicked: Notifications.toggleDnd()
-                        }
+                        onActivated: Notifications.toggleDnd()
                     }
 
-                    Rectangle {
-                        color: Theme.groundRaised
-                        height: Config.notifActionHeight
-                        radius: Config.radiusChip
-                        width: clear.implicitWidth + Config.padLoose - 2
+                    // Ours, so neutral. Same tier-step defect as the DND chip.
+                    ActionButton {
+                        emphasis: "neutral"
+                        text: qsTr("Clear")
 
-                        Text {
-                            id: clear
-
-                            anchors.centerIn: parent
-                            color: Theme.inkPrimary
-                            font.family: Config.guiFont
-                            font.pixelSize: Config.fontBody - 1
-                            font.weight: Font.Medium
-                            text: qsTr("Clear")
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-
-                            onClicked: {
-                                Notifications.clearAll();
-                                root.close();
-                            }
+                        onActivated: {
+                            Notifications.clearAll();
+                            root.close();
                         }
                     }
                 }

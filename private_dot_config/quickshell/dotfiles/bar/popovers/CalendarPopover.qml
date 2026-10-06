@@ -122,7 +122,7 @@ BarPopover {
                     anchors.centerIn: parent
                     border.color: cell.cursor ? Theme.focusRing : "transparent"
                     border.width: cell.cursor ? Config.popRingWidth : 0
-                    color: cell.today ? Theme.signalFocus : "transparent"
+                    color: cell.today ? Theme.action : "transparent"
                     height: Config.pillHeight
                     radius: Config.radiusPill
                     width: Config.pillHeight + Config.gap
@@ -130,10 +130,10 @@ BarPopover {
 
                 Text {
                     anchors.centerIn: parent
-                    // 🚨 inkOnSignal, never a raw ink: a signal fill is the one
-                    // ground where the readable foreground is computed per
-                    // theme rather than bound.
-                    color: cell.today ? Theme.inkOnSignal : Theme.inkPrimary
+                    // 🚨 An accent fill carrying text is Theme.action with
+                    // inkOnAction, never raw signalFocus: the pair is solved
+                    // per theme to clear 4.5 (raw was 3.47 in rose-pine-dawn).
+                    color: cell.today ? Theme.inkOnAction : Theme.inkPrimary
                     font.family: Config.terminalFont
                     font.pixelSize: Config.fontBody
                     font.weight: cell.today ? Font.DemiBold : Font.Normal

@@ -25,6 +25,7 @@ are history, not roadmaps
 | `dotfiles/{Theme,Config,Backlight,Notifications,Meters,MenuServer}.qml*` | Singletons. `Config` is `.tmpl`, the other five are not |
 | `dotfiles/bar/*.qml` | Bar shell and shared components (`BarWidget`, `BarTooltip`, `BarSeparator`, `WaybarJsonSource`) |
 | `dotfiles/bar/{BarPopover,PopoverRow,PopoverSlider}.qml` | The popover chrome: header/body/footer + anchoring and grabs, the 34 row every list-shaped payload draws, and the only control taking both drag and wheel |
+| `dotfiles/bar/ActionButton.qml` | The one push button — notification actions, the centre's Clear and DND, polkit's Cancel/Authenticate. `emphasis` primary / secondary / neutral; never hand-roll a button from a `Rectangle` |
 | `dotfiles/bar/widgets/*.qml` | One file per bar widget |
 | `dotfiles/bar/popovers/*.qml` | The eight payloads — one per bar widget that owns one |
 | `dotfiles/osd/Osd.qml` | Volume + brightness overlay. One window, follows the focused monitor |
@@ -430,7 +431,7 @@ not a theme colour: `Theme.scrim` is a deliberate literal, under the same exempt
 
 🚨 **Then everything drawn on it needs `Theme.fgOnScrim`.** The scrim is dark in every theme,
 so a light theme's own foregrounds land on it at **1.81** (gruvbox-light) and 2.63 (latte) and
-are simply not there. Same computed pick as `inkOnSignal`, better of `INK_PRIMARY` / `GROUND_BASE`;
+are simply not there. A computed pick, better of `INK_PRIMARY` / `GROUND_BASE`;
 worst case across all 8 becomes 6.64. `mise run lint:theme-contrast` checks both, in their own
 section — the scrim is not a colorset token, so the `PAIRS` table cannot express it.
 
@@ -573,7 +574,23 @@ that is not full-screen has no claim to one.
 animated: text replacing text, the focus ring, and anything whose only change is a colour role
 — which is why a live theme switch repaints with no transition at all.
 
-🚨 **Truncation is by PIXELS, never by character count.** `titleMaxLength` and
+🚨 **A control's boundary owes 3:1 against its ground, and a ground-tier step never supplies
+it.** The notification primary was `groundRaised` on the card's `groundFloat`: **1.00** in five
+of eight colorsets, 1.27 at best. It had no edge, stood beside 3:1 outlines, and read as the
+*disabled* button — and since `groundRaised` is also `Theme.hover`, it looked hovered at rest.
+The centre's Clear chip was the same defect one tier down (`groundRaised` on `groundBase`, 1.05
+in rose-pine-dawn). Tier steps are hover and elevation, never a boundary. Both tier pairs are
+`BANNED` rows in `lint:theme-contrast`.
+
+🚨 **Every push button is `bar/ActionButton.qml`, and colour is what ranks it.** `primary` is a
+`Theme.action` fill with an `inkOnAction` label — the one thing the surface asks for. `secondary`
+is a `Theme.action` outline and label — anything else the sender offers. `neutral` is an
+`inkSecondary` outline with an `inkPrimary` label — *ours*, not the sender's: Dismiss, Cancel,
+Clear. Colour means "does something", grey means "go away". A first pass (2026-10-06) made the
+primary an `inkPrimary` fill to keep the accent for focus; it read as one more grey button and was
+reversed the same day — an action that does not look like one blends into the card.
+
+**Truncation is by PIXELS, never by character count.** `titleMaxLength` and
 `mediaMaxLength` are gone: `WWWW…` is about three times the width of `iiii…`, so a character
 cap does not bound the bar. Set `labelMaxWidth` on `BarWidget` and let `Text.elide` do it —
 `labelElideMode: Text.ElideMiddle` for a path, whose identifying half is its tail.
@@ -582,8 +599,10 @@ cap does not bound the bar. Set `labelMaxWidth` on `BarWidget` and let `Text.eli
 default is implemented: the one thing that could select a column is the system menu, which is
 not built, and two unreachable columns are dead configuration.
 
-**The accent rule** — *one accent marks the focused thing, everything else neutral, semantic
-colours only for state* — is enforced by `BarWidget.iconColor`. A widget overrides it only
+**The accent rule** — *the accent marks focus and action, everything else neutral, semantic
+colours only for state* — is enforced by `BarWidget.iconColor` on the bar and by `ActionButton`
+everywhere a control is drawn. Focus is what you are on; action is what you can do (a button, a
+link). Information is never accented. A widget overrides it only
 for a genuine state (muted, disconnected, inhibited, low battery); at rest every widget is
 the same colour. Set `icon`/`label` on `BarWidget` rather than declaring your own `Text`, and
 the rule applies for free.
@@ -693,24 +712,27 @@ outright. Prefer `groundRaised` for any ground that has to carry something on to
 2026-09-08 pass found a fourth instance the first one missed: the occupied workspace pill, at
 **1.67** in solarized-light.
 
-### `Theme.inkOnSignal` — text on an accent fill
+### `Theme.action` — buttons, links, and accent fills that carry text
 
-🚨 **No fixed token works across the 8 themes.** `INK_CONTRAST_CANDIDATE` is the one named for the job and
-lands at **1.49:1** on gruvbox-dark's own accent — the focused workspace number, the most-read
-thing in the bar, unreadable in that theme. `GROUND_BASE` is better there (8.69) and worse in
-gruvbox-light (2.19). So `Theme.qml` computes the pick per theme from WCAG relative luminance,
-and the worst case across all 8 goes 1.49 → **3.47** (rose-pine-dawn).
+🚨 **Raw `signalFocus` cannot be an action colour in all 8 themes.** As a fill on a card it is
+**1.81** in gruvbox-light (the shape vanishes); with the best computed label on it, the old
+`inkOnSignal`, text reached only **3.47** in rose-pine-dawn and 4.08 in both Solarized sets.
 
-🚨 **Design page 01 says this is a fixed binding to `GROUND_BASE`; pages 04 and 07 say it is
-computed. Keep it computed** — the computation picks whichever of `INK_CONTRAST_CANDIDATE` /
-`GROUND_BASE` contrasts more, and `GROUND_BASE` is one of its two candidates, so its result is ≥
-the fixed binding in every theme and can never be worse. Page 13 quotes 4.34 (latte) as the worst case for the bound
-value; that is not the worst case, rose-pine-dawn is.
+So `Theme.action` is `signalFocus` pushed **away from the ground** — toward white on a dark
+`groundBase`, black on a light one — in 5% steps, stopping at the first that clears 4.5 against
+`groundBase` *and* `groundFloat` and 3.0 against `groundRaised`. It is then legal as text on both
+grounds a control sits on, and `inkOnAction` (= `groundBase`) clears 4.5 on it by construction.
+Measured 2026-10-06: mocha, gruvbox-dark and rose-pine-moon keep the raw accent; the largest
+shift is gruvbox-light's (0.45 toward black, a darker amber `#765412`). The hue survives in all
+eight, and the same derivation covers any colorset added later.
 
-Use `Theme.inkOnSignal` for anything drawn **on** a `signalFocus` fill — the focused workspace
-pill, the notification count badge, an active DND chip, the launcher's text selection. A bare
-`Theme.inkContrastCandidate` at such a site is the defect; that property exists only to be one
-of the two candidates and is never assigned to a `color:`.
+Use `action` + `inkOnAction` for: every `ActionButton`, a launchable popover footer hatch, the
+focused workspace pill, the unread badge, the calendar's today, every text selection
+(`selectionColor`/`selectedTextColor`). Graphics that carry no text — carets, the slider and OSD
+fills, `PopoverRow`'s selected glyph, PowerMenu's current border, the launcher prefix glyph —
+stay on raw `signalFocus` at their own 3:1. Raw `signalFocus` as a control fill on a card is a
+`BANNED` row. `mise run lint:theme-contrast` reproduces the derivation per theme and fails if any
+floor is missed.
 
 ### Reading the design source, not the transcription
 
@@ -859,13 +881,12 @@ ground, per theme, and withdrawn where it fails". `Theme.qml` measures `inkSecon
 against `groundBase` and falls back to `inkPrimary` below 4.5:1 — rose-pine-dawn (4.02) and both
 Solarized sets, where the palette assigns body text to base0/base00. Withdrawing by measurement
 fixes every colorset including any added later; hand-editing two palettes fixes two. Never
-assign `inkSecondaryOffered` to a `color:` — like `inkContrastCandidate`, it exists only to be
-measured.
+assign `inkSecondaryOffered` to a `color:` — it exists only to be measured.
 
 **Six values are derived, not read**: `edge` (every hairline), `hover` (one opaque step up the
 ground stack), `press` (`inkPrimary` at 8%), `select` (`signalFocus` at 13%, **always** paired
 with a glyph or a weight change — the tint alone reaches 1.10–1.98), `focusRing` and
-`disabledOpacity`. Plus `inkOnSignal`, `scrim` and `fgOnScrim`, each because no token in the set
+`disabledOpacity`. Plus `action`/`inkOnAction`, `scrim` and `fgOnScrim`, each because no token in the set
 works across all 8 themes. `disabledOpacity` is measured against the **live** theme rather than
 fixed — the lowest 5% step of `inkSecondary` over `groundBase` still clearing 3:1, which lands
 between 0.60 and 0.85 depending on the colorset.
@@ -873,8 +894,8 @@ between 0.60 and 0.85 depending on the colorset.
 🚨 **`INK_MUTED` is not bound here at all.** It is banned as text (2.48 worst) and fails 3:1 as
 an outline, so every former site is `inkSecondary` or the `disabled` derivation. It survives in
 the colorset only because `core/gum-ui.sh` and `media/organize-wallpapers-by-color` spend it,
-and a terminal is not a lit surface. `INK_CONTRAST_CANDIDATE` (was `INK_CONTRAST_CANDIDATE`) survives as a
-property that is read by the `inkOnSignal` computation and never assigned to a `color:`.
+and a terminal is not a lit surface. `INK_CONTRAST_CANDIDATE` is not bound either since `action`
+replaced the `inkOnSignal` pick it was a candidate for.
 
 **Six keys were deleted outright** in the rename, all with zero consumers: `ACCENT_BORDER`,
 `ACCENT_PERFORMANCE`, `ACCENT_MEDIA`, `ACCENT_SECONDARY`, `ACCENT_ALTERNATIVE` and

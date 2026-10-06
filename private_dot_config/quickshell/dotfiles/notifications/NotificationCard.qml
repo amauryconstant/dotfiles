@@ -28,7 +28,9 @@ import QtQuick
 //     foundation page wins. Hierarchy comes from size, weight and
 //     mono-vs-sans, never from dimming. The one non-inkPrimary foreground here
 //     is the OUTLINE on the secondary action buttons — a graphic at 3:1, not
-//     text, and page 13 rules explicitly that it is inkSecondary.
+//     text, and page 13 rules explicitly that it is inkSecondary. The
+//     sender's actions are the card's only COLOUR: Theme.action, solved to
+//     clear 4.5 on this ground. See bar/ActionButton.qml.
 Rectangle {
     id: root
 
@@ -242,7 +244,7 @@ Rectangle {
                         anchors.centerIn: parent
                         color: Theme.inkPrimary
                         font.family: Config.terminalFont
-                        font.pixelSize: Config.fontMeta - 1
+                        font.pixelSize: Config.fontMeta
                         font.weight: Font.Medium
                         text: root.rest.length + 1
                     }
@@ -306,8 +308,10 @@ Rectangle {
             }
         }
 
-        // Actions. The first is the primary and is filled; Dismiss is the
-        // outlined one, and is ours rather than the sender's.
+        // Actions. The sender's first is the primary (action fill), the rest
+        // are secondary (action outline); Dismiss is ours and neutral. Freedesktop actions
+        // carry no priority, so "first is primary" is a guess for a foreign
+        // sender — and right for our own, which order theirs deliberately.
         Row {
             spacing: Config.gap
             visible: root.showActions && root.notification.actions.length > 0
@@ -317,73 +321,29 @@ Rectangle {
             Repeater {
                 model: root.buttonActions
 
-                Rectangle {
+                ActionButton {
                     id: action
 
                     required property var modelData
                     required property int index
 
-                    color: action.index === 0 ? Theme.groundRaised : "transparent"
-                    // fgSecondary, not fgMuted: an outline is a UI component
-                    // and wants 3:1, which fgMuted on this card's bgOverlay
-                    // ground misses in four of the eight themes (2.18 at worst).
-                    // Still foreground-class, so Amendment C's rule holds.
-                    border.color: action.index === 0 ? "transparent" : Theme.inkSecondary
-                    border.width: action.index === 0 ? 0 : Config.hairline
-                    height: Config.notifActionHeight
-                    radius: Config.radiusChip
-                    width: actionLabel.implicitWidth + Config.padLoose
+                    emphasis: action.index === 0 ? "primary" : "secondary"
+                    text: action.modelData.text
 
-                    Text {
-                        id: actionLabel
-
-                        anchors.centerIn: parent
-                        color: Theme.inkPrimary
-                        font.family: Config.guiFont
-                        font.pixelSize: Config.fontBody - 1
-                        font.weight: Font.Medium
-                        text: action.modelData.text
-                        textFormat: Text.PlainText
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        onClicked: {
-                            action.modelData.invoke();
-                            // resident asks to survive its own action.
-                            if (!root.notification.resident)
-                                root.dismissed();
-                        }
+                    onActivated: {
+                        action.modelData.invoke();
+                        // resident asks to survive its own action.
+                        if (!root.notification.resident)
+                            root.dismissed();
                     }
                 }
             }
 
-            Rectangle {
-                // Same 3:1 outline rule as the action buttons above.
-                border.color: Theme.inkSecondary
-                border.width: Config.hairline
-                color: "transparent"
-                height: Config.notifActionHeight
-                radius: Config.radiusChip
-                width: dismissLabel.implicitWidth + Config.padLoose
+            ActionButton {
+                emphasis: "neutral"
+                text: qsTr("Dismiss")
 
-                Text {
-                    id: dismissLabel
-
-                    anchors.centerIn: parent
-                    color: Theme.inkPrimary
-                    font.family: Config.guiFont
-                    font.pixelSize: Config.fontBody - 1
-                    font.weight: Font.Medium
-                    text: qsTr("Dismiss")
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-
-                    onClicked: root.dismissed()
-                }
+                onActivated: root.dismissed()
             }
         }
 
@@ -427,7 +387,7 @@ Rectangle {
                     font.bold: sibling.modelData.urgency === NotificationUrgency.Critical
                     elide: Text.ElideRight
                     font.family: Config.guiFont
-                    font.pixelSize: Config.fontBody - 1
+                    font.pixelSize: Config.fontMeta
                     leftPadding: Config.padTight
                     rightPadding: Config.padTight
                     text: sibling.modelData.summary

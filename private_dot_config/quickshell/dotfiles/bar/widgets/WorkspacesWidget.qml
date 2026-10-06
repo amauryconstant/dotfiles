@@ -73,7 +73,7 @@ BarWidget {
                 // Urgent is the 13% selection tint plus a weight change, never
                 // a colour alone: signalError as TEXT measures 2.81 at worst
                 // and is banned outright.
-                color: button.isFocused ? Theme.signalFocus : button.isUrgent ? Theme.select : button.hasWindows || area.containsMouse ? Theme.hover : "transparent"
+                color: button.isFocused ? Theme.action : button.isUrgent ? Theme.select : button.hasWindows || area.containsMouse ? Theme.hover : "transparent"
                 height: Config.pillHeight
                 radius: Config.radiusPill
                 // An empty workspace is a number in a 24px round square; every
@@ -93,7 +93,7 @@ BarWidget {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        color: button.isFocused ? Theme.inkOnSignal : button.hasWindows || button.isUrgent ? Theme.inkPrimary : Theme.inkSecondary
+                        color: button.isFocused ? Theme.inkOnAction : button.hasWindows || button.isUrgent ? Theme.inkPrimary : Theme.inkSecondary
                         font.family: Config.terminalFont
                         // The number is L3's carrier for urgent: the tint alone
                         // reaches 1.10-1.98 and cannot say anything by itself.
@@ -107,7 +107,7 @@ BarWidget {
                         // Only ever drawn on a lit ground, so inkPrimary —
                         // subordination comes from opacity, not from a quieter
                         // token, because inkSecondary is illegal on groundRaised.
-                        color: button.isFocused ? Theme.inkOnSignal : Theme.inkPrimary
+                        color: button.isFocused ? Theme.inkOnAction : Theme.inkPrimary
                         font.family: Config.guiFont
                         font.pixelSize: Config.glyphRow
                         // Subordinate to the number it annotates.

@@ -164,7 +164,7 @@ Rectangle {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.signalFocus
+                color: Theme.action
                 height: Config.pillHeight
                 radius: Config.radiusPill
                 width: Math.max(height, label.implicitWidth + Config.padTight)
@@ -173,9 +173,7 @@ Rectangle {
                     id: label
 
                     anchors.centerIn: parent
-                    // fgOnAccent, never fgContrast: the named token lands at
-                    // 1.49:1 on gruvbox-dark's own accent.
-                    color: Theme.inkOnSignal
+                    color: Theme.inkOnAction
                     font.family: Config.terminalFont
                     font.pixelSize: Config.fontBody
                     text: root.workspace?.name ?? ""

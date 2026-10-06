@@ -58,14 +58,11 @@ Singleton {
     readonly property color inkSecondaryOffered: root.c.INK_SECONDARY ?? "#bac2de"
     readonly property color inkSecondary: root.contrast(root.inkSecondaryOffered, root.groundBase) >= 4.5 ? root.inkSecondaryOffered : root.inkPrimary
 
-    // 🚨 Read, never drawn. INK_CONTRAST_CANDIDATE is retired as a drawing
-    // token (it has no site left once inkOnSignal exists) but is still one of
-    // the two candidates that computation picks between, so it must stay
-    // readable. INK_MUTED is not bound here AT ALL: it is banned as text (2.48
-    // worst) and fails 3:1 as an outline, so it survives in the colorset only
-    // for the terminal scripts, and every former site here is now inkSecondary
-    // or the `disabled` derivation.
-    readonly property color inkContrastCandidate: root.c.INK_CONTRAST_CANDIDATE ?? "#11111b"
+    // INK_MUTED and INK_CONTRAST_CANDIDATE are not bound here AT ALL. INK_MUTED
+    // is banned as text (2.48 worst) and fails 3:1 as an outline;
+    // INK_CONTRAST_CANDIDATE was only ever one of two candidates for the
+    // retired inkOnSignal pick, which `action` replaced. Both survive in the
+    // colorset for the terminal scripts and the contrast lint only.
 
     // ---- Tier 3 · SIGNAL — "what is the system telling me?". Fixed at five,
     // mutually separable in every theme. This is the one hard floor.
@@ -102,8 +99,11 @@ Singleton {
     // Opaque, so it never composites differently over a tinted row.
     readonly property color hover: root.groundRaised
     // Ink-derived, so it darkens in Latte and lightens in Mocha with no
-    // per-flavour value. Drawn OVER the current ground.
-    readonly property color press: Qt.alpha(root.inkPrimary, 0.08)
+    // per-flavour value. Drawn OVER the current ground. pressAlpha is shared
+    // with ActionButton, which tints in its own ink because an inkPrimary
+    // press vanishes on an inkPrimary fill.
+    readonly property real pressAlpha: 0.08
+    readonly property color press: Qt.alpha(root.inkPrimary, root.pressAlpha)
     // 🚨 The selection tint reaches only 1.10-1.98 against its own ground, so
     // it can never carry a selection alone. Every site pairs it with a
     // signal-coloured glyph, a weight change or a return mark.
@@ -112,17 +112,33 @@ Singleton {
     // both Catppuccins. 2px outside the paint, never animated.
     readonly property color focusRing: root.contrast(root.signalFocus, root.groundRaised) >= root.contrast(root.inkPrimary, root.groundRaised) ? root.signalFocus : root.inkPrimary
 
-    // Text drawn ON a signalFocus fill — the focused workspace pill, the
-    // notification count badge, a primary card action, the launcher selection.
+    // 🚨 The ACTION colour: everything the user can act on (a button, a
+    // link) and every accent fill that carries text (the focused workspace
+    // pill, the unread badge, the calendar's today, a text selection). It is
+    // signalFocus, pushed AWAY from the ground in 5% steps until it clears:
+    //   >= 4.5 against groundBase and groundFloat — it is text in its own
+    //          right (a secondary button's label, a footer link) on both
+    //   >= 3.0 against groundRaised — a boundary on the one tier above
+    // and since inkOnAction IS groundBase, text drawn on it clears 4.5 too.
     //
-    // 🚨 Design page 01 binds this to groundBase outright; pages 04 and 07 call
-    // it computed. The computation wins because it cannot lose: it picks
-    // whichever of inkContrastCandidate / groundBase contrasts MORE against the
-    // accent, and groundBase is one of the two candidates, so the result is >=
-    // the fixed binding in every theme. FG_CONTRAST alone is not an option —
-    // gruvbox-dark's lands at 1.49:1 on its own accent, which would make the
-    // focused workspace number unreadable in that theme.
-    readonly property color inkOnSignal: root.contrast(root.inkContrastCandidate, root.signalFocus) >= root.contrast(root.groundBase, root.signalFocus) ? root.inkContrastCandidate : root.groundBase
+    // Raw signalFocus cannot do this job: 1.81 against the card in
+    // gruvbox-light, and its old inkOnSignal label 3.47 in rose-pine-dawn.
+    // Solved, mocha / gruvbox-dark / rose-pine-moon keep the raw accent and
+    // the worst shift is gruvbox-light's (0.45, a darker amber) — the hue
+    // survives everywhere. Graphics that carry no text (carets, slider and OSD
+    // fills, glyph marks) stay on raw signalFocus at their own 3:1.
+    readonly property color action: {
+        const away = root.contrast(Qt.rgba(1, 1, 1, 1), root.groundBase) >= root.contrast(Qt.rgba(0, 0, 0, 1), root.groundBase) ? 1 : 0;
+        for (let i = 0; i <= 20; i++) {
+            const t = i / 20;
+            const c = Qt.rgba(root.signalFocus.r * (1 - t) + away * t, root.signalFocus.g * (1 - t) + away * t, root.signalFocus.b * (1 - t) + away * t, 1);
+            if (root.contrast(c, root.groundBase) >= 4.5 && root.contrast(c, root.groundFloat) >= 4.5 && root.contrast(c, root.groundRaised) >= 3.0)
+                return c;
+        }
+        return root.inkPrimary;
+    }
+    // Text drawn ON an action fill. >= 4.5 by construction — see above.
+    readonly property color inkOnAction: root.groundBase
 
     // 🚨 Disabled is OPACITY, never a token swap: swapping makes a disabled
     // control look like a different role — a greyed error reads as a muted
@@ -153,9 +169,8 @@ Singleton {
     // Config so the depth stays tunable without touching the colour.
     readonly property color scrim: Qt.rgba(0, 0, 0, 1)
 
-    // 🚨 Anything drawn ON the scrim needs the same per-theme pick inkOnSignal
-    // needs, and for a sharper reason: the scrim is dark in EVERY theme, so a
-    // light theme's own foregrounds land on it at 1.81 (gruvbox-light) and
+    // 🚨 Anything drawn ON the scrim needs a per-theme pick: the scrim is
+    // dark in EVERY theme, so a light theme's own foregrounds land on it at 1.81 (gruvbox-light) and
     // 2.63 (latte) — the labels simply are not there. Picking the better of
     // inkPrimary / groundBase takes the worst case across all 8 to 6.64.
     readonly property color fgOnScrim: root.contrast(root.inkPrimary, root.scrim) >= root.contrast(root.groundBase, root.scrim) ? root.inkPrimary : root.groundBase

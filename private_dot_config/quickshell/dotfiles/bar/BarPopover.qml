@@ -319,9 +319,14 @@ PopupWindow {
                     anchors.right: parent.right
                     anchors.rightMargin: Config.padTight
                     anchors.verticalCenter: parent.verticalCenter
-                    color: root.footerCommand && hatchMouse.containsMouse ? Theme.inkPrimary : Theme.inkSecondary
+                    // A launchable hatch is a LINK, so it is Theme.action —
+                    // until 2026-10-06 it was inkSecondary, identical to the
+                    // key hints on the left and to a hatch that does nothing.
+                    // Underlined on hover; colour stays put.
+                    color: root.footerCommand ? Theme.action : Theme.inkSecondary
                     font.family: Config.terminalFont
                     font.pixelSize: Config.fontMeta
+                    font.underline: root.footerCommand !== null && hatchMouse.containsMouse
                     text: root.footerRight
                     textFormat: Text.PlainText
                 }
@@ -333,6 +338,7 @@ PopupWindow {
 
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
+                    cursorShape: Qt.PointingHandCursor
                     enabled: root.footerCommand !== null
                     height: parent.height
                     hoverEnabled: true

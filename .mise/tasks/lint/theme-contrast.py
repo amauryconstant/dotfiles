@@ -92,7 +92,8 @@ PAIRS = [
     ("SIGNAL_FOCUS", "GROUND_RAISED", 3.0, "OSD progress fill on its track"),
     ("SIGNAL_FOCUS", "GROUND_BASE", 3.0, "launcher caret, prefix mark and return mark; dock running dot"),
     ("INK_SECONDARY_EFF", "GROUND_RAISED", 3.0, "OSD dimmed progress fill"),
-    ("INK_SECONDARY_EFF", "GROUND_FLOAT", 3.0, "NotificationCard action outlines"),
+    ("INK_SECONDARY_EFF", "GROUND_FLOAT", 3.0, "ActionButton neutral outline on a card (Dismiss)"),
+    ("INK_SECONDARY_EFF", "GROUND_BASE", 3.0, "ActionButton neutral outline on GROUND_BASE (centre Clear and DND-off, polkit Cancel)"),
     ("SIGNAL_ERROR", "GROUND_BASE", 3.0, "audio failed-service glyph, network no-route glyph, battery critical glyph, DND bell, idle inhibitor, PowerMenu power-off glyph and border"),
     ("SIGNAL_ERROR", "GROUND_FLOAT", 3.0, "critical NotificationCard border and chip glyph"),
 
@@ -100,11 +101,10 @@ PAIRS = [
     # GROUND_BASE, so its text pairs are the two rows above; what is new is the
     # slider and the meter fill.
     #
-    # The calendar's "today" number is inkOnSignal on SIGNAL_FOCUS and is NOT a
-    # row here: inkOnSignal is COMPUTED in Theme.qml rather than bound in
-    # colors.sh, so this table's parser cannot see it. The fgOnAccent section
-    # below already measures exactly that pick, per theme, and the number is the
-    # same pairing the focused workspace pill has shipped since Phase 2.5.
+    # The calendar's "today" number is inkOnAction on ACTION and is NOT a row
+    # here: ACTION is COMPUTED in Theme.qml rather than bound in colors.sh, so
+    # this table's parser cannot see it. The action section below measures it,
+    # and every other accent fill that carries text, per theme.
     ("SIGNAL_FOCUS", "GROUND_RAISED", 3.0, "popover slider fill on its track, and the thumb"),
     ("INK_SECONDARY_EFF", "GROUND_RAISED", 3.0, "meter and media-position fill on its track"),
 ]
@@ -115,6 +115,9 @@ PAIRS = [
 # are each drawn as a ~15% tint under a pill's number, which is a ground rather
 # than a graphic and has its own floor -- see COMPOSITES below.
 BANNED = [
+    ("SIGNAL_FOCUS", "GROUND_FLOAT", 3.0, "raw accent as a control fill on a card: 1.81 in gruvbox-light. Buttons and accent fills carrying text use the solved Theme.action instead"),
+    ("GROUND_RAISED", "GROUND_FLOAT", 3.0, "a ground-tier step is not a component boundary: 1.00 in five themes. The notification primary button was drawn this way and read as the disabled one"),
+    ("GROUND_RAISED", "GROUND_BASE", 3.0, "same, one tier down: 1.05 in rose-pine-dawn. The centre's Clear chip was drawn this way"),
     ("INK_PRIMARY", "FILL_INERT", 4.5, "no text on fill-inert. This is the 1.67 that moved the occupied workspace pill onto GROUND_RAISED"),
     ("FILL_INERT", "GROUND_RAISED", 3.0, "design page 06 calls this the slider's 'one legal use' of fill-inert; it is under the 3:1 that page 13 sets for a graphic, so the popover slider fills with SIGNAL_FOCUS instead — the same ruling the OSD already took"),
     ("INK_MUTED", "GROUND_BASE", 4.5, "INK_MUTED is retired: banned as text, and under 3:1 as an outline. There is no successor token"),
@@ -324,16 +327,27 @@ for name in names:
     print(f"  {SHORT.get(name, name):<12}{ratio:8.2f}{'  !' if ratio < 4.5 else ''}")
 
 print()
-print("fgOnAccent — Theme.qml picks the better of INK_CONTRAST_CANDIDATE / GROUND_BASE per theme:")
+print("action — SIGNAL_FOCUS pushed away from GROUND_BASE in 5% steps until it")
+print("clears 4.5 on GROUND_BASE and GROUND_FLOAT and 3.0 on GROUND_RAISED.")
+print("Buttons, links and every accent fill that carries text (inkOnAction = GROUND_BASE).")
+WHITE = "#ffffff"
 for name in names:
     colours = themes[name]
-    on_contrast = contrast(colours["INK_CONTRAST_CANDIDATE"], colours["SIGNAL_FOCUS"])
-    on_bg = contrast(colours["GROUND_BASE"], colours["SIGNAL_FOCUS"])
-    picked = "fgContrast" if on_contrast >= on_bg else "bgPrimary"
-    # A theme where BOTH candidates fall short is a colorset property: there is
-    # no third token to reach for. Marked, not failed.
-    flag = " ~" if max(on_contrast, on_bg) < 4.5 else "  "
-    print(f"  {name:<18}{max(on_contrast, on_bg):6.2f}  {picked}{flag}")
+    base, floating, raised = colours["GROUND_BASE"], colours["GROUND_FLOAT"], colours["GROUND_RAISED"]
+    away = WHITE if contrast(WHITE, base) >= contrast(BLACK, base) else BLACK
+    chosen = None
+    for step in range(21):
+        t = step / 20
+        candidate = blend(away, colours["SIGNAL_FOCUS"], t)
+        if contrast(candidate, base) >= 4.5 and contrast(candidate, floating) >= 4.5 and contrast(candidate, raised) >= 3.0:
+            chosen = (t, candidate)
+            break
+    if chosen is None:
+        failures.append(("ACTION", "GROUND_*", name, 0.0, 4.5))
+        print(f"  {SHORT.get(name, name):<12}none clears — falls back to INK_PRIMARY  !")
+        continue
+    t, action = chosen
+    print(f"  {SHORT.get(name, name):<12}step {t:.2f}  {action}  base {contrast(action, base):5.2f}  float {contrast(action, floating):5.2f}  raised {contrast(action, raised):5.2f}")
 
 print()
 if failures:

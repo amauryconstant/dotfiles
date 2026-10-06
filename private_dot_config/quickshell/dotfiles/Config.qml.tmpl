@@ -31,6 +31,9 @@ Singleton {
     // no hit target and cannot be selected, so it is off the row scale and owes
     // nothing to hitMin.
     readonly property int menuSectionHeight: 24
+    // A push button's paint (bar/ActionButton.qml) and the centre's square DND
+    // chip. Under hitMin on purpose: the button's MouseArea extends to it.
+    readonly property int buttonHeight: 28
     // 🚨 A pointer fact, not a density preference, so it does NOT scale with
     // anything else here. A widget whose paint is smaller than this still
     // claims 32 of pointer space; chips sit `gap` apart, so two 32px hit areas
@@ -299,7 +302,6 @@ Singleton {
     readonly property int notifFooterHeight: 38
     readonly property int notifBadgeHeight: 19
     readonly property int notifGroupBadgeHeight: 16
-    readonly property int notifActionHeight: 28
     readonly property int notifIconSize: 12
     // An image payload replaces the glyph chip in the same slot, so a card with
     // one is the same shape as a card without. Decoded AT this size — a

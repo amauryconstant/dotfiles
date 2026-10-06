@@ -249,8 +249,8 @@ PanelWindow {
                     font.family: Config.guiFont
                     font.pixelSize: Config.fontTitle
                     selectByMouse: true
-                    selectedTextColor: Theme.inkOnSignal
-                    selectionColor: Theme.signalFocus
+                    selectedTextColor: Theme.inkOnAction
+                    selectionColor: Theme.action
 
                     // A 2px accent bar, not the platform caret.
                     cursorDelegate: Rectangle {
