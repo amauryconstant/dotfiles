@@ -66,8 +66,13 @@ if command -v {{ $requiresCmd }} > /dev/null 2>&1; then
     systemctl --user enable {{ .name }} 2>/dev/null || true
     {{ includeTemplate "log_success" (printf "%s enabled" .name) }}
 {{ if index . "start" | default false }}
-    systemctl --user start {{ .name }} 2>/dev/null || true
-    {{ includeTemplate "log_success" (printf "%s started" .name) }}
+    # Reported, not swallowed: from a TTY (no graphical session yet) a start
+    # can fail, and the unit then comes up with the session instead.
+    if systemctl --user start {{ .name }} 2>/dev/null; then
+        {{ includeTemplate "log_success" (printf "%s started" .name) }}
+    else
+        {{ includeTemplate "log_warning" (printf "%s not started now -- starts with the next graphical session" .name) }}
+    fi
 {{ end }}
 {{ if $requiresCmd }}
 fi
@@ -244,7 +249,13 @@ if systemctl is-active NetworkManager >/dev/null 2>&1; then
 fi
 
 # Decision logic: Preserve working WiFi configuration
-if [ "$NM_CONFIGURED" = true ] && [ "$ACTIVE_WIFI" = true ]; then
+# This script re-runs whenever its rendered content changes (run_once is keyed
+# on content), so an already-converted machine must be a no-op here: on a wired
+# desktop with no active WiFi the branch below restarted NetworkManager in the
+# middle of `chezmoi apply`.
+if [ "$NM_CONFIGURED" = true ] && [ "$NM_BACKEND" = iwd ]; then
+    {{ includeTemplate "log_skip" "NetworkManager already uses the iwd backend" }}
+elif [ "$NM_CONFIGURED" = true ] && [ "$ACTIVE_WIFI" = true ]; then
     {{ includeTemplate "log_warning" "NetworkManager already configured with active WiFi connection" }}
     {{ includeTemplate "log_info" "Preserving current configuration (backend: $NM_BACKEND)" }}
     {{ includeTemplate "log_info" "To switch to iwd backend manually:" }}
