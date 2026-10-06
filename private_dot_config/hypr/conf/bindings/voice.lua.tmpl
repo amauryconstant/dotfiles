@@ -36,11 +36,7 @@ o.bind("SUPER + SHIFT + T", "Cancel voice dictation", "voxtype record cancel")
 o.bind("SUPER + ALT + T", "Toggle streaming dictation (Parakeet)", "voxtype record toggle")
 
 -- Parakeet — fast English-only push-to-talk — desktop only
-o.bind(
-	"SUPER + CTRL + T",
-	"Start voice dictation (Parakeet)",
-	"voxtype record start --model parakeet-tdt-0.6b-v3"
-)
+o.bind("SUPER + CTRL + T", "Start voice dictation (Parakeet)", "voxtype record start --model parakeet-tdt-0.6b-v3")
 o.bind("SUPER + CTRL + T", "Stop voice dictation (Parakeet)", "voxtype record stop", { release = true })
 {{ end -}}
 
