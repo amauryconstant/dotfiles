@@ -1,0 +1,75 @@
+# Global mise tools, grouped by the job each tool does (never by mise backend).
+#
+# Rendered into ~/.config/mise/conf.d/tools.toml by private_dot_config/mise/conf.d/tools.toml.tmpl;
+# run_onchange_after_sync_mise_tools runs `mise install` whenever this file changes.
+# A tool value is anything mise accepts in [tools]: a version string, a list of versions,
+# or a table ({ version, postinstall, ... }). A tool may appear in one module only.
+#
+# Removing a tool here does NOT uninstall it: run `mise prune` by hand.
+# ~/.config/mise/config.toml keeps [settings] only — an ad-hoc `mise use -g` lands there and
+# shows up in `chezmoi diff` until it is moved into a module below.
+
+mise:
+  modules:
+    runtimes:
+      enabled: true
+      description: "Language runtimes and their package managers"
+      tools:
+        node: ["24", "latest"] # JavaScript runtime (24 LTS pinned beside latest)
+        bun: latest # JavaScript runtime + package manager (mise npm backend, settings.npm.bun)
+        uv: latest # Python package/project manager (settings.python.uv_venv_auto)
+
+    ai_agents:
+      enabled: true
+      description: "Coding agents and the workspace that runs them"
+      tools:
+        claude-code: latest # Anthropic coding agent; sandbox deps bubblewrap + socat live in packages.yaml
+        opencode: latest # Open-source coding agent
+        herdr: latest # Terminal workspace manager for AI coding agents
+
+    ai_workflow:
+      enabled: true
+      description: "Shapes what agents get: specs, context compression, skill sync"
+      tools:
+        "npm:@fission-ai/openspec": latest # Spec-driven development for coding agents
+        "npm:@caveman-ai/cli": # Agent output compression + Claude Code/opencode integration
+          version: latest
+          postinstall: "caveman setup --install; command -v opencode >/dev/null 2>&1 && caveman enable opencode || true"
+        "aqua:runkids/skillshare": latest # Sync agent skills across tools and machines
+
+    ai_insight:
+      enabled: true
+      description: "Usage and cost tracking, model choice, hardware fit"
+      tools:
+        "npm:ccusage": latest # Claude Code token/cost reports from local logs
+        "pipx:claude-monitor": latest # Live Claude usage monitor
+        llmfit: latest # Right-size local LLMs to this machine's hardware
+        "github:arimxyer/models": latest # TUI for browsing AI models, benchmarks and agents
+
+    git:
+      enabled: true
+      description: "Forges, repo fetching, worktrees"
+      tools:
+        gh: latest # GitHub CLI
+        "github:abhixdd/ghgrab": latest # TUI to download files/folders from GitHub repos
+        "gitlab:amoconst/twiggit": latest # Own tool: git worktree manager for rebase workflows
+
+    cloud:
+      enabled: true
+      description: "Cloud provider CLIs and infra-as-code"
+      tools:
+        awscli: latest # AWS CLI
+        gcloud: latest # Google Cloud CLI
+        firebase: latest # Firebase CLI
+        opentofu: latest # Terraform-compatible infra-as-code
+
+    dev_utilities:
+      enabled: true
+      description: "Formatting, browser testing, HTTP, diagrams"
+      tools:
+        prettier: latest # Code formatter
+        "npm:playwright": # Browser automation/testing; postinstall fetches the browsers
+          version: latest
+          postinstall: "playwright install"
+        "pipx:posting": latest # TUI HTTP/API client
+        "github:1jehuang/mermaid-rs-renderer": latest # Mermaid diagram renderer (mmdr)

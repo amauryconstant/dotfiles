@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_after_sync_mise_tools.sh.tmpl
+# Purpose: Install the global mise tools declared in .chezmoidata/mise.yaml
+# Requirements: Arch Linux, mise (installed by run_onchange_before_sync_packages)
+#
+# WHY run_onchange (not run_once): adding a tool to mise.yaml must install it on the next
+# apply. This used to live in run_once_after_001, which ran at first install only, so a new
+# tool reached a machine only through topgrade's `mise upgrade`.
+# Runs AFTER file application: it needs ~/.config/mise/conf.d/tools.toml deployed.
+# Install only — removing a tool from mise.yaml does not uninstall it (`mise prune` by hand).
+#
+# Hash: {{ .mise | toJson | sha256sum }}
+
+{{ includeTemplate "log_start" "Syncing global mise tools..." }}
+
+set -eu
+
+{{ if .developer.mise.enabled -}}
+if command -v mise >/dev/null 2>&1; then
+    # From $HOME: a cwd inside the source dir would also pull in the repo's .mise/config.toml
+    cd "$HOME"
+    {{ includeTemplate "log_step" "Installing missing mise tools..." }}
+    mise install
+    {{ includeTemplate "log_success" "mise tools installed" }}
+else
+    {{ includeTemplate "log_skip" "mise not installed, skipping" }}
+fi
+{{- else -}}
+{{ includeTemplate "log_skip" "developer.mise.enabled is false, skipping" }}
+{{- end }}
+
+{{ includeTemplate "log_complete" "Global mise tools synced" }}

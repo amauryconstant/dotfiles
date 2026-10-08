@@ -12,37 +12,4 @@ uv_venv_auto = true
 [settings.npm]
 bun = true
 
-[tools]
-# Runner & Package manager
-uv = "latest"
-bun = "latest"
-node = [{ version = "24" }, { version = "latest" }]
-
-# Development Tools
-prettier = "latest"
-"npm:playwright" = { version = "latest", postinstall = "playwright install" }
-
-# AI Tools
-"herdr" = "latest"
-"claude-code" = "latest" # sandbox deps bubblewrap + socat live in .chezmoidata/packages.yaml
-"opencode" = "latest"
-"npm:@fission-ai/openspec" = "latest"
-"llmfit" = "latest"
-"github:arimxyer/models" = "latest"
-"pipx:claude-monitor" = "latest"
-"npm:ccusage" = "latest"
-"npm:@caveman-ai/cli" = { version = "latest", postinstall = "caveman setup --install; command -v opencode >/dev/null 2>&1 && caveman enable opencode || true" }
-"aqua:runkids/skillshare" = "latest"
-
-# CLIs
-"github:1jehuang/mermaid-rs-renderer" = "latest"
-"pipx:posting" = "latest"
-awscli = "latest"
-"github:abhixdd/ghgrab" = "latest"
-gh = "latest"
-gcloud = "latest"
-firebase = "latest"
-opentofu = "latest"
-
-# Custom tools
-"gitlab:amoconst/twiggit" = "latest"
+# Tools are declared in .chezmoidata/mise.yaml and rendered to conf.d/tools.toml.

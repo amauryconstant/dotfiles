@@ -7,12 +7,13 @@
 #
 # This script consolidates:
 # - Shell environment (zsh as default shell)
-# - Version management (mise tools)
 # - Git template merge driver for chezmoi repos
 #
 # Benefits of consolidation:
 # - Single pass for all developer tool configuration
-# - Consistent ordering (shell → tools → git)
+# - Consistent ordering (shell → git)
+#
+# mise tools are installed by run_onchange_after_sync_mise_tools (re-runs on mise.yaml change).
 
 {{ includeTemplate "log_start" "Configuring developer tools and shell environment..." }}
 
@@ -45,33 +46,12 @@ else
 fi
 
 # ============================================================================
-# SECTION 2: VERSION MANAGEMENT (MISE)
+# SECTION 2: GIT MERGE DRIVER CONFIGURATION
 # ============================================================================
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 2: Version Management"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-{{ if .developer.mise.enabled }}
-# Initialize mise
-if command -v mise >/dev/null 2>&1; then
-    {{ includeTemplate "log_step" "Installing mise tools..." }}
-    mise install
-    {{ includeTemplate "log_success" "mise tools installed" }}
-else
-    {{ includeTemplate "log_skip" "mise not installed, skipping" }}
-fi
-{{ end }}
-
-# ============================================================================
-# SECTION 3: GIT MERGE DRIVER CONFIGURATION
-# ============================================================================
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "  SECTION 3: Git Merge Driver"
+echo "  SECTION 2: Git Merge Driver"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
@@ -107,7 +87,6 @@ echo "════════════════════════�
 echo ""
 echo "  Configured:"
 echo "    ✓ Shell: {{ .developer.shell }} (default)"
-echo "    ✓ Tools: mise (version manager)"
 echo "    ✓ Git: template merge driver"
 echo ""
 echo "  ⚠️  NOTE: Logout/login required for shell change to take effect"

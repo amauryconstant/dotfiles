@@ -75,7 +75,7 @@
 
 | Number | Script | Purpose |
 |--------|--------|---------|
-| 001 | configure_developer_tools | CLI generation, git tools |
+| 001 | configure_developer_tools | Default shell, git merge driver |
 | 002 | configure_system_services | System services (Docker, etc.) |
 | 003 | setup_network_printer | Network printer |
 | 004 | clone_wallpapers_repo | Clone `~/.config/wallpapers` via SSH (theming source for random-wallpaper); must run before 005, whose initial wallpaper-cycle trigger needs the repo present |
@@ -103,6 +103,7 @@
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
+| sync_mise_tools | `mise install` for the tools in `.chezmoidata/mise.yaml` (rendered to `conf.d/tools.toml`). Install only: dropping a tool does not uninstall it — `mise prune` by hand | `mise.yaml` changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |
 
 ---

@@ -21,6 +21,7 @@
 | `boot.yaml` | Boot config (GPU KMS, power management, hibernation) | `{{ .boot.* }}` |
 | `gsettings.yaml` | GSettings font config (schema, sizes, extra_settings) | `{{ .gsettings.* }}` |
 | `developer.yaml` | Developer env (shell, mise) | `{{ .developer.* }}` |
+| `mise.yaml` | Global mise tools as modules (`enabled`/`description`/`tools`), rendered to `~/.config/mise/conf.d/tools.toml` | `{{ .mise.modules.* }}` |
 | `firefox_policies.json` | Firefox policy config (extensions, settings) | `{{ .firefox_policies.* }}` |
 
 **Note**: All color theming uses theme system from `~/.config/themes/current/`
@@ -90,6 +91,7 @@ Verify with a throwaway source dir rather than the live one:
 .gsettings.sizes.gui      # Font size integer
 .developer.shell          # Default shell (e.g. zsh)
 .developer.mise.enabled   # Boolean: enable mise setup
+.mise.modules.<name>.tools # Map tool -> mise [tools] value (string, list, or table)
 ```
 
 Fonts are referenced as `.globals.terminalFont`/`.globals.guiFont` (not top-level `.terminalFont`).
@@ -105,6 +107,7 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 | `packages.yaml` | `run_onchange_before_sync_packages.sh.tmpl` | BEFORE file application |
 | `firefox_policies` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
 | `globals.timeshift` | `run_onchange_after_configure_timeshift_retention.sh.tmpl` | AFTER file application |
+| `mise.yaml` | `run_onchange_after_sync_mise_tools.sh.tmpl` | AFTER file application |
 
 **Hash detection**: Scripts include `{{ .packages | toJson | sha256sum }}` comment. When data changes, hash changes, script re-runs.
 

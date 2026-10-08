@@ -246,6 +246,7 @@ retirement plan above is kept separate.
 
 **Package additions**:
 - Update `.chezmoidata/packages.yaml` only
+- Global mise tools: `.chezmoidata/mise.yaml` (module by job, never by backend)
 - No additional documentation needed (self-documenting)
 
 **New script patterns**:
