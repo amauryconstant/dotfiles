@@ -40,6 +40,9 @@ prettier = "latest"
 awscli = "latest"
 "github:abhixdd/ghgrab" = "latest"
 gh = "latest"
+gcloud = "latest"
+firebase = "latest"
+opentofu = "latest"
 
 # Custom tools
 "gitlab:amoconst/twiggit" = "latest"
