@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+
+# Script: theme-apply-starship
+# Purpose: Generate ~/.config/starship.toml from the shared base and the current theme's palette
+# Requirements: Arch Linux, starship
+
+# Starship reads one file and has no include, so the shared base
+# (~/.config/starship/base.toml) and the theme's [palettes.theme] fragment are
+# joined here. Run by theme-switcher on every switch and by
+# run_onchange_after_apply_starship_config on apply.
+
+THEME_DIR="$HOME/.config/themes/current"
+BASE="$HOME/.config/starship/base.toml"
+PALETTE="$THEME_DIR/starship.toml"
+TARGET="$HOME/.config/starship.toml"
+
+if [ ! -L "$THEME_DIR" ] || [ ! -f "$BASE" ] || [ ! -f "$PALETTE" ]; then
+    exit 0  # No current theme or sources not deployed yet, skip silently
+fi
+
+# Write a temp file and rename it over the target. Never redirect into
+# $TARGET: on machines provisioned before this split it is still a symlink to
+# themes/current/starship.toml, and a redirect would write THROUGH it and
+# overwrite the theme's palette. mv replaces the symlink itself.
+tmp=$(mktemp "$TARGET.XXXXXX") || exit 1
+if cat "$BASE" "$PALETTE" > "$tmp"; then
+    mv -f "$tmp" "$TARGET"
+else
+    rm -f "$tmp"
+    exit 1
+fi

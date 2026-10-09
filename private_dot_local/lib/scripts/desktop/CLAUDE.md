@@ -155,6 +155,9 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 - `theme-apply-gtk` — GTK theme/color-scheme
 - `theme-apply-qt` — Qt (qt5ct/qt6ct)
 - `theme-apply-neovim` — Neovim colorscheme
+- `theme-apply-starship` — joins `~/.config/starship/base.toml` + the theme's `[palettes.theme]` into
+  `~/.config/starship.toml`. Temp file + `mv`, never a redirect: on older machines the target is still
+  the retired symlink into `themes/current`, and a redirect would overwrite the palette through it
 
 ---
 

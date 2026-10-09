@@ -23,7 +23,7 @@
 
 **Per-theme files** (each theme dir is a complete set):
 - **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`
-- **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml`, `yazi.toml`, `opencode.json`
+- **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
 - **Brand mark**: `icon.png` — **optional**, 128×128, drawn by the theme picker (see below)
@@ -336,13 +336,15 @@ the yin-yang won.
 | **btop** | `btop.theme` | `~/.config/btop/themes/color_theme.theme` | System monitor color scheme |
 | **lazygit** | `lazygit.yml` | `~/.config/lazygit/config.yml` | Git TUI theme colors |
 | **opencode** | `opencode.json` | `~/.config/opencode/themes/current.json` | TUI theme via custom JSON |
-| **starship** | `starship.toml` | `~/.config/starship.toml` | Shell prompt colors/symbols |
+| **starship** | `starship.toml` | `~/.config/starship.toml` (generated) | `[palettes.theme]`: prompt colors only |
 | **yazi** | `yazi.toml` | `~/.config/yazi/theme.toml` | File manager theme |
 
 **Special handling**:
 - **bat**: Requires cache rebuild via `run_onchange_after_rebuild_bat_cache.sh.tmpl`
 - **bat themes**: Rose Pine variants use custom `.tmTheme` files (`~/.config/bat/themes/`)
-- **starship**: Theme-specific prompt symbols and color schemes
+- **starship**: Starship reads one file and has no include, so the theme file is only a `[palettes.theme]`
+  fragment (`directory`, `branch`). Modules, symbols and rules live in `~/.config/starship/base.toml`;
+  `theme-apply-starship` concatenates the two into `~/.config/starship.toml`. Behaviour goes in the base, never a theme
 - **broot**: Skin-based color system with syntax highlighting
 - **btop**: Direct color code mappings (no semantic variables)
 - **lazygit**: Theme colors integrated with git status highlighting

@@ -115,7 +115,7 @@ fi
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 
-**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
+**theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-starship`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
 
 - `theme-apply-firefox` - Firefox userChrome.css theming
   - Symlinks userChrome.css from `~/.config/themes/{variant}/`

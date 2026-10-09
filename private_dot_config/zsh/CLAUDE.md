@@ -99,4 +99,4 @@ Autoloaded via Zephyr `zfunctions` plugin:
 - **Zephyr PATH**: `dot_zstyles` prepath adds all `~/.local/lib/scripts/` categories
 - **Theme system**: `theme` / `theme-list` functions wrap `theme-switcher` script
 - **Script library**: PATH includes all script categories (directly executable)
-- **Starship prompt**: Configured via `~/.config/starship.toml` (theme symlink)
+- **Starship prompt**: `~/.config/starship.toml`, generated from `~/.config/starship/base.toml` + the theme's palette

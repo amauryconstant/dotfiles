@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+# Script: run_onchange_after_apply_starship_config.sh
+# Purpose: Generate ~/.config/starship.toml from the base config and the current theme's palette
+# Requirements: Arch Linux, starship
+
+# theme-switcher regenerates on every switch; this covers first install and an
+# apply that edits the base or a palette fragment.
+# Hash: {{ include "private_dot_config/starship/base.toml" | sha256sum }}
+{{- range (glob (joinPath .chezmoi.sourceDir "private_dot_config/themes/*/starship.toml")) }}
+# Hash: {{ include . | sha256sum }}
+{{- end }}
+
+{{ includeTemplate "log_start" "Generating Starship config..." }}
+
+set -eu
+
+{{ includeTemplate "log_step" "Joining base.toml with the current theme palette" }}
+"$HOME/.local/lib/scripts/desktop/theme-apply-starship"
+
+{{ includeTemplate "log_complete" "Starship config generated" }}

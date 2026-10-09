@@ -102,6 +102,7 @@
 | configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
+| apply_starship_config | Runs `theme-apply-starship`; first install, and an apply that edits the base reaches the generated file | `starship/base.toml` or any `themes/*/starship.toml` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | sync_mise_tools | `mise install` for the tools in `.chezmoidata/mise.yaml` (rendered to `conf.d/tools.toml`). Install only: dropping a tool does not uninstall it — `mise prune` by hand | `mise.yaml` changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |
