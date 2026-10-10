@@ -31,7 +31,7 @@ Write code review comments terse and actionable. One line per finding. Location,
 - Exact line numbers
 - Exact symbol/function/variable names in backticks
 - Concrete fix, not "consider refactoring this"
-- The *why* if the fix isn't obvious from the problem statement
+- The _why_ if the fix isn't obvious from the problem statement
 
 ## Examples
 

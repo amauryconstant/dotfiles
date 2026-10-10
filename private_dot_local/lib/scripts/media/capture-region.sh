@@ -8,17 +8,17 @@
 # Usage: . capture-region.sh; geometry=$(capture_region_select) || exit 1
 
 capture_region_select() {
-    wayfreeze_pid=""
-    if command -v wayfreeze >/dev/null 2>&1; then
-        wayfreeze &
-        wayfreeze_pid=$!
-        sleep 0.1
-    fi
+	wayfreeze_pid=""
+	if command -v wayfreeze >/dev/null 2>&1; then
+		wayfreeze &
+		wayfreeze_pid=$!
+		sleep 0.1
+	fi
 
-    geometry=$(slurp 2>/dev/null)
+	geometry=$(slurp 2>/dev/null)
 
-    [ -n "$wayfreeze_pid" ] && kill "$wayfreeze_pid" 2>/dev/null
+	[ -n "$wayfreeze_pid" ] && kill "$wayfreeze_pid" 2>/dev/null
 
-    [ -n "$geometry" ] || return 1
-    printf '%s\n' "$geometry"
+	[ -n "$geometry" ] || return 1
+	printf '%s\n' "$geometry"
 }
