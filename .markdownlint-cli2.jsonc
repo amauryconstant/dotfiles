@@ -11,5 +11,6 @@
     "**/skills/private_cavecrew/**"
   ],
   "showFound": false,
-  "fix": true
+  "noBanner": true,
+  "noProgress": true
 }

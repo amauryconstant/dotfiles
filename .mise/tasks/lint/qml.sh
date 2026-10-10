@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="Lint the QML tree: render templates, qmllint, qmlformat check"
+#MISE quiet=true
 set -euo pipefail
 
 # 🚨 /usr/bin/qmllint and /usr/bin/qmlformat are the *Qt5* tools

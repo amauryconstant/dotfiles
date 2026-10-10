@@ -109,10 +109,9 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 `mise` owns every linter/formatter and installs the pre-commit hook (`[tools]` postinstall).
 
 ```bash
-mise run lint       # sh + yaml + lua (+ lua-tmpl) + md
-mise run format     # same set, write mode
+mise run lint       # sh + yaml + json + lua (+ lua-tmpl) + qml + md + theme-contrast + hypr-lua; silent unless something fails
+mise run format     # sh + yaml + lua + qml + md, write mode
 mise run verify     # format, then lint
-mise run lint:hypr-lua   # manual only — needs Hyprland binary + deployed ~/.config/hypr
 mise run chezmoi:orphans # targets orphaned by staged deletions
 ```
 

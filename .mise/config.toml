@@ -1,3 +1,9 @@
+[settings]
+task.output = "interleave"
+
+[env]
+MISE_TASK_TIMINGS = "0"
+
 [tools]
 shellcheck = "latest"
 shfmt = "latest"
@@ -9,10 +15,12 @@ stylua = "latest"
 lua-language-server = "latest"
 
 [tasks.lint]
+quiet = true
 description = "Run all linters"
-depends = ["lint:sh", "lint:yaml", "lint:lua", "lint:qml", "lint:md"]
+depends = ["lint:sh", "lint:yaml", "lint:json", "lint:lua", "lint:qml", "lint:md", "lint:theme-contrast", "lint:hypr-lua"]
 
 [tasks.format]
+quiet = true
 description = "Run all formatters"
 depends = ["format:sh", "format:yaml", "format:lua", "format:qml", "format:md"]
 
@@ -21,26 +29,32 @@ description = "Run all linters and formatters"
 run = [{ task = "format" }, { task = "lint" }]
 
 [tasks."format:sh"]
+quiet = true
 description = "Format shell scripts"
 run = "find . \\( -name '*.sh' -o -name '*.bash' \\) -not -path './.git/*' -not -path './private_dot_keys/*' -not -path './_ai/*' | xargs shfmt --write"
 
 [tasks."lint:md"]
+quiet = true
 description = "Lint Markdown files"
 run = "markdownlint-cli2 '**/opencode/**/*.{md,markdown}'"
 
 [tasks."format:md"]
+quiet = true
 description = "Format Markdown files"
 run = "prettier --write '**/opencode/**/*.{md,markdown}' --log-level warn"
 
 [tasks."lint:yaml"]
+quiet = true
 description = "Lint YAML data files"
 run = "find .chezmoidata -name '*.yaml' | xargs yamllint -c .yamllint.yaml"
 
 [tasks."format:yaml"]
+quiet = true
 description = "Format YAML data files"
 run = "prettier --write '.chezmoidata/**/*.yaml' --log-level warn"
 
 [tasks."lint:lua"]
+quiet = true
 description = "Check Lua formatting"
 depends = ["lint:lua-tmpl"]
 run = "stylua --check $(find private_dot_config/hypr private_dot_config/themes private_dot_config/dotfiles private_dot_config/hyprdynamicmonitors -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
@@ -49,6 +63,7 @@ run = "stylua --check $(find private_dot_config/hypr private_dot_config/themes p
 # They cannot be fed to stylua directly (Go template actions aren't valid Lua) —
 # lua-tmpl-file.sh renders each one first.
 [tasks."lint:lua-tmpl"]
+quiet = true
 description = "Check Lua template formatting (rendered)"
 # xargs, not `find -exec`: -exec returns 0 even when the command fails, so a
 # broken template would pass silently. xargs exits 123 if any invocation fails.
@@ -57,6 +72,7 @@ run = "find private_dot_config/hypr -name '*.lua.tmpl' -print0 | xargs -0 -r -n1
 # Deliberately *.lua only: stylua cannot rewrite a template in place, since
 # rendering discards the Go template actions. Templates are check-only.
 [tasks."format:lua"]
+quiet = true
 description = "Format Lua files (templates are check-only, see lint:lua-tmpl)"
 run = "stylua $(find private_dot_config/hypr private_dot_config/themes private_dot_config/dotfiles private_dot_config/hyprdynamicmonitors -name '*.lua' 2>/dev/null | tr '\\n' ' ')"
 
@@ -69,6 +85,7 @@ run = "stylua $(find private_dot_config/hypr private_dot_config/themes private_d
 # *.qml only: rendering a template discards the Go template actions, so there is
 # nothing to write back to. Same rule as format:lua.
 [tasks."format:qml"]
+quiet = true
 description = "Format QML files (templates are check-only, see lint:qml)"
 run = "test -d private_dot_config/quickshell && find private_dot_config/quickshell -name '*.qml' -type f -print0 | xargs -0 -r /usr/lib/qt6/bin/qmlformat --inplace || true"
 
@@ -84,18 +101,22 @@ run = "test -d private_dot_config/quickshell && find private_dot_config/quickshe
 # It measures the Quickshell QML's colour pairs against WCAG in ALL 8 colorsets,
 # which is the rule themes/CLAUDE.md states and says nothing enforces in QML.
 #
-# Deliberately NOT in [tasks.lint].depends, same reason as lint:hypr-lua below:
-# its pair table is harvested BY HAND from the QML, so it goes stale silently
-# when a widget changes a colour. Run it after touching colours in that tree.
+# Its pair table is harvested BY HAND from the QML, so it goes stale silently
+# when a widget changes a colour: re-harvest after touching colours in that tree.
+# Silent on success; `mise run lint:theme-contrast -- --report` prints the tables.
 
-# Deliberately NOT in [tasks.lint].depends: needs the Hyprland binary plus a
-# deployed ~/.config/hypr for package.path to resolve. Run it by hand.
+# Needs the Hyprland binary plus a deployed ~/.config/hypr for package.path to
+# resolve. Silent on success; Hyprland's debug log is shown only on failure.
 [tasks."lint:hypr-lua"]
+quiet = true
 description = "Verify the Hyprland Lua config tree parses (Hyprland --verify-config)"
 run = """
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 worktree_root=$(git rev-parse --show-toplevel)
 chezmoi execute-template --source "$worktree_root" < private_dot_config/hypr/hyprland.lua.tmpl > "$tmp/hyprland.lua"
-Hyprland --verify-config -c "$tmp/hyprland.lua"
+if ! out=$(Hyprland --verify-config -c "$tmp/hyprland.lua" 2>&1); then
+	printf '%s\n' "$out" >&2
+	exit 1
+fi
 """

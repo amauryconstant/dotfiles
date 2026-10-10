@@ -676,8 +676,8 @@ hex table below — and never map a canvas colour by its LABEL.
 `themes/CLAUDE.md` states the rules and says outright that QML gets no automatic
 enforcement. `.mise/tasks/lint/theme-contrast.py` is that enforcement: it reads all **8**
 colorsets (not just the one symlinked at `themes/current`) and measures the pairs this tree
-actually renders. **Manual-only**, like `lint:hypr-lua` — its pair table is harvested by hand,
-so it goes stale silently when a widget changes a colour. Run it after touching any colour here.
+actually renders. Part of `mise run lint`, silent on success (`-- --report` prints the tables). Its pair table is
+harvested by hand, so it goes stale silently when a widget changes a colour: re-harvest after touching any colour here.
 
 🚨 **There is no `INHERENT` escape hatch any more.** It used to excuse five accent-as-text pairs
 on the grounds that Waybar renders the same ratios — parity with an older tool is not a reason to
@@ -921,7 +921,7 @@ pins one fixed rest colour is the finding.
 ```bash
 mise run lint:qml             # render whole tree, qmllint -W 0, qmlformat diff check
 mise run format:qml           # qmlformat --inplace, *.qml only (a template has nothing to write back to)
-mise run lint:theme-contrast  # WCAG pairs across all 8 colorsets — MANUAL, see above
+mise run lint:theme-contrast  # WCAG pairs across all 8 colorsets (part of lint)
 ```
 
 Both are wired into `[tasks.lint]`/`[tasks.format]` and into pre-commit via

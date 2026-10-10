@@ -11,8 +11,6 @@ if [ -z "$staged_scripts" ]; then
 	exit 0
 fi
 
-echo "🔍 Running shellcheck validation on staged scripts..."
-
 validation_failed=0
 temp_dir=$(mktemp -d)
 trap 'rm -rf "$temp_dir"' EXIT
@@ -25,8 +23,6 @@ while IFS= read -r script; do
 
 	# Check if file is a template
 	if [[ "$script" == *.tmpl ]]; then
-		echo "  → Validating template: $script"
-
 		# Pre-render template with chezmoi (use current worktree as source for correct data files)
 		rendered_file="$temp_dir/$(basename "$script" .tmpl)"
 		worktree_root=$(git rev-parse --show-toplevel)
@@ -45,7 +41,6 @@ while IFS= read -r script; do
 		fi
 	else
 		# Non-template: shellcheck directly
-		echo "  → Validating script: $script"
 		shellcheck_output=$(shellcheck --severity=warning "$script" 2>&1 || true)
 		if [ -n "$shellcheck_output" ]; then
 			echo "$shellcheck_output"
@@ -65,5 +60,3 @@ if [ $validation_failed -ne 0 ]; then
 	echo "  - View rendered template: chezmoi cat <file>"
 	exit 1
 fi
-
-echo "✅ All shell scripts passed shellcheck validation"

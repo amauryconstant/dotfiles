@@ -108,7 +108,7 @@ All wired into mise (`.mise/config.toml`), covering `private_dot_config/{hypr,th
 | `mise run lint:lua` | `stylua --check` on `*.lua`; `depends` on `lint:lua-tmpl`, so this one command covers every stylua check |
 | `mise run lint:lua-tmpl` | renders each `*.lua.tmpl` and checks it (see below) |
 | `mise run format:lua` | `stylua` apply — **`*.lua` only, by design** |
-| `mise run lint:hypr-lua` | whole-tree parse check via `Hyprland --verify-config` — **manual-only**, see below |
+| `mise run lint:hypr-lua` | whole-tree parse check via `Hyprland --verify-config` — needs the Hyprland binary + deployed tree, see below |
 
 ### Formatting
 
@@ -156,9 +156,8 @@ argument passes LuaLS, stylua and `--verify-config` alike, and only shows up at 
 `--source` is load-bearing: without it `execute-template` renders against the *global* chezmoi
 source dir, which silently lints the wrong tree from a worktree or second clone.
 
-**Deliberately not in `[tasks.lint].depends`** — unlike every other task in the table, it needs the
-`Hyprland` binary *and* a deployed `~/.config/hypr` for `package.path` to resolve. `mise run lint`
-does not run it; invoke it by hand.
+Part of `mise run lint`, but unlike the other tasks it needs the `Hyprland` binary *and* a deployed
+`~/.config/hypr` for `package.path` to resolve, so `lint` fails on a machine without them.
 
 ### Proving a dispatcher's arguments: a nested Hyprland
 

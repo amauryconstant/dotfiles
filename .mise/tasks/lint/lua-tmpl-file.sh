@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="Lint a single Lua template by rendering it, then stylua --check"
+#MISE quiet=true
 set -euo pipefail
 
 # A *.lua.tmpl cannot be fed to stylua directly — Go template actions

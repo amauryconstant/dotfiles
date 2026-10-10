@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 #MISE description="Check the Quickshell QML colour pairs against WCAG, across all 8 themes"
+#MISE quiet=true
 """WCAG contrast check for the colour pairs the Quickshell QML actually renders.
 
 themes/CLAUDE.md states the contrast rules and says outright that nothing
 enforces them in QML. This is that enforcement, and it is the only check here
 that reads all 8 colorsets rather than the one currently symlinked.
 
-Deliberately NOT in [tasks.lint].depends, for the same reason lint:hypr-lua is
-not: PAIRS below is harvested BY HAND from the QML, so it goes stale silently
-when a widget changes a colour. Run it after touching colours in the tree, and
-re-harvest the table when the tree grows a surface.
+Part of [tasks.lint]. Silent on success; pass --report for the full tables.
+PAIRS below is harvested BY HAND from the QML, so it goes stale silently when a
+widget changes a colour: re-harvest the table when the tree grows a surface.
 
 Harvesting rule: read the PARENTING, not a grep of colour lines. Most
 Theme.bgSecondary uses in that tree are 1px hairlines and borders, not grounds —
@@ -21,9 +21,21 @@ the shipped colorsets — Waybar, wofi and swaync render the same ratios today �
 so they are reported for the record and are not defects in this tree.
 """
 import glob
+import io
 import os
 import re
 import sys
+
+# The report is long; print it only on failure unless --report asks for it.
+_stdout = sys.stdout
+if "--report" not in sys.argv:
+    sys.stdout = io.StringIO()
+
+
+def _die():
+    _stdout.write(sys.stdout.getvalue() if isinstance(sys.stdout, io.StringIO) else "")
+    sys.exit(1)
+
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -189,7 +201,7 @@ for _name, _colours in themes.items():
 
 if not themes:
     print("no colorsets found — run from the chezmoi source root", file=sys.stderr)
-    sys.exit(1)
+    _die()
 
 names = list(themes)
 failures = []
@@ -354,5 +366,5 @@ if failures:
     print(f"❌ {len(failures)} pair(s) below threshold in this tree's own choices:")
     for fg, bg, name, ratio, minimum in failures:
         print(f"   {name}: {fg} on {bg} = {ratio:.2f} (needs {minimum})")
-    sys.exit(1)
+    _die()
 print("✅ every pair this tree chooses clears its threshold in all 8 themes")
