@@ -31,7 +31,7 @@ if [ -L "$CURRENT_LINK" ]; then
 	# Only switch if we're not already on the dark variant
 	if [ "$CURRENT_THEME" != "$DARK_THEME" ]; then
 		if [ -d "$THEMES_DIR/$DARK_THEME" ]; then
-			~/.local/lib/scripts/desktop/theme-switcher switch "$DARK_THEME"
+			~/.local/lib/scripts/desktop/theme-switch-when-unlocked "$DARK_THEME"
 
 			# Call user hook
 			if [ -f "$HOME/.local/lib/scripts/core/hook-runner" ]; then

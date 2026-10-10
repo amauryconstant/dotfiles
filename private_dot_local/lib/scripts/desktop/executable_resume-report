@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+
+# Script: resume-report
+# Purpose: Log lock/display state to the journal right after resume
+# Requirements: Hyprland, quickshell, util-linux (logger)
+# Usage: resume-report   (hypridle after_sleep_cmd)
+#
+# A black screen after resume left no evidence: the kernel and compositor logs
+# were gone by the time anyone looked. This writes one line at resume and one
+# 10 s later, tagged `resume-report`:  journalctl -t resume-report
+#
+# Fields: lock = the shell's own answer (secure/requested/unlocked/...),
+# locked = compositor view (0 locked, 1 not, 2 unknown), dpms per output,
+# surfaces = lock surfaces the compositor maps, qs = quickshell.service state.
+# Bounded and read-only: every probe has a timeout, nothing here can block
+# hypridle or alter the session.
+
+report() {
+    lock=$(timeout 1 quickshell -c dotfiles ipc call lock status 2>/dev/null | tr '\n' ' ')
+    "$HOME/.local/lib/scripts/desktop/session-locked" >/dev/null 2>&1
+    locked=$?
+    dpms=$(timeout 2 hyprctl -j monitors 2>/dev/null |
+        jaq -r '[.[] | "\(.name)=\(.dpmsStatus)"] | join(",")' 2>/dev/null)
+    surfaces=$(timeout 2 hyprctl layers 2>/dev/null | grep -ci 'lock')
+    qs=$(systemctl --user is-active quickshell.service 2>/dev/null)
+    logger -t resume-report "$1 lock=[${lock:-none}] locked=$locked dpms=[${dpms:-none}] lock-surfaces=${surfaces:-0} qs=$qs"
+}
+
+report now
+(
+    sleep 10
+    report +10s
+) </dev/null >/dev/null 2>&1 &

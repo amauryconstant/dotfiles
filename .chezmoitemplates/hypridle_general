@@ -30,7 +30,16 @@ general {
     # Restarting wireplumber destroys its objects and rebuilds a clean registry.
     # Measured on the laptop only; on the desktop a restart would just cut any
     # stream playing across the suspend.
-    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'{{ if eq .chassisType "laptop" }}; systemctl --user restart wireplumber{{ end }}
+    #
+    # Restarting wireplumber kills the output stream voxtype holds for its audio
+    # feedback; cpal then reports "snd_pcm_poll_descriptors_revents ... errno -2"
+    # in a hot loop for the rest of the boot (14M journal lines on 2026-10-10,
+    # enough to evict the kernel log of the failure being investigated). So
+    # voxtype is restarted after it; try-restart leaves a stopped unit alone.
+    #
+    # resume-report logs lock/DPMS state to the journal, so a black screen on
+    # resume leaves evidence of whether the lock surface was alive.
+    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "on" })'; ~/.local/lib/scripts/desktop/resume-report{{ if eq .chassisType "laptop" }}; systemctl --user restart wireplumber; systemctl --user try-restart voxtype{{ end }}
 
     # True session lock/unlock events. Unlike a listener's on-resume (which fires
     # the instant the mouse moves, BEFORE authentication), on_unlock_cmd only

@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+
+# Script: theme-switch-when-unlocked
+# Purpose: Switch theme now, or once the session unlocks if it is locked
+# Requirements: Hyprland, desktop/session-locked, desktop/theme-switcher
+# Usage: theme-switch-when-unlocked <theme-name>
+#
+# Darkman fires on resume when the sleep crossed sunrise/sundown, i.e. while the
+# lock screen is up and in the same second hypridle turns DPMS back on.
+# theme-switcher then runs `hyprctl reload` and a Quickshell theme reload against
+# a locked, just-woken session. A switch is cosmetic and can wait for the unlock.
+# Exit 2 from session-locked (no Hyprland) means "unknown": switch as before.
+
+theme="$1"
+[ -n "$theme" ] || exit 1
+
+SCRIPTS="$HOME/.local/lib/scripts/desktop"
+
+if ! "$SCRIPTS/session-locked"; then
+    exec "$SCRIPTS/theme-switcher" switch "$theme"
+fi
+
+# Locked: wait, detached, so darkman's handler returns. The switch is resolved
+# against the theme requested last, so a newer deferral replaces an older one.
+PENDING="${XDG_RUNTIME_DIR:-/tmp}/theme-switch-pending"
+printf '%s\n' "$theme" >"$PENDING"
+
+# 0 = locked; keep waiting. Anything else = unlocked or unknown.
+(
+    while "$SCRIPTS/session-locked"; do
+        sleep 2
+    done
+    # Let the lock surface finish tearing down before reloading.
+    sleep 2
+    pending=$(cat "$PENDING" 2>/dev/null) || exit 0
+    rm -f "$PENDING"
+    exec "$SCRIPTS/theme-switcher" switch "$pending"
+) </dev/null >/dev/null 2>&1 &
