@@ -43,3 +43,9 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
+  - id: verify
+    name: mise run verify (format + full lint)
+    entry: mise run verify
+    language: system
+    pass_filenames: false
+    always_run: true

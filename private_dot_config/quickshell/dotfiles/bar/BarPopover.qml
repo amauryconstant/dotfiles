@@ -57,7 +57,7 @@ PopupWindow {
     // the window maps first, then this flips one event loop later.
     property bool revealed: false
     // The rows' right-click menu. Payload rows take it as `menu: root.rowMenu`.
-    readonly property alias rowMenu: rowMenu
+    readonly property alias rowMenu: contextMenu
     property int selected: -1
     property bool shown: false
     property string title: ""
@@ -76,7 +76,7 @@ PopupWindow {
     signal stepped(int delta)
 
     function close(): void {
-        rowMenu.hide();
+        contextMenu.hide();
         root.shown = false;
         root.revealed = false;
         root.keyboardMode = false;
@@ -199,21 +199,21 @@ PopupWindow {
             anchors.fill: parent
             focus: root.keyboardMode
 
-            Keys.onBacktabPressed: rowMenu.visible ? rowMenu.move(-1) : root.move(-1)
-            Keys.onDownPressed: rowMenu.visible ? rowMenu.move(1) : root.move(1)
-            Keys.onEnterPressed: rowMenu.visible ? rowMenu.run(rowMenu.cursor) : root.activated(root.selected)
-            Keys.onEscapePressed: rowMenu.visible ? rowMenu.hide() : root.close()
+            Keys.onBacktabPressed: contextMenu.visible ? contextMenu.move(-1) : root.move(-1)
+            Keys.onDownPressed: contextMenu.visible ? contextMenu.move(1) : root.move(1)
+            Keys.onEnterPressed: contextMenu.visible ? contextMenu.run(contextMenu.cursor) : root.activated(root.selected)
+            Keys.onEscapePressed: contextMenu.visible ? contextMenu.hide() : root.close()
             Keys.onLeftPressed: {
-                if (!rowMenu.visible)
+                if (!contextMenu.visible)
                     root.stepped(-1);
             }
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
-                    if (rowMenu.visible)
-                        rowMenu.hide();
+                    if (contextMenu.visible)
+                        contextMenu.hide();
                     else
-                        rowMenu.keyRequested();
-                } else if (rowMenu.visible) {
+                        contextMenu.keyRequested();
+                } else if (contextMenu.visible) {
                     return;
                 } else if (event.key === Qt.Key_PageUp) {
                     root.paged(-1);
@@ -224,13 +224,13 @@ PopupWindow {
                 }
                 event.accepted = true;
             }
-            Keys.onReturnPressed: rowMenu.visible ? rowMenu.run(rowMenu.cursor) : root.activated(root.selected)
+            Keys.onReturnPressed: contextMenu.visible ? contextMenu.run(contextMenu.cursor) : root.activated(root.selected)
             Keys.onRightPressed: {
-                if (!rowMenu.visible)
+                if (!contextMenu.visible)
                     root.stepped(1);
             }
-            Keys.onTabPressed: rowMenu.visible ? rowMenu.move(1) : root.move(1)
-            Keys.onUpPressed: rowMenu.visible ? rowMenu.move(-1) : root.move(-1)
+            Keys.onTabPressed: contextMenu.visible ? contextMenu.move(1) : root.move(1)
+            Keys.onUpPressed: contextMenu.visible ? contextMenu.move(-1) : root.move(-1)
         }
 
         Column {
@@ -351,7 +351,7 @@ PopupWindow {
 
         // Last child, so it stacks over the body and the footer alike.
         ContextMenu {
-            id: rowMenu
+            id: contextMenu
 
             anchors.fill: parent
         }
