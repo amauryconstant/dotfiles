@@ -32,7 +32,9 @@ A modify-template re-serializes: `fromJson` → `toPrettyJson` sorts keys and no
 
 Use `create_` for these files: chezmoi writes the seed only when the target is absent and never touches it again. See `private_dot_config/claude/create_private_settings.json`.
 
-The trade is real — source edits never reach machines that already have the file. That is the correct trade when the file is app-managed state and only its initial content is ours.
+To keep versioning keys on a machine that already has the file, pair the seed with a `run_onchange_after_` script that deep-merges it in with `jaq '. * $seed'` (see `.chezmoiscripts/run_onchange_after_merge_claude_settings.sh.tmpl`). jaq keeps key order and escaping, so only the declared lines change — verified by diff, and `caveman doctor claude` stays `owned: true`. The script refuses a seed declaring `env`/`hooks`, which stay caveman's. Any seed edit re-asserts every declared key (reverting a later `/model` change); deleting a key from the seed does not remove it from the live file.
+
+Without the merge script the trade is real — source edits never reach machines that already have the file. That is the correct trade when the file is app-managed state and only its initial content is ours.
 
 `~/.config/claude/.claude.json` is Claude Code state and holds account credentials. It is untracked by chezmoi on purpose: never add, read, copy or render it.
 

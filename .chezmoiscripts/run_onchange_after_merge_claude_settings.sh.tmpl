@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_merge_claude_settings.sh
+# Purpose: Merge the declared Claude Code settings into the live settings.json
+# Requirements: jaq
+#
+# settings.json is co-owned: caveman keeps env + hooks (and checksums the file), we keep the rest.
+# create_private_settings.json only seeds a missing file, so edits to it reach an existing machine
+# through this merge instead. jaq keeps key order and escaping, which a chezmoi modify-template
+# does not — see .claude/rules/chezmoi-modify-entries.md.
+
+# Hash: {{ include "private_dot_config/claude/create_private_settings.json" | sha256sum }}
+
+{{ includeTemplate "log_start" "Merging Claude Code settings..." }}
+
+set -euo pipefail
+
+target="${XDG_CONFIG_HOME:-$HOME/.config}/claude/settings.json"
+
+if [ ! -f "$target" ]; then
+    {{ includeTemplate "log_skip" "No live settings.json, the create_ seed provides it" }}
+    exit 0
+fi
+
+seed=$(cat <<'SEED_EOF'
+{{ include "private_dot_config/claude/create_private_settings.json" }}
+SEED_EOF
+)
+
+if printf '%s' "$seed" | jaq -e 'has("env") or has("hooks")' >/dev/null; then
+    {{ includeTemplate "log_error" "Seed declares env/hooks: those belong to caveman" }}
+    exit 1
+fi
+
+tmp=$(mktemp "$target.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+
+{{ includeTemplate "log_step" "Deep-merging declared keys..." }}
+# shellcheck disable=SC2016 # $seed is a jaq variable
+jaq --argjson seed "$seed" '. * $seed' "$target" > "$tmp"
+chmod 600 "$tmp"
+mv "$tmp" "$target"
+
+{{ includeTemplate "log_complete" "Claude Code settings merged" }}

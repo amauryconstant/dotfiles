@@ -100,6 +100,7 @@
 | configure_desktop_shell | Two-way Quickshell ⇄ Waybar switch: removes the off side's stale drop-ins (ignored ≠ deleted), enables or stops `quickshell.service`, stops Waybar once the shell is up. Sorts before `configure_notifications`, which needs the shell gone before starting swaync | `features.quickshell_shell` or `features.quickshell_polkit` changes |
 | configure_notifications | Masks/unmasks swaync so exactly one daemon owns `org.freedesktop.Notifications` | `features.quickshell_shell` or `features.quickshell_notifications` changes |
 | configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
+| merge_claude_settings | jaq-merge `claude/create_private_settings.json` into the live `~/.config/claude/settings.json` (caveman keeps `env`/`hooks`) | The seed file changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
 | apply_starship_config | Runs `theme-apply-starship`; first install, and an apply that edits the base reaches the generated file | `starship/base.toml` or any `themes/*/starship.toml` changes |

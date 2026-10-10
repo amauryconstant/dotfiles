@@ -5,6 +5,8 @@
     "sessionUrl": false
   },
   "includeCoAuthoredBy": false,
+  "model": "opusplan",
+  "advisorModel": "opus",
   "statusLine": {
     "type": "command",
     "command": "bash \"$HOME/.config/claude/statusline.sh\""
