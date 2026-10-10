@@ -1,8 +1,8 @@
 # Firefox-Based Browser Alternatives: Research
 
 Evaluates Gecko/Firefox-derived browsers as a replacement for stock Firefox, **before** committing
-to `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` (866 lines, uncommitted on branch
-`firefox-profiles`). Chromium-based browsers are out of scope by requirement.
+to `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` (committed on branch
+`firefox-profiles`, not yet executed). Chromium-based browsers are out of scope by requirement.
 
 **Date**: 2026-08-08 · **System Firefox**: 153.0.3-2 (`extra`)
 
