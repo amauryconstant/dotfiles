@@ -73,6 +73,27 @@ Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER
 - Edit via: `dotfiles-bindings-edit` (auto-reloads on exit)
 - See: `dotfiles/CLAUDE.md` for full documentation
 
+## OAuth sign-in popups (`conf/oauth-popups.lua`)
+
+Floats, halves and centres a sign-in **popup** window, once. Replaced the hyprwhenthen service (a
+`windowtitlev2` regex + a script), whose float call was a **toggle** that fired on every retitle and
+whose title match could not tell a popup from a sign-in **tab**.
+
+Acts only when ALL hold: the title matches (Google / Microsoft / GitHub, lowercase plain substrings);
+the window first appeared ≤10s ago; an **older window with the same pid** exists (a `window.open()`
+popup shares its opener's process; a sign-in tab retitles the whole browser window, and a browser
+cold-started onto a sign-in page has no older sibling); not already handled or floating.
+So a sign-in in a **tab** deliberately leaves the browser alone.
+
+🚨 `window.title` fires BEFORE `window.open` for a new window, so first-seen time is recorded on
+whichever event comes first (`track`). Windows alive at module load get `t = 0` so a reload cannot
+make an old window look new. Callbacks receive the `HL.Window` itself.
+
+Add a provider: append a lowercase substring to `TITLES`. Test in a nested Hyprland with a client
+that opens two windows in ONE process (GTK script; ghostty spawns a pid per window, so the guard
+correctly refuses it). Kill only the nested instance's pids -- `pkill -x <name>` also kills the
+host's.
+
 ## Template Decisions
 
 Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the wlogout `SUPER+SHIFT+Q`, same gate).

@@ -15,3 +15,8 @@
 
 # Wofi keybindings sheet style — the sheet is a Quickshell surface now.
 .config/wofi/keybinds.css
+
+# hyprwhenthen — its only handler (OAuth popup float) is hypr/conf/oauth-popups.lua now.
+# Stopping the running unit is manual: systemctl --user disable --now hyprwhenthen.service
+.config/hyprwhenthen
+.config/systemd/user/hyprwhenthen.service

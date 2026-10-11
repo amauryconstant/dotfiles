@@ -53,6 +53,7 @@ require_all.files(config .. "/hypr/conf/bindings", "conf.bindings", { reload = t
 
 -- Window rules
 require("conf.windowrules")
+require("conf.oauth-popups") -- float + centre sign-in popups (replaced hyprwhenthen)
 
 -- conf.d overrides (literal dot in dir name → add to package.path, load bare names)
 package.path = config .. "/hypr/conf.d/?.lua;" .. package.path

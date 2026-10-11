@@ -31,8 +31,8 @@ Verified on the real session, not a nested one:
 - **Anything multi-monitor** — the machine is on a single output right now. `SUPER+ALT+m` crossing
   monitors, and `hl.dsp.workspace.move`'s monitor argument, were exercised only against a nested
   headless output. Re-check on the desktop profile.
-- **hyprwhenthen float-and-center** — needs a real OAuth popup. The script itself was run by hand
-  against a nested instance and produced exactly half the logical monitor.
+- **OAuth popup float (`conf/oauth-popups.lua`)** — needs a real `window.open()` sign-in popup. The
+  module was exercised against a nested instance and produced exactly half the logical monitor.
 - **Media keys on the lock screen**, and a **workspace click on the Quickshell bar** — both
   need a human at the keyboard. The lock screen this now means is `quickshell/dotfiles/lock/`
   (shipped 2026-09-12), not hyprlock, which is only the runtime fallback `desktop/immediate-lock`
@@ -93,7 +93,7 @@ net; not a rollback target. The rollback target is the `.chezmoiignore` block.
      `hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'`, wake, then the `"on"` form; **only
      then** `systemctl --user start hypridle` and let one real idle timeout run. Then a voxtype
      submap entering and resetting (`hyprctl submap`); a `session-restore` round trip across
-     two monitors; `window-pop`; the hyprwhenthen float-and-center path; `SUPER+ALT+g`
+     two monitors; `window-pop`; the OAuth popup float path; `SUPER+ALT+g`
    - Workspace clicks in the Quickshell bar (or, with the flag off, Waybar's — expected **dead**,
      see Status)
    - hyprsplit per-monitor workspaces: `SUPER+1..0`, `SUPER+SHIFT+1..0`, `SUPER+ALT+s` swap,

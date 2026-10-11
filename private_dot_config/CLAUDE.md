@@ -34,7 +34,6 @@
 | `swaync/` | Notification daemon | ✅ Yes |
 | `btop/` | System monitor (themed) | ✅ Yes |
 | `hyprdynamicmonitors/` | Monitor profile manager | ✅ Yes |
-| `hyprwhenthen/` | Event-driven window automation | ✅ Yes |
 | `jj/` | Jujutsu VCS config | ✅ Yes |
 | `dotfiles/` | Hook system + extra bindings | ✅ Yes |
 | `opencode/` | opencode TUI config (theme-managed, `modify_opencode.jsonc`) | ❌ No |

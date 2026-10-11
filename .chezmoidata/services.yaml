@@ -35,10 +35,6 @@ services:
       enabled: true
       start: true
       requires_command: hyprdynamicmonitors
-    - name: hyprwhenthen.service # event-driven window rules (OAuth popups etc.)
-      enabled: true
-      start: true
-      requires_command: hyprwhenthen
     - name: quickshell.service # desktop shell; its ConditionPathExists keeps it inert on the Waybar branch
       enabled: true
       start: true

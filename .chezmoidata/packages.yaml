@@ -324,7 +324,6 @@ packages:
         - solarized-sddm-theme # Solarized theme for SDDM
         - xorg-server # X server for XWayland compatibility
         - hyprdynamicmonitors-bin # Power-aware monitor manager with TUI
-        - hyprwhenthen-bin # Event-driven window automation
         - hyprdrover # Rust-based session management for Hyprland
         - wtype # Wayland keyboard simulation (voxtype dependency)
         - voxtype-bin # Speech-to-text dictation (AUR)

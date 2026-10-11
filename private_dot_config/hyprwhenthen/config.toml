@@ -1,8 +1,0 @@
-[general]
-timeout = "1s"
-hot_reload_debounce_timer = "100ms"
-
-[[handler]]
-on = "windowtitlev2"
-when = "(.*),(?:Sign [Ii]n - Google Accounts|Sign [Ii]n - (?:Google|Microsoft|GitHub)).*"
-then = "~/.config/hyprwhenthen/scripts/float-and-center.sh $REGEX_GROUP_1"
