@@ -10,7 +10,9 @@ BarWidget {
     id: root
 
     readonly property MprisPlayer player: {
+        // qmllint disable missing-property
         const usable = Mpris.players.values.filter(p => !root.ignored.some(name => (p.dbusName ?? "").toLowerCase().includes(name)));
+        // qmllint enable missing-property
         return usable.find(p => p.isPlaying) ?? usable[0] ?? null;
     }
     // Waybar delegated to playerctld exclusively; here every player is

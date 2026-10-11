@@ -98,9 +98,9 @@ PopupWindow {
         // does not follow the item (popupanchor.hpp). Bar widgets move — the
         // window title changes width, a workspace appears — so without this a
         // reopened popover lands where its widget used to be.
-        // qmllint disable unresolved-type
+        // qmllint disable unresolved-type missing-property
         root.anchor.updateAnchor();
-        // qmllint enable unresolved-type
+        // qmllint enable unresolved-type missing-property
         root.shown = true;
         Qt.callLater(() => {
             root.revealed = true;
@@ -124,12 +124,12 @@ PopupWindow {
     // the output ("clamped to the output", page 06); flipping is wrong here,
     // since there is nothing above the bar to flip into.
     anchor {
-        // qmllint disable missing-type
+        // qmllint disable missing-type missing-property
         adjustment: PopupAdjustment.SlideX
         edges: Edges.Bottom
         gravity: Edges.Bottom
-        // qmllint enable missing-type
         item: root.anchorItem
+        // qmllint enable missing-type missing-property
     }
 
     onPointerHeldChanged: {

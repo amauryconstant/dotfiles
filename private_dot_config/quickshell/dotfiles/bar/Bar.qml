@@ -91,11 +91,11 @@ PanelWindow {
         right: true
         top: true
     }
-    // qmllint disable unqualified unresolved-type
+    // qmllint disable unqualified unresolved-type missing-property
     margins.left: Config.barInset
     margins.right: Config.barInset
     margins.top: Config.barInset
-    // qmllint enable unqualified unresolved-type
+    // qmllint enable unqualified unresolved-type missing-property
 
     Rectangle {
         anchors.fill: parent

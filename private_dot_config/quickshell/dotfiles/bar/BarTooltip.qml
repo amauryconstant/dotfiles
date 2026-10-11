@@ -36,11 +36,11 @@ PopupWindow {
     // centres it horizontally (gravity with neither Left nor Right centres —
     // popupanchor.cpp calcEffectiveX).
     anchor {
-        // qmllint disable missing-type
+        // qmllint disable missing-type missing-property
         edges: Edges.Bottom
         gravity: Edges.Bottom
-        // qmllint enable missing-type
         item: root.anchorItem
+        // qmllint enable missing-type missing-property
     }
 
     Rectangle {

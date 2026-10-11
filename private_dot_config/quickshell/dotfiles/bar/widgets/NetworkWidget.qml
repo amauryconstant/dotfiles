@@ -16,7 +16,9 @@ BarWidget {
     id: root
 
     readonly property NetworkDevice active: {
+        // qmllint disable missing-property
         const devices = Networking.devices.values;
+        // qmllint enable missing-property
         return devices.find(d => d.connected && d.type === DeviceType.Wifi) ?? devices.find(d => d.connected) ?? null;
     }
     // Same class of upstream gap as BluetoothWidget: Networking's qmltypes
@@ -25,7 +27,9 @@ BarWidget {
     // qmllint disable unresolved-type
     readonly property bool isWifi: root.active?.type === DeviceType.Wifi
     // qmllint enable unresolved-type
+    // qmllint disable missing-property
     readonly property var wifi: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
+    // qmllint enable missing-property
 
     readonly property bool wifiOn: Networking.wifiEnabled
 
@@ -62,7 +66,9 @@ BarWidget {
     // Networking.devices is empty for the first ~1-2s and fills on its own;
     // ObjectModel.values notifies, so this binding recovers rather than
     // latching a startup reading.
+    // qmllint disable missing-property
     visible: Networking.devices.values.length > 0
+    // qmllint enable missing-property
 
     signal popoverRequested
 

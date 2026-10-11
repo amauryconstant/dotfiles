@@ -18,14 +18,14 @@ BarPopover {
     // Same upstream qmltypes gap NetworkWidget documents: Networking records
     // this enum unqualified, so the linter cannot match it to the module's own
     // exported type.
-    // qmllint disable unresolved-type
+    // qmllint disable unresolved-type missing-property
     readonly property NetworkDevice active: {
         const devices = Networking.devices.values;
         return devices.find(d => d.connected && d.type === DeviceType.Wifi) ?? devices.find(d => d.connected) ?? null;
     }
     readonly property bool isWifi: root.active?.type === DeviceType.Wifi
     readonly property var wifiDevice: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
-    // qmllint enable unresolved-type
+    // qmllint enable unresolved-type missing-property
     // Known first, then the rest by signal: the design's order, minus the
     // active one, which is drawn on its own above the list.
     readonly property var networks: {
@@ -33,7 +33,9 @@ BarPopover {
         const rest = all.filter(n => !n.connected);
         return rest.slice().sort((a, b) => (b.known - a.known) || (b.signalStrength - a.signalStrength));
     }
+    // qmllint disable missing-property
     readonly property var connectedNetwork: root.isWifi ? root.active.networks.values.find(n => n.connected) ?? null : null
+    // qmllint enable missing-property
     // A hard rfkill block cannot be lifted from software, so the switch row
     // is drawn only where flipping it would do something.
     readonly property bool radioSwitchable: Networking.wifiHardwareEnabled && root.wifiDevice !== null

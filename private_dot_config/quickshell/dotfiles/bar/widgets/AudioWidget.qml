@@ -52,7 +52,9 @@ BarWidget {
     // Waybar's on-click-middle was `pamixer --next-sink`; cycling the
     // preferred default is the native equivalent.
     function nextSink(): void {
+        // qmllint disable missing-property
         const sinks = Pipewire.nodes.values.filter(n => n.isSink && !n.isStream);
+        // qmllint enable missing-property
         if (sinks.length < 2)
             return;
         const at = sinks.findIndex(n => n.id === root.sink?.id);

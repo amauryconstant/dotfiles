@@ -18,10 +18,10 @@ BarWidget {
     //
     // NB a comment whose first word is the linter's own name is parsed as a
     // directive, so the prose above deliberately never starts a line with it.
-    // qmllint disable unresolved-type
+    // qmllint disable unresolved-type missing-property
     readonly property BluetoothAdapter adapter: Bluetooth.defaultAdapter
     readonly property list<BluetoothDevice> connected: Bluetooth.devices.values.filter(d => d.connected)
-    // qmllint enable unresolved-type
+    // qmllint enable unresolved-type missing-property
 
     readonly property bool powered: root.adapter?.enabled ?? false
 

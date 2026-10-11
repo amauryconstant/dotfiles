@@ -24,12 +24,12 @@ BarPopover {
     // cannot resolve the core types these are declared as. Suppressed over
     // these lines only — unresolved-type is also how a real missing import
     // surfaces.
-    // qmllint disable unresolved-type
+    // qmllint disable unresolved-type missing-property
     readonly property BluetoothAdapter adapter: Bluetooth.defaultAdapter
     readonly property list<BluetoothDevice> devices: Bluetooth.devices.values.filter(d => d.paired || d.connected)
     // What the arrows step through: the switch, then the devices while on.
     readonly property list<BluetoothDevice> shownDevices: root.powered ? root.devices : []
-    // qmllint enable unresolved-type
+    // qmllint enable unresolved-type missing-property
     readonly property bool powered: root.adapter?.enabled ?? false
     readonly property bool busy: root.devices.some(d => d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting)
 

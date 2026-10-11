@@ -17,7 +17,9 @@ BarPopover {
     readonly property bool failed: root.armed && !root.sink
     property bool armed: false
     readonly property PwNode sink: Pipewire.defaultAudioSink
+    // qmllint disable missing-property
     readonly property list<PwNode> sinks: Pipewire.nodes.values.filter(n => n.isSink && !n.isStream)
+    // qmllint enable missing-property
     readonly property PwNode source: Pipewire.defaultAudioSource
     // The node a switch is in flight to. Its own row reports it and its
     // siblings dim; there is no toast and no global spinner, because a spinner

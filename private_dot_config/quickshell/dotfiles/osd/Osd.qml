@@ -66,10 +66,10 @@ PanelWindow {
     // patch while it is up, and it has no interactive element to justify that.
     mask: Region {}
 
-    // qmllint disable unqualified unresolved-type
+    // qmllint disable unqualified unresolved-type missing-property
     anchors.bottom: true
     margins.bottom: Config.osdMargin
-    // qmllint enable unqualified unresolved-type
+    // qmllint enable unqualified unresolved-type missing-property
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Overlay

@@ -44,13 +44,13 @@ Variants {
         screen: win.modelData
         visible: win.mine.length > 0
 
-        // qmllint disable unqualified unresolved-type
+        // qmllint disable unqualified unresolved-type missing-property
         anchors.right: true
         anchors.top: true
         // Clears the floating bar rather than sliding under it.
         margins.right: Config.barInset
         margins.top: Config.barHeight + Config.barInset * 2
-        // qmllint enable unqualified unresolved-type
+        // qmllint enable unqualified unresolved-type missing-property
 
         // Popups are clickable (dismiss, action) but must never take keyboard
         // focus: a toast stealing keys mid-typing is worse than a missed

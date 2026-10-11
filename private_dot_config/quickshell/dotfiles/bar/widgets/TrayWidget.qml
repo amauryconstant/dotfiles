@@ -16,8 +16,10 @@ BarWidget {
     // Capped, with the overflow folded behind one glyph — the same cap the
     // launcher's result list uses. An uncapped tray is the one widget that can
     // push every other one off a narrow output.
+    // qmllint disable missing-property
     readonly property var shown: SystemTray.items.values.slice(0, Config.trayMaxItems)
     readonly property int overflow: SystemTray.items.values.length - root.shown.length
+    // qmllint enable missing-property
 
     hoverBackground: false
 

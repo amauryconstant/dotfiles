@@ -286,8 +286,10 @@ Item {
                 anchors.fill: parent
                 failureMessage: root.failureMessage
                 inputEnabled: root.lockRequested && !root.authenticating
+                // qmllint disable missing-property redundant-optional-chaining
                 promptVisible: surface.screen?.name === root.promptScreenName
                 wallpaper: root.wallpaperFor(surface.screen?.name ?? "")
+                // qmllint enable missing-property redundant-optional-chaining
 
                 onSubmitted: password => root.submit(password)
             }
