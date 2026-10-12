@@ -89,6 +89,11 @@ So a sign-in in a **tab** deliberately leaves the browser alone.
 whichever event comes first (`track`). Windows alive at module load get `t = 0` so a reload cannot
 make an old window look new. Callbacks receive the `HL.Window` itself.
 
+🚨 Payloads can be incomplete: `window.destroy`/`close` may carry no `address` (`seen[nil] = nil`
+raised a red overlay at the old line 99, Firefox), and `window.title` before `window.open` may carry
+no `monitor`. Every handler guards `w`, `w.address` (and `w.monitor` in `consider`) and returns.
+No `pcall` -- it would hide the next bug.
+
 Add a provider: append a lowercase substring to `TITLES`. Test in a nested Hyprland with a client
 that opens two windows in ONE process (GTK script; ghostty spawns a pid per window, so the guard
 correctly refuses it). Kill only the nested instance's pids -- `pkill -x <name>` also kills the

@@ -72,6 +72,10 @@ local function half_monitor(m)
 end
 
 local function consider(w)
+	-- window.title can fire before the window has an address or a monitor; window.open follows.
+	if not (w and w.address and w.monitor) then
+		return
+	end
 	if handled[w.address] or w.floating or not is_sign_in(w.title or "") then
 		return
 	end
@@ -90,12 +94,17 @@ local function consider(w)
 end
 
 hl.on("window.open_early", function(w)
-	track(w)
+	if w and w.address then
+		track(w)
+	end
 end)
 hl.on("window.open", consider)
 hl.on("window.title", consider)
 
 local function forget(w)
+	if not (w and w.address) then
+		return
+	end
 	seen[w.address] = nil
 	handled[w.address] = nil
 end
