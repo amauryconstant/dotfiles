@@ -102,6 +102,11 @@ else
     {{ includeTemplate "log_info" "Chaotic-AUR already configured" }}
 fi
 
+# AUR builds (006 runs before sync_packages) need base-devel: makepkg's default
+# `debug` option requires debugedit, shipped by it.
+{{ includeTemplate "log_step" "Installing base-devel (AUR build toolchain)..." }}
+sudo pacman -S --needed --noconfirm base-devel
+
 # Install paru from Chaotic-AUR (avoids compilation)
 if ! command -v paru &> /dev/null; then
     {{ includeTemplate "log_step" "Installing paru AUR helper from Chaotic-AUR..." }}
