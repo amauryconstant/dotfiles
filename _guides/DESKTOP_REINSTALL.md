@@ -125,7 +125,7 @@ Start it with `archinstall`. It opens a menu prefilled with defaults. Work **top
 
 ### 2.2 Disk configuration
 
-1. *Partitioning* → "Use a best-effort default partition layout".
+1. *Partitioning* → "Use a best-effort default partition layout". The Disk configuration submenu in 4.5 also lists **Btrfs snapshots**, **LVM** and **Disk encryption**; skip all three here (Btrfs snapshots writes snapshot config that you'd undo later, LVM is not used, Disk encryption is set last in 2.4).
 2. *Select disks*: the table is **multi-select**. Mark **only the root NVMe**. Marking two disks makes archinstall wipe **both** (root on one, `/home` on the other).
 3. Filesystem: **btrfs**.
 4. "Would you like to use BTRFS subvolumes with a default structure?": **yes**.
@@ -140,8 +140,8 @@ Do **not** add `@swap` (swap is zram; script 006 skips hibernation on any `/dev/
 ### 2.3 Profile
 
 1. *Profile → Type*: **Desktop**, then pick **Hyprland**.
-2. Seat access prompt: **`systemd-logind`** (4.5 default; `seatd` would add a service and a `seat` group).
-3. *Graphics driver*: set it to **no driver**. Do not pick "Nvidia (open kernel module…)": with `linux-lts` in the kernel list it installs `nvidia-open-dkms` (+ `dkms` + headers), not the `nvidia-open` / `nvidia-open-lts` packages that `.chezmoidata/packages.yaml` declares, and script 001 then stops with "NVIDIA DRIVER MIGRATION DETECTED". The packages are added by hand in 2.1. Also avoid the "All open-source" default: it installs nouveau and Intel/AMD userspace. (The exact way to blank the driver in the TUI is *(unverified)*; the JSON route, `"gfx_driver": null`, is certain: see Appendix A.)
+2. Seat access prompt: **`systemd-logind`** (4.5 makes you pick; `seatd` would add a service and a `seat` group).
+3. *Graphics driver*: set it to **no driver**. Do not pick "Nvidia (open kernel module…)": with `linux-lts` in the kernel list it installs `nvidia-open-dkms` (+ `dkms` + headers) instead of the `nvidia-open` / `nvidia-open-lts` packages that `.chezmoidata/packages.yaml` declares; `run_onchange_before_sync_packages.sh.tmpl` will then remove `nvidia-open-dkms`, `dkms` and the kernel headers on first apply, but the extra churn slows the bootstrap. The prebuilt packages are added by hand in 2.1. Also avoid the "All open-source" default: it installs nouveau and Intel/AMD userspace. (The exact way to blank the driver in the TUI is *(unverified)*; the JSON route, `"gfx_driver": null`, is certain: see Appendix A.)
 4. *Greeter*: **sddm**. sddm requires a regular user (step in 2.1).
 
 ### 2.4 Disk encryption (last)
@@ -152,9 +152,9 @@ If the password or the partition list is empty the menu silently returns "no enc
 
 ### 2.5 Review, save, install
 
-1. *Save configuration* → "Save all" → pick a directory (a USB stick if you want to reuse it: Appendix A).
+1. *Save configuration* → pick a directory (a USB stick if you want to reuse it: Appendix A).
 2. *Install*.
-3. When "What would you like to do next?" appears choose **Exit archinstall**. **Not** "Reboot system". **Not** "chroot": Phase 3 starts outside the chroot because it needs the ISO shell variables.
+3. When "What would you like to do next?" appears choose **Exit archinstall**. **Not** "Reboot system". **Not** "chroot into installation for post-installation configurations": Phase 3 starts outside the chroot because it needs the ISO shell variables.
 
 ### 2.6 State to expect
 
@@ -335,9 +335,9 @@ Trimmed template (take sizes and `obj_id` values from your saved file):
 ```
 
 Notes:
-- `iter_time` inside `disk_encryption` is *(unverified)*; the TUI field is certain.
+- `iter_time` inside `disk_encryption` is the TUI value in milliseconds; the TUI field is the same key.
 - `"device"` is a path; NVMe numbering can change between boots. Re-check with `lsblk -o NAME,SIZE,MODEL,SERIAL` before running.
-- Flags: `--config`, `--creds`, `--silent`, `--dry-run`, `--skip-ntp`, `--offline`, `--advanced`. Without `--silent` the menu opens prefilled for review.
+- Flags: `--config`, `--creds`, `--silent`, `--dry-run`, `--skip-ntp`, `--offline`, `--advanced`. **Caveat**: `--silent` is silently disabled unless `--config`/`--config-url` is also passed. Without `--silent` the menu opens prefilled for review.
 
 ## Known archinstall pitfalls (4.5)
 

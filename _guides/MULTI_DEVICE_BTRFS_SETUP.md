@@ -260,7 +260,7 @@ arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux.efi | grep -E 'cryptsetup
 arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux-lts.efi | grep -E 'cryptsetup-keys|crypttab'
 ```
 
-**Expected**: `cryptdisk1.key` ... `cryptdiskN.key` and `etc/crypttab` listed in **both** UKIs; **no** `root.key`. `lsinitcpio` reading a UKI is *unverified*; if it refuses, `mkinitcpio -P` output (the `==> ... Including file` lines) is the fallback evidence.
+**Expected**: `cryptdisk1.key` ... `cryptdiskN.key` and `etc/crypttab` listed in **both** UKIs; **no** `root.key`. `lsinitcpio` has read UKIs since mkinitcpio v39 (May 2024) by extracting the `.initrd` PE section; if your local mkinitcpio is older, the `mkinitcpio -P` `==> ... Including file` log is the fallback evidence.
 
 ## Phase 5: Add the disks to BTRFS
 
@@ -287,7 +287,7 @@ btrfs balance status /mnt
 btrfs filesystem df /mnt
 ```
 
-**Expected**: `Metadata, RAID1`, `System, RAID1`, `Data, single`. On a fresh install this takes seconds. If it is interrupted, resume with `btrfs balance start -mconvert=raid1,soft /mnt`.
+**Expected**: `Metadata, RAID1`, `System, RAID1`, `Data, single`. On a fresh install this takes seconds. If it is interrupted, resume with `btrfs balance start -mconvert=raid1,soft /mnt`. On a populated filesystem balance needs free workspace for new chunks — if it ever fails with ENOSPC, see Recovery 5.
 
 `raid1c3` (three copies) is also valid with three or more devices.
 
@@ -332,7 +332,7 @@ sudo btrfs scrub status /
 
 ## Phase 7 (optional): Remove the keyfiles from the UKI
 
-Closes the ESP exposure. Each extra disk gets a **passphrase slot identical to the root passphrase**; systemd caches the root passphrase for 2.5 minutes (`password-cache=yes` is the crypttab default), so the extra disks open from the same prompt. *(unverified on this hardware; if the cache does not apply you get one extra prompt per disk, boot does not fail)*
+Closes the ESP exposure. Each extra disk gets a **passphrase slot identical to the root passphrase**; systemd caches the root passphrase for 2.5 minutes (`password-cache=yes` is the crypttab default), so the extra disks open from the same prompt. (Confirmed in `crypttab(5)`: `password-cache=yes` is the systemd default with a 2.5-minute TTL.)
 
 Do it from the running system:
 
@@ -346,7 +346,7 @@ done
 
 Then in `/etc/crypttab` replace each key column with `none`, empty `FILES=()` in `/etc/mkinitcpio.conf`, remove the keyfiles from `/etc/cryptsetup-keys.d/` **after** keeping the offline backup, and run `sudo mkinitcpio -P`.
 
-The keyfiles remain valid keyslots on the disks, so keep them offline as your recovery credential. Each unlock now pays Argon2 cost for the passphrase slot; to make it try the keyfile slot first when a key file is present, run `cryptsetup config --priority prefer --key-slot 0 <disk>`. Do not set `key-slot=` in crypttab: it breaks the passphrase fallback.
+The keyfiles remain valid keyslots on the disks, so keep them offline as your recovery credential. After Phase 2.3 (`luksFormat --key-file`) the keyfile is in **slot 0**; Phase 7's `luksAddKey` adds the passphrase to **slot 1**. To make boot prefer the keyfile slot when a keyfile is present (e.g. a recovery USB), run `cryptsetup config --priority prefer --key-slot 0 <disk>`. Do not set `key-slot=` in crypttab: it breaks the passphrase fallback.
 
 TPM2 enrolment (`systemd-cryptenroll --tpm2-device=auto`, crypttab `tpm2-device=auto`) is another way to avoid embedded keys. It adds PCR/firmware-update complexity and is out of scope here.
 
