@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code statusLine: model | dir (branch) | cost-or-backend, ccp profile, plugin badges.
+# Claude Code statusLine: model | dir (branch) | cost-or-backend | context %, ccp profile, plugin badges.
 set -euo pipefail
 
 input=$(cat)
@@ -7,6 +7,8 @@ input=$(cat)
 model=$(jaq -r '.model.display_name // "?"' <<<"$input")
 dir=$(jaq -r '.workspace.current_dir // .cwd // "?"' <<<"$input")
 cost=$(jaq -r '.cost.total_cost_usd // 0' <<<"$input")
+# null before the first message; the segment is then omitted.
+ctx=$(jaq -r '.context_window.used_percentage // empty' <<<"$input")
 
 branch=""
 if git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -35,6 +37,18 @@ http://127.0.0.1:*/w/* | http://localhost:*/w/*)
 	;;
 *) line="$line | $host" ;;
 esac
+
+# Context consumed is client-side, so it holds on every backend. Yellow from 70, red from 90.
+if [ -n "$ctx" ]; then
+	ctx=$(printf '%.0f' "$ctx")
+	color=""
+	if [ "$ctx" -ge 90 ]; then
+		color='\033[31m'
+	elif [ "$ctx" -ge 70 ]; then
+		color='\033[33m'
+	fi
+	line="$line | $(printf "${color}ctx %s%%"'\033[0m' "$ctx")"
+fi
 
 config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
