@@ -80,7 +80,7 @@
 | 003 | setup_network_printer | Network printer |
 | 004 | clone_wallpapers_repo | Clone `~/.config/wallpapers` via SSH (theming source for random-wallpaper); must run before 005, whose initial wallpaper-cycle trigger needs the repo present |
 | 005 | enable_user_timers | Enable systemd timers (wallpaper, health, backup) |
-| 006 | configure_boot_system | Boot system (Plymouth, GRUB) |
+| 006 | configure_boot_system | Boot system (NVIDIA, Plymouth, SDDM, hibernation, UKI presets; rEFInd via `refind-install` on desktop only) |
 | 007 | setup_darkman | Darkman solar auto-theme service |
 | 008 | validate_hyprland_config | **Hyprland config validation** (post-install safety check) |
 | 010 | configure_spicetify | Spicetify for Flatpak Spotify (skips if not installed) |

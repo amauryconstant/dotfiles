@@ -24,6 +24,7 @@ packages:
         - linux # Latest kernel
         - linux-lts # Long-term support kernel (fallback)
         - efibootmgr # UEFI boot manager utility
+        - refind # rEFInd boot manager — installed everywhere, refind-install runs on desktop only (run_once_after_006)
         - cryptsetup # LUKS disk encryption tools
         - rage-encryption # age encryption tool (Rust)
 

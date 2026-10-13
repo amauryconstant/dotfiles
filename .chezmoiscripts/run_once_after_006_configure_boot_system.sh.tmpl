@@ -947,6 +947,34 @@ if [ "$REBUILD_NEEDED" = true ]; then
 else
     {{ includeTemplate "log_skip" "No changes detected - skipping initramfs rebuild" }}
 fi
+{{- if eq .chassisType "desktop" }}
+
+# ============================================================================
+# SECTION 7: rEFInd BOOT MANAGER (desktop only)
+# ============================================================================
+
+echo ""
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+{{ includeTemplate "log_info" "  SECTION 7: rEFInd Boot Manager" }}
+{{ includeTemplate "log_info" "════════════════════════════════════════════════════════════════" }}
+echo ""
+
+REFIND_INSTALLED=false
+REFIND_ESP=$(bootctl --print-esp-path 2>/dev/null || echo /boot)
+
+if [ ! -d /sys/firmware/efi ]; then
+    {{ includeTemplate "log_skip" "Not booted in UEFI mode - refind-install needs an ESP" }}
+elif [ -f "${REFIND_ESP}/EFI/refind/refind_x64.efi" ]; then
+    {{ includeTemplate "log_success" "rEFInd already installed at ${REFIND_ESP}/EFI/refind" }}
+else
+    {{ includeTemplate "log_step" "Running refind-install (default options)" }}
+    # Defaults: copy to ESP/EFI/refind, add an efibootmgr entry first in BootOrder
+    # (systemd-boot stays installed as a fallback), write /boot/refind_linux.conf.
+    sudo refind-install
+    REFIND_INSTALLED=true
+    {{ includeTemplate "log_success" "rEFInd installed to ${REFIND_ESP}/EFI/refind" }}
+fi
+{{- end }}
 
 # ============================================================================
 # FINAL SUMMARY
@@ -1017,6 +1045,16 @@ if [ "${UKI_PRESETS_CHANGED:-false}" = true ]; then
     {{ includeTemplate "log_info" "  ✓ Pacman hook: /etc/pacman.d/hooks/60-mkinitcpio-uki-presets.hook" }}
     echo ""
 fi
+{{- if eq .chassisType "desktop" }}
+
+# rEFInd Summary
+if [ "$REFIND_INSTALLED" = true ]; then
+    {{ includeTemplate "log_info" "rEFInd Configuration:" }}
+    {{ includeTemplate "log_info" "  ✓ Installed to ${REFIND_ESP}/EFI/refind (default refind-install)" }}
+    {{ includeTemplate "log_info" "  ✓ First in UEFI BootOrder (check: efibootmgr); systemd-boot kept as fallback" }}
+    echo ""
+fi
+{{- end }}
 
 {{ includeTemplate "log_warning" "⚠️  REBOOT REQUIRED for all changes to take effect" }}
 echo ""
