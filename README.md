@@ -50,6 +50,8 @@ A complete, automated desktop environment for Arch Linux with dynamic theming, i
 
 Fresh Arch Linux installation via **archinstall** with **Hyprland desktop profile**.
 
+Reinstalling a full machine (encrypted root, extra disks, NVIDIA)? Follow [`_guides/DESKTOP_REINSTALL.md`](_guides/DESKTOP_REINSTALL.md) from a blank disk to this Quick Start.
+
 ### Quick Start
 
 ```bash
