@@ -181,12 +181,16 @@ fi
 spicetify config overwrite_assets 1
 spicetify config replace_colors 1
 
-# Apply spicetify configuration
+# Apply spicetify configuration. restore needs an existing backup: on a fresh install
+# it exits 1 ("You haven't backed up"), so only return to stock when one exists.
+# backup replaces a stale backup by itself, so no separate clear is needed.
+SPICETIFY_BACKUP_DIR="${SPICETIFY_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/spicetify}/Backup"
+if compgen -G "$SPICETIFY_BACKUP_DIR/*.spa" >/dev/null; then
+    {{ includeTemplate "log_step" "Restoring Spotify to stock before re-applying" }}
+    spicetify restore
+fi
 {{ includeTemplate "log_step" "Creating backup and applying configuration" }}
-spicetify restore
-spicetify clear
-spicetify backup
-spicetify apply
+spicetify backup apply
 
 {{ includeTemplate "log_success" "Spicetify configured successfully" }}
 {{ includeTemplate "log_info" "Theme changes will be handled by theme-apply-spotify.sh" }}
