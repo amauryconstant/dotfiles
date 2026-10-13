@@ -52,7 +52,7 @@ else
         else
             {{ includeTemplate "log_step" "Initializing home backup repository..." }}
 
-            home-backup init --non-interactive
+            "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/home-backup" init --non-interactive
 
             {{ includeTemplate "log_success" "Repository initialized at $REPO" }}
             BACKUP_CONFIGURED=true
