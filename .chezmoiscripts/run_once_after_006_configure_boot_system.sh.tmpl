@@ -997,7 +997,8 @@ restore_bazzite_esp() {
         return 0
     fi
 
-    esp_uuid=$(findmnt -no UUID "$REFIND_ESP" 2>/dev/null) || esp_uuid=""
+    # findmnt can list a mount point twice (stacked mounts), so keep one line
+    esp_uuid=$(findmnt -no UUID "$REFIND_ESP" 2>/dev/null | head -n 1) || esp_uuid=""
     xboot_uuid=$(blkid -s UUID -o value "$xboot" 2>/dev/null) || xboot_uuid=""
     if [ -z "$esp_uuid" ] || [ -z "$xboot_uuid" ]; then
         {{ includeTemplate "log_warning" "Cannot read ESP/xboot UUID - skipping Bazzite setup" }}
@@ -1074,10 +1075,13 @@ restore_bazzite_esp() {
                 sudo mount -o remount,rw "$BAZZITE_MNT" 2>/dev/null && remounted=true
             fi
             if [ "$remounted" = true ]; then
-                sudo cp "$fstab" "${fstab}.bak.$(date +%s)"
-                sudo sed -i "\\|^UUID=${fstab_uuid}[[:space:]]\\+/boot/efi[[:space:]]|s|^UUID=${fstab_uuid}|UUID=${esp_uuid}|" "$fstab"
-                BAZZITE_RESTORED=true
-                {{ includeTemplate "log_success" "fstab of ${deploy_dir##*/}: /boot/efi ${fstab_uuid} -> ${esp_uuid} (backup kept)" }}
+                if sudo cp "$fstab" "${fstab}.bak.$(date +%s)" \
+                    && sudo sed -i "\\|^UUID=${fstab_uuid}[[:space:]]\\+/boot/efi[[:space:]]|s|^UUID=${fstab_uuid}|UUID=${esp_uuid}|" "$fstab"; then
+                    BAZZITE_RESTORED=true
+                    {{ includeTemplate "log_success" "fstab of ${deploy_dir##*/}: /boot/efi ${fstab_uuid} -> ${esp_uuid} (backup kept)" }}
+                else
+                    {{ includeTemplate "log_warning" "Could not rewrite $fstab - set /boot/efi to UUID=${esp_uuid} by hand" }}
+                fi
             else
                 {{ includeTemplate "log_warning" "Bazzite root is read-only - set /boot/efi to UUID=${esp_uuid} in $fstab by hand" }}
             fi
