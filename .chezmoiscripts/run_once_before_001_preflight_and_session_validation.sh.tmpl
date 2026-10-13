@@ -150,11 +150,14 @@ else
     TARGET_DRIVER="{{ .nvidiaDriverType }}"
 
     # Installed driver. "modern-dkms" is archinstall's "Nvidia (open kernel module)" choice.
+    # The DKMS test MUST come first: pacman -Q resolves provides, and nvidia-open-dkms
+    # provides nvidia-open, so `pacman -Q nvidia-open` also succeeds when only the DKMS
+    # package is installed.
     {{ includeTemplate "log_step" "Checking installed NVIDIA driver..." }}
-    if pacman -Q nvidia-open >/dev/null 2>&1; then
-        CURRENT_DRIVER="modern"
-    elif pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
+    if pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
         CURRENT_DRIVER="modern-dkms"
+    elif pacman -Q nvidia-open >/dev/null 2>&1; then
+        CURRENT_DRIVER="modern"
     elif pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
         CURRENT_DRIVER="legacy"
     else
