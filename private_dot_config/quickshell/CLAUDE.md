@@ -437,21 +437,23 @@ brought in line.
 | Audio | mute (panel when PipeWire is down) | panel | next sink | volume |
 | Microphone (muted only) | unmute, via `mic-mute` | audio panel | — | — |
 | Media | play/pause | panel | next | player volume |
-| Network | Wi-Fi radio on/off (panel under a hard rfkill block) | panel | — | — |
-| Bluetooth | adapter power | panel | — | — |
+| Network | panel | Wi-Fi radio on/off (panel under a hard rfkill block) | — | — |
+| Bluetooth | panel | adapter power | — | — |
 | Night light (on only) | off, via `nightlight-toggle` | panel | — | — |
 | Clock, Battery, Meters | panel | panel | — | — |
 
-**The exception is the notification bell**, kept as it was by the user's choice (left centre,
-right DND, middle clear all): the centre is what the bell is for. Idle, Kanata, Recording,
+**The exceptions are the notification bell**, kept as it was by the user's choice (left centre,
+right DND, middle clear all): the centre is what the bell is for; **and Network and Bluetooth**,
+inverted by the user's choice (left panel, right radio): the selector is what those chips are
+clicked for. Idle, Kanata, Recording,
 Voxtype, Launcher, Tray and Workspaces have no panel and are unchanged.
 
 `BarWidget.clickHint` puts the widget's share of the rule on the tooltip's last line. Set it
 wherever left and right differ; the three panel-only widgets leave it empty.
 
 🚨 **Two old rulings reversed by this, on purpose.** Bluetooth "off is absence": the widget now
-stays while the adapter is off, with `Config.bluetoothOffGlyph`, because left click is the only
-way back on. Night light "a chip that both opens a surface and acts is the shape a user cannot
+stays while the adapter is off, with `Config.bluetoothOffGlyph`, because right click (or the
+panel's power row) is the way back on. Night light "a chip that both opens a surface and acts is the shape a user cannot
 undo by looking": the left/right split is what resolves it.
 
 **`bar/ContextMenu.qml` is an `Item` overlaid on its host, never a window** — a popup parented to

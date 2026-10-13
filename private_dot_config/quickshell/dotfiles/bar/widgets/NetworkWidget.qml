@@ -33,7 +33,7 @@ BarWidget {
 
     readonly property bool wifiOn: Networking.wifiEnabled
 
-    clickHint: Networking.wifiHardwareEnabled ? qsTr("L Wi-Fi on/off · R panel") : qsTr("R panel")
+    clickHint: Networking.wifiHardwareEnabled ? qsTr("L panel · R Wi-Fi on/off") : qsTr("L panel")
     icon: {
         // Wired with the radio off still reports the wired route below; only
         // "nothing at all, by choice" takes the off glyph.
@@ -72,13 +72,14 @@ BarWidget {
 
     signal popoverRequested
 
-    // A hard rfkill block cannot be lifted from here, so the click then opens
-    // the panel instead of doing nothing.
-    onClicked: {
+    onClicked: root.popoverRequested()
+    // Inverted from the bar's rule by the user's choice: the selector is what
+    // this chip is clicked for. A hard rfkill block cannot be lifted from
+    // here, so the right click then opens the panel instead of doing nothing.
+    onRightClicked: {
         if (Networking.wifiHardwareEnabled)
             Networking.wifiEnabled = !Networking.wifiEnabled;
         else
             root.popoverRequested();
     }
-    onRightClicked: root.popoverRequested()
 }
