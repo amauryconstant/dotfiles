@@ -68,6 +68,8 @@ Write down which disk is the root NVMe and which are the extras. You will pick t
 ### 0.5 Prepare the stick
 
 - Download the current Arch ISO, write it to a USB stick, boot with **Secure Boot off** (this repo has no sbctl flow).
+- Write the ISO with `dd` (`dd if=archlinux-*.iso of=/dev/sdX bs=4M status=progress oflag=sync`), not Ventoy: Ventoy 1.1.18 and a direct write both stalled here, so the stick type is not the cause, but one fewer loader is one fewer variable. Verify first with `sha256sum` against archlinux.org.
+- **The live ISO hangs on the RTX 4090** (cursor stops blinking after `Failed to register i2c client ...`, which is a harmless warning): nouveau stalls on the Ada GPU. At the systemd-boot menu press `e` and append `nomodeset module_blacklist=nouveau` to the options, then Enter. `nomodeset` alone is not enough. This affects only the live session; the installed system uses `nvidia-open`.
 - Keep the stick and a second copy of the Phase 0 notes available offline.
 
 ## Phase 1: Boot the ISO
@@ -91,6 +93,16 @@ wipefs -a /dev/disk/by-id/nvme-ROOT-SERIAL
 ```
 
 Stale BTRFS signatures from the old install have crashed manual partitioning before (issue #4299). **Do not touch the extra disks here:** the multi-device guide wipes them in Phase 3.
+
+### 1.2 Verify the wipe
+
+```bash
+partprobe /dev/disk/by-id/nvme-ROOT-SERIAL    # make the kernel drop the old partitions
+wipefs /dev/disk/by-id/nvme-ROOT-SERIAL       # list mode: must print nothing
+lsblk -f /dev/disk/by-id/nvme-ROOT-SERIAL     # only the disk line, no child partitions
+```
+
+**Expected**: `wipefs` prints nothing and `lsblk` shows no partitions or filesystems under the root NVMe. If a partition or signature is still listed, re-run `wipefs -a` on it (partition first, then the disk). The old partitions are still mounted or in use (`findmnt`, `cryptsetup close root`) if the wipe fails with "Device or resource busy". Check the serial in the path against Phase 0.4 once more: this must be the root NVMe and no extra disk.
 
 ## Phase 2: archinstall
 
