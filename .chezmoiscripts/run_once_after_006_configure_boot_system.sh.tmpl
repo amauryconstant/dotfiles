@@ -984,7 +984,7 @@ BAZZITE_RESTORED=false
 BAZZITE_MNT=""
 
 restore_bazzite_esp() {
-    local d xboot root deploy esp_uuid xboot_uuid fstab fstab_uuid
+    local d deploy_dir xboot root deploy esp_uuid xboot_uuid fstab fstab_uuid
 
     xboot=$(blkid -L bazzite_xboot 2>/dev/null) || xboot=""
     if [ -z "$xboot" ]; then
@@ -1010,13 +1010,20 @@ restore_bazzite_esp() {
         return 0
     fi
 
-    # Newest ostree deployment (Bazzite root is the "@" subvolume; fall back to the top level)
-    # ls exits 2 when one glob has no match, which pipefail would turn into a failure
-    deploy=$({ ls -dt "$BAZZITE_MNT"/@/ostree/deploy/*/deploy/*.0 "$BAZZITE_MNT"/ostree/deploy/*/deploy/*.0 2>/dev/null || true; } | head -n 1)
-    if [ -z "$deploy" ]; then
-        {{ includeTemplate "log_warning" "No ostree deployment found on $root - skipping Bazzite setup" }}
+    # Deployments the bootloader actually boots: ostree/boot.N/<os>/<hash>/<n> links to them.
+    # Never pick by mtime - a staged, never-booted deployment is newer and has no /etc.
+    # Bazzite root is the "@" subvolume; fall back to the top level.
+    local osroot="$BAZZITE_MNT"
+    [ -d "$BAZZITE_MNT/@/ostree" ] && osroot="$BAZZITE_MNT/@"
+    local deploys=() booted
+    while IFS= read -r booted; do
+        [ -d "$booted/etc" ] && deploys+=("$booted")
+    done < <({ readlink -f "$osroot"/ostree/boot.*/*/*/* 2>/dev/null || true; } | sort -u)
+    if [ "${#deploys[@]}" -eq 0 ]; then
+        {{ includeTemplate "log_warning" "No booted ostree deployment found on $root - skipping Bazzite setup" }}
         return 0
     fi
+    deploy="${deploys[0]}"
 
     # 1. Fedora loader on the ESP
     if [ -f "${REFIND_ESP}/EFI/fedora/grubx64.efi" ]; then
@@ -1048,24 +1055,34 @@ restore_bazzite_esp() {
         fi
     fi
 
-    # 2. Bazzite's fstab must mount the CURRENT ESP at /boot/efi, or it waits on the old UUID
-    fstab="$deploy/etc/fstab"
-    fstab_uuid=""
-    if [ -f "$fstab" ]; then
+    # 2. Every booted deployment's fstab must mount the CURRENT ESP at /boot/efi, or boot-efi.mount
+    #    waits on the old UUID and systemd drops to emergency mode. Fix all, so a rollback boots too.
+    local remounted=false
+    for deploy_dir in "${deploys[@]}"; do
+        fstab="$deploy_dir/etc/fstab"
+        if [ ! -f "$fstab" ]; then
+            {{ includeTemplate "log_skip" "No etc/fstab in ${deploy_dir##*/}" }}
+            continue
+        fi
         fstab_uuid=$(awk '$2 == "/boot/efi" && $1 ~ /^UUID=/ { sub(/^UUID=/, "", $1); print $1; exit }' "$fstab")
-    fi
-    if [ -z "$fstab_uuid" ]; then
-        {{ includeTemplate "log_skip" "Bazzite fstab has no UUID= /boot/efi entry" }}
-    elif [ "$fstab_uuid" = "$esp_uuid" ]; then
-        {{ includeTemplate "log_skip" "Bazzite fstab already points at the current ESP" }}
-    elif sudo mount -o remount,rw "$BAZZITE_MNT" 2>/dev/null; then
-        sudo cp "$fstab" "${fstab}.bak.$(date +%s)"
-        sudo sed -i "\\|^UUID=${fstab_uuid}[[:space:]]\\+/boot/efi[[:space:]]|s|^UUID=${fstab_uuid}|UUID=${esp_uuid}|" "$fstab"
-        BAZZITE_RESTORED=true
-        {{ includeTemplate "log_success" "Bazzite fstab: /boot/efi ${fstab_uuid} -> ${esp_uuid} (backup kept)" }}
-    else
-        {{ includeTemplate "log_warning" "Bazzite root is read-only - set /boot/efi to UUID=${esp_uuid} in $fstab by hand" }}
-    fi
+        if [ -z "$fstab_uuid" ]; then
+            {{ includeTemplate "log_skip" "No UUID= /boot/efi line in ${deploy_dir##*/} fstab" }}
+        elif [ "$fstab_uuid" = "$esp_uuid" ]; then
+            {{ includeTemplate "log_skip" "fstab of ${deploy_dir##*/} already points at the current ESP" }}
+        else
+            if [ "$remounted" = false ]; then
+                sudo mount -o remount,rw "$BAZZITE_MNT" 2>/dev/null && remounted=true
+            fi
+            if [ "$remounted" = true ]; then
+                sudo cp "$fstab" "${fstab}.bak.$(date +%s)"
+                sudo sed -i "\\|^UUID=${fstab_uuid}[[:space:]]\\+/boot/efi[[:space:]]|s|^UUID=${fstab_uuid}|UUID=${esp_uuid}|" "$fstab"
+                BAZZITE_RESTORED=true
+                {{ includeTemplate "log_success" "fstab of ${deploy_dir##*/}: /boot/efi ${fstab_uuid} -> ${esp_uuid} (backup kept)" }}
+            else
+                {{ includeTemplate "log_warning" "Bazzite root is read-only - set /boot/efi to UUID=${esp_uuid} in $fstab by hand" }}
+            fi
+        fi
+    done
 
     # 3. Drop UEFI entries whose ESP is gone (Bazzite's old one). Only fallback/Fedora loader
     #    paths: an entry on a merely disconnected disk or USB stick is not stale
