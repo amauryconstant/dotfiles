@@ -95,7 +95,7 @@ globals:
 
   timeshift:
     # Timeshift automatic snapshot retention policy
-    # Configure via: sudo timeshift-launcher (GUI) or automated setup
+    # Seeded automatically (BTRFS, no GUI) by run_onchange_after_configure_timeshift_retention
     retention:
       daily: 7 # Keep last 7 daily snapshots (1 week)
       weekly: 4 # Keep last 4 weekly snapshots (1 month)

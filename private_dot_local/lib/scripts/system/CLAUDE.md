@@ -474,7 +474,7 @@ says so. Loud is the right behaviour there; the bug was only ever the silence.
 
 ### Automatic Retention Policy Configuration
 
-**Default retention policy** (automatically configured via `run_once_after_009`):
+**Default retention policy** (automatically configured via `run_onchange_after_configure_timeshift_retention`; on first run it also seeds a BTRFS config from the root filesystem, no GUI):
 - **Daily**: 7 snapshots (1 week)
 - **Weekly**: 4 snapshots (1 month)
 - **Monthly**: 6 snapshots (6 months)

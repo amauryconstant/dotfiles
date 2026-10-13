@@ -28,79 +28,30 @@ fi
 TIMESHIFT_CONFIG="/etc/timeshift/timeshift.json"
 
 if [[ ! -f "$TIMESHIFT_CONFIG" ]]; then
-    {{ includeTemplate "log_info" "Timeshift configuration not found - first run setup required" }}
-    
-    # Check if we're in a graphical session
-    if [[ -z "${DISPLAY:-}" ]] || [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
-        {{ includeTemplate "log_error" "Graphical session not detected" }}
-        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to create initial configuration" }}
-        {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
+    {{ includeTemplate "log_step" "Timeshift configuration not found - seeding BTRFS config..." }}
+
+    # Same shape the GUI writes on first save; retention and schedule are applied below.
+    # parent_device_uuid stays empty: timeshift resolves the device from backup_device_uuid
+    # and records the LUKS parent itself on its next config save.
+    ROOT_FSTYPE=$(findmnt -no FSTYPE /)
+    ROOT_UUID=$(findmnt -no UUID /)
+    if [[ "$ROOT_FSTYPE" != "btrfs" ]] || [[ -z "$ROOT_UUID" ]]; then
+        {{ includeTemplate "log_error" "Root filesystem is '$ROOT_FSTYPE', not BTRFS - cannot seed BTRFS config" }}
+        {{ includeTemplate "log_info" "Configure manually: sudo timeshift-launcher, then run 'chezmoi apply'" }}
         exit 1
     fi
-    
-    # Check if GUI tools are available
-    if ! command -v timeshift-launcher >/dev/null 2>&1; then
-        {{ includeTemplate "log_error" "timeshift-launcher not found" }}
-        {{ includeTemplate "log_info" "Please install timeshift package and run 'chezmoi apply'" }}
-        exit 1
-    fi
-    
-    {{ includeTemplate "log_step" "Launching Timeshift GUI for initial setup..." }}
-    {{ includeTemplate "log_info" "Please complete the setup in the GUI window" }}
-    {{ includeTemplate "log_info" "Select backup location and click 'Save' to create configuration" }}
-    
-    # Launch Timeshift GUI in background
-    timeshift-launcher &
-    LAUNCHER_PID=$!
-    
-    {{ includeTemplate "log_info" "Waiting for configuration file creation..." }}
-    
-    # Wait for config file creation with timeout (5 minutes)
-    TIMEOUT=300
-    ELAPSED=0
-    
-    while [[ "$ELAPSED" -lt "$TIMEOUT" ]]; do
-        if [[ -f "$TIMESHIFT_CONFIG" ]]; then
-            {{ includeTemplate "log_success" "Configuration file created successfully" }}
-            break
-        fi
-        
-        # Check if launcher process is still running
-        if ! kill -0 "$LAUNCHER_PID" 2>/dev/null; then
-            {{ includeTemplate "log_error" "Timeshift GUI was closed without creating configuration" }}
-            {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
-            exit 1
-        fi
-        
-        # Progress indicator every 10 seconds
-        if [[ $((ELAPSED % 10)) -eq 0 ]] && [[ "$ELAPSED" -gt 0 ]]; then
-            {{ includeTemplate "log_info" "Still waiting for setup... (${ELAPSED}/${TIMEOUT} seconds)" }}
-        fi
-        
-        sleep 1
-        ELAPSED=$((ELAPSED + 1))
-    done
-    
-    # Clean up launcher process if still running
-    if kill -0 "$LAUNCHER_PID" 2>/dev/null; then
-        kill "$LAUNCHER_PID" 2>/dev/null || true
-        wait "$LAUNCHER_PID" 2>/dev/null || true
-    fi
-    
-    # Check if we timed out
-    if [[ "$ELAPSED" -ge "$TIMEOUT" ]]; then
-        {{ includeTemplate "log_error" "Setup timed out after ${TIMEOUT} seconds" }}
-        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually to complete setup" }}
-        {{ includeTemplate "log_info" "Then run 'chezmoi apply' to continue" }}
-        exit 1
-    fi
-    
-    # Final validation
-    if [[ ! -f "$TIMESHIFT_CONFIG" ]]; then
-        {{ includeTemplate "log_error" "Configuration file still not found after setup" }}
-        {{ includeTemplate "log_info" "Please run 'sudo timeshift-launcher' manually and try again" }}
-        exit 1
-    fi
+
+    sudo UUID="$ROOT_UUID" yq eval -p=json -o=json '
+        .backup_device_uuid = strenv(UUID) |
+        .parent_device_uuid = "" |
+        .do_first_run = "false" |
+        .btrfs_mode = "true" |
+        .include_btrfs_home_for_backup = "true" |
+        .include_btrfs_home_for_restore = "false" |
+        del(.include_btrfs_home)' /etc/timeshift/default.json |
+        sudo tee "$TIMESHIFT_CONFIG" >/dev/null
+
+    {{ includeTemplate "log_success" "Timeshift configured: BTRFS snapshots on $ROOT_UUID (with @home)" }}
 else
     {{ includeTemplate "log_success" "Timeshift configuration exists" }}
 fi
@@ -486,7 +437,7 @@ fi # end: timeshift-systemd-timer installed
 {{ includeTemplate "log_step" "Pruning excess on-demand snapshots..." }}
 
 DESIRED_ON_DEMAND="{{ .globals.timeshift.retention.on_demand }}"
-ON_DEMAND_LIST=$(sudo timeshift --list --scripted 2>/dev/null | awk '$2 == ">" && $4 == "O" {print $3}')
+ON_DEMAND_LIST=$(sudo timeshift --list --scripted 2>/dev/null | awk '$2 == ">" && $4 == "O" {print $3}' || true)
 ON_DEMAND_COUNT=$(printf '%s\n' "$ON_DEMAND_LIST" | grep -c '[^[:space:]]' || true)
 ON_DEMAND_COUNT=${ON_DEMAND_COUNT:-0}
 

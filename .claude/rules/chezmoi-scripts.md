@@ -94,7 +94,7 @@
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
-| configure_timeshift_retention | Timeshift retention + timer config | `globals.timeshift` changes |
+| configure_timeshift_retention | Timeshift first-run config seed (BTRFS, no GUI) + retention + timer config | `globals.timeshift` changes |
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | configure_desktop_shell | Two-way Quickshell ⇄ Waybar switch: removes the off side's stale drop-ins (ignored ≠ deleted), enables or stops `quickshell.service`, stops Waybar once the shell is up. Sorts before `configure_notifications`, which needs the shell gone before starting swaync | `features.quickshell_shell` or `features.quickshell_polkit` changes |
