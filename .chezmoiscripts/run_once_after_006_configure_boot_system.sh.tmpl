@@ -974,6 +974,117 @@ else
     REFIND_INSTALLED=true
     {{ includeTemplate "log_success" "rEFInd installed to ${REFIND_ESP}/EFI/refind" }}
 fi
+
+# Dual boot with Bazzite. archinstall formats the ESP, wiping the Fedora loader
+# Bazzite keeps there, and rEFInd only lists .efi files it can see. Bazzite's
+# kernels live on ext4 (label bazzite_xboot), which rEFInd cannot read, so the
+# fix is Fedora's grub + stub on the ESP. grub then reads Bazzite's BLS entries.
+# Best-effort: every failure warns and returns, it never aborts the script.
+BAZZITE_RESTORED=false
+BAZZITE_MNT=""
+
+restore_bazzite_esp() {
+    local d xboot root deploy esp_uuid xboot_uuid fstab fstab_uuid
+
+    xboot=$(blkid -L bazzite_xboot 2>/dev/null) || xboot=""
+    if [ -z "$xboot" ]; then
+        {{ includeTemplate "log_skip" "No Bazzite install detected (no bazzite_xboot partition)" }}
+        return 0
+    fi
+    root=$(blkid -L BZ_ROOT 2>/dev/null) || root=""
+    if [ -z "$root" ]; then
+        {{ includeTemplate "log_warning" "Bazzite xboot found but no BZ_ROOT partition - skipping" }}
+        return 0
+    fi
+
+    esp_uuid=$(findmnt -no UUID "$REFIND_ESP" 2>/dev/null) || esp_uuid=""
+    xboot_uuid=$(blkid -s UUID -o value "$xboot" 2>/dev/null) || xboot_uuid=""
+    if [ -z "$esp_uuid" ] || [ -z "$xboot_uuid" ]; then
+        {{ includeTemplate "log_warning" "Cannot read ESP/xboot UUID - skipping Bazzite setup" }}
+        return 0
+    fi
+
+    BAZZITE_MNT=$(mktemp -d) || return 1
+    if ! sudo mount -o ro "$root" "$BAZZITE_MNT" 2>/dev/null; then
+        {{ includeTemplate "log_warning" "Could not mount $root - skipping Bazzite setup" }}
+        return 0
+    fi
+
+    # Newest ostree deployment (Bazzite root is the "@" subvolume; fall back to the top level)
+    # ls exits 2 when one glob has no match, which pipefail would turn into a failure
+    deploy=$({ ls -dt "$BAZZITE_MNT"/@/ostree/deploy/*/deploy/*.0 "$BAZZITE_MNT"/ostree/deploy/*/deploy/*.0 2>/dev/null || true; } | head -n 1)
+    if [ -z "$deploy" ]; then
+        {{ includeTemplate "log_warning" "No ostree deployment found on $root - skipping Bazzite setup" }}
+        return 0
+    fi
+
+    # 1. Fedora loader on the ESP
+    if [ -f "${REFIND_ESP}/EFI/fedora/grubx64.efi" ]; then
+        {{ includeTemplate "log_skip" "Bazzite loader already on the ESP (EFI/fedora)" }}
+    else
+        # grub2 and shim ship in separate package dirs; bootupd's copy is the older layout
+        local payload=()
+        for d in "$deploy"/usr/lib/efi/*/*/EFI/fedora "$deploy"/usr/lib/bootupd/updates/EFI/fedora "$deploy"/usr/lib/ostree-boot/efi/EFI/fedora; do
+            [ -d "$d" ] && payload+=("$d")
+        done
+        if ! compgen -G "${deploy}/usr/lib/efi/*/*/EFI/fedora/grubx64.efi" >/dev/null \
+            && [ ! -f "$deploy/usr/lib/bootupd/updates/EFI/fedora/grubx64.efi" ] \
+            && [ ! -f "$deploy/usr/lib/ostree-boot/efi/EFI/fedora/grubx64.efi" ]; then
+            {{ includeTemplate "log_warning" "No Fedora EFI payload in $deploy - skipping loader restore" }}
+        else
+            {{ includeTemplate "log_step" "Restoring Bazzite loader to ${REFIND_ESP}/EFI/fedora" }}
+            sudo mkdir -p "${REFIND_ESP}/EFI/fedora"
+            for d in "${payload[@]}"; do
+                sudo cp "$d"/*.efi "${REFIND_ESP}/EFI/fedora/"
+            done
+            printf '%s\n' \
+                "search --no-floppy --fs-uuid --set=dev ${xboot_uuid}" \
+                'set prefix=($dev)/grub2' \
+                'export $prefix' \
+                'configfile $prefix/grub.cfg' \
+                | sudo tee "${REFIND_ESP}/EFI/fedora/grub.cfg" >/dev/null
+            BAZZITE_RESTORED=true
+            {{ includeTemplate "log_success" "Bazzite loader restored (grub stub -> xboot ${xboot_uuid})" }}
+        fi
+    fi
+
+    # 2. Bazzite's fstab must mount the CURRENT ESP at /boot/efi, or it waits on the old UUID
+    fstab="$deploy/etc/fstab"
+    fstab_uuid=""
+    if [ -f "$fstab" ]; then
+        fstab_uuid=$(awk '$2 == "/boot/efi" && $1 ~ /^UUID=/ { sub(/^UUID=/, "", $1); print $1; exit }' "$fstab")
+    fi
+    if [ -z "$fstab_uuid" ]; then
+        {{ includeTemplate "log_skip" "Bazzite fstab has no UUID= /boot/efi entry" }}
+    elif [ "$fstab_uuid" = "$esp_uuid" ]; then
+        {{ includeTemplate "log_skip" "Bazzite fstab already points at the current ESP" }}
+    elif sudo mount -o remount,rw "$BAZZITE_MNT" 2>/dev/null; then
+        sudo cp "$fstab" "${fstab}.bak.$(date +%s)"
+        sudo sed -i "\\|^UUID=${fstab_uuid}[[:space:]]\\+/boot/efi[[:space:]]|s|^UUID=${fstab_uuid}|UUID=${esp_uuid}|" "$fstab"
+        BAZZITE_RESTORED=true
+        {{ includeTemplate "log_success" "Bazzite fstab: /boot/efi ${fstab_uuid} -> ${esp_uuid} (backup kept)" }}
+    else
+        {{ includeTemplate "log_warning" "Bazzite root is read-only - set /boot/efi to UUID=${esp_uuid} in $fstab by hand" }}
+    fi
+
+    # 3. Drop UEFI entries whose ESP is gone (Bazzite's old one). Only fallback/Fedora loader
+    #    paths: an entry on a merely disconnected disk or USB stick is not stale
+    local num guid
+    while read -r num guid; do
+        [ -n "$num" ] || continue
+        if [ ! -e "/dev/disk/by-partuuid/${guid,,}" ]; then
+            sudo efibootmgr -b "$num" -B >/dev/null 2>&1 \
+                && {{ includeTemplate "log_info" "Removed stale UEFI entry Boot${num} (partition ${guid} is gone)" }}
+        fi
+    done < <(efibootmgr -v 2>/dev/null | sed -nE 's/^Boot([0-9A-Fa-f]{4})\*? .*HD\([0-9]+,GPT,([0-9A-Fa-f-]{36}),[^)]*\)\/\\EFI\\(BOOT|FEDORA)\\.*/\1 \2/Ip')
+    return 0
+}
+
+restore_bazzite_esp || {{ includeTemplate "log_warning" "Bazzite boot setup failed - boot entry may be missing" }}
+if [ -n "$BAZZITE_MNT" ]; then
+    sudo umount "$BAZZITE_MNT" 2>/dev/null || true
+    rmdir "$BAZZITE_MNT" 2>/dev/null || true
+fi
 {{- end }}
 
 # ============================================================================
@@ -1052,6 +1163,10 @@ if [ "$REFIND_INSTALLED" = true ]; then
     {{ includeTemplate "log_info" "rEFInd Configuration:" }}
     {{ includeTemplate "log_info" "  ✓ Installed to ${REFIND_ESP}/EFI/refind (default refind-install)" }}
     {{ includeTemplate "log_info" "  ✓ First in UEFI BootOrder (check: efibootmgr); systemd-boot kept as fallback" }}
+    echo ""
+fi
+if [ "$BAZZITE_RESTORED" = true ]; then
+    {{ includeTemplate "log_info" "  ✓ Bazzite: loader in ${REFIND_ESP}/EFI/fedora, fstab and stale UEFI entries fixed" }}
     echo ""
 fi
 {{- end }}
