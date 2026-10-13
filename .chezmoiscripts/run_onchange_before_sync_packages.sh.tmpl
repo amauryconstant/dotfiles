@@ -229,26 +229,6 @@ if [ -n "$TRIPWIRE_BLOCKED" ]; then
 fi
 
 # ============================================================
-# Replace archinstall's DKMS NVIDIA driver BEFORE installing
-# ============================================================
-
-# 🚨 nvidia-open-dkms conflicts with nvidia-open / nvidia-open-lts (both provide
-# NVIDIA-MODULE). pacman's conflict prompt defaults to "no" under --noconfirm, so
-# the install below fails unless the DKMS variant is already gone. The cleanup
-# further down runs too late, hence this early removal.
-if [ "$NVIDIA_DRIVER_TYPE" != "legacy" ]; then
-    DKMS_NVIDIA=""
-    for pkg in nvidia-open-dkms nvidia-dkms; do
-        pacman -Qq "$pkg" >/dev/null 2>&1 && DKMS_NVIDIA="$DKMS_NVIDIA $pkg"
-    done
-    if [ -n "$DKMS_NVIDIA" ]; then
-        {{ includeTemplate "log_step" "Removing DKMS NVIDIA driver before installing pre-built packages:$DKMS_NVIDIA" }}
-        # shellcheck disable=SC2086
-        sudo pacman -Rns --noconfirm $DKMS_NVIDIA
-    fi
-fi
-
-# ============================================================
 # Install Arch/AUR packages
 # ============================================================
 

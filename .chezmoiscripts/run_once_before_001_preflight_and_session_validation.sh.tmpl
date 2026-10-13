@@ -141,35 +141,46 @@ echo ""
 
 {{ includeTemplate "log_step" "Checking for NVIDIA GPU..." }}
 
-if lspci | grep -i nvidia >/dev/null 2>&1; then
-{{- $gpuName := .nvidiaGpuDetected | default "unknown" }}
-    {{ includeTemplate "log_info" (printf "NVIDIA GPU PCI ID: %s" $gpuName) }}
+if ! lspci | grep -qi nvidia; then
+    {{ includeTemplate "log_skip" "No NVIDIA GPU detected" }}
+else
+    {{ includeTemplate "log_info" (printf "NVIDIA GPU PCI ID: %s" (.nvidiaGpuDetected | default "unknown")) }}
     {{ includeTemplate "log_info" (printf "Driver type selected: %s" .nvidiaDriverType) }}
-
-    if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
-        {{ includeTemplate "log_warning" "Nouveau drivers currently active (archinstall default)" }}
-        {{ includeTemplate "log_info" "Proprietary NVIDIA drivers will be installed during package sync" }}
-        {{ includeTemplate "log_info" "Reboot after package installation to load proprietary drivers" }}
-    else
-        {{ includeTemplate "log_info" "Proprietary NVIDIA drivers active" }}
-
-        if ! modinfo nvidia >/dev/null 2>&1; then
-            {{ includeTemplate "log_warning" "NVIDIA kernel module not loaded" }}
-            {{ includeTemplate "log_info" "May need reboot or module build with: sudo dkms autoinstall" }}
-        fi
-    fi
-
-    {{ includeTemplate "log_step" "Checking for driver migration..." }}
-    CURRENT_DRIVER=""
-    if pacman -Q nvidia-open >/dev/null 2>&1; then
-        CURRENT_DRIVER="modern"
-    elif pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
-        CURRENT_DRIVER="legacy"
-    fi
 
     TARGET_DRIVER="{{ .nvidiaDriverType }}"
 
-    if [ -n "$CURRENT_DRIVER" ] && [ "$CURRENT_DRIVER" != "$TARGET_DRIVER" ]; then
+    # Installed driver. "modern-dkms" is archinstall's "Nvidia (open kernel module)" choice.
+    {{ includeTemplate "log_step" "Checking installed NVIDIA driver..." }}
+    if pacman -Q nvidia-open >/dev/null 2>&1; then
+        CURRENT_DRIVER="modern"
+    elif pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
+        CURRENT_DRIVER="modern-dkms"
+    elif pacman -Q nvidia-580xx-dkms >/dev/null 2>&1; then
+        CURRENT_DRIVER="legacy"
+    else
+        CURRENT_DRIVER=""
+    fi
+
+    if [ -z "$CURRENT_DRIVER" ]; then
+        {{ includeTemplate "log_info" "No NVIDIA driver installed - package sync will install it" }}
+    elif [ "$CURRENT_DRIVER" = "$TARGET_DRIVER" ]; then
+        {{ includeTemplate "log_success" "Installed driver matches target ($TARGET_DRIVER)" }}
+    elif [ "$CURRENT_DRIVER" = "modern-dkms" ] && [ "$TARGET_DRIVER" = "modern" ]; then
+        # Same driver, different packaging: swap without prompting. nvidia-open-dkms conflicts
+        # with nvidia-open / nvidia-open-lts (both provide NVIDIA-MODULE), and pacman's conflict
+        # prompt defaults to "no" under --noconfirm, so package sync would abort on it.
+        {{ includeTemplate "log_warning" "nvidia-open-dkms installed (archinstall default) - conflicts with pre-built nvidia-open" }}
+        {{ includeTemplate "log_step" "Replacing nvidia-open-dkms with nvidia-open + nvidia-open-lts..." }}
+
+        if sudo pacman -R --noconfirm nvidia-open-dkms 2>&1 | grep -v "warning: " &&
+            sudo pacman -S --needed --noconfirm nvidia-open nvidia-open-lts 2>&1 | grep -v "warning: "; then
+            {{ includeTemplate "log_success" "Switched to pre-built nvidia-open" }}
+        else
+            {{ includeTemplate "log_error" "Failed to replace nvidia-open-dkms" }}
+            {{ includeTemplate "log_info" "Fix: sudo pacman -R nvidia-open-dkms && sudo pacman -S nvidia-open nvidia-open-lts" }}
+            PREFLIGHT_FAILED=true
+        fi
+    else
         echo ""
         echo "════════════════════════════════════════════════════════════════"
         echo "  ⚠️  NVIDIA DRIVER MIGRATION DETECTED"
@@ -181,7 +192,7 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         echo "  Detected GPU (PCI ID): {{ .nvidiaGpuDetected | default "unknown" }}"
         echo ""
         echo "  This migration will:"
-        if [ "$CURRENT_DRIVER" = "modern" ]; then
+        if [ "$CURRENT_DRIVER" != "legacy" ]; then
             echo "    1. Remove nvidia-open, nvidia-open-lts, nvidia-utils, lib32-nvidia-utils"
             echo "    2. Install nvidia-580xx-dkms, nvidia-580xx-utils, lib32-nvidia-580xx-utils"
         else
@@ -215,8 +226,15 @@ if lspci | grep -i nvidia >/dev/null 2>&1; then
         fi
 
         {{ includeTemplate "log_warning" "Proceeding with driver migration..." }}
+    fi
+
+    # Runtime state (informational), after any package change above
+    if lspci -k | grep -A 3 -i "VGA\|3D" | grep -qi "nouveau"; then
+        {{ includeTemplate "log_warning" "Nouveau driver active (archinstall default) - reboot after package sync to load NVIDIA" }}
+    elif ! lsmod | grep -q '^nvidia '; then
+        {{ includeTemplate "log_info" "NVIDIA kernel module not loaded - reboot after package sync" }}
     else
-        {{ includeTemplate "log_success" "No driver migration needed" }}
+        {{ includeTemplate "log_success" "NVIDIA kernel module loaded" }}
     fi
 fi
 

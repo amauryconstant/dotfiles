@@ -153,7 +153,7 @@ Do **not** add `@swap` (swap is zram; script 006 skips hibernation on any `/dev/
 
 1. *Profile → Type*: **Desktop**, then pick **Hyprland**.
 2. Seat access prompt: **`systemd-logind`** (4.5 makes you pick; `seatd` would add a service and a `seat` group).
-3. *Graphics driver*: set it to **no driver**. Do not pick "Nvidia (open kernel module…)": with `linux-lts` in the kernel list it installs `nvidia-open-dkms` (+ `dkms` + headers) instead of the `nvidia-open` / `nvidia-open-lts` packages that `.chezmoidata/packages.yaml` declares; `run_onchange_before_sync_packages.sh.tmpl` will then remove `nvidia-open-dkms`, `dkms` and the kernel headers on first apply, but the extra churn slows the bootstrap. The prebuilt packages are added by hand in 2.1. Also avoid the "All open-source" default: it installs nouveau and Intel/AMD userspace. (The exact way to blank the driver in the TUI is *(unverified)*; the JSON route, `"gfx_driver": null`, is certain: see Appendix A.)
+3. *Graphics driver*: set it to **no driver**. Do not pick "Nvidia (open kernel module…)": with `linux-lts` in the kernel list it installs `nvidia-open-dkms` (+ `dkms` + headers) instead of the `nvidia-open` / `nvidia-open-lts` packages that `.chezmoidata/packages.yaml` declares; script `001_preflight_and_session_validation` will then swap `nvidia-open-dkms` for `nvidia-open` / `nvidia-open-lts` on first apply (the two conflict, so package sync would abort otherwise), and the orphan cleanup drops `dkms` and the headers, but the extra churn slows the bootstrap. The prebuilt packages are added by hand in 2.1. Also avoid the "All open-source" default: it installs nouveau and Intel/AMD userspace. (The exact way to blank the driver in the TUI is *(unverified)*; the JSON route, `"gfx_driver": null`, is certain: see Appendix A.)
 4. *Greeter*: **sddm**. sddm requires a regular user (step in 2.1).
 
 ### 2.4 Disk encryption (last)
@@ -284,7 +284,7 @@ Read the failing script's last log lines. Typical causes: network, no vault acce
 
 ### Script 001: "NVIDIA DRIVER MIGRATION DETECTED"
 
-The installed driver does not match `nvidiaDriverType`. Check `chezmoi data | jaq .nvidiaDriverType` (should be `"modern"`), and `pacman -Q nvidia-open`. If archinstall installed `nvidia-open-dkms`, remove it and install `nvidia-open nvidia-open-lts`. If detection itself is wrong, override with `NVIDIA_DRIVER_OVERRIDE=modern chezmoi apply`.
+The installed driver does not match `nvidiaDriverType`. Check `chezmoi data | jaq .nvidiaDriverType` (should be `"modern"`), and `pacman -Q nvidia-open`. `nvidia-open-dkms` from archinstall is swapped for `nvidia-open nvidia-open-lts` automatically, without this prompt; if that swap fails, run `sudo pacman -R nvidia-open-dkms && sudo pacman -S nvidia-open nvidia-open-lts`. If detection itself is wrong, override with `NVIDIA_DRIVER_OVERRIDE=modern chezmoi apply`.
 
 ### Vault unreachable (script 005)
 
