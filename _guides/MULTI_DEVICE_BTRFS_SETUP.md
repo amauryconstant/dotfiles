@@ -74,11 +74,11 @@ Use `/dev/disk/by-id/...` paths for disks, never `/dev/sdX`: the letters change 
 ## Phase 1: Verify the starting state
 
 ```bash
-findmnt -R /mnt
-ls /dev/mapper
-lsblk -o NAME,SIZE,MODEL,SERIAL,FSTYPE
-grep -E '/boot' /mnt/etc/fstab
-cat /mnt/etc/kernel/cmdline
+findmnt -R /mnt                                  # @ on /mnt, plus /home /var/log /var/cache/pacman/pkg /var/tmp, ESP on /mnt/boot
+ls /dev/mapper                                   # must list "root"
+lsblk -o NAME,SIZE,MODEL,SERIAL,FSTYPE           # note each disk's serial for 1.1
+grep -E '/boot' /mnt/etc/fstab                   # options must contain fmask=0177,dmask=0077
+cat /mnt/etc/kernel/cmdline                      # contains cryptdevice=PARTUUID=...:root root=/dev/mapper/root
 ```
 
 **Expected**:
@@ -87,21 +87,52 @@ cat /mnt/etc/kernel/cmdline
 - The cmdline holds `cryptdevice=PARTUUID=...:root root=/dev/mapper/root`.
 - The `/boot` fstab line has `fmask=0177,dmask=0077`. If it says `0022`, edit it now: the UKI would otherwise be world-readable on a running system.
 
-Define the disks once. All later phases reuse these variables, so stay in the same shell.
+### 1.1 Define the disks
+
+Two variables drive every later phase. Define them once and stay in the same shell.
+
+| Variable | Holds | Set by |
+|---|---|---|
+| `DISKS` | The **extra disks only**: the ones to wipe and encrypt. **Never the root NVMe.** | You, by hand |
+| `ROOT_PART` | The root LUKS partition archinstall created | Read from the open `root` mapper |
+
+List the candidates and pick the extra disks by serial. Use whole-disk entries (no `-partN` suffix), and one entry per disk (`wwn-` and `eui.` links point at the same disk as the model-serial link):
+
+```bash
+ls -l /dev/disk/by-id/ | grep -vE 'part[0-9]+$'
+lsblk -o NAME,SIZE,MODEL,SERIAL,MOUNTPOINTS
+```
+
+Then write one line per extra disk. The example has **two**; add or delete lines to match your count. Every later command loops over the array, so nothing else changes.
 
 ```bash
 DISKS=(
   /dev/disk/by-id/ata-DISK1-SERIAL
-  /dev/disk/by-id/ata-DISK2-SERIAL
-  /dev/disk/by-id/nvme-DISK3-SERIAL
+  /dev/disk/by-id/nvme-DISK2-SERIAL
 )
 ROOT_PART=$(cryptsetup status root | awk '/device:/ {print $2}')
-echo "$ROOT_PART"; printf '%s\n' "${DISKS[@]}"
 ```
 
-Check that `ROOT_PART` is the root partition and that **none** of `DISKS` is the root NVMe.
+### 1.2 Safety check
+
+This flags an entry that is missing or is the root disk. Phase 2 wipes and reformats everything in `DISKS`, so **do not continue unless it prints `OK`**.
+
+```bash
+ROOT_DISK=$(lsblk -no PKNAME "$ROOT_PART")
+bad=0
+for d in "${DISKS[@]}"; do
+  [ -b "$d" ] || { echo "NOT A DISK: $d"; bad=1; }
+  [ "$(basename "$(readlink -f "$d")")" = "$ROOT_DISK" ] && { echo "ROOT DISK IN DISKS: $d"; bad=1; }
+done
+echo "root partition: $ROOT_PART (disk $ROOT_DISK)"; printf 'extra disk: %s\n' "${DISKS[@]}"
+[ "$bad" = 0 ] && echo OK || echo "FIX DISKS BEFORE CONTINUING"
+```
+
+**Expected**: one `root partition` line, one `extra disk` line per disk, then `OK`. Compare the printed paths with `lsblk` once more: the root disk must be absent from the list.
 
 ## Phase 2: Wipe, key and encrypt the extra disks
+
+Everything here acts on `DISKS` (the extra disks, defined in 1.1) and never on the root disk. Do not start unless 1.2 printed `OK`. The loops number the disks in array order: the first entry becomes `cryptdisk1`, the second `cryptdisk2`, and so on.
 
 ### 2.1 Wipe
 
@@ -120,7 +151,7 @@ for d in "${DISKS[@]}"; do
   n=$((n+1))
   ( umask 077; dd if=/dev/urandom of=/mnt/etc/cryptsetup-keys.d/cryptdisk$n.key bs=4096 count=1 )
 done
-ls -l /mnt/etc/cryptsetup-keys.d/
+ls -l /mnt/etc/cryptsetup-keys.d/    # one cryptdiskN.key per extra disk, 4096 bytes, mode -rw------- (no root.key)
 ```
 
 **Do not create a key for the root disk.** Root uses the passphrase only.
@@ -147,7 +178,7 @@ for d in "${DISKS[@]}"; do
   n=$((n+1))
   cryptsetup open --key-file /mnt/etc/cryptsetup-keys.d/cryptdisk$n.key "$d" cryptdisk$n
 done
-ls /dev/mapper
+ls /dev/mapper    # root, cryptdisk1 ... cryptdiskN
 ```
 
 **Expected**: `root`, `cryptdisk1` ... `cryptdiskN`.
@@ -166,8 +197,12 @@ for d in "${DISKS[@]}"; do
   cryptsetup luksHeaderBackup "$d" --header-backup-file /root/bk/cryptdisk$n.hdr
   base64 -w0 /mnt/etc/cryptsetup-keys.d/cryptdisk$n.key > /root/bk/cryptdisk$n.key.b64
 done
-tar -C /root/bk -cf - . | gpg --symmetric --cipher-algo AES256 -o /root/luks-backup.tar.gpg
+export GPG_TTY=$(tty)
+tar -C /root/bk -cf - . | gpg --pinentry-mode loopback --symmetric --cipher-algo AES256 -o /root/luks-backup.tar.gpg
+ls -l /root/luks-backup.tar.gpg          # must exist and be non-empty
 ```
+
+`--pinentry-mode loopback` is required on the ISO: without it gpg tries to start a pinentry, fails with `Problem with the agent: Inappropriate IOCTL for device` and creates no file. If gpg still fails, use `openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -out /root/luks-backup.tar.enc` in place of the `gpg` stage (decrypt with `openssl enc -d` and the same options).
 
 Copy `/root/luks-backup.tar.gpg` to another machine or USB stick (`scp`, `mount` a stick). Then keep the keyfiles as base64 **secure notes** in Vaultwarden (4096 bytes ≈ 5464 characters; `rbw`'s attachment support is *unverified*, so use a note). Never store the backup on the same disk.
 
@@ -191,7 +226,7 @@ Use `/etc/crypttab` with `x-initrd.attach` for root **and every member**. Do not
       "$n" "$(cryptsetup luksUUID "$d")" "$n"
   done
 } > /mnt/etc/crypttab
-cat /mnt/etc/crypttab
+cat /mnt/etc/crypttab    # one line for root (key "none") + one per extra disk (key path), all with x-initrd.attach
 ```
 
 The UUIDs are the **LUKS container UUIDs** (`cryptsetup luksUUID`), not PARTUUID and not the BTRFS UUID.
@@ -205,7 +240,7 @@ cp /mnt/etc/mkinitcpio.conf /mnt/etc/mkinitcpio.conf.archinstall
 sed -i -E 's/^HOOKS=.*/HOOKS=(base systemd autodetect microcode modconf keyboard sd-vconsole block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 files=$(for i in $(seq 1 ${#DISKS[@]}); do printf '/etc/cryptsetup-keys.d/cryptdisk%s.key ' "$i"; done)
 sed -i -E "s|^FILES=.*|FILES=(${files% })|" /mnt/etc/mkinitcpio.conf
-grep -E '^(HOOKS|FILES)=' /mnt/etc/mkinitcpio.conf
+grep -E '^(HOOKS|FILES)=' /mnt/etc/mkinitcpio.conf    # HOOKS has systemd + sd-encrypt; FILES lists one cryptdiskN.key per extra disk, no root.key
 ```
 
 Why these hooks:
@@ -222,7 +257,7 @@ mkinitcpio 42 **concatenates** `/etc/kernel/cmdline` and every `/etc/cmdline.d/*
 ```bash
 cp /mnt/etc/kernel/cmdline /mnt/etc/kernel/cmdline.archinstall
 echo 'root=/dev/mapper/root rootflags=subvol=@ rw rootfstype=btrfs zswap.enabled=0' > /mnt/etc/kernel/cmdline
-cat /mnt/etc/kernel/cmdline
+cat /mnt/etc/kernel/cmdline    # one line, no cryptdevice=
 ```
 
 `cryptdevice=` is gone (busybox-only). `006` appends `quiet splash` later; it rolls back from `cmdline.backup`, so keep this file as the source of truth.
@@ -230,7 +265,7 @@ cat /mnt/etc/kernel/cmdline
 ### 3.4 Boot loader default
 
 ```bash
-cat /mnt/boot/loader/loader.conf
+cat /mnt/boot/loader/loader.conf    # must contain: default arch-linux.efi
 ```
 
 It should contain `default arch-linux.efi`. If the line is missing, add it:
@@ -255,9 +290,9 @@ arch-chroot /mnt mkinitcpio -P
 ### 4.1 Verify
 
 ```bash
-ls -l /mnt/boot/EFI/Linux/
-arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux.efi | grep -E 'cryptsetup-keys|crypttab'
-arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux-lts.efi | grep -E 'cryptsetup-keys|crypttab'
+ls -l /mnt/boot/EFI/Linux/                                                                          # arch-linux.efi and arch-linux-lts.efi, both just written
+arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux.efi | grep -E 'cryptsetup-keys|crypttab'      # cryptdiskN.key for every extra disk + etc/crypttab, no root.key
+arch-chroot /mnt lsinitcpio /boot/EFI/Linux/arch-linux-lts.efi | grep -E 'cryptsetup-keys|crypttab'  # same list as above
 ```
 
 **Expected**: `cryptdisk1.key` ... `cryptdiskN.key` and `etc/crypttab` listed in **both** UKIs; **no** `root.key`. `lsinitcpio` has read UKIs since mkinitcpio v39 (May 2024) by extracting the `.initrd` PE section; if your local mkinitcpio is older, the `mkinitcpio -P` `==> ... Including file` log is the fallback evidence.
@@ -272,7 +307,7 @@ for d in "${DISKS[@]}"; do
   n=$((n+1))
   btrfs device add /dev/mapper/cryptdisk$n /mnt
 done
-btrfs filesystem show /mnt
+btrfs filesystem show /mnt    # Total devices N+1: the root mapper plus every cryptdiskN
 ```
 
 **Expected**: `Total devices N+1` with the root mapper plus every `cryptdiskN`.
@@ -282,9 +317,9 @@ btrfs filesystem show /mnt
 `device add` keeps the existing profiles, so metadata stays **DUP**, and both DUP copies can end up on the same disk. One dead disk could then make the whole filesystem unrecoverable. Convert once the last disk is added:
 
 ```bash
-btrfs balance start -mconvert=raid1 /mnt
-btrfs balance status /mnt
-btrfs filesystem df /mnt
+btrfs balance start -mconvert=raid1 /mnt    # runs in the foreground; returns when done (seconds on a fresh install)
+btrfs balance status /mnt                   # "No balance found" is normal: it already finished. Only informative if interrupted
+btrfs filesystem df /mnt                    # THE CHECK: Metadata RAID1, System RAID1, Data single (DUP = conversion did not happen)
 ```
 
 **Expected**: `Metadata, RAID1`, `System, RAID1`, `Data, single`. On a fresh install this takes seconds. If it is interrupted, resume with `btrfs balance start -mconvert=raid1,soft /mnt`. On a populated filesystem balance needs free workspace for new chunks — if it ever fails with ENOSPC, see Recovery 5.
@@ -307,10 +342,10 @@ Remove the USB stick when the machine powers off.
 ### 6.1 Verify after boot
 
 ```bash
-ls /dev/mapper/
-sudo btrfs filesystem show /
-sudo btrfs device usage /
-sudo journalctl -b | grep -E 'UUID is invalid|cryptsetup.*fail|btrfs.*(error|fail)'
+ls /dev/mapper/                 # root, cryptdisk1 ... cryptdiskN
+sudo btrfs filesystem show /    # Total devices N+1
+sudo btrfs device usage /       # every device listed, data on the extra disks, metadata RAID1
+sudo journalctl -b | grep -E 'UUID is invalid|cryptsetup.*fail|btrfs.*(error|fail)'    # must print nothing
 ```
 
 **Expected**:
@@ -324,8 +359,8 @@ If a prompt appears for an extra disk, or `UUID is invalid` shows up, go to Reco
 
 ```bash
 sudo systemctl enable --now fstrim.timer     # weekly TRIM
-sudo btrfs scrub start -B /                  # first integrity pass
-sudo btrfs scrub status /
+sudo btrfs scrub start -B /                  # first integrity pass (-B waits until done)
+sudo btrfs scrub status /                    # must report 0 errors
 ```
 
 **Expected**: scrub reports 0 errors.
