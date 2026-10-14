@@ -37,6 +37,15 @@ for entry in firefox firefox-esr; do
     sed "s|^Exec=/usr/lib/${entry}/${entry}|Exec=${HOME}/.local/bin/${entry}|" \
         "$system_entry" >"$candidate"
 
+    # Firefox only: send the main entry and the two window actions through firefox-open
+    # (link -> last-focused profile, plain launch -> profile menu). The Profile Manager
+    # action stays on the wrapper so it still opens the classic dialog. Guarded so a
+    # missing chooser cannot break the entry.
+    firefox_open="${HOME}/.local/lib/scripts/desktop/firefox-open"
+    if [ "$entry" = firefox ] && [ -x "$firefox_open" ]; then
+        sed -i "/--ProfileManager/!s|^Exec=${HOME}/.local/bin/firefox |Exec=${firefox_open} |" "$candidate"
+    fi
+
     if [ -f "$override" ] && cmp -s "$candidate" "$override"; then
         rm -f "$candidate"
         continue

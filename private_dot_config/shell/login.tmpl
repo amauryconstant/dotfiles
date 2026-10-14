@@ -28,7 +28,12 @@ fi
 # Software Envs
 export EDITOR="${EDITOR:-{{ .globals.applications.editor }}}"
 export VISUAL="${VISUAL:-{{ .globals.applications.visual }}}"
+{{- if eq .globals.applications.browser "firefox" }}
+# firefox-open picks the profile (last-focused, else default); bare firefox opens the Profile Manager
+export BROWSER="${BROWSER:-$HOME/.local/lib/scripts/desktop/firefox-open}"
+{{- else }}
 export BROWSER="${BROWSER:-{{ .globals.applications.browser }}}"
+{{- end }}
 
 # Package Version Managers Envs
 export CARGO_HOME="{{ .globals.paths.cargo_home }}"

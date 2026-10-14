@@ -1,0 +1,56 @@
+#!/usr/bin/env sh
+
+# Script: firefox-open
+# Purpose: Open Firefox in the right profile. A link goes to the last-focused
+#          profile (else the default); a plain launch asks via the shell's menu.
+# Requirements: Arch Linux, hyprctl, jaq, quickshell-menu
+{{- $ff := includeTemplate "firefox_profiles" . | fromJson }}
+{{- $rows := list }}
+{{- range .firefox.profiles }}{{ if has .id $ff.ids }}{{ $rows = append $rows (dict "title" .name "payload" .id) }}{{ end }}{{ end }}
+
+FIREFOX="$HOME/.local/bin/firefox"
+DEFAULT="{{ $ff.default }}"
+IDS="{{ join " " $ff.ids }}"
+ROWS='{{ $rows | toJson }}'
+
+# Inherit-safe: set it here too for launches from outside the uwsm session.
+export MOZ_LEGACY_PROFILES=1
+
+has_target=0
+for arg in "$@"; do
+    case "$arg" in
+        -*) ;;
+        [a-zA-Z]*:*) has_target=1 ;;
+        *) [ -e "$arg" ] && has_target=1 ;;
+    esac
+done
+
+valid_id() {
+    for candidate in $IDS; do
+        [ "$candidate" = "$1" ] && return 0
+    done
+    return 1
+}
+
+# -P takes the profiles.ini Name=, not the directory id
+name_of() {
+    case "$1" in
+{{- range .firefox.profiles }}{{ if has .id $ff.ids }}
+        {{ .id }}) echo "{{ .name }}" ;;
+{{- end }}{{ end }}
+    esac
+}
+
+if [ "$has_target" -eq 1 ]; then
+    # Lowest focusHistoryID = most recently focused window
+    id="$(hyprctl clients -j 2>/dev/null |
+        jaq -r '[.[] | select(.class | startswith("firefox-"))] | sort_by(.focusHistoryID) | (.[0].class // "") | ltrimstr("firefox-")' \
+            2>/dev/null)"
+    valid_id "$id" || id="$DEFAULT"
+else
+    id="$(printf '%s' "$ROWS" | "$HOME/.local/lib/scripts/desktop/quickshell-menu" --json --prompt "Firefox")" || exit 0
+    [ -n "$id" ] || exit 0
+    valid_id "$id" || exit 1
+fi
+
+exec "$FIREFOX" --name "firefox-$id" --class "firefox-$id" -P "$(name_of "$id")" "$@"
