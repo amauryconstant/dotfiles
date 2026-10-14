@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_manage_firefox_profiles.sh
+# Purpose: Declaratively manage Firefox profiles (XDG): dirs, user.js, profiles.ini, launchers
+# Requirements: Arch Linux, firefox, MOZ_LEGACY_PROFILES=1 in the session environment
+
+# Hash: {{ list .firefox .chassisType | toJson | sha256sum }}
+{{- $ff := includeTemplate "firefox_profiles" . | fromJson }}
+
+{{ includeTemplate "log_start" "Managing Firefox profiles..." }}
+
+set -euo pipefail
+
+if ! command -v firefox >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Firefox not installed, skipping" }}
+    exit 0
+fi
+
+PROFILE_ROOT="$HOME/{{ .firefox.profile_root }}"
+APP_DIR="$HOME/.local/share/applications"
+
+# Interlock 1: while ~/.mozilla/firefox exists Firefox ignores the XDG base entirely,
+# so anything written here is dead config.
+if [ -d "$HOME/.mozilla/firefox" ]; then
+    {{ includeTemplate "log_warning" "Legacy ~/.mozilla/firefox present — move its profiles into the XDG root first (Task 3), then run this script by hand. Skipping." }}
+    exit 0
+fi
+
+# Interlock 2: unadopted data. Writing profiles.ini now would orphan a real profile,
+# and installs.ini / [Install] means Firefox ran without MOZ_LEGACY_PROFILES=1.
+if [ -e "$PROFILE_ROOT/installs.ini" ] || { [ -f "$PROFILE_ROOT/profiles.ini" ] && grep -q '^\[Install' "$PROFILE_ROOT/profiles.ini"; }; then
+    {{ includeTemplate "log_warning" "installs.ini / [Install] present — adopt the existing profile (Task 3) and check MOZ_LEGACY_PROFILES=1, then run this script by hand. Skipping." }}
+    exit 0
+fi
+for dir in "$PROFILE_ROOT"/*/; do
+    [ -f "${dir}prefs.js" ] || continue
+    case "$(basename "$dir")" in
+        {{ range $.firefox.profiles }}{{ if has .id $ff.ids }}{{ .id }}|{{ end }}{{ end }}__managed_ids_end__) ;;
+        *)
+            {{ includeTemplate "log_warning" "Unmanaged profile with data in the XDG root — adopt it (Task 3), then run this script by hand. Skipping." }}
+            exit 0
+            ;;
+    esac
+done
+
+if pgrep -x firefox >/dev/null 2>&1; then
+    {{ includeTemplate "log_warning" "Firefox is running — restart it for profile changes to take effect" }}
+fi
+
+{{ includeTemplate "log_step" "Ensuring XDG profile root..." }}
+mkdir -p "$PROFILE_ROOT" "$APP_DIR"
+
+# --- Per-profile directories + user.js (this chassis only) -----------------
+{{ range .firefox.profiles }}{{ if has .id $ff.ids }}
+{{ includeTemplate "log_step" (printf "Configuring profile: %s" .name) }}
+mkdir -p "$PROFILE_ROOT/{{ .id }}"
+cat > "$PROFILE_ROOT/{{ .id }}/user.js" <<'USERJS_EOF'
+// Managed by chezmoi — do not edit. Source: .chezmoidata/firefox.yaml
+{{ range $.firefox.common_prefs -}}
+user_pref("{{ .key }}", {{ if kindIs "string" .value }}"{{ .value }}"{{ else }}{{ .value }}{{ end }});
+{{ end -}}
+{{ range .prefs -}}
+user_pref("{{ .key }}", {{ if kindIs "string" .value }}"{{ .value }}"{{ else }}{{ .value }}{{ end }});
+{{ end -}}
+USERJS_EOF
+{{ end }}{{ end }}
+# --- Classic profiles.ini (no Install/StoreID) -----------------------------
+# StartWithLastProfile=0 => a bare `firefox` shows the classic Profile Manager;
+# Default=1 marks the preselected entry. Both only work under MOZ_LEGACY_PROFILES=1.
+{{ includeTemplate "log_step" "Writing profiles.ini..." }}
+cat > "$PROFILE_ROOT/profiles.ini" <<'PROFILES_EOF'
+[General]
+StartWithLastProfile=0
+Version=2
+{{ $n := 0 }}{{ range .firefox.profiles }}{{ if has .id $ff.ids }}
+[Profile{{ $n }}]
+Name={{ .name }}
+IsRelative=1
+Path={{ .id }}
+{{ if eq .id $ff.default }}Default=1
+{{ end }}{{ $n = add1 $n }}{{ end }}{{ end }}
+PROFILES_EOF
+
+# --- Per-profile .desktop launchers (pruned + regenerated) -----------------
+# Exec names the EGL wrapper by ABSOLUTE path (see Global Constraints) and carries
+# MOZ_LEGACY_PROFILES inline so a launcher works outside a uwsm session too.
+# --name and --class are BOTH needed (Task 2 gate): --name sets the Wayland app_id,
+# --class the XWayland WM_CLASS the wrapper falls back to. -P takes the profiles.ini
+# Name= (exact, case-sensitive) so a launch hands off to that profile's running instance.
+# StartupWMClass matches, so the dock and Hyprland see one app per profile.
+# The prune glob is namespaced 'firefox-profile-*' so it never touches the
+# firefox.desktop override that configure_firefox_egl_workaround owns.
+{{ includeTemplate "log_step" "Generating per-profile launchers..." }}
+rm -f "$APP_DIR"/firefox-profile-*.desktop
+{{ range .firefox.profiles }}{{ if has .id $ff.ids }}
+cat > "$APP_DIR/firefox-profile-{{ .id }}.desktop" <<'DESKTOP_EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Firefox — {{ .name }}
+Comment=Browse the Web ({{ .name }} profile)
+Exec=env MOZ_LEGACY_PROFILES=1 {{ $.chezmoi.homeDir }}/.local/bin/firefox --name firefox-{{ .id }} --class firefox-{{ .id }} -P {{ .name }} %U
+Icon=firefox
+Terminal=false
+Categories=Network;WebBrowser;
+StartupNotify=true
+StartupWMClass=firefox-{{ .id }}
+DESKTOP_EOF
+{{ end }}{{ end }}
+{{ includeTemplate "log_complete" "Firefox profiles managed" }}
