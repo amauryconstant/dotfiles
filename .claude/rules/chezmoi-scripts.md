@@ -16,6 +16,7 @@
 | Setup | `run_once_before_*` | System preparation | Before file application |
 | Configuration | `run_once_after_*` | Service setup | After file application |
 | Content-driven | `run_onchange_*` | Data file changes | Hash-triggered |
+| Retry-until-done | `run_after_*` | Work that can fail transiently and must retry | Every apply; script self-skips |
 
 ---
 
@@ -107,6 +108,19 @@
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | sync_mise_tools | `mise install` for the tools in `.chezmoidata/mise.yaml` (rendered to `conf.d/tools.toml`). Install only: dropping a tool does not uninstall it — `mise prune` by hand | `mise.yaml` changes |
 | update_plymouth_theme | Plymouth theme | Theme changes |
+
+---
+
+### run_after_*
+
+Runs on **every** apply, so it must be cheap and idempotent. Use it only where
+`run_onchange_*` is wrong: a run_onchange script that exits 0 on failure is recorded as
+done and is never retried, so network-dependent work would stay undone until its inputs
+change. A `run_after_` script guards itself with a stamp and exits early once satisfied.
+
+| Script | Purpose | Skips when |
+|--------|---------|------------|
+| build_egl_wayland2_patched | Builds egl-wayland2 from a pinned upstream commit plus `.patches/egl-wayland2-bounded-frame-wait.patch` into `~/.local/lib/egl-wayland2-patched`; only the Firefox wrapper uses it. Verifies the patch landed (symbol check) before writing `.stamp`. A failed build warns, exits 0 and installs nothing — the wrapper falls back to XWayland and the next apply retries | `.stamp` matches pin + patch hash, or egl-wayland2 is absent |
 
 ---
 

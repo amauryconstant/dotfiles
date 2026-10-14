@@ -1,0 +1,50 @@
+diff --git a/src/wayland/wayland-surface.c b/src/wayland/wayland-surface.c
+index a1b52d4..2119b1e 100644
+--- a/src/wayland/wayland-surface.c
++++ b/src/wayland/wayland-surface.c
+@@ -1208,16 +1208,44 @@ static const struct wp_presentation_feedback_listener PRESENTATION_FEEDBACK_LIST
+  */
+ static EGLBoolean WaitForPreviousFrames(EplSurface *psurf)
+ {
++    /*
++     * The compositor is allowed to never answer for a surface that isn't
++     * visible. A subsurface whose parent isn't mapped yet gets no frame
++     * callback or presentation feedback, and a client that renders the parent
++     * only after this swap returns (Firefox: its GTK main thread waits on this
++     * thread) would then wait forever. So bound the wait, and past the limit
++     * treat the frame as discarded, as the swap-interval-zero path does.
++     */
+     while (psurf->priv->current.frame_callback != NULL
+             || psurf->priv->current.last_swap_sync != NULL
+             || psurf->priv->current.presentation_feedback != NULL)
+     {
+-        if (wl_display_dispatch_queue(psurf->priv->inst->wdpy, psurf->priv->current.queue) < 0)
++        struct timespec timeout = { .tv_sec = 0, .tv_nsec = 100 * 1000 * 1000 };
++        int ret = wl_display_dispatch_queue_timeout(psurf->priv->inst->wdpy,
++                psurf->priv->current.queue, &timeout);
++        if (ret < 0)
+         {
+             eplSetError(psurf->priv->inst->platform, EGL_BAD_ALLOC,
+                     "Failed to dispatch Wayland events");
+             return EGL_FALSE;
+         }
++        if (ret == 0)
++        {
++            if (psurf->priv->current.frame_callback != NULL)
++            {
++                wl_callback_destroy(psurf->priv->current.frame_callback);
++                psurf->priv->current.frame_callback = NULL;
++            }
++            if (psurf->priv->current.last_swap_sync != NULL)
++            {
++                wl_callback_destroy(psurf->priv->current.last_swap_sync);
++                psurf->priv->current.last_swap_sync = NULL;
++            }
++            if (psurf->priv->current.presentation_feedback != NULL)
++            {
++                DiscardPresentationFeedback(psurf);
++            }
++        }
+     }
+ 
+     return EGL_TRUE;

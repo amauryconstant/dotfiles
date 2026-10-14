@@ -3,6 +3,7 @@
 
 # Development
 .mise/
+.patches/
 .pre-commit-config.yaml
 .mcp.json
 .markdownlint-cli2.jsonc

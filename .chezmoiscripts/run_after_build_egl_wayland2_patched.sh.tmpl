@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# Script: run_after_build_egl_wayland2_patched.sh
+# Purpose: Build egl-wayland2 with the bounded frame-wait patch for the Firefox wrapper
+# Requirements: Arch Linux, git, meson, binutils, eglexternalplatform, NVIDIA (egl-wayland2 installed)
+#
+# WHY a private build instead of replacing the Arch package: only Firefox needs the
+# patch (.patches/egl-wayland2-bounded-frame-wait.patch, rationale in
+# _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md), and a replaced system package would sit
+# outside the package-manager supply-chain tooling and be overwritten by every update.
+# `bin/executable_firefox` points the EGL platform at this copy; every other client
+# keeps the packaged library. Without it the wrapper falls back to XWayland.
+#
+# WHY run_after (every apply) and not run_onchange: a failed build must be retried. A
+# run_onchange script that exits 0 on failure is recorded as done and never runs again,
+# so a first apply without network would leave Firefox on soft XWayland until someone
+# edited the patch. Here a stamp inside $DEST (pin + patch hash) is written only after a
+# verified build, and a matching stamp makes every later apply a no-op.
+#
+# Upstream is pinned by full commit SHA, so a moved branch or tag cannot change what
+# gets built. Bump EGL_WAYLAND2_COMMIT deliberately, after retesting the patch.
+
+set -euo pipefail
+
+EGL_WAYLAND2_REPO=https://github.com/NVIDIA/egl-wayland2.git
+EGL_WAYLAND2_COMMIT=ce0eb711fbfb48de7b42bb615847587d15d4bab5 # 1.0.3 merge (2026-09-29)
+PATCH="{{ .chezmoi.sourceDir }}/.patches/egl-wayland2-bounded-frame-wait.patch"
+PATCH_SHA="{{ include ".patches/egl-wayland2-bounded-frame-wait.patch" | sha256sum }}"
+DEST="$HOME/.local/lib/egl-wayland2-patched"
+STAMP="$EGL_WAYLAND2_COMMIT $PATCH_SHA"
+
+if [ ! -e /usr/share/egl/egl_external_platform.d/09_nvidia_wayland2.json ]; then
+    rm -rf "$DEST"
+    exit 0
+fi
+
+if [ -f "$DEST/.stamp" ] && [ "$(cat "$DEST/.stamp")" = "$STAMP" ]; then
+    exit 0
+fi
+
+{{ includeTemplate "log_start" "Building patched egl-wayland2..." }}
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+# Every step ends in `|| return 1`: errexit is ignored inside a function called from an
+# `if`, so without it a failed `git apply` would still install an unpatched library.
+build() {
+    git -C "$work" init -q src || return 1
+    git -C "$work/src" fetch -q --depth 1 "$EGL_WAYLAND2_REPO" "$EGL_WAYLAND2_COMMIT" || return 1
+    git -C "$work/src" checkout -q FETCH_HEAD || return 1
+    [ "$(git -C "$work/src" rev-parse HEAD)" = "$EGL_WAYLAND2_COMMIT" ] || return 1
+    git -C "$work/src" apply "$PATCH" || return 1
+    meson setup "$work/build" "$work/src" --buildtype=release --prefix="$work/inst" >/dev/null || return 1
+    ninja -C "$work/build" >/dev/null || return 1
+    meson install -C "$work/build" >/dev/null || return 1
+
+    # The patch needs libwayland >= 1.23. An unresolved symbol only fails at load time,
+    # so prove both ends here: the library imports it, and the installed libwayland has it.
+    local lib="$work/inst/lib/libnvidia-egl-wayland2.so.1" imports exports
+    imports=$(nm -D --undefined-only "$lib") || return 1
+    exports=$(nm -D --defined-only /usr/lib/libwayland-client.so) || return 1
+    [[ "$imports" == *wl_display_dispatch_queue_timeout* ]] || return 1
+    [[ "$exports" == *wl_display_dispatch_queue_timeout* ]] || return 1
+    printf '%s\n' "$STAMP" >"$work/inst/.stamp"
+}
+
+{{ includeTemplate "log_step" "Fetching, patching and compiling (pinned commit)..." }}
+if ! build; then
+    {{ includeTemplate "log_warning" "Patched egl-wayland2 build failed (retries next apply); Firefox falls back to XWayland" }}
+    exit 0
+fi
+
+# Swap the directory in. A running Firefox keeps the old library mapped, so this is safe
+# while it runs; the old copy is only removed once the new one is in place.
+mkdir -p "$(dirname "$DEST")"
+rm -rf "$DEST.old"
+[ ! -e "$DEST" ] || mv "$DEST" "$DEST.old"
+mv "$work/inst" "$DEST"
+rm -rf "$DEST.old"
+
+{{ includeTemplate "log_complete" "Patched egl-wayland2 installed to $DEST" }}

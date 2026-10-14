@@ -13,10 +13,67 @@ minidump, no coredump. Two symptoms that look unrelated are **one bug**:
 | `libnvidia-egl-wayland2.so.1` (default, sorts first) | Fires on frame 1 — window never maps |
 | `libnvidia-egl-wayland.so.1` (forced by our wrapper) | Fires later, when an extension popup creates a new EGL surface |
 
-Both show the identical thread signature. The wrapper
-(`private_dot_local/bin/executable_firefox`) trades "never opens" for "occasionally freezes".
-No fix exists today: there is nothing newer to upgrade to, and every mitigation tested was
-either ineffective or broke something else.
+Both show the identical thread signature.
+
+**Resolved 2026-10-14 with a local patch to egl-wayland2** — see "Root cause and fix" below. The
+sections after it are the original investigation (written against firefox 154 / egl-wayland2
+1.0.1) and are kept as evidence, not as current state.
+
+## Root cause and fix (2026-10-14)
+
+Retested on firefox 157.0.1, nvidia 615.78.08, egl-wayland 1.1.24, egl-wayland2 1.0.2 **and
+upstream master (1.0.3, `ce0eb71`)**: all three configurations still wedged (wayland2 never
+maps; legacy freezes on the Bitwarden popup). A `eu-stack` of the wedged wayland2 process
+(debug build, so frames are named) finally showed where the Renderer blocks:
+
+```
+Renderer   ppoll -> wl_display_dispatch_queue -> WaitForPreviousFrames
+           -> eplWlSwapBuffers -> HookSwapBuffersWithDamage
+main       pthread_cond_wait (waits for the Renderer) <- gtk draw
+```
+
+`WAYLAND_DEBUG` trace of the same run: the EGL surface (`wl_surface#69`) is a **desync
+subsurface** of the toplevel (`#76`). The swap path is FIFO + `wp_presentation`; every swap
+requests `wp_presentation.feedback` and the next swap's `WaitForPreviousFrames` waits for it.
+The compositor does not answer for a subsurface whose parent toplevel is not mapped, and the
+parent is mapped by the GTK main thread — which is blocked waiting for this very Renderer.
+The GTK CSD shm buffer is created and never attached, which matches the old trace.
+
+The first guess was a **synchronized** subsurface; the trace refuted it (`set_desync`).
+
+**Proof**: making every swap behave as swap interval 0 (no wait) mapped the window and let
+Bitwarden open repeatedly. That removes the throttle, so the shipped patch bounds the wait
+instead.
+
+**Fix**: `.patches/egl-wayland2-bounded-frame-wait.patch` — `WaitForPreviousFrames` uses
+`wl_display_dispatch_queue_timeout` (100 ms) and, on timeout, abandons the outstanding frame
+callback / swap sync / presentation feedback exactly as the interval-0 path already does. Built
+from a pinned upstream commit into `~/.local/lib/egl-wayland2-patched` by
+`.chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl`; the Firefox wrapper
+points its EGL platform config at it. Every other client keeps the packaged library.
+`__NV_DISABLE_EXPLICIT_SYNC` is gone from the wrapper — it was unproven and the patched run
+passed without it.
+
+**Fallback** if the build is absent: XWayland (no wedge, soft text on DP-1 because Hyprland
+stretches the 1x X window). Sharp XWayland via `xwayland:force_zero_scaling` was retested on
+Hyprland 0.56.2 and is **still broken**: the window overflows its tile and the right part is
+not clickable (input region stays at logical size).
+
+**Verified**: Bitwarden popup, window mapping, normal use on DP-1. **Not verified**: tearing /
+frame pacing under video (100 ms bound only matters when feedback never arrives), HDMI-A-1,
+whether the patch is acceptable upstream.
+
+**Patch limits** (for the upstream report): the 100 ms is silence per dispatch, not a total cap —
+a compositor that answers late but steadily is never cut off. `wl_display_dispatch_queue_timeout`
+needs libwayland >= 1.23, which upstream would have to guard; the build script checks it.
+
+**Upstream report not yet filed.** NVIDIA/egl-wayland2: evidence above, expected behaviour
+(a swap must not block indefinitely on feedback for a surface the compositor may never present),
+the patch. Related: Mozilla 2063934, egl-wayland2 #47 (different symptom).
+
+## Original investigation (superseded)
+
+The sections below predate the fix.
 
 ## The deadlock
 
@@ -139,6 +196,12 @@ egl-wayland2 is dma-buf based and EGLStream-free.
 
 ## When to Revisit
 
+- **Drop the patch** once an egl-wayland2 release bounds or removes that wait: delete
+  `.patches/`, the build script, and the patched branch of the wrapper, then
+  `rm -rf ~/.local/lib/egl-wayland2-patched`. Test with `FIREFOX_BACKEND=` unset against the
+  packaged library and the Bitwarden popup.
+- Bump `EGL_WAYLAND2_COMMIT` in the build script only after re-running that test.
+
 - `egl-wayland2` moves past 1.0.1 in Arch — retest wayland2 immediately; it is the supported path.
 - Mozilla 2063934 or egl-wayland2 #47 get a fix — both are active as of 2026-08-25.
 - Hyprland #5144 / #4521 fixed — re-enables the sharp XWayland recipe.
@@ -147,4 +210,7 @@ egl-wayland2 is dma-buf based and EGLStream-free.
 ## Related
 
 - `private_dot_local/bin/executable_firefox` — the wrapper, carries the full rationale in comments
+- `.patches/egl-wayland2-bounded-frame-wait.patch` — the fix
+- `.chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl` — builds it (pinned commit,
+  stamp-guarded, retried until it succeeds)
 - `private_dot_config/hypr/conf/environment.conf.tmpl` — sets `MOZ_ENABLE_WAYLAND`, `GDK_BACKEND`

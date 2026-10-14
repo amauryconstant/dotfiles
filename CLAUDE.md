@@ -72,6 +72,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .chezmoiscripts/        # Lifecycle scripts (run_once_*, run_onchange_*)
 ├── .chezmoitemplates/      # Reusable includes (log_*)
 ├── .scripts/               # Repository utilities (merge-driver, merge-guard)
+├── .patches/               # Patches applied to upstream sources at build time (not deployed)
 ├── .mise/                  # Lint/format tasks + pre-commit hook entrypoints
 ├── .chezmoiexternal.yaml   # Externally-fetched assets
 ├── archives/               # Retired configs (KDE, VSCode) — not deployed
@@ -132,6 +133,7 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 | `_guides/` | Operational procedures and reference guides | `MULTI_DEVICE_BTRFS_SETUP.md` |
 | `_research/` | Technology investigation and decision records | `LLM_BACKENDS_RESEARCH.md` |
 | `_plans/` | Feature roadmaps and phased implementation plans | `VOICE_STT_ROADMAP.md` |
+| `.patches/` | Patches a `.chezmoiscripts/` build applies to a pinned upstream commit; rationale lives in `_research/` | `egl-wayland2-bounded-frame-wait.patch` |
 | `_ai/` | Vendored upstream sources via `git subtree` — read-only API/code reference (see `_guides/VENDORED_SUBTREES.md`) | `_ai/quickshell/` |
 
 **`_ai/` is vendored, not ours**: ignored by chezmoi, linters, and formatters; marked `linguist-vendored`. Never hand-edit, lint, or reformat it — update via `git subtree pull`. See `_guides/VENDORED_SUBTREES.md` for per-subtree remotes + update commands.

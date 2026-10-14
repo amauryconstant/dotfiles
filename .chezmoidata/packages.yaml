@@ -242,6 +242,7 @@ packages:
         # Build tooling
         - cmake # hyprpm dependency
         - meson # hyprpm dependency
+        - eglexternalplatform # EGL external platform headers (builds the patched egl-wayland2 for Firefox)
         - cpio # hyprpm dependency
         # Development CLIs
         - git-delta # Syntax-highlighting git diff pager
