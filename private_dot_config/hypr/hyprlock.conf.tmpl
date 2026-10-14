@@ -14,10 +14,16 @@ source = ~/.config/themes/current/hyprlock.conf
 # NOTE: grace is a CLI flag as of hyprlock 0.9.6, not a config key — it lives in
 # desktop/immediate-lock (`hyprlock --grace 0`), the single lock entry point.
 general {
+    ignore_empty_input = true
     disable_loading_bar = false
     hide_cursor = true
     no_fade_in = false
     no_fade_out = false
+}
+
+# Fewer frames while locked (Omarchy ships hyprlock with animations off too)
+animations {
+    enabled = false
 }
 
 # Time label

@@ -29,5 +29,12 @@ features:
   # same reason as notifications and polkit, but with a gentler failure mode:
   # desktop/immediate-lock routes at RUNTIME, so with this off — or with the
   # shell down, or its restart budget spent — SUPER+L still locks via hyprlock.
+  #
+  # `chassis` lists the chassis types that own the lock (Config.qml.tmpl
+  # combines it with `enabled`). The desktop is left out since 2026-10-14: on
+  # the two-monitor NVIDIA machine the in-shell lock froze a few seconds after
+  # appearing, so SUPER+L takes the hyprlock fallback there. Add `desktop` back
+  # once that is solved.
   quickshell_lock:
     enabled: true
+    chassis: [laptop]

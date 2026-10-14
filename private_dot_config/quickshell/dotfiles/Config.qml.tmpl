@@ -519,8 +519,9 @@ Singleton {
     // to hyprlock when the answer is not "ok". So this only decides whether the
     // WlSessionLock is constructed at all; the `lock` IPC target is registered
     // either way and answers "disabled", which is what keeps a switched-off
-    // feature distinguishable from a broken wiring.
-    readonly property bool lockOwned: {{ .features.quickshell_lock.enabled }}
+    // feature distinguishable from a broken wiring. Also false on a chassis not
+    // listed in `quickshell_lock.chassis` (the desktop: see features.yaml).
+    readonly property bool lockOwned: {{ and .features.quickshell_lock.enabled (has .chassisType .features.quickshell_lock.chassis) }}
 
     function brightnessGlyph(percent: int): string {
         return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];
