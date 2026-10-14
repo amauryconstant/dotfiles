@@ -1,0 +1,22 @@
+-- hyprsplit: independent workspaces (1-10) per monitor — Lua library
+-- Source: https://github.com/cryeprecision/hyprsplit (fork, tracks Hyprland
+-- internals closer than upstream shezdy/hyprsplit — see
+-- _guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md).
+-- Cloned to ~/.config/hypr/hyprsplit by .chezmoiexternal.yaml; resolved via the
+-- package.path entry in hyprland.lua. Replaces the hyprpm C++ plugin at cutover.
+local hs = require("hyprsplit")
+hs.config({ num_workspaces = 10, persistent_workspaces = false })
+{{- if eq .chassisType "desktop" }}
+
+-- Desktop: workspaces 1-10 on the Gigabyte (DP), 11-20 on the BenQ (HDMI), not hyprsplit's
+-- default monitor-id order (HDMI is id 0). Matched by EDID description, so a port rename cannot
+-- flip it. Both are listed: the fork's auto-assign loop tests `monitor` instead of `m`, so an
+-- unlisted HDMI would land on 21-30. monitor_priority appends and hyprsplit survives
+-- `hyprctl reload`, so only fill an empty list or the second entry would remap the order.
+if #hs.monitor_priority_list == 0 then
+	hs.monitor_priority({
+		"GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 21411B000071",
+		"BNQ BenQ GW2765 W9F03010019",
+	})
+end
+{{- end }}
