@@ -3,11 +3,12 @@
 **Location**: `.scripts/` (repo utilities — never applied to the system)
 **Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
 
-Two scripts live here:
+Scripts that live here (the tables below cover the merge driver in detail):
 
 | Script | Role |
 |--------|------|
 | `template-merge-driver.sh` | Git merge driver that preserves `{{ }}` template syntax in `*.tmpl` files |
+| `firefox-profile-gate.sh` | Re-proves Firefox picker, window class and per-profile remoting against a throwaway profile root. Run after a Firefox major bump or a change to the EGL wrapper; record: `_research/FIREFOX_PROFILE_LAUNCH_BEHAVIOUR.md` |
 | `install-password-manager-and-encryption.sh` | chezmoi init bootstrap — invoked by `.chezmoi.yaml.tmpl` (`scriptEnv`/prompt) to install the password manager + age tooling before first apply |
 
 ---

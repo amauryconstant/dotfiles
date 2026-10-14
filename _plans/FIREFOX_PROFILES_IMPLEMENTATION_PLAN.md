@@ -300,7 +300,7 @@ Expected: `MOZ_LEGACY_PROFILES=1` and `1`. If either is empty, stop.
 
 - [x] **Step 4: The gate — picker, identity and remoting against a throwaway home (PASSED 2026-10-14, Firefox 157.0.1)**
 
-Appendix A was recorded on 153 under `StartWithLastProfile=1`; none of it covered `StartWithLastProfile=0`, window identity, or concurrent profiles on 157. This step proved all three on disposable data. Re-run it after a Firefox major bump or a wrapper change. Close your real Firefox first.
+Appendix A was recorded on 153 under `StartWithLastProfile=1`; none of it covered `StartWithLastProfile=0`, window identity, or concurrent profiles on 157. This step proved all three on disposable data. Re-run it after a Firefox major bump or a wrapper change with `.scripts/firefox-profile-gate.sh` (commands below are the manual form; record in `_research/FIREFOX_PROFILE_LAUNCH_BEHAVIOUR.md`). Close your real Firefox first.
 
 🚨 **Isolation takes more than `$HOME`.** The session exports `XDG_CONFIG_HOME`, and Firefox honours it before `$HOME`: the first attempt silently used the *real* profile root. Override `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` and `XDG_DATA_HOME`, and `env -u BASH_ENV` (the login shell's `BASH_ENV` file sources `$HOME/.config/shell/env`, which the throwaway home lacks). Symlink `$HOME/.local/lib` into the throwaway home, because the wrapper reads `PATCHED_LIB` from `$HOME` and otherwise drops to XWayland.
 
@@ -971,6 +971,13 @@ Recorded because several rows contradict the obvious reading of the docs, and th
 | `[Install<HASH>]` written by hand | Also works, but `HASH` is derived from the installation directory — machine/path specific, and unavailable on a fresh install. Rejected in favour of the env var. |
 | Profile-group SQLite | `Profiles` table is 7 columns (`id, path, name, avatar, themeId, themeFg, themeBg`). Display names live **only** here, which is what the retired migration script read. Not needed any more: the reinstall left no named profiles. |
 | 157.0.1, in situ (2026-10-14) | Without `MOZ_LEGACY_PROFILES=1` this machine got `aybu1fna.default-release-…` bound by `[Install4F96D1932A9F858E] Locked=1` and `installs.ini`, plus two stub profiles and two empty `Profile Groups/*.sqlite`. The dedicated-profile takeover still happens on 157. |
+| 157.0.1, class per backend (2026-10-14) | `--name X` sets the Hyprland class on native Wayland only; `--class X` sets it on XWayland only. Both flags together give `X` on both. Verified through the real EGL wrapper, `FIREFOX_BACKEND=x11` forcing the fallback. |
+| 157.0.1, remoting (2026-10-14) | Remoting routes by **profile**. `-P <Name> --new-tab URL` and `--profile <path> URL` hand off to that profile's running instance (no new parent process). A URL with **no** profile flag landed in the *wrong* profile. |
+| 157.0.1, `-P` matching (2026-10-14) | `-P` matches the `Name=` in `profiles.ini`, case-sensitively, never the directory. `-P alpha` against `Name=Alpha` opens a Profile Manager; `--name` still sets a class on that dialog, so a class check alone does not prove a profile started. |
+| 157.0.1, `StartWithLastProfile=0` (2026-10-14) | The classic Profile Manager appears on a bare launch, lists exactly the `profiles.ini` entries, preselects the `Default=1` one, and creates no `*.default-release`, `[Install]` section or `installs.ini`. |
+| Isolation trap (2026-10-14) | `XDG_CONFIG_HOME` (exported by the session) wins over `$HOME` for the profile root. A test that overrides only `$HOME` runs against the real profiles. |
+
+Full measurements and method: `_research/FIREFOX_PROFILE_LAUNCH_BEHAVIOUR.md`; re-run with `.scripts/firefox-profile-gate.sh`.
 
 ## Appendix B: The "Hybrid" Alternative (not implemented)
 
