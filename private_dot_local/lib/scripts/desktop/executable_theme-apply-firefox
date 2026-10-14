@@ -1,55 +1,37 @@
 #!/usr/bin/env sh
 
 # Script: theme-apply-firefox.sh
-# Purpose: Apply current dotfiles theme to Firefox via userChrome.css
+# Purpose: Apply current dotfiles theme to every Firefox profile via userChrome.css
 # Requirements: Arch Linux, Firefox
-# Note: Requires toolkit.legacyUserProfileCustomizations.stylesheets = true in about:config
+# Note: profiles set toolkit.legacyUserProfileCustomizations.stylesheets=true via managed user.js
 
-# Get current theme directory
 THEME_DIR="$HOME/.config/themes/current"
+[ -L "$THEME_DIR" ] || exit 0
 
-if [ ! -L "$THEME_DIR" ]; then
-    exit 0  # No current theme set, skip silently
-fi
-
-# Check if Firefox userChrome.css exists in theme
 USERCHROME_SOURCE="$THEME_DIR/firefox-userChrome.css"
+[ -f "$USERCHROME_SOURCE" ] || exit 0
 
-if [ ! -f "$USERCHROME_SOURCE" ]; then
-    exit 0  # Theme doesn't have Firefox support, skip
-fi
-
-# Find Firefox profile directory (check both standard and XDG locations)
-FIREFOX_DIR=""
+# XDG-first, then legacy fallback
 if [ -d "$HOME/.config/mozilla/firefox" ]; then
     FIREFOX_DIR="$HOME/.config/mozilla/firefox"
 elif [ -d "$HOME/.mozilla/firefox" ]; then
     FIREFOX_DIR="$HOME/.mozilla/firefox"
 else
-    exit 0  # Firefox not installed, skip
+    exit 0
 fi
 
-# Find default-release profile (most common)
-FIREFOX_PROFILE=$(find "$FIREFOX_DIR" -maxdepth 1 -type d -name "*.default-release" | head -1)
+# Symlink userChrome.css into every profile directory. The user.js/prefs.js test
+# distinguishes real profiles from siblings like "Crash Reports" / "Pending Pings".
+found=0
+for profile in "$FIREFOX_DIR"/*/; do
+    [ -d "$profile" ] || continue
+    if [ -f "${profile}user.js" ] || [ -f "${profile}prefs.js" ]; then
+        chrome_dir="${profile}chrome"
+        mkdir -p "$chrome_dir"
+        rm -f "$chrome_dir/userChrome.css"
+        ln -sf "$USERCHROME_SOURCE" "$chrome_dir/userChrome.css"
+        found=1
+    fi
+done
 
-# Fallback to any .default profile
-if [ -z "$FIREFOX_PROFILE" ]; then
-    FIREFOX_PROFILE=$(find "$FIREFOX_DIR" -maxdepth 1 -type d -name "*.default" | head -1)
-fi
-
-if [ -z "$FIREFOX_PROFILE" ] || [ ! -d "$FIREFOX_PROFILE" ]; then
-    exit 0  # No profile found, skip
-fi
-
-# Create chrome directory if needed
-CHROME_DIR="$FIREFOX_PROFILE/chrome"
-mkdir -p "$CHROME_DIR"
-
-# Symlink userChrome.css
-USERCHROME_TARGET="$CHROME_DIR/userChrome.css"
-
-# Remove existing file/symlink
-rm -f "$USERCHROME_TARGET"
-
-# Create symlink
-ln -sf "$USERCHROME_SOURCE" "$USERCHROME_TARGET"
+[ "$found" -eq 1 ] || exit 0

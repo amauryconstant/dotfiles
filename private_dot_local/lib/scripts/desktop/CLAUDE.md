@@ -21,16 +21,14 @@
 **Method**: CSS symlink injection via userChrome.css
 **Status**: ✅ Working
 
-**Manual Requirement** (one-time setup):
-1. Open Firefox
-2. Navigate to `about:config`
-3. Search: `toolkit.legacyUserProfileCustomizations.stylesheets`
-4. Set to: `true`
-5. Restart Firefox
+**No manual setup**: each managed profile's `user.js` sets
+`toolkit.legacyUserProfileCustomizations.stylesheets=true` (`.chezmoidata/firefox.yaml` `common_prefs`).
+Restart Firefox to see a theme change.
 
 **How it works**:
 - Theme files: `~/.config/themes/{variant}/firefox-userChrome.css` (one per theme)
-- Script creates symlink: `~/.mozilla/firefox/{profile}/chrome/userChrome.css` → `~/.config/themes/current/firefox-userChrome.css`
+- Script loops over every profile dir under `~/.config/mozilla/firefox/` (dirs holding `user.js` or `prefs.js`) and symlinks `<profile>/chrome/userChrome.css` → `~/.config/themes/current/firefox-userChrome.css`
+- Needs no chassis awareness; run it after the manage-profiles script has created the dirs, or it matches nothing and exits 0
 - Firefox restart required to see theme changes
 - All theme CSS files exist (Catppuccin, Rose Pine, Gruvbox, Solarized)
 

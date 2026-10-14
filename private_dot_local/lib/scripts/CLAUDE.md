@@ -118,10 +118,9 @@ fi
 **theme-apply-\* scripts** (each silently skips if its app is absent): `theme-apply-firefox`, `theme-apply-spotify`, `theme-apply-opencode`, `theme-apply-claude-code`, `theme-apply-gtk`, `theme-apply-qt`, `theme-apply-neovim`, `theme-apply-starship`. Each reads `~/.config/themes/current` itself and writes only to its own app, so they are independent and run in glob order. Details for a few:
 
 - `theme-apply-firefox` - Firefox userChrome.css theming
-  - Symlinks userChrome.css from `~/.config/themes/{variant}/`
-  - Finds Firefox profile dynamically
+  - Symlinks userChrome.css from `~/.config/themes/{variant}/` into EVERY profile dir under the XDG root
   - Creates chrome/ directory if needed
-  - Requires: `toolkit.legacyUserProfileCustomizations.stylesheets = true` in about:config
+  - Needs `toolkit.legacyUserProfileCustomizations.stylesheets = true`; the managed `user.js` sets it
 
 - `theme-apply-spotify` - Spotify theme integration
   - Maps theme to spicetify color scheme
