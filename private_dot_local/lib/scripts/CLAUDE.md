@@ -93,6 +93,8 @@ fi
   - Pattern: `launch-or-focus dolphin` or `launch-or-focus btop "ghostty -e btop"`
   - Algorithm: Query clients → Match class/title → Focus or launch
 
+- `firefox-open.tmpl` - Chooser behind `firefox.desktop`, `SUPER+W` and `$BROWSER`. A link goes to the last-focused `firefox-<id>` window's profile (else `firefox.default`); a plain launch asks via `quickshell-menu --json`. Always execs the EGL wrapper with `--name`/`--class firefox-<id> -P <Name>`. Data: `.chezmoidata/firefox.yaml`
+
 - `keybindings` - Keybinding data (`--json`) and fallback sheet (`Super+/`)
 
 **Display & Monitors**:

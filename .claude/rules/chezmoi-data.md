@@ -15,6 +15,7 @@
 |------|---------|-----------------|
 | `packages.yaml` | Package management (Arch + Flatpak) | `{{ .packages.* }}` |
 | `ai.yaml` | AI server host/port (llama-swap `--listen`) | `{{ .ai.server.* }}` |
+| `firefox.yaml` | Firefox profiles: per-profile chassis/identity/workspace, default, prefs | `{{ .firefox.* }}` |
 | `globals.yaml` | Global env vars (XDG, apps, boot, timeshift) | `{{ .globals.* }}` |
 | `services.yaml` | Service enablement (system services, user services, timers) | `{{ .services.* }}` |
 | `features.yaml` | Optional feature toggles (voxtype, restic) | `{{ .features.* }}` |
@@ -92,6 +93,8 @@ Verify with a throwaway source dir rather than the live one:
 .developer.shell          # Default shell (e.g. zsh)
 .developer.mise.enabled   # Boolean: enable mise setup
 .mise.modules.<name>.tools # Map tool -> mise [tools] value (string, list, or table)
+.firefox.profiles[].{id,name,chassis,identity,workspace,prefs}  # chassis filtering lives in the firefox_profiles include, not the data
+.firefox.default / .firefox.common_prefs / .firefox.profile_root
 ```
 
 Fonts are referenced as `.globals.terminalFont`/`.globals.guiFont` (not top-level `.terminalFont`).
@@ -106,6 +109,7 @@ Changes to data files trigger specific `run_onchange_*` scripts:
 |-----------|----------------|--------|
 | `packages.yaml` | `run_onchange_before_sync_packages.sh.tmpl` | BEFORE file application |
 | `firefox_policies` | `run_onchange_after_install_extensions.sh.tmpl` | AFTER file application |
+| `firefox` + `.chassisType` | `run_onchange_after_manage_firefox_profiles.sh.tmpl` | AFTER file application |
 | `globals.timeshift` | `run_onchange_after_configure_timeshift_retention.sh.tmpl` | AFTER file application |
 | `mise.yaml` | `run_onchange_after_sync_mise_tools.sh.tmpl` | AFTER file application |
 

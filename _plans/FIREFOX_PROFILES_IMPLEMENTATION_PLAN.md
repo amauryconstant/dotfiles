@@ -10,6 +10,8 @@
 >
 > **What changed from the 2026-10-10 version:** the legacy-tree migration script is gone (Task 3 is now a few manual commands); profiles are chassis-gated; each profile gets its own window identity, Hyprland workspace and theme-coloured border; a link/launch chooser (`firefox-open`) becomes the `firefox.desktop` entry point; MerciApp is blocked (Task 0).
 
+> **Progress (2026-10-14, later): Tasks 4–7 and 9 are WRITTEN AND COMMITTED but NOT APPLIED.** Only Task 3 (manual adoption, Firefox closed) and the applies remain, then the Task 8 human gate. Apply order: Task 3 first, then `chezmoi diff` review, then apply. An apply before Task 3 burns Task 4's run_onchange interlock and sends links to `-P Work` before that profile exists. Additions beyond the original draft, all committed: `SUPER+W` and `$BROWSER` (`shell/login.tmpl`) go through `firefox-open`; `session-save` treats `firefox-<id>` windows as Firefox (one saved window per profile, relaunched via `gtk-launch firefox-profile-<id>`); the workspace is placed by a `window.open` handler, not a static rule (see Task 7).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Manage Firefox profiles declaratively from a single chezmoi data file, targeting Firefox's XDG profile location, with per-profile `user.js`, a generated `profiles.ini`, per-profile theme `userChrome.css`, per-profile `.desktop` launchers, a chooser that routes links and plain launches, and per-profile Hyprland identity (workspace + border colour).
@@ -748,7 +750,9 @@ grep -E '^(DEFAULT|IDS|ROWS)=' "$TMPDIR/firefox-open.sh"
 ```
 Expected: clean lint; `DEFAULT="work"`, `IDS="work ringstone"`, and `ROWS` a JSON array of `{"payload":…,"title":…}` objects.
 
-- [ ] **Step 3: Route `firefox.desktop` through it**
+- [x] **Step 3: Route `firefox.desktop` through it** — committed. The pass uses the script's real variables (`entry`, `candidate`) and runs before the `cmp`, so a change is detected. Also wired in this commit: `SUPER+W` (`conf/bindings/applications.{lua,conf}.tmpl`) and `$BROWSER` (`shell/login.tmpl`, `zsh/dot_zstyles` left alone: Zephyr's `environment` plugin ignores its `BROWSER` zstyle off macOS). Known limit: when egl-wayland2 is absent the script deletes the `firefox.desktop` override, so links then skip `firefox-open`; moot while `nvidia-utils` pulls egl-wayland2.
+
+(The original step text follows.)
 
 `run_onchange_after_configure_firefox_egl_workaround.sh.tmpl:35-37` currently rewrites **every** `Exec=` in the system entry — main `%u`, `new-window`, `new-private-window` and `open-profile-manager` — to the wrapper with one `sed`. Read the script first, keep its version-hash trigger, then after that `sed`, **for `firefox` only** (not `firefox-esr`), add a second pass that redirects every `Exec=` except `--ProfileManager`, guarded so a missing chooser cannot break the entry:
 
@@ -792,38 +796,12 @@ Gives each profile's windows its own workspace (focus follows) and an active-bor
 
 `conf.d` is loaded by `require_all.files` with bare names (`hyprland.lua.tmpl:58-60`). The Lua config is live, so there is no `.conf` twin.
 
-- [ ] **Step 1: Write the template** (tabs, stylua defaults)
+- [x] **Step 1: Write the template** (tabs, stylua defaults) — committed as `private_dot_config/hypr/conf.d/firefox-profiles.lua.tmpl`
 
-```lua
--- Per-profile Firefox windows: workspace + identity border.
--- Generated from .chezmoidata/firefox.yaml. Colours are read from the current theme's
--- colors.sh at config load; theme-switcher runs `hyprctl reload`, so they follow switches.
-{{- $ff := includeTemplate "firefox_profiles" . | fromJson }}
+Two parts, per chassis profile:
 
-local function identity(n)
-	local f = io.open(os.getenv("HOME") .. "/.config/themes/current/colors.sh", "r")
-	if not f then
-		return nil
-	end
-	local text = f:read("*a")
-	f:close()
-	local hex = text:match("IDENTITY_" .. n .. '="#(%x%x%x%x%x%x)"')
-	return hex and ("rgba(" .. hex .. "ff)") or nil
-end
-
-{{ range .firefox.profiles }}{{ if has .id $ff.ids }}
-do
-	local rule = { workspace = "{{ .workspace }}" }
-	local color = identity({{ .identity }})
-	if color then
-		rule.border_color = color
-	end
-	o.window("^firefox-{{ .id }}$", rule)
-end
-{{ end }}{{ end }}
-```
-
-The class match is **regex (RE2)**, not a Lua pattern: a hyphen needs no escape, and `%-` would match nothing. Colours are 8 hex digits (`rrggbbaa`) — a 10-digit value silently truncates (`.claude/rules/hyprland-lua.md`). The rule is deliberately not `silent`, so focus follows the window to its workspace.
+1. `o.window("^firefox-<id>$", { border_color = <rgba from IDENTITY_n> })`. The colour is read from `~/.config/themes/current/colors.sh` at config load; 8 hex digits (`rrggbbff`). The class is a regex (RE2), so a hyphen needs no escape. `border_color` is a valid rule field (`Hyprland --verify-config` accepts it and rejects an unknown field with `unknown field`); whether it actually paints the active border is checked live in Task 8.
+2. A `window.open` handler that moves the window to its **local** workspace on the **focused monitor** through `hs.dsp.window.move({ workspace = n, follow = true, window = "address:…" })()`. A static `workspace = "2"` rule would name global workspace 2, and under hyprsplit that is always the first monitor's (HDMI-A-1 owns 1–10, DP-1 owns 11–20 on this machine). The handler runs once per address and forgets it on close/destroy. It mirrors `conf/oauth-popups.lua`'s guards: `w`, `w.address`, `w.class` are checked before use.
 
 - [ ] **Step 2: Render and lint**
 
