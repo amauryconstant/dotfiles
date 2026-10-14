@@ -46,6 +46,8 @@ Firefox's SQLite-backed profile selector (`SelectableProfileService`) is disable
 - **`MOZ_LEGACY_PROFILES=1` is mandatory — and its purpose is broader than `Default=1`.** Without it Firefox applies per-install dedicated profiles: it auto-creates its own `*.default-release`, binds it with an `[Install<HASH>]` section, writes `installs.ini`, and leaves the managed profiles unused. That bypasses `Default=1` and the Profile Manager alike. This machine currently shows exactly that state. Verified both ways on 153.0.1; the unmanaged state is observed on 157.0.1.
 - **Every launch path goes through the EGL wrapper.** `~/.local/bin/firefox` (`private_dot_local/bin/executable_firefox`) is mandatory on this NVIDIA machine: bare `/usr/lib/firefox/firefox` starts but never maps a window. Anything this plan generates that launches Firefox must name the wrapper by absolute path — the per-profile `.desktop` files and `firefox-open`. The wrapper falls back to **XWayland** when the patched egl-wayland2 build is missing (fresh laptop before the build script runs); window identity must survive that (Task 2 gate).
 - **The wrapper resolves `PATCHED_LIB` from `$HOME`.** Any test that overrides `$HOME` must symlink `$HOME/.local/lib` into the throwaway home, or the wrapper silently drops to XWayland and the test measures the wrong backend.
+- **Isolation needs the XDG variables too.** The session exports `XDG_CONFIG_HOME`, which Firefox honours before `$HOME`; overriding `$HOME` alone silently runs against the real profile root (it happened). Override `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` and `XDG_DATA_HOME`, and `env -u BASH_ENV`.
+- **Window identity is two flags, and remoting needs a profile (gate, 2026-10-14).** Every Firefox launch this plan generates passes `--name firefox-<id> --class firefox-<id> -P "<Name>"`. `--name` sets the class on Wayland only and `--class` on XWayland only; remoting routes by *profile*, so a launch without a profile flag lands in the wrong instance. `-P` matches the `Name=` in `profiles.ini` (case-sensitive), never the directory: a miss silently opens a Profile Manager. Profile `name`s must be single words.
 - **Session env is uwsm, not Hyprland.** `MOZ_LEGACY_PROFILES=1` goes in `private_dot_config/uwsm/env.tmpl`. Anything set via `hl.env()` never reaches `quickshell.service` or the apps its launcher spawns. `hypr/conf/environment.lua` is a deliberately empty stub — do not touch it.
 - **Classic `profiles.ini` only:** no `[Install…]` section, no `StoreID`. Profile identity is `IsRelative=1` + `Path=<id>`.
 - **New SQLite selector disabled:** every profile's `user.js` sets `browser.profiles.enabled=false`. Switching is via `firefox-open`, `about:profiles`, `firefox -P <id>`, or the generated launchers.
@@ -77,7 +79,7 @@ Firefox's SQLite-backed profile selector (`SelectableProfileService`) is disable
 | `private_dot_config/hypr/conf.d/firefox-profiles.lua.tmpl` | Per-profile workspace + identity border rules | Create |
 | `.claude/rules/chezmoi-data.md`, `.claude/rules/chezmoi-templates.md` | Document the data file and the include | Modify |
 
-**Ordering:** `0 → 1 ∥ 2(gate) → 3 → 4 → 5 → 6 → 7 → 8 → 9`. Tasks 6 and 7 depend on the Task 2 `--name`/`--class` result.
+**Ordering:** `0 → 1 ∥ 2(gate) → 3 → 4 → 5 → 6 → 7 → 8 → 9`. Tasks 6 and 7 depend on the Task 2 gate result (passed 2026-10-14: both flags, `-P "<Name>"`).
 
 **Rollback (after Task 3):**
 
@@ -296,15 +298,18 @@ hyprctl dispatch exec 'sh -c "echo $MOZ_LEGACY_PROFILES > /tmp/mlp.txt"'; sleep 
 ```
 Expected: `MOZ_LEGACY_PROFILES=1` and `1`. If either is empty, stop.
 
-- [ ] **Step 4: The gate — prove picker, identity and remoting against a throwaway `$HOME`**
+- [x] **Step 4: The gate — picker, identity and remoting against a throwaway home (PASSED 2026-10-14, Firefox 157.0.1)**
 
-Appendix A was recorded on 153 under `StartWithLastProfile=1`; none of it covers `StartWithLastProfile=0`, `--name`, or concurrent profiles on 157. Prove all of it on disposable data. Close your real Firefox first.
+Appendix A was recorded on 153 under `StartWithLastProfile=1`; none of it covered `StartWithLastProfile=0`, window identity, or concurrent profiles on 157. This step proved all three on disposable data. Re-run it after a Firefox major bump or a wrapper change. Close your real Firefox first.
+
+🚨 **Isolation takes more than `$HOME`.** The session exports `XDG_CONFIG_HOME`, and Firefox honours it before `$HOME`: the first attempt silently used the *real* profile root. Override `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` and `XDG_DATA_HOME`, and `env -u BASH_ENV` (the login shell's `BASH_ENV` file sources `$HOME/.config/shell/env`, which the throwaway home lacks). Symlink `$HOME/.local/lib` into the throwaway home, because the wrapper reads `PATCHED_LIB` from `$HOME` and otherwise drops to XWayland.
+
+🚨 **`-P` matches the profile `Name=`, case-sensitively, never the directory.** `-P alpha` against `Name=Alpha` silently opens a *Profile Manager*, and `--name` still sets a class on that dialog, so a class check alone proves nothing. Always confirm the window's title is not "Choose User Profile" and the profile dir holds files.
 
 ```bash
-TESTHOME="$(mktemp -d)"
-FFROOT="$TESTHOME/.config/mozilla/firefox"
+TESTHOME=/tmp/ff-gate-home; FFROOT="$TESTHOME/.config/mozilla/firefox"
 mkdir -p "$FFROOT/alpha" "$FFROOT/beta" "$TESTHOME/.local"
-ln -s "$HOME/.local/lib" "$TESTHOME/.local/lib"     # the wrapper reads PATCHED_LIB from $HOME
+ln -s "$HOME/.local/lib" "$TESTHOME/.local/lib"
 cat > "$FFROOT/profiles.ini" <<'EOF'
 [General]
 StartWithLastProfile=0
@@ -321,48 +326,35 @@ Name=Beta
 IsRelative=1
 Path=beta
 EOF
-FF="env HOME=$TESTHOME MOZ_LEGACY_PROFILES=1 $HOME/.local/bin/firefox"
+FF() { env -u BASH_ENV HOME="$TESTHOME" XDG_CONFIG_HOME="$TESTHOME/.config" \
+    XDG_CACHE_HOME="$TESTHOME/.cache" XDG_DATA_HOME="$TESTHOME/.local/share" \
+    MOZ_LEGACY_PROFILES=1 "$HOME/.local/bin/firefox" "$@"; }
 ```
 
-**A. Picker and preselection** (needs `-no-remote`):
+- **A. Picker** — `FF -no-remote`: Profile Manager lists exactly Alpha and Beta, Alpha preselected; afterwards no `*.default-release`, no `[Install` line, no `installs.ini`.
+- **B. Identity and remoting** (no `-no-remote`): launch `FF --name firefox-alpha --class firefox-alpha -P Alpha about:blank`, then the same for beta; `hyprctl clients -j` shows classes `firefox-alpha` / `firefox-beta` and titles that are not "Choose User Profile". Then `FF --name firefox-beta --class firefox-beta -P Beta --new-tab https://example.org`: the tab opens in beta's existing window and the parent-process count stays at 2.
+- **C. Repeat B with `FIREFOX_BACKEND=x11`** (the wrapper's XWayland fallback).
+- Clean up by killing only processes whose environment holds `XDG_CONFIG_HOME=$TESTHOME/.config` (`pkill -f "$TESTHOME"` misses the instances, whose command lines do not contain the path), then remove `$TESTHOME`.
 
-```bash
-$FF -no-remote
-```
-Expected: the classic Profile Manager lists exactly `Alpha` and `Beta`, **`Alpha` preselected**. Close it without launching, then:
+**Results recorded 2026-10-14:**
 
-```bash
-ls -1 "$FFROOT"                                 # alpha beta profiles.ini — no *.default-release
-grep -c '^\[Install' "$FFROOT/profiles.ini"     # 0
-test ! -e "$FFROOT/installs.ini" && echo "no installs.ini — OK"
-```
-
-**B. Identity and remoting, native Wayland** (no `-no-remote` here — remoting is what is being tested):
-
-```bash
-$FF --name firefox-alpha -P alpha about:blank &
-sleep 8; hyprctl clients -j | jaq -r '.[] | select(.class|startswith("firefox")) | .class'    # expect firefox-alpha
-$FF --name firefox-beta -P beta about:blank &
-sleep 8; pgrep -fc 'firefox.*-P (alpha|beta)'                                                   # two separate main processes
-$FF --name firefox-beta -P beta https://example.org
-```
-Expected: the `example.org` tab appears in **beta's** window (and not alpha's), with no third process.
-
-**C. The same B sequence with `FIREFOX_BACKEND=x11`** (the wrapper's fallback). On X11 Hyprland reports WM_CLASS `res_class`, which `--name` may not set.
-
-**D. If `class` is not `firefox-alpha` anywhere above**, repeat B/C with `--class firefox-alpha` in place of `--name`. Pick whichever flag yields `firefox-alpha` on **both** backends and **also** keeps remoting separated; use it in every later task as `<flag>`.
-
-Clean up: `pkill -f "$TESTHOME"; rm -rf "$TESTHOME"`.
-
-**Record the outcome — later tasks branch on it:**
-
-| Result | Action |
+| Check | Result |
 |---|---|
-| A picks `Alpha`, B/C/D give per-profile class and routed remoting | Proceed as written. |
-| A: picker appears but preselection is arbitrary | `Default=1` is inert under `StartWithLastProfile=0`. Drop only the `Default=1` emission (Task 4) and the preselection assertion (Task 8). **Keep `default:`**: `firefox-open` still uses it. |
-| A: no picker, or a stray `*.default-release` / `[Install…]` / `installs.ini` | `MOZ_LEGACY_PROFILES=1` is not reaching Firefox. Stop; revisit Step 3. |
-| B: the beta URL lands in alpha, or beta never starts a second process | The flag does not separate remoting. Try adding `--new-instance`; if that fails, drop per-profile identity: one shared `firefox` class, and **Tasks 6 (last-focused lookup) and 7 go away** — the chooser then needs another way to find the active profile. |
-| Class correct on Wayland but wrong on `FIREFOX_BACKEND=x11` with both flags | The laptop's first boot would silently route every link to `default` and the Hyprland rules would not fire. Fix the wrapper fallback first, or accept identity only once the egl build exists. |
+| A: picker, `Default=1` preselect under `StartWithLastProfile=0` | ✅ Alpha preselected, only the two entries; no stray profile, `[Install]` or `installs.ini` |
+| Wayland, `--name` alone | class `firefox-<id>` ✅ |
+| Wayland, `--class` alone | class stays `firefox` ❌ |
+| XWayland, `--name` alone | class stays `firefox` ❌ |
+| XWayland, `--class` alone | class `firefox-<id>` ✅ |
+| **Both flags, either backend** | class `firefox-<id>` ✅ |
+| Remoting, `-P <Name> --new-tab URL` | hands off to that profile's running instance, no new process ✅ (both backends) |
+| Remoting, `--profile <path> URL` | ✅ (Wayland) |
+| Remoting, URL with **no profile flag** | ❌ lands in the *wrong* profile (alpha) |
+| Remoting, `-P` with a name that does not match | ❌ opens a Profile Manager and a second parent process |
+
+**Decisions taken from the results — every later task uses them:**
+1. Identity is **both** flags: `--name firefox-<id> --class firefox-<id>`. Neither alone covers Wayland and XWayland, and the XWayland fallback is exactly what a fresh laptop runs before the EGL build exists.
+2. Remoting routes by **profile**, not by `--name`. Every launch must name its profile: `-P "<Name>"` with the exact `Name=` from `profiles.ini` (proven on both backends). `profiles.ini` `Name=` therefore must be a single word with no quoting hazards, and the launchers and `firefox-open` pass `.name`, not `.id`.
+3. `Default=1` works, so Task 4 keeps it.
 
 - [ ] **Step 5: Commit**
 
@@ -421,7 +413,7 @@ Creates profile directories, `user.js`, `profiles.ini` and `.desktop` launchers 
 - Create: `.chezmoiscripts/run_onchange_after_manage_firefox_profiles.sh.tmpl`
 
 **Interfaces:**
-- Consumes: `.firefox.*` and the include (Task 1); `MOZ_LEGACY_PROFILES=1` (Task 2); the adopted `work` dir (Task 3); `<flag>` = `--name` or `--class` from the Task 2 gate.
+- Consumes: `.firefox.*` and the include (Task 1); `MOZ_LEGACY_PROFILES=1` (Task 2); the adopted `work` dir (Task 3); the identity flags decided by the Task 2 gate (`--name` **and** `--class`, plus `-P "<Name>"`).
 - Produces: `~/.config/mozilla/firefox/<id>/user.js`, `~/.config/mozilla/firefox/profiles.ini`, `~/.local/share/applications/firefox-profile-<id>.desktop` — for the chassis's ids only.
 
 - [ ] **Step 1: Write the script template**
@@ -513,8 +505,10 @@ PROFILES_EOF
 # --- Per-profile .desktop launchers (pruned + regenerated) -----------------
 # Exec names the EGL wrapper by ABSOLUTE path (see Global Constraints) and carries
 # MOZ_LEGACY_PROFILES inline so a launcher works outside a uwsm session too.
-# <flag> is --name or --class: the Task 2 gate decides. StartupWMClass matches it,
-# so the dock and Hyprland see one app per profile.
+# --name and --class are BOTH needed (Task 2 gate): --name sets the Wayland app_id,
+# --class the XWayland WM_CLASS the wrapper falls back to. -P takes the profiles.ini
+# Name= (exact, case-sensitive) so a launch hands off to that profile's running instance.
+# StartupWMClass matches, so the dock and Hyprland see one app per profile.
 # The prune glob is namespaced 'firefox-profile-*' so it never touches the
 # firefox.desktop override that configure_firefox_egl_workaround owns.
 {{ includeTemplate "log_step" "Generating per-profile launchers..." }}
@@ -526,7 +520,7 @@ Version=1.0
 Type=Application
 Name=Firefox — {{ .name }}
 Comment=Browse the Web ({{ .name }} profile)
-Exec=env MOZ_LEGACY_PROFILES=1 {{ $.chezmoi.homeDir }}/.local/bin/firefox --name firefox-{{ .id }} -P {{ .id }} %U
+Exec=env MOZ_LEGACY_PROFILES=1 {{ $.chezmoi.homeDir }}/.local/bin/firefox --name firefox-{{ .id }} --class firefox-{{ .id }} -P {{ .name }} %U
 Icon=firefox
 Terminal=false
 Categories=Network;WebBrowser;
@@ -537,7 +531,6 @@ DESKTOP_EOF
 {{ includeTemplate "log_complete" "Firefox profiles managed" }}
 ```
 
-Replace `--name` with `--class` throughout if Task 2 Step 4 D chose it.
 
 - [ ] **Step 2: Render and inspect (desktop)**
 
@@ -666,7 +659,7 @@ git commit -m "Retarget theme-apply-firefox to XDG and all managed profiles"
 
 ### Task 6: `firefox-open` — the link and plain-launch chooser
 
-Makes `firefox.desktop` (and therefore `xdg-open`, the Quickshell launcher and every web link) profile-aware. Depends on the Task 2 `<flag>` result.
+Makes `firefox.desktop` (and therefore `xdg-open`, the Quickshell launcher and every web link) profile-aware. Uses the identity flags and `-P "<Name>"` decided by the Task 2 gate.
 
 **Files:**
 - Create: `private_dot_local/lib/scripts/desktop/executable_firefox-open.tmpl`
@@ -720,6 +713,15 @@ valid_id() {
     return 1
 }
 
+# -P takes the profiles.ini Name=, not the directory id
+name_of() {
+    case "$1" in
+{{- range .firefox.profiles }}{{ if has .id $ff.ids }}
+        {{ .id }}) echo "{{ .name }}" ;;
+{{- end }}{{ end }}
+    esac
+}
+
 if [ "$has_target" -eq 1 ]; then
     # Lowest focusHistoryID = most recently focused window
     id="$(hyprctl clients -j 2>/dev/null |
@@ -732,10 +734,10 @@ else
     valid_id "$id" || exit 1
 fi
 
-exec "$FIREFOX" --name "firefox-$id" -P "$id" "$@"
+exec "$FIREFOX" --name "firefox-$id" --class "firefox-$id" -P "$(name_of "$id")" "$@"
 ```
 
-Replace `--name` with `--class` if the gate chose it. The `[a-zA-Z]*:*` glob approximates the `^[a-z][a-z0-9+.-]*:` URL test; it also matches a bare `host:port`, which is acceptable.
+`name_of` maps an id to its `profiles.ini` `Name=`: `-P` takes the name, and a miss opens a Profile Manager. The `[a-zA-Z]*:*` glob approximates the `^[a-z][a-z0-9+.-]*:` URL test; it also matches a bare `host:port`, which is acceptable.
 
 - [ ] **Step 2: Render and lint**
 
@@ -764,7 +766,7 @@ fi
 chezmoi apply ~/.local/lib/scripts/desktop/firefox-open
 grep -n '^Exec' ~/.local/share/applications/firefox.desktop
 ```
-Expected after the EGL script runs: three `Exec=` lines naming `firefox-open`, one (`--ProfileManager`) naming `.local/bin/firefox`. Dry-run the logic without launching: `sh -x ~/.local/lib/scripts/desktop/firefox-open https://example.org` with Firefox closed should `exec` the wrapper with `--name firefox-work -P work`.
+Expected after the EGL script runs: three `Exec=` lines naming `firefox-open`, one (`--ProfileManager`) naming `.local/bin/firefox`. Dry-run the logic without launching: `sh -x ~/.local/lib/scripts/desktop/firefox-open https://example.org` with Firefox closed should `exec` the wrapper with `--name firefox-work --class firefox-work -P Work`.
 
 - [ ] **Step 5: Commit**
 
@@ -956,9 +958,9 @@ git commit -m "Document firefox.yaml, the firefox_profiles include and firefox-o
 
 Recorded because several rows contradict the obvious reading of the docs, and the plan depends on them.
 
-> **⚠ Version gap.** The first six rows were recorded on Firefox **153.0.1**. The installed Firefox on 2026-10-14 is **157.0.1**. Only the last row is an observation on 157. Task 2 Step 4 re-proves the load-bearing ones before any real data moves.
+> **⚠ Version gap.** The first six rows were recorded on Firefox **153.0.1**; the installed Firefox on 2026-10-14 is **157.0.1**. The last three rows were observed on 157. The Task 2 gate re-proved picker, preselection, identity and remoting on 157 (see its results table).
 >
-> **⚠ Coverage gap.** Every 153 row was recorded under `StartWithLastProfile=1`. The plan ships `StartWithLastProfile=0`; picker behaviour, `Default=1` as preselection, `--name` window identity and per-profile remoting are *inferred*, not verified, until Task 2 Step 4.
+> **Coverage.** Every 153 row was recorded under `StartWithLastProfile=1`. The plan ships `StartWithLastProfile=0`; the Task 2 gate verified on 157 that the picker appears, `Default=1` preselects, and window identity and per-profile remoting work (both backends).
 
 | Claim | Result |
 |---|---|
@@ -1007,11 +1009,11 @@ If this fallback is ever chosen, it is a separate spec/plan cycle: it changes Ta
 
 **Open items carried into execution** (each has a cheap test and a recorded fallback):
 1. Whether `Default=1` preselects under `StartWithLastProfile=0` (Task 2 Step 4 A).
-2. Whether `--name` (or `--class`) separates window identity **and** remoting on both Wayland and the XWayland fallback (Task 2 Step 4 B–D). If not, Tasks 6 (last-focused lookup) and 7 collapse.
+2. ~~Whether `--name`/`--class` separate window identity and remoting on both backends~~ **Resolved 2026-10-14**: both flags together, plus `-P "<Name>"` (Task 2 gate).
 3. The Hyprland rule field names and the workspace semantics under hyprsplit (Task 7 Step 3).
 4. Whether `blocked` uninstalls an already-installed extension (Task 0 Step 3).
 
-**Placeholder scan:** no `TBD`/`TODO`. `--name` vs `--class` is a recorded decision point with an explicit rule, not a placeholder; `$entry`/`$target` in Task 6 Step 3 are named after variables the existing script defines, which that step tells the implementer to read first.
+**Placeholder scan:** no `TBD`/`TODO`. `$entry`/`$target` in Task 6 Step 3 are named after variables the existing script defines, which that step tells the implementer to read first.
 
 **Type/name consistency:** `.firefox.profile_root`, `.default`, `.common_prefs[].{key,value}`, `.profiles[].{id,name,chassis,identity,workspace,prefs}` are used identically in Tasks 1, 4, 6, 7; the include returns `{default, ids}` and every consumer reads `$ff.ids` / `$ff.default` and re-reads profile objects from `.firefox.profiles`; ids `work`/`leisure`/`ringstone` and the `firefox-<id>` identity are consistent across data, launchers, chooser, Hyprland rules and the theme loop.
 
