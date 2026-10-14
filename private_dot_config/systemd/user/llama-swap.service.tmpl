@@ -22,7 +22,8 @@ RestartSec=5
 # (hides /dev/nvidia*, breaks CUDA).
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=%h/.local/share/models
+# "-" ignores a missing dir: it only exists after `llama-models pull`, and systemd fails 226/NAMESPACE without it.
+ReadWritePaths=-%h/.local/share/models
 PrivateTmp=true
 
 [Install]
