@@ -84,6 +84,13 @@ get_launch_command() {
         "firefox")
             echo "firefox"
             ;;
+        "firefox-esr")
+            echo "firefox-esr"
+            ;;
+        # Per-profile windows (class firefox-<id>): the generated launcher names the profile
+        "firefox-"*)
+            echo "gtk-launch firefox-profile-${class_lower#firefox-}"
+            ;;
         "chromium"|"chromium-browser")
             echo "chromium"
             ;;
@@ -328,7 +335,7 @@ save_session() {
             sort_by(.workspace.id) |
             group_by(.class) |
             map(
-                if ($browserSet[.[0].class | ascii_downcase] // false) then [.[0]]
+                if ($browserSet[.[0].class | ascii_downcase | if startswith("firefox-") and . != "firefox-esr" then "firefox" else . end] // false) then [.[0]]
                 else .
                 end
             ) |
@@ -358,7 +365,7 @@ save_session() {
         ($browsers | map({key: ., value: true}) | from_entries) as $browserSet |
         [.[] | select([.class] | inside($denylist) | not)] |
         sort_by(.workspace.id) | group_by(.class) |
-        map(select($browserSet[.[0].class | ascii_downcase] // false) | .[1:] | .[]) |
+        map(select($browserSet[.[0].class | ascii_downcase | if startswith("firefox-") and . != "firefox-esr" then "firefox" else . end] // false) | .[1:] | .[]) |
         .[] | "  class=\(.class) ws=\(.workspace.id) title=\"\(.title[0:40] // "")\" (browser-deduped)"
     ' 2>/dev/null | while IFS= read -r line; do
         log_debug "session-save:$line"
