@@ -1,0 +1,58 @@
+# Firefox multi-profile configuration — single source of truth.
+# Consumed by: .chezmoiscripts/run_onchange_after_manage_firefox_profiles.sh.tmpl
+#              private_dot_local/lib/scripts/desktop/executable_firefox-open.tmpl
+#              private_dot_config/hypr/conf.d/firefox-profiles.lua.tmpl
+# Chassis filtering happens in those consumers via .chezmoitemplates/firefox_profiles;
+# data files cannot be templated.
+#
+# Profile identity is a classic profiles.ini (IsRelative=1 + Path=<id>).
+# Requires MOZ_LEGACY_PROFILES=1 in the session environment, otherwise Firefox
+# auto-creates and auto-binds a per-install dedicated profile.
+# Firefox's SQLite avatar selector is disabled (browser.profiles.enabled=false).
+# Addons remain global via firefox_policies.json.
+
+firefox:
+  # XDG profile root, relative to $HOME.
+  profile_root: ".config/mozilla/firefox"
+
+  # Marked Default=1 in profiles.ini (preselected by the bare `firefox` Profile Manager)
+  # AND the profile `firefox-open` falls back to when no Firefox window exists.
+  # Must be in the chassis set of every chassis (the include fails the render otherwise).
+  default: work
+
+  # Applied to EVERY profile's user.js. String values are quoted; bool/number raw.
+  common_prefs:
+    - key: "browser.profiles.enabled" # disable new SQLite selector
+      value: false
+    - key: "toolkit.legacyUserProfileCustomizations.stylesheets" # allow theme userChrome.css
+      value: true
+    - key: "browser.shell.checkDefaultBrowser"
+      value: false
+    - key: "browser.aboutConfig.showWarning"
+      value: false
+
+  # id         directory name AND window identity (firefox-<id>)
+  # name       shown in profiles.ini and the chooser menu
+  # chassis    which machines get this profile (.chassisType values)
+  # identity   theme IDENTITY_<n> colour (1..5) for the active border
+  # workspace  Hyprland workspace the window opens on (focus follows)
+  # prefs      per-profile {key,value}, extends common_prefs (empty for now)
+  profiles:
+    - id: work
+      name: Work
+      chassis: [desktop, laptop]
+      identity: 1
+      workspace: 2
+      prefs: []
+    - id: leisure
+      name: Leisure
+      chassis: [laptop]
+      identity: 2
+      workspace: 3
+      prefs: []
+    - id: ringstone
+      name: Ringstone
+      chassis: [desktop, laptop]
+      identity: 3
+      workspace: 4
+      prefs: []

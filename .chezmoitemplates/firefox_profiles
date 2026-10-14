@@ -1,0 +1,13 @@
+{{- /* Chassis-filtered Firefox profile ids. Call: includeTemplate "firefox_profiles" . | fromJson */ -}}
+{{- $ids := list -}}
+{{- $hasDefault := false -}}
+{{- range .firefox.profiles -}}
+{{-   if has $.chassisType .chassis -}}
+{{-     $ids = append $ids .id -}}
+{{-     if eq .id $.firefox.default -}}{{- $hasDefault = true -}}{{- end -}}
+{{-   end -}}
+{{- end -}}
+{{- if not $hasDefault -}}
+{{-   fail (printf "firefox.default %q is not in the %s profile set" .firefox.default .chassisType) -}}
+{{- end -}}
+{{- dict "default" .firefox.default "ids" $ids | toJson -}}
