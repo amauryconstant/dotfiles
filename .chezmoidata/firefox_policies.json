@@ -18,9 +18,7 @@
                     "default_area": "navbar"
                 },
                 "ffwebextension@merciappcom": {
-                    "installation_mode": "normal_installed",
-                    "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ffwebextension@merciappcom/latest.xpi",
-                    "default_area": "navbar"
+                    "installation_mode": "blocked"
                 },
                 "addon@karakeep.app": {
                     "installation_mode": "normal_installed",
