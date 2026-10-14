@@ -1,0 +1,53 @@
+-- Per-profile Firefox windows: identity border + workspace on the focused monitor.
+-- Generated from .chezmoidata/firefox.yaml. Colours are read from the current theme's
+-- colors.sh at config load; theme-switcher runs `hyprctl reload`, so they follow switches.
+{{- $ff := includeTemplate "firefox_profiles" . | fromJson }}
+local hs = require("hyprsplit")
+
+local function identity(n)
+	local f = io.open(os.getenv("HOME") .. "/.config/themes/current/colors.sh", "r")
+	if not f then
+		return nil
+	end
+	local text = f:read("*a")
+	f:close()
+	local hex = text:match("IDENTITY_" .. n .. '="#(%x%x%x%x%x%x)"')
+	return hex and ("rgba(" .. hex .. "ff)") or nil
+end
+
+-- class -> local workspace number (1-10 per monitor under hyprsplit)
+local WORKSPACE = {}
+{{ range .firefox.profiles }}{{ if has .id $ff.ids }}
+WORKSPACE["firefox-{{ .id }}"] = {{ .workspace }}
+do
+	local color = identity({{ .identity }})
+	if color then
+		-- The class is matched as a regex (RE2), not a Lua pattern: a hyphen needs no escape.
+		o.window("^firefox-{{ .id }}$", { border_color = color })
+	end
+end
+{{- end }}{{ end }}
+
+-- A static `workspace` rule would name a GLOBAL workspace, which under hyprsplit is always
+-- the first monitor's. Resolve the number against the focused monitor instead, once per window.
+local placed = {}
+
+hl.on("window.open", function(w)
+	if not (w and w.address and w.class) then
+		return
+	end
+	local n = WORKSPACE[w.class]
+	if not n or placed[w.address] then
+		return
+	end
+	placed[w.address] = true
+	hs.dsp.window.move({ workspace = n, follow = true, window = "address:" .. w.address })()
+end)
+
+local function forget(w)
+	if w and w.address then
+		placed[w.address] = nil
+	end
+end
+hl.on("window.close", forget)
+hl.on("window.destroy", forget)
