@@ -24,7 +24,9 @@ mise:
       description: "Coding agents and the workspace that runs them"
       tools:
         claude-code: latest # Anthropic coding agent; sandbox deps bubblewrap + socat live in packages.yaml
-        opencode: latest # Open-source coding agent
+        opencode: # Open-source coding agent; bun skips its postinstall, which swaps the stub for the platform binary
+          version: latest
+          postinstall: 'node "$MISE_TOOL_INSTALL_PATH/node_modules/@opencode/cli/postinstall.mjs"'
         herdr: latest # Terminal workspace manager for AI coding agents
 
     ai_workflow:
