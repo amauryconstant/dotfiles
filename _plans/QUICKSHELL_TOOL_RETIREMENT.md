@@ -1,6 +1,7 @@
 # Quickshell — retiring the replaced tooling
 
-**Status**: Open. The only outstanding item from the shell build.
+**Status**: wlogout, swaync, polkit-gnome, polkit-kde-agent and Waybar retired 2026-10-15 (one commit each, flags deleted). **Open**: Wofi (fallback, keep) and hyprlock (active on the desktop while the in-shell lock freeze is unsolved).
+**Manual leftovers**: `package-manager sync --prune` (reviewed), `systemctl --user unmask swaync.service`, `pkill waybar`, and the same on the laptop after `chezmoi apply`.
 **Reviewed**: 2026-10-15 — every tool past its month and the go-ahead given: wlogout, swaync,
 polkit-gnome, polkit-kde-agent and Waybar are retired in that order, one commit each, with their
 feature flags (`quickshell_notifications`, `quickshell_polkit`, `quickshell_shell`) deleted and
