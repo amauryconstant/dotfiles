@@ -47,7 +47,7 @@ The current `main` ships a **minimal, correct llama.cpp skeleton with zero model
 
 **Reading of it**: This was the only era where a local model was *actually configured and consumed* end-to-end. The design was already hybrid — local for cheap high-frequency tasks (autocomplete, embeddings), cloud for reasoning. The 32B→1.5B downgrade is telling: **[inferred]** 32B autocomplete was impractically slow/large, so it was cut to a 1.5B model that fits comfortably and responds fast enough for inline completion.
 
-**Fate**: continue.dev config archived (`e7974d9`, "Remove Continue IDE configuration" → moved to `archives/`), then VS Code AI extensions removed wholesale (`89b95cc`). **[inferred]** The user moved off IDE-embedded assistants toward terminal-native agentic tools (opencode, claude-code), which the current `menu-ai` confirms. The lesson carried forward: **don't couple the backend to one editor's plugin** — expose a neutral OpenAI endpoint and let any consumer attach.
+**Fate**: continue.dev config archived (`e7974d9`, "Remove Continue IDE configuration" → moved to `archives/`, since removed), then VS Code AI extensions removed wholesale (`89b95cc`). **[inferred]** The user moved off IDE-embedded assistants toward terminal-native agentic tools (opencode, claude-code), which the current `menu-ai` confirms. The lesson carried forward: **don't couple the backend to one editor's plugin** — expose a neutral OpenAI endpoint and let any consumer attach.
 
 ### 3. Submodule / separate-repo saga (2025-07 → 2025-08)
 

@@ -11,9 +11,6 @@
 .prettierignore
 tests/
 
-# Archive directory for storing old configurations
-archives/
-
 # Resources and Documentation
 _guides/
 _research/

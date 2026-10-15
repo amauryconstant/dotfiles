@@ -20,8 +20,8 @@ echo "🔧 Processing template file merge: $pathname"
 # Check if a version still looks like a generator rather than rendered output.
 #
 # Three markers, not just template syntax: a chezmoi_modify_manager script or a
-# native modify-template can legitimately contain zero {{ }} (e.g.
-# archives/kde/.../modify_private_kwinrc), and merging one against its own
+# native modify-template can legitimately contain zero {{ }} (a
+# modify_ script without a .tmpl suffix), and merging one against its own
 # rendered output is what destroys it.
 has_generator_syntax() {
 	grep -q '{{.*}}' "$1" 2>/dev/null && return 0

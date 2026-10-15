@@ -75,7 +75,6 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .patches/               # Patches applied to upstream sources at build time (not deployed)
 ├── .mise/                  # Lint/format tasks + pre-commit hook entrypoints
 ├── .chezmoiexternal.yaml   # Externally-fetched assets
-├── archives/               # Retired configs (KDE, VSCode) — not deployed
 ├── private_dot_config/     # XDG config (hypr, waybar, wofi, zsh, etc.)
 │   ├── dotfiles/           # Hook system
 │   ├── quickshell/         # Quickshell shell (bar) — behind a features flag

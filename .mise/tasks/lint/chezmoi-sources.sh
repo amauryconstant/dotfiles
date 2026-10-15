@@ -30,7 +30,7 @@ validation_failed=0
 #
 # `chezmoi target-path` is a pure path computation: it succeeds even for
 # chezmoi-IGNORED entries, happily returning e.g.
-# /home/amaury/archives/kde/.config/kdeglobals for a file under archives/.
+# /home/amaury/<path> for any file under an ignored directory.
 # `chezmoi cat` then fails with "not managed". So target-path cannot decide
 # whether a generator is runnable — membership in `chezmoi managed` can.
 managed_targets=$(chezmoi managed --path-style=absolute 2>/dev/null || true)
@@ -86,9 +86,9 @@ for file in "${staged[@]}"; do
 	# --- Check 1: corruption, as a REGRESSION against HEAD -------------------
 	#
 	# An absolute "every *.tmpl contains {{ }}" rule would false-positive on the
-	# six legitimately template-free tracked .tmpl files (wlogout/style.css.tmpl,
+	# five legitimately template-free tracked .tmpl files (wlogout/style.css.tmpl,
 	# voxtype/config.toml.tmpl, theme-switcher.tmpl, theme-menu.tmpl,
-	# private_kdeglobals.tmpl, archives/kde/.../modify_private_kdeglobals.tmpl).
+	# private_kdeglobals.tmpl).
 	# Comparing against HEAD and failing only on LOSS has no false positives and
 	# needs no allowlist. Files new in this commit have no HEAD blob to compare.
 	if head_content=$(git show "HEAD:$file" 2>/dev/null); then

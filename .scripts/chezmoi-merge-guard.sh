@@ -61,8 +61,8 @@ target_path="$3"
 }
 
 # Classify by CONTENT first, then filename. Filename alone is insufficient:
-# modify_opencode.jsonc has no .tmpl suffix, and modify_private_kwinrc has
-# neither a suffix nor template syntax.
+# modify_opencode.jsonc has no .tmpl suffix, and a chezmoi_modify_manager
+# script may have neither a suffix nor template syntax.
 kind=""
 advice=""
 

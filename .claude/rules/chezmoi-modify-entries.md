@@ -103,4 +103,4 @@ Never let `chezmoi cat` output reach a log — for `opencode.jsonc` it emits a d
 | Git merge driver | `.gitattributes` `modify_*` + `*.tmpl` → `.scripts/template-merge-driver.sh` |
 | Pre-commit | `.mise/tasks/lint/chezmoi-sources.sh` — marker-loss regression vs HEAD, `chezmoi cat` render, gitleaks |
 
-Corruption detection is **regression-based** (HEAD had a marker, staged does not). An absolute "must contain `{{ }}`" rule would false-positive on the six legitimately template-free tracked `.tmpl` files.
+Corruption detection is **regression-based** (HEAD had a marker, staged does not). An absolute "must contain `{{ }}`" rule would false-positive on the five legitimately template-free tracked `.tmpl` files.
