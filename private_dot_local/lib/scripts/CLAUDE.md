@@ -113,7 +113,7 @@ fi
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
   - Reloads terminal, the bar (Waybar `SIGUSR2`, or Quickshell via `ipc call theme reload`),
-    swaync and wofi — each step skipped when the tool is absent or masked
+    and wofi — each step skipped when the tool is absent or masked
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 

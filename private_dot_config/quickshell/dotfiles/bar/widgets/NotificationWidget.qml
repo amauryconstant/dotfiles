@@ -19,13 +19,8 @@ BarWidget {
     iconColor: Notifications.dnd ? Theme.signalError : root.restColor
     label: root.unread ? Notifications.unread : ""
     monoLabel: true
-    // Hidden when this shell does not own notifications: swaync is then the
-    // daemon and draws its own panel, and a bell wired to an unloaded server
-    // would sit there reading zero forever.
-    // ponytail: the rollback loses the bar's bell, not its notifications.
-    // Restoring it would mean keeping the old WaybarJsonSource swaync
-    // subscriber alongside this — two implementations of one widget for a
-    // state that exists only to be temporary.
+    // Hidden when this shell does not own notifications: a bell wired to an
+    // unloaded server would sit there reading zero forever.
     visible: Config.notificationsOwned
     tooltipText: Notifications.dnd ? qsTr("Do not disturb — %1 in history").arg(Notifications.unread) : root.unread ? qsTr("%1 notifications").arg(Notifications.unread) : qsTr("No notifications")
 

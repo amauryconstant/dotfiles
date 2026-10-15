@@ -56,15 +56,7 @@ hl.config({
 
 8 hex digits (`rrggbbaa`), no `#`, tabs (stylua). See `.claude/rules/hyprland-lua.md`.
 
-## Step 6: `swaync.css.tmpl`
-
-The **only** templated file in a theme dir — injects `.globals.*` fonts. Copy the `{{ }}` blocks verbatim from the base theme; only recolor the literal CSS values around them. Validate:
-
-```bash
-chezmoi execute-template < private_dot_config/themes/<new-name>/swaync.css.tmpl > /dev/null
-```
-
-## Step 7: Registration
+## Step 6: Registration
 
 Five scripts hardcode exact theme names in `case` arms and will silently no-op (or fall back to a default) for an unregistered theme — this is NOT covered by the file-set check in Step 2.
 
@@ -74,7 +66,7 @@ bash scripts/check-registrations.sh <new-name>
 
 Reports ✅/❌ per file across: `theme-apply-gtk`, `theme-apply-claude-code`, `theme-apply-spotify`, `theme-apply-qt` (all `case "$THEME_NAME" in ...`), `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark`-suffixed pairs may already resolve generically, check the script's own logic), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap dir creation only). `theme-apply-opencode`, `-firefox`, `-neovim` are name-agnostic and need no change.
 
-## Step 8: Validate
+## Step 7: Validate
 
 ```bash
 mise run lint:lua-file -- private_dot_config/themes/<new-name>/hyprland.lua
@@ -82,6 +74,6 @@ mise run lint:lua-file -- private_dot_config/themes/<new-name>/hyprland.lua
 
 Consider running the `theme-consistency-reviewer` subagent before committing — it checks the same file-set/contrast/format rules end to end.
 
-## Step 9: Wallpapers
+## Step 8: Wallpapers
 
 Curate wallpapers into `~/.config/wallpapers/<new-name>/`, per the guidance in the new theme's own (cloned) `wallpapers/README.md`. `organize-wallpapers-by-color.sh` is a one-time historical tool, not part of this workflow.

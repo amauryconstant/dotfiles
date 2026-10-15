@@ -93,13 +93,9 @@ the meters payload's missing temperature
   whole switch, both ways. `.chezmoiignore` alone could not do the rollback — an ignored target
   is never deleted, so the stale drop-ins and `shell.qml` kept the shell running beside Waybar.
   `run_onchange_after_configure_desktop_shell` removes the off side's files and enables or
-  stops `quickshell.service`; it sorts before `configure_notifications` on purpose
-- **Second gate**: `features.quickshell_notifications.enabled`, for notifications ONLY.
-  Separate because it does something the bar flag does not — it takes
-  `org.freedesktop.Notifications` from swaync by MASKING the unit
-  (`run_onchange_after_configure_notifications`). A bus name has one owner, so this is the one
-  phase with no coexistence. Flipping it back unmasks swaync, starts it, and points
-  `SUPER+SHIFT+N` back at `swaync-client`
+  stops `quickshell.service`
+- **Notifications are always the shell's** since swaync was retired (2026-10-15):
+  `Config.notificationsOwned` is a constant `true`, and there is no second gate
 - 🚨 **The two bars are mutually exclusive, by config.** `.chezmoiignore` deploys exactly one
   of `hypr/conf.d/quickshell.{lua,conf}` and `hypr/conf.d/waybar.{lua,conf}`; each drop-in
   carries both its own autostart and `SUPER+B`. `conf/autostart.*` and

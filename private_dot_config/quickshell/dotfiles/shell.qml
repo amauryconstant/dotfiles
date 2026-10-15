@@ -150,9 +150,7 @@ ShellRoot {
         }
     }
 
-    // SUPER+SHIFT+N, taken from swaync-client --toggle-panel. Phase 4 masks
-    // swaync outright — one bus name, one owner — so this is a replacement
-    // rather than a coexistence.
+    // SUPER+SHIFT+N, taken from swaync-client --toggle-panel.
     IpcHandler {
         target: "notifications"
 

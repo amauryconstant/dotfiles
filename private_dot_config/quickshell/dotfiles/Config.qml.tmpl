@@ -498,13 +498,11 @@ Singleton {
     // this ONE property. Deliberately not eight separate .tmpl widgets.
     readonly property bool isLaptop: {{ eq .chassisType "laptop" }}
 
-    // 🚨 Whether this shell owns org.freedesktop.Notifications. Load-bearing,
-    // not cosmetic: a bus name has ONE owner, so merely instantiating
-    // NotificationServer takes it. With the flag off, swaync is unmasked and
-    // instantiating anyway would make the two race for the name at login —
-    // exactly the state the rollback exists to avoid. See
-    // .chezmoiscripts/run_onchange_after_configure_notifications.sh.tmpl.
-    readonly property bool notificationsOwned: {{ .features.quickshell_notifications.enabled }}
+    // Whether this shell owns org.freedesktop.Notifications. Always true since
+    // swaync was retired (2026-10-15); kept as a property so the Loader and the
+    // bell still read one name. A bus name has ONE owner, so a second daemon
+    // installed later would race this one for it at login.
+    readonly property bool notificationsOwned: true
 
     // 🚨 Whether this shell owns the polkit authentication agent. Same kind of
     // exclusivity as notificationsOwned and load-bearing for the same reason: a

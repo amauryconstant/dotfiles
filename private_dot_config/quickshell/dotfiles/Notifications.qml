@@ -6,9 +6,8 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import QtQuick
 
-// Phase 4. Owns org.freedesktop.Notifications for the session — swaync is
-// masked by run_onchange_after_configure_notifications, because a bus name has
-// exactly one owner and there is no coexistence to be had.
+// Phase 4. Owns org.freedesktop.Notifications for the session — a bus name has
+// exactly one owner and there is no coexistence to be had (swaync was retired).
 //
 // 🚨 A popup timing out must NOT call expire() or dismiss(). Both destroy the
 // Notification, which removes it from trackedNotifications — i.e. from the
@@ -228,9 +227,7 @@ Singleton {
 
     // 🚨 Loader, not a bare NotificationServer: CONSTRUCTING the server is what
     // claims the bus name, so the only way to not own notifications is to not
-    // construct it. With Config.notificationsOwned false, swaync is unmasked
-    // and a server here would race it for the name at login — which is the
-    // exact failure the flag exists to prevent. See Config.notificationsOwned.
+    // construct it. See Config.notificationsOwned.
     Loader {
         id: serverLoader
 

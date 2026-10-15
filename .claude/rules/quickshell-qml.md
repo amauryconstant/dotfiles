@@ -333,8 +333,8 @@ after a self-inflicted wound.
 🚨 **Constructing `NotificationServer` is what claims `org.freedesktop.Notifications`**, and a
 bus name has exactly one owner. There is no "advertise nothing" configuration — the only way
 not to own notifications is not to construct the server, which is why it sits behind a
-`Loader { active: Config.notificationsOwned }`. With swaync unmasked and a server constructed
-anyway, the two race for the name at login.
+`Loader { active: Config.notificationsOwned }`. A second daemon installed beside it would race
+for the name at login.
 
 🚨 **A notification is NOT tracked by default — the handler must set `tracked = true`.**
 `isTracked()` reads `mCloseReason == 0`, which looks like "tracked unless closed", but the

@@ -13,12 +13,8 @@
 # (.chezmoiremove cannot do it: chezmoi skips remove entries that are ignored,
 # and these paths are ignored exactly when they have to go.)
 #
-# WHY run_onchange (not run_once): same reason as configure_notifications -- the
-# flag is a two-way switch, and a run_once script could only ever go one way.
-#
-# 🚨 ORDER: this sorts before run_onchange_after_configure_notifications, and has
-# to. Turning the shell off must stop it -- releasing the notification bus name --
-# before that script starts swaync.
+# WHY run_onchange (not run_once): the flag is a two-way switch, and a
+# run_once script could only ever go one way.
 #
 # Only removes what chezmoi itself deployed from the other branch; the flag
 # going back on redeploys it all. Warns about a re-login only when something
@@ -71,8 +67,7 @@ remove_stale "$HYPR_CONFD/polkit-gnome.lua" "$HYPR_CONFD/polkit-gnome.conf"
 {{ else }}
 if systemctl --user is-enabled --quiet quickshell.service 2>/dev/null \
     || systemctl --user is-active --quiet quickshell.service 2>/dev/null; then
-    # disable --now stops the shell too, which releases the notification bus
-    # name before configure_notifications starts swaync.
+    # disable --now stops the shell too, which releases the notification bus name.
     systemctl --user disable --now quickshell.service
     {{ includeTemplate "log_success" "quickshell.service stopped and disabled" }}
     changed=true

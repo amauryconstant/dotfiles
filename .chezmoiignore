@@ -62,8 +62,7 @@ private_dot_config/broot/launcher/
 # Polkit agent: exactly ONE exists per session, so the Quickshell agent
 # (quickshell/dotfiles/polkit/PolkitDialog.qml, behind Config.polkitOwned) and
 # polkit-gnome are mutually exclusive. Its own flag rather than the bar's: the
-# bar and a session-exclusive D-Bus agent are separate decisions, exactly as
-# quickshell_notifications is separate for swaync. The line polkit-gnome.* holds
+# bar and a session-exclusive D-Bus agent are separate decisions. The line polkit-gnome.* holds
 # used to live unconditionally in conf/autostart.*, which BOTH branches load.
 # Both flags: with the shell off there is no Quickshell agent, whatever
 # quickshell_polkit says, so polkit-gnome has to deploy.

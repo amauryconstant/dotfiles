@@ -25,3 +25,8 @@
 .config/wlogout
 .config/themes/*/wlogout.css
 .local/lib/scripts/desktop/wlogout
+
+# swaync — notifications are the Quickshell shell's. The unit stays masked on machines
+# that had it; `systemctl --user unmask swaync.service` after removing the package.
+.config/swaync
+.config/themes/*/swaync.css

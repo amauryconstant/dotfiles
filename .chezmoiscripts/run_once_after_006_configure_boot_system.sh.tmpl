@@ -463,7 +463,7 @@ EOF
     # hyprwhenthen) is WantedBy=graphical-session.target, which only the uwsm
     # session reaches -- and the session environment lives in uwsm/env. The
     # plain hyprland.desktop session comes up with no bar, no idle lock and no
-    # notification daemon (swaync is masked when Quickshell owns the name).
+    # notification daemon.
     UWSM_SESSION=/usr/share/wayland-sessions/hyprland-uwsm.desktop
     if [ -f "$UWSM_SESSION" ]; then
         {{ includeTemplate "log_success" "Hyprland UWSM-managed session available" }}

@@ -17,7 +17,7 @@ taking them for grounds invents failures that do not exist on screen.
 
 Two thresholds, per WCAG 2.1: 4.5:1 for text, 3:1 for UI components and
 graphics (an outline, a progress fill). Pairs marked INHERENT are properties of
-the shipped colorsets — Waybar, wofi and swaync render the same ratios today —
+the shipped colorsets — Waybar and wofi render the same ratios today —
 so they are reported for the record and are not defects in this tree.
 """
 import glob

@@ -22,13 +22,13 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
+- **Desktop**: `waybar.css`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
 - **Brand mark**: `icon.png` — **optional**, 128×128, drawn by the theme picker (see below)
 
-`swaync.css.tmpl` is the **only templated file** (injects `.globals.*` fonts); `hyprland.lua` is the Lua-config counterpart to `hyprland.conf` (see `.claude/rules/hyprland-lua.md`). All others are static — add the new file to every theme dir when introducing one.
+No theme file is templated; `hyprland.lua` is the Lua-config counterpart to `hyprland.conf` (see `.claude/rules/hyprland-lua.md`). All others are static — add the new file to every theme dir when introducing one.
 
 **Integration**:
 - **Desktop apps**: Import via `@import`, `!include`, or `source` directives
@@ -41,7 +41,7 @@
 A theme carries its colours **twice**, in two naming systems that nothing translates between,
 because nothing needs to. Confusing them is the standing defect in this directory.
 
-| | `colors.sh` | `waybar.css` · `wofi.css` · `swaync.css.tmpl` |
+| | `colors.sh` | `waybar.css` · `wofi.css` |
 |---|---|---|
 | Names | **roles** — `GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5` | **CSS module names** — `@bg-*`, `@fg-*`, `@accent-*` |
 | Count | **18** `readonly` keys | 24 `@define-color` + 4 hover tints |
@@ -127,7 +127,7 @@ tables use role names because they were regenerated from `colors.sh`.
 | `@accent-warning-hover` | Backlight hover | 10% opacity version of accent-warning |
 | `@accent-success-hover` | Battery hover | 10% opacity version of accent-success |
 
-These four are declared **only** in each theme's `waybar.css` and `swaync.css.tmpl`. They are
+These four are declared **only** in each theme's `waybar.css`. They are
 **not** in `colors.sh`, which holds exactly **18** `readonly` role keys — so they are invisible to
 the shell scripts and to Quickshell's `Theme.qml`, both of which read `colors.sh` alone. A QML or
 shell consumer needing a hover tint composites the base accent itself. Do not design against
@@ -255,7 +255,7 @@ independently; see the two-vocabulary note at the top.
 **Solar auto**: darkman service (sunrise/sunset transitions)
 **Keybindings**: Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 
-**Process**: Updates symlink → reloads Waybar/Swaync/Hyprland → updates wallpaper
+**Process**: Updates symlink → reloads Waybar/Hyprland → updates wallpaper
 
 ---
 
@@ -457,7 +457,7 @@ theme: three greps for a literal hex, a literal font name, and `fgSecondary` on 
 
 `theme-switcher` (in `lib/scripts/desktop/`) drives the full switch:
 1. Update `~/.config/themes/current` symlink
-2. Reload core apps (Hyprland, Waybar, Swaync, terminal, wofi)
+2. Reload core apps (Hyprland, Waybar, terminal, wofi)
 3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim (each silently skips if its app is absent)
 4. Trigger the `theme-change` user hook: `hook-runner theme-change $theme_name`
 
@@ -466,4 +466,3 @@ Per-script behavior (e.g. Firefox needs `toolkit.legacyUserProfileCustomizations
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 **See**: `dotfiles/CLAUDE.md` for hook system documentation
 
-**See**: `swaync/CLAUDE.md` for SwayNC semantic variable mapping.

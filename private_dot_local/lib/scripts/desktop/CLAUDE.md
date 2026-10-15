@@ -166,7 +166,7 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
-2. Reloads core apps (Hyprland, Waybar, Swaync, Ghostty, Quickshell).
+2. Reloads core apps (Hyprland, Waybar, Ghostty, Quickshell).
    **Ghostty reloads on SIGUSR2** — undocumented in the man pages, verified on
    1.3.1-arch2 (the binary logs "received SIGUSR2, reloading configuration" and
    survives the signal). Do not read the man page's silence as absence: that
@@ -224,7 +224,7 @@ launched any other way is unsupervised. It clears a spent restart budget (`reset
 because that is exactly the state in which the user has no bar left to ask with.
 When the tree is not deployed (flag off) or the unit will not come up, the targets that had a
 predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wofi`, power → `menu-system`,
-keybindings → `desktop/keybindings`, notifications → `swaync-client` if unmasked. That is what
+keybindings → `desktop/keybindings`, notifications → nothing (swaync is retired). That is what
 keeps the system menu's Apps / Clipboard History entries alive on the Waybar branch
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through

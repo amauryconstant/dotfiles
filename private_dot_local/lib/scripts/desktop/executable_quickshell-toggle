@@ -69,8 +69,8 @@ toggle_target() {
         return 0
         ;;
     *)
-        # Also to stderr: once swaync is masked, THIS SHELL is the notification
-    # daemon, so a notify-send about it being down has nothing to reach.
+        # Also to stderr: THIS SHELL is the notification daemon, so a
+        # notify-send about it being down has nothing to reach.
     echo "quickshell-toggle: $TARGET not responding" >&2
         notify-send "󰕮 Quickshell" "$TARGET not responding" -t 2000
         return 1
@@ -98,12 +98,6 @@ fallback() {
         ;;
     power) exec "$HOME/.local/lib/scripts/user-interface/menu-system" ;;
     keybindings) exec "$HOME/.local/lib/scripts/desktop/keybindings" ;;
-    notifications)
-        # Only while swaync is actually the daemon; masked, it would activate nothing.
-        if [ "$(systemctl --user is-enabled swaync.service 2>/dev/null)" != masked ]; then
-            exec swaync-client -t -sw
-        fi
-        ;;
     *) ;;
     esac
     return 1

@@ -38,8 +38,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - Cross-check the hex values against `hyprland.conf`'s equivalent `$activeBorderColor`/`$inactiveBorderColor` (or similarly named) variables — they should match
 
 ### Templated File
-- `swaync.css.tmpl` is the **only** file in a theme dir allowed `{{ }}` Go template syntax — any `{{ }}` found in another file is generator corruption, not a template feature
-- `swaync.css.tmpl` itself should still inject `.globals.*` fonts (missing injection = regression, not just a static-recolor mistake)
+- No file in a theme dir is a template — any `{{ }}` found is generator corruption, not a template feature
 
 ### Hex Consistency
 - The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `waybar.css`, `wofi.css`, `hyprlock.conf`, `hyprland.conf`, and `hyprland.lua`
