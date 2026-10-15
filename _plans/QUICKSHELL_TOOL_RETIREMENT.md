@@ -1,7 +1,13 @@
 # Quickshell — retiring the replaced tooling
 
 **Status**: Open. The only outstanding item from the shell build.
-**Reviewed**: 2026-09-13 — every path below re-checked against the tree; three rows added
+**Reviewed**: 2026-10-15 — every tool past its month and the go-ahead given: wlogout, swaync,
+polkit-gnome, polkit-kde-agent and Waybar are retired in that order, one commit each, with their
+feature flags (`quickshell_notifications`, `quickshell_polkit`, `quickshell_shell`) deleted and
+ownership hardwired on. Wofi, cliphist and hyprlock stay. Gaps found in the review: wlogout was
+also `quickshell-toggle`'s `power` fallback (now `user-interface/menu-system`); swaync was its
+`notifications` fallback; `voxtype-waybar-status` no longer exists.
+**Reviewed earlier**: 2026-09-13 — every path re-checked; three rows added
 (hyprlock, polkit-gnome, polkit-kde-agent), none of which existed when the file was written.
 **Extracted from**: `_plans/archive/QUICKSHELL_SHELL.md` Phase 6, on 2026-09-11, so that a live
 decision stops living inside a frozen document. That plan is history; this file is the work.
@@ -35,7 +41,7 @@ Order below is easiest-to-reverse first.
 | **Waybar** | the bar has lived a month | `packages.yaml`, `private_dot_config/waybar/`, `desktop/executable_waybar-toggle`, `executable_waybar-style`, `voxtype-waybar-status`, `hypr/conf.d/waybar.{lua,conf}`, the `.chezmoiignore` gate that picks between the two bars, `waybar.css` × 8 themes | No — but see the `waybar.css` trap below |
 | **Wofi** | **not yet** | — | **Keep.** Still two live jobs: the fallback path in `desktop/quickshell-menu` when the socket is absent, and `SUPER+D` / `SUPER+C` in `hypr/conf/bindings/applications.*` for the Waybar branch. Removable only after Waybar goes and the fallback is deliberately dropped |
 | **cliphist** | never | — | **Keep.** `ClipboardPicker.qml` is a front end for it, not a replacement — the shell deliberately does not own clipboard storage |
-| **hyprlock** | never | — | **Keep.** `features.quickshell_lock` routes at *runtime* through `desktop/immediate-lock`, so hyprlock is what still locks the screen with the shell down or its restart budget spent. Per-theme `hyprlock.conf` × 8 stays with it |
+| **hyprlock** | never | — | **Keep — and on the desktop it is the ACTIVE lock, not only a fallback.** The in-shell lock froze a few seconds after appearing on the two-monitor NVIDIA desktop (root cause open), so 670f0b2 limits `quickshell_lock.chassis` to the laptop. Out of scope for this file until that is solved. `features.quickshell_lock` routes at *runtime* through `desktop/immediate-lock`, so hyprlock is what still locks the screen with the shell down or its restart budget spent. Per-theme `hyprlock.conf` × 8 stays with it |
 | **polkit-gnome** | the shell's agent has lived a month | `packages.yaml`, `private_dot_config/hypr/conf.d/polkit-gnome.{lua,conf}`, the `.chezmoiignore` gate on `features.quickshell_polkit`, and the explanatory NOTE in `autostart.{lua,conf}` that says why no agent is started there | Same shape as swaync: removing it also removes the rollback path the feature flag exists for. A session holds exactly one agent, so there is no half-state to fall back to |
 | **polkit-kde-agent** | now | `packages.yaml` line only | **Not a fallback — an orphan.** Installed, referenced by nothing in the tree (verified 2026-09-13), and it was already redundant before the shell existed. Removable independently of everything else here |
 
