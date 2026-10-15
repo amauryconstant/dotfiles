@@ -82,7 +82,7 @@ Verify with a throwaway source dir rather than the live one:
 .packages.install.arch     # Package lists with strategies
 .globals.applications.*   # Default apps (EDITOR, VISUAL, BROWSER)
 .globals.xdg.*           # XDG Base Directory paths
-.globals.guiFont          # "Inter" — GTK/Qt/Waybar/Wofi/Hyprlock
+.globals.guiFont          # "Inter" — GTK/Qt/Wofi/Hyprlock
 .globals.terminalFont     # "GeistMono Nerd Font" — terminal/code/fontconfig
 .services.user_timers     # List of user timers with name/enabled/start fields
 .features.voxtype.enabled # Boolean toggle for Voxtype setup

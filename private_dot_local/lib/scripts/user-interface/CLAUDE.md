@@ -59,7 +59,7 @@ so sixteen `menu-*` scripts converted without an edit of their own.
 
 **Share submenu**: 󰈔 md-file-send (File) · 󰨸 md-clipboard-arrow-up (Clipboard)
 
-**Toggle submenu**: 󰛨 md-weather-night (Nightlight) · 󰌾 md-lock (Idle Lock) · 󰘯 md-monitor-dashboard (Waybar) · 󰝘 md-grid-large (Workspace Gaps)
+**Toggle submenu**: 󰛨 md-weather-night (Nightlight) · 󰌾 md-lock (Idle Lock) · 󰝘 md-grid-large (Workspace Gaps)
 
 ### Style Menu (menu-style)
 

@@ -9,12 +9,11 @@
 # Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
 #           SUPER+grave (overview)
 #           — hypr/conf.d/quickshell.{lua,conf}; SUPER+SHIFT+N (notifications)
-#           — hypr/conf/bindings/system-control.{lua,conf}.tmpl, which is where
-#           it lives because that key is gated on a different feature flag
+#           — hypr/conf/bindings/system-control.{lua,conf}
 #
-# Mirrors waybar-toggle, with one difference: a running Quickshell hides and
-# shows over IPC rather than being killed and relaunched. That is instant and
-# keeps the shell's state, so only a missing instance needs a launch.
+# A running Quickshell hides and shows over IPC rather than being killed and
+# relaunched. That is instant and keeps the shell's state, so only a missing
+# instance needs a launch.
 #
 # One script for every surface because the hard part is identical for all of
 # them: IPC only reaches a RUNNING instance, so every binding needs the same
@@ -103,11 +102,11 @@ fallback() {
     return 1
 }
 
-# No deployed tree: the Waybar branch. Starting the unit would only fail its
+# No deployed tree (a broken apply). Starting the unit would only fail its
 # ConditionPathExists, so skip straight to the predecessor tool.
 if [ ! -f "$HOME/.config/quickshell/$CONFIG/shell.qml" ]; then
     fallback
-    echo "quickshell-toggle: shell not deployed (features.quickshell_shell off)" >&2
+    echo "quickshell-toggle: shell not deployed (~/.config/quickshell/$CONFIG missing)" >&2
     exit 1
 fi
 

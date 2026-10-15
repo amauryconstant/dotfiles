@@ -13,10 +13,8 @@ After=graphical-session.target
 # Omarchy's bin/omarchy-launch-shell needs an explicit compositor_alive() probe
 # for: a relaunch into a tearing-down session burns the attempt budget.
 PartOf=graphical-session.target
-# Inert on the Waybar branch: .chezmoiignore drops .config/quickshell when
-# features.quickshell_shell is off, so the condition fails and the unit is
-# skipped rather than restart-looping. This is what keeps "flip the flag and
-# apply" the whole rollback, with no second gate to keep in sync.
+# Guard for a broken apply: with no deployed tree the condition fails and the
+# unit is skipped rather than restart-looping.
 ConditionPathExists=%h/.config/quickshell/dotfiles/shell.qml
 # Omarchy's give-up budget (5 relaunches per rolling 60s), as directives.
 StartLimitIntervalSec=60

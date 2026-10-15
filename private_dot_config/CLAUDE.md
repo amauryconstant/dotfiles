@@ -26,8 +26,7 @@
 | `Nextcloud/` | Nextcloud client | ✅ Yes |
 | `git/` | Git config | ✅ Yes |
 | `themes/` | Theme system | ✅ Yes |
-| `waybar/` | Status bar | ✅ Yes |
-| `quickshell/` | Quickshell desktop shell — the active one (Waybar stack is the fallback) | ✅ Yes |
+| `quickshell/` | Quickshell desktop shell — the only desktop shell (Waybar, swaync, wlogout retired 2026-10-15) | ✅ Yes |
 | `uwsm/` | Session environment (`env.tmpl`) — exported to Hyprland AND systemd units | ❌ No |
 | `wofi/` | Application launcher | ✅ Yes |
 | `btop/` | System monitor (themed) | ✅ Yes |
@@ -56,7 +55,7 @@
 **Theme system** (`themes/`):
 - Variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - Semantic variables (backgrounds, foregrounds, accents)
-- Desktop apps: Waybar, Wofi, Hyprland, Ghostty, Hyprlock (CSS/conf files)
+- Desktop apps: Wofi, Hyprland, Ghostty, Hyprlock (CSS/conf files)
 - Quickshell reads the **same** `colors.sh` the shell scripts do — see `themes/CLAUDE.md` →
   "Two vocabularies, one palette"
 - CLI tools: bat, broot, btop, lazygit, starship, yazi
@@ -65,21 +64,12 @@
 
 **Quickshell shell** (`quickshell/`) — **the active desktop shell**:
 - One QML tree owns bar, OSDs, launcher, power menu, notifications, popovers and every picker
-- Gated by `features.quickshell_shell` (**on**)
 - See: `quickshell/CLAUDE.md`, `.claude/rules/quickshell-qml.md`
-
-**Waybar status bar** — **fallback bar, not the active one**:
-- Deployed only when `features.quickshell_shell` is off; `.chezmoiignore` picks exactly one of
-  `hypr/conf.d/{quickshell,waybar}.{lua,conf}`, because the two cannot stack
-- Modules (workspaces, clock, CPU, memory, network, etc.)
-- Theme integration via `@import "themes/current/waybar.css"`
-- Files: `config.tmpl` (JSON5), `style.css.tmpl` (CSS)
-- Reload: `killall -SIGUSR2 waybar`
 
 **Wofi launcher** — **fallback only**:
 - Replaced 2026-09-09 by the Quickshell launcher, dmenu picker and clipboard picker
 - Still reached when `desktop/quickshell-menu` cannot open the socket, and by `SUPER+D` /
-  `SUPER+C` in the Waybar branch
+  `SUPER+C` binds were removed with the Waybar branch
 - Files: `config` (static), `style.css.tmpl` (themed)
 - Theme: CSS import from `themes/current/wofi.css`
 

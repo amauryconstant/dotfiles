@@ -74,7 +74,7 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | Keys | Action |
 |------|--------|
 | `SUPER+A` / `SUPER+SHIFT+A` | Audio output switcher / pavucontrol |
-| `SUPER+B` | Toggle the status bar (bound in `conf.d/quickshell.*` or `conf.d/waybar.*`, whichever deploys) |
+| `SUPER+B` | Toggle the status bar (bound in `conf.d/quickshell.*`) |
 | `SUPER+G` | Toggle gaps (presentation mode) |
 | `SUPER+I` / `SUPER+SHIFT+I` | Toggle idle lock / idle no-lock (display still sleeps) |
 | `SUPER+M` | Monitor switcher |
@@ -147,7 +147,7 @@ Each file below has a parallel `.lua` twin (inactive until the Lua entry point i
 | File | Scope |
 |------|-------|
 | `applications.conf.tmpl` | App launchers |
-| `desktop-utilities.conf` | Audio, gaps, Waybar, nightlight, idle, zoom |
+| `desktop-utilities.conf` | Audio, gaps, nightlight, idle, zoom |
 | `focus-navigation.conf` | Focus + move within workspace |
 | `media-keys.conf` | Volume, brightness, playback |
 | `screenshots.conf` | Screenshots and recording |

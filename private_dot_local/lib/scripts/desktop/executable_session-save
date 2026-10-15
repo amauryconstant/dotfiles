@@ -49,7 +49,7 @@ load_denylist() {
         grep -v '^#' "$DENYLIST_FILE" | grep -v '^$'
     else
         # Default denylist (ephemeral/UI elements)
-        printf "wofi\nwlogout\ndunst\nwaybar\nhyprpicker\n"
+        printf "wofi\ndunst\nhyprpicker\n"
     fi
 }
 

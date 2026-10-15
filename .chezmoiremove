@@ -35,3 +35,13 @@
 # A stale copy would start a second agent, so this must go with the package.
 .config/hypr/conf.d/polkit-gnome.lua
 .config/hypr/conf.d/polkit-gnome.conf
+
+# Waybar — retired; the Quickshell bar is the only bar. The conf.d drop-in must go
+# or Hyprland's conf.d glob would start Waybar beside the shell and claim a second
+# SUPER+B. Stopping the running process is manual: pkill waybar.
+.config/waybar
+.config/themes/*/waybar.css
+.config/hypr/conf.d/waybar.lua
+.config/hypr/conf.d/waybar.conf
+.local/lib/scripts/desktop/waybar-toggle
+.local/lib/scripts/desktop/waybar-style

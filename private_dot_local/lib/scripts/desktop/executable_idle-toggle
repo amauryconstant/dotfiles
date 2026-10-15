@@ -3,7 +3,7 @@
 # Script: idle-toggle
 # Purpose: Toggle automatic screen locking (presentation mode)
 # Requirements: Arch Linux, systemd, hypridle
-# Bound to: Super+I / Waybar idle-indicator left-click
+# Bound to: Super+I / bar idle-indicator left-click
 #
 # Holds a systemd idle inhibitor rather than killing hypridle. hypridle honors
 # systemd idle inhibitors (general:ignore_systemd_inhibit defaults to false), so
@@ -45,8 +45,6 @@ else
     notify-send "⏸️ Idle Lock" "Auto-lock disabled (presentation mode)" -t 2000
 fi
 
-# Refresh the idle indicator in both bars. Waybar takes a real-time signal;
-# Quickshell has no signal mechanism, so it gets an IPC call instead. Both are
-# best-effort: either bar may legitimately not be running.
-pkill -RTMIN+9 waybar 2>/dev/null || true
+# Refresh the idle indicator. Best-effort: the shell may legitimately not be
+# running.
 quickshell -c dotfiles ipc call idle refresh >/dev/null 2>&1 || true

@@ -34,10 +34,8 @@ Timer schedules/enable logic are driven by `.chezmoidata/services.yaml` (`user_t
   (`bin/omarchy-launch-shell`) as directives rather than a bash loop. Once spent, `start` is
   refused until `reset-failed`, which `desktop/quickshell-toggle` does before starting: `SUPER+B`
   is the only route back when there is no bar left to ask with.
-- **`ConditionPathExists=%h/.config/quickshell/dotfiles/shell.qml`** is the whole Waybar-branch
-  gate. `.chezmoiignore` already drops `.config/quickshell` when `features.quickshell_shell` is
-  off, so the unit goes inert instead of restart-looping — no second gate, and no `run_onchange`
-  script to keep the two in sync.
+- **`ConditionPathExists=%h/.config/quickshell/dotfiles/shell.qml`** is a guard
+  for a broken apply: with no deployed tree the unit goes inert instead of restart-looping.
 - **`PartOf=graphical-session.target`** is what Omarchy needs an explicit `compositor_alive()`
   probe for: the session going down stops the unit rather than burning its restart budget.
 - **`Environment=QS_DISABLE_FILE_WATCHER=1`.** `chezmoi apply` replaces files by rename, which

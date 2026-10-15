@@ -27,7 +27,7 @@ Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardc
 
 ## Step 3: Recolor semantic variables
 
-Full 24-variable schema (Background: `@bg-primary/secondary/tertiary/overlay`; Foreground: `@fg-primary/secondary/muted/contrast`; 8 Core + 8 Extended accents; 4 hover variants) is defined in `themes/CLAUDE.md`. Start with `waybar.css` — it's the most complete single-file reference — then propagate the same hex values into every other file in the theme dir.
+Full 24-variable schema (Background: `@bg-primary/secondary/tertiary/overlay`; Foreground: `@fg-primary/secondary/muted/contrast`; 8 Core + 8 Extended accents) is defined in `themes/CLAUDE.md`. Start with `wofi.css` — it's the most complete single-file reference — then propagate the same hex values into every other file in the theme dir.
 
 **`colors.sh` is a second vocabulary, and the one Quickshell and the shell scripts read**: semantic ROLE keys, not CSS names — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
 

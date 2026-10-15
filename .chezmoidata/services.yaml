@@ -35,7 +35,7 @@ services:
       enabled: true
       start: true
       requires_command: hyprdynamicmonitors
-    - name: quickshell.service # desktop shell; its ConditionPathExists keeps it inert on the Waybar branch
+    - name: quickshell.service # desktop shell; ConditionPathExists guards a missing tree
       enabled: true
       start: true
       requires_command: quickshell

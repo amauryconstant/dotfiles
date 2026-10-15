@@ -53,8 +53,7 @@ tagged release, installed waybar is 0.15.0-2. That is now irrelevant, for two re
 
 - The Quickshell bar does workspace clicks correctly in Lua mode (`activate()` branches on
   `Hyprland.usingLua` itself), so nothing we click depends on Waybar any more.
-- Since 2026-08-31 the two bars are **mutually exclusive** `conf.d/` drop-ins keyed on
-  `features.quickshell_shell`. With the flag on, Waybar does not autostart at all.
+- Waybar was retired 2026-10-15; the Quickshell bar is the only one.
 
 **The blocker was internal**: 30 `hyprctl dispatch <legacy string>` call sites across 11 of our
 own scripts and configs, every one of which Lua mode breaks. Verified from Hyprland v0.56.2

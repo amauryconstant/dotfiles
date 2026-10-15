@@ -16,8 +16,8 @@
 # Contrast is measured, not judged: `mise run lint:theme-contrast` reads all
 # eight colorsets and checks the pairs the shell actually renders.
 #
-# Edited by hand. (An earlier header called this file generated from
-# waybar.css; no such generator has ever existed in this repository.)
+# Edited by hand. (An earlier header called this file generated from the
+# retired waybar.css; no such generator has ever existed in this repository.)
 
 # GROUND -- what surface am I on? Fixed at three: a theme that cannot supply
 # three separable surfaces is unsupportable rather than degraded.

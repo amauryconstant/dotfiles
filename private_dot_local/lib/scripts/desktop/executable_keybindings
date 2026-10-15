@@ -102,7 +102,7 @@ category_from_description() {
         *volume* | *mute* | *brightness* | *play* | *track* | *player* | *media*) echo "Media and Hardware" ;;
         *audio* | *pause* | *touchpad* | *bluetooth* | *wifi* | *battery* | *lid*) echo "Media and Hardware" ;;
         *screenshot* | *record* | *capture* | *"qr"* | *"text extraction"*) echo "Capture" ;;
-        *theme* | *wallpaper* | *nightlight* | *"night light"* | *gaps* | *bar* | *waybar*) echo "Appearance" ;;
+        *theme* | *wallpaper* | *nightlight* | *"night light"* | *gaps* | *bar*) echo "Appearance" ;;
         *"dark mode"* | *"monitor switcher"* | *zoom* | *"color picker"*) echo "Appearance" ;;
         *launch* | *terminal* | *browser* | *"file manager"* | *launcher* | *menu* | *clipboard*) echo "Applications" ;;
         *lock* | *idle* | *power* | *exit* | *reload* | *sleep* | *suspend*) echo "System Control" ;;

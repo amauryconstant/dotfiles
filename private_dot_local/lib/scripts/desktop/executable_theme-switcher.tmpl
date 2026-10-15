@@ -2,7 +2,7 @@
 
 # Script: theme-switcher
 # Purpose: Switch between themes and reload applications
-# Requirements: Arch Linux, Hyprland, Waybar, Dunst, Ghostty
+# Requirements: Arch Linux, Hyprland, Ghostty
 
 # Source UI library for monitor-focused notifications
 if [ -n "$UI_LIB" ] && [ -f "$UI_LIB" ]; then
@@ -106,11 +106,6 @@ reload_applications() {
     # Reload Hyprland configuration
     if command -v hyprctl >/dev/null 2>&1; then
         hyprctl reload >/dev/null 2>&1
-    fi
-
-    # Reload Waybar
-    if pgrep -x waybar >/dev/null; then
-        killall -SIGUSR2 waybar 2>/dev/null
     fi
 
     # Ghostty reloads its config on SIGUSR2 (verified on 1.3.1-arch2: the

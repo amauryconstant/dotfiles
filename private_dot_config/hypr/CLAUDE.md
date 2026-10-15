@@ -19,7 +19,7 @@
 
 `hyprland.conf` also pulls `conf.d/*.conf` (drop-ins), `monitors.conf` (HyprDynamicMonitors output), and `~/.config/themes/current/hyprland.conf` (theme borders).
 
-**Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 44px, which Waybar's full-bleed bar cannot stack with. Shell docs: `private_dot_config/quickshell/CLAUDE.md`.
+**Status bar lives in `conf.d/quickshell.{lua,conf}`, not in `conf/`.** It carries its own autostart note and `SUPER+B`. Shell docs: `private_dot_config/quickshell/CLAUDE.md`.
 
 **Base config files** (`conf/`, each `.conf` twinned by the `.lua` that is live since the 2026-09-01 cutover):
 
@@ -59,7 +59,7 @@ because the compositor now accepts the second locker a lost race would spawn.
 | `voice.conf.tmpl` | Voice dictation (Voxtype; Parakeet bindings desktop-only) | ✅ Yes |
 | `desktop-utilities.conf` | Utilities (audio, gaps, nightlight, idle). **`SUPER+B` is not here** — see `conf.d/` below | ❌ No |
 | `theme-session.conf` | Theme switching, dark mode | ❌ No |
-| `system-control.conf.tmpl` | Lock, power, help, menu (the old `SUPER+SHIFT+Q` power bind is gated on `features.quickshell_shell`) | ✅ Yes |
+| `system-control.conf` | Lock, help, menu, notification centre | ❌ No |
 
 Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system).
 
@@ -99,13 +99,13 @@ host's.
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the old `SUPER+SHIFT+Q` power bind, same gate).
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl`.
 
 Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 
-**Static theme files**: Unlike GTK apps (Waybar, Wofi), Hyprland uses static theme files per theme variant.
+**Static theme files**: Unlike GTK apps (Wofi), Hyprland uses static theme files per theme variant.
 
 **Border colors** (`~/.config/themes/{theme}/hyprland.conf`):
 ```conf

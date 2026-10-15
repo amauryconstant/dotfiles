@@ -74,7 +74,7 @@ case "$CHOICE" in
         ;;
     "󰔡 Toggle")
         # Toggle submenu
-        TOGGLE_OPTIONS="󰁍 Back|󰛨 Nightlight|󰔎 Nightlight Temperature|󰌾 Idle Lock|󰘯 Waybar|󰝘 Workspace Gaps"
+        TOGGLE_OPTIONS="󰁍 Back|󰛨 Nightlight|󰔎 Nightlight Temperature|󰌾 Idle Lock|󰝘 Workspace Gaps"
         TOGGLE_CHOICE=$(show_menu "Toggle" "$TOGGLE_OPTIONS" "Trigger" "󰁍 Back")
 
         case "$TOGGLE_CHOICE" in
@@ -89,9 +89,6 @@ case "$CHOICE" in
                 ;;
             "󰌾 Idle Lock")
                 "$SCRIPTS_DIR/desktop/idle-toggle"
-                ;;
-            "󰘯 Waybar")
-                "$SCRIPTS_DIR/desktop/waybar-toggle"
                 ;;
             "󰝘 Workspace Gaps")
                 "$SCRIPTS_DIR/desktop/workspace-gaps-toggle"

@@ -103,7 +103,6 @@ fi
 - Other monitor utilities - Display management (use `notify-send`)
 
 **Appearance & Style**:
-- `waybar-toggle`, `waybar-style` - Waybar controls (use `notify-send`)
 - `quickshell-toggle`, `quickshell-menu` - Quickshell bar/surface toggles and the dmenu substrate
 - `quickshell-restart` - restart the shell; refuses while the session lock is live
 - `nightlight-toggle`, `nightlight-config` - Blue light filter (use `notify-send`)
@@ -112,7 +111,7 @@ fi
 
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
-  - Reloads terminal, the bar (Waybar `SIGUSR2`, or Quickshell via `ipc call theme reload`),
+  - Reloads terminal, the bar (Quickshell via `ipc call theme reload`)
     and wofi — each step skipped when the tool is absent or masked
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
@@ -149,7 +148,7 @@ fi
 
 **Other Utilities**:
 - `audio-switch` - Audio device switching
-- `battery-status` - Battery/power status (Waybar custom module / notify)
+- `battery-status` - Battery/power status (bar popover / notify)
 - `idle-indicator`, `idle-toggle`, `idle-toggle-nolock` - idle mode state + toggles
 - `idle-sleep` - sleep the system, hibernating when logind reports it available
 - `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`).

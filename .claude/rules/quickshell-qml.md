@@ -3,7 +3,6 @@
 **Location**: `private_dot_config/quickshell/dotfiles/`
 **Runs as**: `quickshell -c dotfiles` (never a bare `~/.config/quickshell/shell.qml` — that
 disables subdirectory discovery for every other config, including voxtype's)
-**Gated by**: `features.quickshell_shell` via `.chezmoiignore`
 
 **See**: Root `CLAUDE.md` for core standards
 **See**: `private_dot_config/quickshell/CLAUDE.md` for what the shell is today, and

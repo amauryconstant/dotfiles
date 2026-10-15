@@ -166,7 +166,7 @@ Same pattern (read `current` symlink → map → apply; silent skip if app absen
 
 **Execution flow**:
 1. Updates `~/.config/themes/current` symlink
-2. Reloads core apps (Hyprland, Waybar, Ghostty, Quickshell).
+2. Reloads core apps (Hyprland, Ghostty, Quickshell).
    **Ghostty reloads on SIGUSR2** — undocumented in the man pages, verified on
    1.3.1-arch2 (the binary logs "received SIGUSR2, reloading configuration" and
    survives the signal). Do not read the man page's silence as absence: that
@@ -218,14 +218,13 @@ what `Super+/` reaches when the shell is down
 ## Appearance & Style
 
 **Bar**: `quickshell-toggle` (bar, launcher, power, notifications, clipboard, overview, keybindings, popovers)
-— the active shell. `waybar-toggle`, `waybar-style` drive the fallback bar.
+— the active shell.
 🚨 `quickshell-toggle` **starts `quickshell.service`**, never a bare `quickshell` — a shell
 launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
 because that is exactly the state in which the user has no bar left to ask with.
-When the tree is not deployed (flag off) or the unit will not come up, the targets that had a
+When the tree is not deployed or the unit will not come up, the targets that had a
 predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wofi`, power → `menu-system`,
-keybindings → `desktop/keybindings`, notifications → nothing (swaync is retired). That is what
-keeps the system menu's Apps / Clipboard History entries alive on the Waybar branch
+keybindings → `desktop/keybindings`, notifications → nothing (swaync is retired).
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
 **Night light**: nightlight-toggle, nightlight-config (`nightlight-config [KELVIN]` skips the
@@ -258,8 +257,8 @@ shapes; they are **not** in the Hyprland stubs, which type every dispatcher as `
 **Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).
 
 🚨 **A bar's persistent JSON source must guard on its parent still being alive.** `kanata-layer` is
-spawned by whichever bar is deployed (Waybar's `exec-persistent`, Quickshell's
-`WaybarJsonSource`), and only writes on a state change — so it never takes SIGPIPE when the bar's
+spawned by the Quickshell bar's
+`WaybarJsonSource`, and only writes on a state change — so it never takes SIGPIPE when the bar's
 read end closes. Quickshell's `Process` destructor
 SIGKILLs its direct child, but only on a graceful teardown; a hard-killed or crashed bar leaves
 the whole tree behind. Verified live 2026-09-01: **seven orphaned `kanata-layer`** (and five
@@ -412,8 +411,8 @@ authenticated events, in both configs. `idle-change` (`timeout`/`resume`) fires 
 listener 1, which only exists in `hypridle.conf` — it goes silent in no-lock mode. And
 `resume` fires on *any* input, before authentication; don't treat it as an unlock.
 
-**Waybar**: `custom/idle-indicator` — blank when armed, 󱫖 presentation, 󰍹 no-lock,
-󰒲 (`.error`) when the daemon is down. Refreshed by `pkill -RTMIN+9 waybar` on toggle,
+**Bar**: the idle indicator (`IdleWidget`, via `idle-indicator`) — blank when armed, 󱫖 presentation, 󰍹 no-lock,
+󰒲 (`.error`) when the daemon is down. Refreshed by `ipc call idle refresh` on toggle,
 plus a 30s interval so an externally-stopped daemon can't leave a stale glyph.
 
 ---

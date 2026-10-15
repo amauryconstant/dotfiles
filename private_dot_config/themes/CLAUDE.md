@@ -22,7 +22,7 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `waybar.css`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
+- **Desktop**: `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
@@ -41,7 +41,7 @@ No theme file is templated; `hyprland.lua` is the Lua-config counterpart to `hyp
 A theme carries its colours **twice**, in two naming systems that nothing translates between,
 because nothing needs to. Confusing them is the standing defect in this directory.
 
-| | `colors.sh` | `waybar.css` · `wofi.css` |
+| | `colors.sh` | `wofi.css` |
 |---|---|---|
 | Names | **roles** — `GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5` | **CSS module names** — `@bg-*`, `@fg-*`, `@accent-*` |
 | Count | **18** `readonly` keys | 24 `@define-color` + 4 hover tints |
@@ -69,7 +69,7 @@ tables use role names because they were regenerated from `colors.sh`.
 
 ## Semantic Variable Schema (CSS files only)
 
-**Variables** organized into categories. **These live in `waybar.css` and its siblings, not in
+**Variables** organized into categories. **These live in `wofi.css`, not in
 `colors.sh`** — see the two-vocabulary note above.
 
 ### Background Hierarchy
@@ -117,21 +117,6 @@ tables use role names because they were regenerated from `colors.sh`.
 | `@accent-alternative` | Alternative | Tertiary navigation |
 | `@accent-special` | Special states | Custom modules, rare indicators |
 | `@accent-urgent-secondary` | Moderate urgency | Battery 20-30%, moderate warnings |
-
-**Hover Variants** — ⚠️ **CSS-only, not part of the colorset**:
-
-| Variable | Role | Usage |
-|----------|------|-------|
-| `@accent-info-hover` | Network hover | 10% opacity version of accent-info |
-| `@accent-highlight-hover` | Audio hover | 10% opacity version of accent-highlight |
-| `@accent-warning-hover` | Backlight hover | 10% opacity version of accent-warning |
-| `@accent-success-hover` | Battery hover | 10% opacity version of accent-success |
-
-These four are declared **only** in each theme's `waybar.css`. They are
-**not** in `colors.sh`, which holds exactly **18** `readonly` role keys — so they are invisible to
-the shell scripts and to Quickshell's `Theme.qml`, both of which read `colors.sh` alone. A QML or
-shell consumer needing a hover tint composites the base accent itself. Do not design against
-these outside GTK CSS.
 
 🚨 **Six `@accent-*` names above have no role counterpart** — `@accent-border`,
 `@accent-performance`, `@accent-media`, `@accent-secondary`, `@accent-alternative` and
@@ -221,7 +206,7 @@ Firefox (URL bar icons, selected tabs) on Rose Pine Dawn.
 
 🚨 **Solarized inverts the rule.** In *both* solarized themes `INK_SECONDARY` measures **better**
 than `INK_PRIMARY` on every ground (light: 4.39 vs 3.64; dark: 4.86 vs 4.11), because Solarized
-assigns body text to base00/base0 by design. No consumer clears AA there — Waybar, wofi and
+assigns body text to base00/base0 by design. No consumer clears AA there — wofi and
 swaync render the same ratios today — so this is a **colorset** property, not a per-app one.
 
 The shell now handles it **by measurement rather than by editing the palette**: `Theme.qml`
@@ -243,8 +228,7 @@ hand would not. The other consumers still render the raw ratios.
 - Variant adaptation strategies
 
 **Quick lookup**: `colors.sh` is the **role layer** and the only file two different runtimes read
-(gum-ui and Quickshell). `waybar.css` holds the fullest **CSS** set — 24 `@define-color` plus the
-four hover tints — and is what a new theme is authored from today. The two are edited by hand and
+(gum-ui and Quickshell). `wofi.css` holds the fullest **CSS** set — 24 `@define-color` — and is what a new theme is authored from today (Waybar's `waybar.css`, which carried four extra hover tints, was retired 2026-10-15). The two are edited by hand and
 independently; see the two-vocabulary note at the top.
 
 ---
@@ -255,7 +239,7 @@ independently; see the two-vocabulary note at the top.
 **Solar auto**: darkman service (sunrise/sunset transitions)
 **Keybindings**: Super+Shift+Y (toggle), Super+Shift+Ctrl+Space (menu)
 
-**Process**: Updates symlink → reloads Waybar/Hyprland → updates wallpaper
+**Process**: Updates symlink → reloads Hyprland → updates wallpaper
 
 ---
 
@@ -381,7 +365,7 @@ All 12 lazygit theme fields and their semantic mappings:
 
 System CLI tools source `~/.config/themes/current/colors.sh` via the gum-ui library. The keys
 are **roles**: `GROUND_BASE`, `INK_PRIMARY`, `SIGNAL_OK`, `IDENTITY_3`. They no longer mirror the
-CSS variable names — `waybar.css` and the rest still carry their own module-named variables, and
+CSS variable names — `wofi.css` and the rest still carry their own module-named variables, and
 nothing translates between the two, because nothing needs to.
 
 ⚠️ **`INK_MUTED` is terminal-only.** It survives in the colorset for `gum-ui.sh` and
@@ -457,7 +441,7 @@ theme: three greps for a literal hex, a literal font name, and `fgSecondary` on 
 
 `theme-switcher` (in `lib/scripts/desktop/`) drives the full switch:
 1. Update `~/.config/themes/current` symlink
-2. Reload core apps (Hyprland, Waybar, terminal, wofi)
+2. Reload core apps (Hyprland, terminal, wofi)
 3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim (each silently skips if its app is absent)
 4. Trigger the `theme-change` user hook: `hook-runner theme-change $theme_name`
 

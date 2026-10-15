@@ -28,7 +28,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - Flag missing files as blocking; flag extra files not present in the reference as a warning to confirm intentional
 
 ### Contrast Safety
-- Elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` only — grep hover/card/input/popover/notification/modal selectors in `waybar.css`, `wofi.css` for `@fg-secondary` (or its resolved hex) used against an elevated background
+- Elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` only — grep hover/card/input/popover/notification/modal selectors in `wofi.css` for `@fg-secondary` (or its resolved hex) used against an elevated background
 - If this theme is a documented "PRIMARY only" case (Catppuccin Latte, Rose Pine Dawn, Rose Pine Moon, Solarized Light per `themes/CLAUDE.md`'s ratio table), any `@fg-secondary`-on-elevated usage is blocking, not just a warning
 - For a genuinely new theme (not one of the 8 documented), flag `@fg-secondary`-on-elevated as a warning and recommend the author compute the actual contrast ratio
 
@@ -41,7 +41,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - No file in a theme dir is a template — any `{{ }}` found is generator corruption, not a template feature
 
 ### Hex Consistency
-- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `waybar.css`, `wofi.css`, `hyprlock.conf`, `hyprland.conf`, and `hyprland.lua`
+- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `wofi.css`, `hyprlock.conf`, `hyprland.conf`, and `hyprland.lua`
 - A mismatch usually means one file was updated during a recolor and a sibling was missed
 
 ### STYLE-GUIDE.md

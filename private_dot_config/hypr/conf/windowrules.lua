@@ -41,7 +41,7 @@ o.window({ class = "thunar", title = "(Open|Save)" }, { float = true, size = { 8
 o.window("localsend", { size = { 600, 400 } })
 
 -- ============================================================================
--- Layer Rules (special surfaces: waybar, notifications, launchers)
+-- Layer Rules (special surfaces: notifications, launchers)
 -- ============================================================================
 -- Wofi launcher: blur background for transparency readability
 hl.layer_rule({ match = { namespace = "wofi" }, blur = true })

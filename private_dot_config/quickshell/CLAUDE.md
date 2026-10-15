@@ -88,18 +88,11 @@ the meters payload's missing temperature
   too — those are plain files, so a single line in them cannot be template-gated. The
   `overview` IPC target stays registered either way and answers `"disabled"`, so a broken
   wiring still looks different from a switched-off feature
-- **Gate**: `features.quickshell_shell.enabled`. Flip it + `chezmoi apply` + re-login is the
-  whole switch, both ways. `.chezmoiignore` alone could not do the rollback — an ignored target
-  is never deleted, so the stale drop-ins and `shell.qml` kept the shell running beside Waybar.
-  `run_onchange_after_configure_desktop_shell` removes the off side's files and enables or
-  stops `quickshell.service`
+- **No feature flags** gate the shell, notifications or polkit since Waybar, swaync and
+  polkit-gnome were retired (2026-10-15). `quickshell.service` is enabled by `services.yaml`
+  and its `ConditionPathExists` only guards a broken apply
 - **Notifications are always the shell's** since swaync was retired (2026-10-15):
   `Config.notificationsOwned` is a constant `true`, and there is no second gate
-- 🚨 **The two bars are mutually exclusive, by config.** `.chezmoiignore` deploys exactly one
-  of `hypr/conf.d/quickshell.{lua,conf}` and `hypr/conf.d/waybar.{lua,conf}`; each drop-in
-  carries both its own autostart and `SUPER+B`. `conf/autostart.*` and
-  `conf/bindings/desktop-utilities.*` start and bind **no** bar — that is deliberate, not an
-  omission
 - **Launch**: `quickshell -c dotfiles`, from `hypr/conf.d/quickshell.{lua,conf}`
 - 🚨 **`PowerMenu.qml` holds the tree's only `hyprctl dispatch`** (log out). Under the Lua config
   provider it must be `hl.dsp.exit()`, never the legacy `exit` — it was the 30th call site the
@@ -112,11 +105,9 @@ the meters payload's missing temperature
   served by `MenuServer.qml` and called by `desktop/quickshell-menu`. A dmenu call has to BLOCK
   until the user chooses, and an IPC handler returns immediately (and `ipc call` exits 0 even
   for a target that does not exist). One connection is one menu
-- 🚨 **The primary keys were taken on 2026-09-01, by gating not shadowing.** Duplicate binds
-  *stack* in Hyprland — both would fire — so the Wofi `SUPER+D`
-  (`conf/bindings/applications.{conf,lua}.tmpl`) and the wlogout `SUPER+SHIFT+Q`
-  (`conf/bindings/system-control.{conf,lua}.tmpl`, renamed to `.tmpl` for this) are wrapped in
-  `{{ if not .features.quickshell_shell.enabled }}`. Flip the flag and the old pair comes back.
+- 🚨 **The primary keys are plain binds in `hypr/conf.d/quickshell.{lua,conf}`.** The old Wofi
+  `SUPER+D` and wlogout `SUPER+SHIFT+Q` were gated off from 2026-09-01 and deleted with their tools
+  on 2026-10-15 — duplicate binds *stack* in Hyprland, so never re-add one beside these.
   **Wofi is now a FALLBACK, not a renderer.** `SUPER+C` was taken the same way on 2026-09-09
   and `SUPER+SHIFT+C` retired (deletion is Shift+Delete inside the surface). It stays installed
   because `quickshell-menu` falls back to it when the shell is unreachable — during first-boot

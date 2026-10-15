@@ -6,8 +6,7 @@ caller goes through `desktop/quickshell-menu`, and clipboard history is
 `clipboard/ClipboardPicker.qml`. Wofi stays installed because `quickshell-menu` falls back to it
 whenever the shell is unreachable, which is load-bearing: these menus run during first-boot setup
 and while the shell is being restarted, and a picker that hung there would take `system-menu` and
-every `menu-*` script with it. It is also what still renders when
-`features.quickshell_shell.enabled` is false.
+every `menu-*` script with it.
 
 **Location**: `private_dot_config/wofi/`
 **Theme system**: See `../themes/CLAUDE.md` for the semantic variable schema + contrast rules.

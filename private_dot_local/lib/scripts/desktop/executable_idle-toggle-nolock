@@ -4,7 +4,7 @@
 # Purpose: Toggle "no-lock" idle mode — display still powers off for energy
 #          saving, but hyprlock never triggers on idle
 # Requirements: Arch Linux, systemd, hypridle
-# Bound to: Super+Shift+I / Waybar idle-indicator right-click
+# Bound to: Super+Shift+I / bar idle-indicator right-click
 #
 # An idle inhibitor (see idle-toggle) pauses *every* listener, so it cannot
 # express "displays still power off, but no lock". This mode instead swaps which
@@ -32,8 +32,6 @@ else
     notify-send "🔅 Idle Lock" "Lock disabled, display still powers off" -t 2000
 fi
 
-# Refresh the idle indicator in both bars. Waybar takes a real-time signal;
-# Quickshell has no signal mechanism, so it gets an IPC call instead. Both are
-# best-effort: either bar may legitimately not be running.
-pkill -RTMIN+9 waybar 2>/dev/null || true
+# Refresh the idle indicator. Best-effort: the shell may legitimately not be
+# running.
 quickshell -c dotfiles ipc call idle refresh >/dev/null 2>&1 || true
