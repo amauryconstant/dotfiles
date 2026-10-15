@@ -30,7 +30,6 @@
 | `quickshell/` | Quickshell desktop shell — the active one (Waybar stack is the fallback) | ✅ Yes |
 | `uwsm/` | Session environment (`env.tmpl`) — exported to Hyprland AND systemd units | ❌ No |
 | `wofi/` | Application launcher | ✅ Yes |
-| `wlogout/` | Power menu | ✅ Yes |
 | `swaync/` | Notification daemon | ✅ Yes |
 | `btop/` | System monitor (themed) | ✅ Yes |
 | `hyprdynamicmonitors/` | Monitor profile manager | ✅ Yes |
@@ -58,7 +57,7 @@
 **Theme system** (`themes/`):
 - Variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - Semantic variables (backgrounds, foregrounds, accents)
-- Desktop apps: Waybar, Swaync, Wofi, Wlogout, Hyprland, Ghostty, Hyprlock (CSS/conf files)
+- Desktop apps: Waybar, Swaync, Wofi, Hyprland, Ghostty, Hyprlock (CSS/conf files)
 - Quickshell reads the **same** `colors.sh` the shell scripts do — see `themes/CLAUDE.md` →
   "Two vocabularies, one palette"
 - CLI tools: bat, broot, btop, lazygit, starship, yazi

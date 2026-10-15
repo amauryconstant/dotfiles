@@ -96,7 +96,7 @@ fallback() {
         cliphist list | wofi --dmenu | cliphist decode | wl-copy
         exit $?
         ;;
-    power) exec wlogout ;;
+    power) exec "$HOME/.local/lib/scripts/user-interface/menu-system" ;;
     keybindings) exec "$HOME/.local/lib/scripts/desktop/keybindings" ;;
     notifications)
         # Only while swaync is actually the daemon; masked, it would activate nothing.

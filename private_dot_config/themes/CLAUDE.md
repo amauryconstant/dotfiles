@@ -22,7 +22,7 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wlogout.css`, `wofi.css`, `firefox-userChrome.css`
+- **Desktop**: `waybar.css`, `swaync.css.tmpl`, `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
@@ -41,7 +41,7 @@
 A theme carries its colours **twice**, in two naming systems that nothing translates between,
 because nothing needs to. Confusing them is the standing defect in this directory.
 
-| | `colors.sh` | `waybar.css` · `wofi.css` · `wlogout.css` · `swaync.css.tmpl` |
+| | `colors.sh` | `waybar.css` · `wofi.css` · `swaync.css.tmpl` |
 |---|---|---|
 | Names | **roles** — `GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5` | **CSS module names** — `@bg-*`, `@fg-*`, `@accent-*` |
 | Count | **18** `readonly` keys | 24 `@define-color` + 4 hover tints |
@@ -114,7 +114,7 @@ tables use role names because they were regenerated from `colors.sh`.
 | `@accent-performance` | System metrics | Disk usage, CPU, memory modules |
 | `@accent-media` | Media controls | Audio, video, media player modules |
 | `@accent-subtle` | Low priority | Cursors, subtle hints, disabled secondary |
-| `@accent-alternative` | Alternative | Tertiary navigation, wlogout extra buttons |
+| `@accent-alternative` | Alternative | Tertiary navigation |
 | `@accent-special` | Special states | Custom modules, rare indicators |
 | `@accent-urgent-secondary` | Moderate urgency | Battery 20-30%, moderate warnings |
 
@@ -179,7 +179,7 @@ whose distance from the foreground tokens varies enough between themes to vanish
 
 ### Application Examples
 
-**Correct (Wofi, Wlogout):**
+**Correct (Wofi):**
 ```css
 #input {
   background-color: @bg-secondary;  /* Elevated surface */

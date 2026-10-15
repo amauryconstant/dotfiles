@@ -86,9 +86,8 @@ for file in "${staged[@]}"; do
 	# --- Check 1: corruption, as a REGRESSION against HEAD -------------------
 	#
 	# An absolute "every *.tmpl contains {{ }}" rule would false-positive on the
-	# five legitimately template-free tracked .tmpl files (wlogout/style.css.tmpl,
-	# voxtype/config.toml.tmpl, theme-switcher.tmpl, theme-menu.tmpl,
-	# private_kdeglobals.tmpl).
+	# four legitimately template-free tracked .tmpl files (voxtype/config.toml.tmpl,
+	# theme-switcher.tmpl, theme-menu.tmpl, private_kdeglobals.tmpl).
 	# Comparing against HEAD and failing only on LOSS has no false positives and
 	# needs no allowlist. Files new in this commit have no HEAD blob to compare.
 	if head_content=$(git show "HEAD:$file" 2>/dev/null); then

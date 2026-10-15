@@ -223,7 +223,7 @@ what `Super+/` reaches when the shell is down
 launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
 because that is exactly the state in which the user has no bar left to ask with.
 When the tree is not deployed (flag off) or the unit will not come up, the targets that had a
-predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wofi`, power → wlogout,
+predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wofi`, power → `menu-system`,
 keybindings → `desktop/keybindings`, notifications → `swaync-client` if unmasked. That is what
 keeps the system menu's Apps / Clipboard History entries alive on the Waybar branch
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
@@ -244,7 +244,6 @@ All use `notify-send` for user feedback.
 **battery-status**: Battery/power status output
 **screenrecord**: Screen recording
 **system-settings**: Launch system settings
-**wlogout**: Logout menu launcher
 **window-pop**: toggle a window to/from a floating "pop" state
 **zoom-cursor**: cursor magnifier
 **voice-meeting**: meeting voice helper
@@ -323,7 +322,7 @@ always fully armed.
 and answers the `Lock` signal — killing it silently disables lock-before-suspend, so a
 lid close suspends the machine unlocked. The inhibitor leaves `before_sleep_cmd` armed.
 
-**`immediate-lock`** is the single lock entry point (`Super+L`, wlogout, system menu, and
+**`immediate-lock`** is the single lock entry point (`Super+L`, system menu, and
 hypridle's `lock_cmd`). `grace` is a hyprlock **CLI flag** since 0.9.6, not a config key.
 
 **It has two routes, chosen at RUNTIME**: the Quickshell lock surface (§22) when

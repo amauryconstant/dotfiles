@@ -66,7 +66,7 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | `SUPER+L` | Lock screen |
 | `SUPER+Space` | Main system menu |
 | `SUPER+/` | Keybinding help (interactive viewer) |
-| `SUPER+SHIFT+Q` | Power menu — Quickshell, or wlogout when `features.quickshell_shell` is off |
+| `SUPER+SHIFT+Q` | Power menu — Quickshell (`menu-system` when the shell is down) |
 | `SUPER+SHIFT+N` | Notification center (swaync) |
 
 ### Desktop utilities (`desktop-utilities.conf`)

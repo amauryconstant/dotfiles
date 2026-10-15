@@ -11,7 +11,7 @@ Technical guidance for Claude Code when developing in this repository.
 - **Project**: Chezmoi dotfiles repository
 - **Target OS**: Arch Linux (archinstall + Hyprland profile)
 - **Desktop**: Hyprland + **Quickshell** (bar, launcher, notifications, power menu, popovers,
-  pickers) — `features.quickshell_shell` is **on**. Waybar + Wofi + swaync + wlogout are still
+  pickers) — `features.quickshell_shell` is **on**. Waybar + Wofi + swaync are still
   installed as the fallback stack; the two bars are mutually exclusive by `.chezmoiignore`
 - **Terminal**: Ghostty (only chezmoi-managed terminal — there is no `private_dot_config/kitty/`)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
@@ -162,7 +162,6 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 - `hypr/` - Hyprland compositor config
 - `waybar/` - Status bar
 - `wofi/` - Launcher
-- `wlogout/` - Power menu
 - `swaync/` - Notification center (themed via `.tmpl`)
 - `themes/` - Theme system (semantic variables, Firefox/Spotify integration)
 - `dotfiles/` - **Hook system** (user extensibility)

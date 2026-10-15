@@ -160,7 +160,6 @@ fi
 - `voice-meeting` - meeting voice helper
 - `window-pop` - toggle a window to a floating "pop" state
 - `zoom-cursor` - cursor magnifier
-- `wlogout` - Logout menu launcher
 
 ### Media Scripts
 **Purpose**: Media capture and wallpaper management

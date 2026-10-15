@@ -20,3 +20,8 @@
 # Stopping the running unit is manual: systemctl --user disable --now hyprwhenthen.service
 .config/hyprwhenthen
 .config/systemd/user/hyprwhenthen.service
+
+# wlogout — the power menu is a Quickshell surface; the shell-down fallback is menu-system.
+.config/wlogout
+.config/themes/*/wlogout.css
+.local/lib/scripts/desktop/wlogout

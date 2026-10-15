@@ -61,7 +61,7 @@ because the compositor now accepts the second locker a lost race would spawn.
 | `voice.conf.tmpl` | Voice dictation (Voxtype; Parakeet bindings desktop-only) | ✅ Yes |
 | `desktop-utilities.conf` | Utilities (audio, gaps, nightlight, idle). **`SUPER+B` is not here** — see `conf.d/` below | ❌ No |
 | `theme-session.conf` | Theme switching, dark mode | ❌ No |
-| `system-control.conf.tmpl` | Lock, power, help, menu (the wlogout `SUPER+SHIFT+Q` is gated on `features.quickshell_shell`) | ✅ Yes |
+| `system-control.conf.tmpl` | Lock, power, help, menu (the old `SUPER+SHIFT+Q` power bind is gated on `features.quickshell_shell`) | ✅ Yes |
 
 Bindings use `bindd` (self-documenting descriptions). Modifier convention: SUPER (primary), SUPER+SHIFT (move/variant), SUPER+CTRL (system).
 
@@ -101,13 +101,13 @@ host's.
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the wlogout `SUPER+SHIFT+Q`, same gate).
+Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`; the Wofi `SUPER+D` gated on `features.quickshell_shell`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl` (the old `SUPER+SHIFT+Q` power bind, same gate).
 
 Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 
 ## Theme System Integration
 
-**Static theme files**: Unlike GTK apps (Waybar, Wofi, Wlogout), Hyprland uses static theme files per theme variant.
+**Static theme files**: Unlike GTK apps (Waybar, Wofi), Hyprland uses static theme files per theme variant.
 
 **Border colors** (`~/.config/themes/{theme}/hyprland.conf`):
 ```conf
