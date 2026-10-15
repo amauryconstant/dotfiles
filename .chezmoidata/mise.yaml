@@ -34,9 +34,6 @@ mise:
       description: "Shapes what agents get: specs, context compression, skill sync"
       tools:
         "npm:@fission-ai/openspec": latest # Spec-driven development for coding agents
-        "npm:@caveman-ai/cli": # Agent output compression + Claude Code/opencode integration
-          version: latest
-          postinstall: "caveman setup --install; command -v opencode >/dev/null 2>&1 && caveman enable opencode || true"
         "aqua:runkids/skillshare": latest # Sync agent skills across tools and machines
 
     ai_insight:

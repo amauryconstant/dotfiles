@@ -4,7 +4,7 @@
 # Purpose: Merge the declared Claude Code settings into the live settings.json
 # Requirements: jaq
 #
-# settings.json is co-owned: caveman keeps env + hooks (and checksums the file), we keep the rest.
+# settings.json is app-managed state; we only assert the keys declared in the seed.
 # create_private_settings.json only seeds a missing file, so edits to it reach an existing machine
 # through this merge instead. jaq keeps key order and escaping, which a chezmoi modify-template
 # does not — see .claude/rules/chezmoi-modify-entries.md.
@@ -26,11 +26,6 @@ seed=$(cat <<'SEED_EOF'
 {{ include "private_dot_config/claude/create_private_settings.json" }}
 SEED_EOF
 )
-
-if printf '%s' "$seed" | jaq -e 'has("env") or has("hooks")' >/dev/null; then
-    {{ includeTemplate "log_error" "Seed declares env/hooks: those belong to caveman" }}
-    exit 1
-fi
 
 tmp=$(mktemp "$target.XXXXXX")
 trap 'rm -f "$tmp"' EXIT

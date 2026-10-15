@@ -3,12 +3,7 @@
   "gitignore": true,
   "ignores": [
     ".opencode/",
-    "_ai/",
-    "**/private_agents/**",
-    "**/private_plugins/**",
-    "**/commands/private_caveman*.md",
-    "**/skills/private_caveman*/**",
-    "**/skills/private_cavecrew/**"
+    "_ai/"
   ],
   "showFound": false,
   "noBanner": true,

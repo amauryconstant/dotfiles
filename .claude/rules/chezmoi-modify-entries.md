@@ -28,11 +28,11 @@
 
 A modify-template re-serializes: `fromJson` → `toPrettyJson` sorts keys and normalizes layout, so the output is semantically equal to the input but never byte-equal. Any tool that records a hash of the bytes it wrote sees that as tampering.
 
-`caveman doctor claude --fix` does exactly this — `~/.caveman/integrations/claude.json` stores `after_sha256` of `~/.config/claude/settings.json`. An apply through a modify-template preserved caveman's `env`/`hooks` intact and still flipped it to `owned: false` / `state: degraded`. Worse, the reinstall then refused: `claude PreToolUse Caveman hook changed after enable; refusing destructive disable`. Recovery was to restore the file to the manifest's `before_sha256` and re-run `--fix`.
+Caveman did exactly this (retired 2026-10-15): its manifest stored `after_sha256` of `~/.config/claude/settings.json`. An apply through a modify-template preserved its `env`/`hooks` intact and still flipped the integration to `owned: false` / `state: degraded`, and its reinstall then refused to touch the file. Recovery was to restore the file to the manifest's `before_sha256` and re-run its fix.
 
 Use `create_` for these files: chezmoi writes the seed only when the target is absent and never touches it again. See `private_dot_config/claude/create_private_settings.json`.
 
-To keep versioning keys on a machine that already has the file, pair the seed with a `run_onchange_after_` script that deep-merges it in with `jaq '. * $seed'` (see `.chezmoiscripts/run_onchange_after_merge_claude_settings.sh.tmpl`). jaq keeps key order and escaping, so only the declared lines change — verified by diff, and `caveman doctor claude` stays `owned: true`. The script refuses a seed declaring `env`/`hooks`, which stay caveman's. Any seed edit re-asserts every declared key (reverting a later `/model` change); deleting a key from the seed does not remove it from the live file.
+To keep versioning keys on a machine that already has the file, pair the seed with a `run_onchange_after_` script that deep-merges it in with `jaq '. * $seed'` (see `.chezmoiscripts/run_onchange_after_merge_claude_settings.sh.tmpl`). jaq keeps key order and escaping, so only the declared lines change — verified by diff. Any seed edit re-asserts every declared key (reverting a later `/model` change); deleting a key from the seed does not remove it from the live file.
 
 Without the merge script the trade is real — source edits never reach machines that already have the file. That is the correct trade when the file is app-managed state and only its initial content is ours.
 
