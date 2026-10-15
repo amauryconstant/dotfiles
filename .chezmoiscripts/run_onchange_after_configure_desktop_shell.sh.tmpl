@@ -19,7 +19,7 @@
 # Only removes what chezmoi itself deployed from the other branch; the flag
 # going back on redeploys it all. Warns about a re-login only when something
 # actually changed, so a first run on an already-converted machine is silent.
-# Hash: {{ printf "shell=%s polkit=%s" (.features.quickshell_shell | toJson) (.features.quickshell_polkit | toJson) }}
+# Hash: {{ printf "shell=%s" (.features.quickshell_shell | toJson) }}
 
 {{ includeTemplate "log_start" "Configuring desktop shell (Quickshell vs Waybar)..." }}
 
@@ -61,9 +61,6 @@ if pgrep -x waybar >/dev/null 2>&1; then
         {{ includeTemplate "log_warning" "quickshell.service is not running -- leaving Waybar up" }}
     fi
 fi
-{{ if .features.quickshell_polkit.enabled }}
-remove_stale "$HYPR_CONFD/polkit-gnome.lua" "$HYPR_CONFD/polkit-gnome.conf"
-{{ end }}
 {{ else }}
 if systemctl --user is-enabled --quiet quickshell.service 2>/dev/null \
     || systemctl --user is-active --quiet quickshell.service 2>/dev/null; then

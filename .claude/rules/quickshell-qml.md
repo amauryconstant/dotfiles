@@ -305,8 +305,8 @@ anything.
 🚨 **Constructing `PolkitAgent` is what REGISTERS the agent, and a session may have
 exactly one.** Same shape as the notification server below, and the same consequence: the only
 way not to own polkit is not to construct it, which is why the whole dialog sits behind a
-`Loader { active: Config.polkitOwned }`. With the flag off, `hypr/conf.d/polkit-gnome.{lua,conf}`
-deploys and polkit-gnome keeps the session. `path` is deliberately unset — the binary's own
+`Loader { active: Config.polkitOwned }`.
+`path` is deliberately unset — the binary's own
 default (`/org/quickshell/Polkit`) is as good as any, and naming one only invites drift.
 
 ⚠️ **A failure does NOT end the flow.** Quickshell starts a fresh PAM session automatically and

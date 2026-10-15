@@ -41,9 +41,8 @@ the meters payload's missing temperature
   2026-09-12 on top of that supervision — the inventory deferred it until a crash-recovery story
   existed, because a crashed agent leaves the session with NONE and every privileged action then
   fails with no prompt). A session may have exactly one agent and **constructing `PolkitAgent`
-  registers it**, so the dialog sits behind `Loader { active: Config.polkitOwned }`, gated on
-  `features.quickshell_polkit`. Flipping that off deploys `hypr/conf.d/polkit-gnome.{lua,conf}`
-  instead. It is an **interrupt**: no toggle, no IPC target, no keybinding — its visibility is the
+  registers it**, so the dialog sits behind `Loader { active: Config.polkitOwned }`
+  (a constant `true` since polkit-gnome was retired 2026-10-15). It is an **interrupt**: no toggle, no IPC target, no keybinding — its visibility is the
   agent's `isActive` and nothing else. Escape cancels, Return submits, Tab cycles identities when
   polkit offers more than one (the branch §21 called out as assumed away). Cancel (neutral) and
   Authenticate (primary) are `ActionButton`s too: until 2026-10-06 the dialog was keyboard-only
@@ -51,7 +50,7 @@ the meters payload's missing temperature
   `lock/LockContent.qml`, surface §22, added 2026-09-12), gated on `features.quickshell_lock`
   (`enabled` and `chassis: [laptop]`). On the two-monitor NVIDIA desktop it froze a few seconds
   after appearing (2026-10-14: Quickshell's main thread stops, Hyprland stays alive), so there
-  `SUPER+L` takes the hyprlock fallback. Add `desktop` to the chassis list to retry. Unlike the two flags above
+  `SUPER+L` takes the hyprlock fallback. Add `desktop` to the chassis list to retry. Unlike the polkit and notification roles
   **nothing is displaced**: `desktop/immediate-lock` asks the running shell and falls back to
   hyprlock at RUNTIME, so `SUPER+L` locks the screen with the flag off, with the shell down, or
   with its restart budget spent. PAM is `/etc/pam.d/hyprlock`, borrowed from the package — no

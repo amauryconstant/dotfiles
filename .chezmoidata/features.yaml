@@ -11,15 +11,8 @@ features:
     enabled: true
   quickshell_shell:
     enabled: true
-  # Polkit authentication agent. Separate from quickshell_shell because a
-  # session may have exactly one agent, so running the bar must not imply
-  # displacing the existing one. Flipping it back deploys
-  # hypr/conf.d/polkit-gnome again, which restores the polkit-gnome agent that
-  # hypr/conf/autostart used to start unconditionally.
-  quickshell_polkit:
-    enabled: true
   # In-shell lock screen (surface §22). Separate from quickshell_shell for the
-  # same reason as polkit, but with a gentler failure mode:
+  # same reason as the bar's other owned roles, but with a gentler failure mode:
   # desktop/immediate-lock routes at RUNTIME, so with this off — or with the
   # shell down, or its restart budget spent — SUPER+L still locks via hyprlock.
   #

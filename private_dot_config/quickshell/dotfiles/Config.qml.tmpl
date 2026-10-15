@@ -504,12 +504,11 @@ Singleton {
     // installed later would race this one for it at login.
     readonly property bool notificationsOwned: true
 
-    // 🚨 Whether this shell owns the polkit authentication agent. Same kind of
-    // exclusivity as notificationsOwned and load-bearing for the same reason: a
-    // session may have exactly ONE agent, and merely CONSTRUCTING PolkitAgent
-    // registers it. With the flag off, hypr/conf.d/polkit-gnome deploys the
-    // polkit-gnome agent instead and this shell must not construct one.
-    readonly property bool polkitOwned: {{ .features.quickshell_polkit.enabled }}
+    // Whether this shell owns the polkit authentication agent. Always true
+    // since polkit-gnome was retired (2026-10-15). A session may have exactly
+    // ONE agent and merely CONSTRUCTING PolkitAgent registers it, so a second
+    // agent installed later would race this one.
+    readonly property bool polkitOwned: true
 
     // Whether this shell draws the lock screen. NOT the same kind of flag as
     // the two above: nothing is displaced and nothing races, because

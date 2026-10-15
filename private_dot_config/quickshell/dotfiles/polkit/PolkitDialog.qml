@@ -17,8 +17,6 @@ import QtQuick
 // have exactly one. So the only way not to own polkit is not to construct it,
 // which is why this whole window sits behind a Loader on Config.polkitOwned in
 // shell.qml — the same shape, for the same reason, as NotificationServer.
-// With the flag off, hypr/conf.d/polkit-gnome deploys instead and that agent
-// keeps the session.
 //
 // 🚨 This surface is why the shell had to be supervised first. A crashed agent
 // leaves the session with NONE, and every privileged action then fails with no

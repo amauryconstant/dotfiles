@@ -19,8 +19,6 @@
 
 `hyprland.conf` also pulls `conf.d/*.conf` (drop-ins), `monitors.conf` (HyprDynamicMonitors output), and `~/.config/themes/current/hyprland.conf` (theme borders).
 
-**The polkit agent lives in `conf.d/` too, on its own flag.** A session may have exactly one agent, and the Quickshell shell ships one (`quickshell/dotfiles/polkit/PolkitDialog.qml`), so `conf.d/polkit-gnome.{lua,conf}` deploys only when `features.quickshell_polkit` is **off**. Its own flag rather than `quickshell_shell`, for the same reason `quickshell_notifications` is separate: running the bar and displacing a session-exclusive D-Bus agent are separate decisions. That line used to sit unconditionally in `conf/autostart.*`, which **both** branches load.
-
 **Status bar lives in `conf.d/`, not in `conf/`.** `conf.d/waybar.{lua,conf}` and `conf.d/quickshell.{lua,conf}` each carry their own autostart **and** `SUPER+B`; `.chezmoiignore` deploys exactly one pair, keyed on `features.quickshell_shell` — the Quickshell bar floats and reserves 44px, which Waybar's full-bleed bar cannot stack with. Shell docs: `private_dot_config/quickshell/CLAUDE.md`.
 
 **Base config files** (`conf/`, each `.conf` twinned by the `.lua` that is live since the 2026-09-01 cutover):

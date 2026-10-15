@@ -654,8 +654,7 @@ implicit one — built here as the real branch, see `_research/archive/QUICKSHEL
 (The `pf-d` artboard this paragraph used to cite died in the 2026-09-08 design rewrite.)
 
 **The risk was never the API, it is exclusivity**: a polkit session has one agent. `polkit-gnome`
-no longer starts from `hypr/conf/autostart.*` at all — it moved to `hypr/conf.d/polkit-gnome.{lua,conf}`,
-which `.chezmoiignore` deploys only when `features.quickshell_polkit` is off. A crash in the
+was retired 2026-10-15; the shell's agent is the only one. A crash in the
 Quickshell agent leaves none, which `Restart=always` answers in ~2s.
 
 ### `PamContext` (`pam/qml.hpp`)

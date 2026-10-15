@@ -30,3 +30,8 @@
 # that had it; `systemctl --user unmask swaync.service` after removing the package.
 .config/swaync
 .config/themes/*/swaync.css
+
+# polkit-gnome autostart drop-in — the Quickshell shell owns the polkit agent.
+# A stale copy would start a second agent, so this must go with the package.
+.config/hypr/conf.d/polkit-gnome.lua
+.config/hypr/conf.d/polkit-gnome.conf

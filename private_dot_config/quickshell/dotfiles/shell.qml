@@ -256,7 +256,6 @@ ShellRoot {
     // 🚨 Behind a Loader for the same reason NotificationServer is: a session
     // may have exactly ONE polkit agent and merely CONSTRUCTING PolkitAgent
     // registers it, so the only way not to own polkit is not to build this.
-    // With the flag off, hypr/conf.d/polkit-gnome keeps the existing agent.
     Loader {
         active: Config.polkitOwned
 

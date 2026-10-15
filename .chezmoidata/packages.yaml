@@ -288,7 +288,6 @@ packages:
         - waybar-git # Status bar for Wayland
         - hyprlock # Official Hyprland screen locker
         - hypridle # Official Hyprland idle daemon
-        - polkit-gnome # Polkit authentication agent (hyprpolkitagent crashes)
         - network-manager-applet # Network Manager GUI applet
         - darkman # Solar-based light/dark mode automation
         - hyprsunset # Blue light filter (gamma adjustment)
