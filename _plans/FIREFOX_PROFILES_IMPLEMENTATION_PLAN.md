@@ -784,6 +784,8 @@ git commit -m "Add firefox-open chooser and route firefox.desktop through it"
 
 ---
 
+> **Update (2026-10-15):** Task 7's `window.open` handler is replaced by a static `workspace` window rule. `workspace` is now a GLOBAL id (1-10 = primary monitor: DP-1 on desktop, the only monitor on laptop), so a profile always opens on the primary monitor, not the focused one. Numbers: work 1, ringstone 2, leisure 10.
+
 ### Task 7: Hyprland identity — workspace and border per profile
 
 Gives each profile's windows its own workspace (focus follows) and an active-border colour taken from a theme `IDENTITY_<n>` slot, so the context is visible at a glance.

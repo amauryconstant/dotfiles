@@ -35,24 +35,25 @@ firefox:
   # name       shown in profiles.ini and the chooser menu
   # chassis    which machines get this profile (.chassisType values)
   # identity   theme IDENTITY_<n> colour (1..5) for the active border
-  # workspace  Hyprland workspace the window opens on (focus follows)
+  # workspace  GLOBAL Hyprland workspace id (focus follows). 1-10 = primary monitor
+  #            (DP-1 on desktop via hyprsplit monitor_priority; the only monitor on laptop)
   # prefs      per-profile {key,value}, extends common_prefs (empty for now)
   profiles:
     - id: work
       name: Work
       chassis: [desktop, laptop]
       identity: 1
-      workspace: 2
+      workspace: 1
       prefs: []
     - id: leisure
       name: Leisure
       chassis: [laptop]
       identity: 2
-      workspace: 3
+      workspace: 10
       prefs: []
     - id: ringstone
       name: Ringstone
       chassis: [desktop, laptop]
       identity: 3
-      workspace: 4
+      workspace: 2
       prefs: []
