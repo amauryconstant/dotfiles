@@ -1,7 +1,7 @@
 # Quickshell — retiring the replaced tooling
 
 **Status**: wlogout, swaync, polkit-gnome, polkit-kde-agent and Waybar retired 2026-10-15 (one commit each, flags deleted). **Open**: Wofi (fallback, keep) and hyprlock (active on the desktop while the in-shell lock freeze is unsolved).
-**Manual leftovers**: `package-manager sync --prune` (reviewed), `systemctl --user unmask swaync.service`, `pkill waybar`, and the same on the laptop after `chezmoi apply`.
+**Manual leftovers**: `paru -Rns waybar-git swaync wlogout polkit-gnome polkit-kde-agent` (`sync --prune` finds nothing here: no `package-state.yaml`), `systemctl --user unmask swaync.service`, `pkill waybar`, and the same on the laptop after `chezmoi apply`.
 **Reviewed**: 2026-10-15 — every tool past its month and the go-ahead given: wlogout, swaync,
 polkit-gnome, polkit-kde-agent and Waybar are retired in that order, one commit each, with their
 feature flags (`quickshell_notifications`, `quickshell_polkit`, `quickshell_shell`) deleted and
@@ -66,7 +66,7 @@ same commit as the Waybar package, or not at all.
 
 ## Per-tool checklist
 
-- [ ] `packages.yaml` entry removed; `package-manager sync --prune` reviewed **before** running
+- [ ] `packages.yaml` entry removed; `paru -Rns <pkg>` run by hand (`sync --prune` only sees packages `package-manager` itself installed — see `.claude/rules/chezmoi-scripts.md`)
 - [ ] Config directory and per-theme files removed across **all 8 themes** — `themes/CLAUDE.md`
       requires the set stay uniform, so a file removed from one goes from all
 - [ ] Wrapper scripts, keybindings (`.conf` **and** `.lua`), autostart entries, menu entries

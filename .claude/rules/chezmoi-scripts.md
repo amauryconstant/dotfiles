@@ -158,14 +158,19 @@ Two manual steps, in order:
 
 ```sh
 # 1. drop it from .chezmoidata/packages.yaml (declarative source of truth)
-# 2. remove it from this machine:
-package-manager sync --prune
+# 2. remove it from this machine (every machine that has it):
+paru -Rns <pkg>
 ```
 
-`sync --prune` diffs `packages.yaml` against `~/.local/state/package-manager/package-state.yaml`,
-prints every package installed but no longer declared, and asks before removing anything
-(`_sync_prune_orphans`). `package-manager update` — and therefore topgrade — runs it too, so a
-retirement also surfaces on the normal update path. Step 1 alone uninstalls nothing.
+Step 1 alone uninstalls nothing.
+
+🚨 **`package-manager sync --prune` does NOT do this here.** It diffs `packages.yaml` against
+`~/.local/state/package-manager/package-state.yaml` (`_sync_prune_orphans`), and that file only
+records packages `package-manager` itself installed or updated. Packages installed by
+`run_onchange_before_sync_packages` (direct `pacman`/`paru`) are never recorded, so on this machine
+the file did not exist, `yq` failed behind `2>/dev/null`, and `--prune` printed "No orphaned
+packages found" with all five retired Quickshell-era packages still installed (2026-10-15). Treat a
+clean prune as *no information*, not as proof nothing is installed.
 
 **See**: `private_dot_local/lib/scripts/system/CLAUDE.md` for package-manager details
 

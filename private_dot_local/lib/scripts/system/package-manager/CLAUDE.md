@@ -22,7 +22,7 @@ package-manager module enable base shell
 
 # Package operations
 package-manager sync              # Sync to packages.yaml
-package-manager sync --prune      # Sync + remove orphans (THE way to retire a package)
+package-manager sync --prune      # Sync + remove orphans it RECORDED (not a reliable way to retire a package — see Integration Points)
 package-manager install firefox   # Install single package
 package-manager update            # Sync + update all packages
 
@@ -184,18 +184,20 @@ packages:
 
 ## Integration Points
 
-**Retiring a package**: drop it from `.chezmoidata/packages.yaml`, then run
-`package-manager sync --prune`. The first step alone uninstalls nothing — it only stops *new*
-machines installing it. `--prune` diffs the manifest against `package-state.yaml`, lists everything
-installed but no longer declared, and gates removal behind a confirmation prompt
-(`_sync_prune_orphans`, `operations/sync-orchestrator.sh`). There is no automatic path, by design:
-`packages.delete` is one-time migration cleanup, and no hook fires during `chezmoi apply`.
+**Retiring a package**: drop it from `.chezmoidata/packages.yaml`, then `paru -Rns <pkg>` by hand.
+The first step alone uninstalls nothing — it only stops *new* machines installing it.
+🚨 `--prune` is NOT the retirement path: it diffs the manifest against `package-state.yaml`
+(`_sync_prune_orphans`, `operations/sync-orchestrator.sh`), which only holds packages this tool
+installed or updated itself. Packages put there by the `run_onchange` script are unrecorded, the
+file may not exist at all, and `yq` failing behind `2>/dev/null` reads as "No orphaned packages
+found". There is no automatic path, by design: `packages.delete` is one-time migration cleanup,
+and no hook fires during `chezmoi apply`.
 
 **Chezmoi trigger**: `run_onchange_before_sync_packages.sh.tmpl` — hash change on packages.yaml
 re-runs that script, which is **self-contained and does not call `package-manager` at all** (it runs
 before `lib/scripts` is applied). It installs `packages.install` and applies `packages.delete`
 (one-time migration cleanup, not a retirement list); it never prunes. Retiring a package is a
-manual `paru -Rns`. `sync --prune` is manual, or via `package-manager update`.
+manual `paru -Rns`. `sync --prune` is manual, or via `package-manager update`, and only covers recorded packages.
 
 **Topgrade**: Pre-command calls `package-manager update` (sync + update all) before firmware/git/cleanup.
 

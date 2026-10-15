@@ -125,7 +125,7 @@ Module-based declarative package management with NixOS-style version pinning (ex
 package-manager module enable base shell   # module management
 package-manager pin firefox 120.0           # version pinning
 package-manager lock
-package-manager sync --prune                # apply packages.yaml (the run_onchange uses this)
+package-manager sync --prune                # sync + remove orphans it recorded (not the retirement path; see package-manager/CLAUDE.md)
 package-manager update
 package-manager status / validate / outdated
 ```
