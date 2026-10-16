@@ -11,7 +11,7 @@ BarWidget {
 
     readonly property MprisPlayer player: {
         // qmllint disable missing-property
-        const usable = Mpris.players.values.filter(p => !root.ignored.some(name => (p.dbusName ?? "").toLowerCase().includes(name)));
+        const usable = Mpris.players.values.filter(p => root.allowed.some(name => (p.identity ?? "").toLowerCase().includes(name)) || !root.ignored.some(name => (p.dbusName ?? "").toLowerCase().includes(name)));
         // qmllint enable missing-property
         return usable.find(p => p.isPlaying) ?? usable[0] ?? null;
     }
@@ -19,6 +19,9 @@ BarWidget {
     // visible, so the playerctld proxy has to go or it double-counts the
     // real player it is proxying. Browsers were Waybar's ignored-players.
     readonly property list<string> ignored: ["firefox", "chromium", "playerctld"]
+    // "chromium" in a bus name means the ENGINE, not a browser: NouTube is a
+    // Chromium app and publishes as chromium.instanceN. Matched on identity.
+    readonly property list<string> allowed: ["noutube"]
 
     icon: {
         if (!root.player)

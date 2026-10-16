@@ -16,11 +16,13 @@ BarPopover {
 
     readonly property MprisPlayer player: {
         // qmllint disable missing-property
-        const usable = Mpris.players.values.filter(p => !root.ignored.some(name => (p.dbusName ?? "").toLowerCase().includes(name)));
+        const usable = Mpris.players.values.filter(p => root.allowed.some(name => (p.identity ?? "").toLowerCase().includes(name)) || !root.ignored.some(name => (p.dbusName ?? "").toLowerCase().includes(name)));
         // qmllint enable missing-property
         return usable.find(p => p.isPlaying) ?? usable[0] ?? null;
     }
     readonly property list<string> ignored: ["firefox", "chromium", "playerctld"]
+    // Same allow-list as MediaWidget: Chromium-engine apps that are not browsers.
+    readonly property list<string> allowed: ["noutube"]
     readonly property real progress: (root.player?.lengthSupported ?? false) && (root.player?.length ?? 0) > 0 ? (root.player?.position ?? 0) / root.player.length : 0
 
     function clockText(seconds: real): string {
