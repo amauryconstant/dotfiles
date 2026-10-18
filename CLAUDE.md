@@ -235,6 +235,9 @@ surface, and why each departure
 surface is made of — not backlogs. Taking a task from one is the standing hazard, which is why the
 retirement plan above is kept separate.
 
+**Testing a Hyprland/Quickshell change visually before `chezmoi apply`?**
+→ `.claude/skills/desk/SKILL.md` (nested desktop on the rendered source; screenshots Claude can read)
+
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)
 

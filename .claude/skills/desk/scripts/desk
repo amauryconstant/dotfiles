@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# desk — a disposable Hyprland + Quickshell desktop that runs the SOURCE tree.
+#
+# A nested Hyprland (a window inside the live session) whose XDG_CONFIG_HOME points
+# at a copy rendered from the repo, so un-applied edits are what runs. Nothing under
+# ~/.config, the live compositor or the live systemd units is touched.
+#
+#   desk up | down | reload | status | shot [file] | run <cmd…> | logs [hypr|qs]
+#
+# Procedure and what leaks: .claude/skills/desk/SKILL.md
+set -euo pipefail
+
+repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
+root="${XDG_RUNTIME_DIR:?}/dotfiles-desk"
+state="$root/env"
+cfg="$root/config"
+
+die() {
+	echo "❌ $*" >&2
+	exit 1
+}
+
+load_state() {
+	[[ -f "$state" ]] || die "no sandbox running — start one with: desk up"
+	# shellcheck disable=SC1090
+	source "$state"
+	kill -0 "$HYPR_PID" 2>/dev/null || die "sandbox compositor (pid $HYPR_PID) is gone — run: desk down"
+}
+
+# Wayland socket names currently present (not their .lock files).
+wl_sockets() {
+	local f
+	for f in "$XDG_RUNTIME_DIR"/wayland-*; do
+		[[ "$f" == *.lock || ! -e "$f" ]] || basename "$f"
+	done
+}
+
+# The nested session's environment, for anything that must talk to IT, not the live one.
+nested_env() {
+	export HYPRLAND_INSTANCE_SIGNATURE="$SIG" WAYLAND_DISPLAY="$NESTED_DISPLAY" XDG_CONFIG_HOME="$cfg"
+	export QS_DISABLE_FILE_WATCHER=1
+}
+
+# Render hypr, themes, quickshell and dotfiles from SOURCE into $cfg, then apply the
+# sandbox overrides to the COPY. None of these paths are encrypted.
+render() {
+	local tmp
+	tmp=$(mktemp -d -p "$root")
+	(cd "$repo" && chezmoi archive --source "$repo" --format tar \
+		~/.config/hypr ~/.config/themes ~/.config/quickshell ~/.config/dotfiles) |
+		tar --warning=no-timestamp -x -C "$tmp" --strip-components=1
+	# `themes/current` is a symlink chezmoi does not manage: aim it at the rendered copy
+	# of whatever theme the live session uses.
+	local theme
+	theme=$(basename "$(readlink -f ~/.config/themes/current)")
+	ln -sfn "$cfg/themes/$theme" "$tmp/themes/current"
+	# hyprsplit is a .chezmoiexternal checkout, so the archive lacks it: borrow the live one (read-only).
+	ln -sfn ~/.config/hypr/hyprsplit "$tmp/hypr/hyprsplit"
+
+	# The real autostart runs `dbus-update-activation-environment --systemd` (which would
+	# repoint the live session's units at this display), Nextcloud, the keyring and the
+	# clipboard store. The shell is started by `desk` itself, so autostart is empty.
+	printf -- '-- desk sandbox: nothing autostarts; `desk` starts the shell.\n' >"$tmp/hypr/conf/autostart.lua"
+	# The nested output is named WAYLAND-1, not the desktop's DP-1.
+	printf 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })\n' >"$tmp/hypr/conf.d/zz-desk.lua"
+
+	# shellcheck source=../../../../.mise/lib/render-qml.sh
+	source "$repo/.mise/lib/render-qml.sh"
+	neutralise_qml_singletons "$tmp/quickshell/dotfiles"
+
+	# Swap in place: the path must stay stable for a running compositor.
+	if [[ -d "$cfg" ]]; then
+		mv "$cfg" "$root/config.old"
+	fi
+	mv "$tmp" "$cfg"
+	[[ ! -d "$root/config.old" ]] || rm -r "$root/config.old"
+}
+
+start_shell() {
+	(
+		nested_env
+		setsid quickshell -c dotfiles >"$root/quickshell.log" 2>&1 &
+		echo $! >"$root/qs.pid"
+	)
+	local _
+	for _ in $(seq 1 50); do
+		# Loaded is not drawn: wait for the first layer surface, or a shot is an empty desktop.
+		if grep -q 'Configuration Loaded' "$root/quickshell.log" 2>/dev/null &&
+			(nested_env && hyprctl layers | grep -q 'namespace: quickshell'); then
+			return 0
+		fi
+		sleep 0.2
+	done
+	cat "$root/quickshell.log" >&2
+	die "sandbox shell never reported 'Configuration Loaded'"
+}
+
+stop_shell() {
+	if [[ -f "$root/qs.pid" ]]; then
+		kill "$(<"$root/qs.pid")" 2>/dev/null || true
+		rm -f "$root/qs.pid"
+	fi
+}
+
+cmd_up() {
+	[[ -n "${WAYLAND_DISPLAY:-}" ]] || die "no Wayland session (WAYLAND_DISPLAY unset)"
+	[[ ! -f "$state" ]] || die "a sandbox is already up — desk down first"
+	mkdir -p "$root"
+	chmod 700 "$root"
+
+	local _ hyprdir="${XDG_RUNTIME_DIR}/hypr" pid='' sig='' disp='' d
+	# shellcheck disable=SC2329 # invoked by the trap
+	fail_cleanup() {
+		[[ -z "$pid" ]] || kill -- "-$pid" 2>/dev/null || true
+		stop_shell
+		[[ -z "$sig" ]] || rm -r "${hyprdir:?}/${sig:?}" 2>/dev/null || true
+		rm -rf "$root"
+	}
+	trap fail_cleanup ERR
+
+	render
+	mapfile -t before_hypr < <(ls "$hyprdir" 2>/dev/null || true)
+	mapfile -t before_wl < <(wl_sockets)
+
+	XDG_CONFIG_HOME="$cfg" setsid Hyprland -c "$cfg/hypr/hyprland.lua" >"$root/hyprland.log" 2>&1 &
+	pid=$!
+
+	for _ in $(seq 1 75); do
+		kill -0 "$pid" 2>/dev/null || {
+			cat "$root/hyprland.log" >&2
+			die "nested Hyprland exited"
+		}
+		while IFS= read -r d; do
+			[[ " ${before_hypr[*]-} " == *" $d "* ]] || sig=$d
+		done < <(ls "$hyprdir" 2>/dev/null || true)
+		while IFS= read -r d; do
+			[[ " ${before_wl[*]-} " == *" $d "* ]] || disp=$d
+		done < <(wl_sockets)
+		if [[ -n "$sig" && -n "$disp" ]] && HYPRLAND_INSTANCE_SIGNATURE=$sig hyprctl -j status >/dev/null 2>&1; then
+			break
+		fi
+		sleep 0.2
+	done
+	[[ -n "$sig" && -n "$disp" ]] || {
+		cat "$root/hyprland.log" >&2
+		die "nested Hyprland did not come up"
+	}
+
+	printf 'HYPR_PID=%q\nSIG=%q\nNESTED_DISPLAY=%q\n' "$pid" "$sig" "$disp" >"$state"
+	load_state
+	start_shell
+	trap - ERR
+	echo "sandbox up: display $disp, instance $sig"
+	echo "config: $cfg (rendered from source)"
+	echo "logs:   $root/{hyprland,quickshell}.log"
+}
+
+cmd_down() {
+	if [[ -f "$state" ]]; then
+		# shellcheck disable=SC1090
+		source "$state"
+		stop_shell
+		kill -- "-$HYPR_PID" 2>/dev/null || kill "$HYPR_PID" 2>/dev/null || true
+		local _
+		for _ in $(seq 1 25); do
+			kill -0 "$HYPR_PID" 2>/dev/null || break
+			sleep 0.2
+		done
+		kill -9 "-$HYPR_PID" 2>/dev/null || true
+		rm -r "${XDG_RUNTIME_DIR:?}/hypr/${SIG:?}" 2>/dev/null || true
+	fi
+	[[ ! -d "$root" ]] || rm -r "$root"
+	echo "sandbox down"
+}
+
+cmd_reload() {
+	load_state
+	stop_shell
+	render
+	(nested_env && hyprctl reload >/dev/null)
+	start_shell
+	echo "reloaded from source"
+}
+
+cmd_status() {
+	if [[ -f "$state" ]] && load_state 2>/dev/null; then
+		echo "up: display $NESTED_DISPLAY, instance $SIG, compositor pid $HYPR_PID"
+	else
+		echo "down"
+	fi
+}
+
+cmd_shot() {
+	load_state
+	local out=${1:-"$root/shot-$(date +%H%M%S).png"}
+	WAYLAND_DISPLAY=$NESTED_DISPLAY grim "$out"
+	echo "$out"
+}
+
+cmd_run() {
+	[[ $# -gt 0 ]] || die "usage: desk run <command…>"
+	load_state
+	nested_env
+	exec "$@"
+}
+
+cmd_logs() {
+	load_state
+	case "${1:-all}" in
+	hypr) tail -n 60 "$root/hyprland.log" ;;
+	qs) tail -n 60 "$root/quickshell.log" ;;
+	*)
+		echo "--- hyprland.log" && tail -n 40 "$root/hyprland.log"
+		echo "--- quickshell.log" && tail -n 40 "$root/quickshell.log"
+		;;
+	esac
+}
+
+sub=${1:-}
+[[ $# -eq 0 ]] || shift
+case "$sub" in
+up) cmd_up ;;
+down) cmd_down ;;
+reload) cmd_reload ;;
+status) cmd_status ;;
+shot) cmd_shot "$@" ;;
+run) cmd_run "$@" ;;
+logs) cmd_logs "$@" ;;
+*) die "usage: desk up | down | reload | status | shot [file] | run <cmd…> | logs [hypr|qs]" ;;
+esac

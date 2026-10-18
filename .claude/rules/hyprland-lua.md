@@ -171,6 +171,7 @@ Part of `mise run lint`, but unlike the other tasks it needs the `Hyprland` bina
 reply and exit code printed, instance and its socket dir removed on exit (verified on a good call,
 `exit 0 / ok`, and a bad one, `exit 7 / error: … nil value`). The manual procedure follows for
 reference.
+To see a whole config (bindings, rules, the shell) run, use the `desk` skill instead: same nested approach, rendered from source, with screenshots.
 
 The gap above is real and it is where a dead `dpms on` hides. The check that closes it is a
 **nested Hyprland in Lua mode** — it nests as a Wayland client inside the running session, so it

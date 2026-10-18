@@ -9,6 +9,8 @@ allowed-tools: Read, Bash(chezmoi diff:*), Bash(chezmoi status:*), Bash(chezmoi 
 
 `chezmoi apply` is denied for Claude on purpose. This skill prepares it, hands it to the user, then finishes the job — an apply alone leaves several things stale (notably a running Quickshell, see `.claude/rules/quickshell-qml.md`).
 
+> Visual change to `hypr/`, `quickshell/` or `themes/`? Run it in the `desk` sandbox first (`/desk` skill), so the live session is not the first place it renders.
+
 ## 1. Review the diff — never apply blind
 
 ```bash

@@ -79,6 +79,7 @@
       "Bash(yq:*)",
       "Bash(jq:*)",
       "Bash(mise run:*)",
+      "Bash(.claude/skills/desk/scripts/desk:*)",
       "Bash(mise tasks:*)",
       "Bash(journalctl:*)",
       "Bash(hyprctl clients:*)",

@@ -22,12 +22,7 @@ source "$(git rev-parse --show-toplevel)/.mise/lib/render-qml.sh"
 render_qml_tree "$tmp"
 cfg="$tmp/dotfiles"
 
-sed -i -E 's/(notificationsOwned|polkitOwned): true/\1: false/; s/(lockOwned): .*/\1: false/' "$cfg/Config.qml"
-sed -i 's/quickshell-menu\.sock/quickshell-menu-smoke.sock/' "$cfg/MenuServer.qml"
-grep -q 'notificationsOwned: false' "$cfg/Config.qml" || {
-	echo "❌ could not neutralise Config ownership flags — Config.qml layout changed" >&2
-	exit 1
-}
+neutralise_qml_singletons "$cfg"
 
 log="$tmp/smoke.log"
 # 124 = timeout, the expected exit: a healthy shell runs until it is killed.

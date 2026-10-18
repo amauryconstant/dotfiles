@@ -553,6 +553,7 @@ for nothing singular (notification bus name, polkit agent, session lock, menu so
 `timeout` beside the live shell, and fails on `Illegal method name`, `Type … unavailable`, `ERROR`
 or a missing `Configuration Loaded`. Manual — it needs a Wayland session and flashes a second bar
 for ~8s. Verified to fail on an injected `function escape()` and pass on the real tree.
+To SEE the shell run (screenshots, IPC, a surface open) without applying, use the `desk` skill: a nested Hyprland on the rendered source.
 
 For other runtime checks, render the tree and run it directly rather than deploying:
 
