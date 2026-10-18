@@ -932,6 +932,11 @@ mise run lint:theme-contrast  # WCAG pairs across all 8 colorsets (part of lint)
 Both are wired into `[tasks.lint]`/`[tasks.format]` and into pre-commit via
 `.mise/tasks/lint/qml-staged.sh`.
 
+`mise run lint:qml-rules` (part of `lint`) mechanizes the traps above that qmllint cannot see:
+`import "root:/"`, `function escape(`, an `execDetached` without `Config.detach`, an `IpcHandler`
+function with no return type, and an empty `""` in an array literal. It takes file arguments; a
+PostToolUse hook runs it plus the `qmlformat` diff on every QML file Claude edits.
+
 **The tree is linted as one rendered unit**, not per file: `shell.qml` references the `Config`
 singleton, which exists in source only as `Config.qml.tmpl`. Formatting is checked against
 **source** `*.qml` only.

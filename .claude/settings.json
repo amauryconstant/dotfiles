@@ -202,6 +202,11 @@
             "type": "command",
             "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.(json|jsonc)$ && ! \"$f\" =~ /modify_ ]] || exit 0; out=$(mise run lint:json-file -- \"$f\" 2>&1) || { echo \"$out\" >&2; exit 2; }",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ private_dot_config/quickshell/.*\\.qml(\\.tmpl)?$ ]] || exit 0; out=$( { [[ \"$f\" == *.tmpl ]] || { /usr/lib/qt6/bin/qmlformat \"$f\" | diff -u \"$f\" - | head -20; }; \"$CLAUDE_PROJECT_DIR\"/.mise/tasks/lint/qml-rules.sh \"$f\" 2>&1; } 2>&1 ); [[ -z \"$out\" ]] || { echo \"$out\" >&2; exit 2; }",
+            "timeout": 15
           }
         ]
       }
