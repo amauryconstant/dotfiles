@@ -22,22 +22,11 @@ done
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-worktree_root=$(git rev-parse --show-toplevel)
 
-# Render the WHOLE tree before linting. A single file cannot be linted in
-# isolation: shell.qml references the Config singleton, which exists in source
-# only as Config.qml.tmpl, so a per-file pass would report it unresolved.
-# Rendering to a temp tree also reproduces the deployed import graph exactly.
-# qmldir rides along: without it qmllint cannot see `pragma Singleton` types.
-while IFS= read -r file; do
-	rel="${file#"$src"/}"
-	dest="$tmp/${rel%.tmpl}"
-	mkdir -p "$(dirname "$dest")"
-	case "$file" in
-	*.tmpl) chezmoi execute-template --source "$worktree_root" <"$file" >"$dest" ;;
-	*) cp "$file" "$dest" ;;
-	esac
-done < <(git ls-files -- "$src/*.qml" "$src/*.qml.tmpl" "$src/*qmldir")
+# Render the WHOLE tree before linting — see render-qml.sh for why.
+# shellcheck source=../../lib/render-qml.sh
+source "$(git rev-parse --show-toplevel)/.mise/lib/render-qml.sh"
+render_qml_tree "$tmp"
 
 mapfile -t rendered < <(find "$tmp" -name '*.qml' -type f | sort)
 [[ ${#rendered[@]} -gt 0 ]] || exit 0

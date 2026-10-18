@@ -947,7 +947,13 @@ No `.qmlformat.ini` exists, so QML formats to **4 spaces** — unlike the Lua tr
 current machine is checked. `Config.qml.tmpl`'s `isLaptop` is a value rather than a branch,
 which is deliberate — it keeps chassis differences out of the template layer entirely.
 
-For runtime checks, render the tree and run it directly rather than deploying:
+`mise run qml:smoke` does that for you: it renders the tree, patches the scratch copy so it contends
+for nothing singular (notification bus name, polkit agent, session lock, menu socket), runs it under
+`timeout` beside the live shell, and fails on `Illegal method name`, `Type … unavailable`, `ERROR`
+or a missing `Configuration Loaded`. Manual — it needs a Wayland session and flashes a second bar
+for ~8s. Verified to fail on an injected `function escape()` and pass on the real tree.
+
+For other runtime checks, render the tree and run it directly rather than deploying:
 
 ```bash
 quickshell -p /path/to/rendered/tree    # loads without touching ~/.config
