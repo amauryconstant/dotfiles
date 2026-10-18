@@ -95,7 +95,7 @@ chezmoi cat <target-path> >/dev/null   # renders, executes, parses directives, m
 
 Do **not** use `chezmoi execute-template` to validate: it fails permanently on native modify-templates (`.chezmoi.stdin` is never set when the template itself comes from stdin), and it *passes* on rendered-output corruption, since raw INI/JSON are valid templates with zero actions.
 
-Never let `chezmoi cat` output reach a log — for `opencode.jsonc` it emits a decrypted API key.
+Never let `chezmoi cat` output reach a log — for `opencode.jsonc` it emits a decrypted API key. A PreToolUse hook (`.claude/hooks/guard-chezmoi-cat.sh`) now refuses an unredirected `chezmoi cat` of opencode or any encrypted source; `>/dev/null` passes.
 
 `chezmoi_modify_manager --doctor` checks the *environment*, not your files, and writes probe artifacts into the source dir. Manual troubleshooting only; not a pre-commit hook.
 
