@@ -73,6 +73,9 @@ def format_results(results):
     for name, char, code, score in results:
         output.append(f"  {char}  {name}")
         output.append(f"     Code: U+{code.upper()}")
+        # An empty "" is what a pasted glyph silently becomes: transcribe the
+        # codepoint, never the character.
+        output.append(f"     chr(0x{code.upper()})   String.fromCodePoint(0x{code.upper()})")
         output.append("")
 
     return "\n".join(output)

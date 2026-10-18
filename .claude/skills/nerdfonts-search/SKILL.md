@@ -32,12 +32,16 @@ python scripts/search_glyphs.py arrow
 ```
   󰁹  md-battery
      Code: U+F0079
+     chr(0xF0079)   String.fromCodePoint(0xF0079)
 ```
 
 Each result shows:
 - The actual glyph character (requires Nerd Font)
 - The glyph name
 - Unicode codepoint
+- Ready-to-transcribe forms: `chr(0x…)` (a generating script) and `String.fromCodePoint(0x…)` (QML/JS)
+
+**In this repo's QML, never paste the glyph character.** A pasted glyph has twice been committed as an empty `""` — valid QML, nothing rendered, no error (`.claude/rules/quickshell-qml.md`). Transcribe the codepoint from this output, and `mise run lint:qml-rules` flags an empty string in an array literal.
 
 ## Search Strategy
 
