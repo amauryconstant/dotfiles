@@ -137,7 +137,8 @@
 **Topgrade** (`topgrade.toml.tmpl`):
 - Unified update workflow (firmware, git, cleanup)
 - Calls `package-manager update` as pre-command (packages handled by package-manager)
-- Disabled: system (Arch/AUR), flatpak (handled by package-manager); mise (built-in step always runs `mise self-update`, which pacman-built mise rejects); claude_code (mise tool, updated by `mise upgrade`); gcloud (mise tool, same); chezmoi (`chezmoi update` applies without diff review — `git_repos` pulls, apply stays manual)
+- Disabled: system (Arch/AUR), flatpak (handled by package-manager); mise (built-in step always runs `mise self-update`, which pacman-built mise rejects); claude_code (mise tool, updated by `mise upgrade`); gcloud (mise tool, same)
+- Enabled: built-in `chezmoi` step (`chezmoi update` pulls + applies; user-run, review accepted). Was disabled 2026-10-01 (`b80cc40`), re-enabled 2026-10-18
 - Antidote: built-in `antidote` step only (no custom command — it ran twice)
 - Custom commands: mise tool upgrade, system-health, unmanaged package check, orphan removal
 
