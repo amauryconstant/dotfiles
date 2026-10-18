@@ -340,16 +340,9 @@ each anchored under the bar widget that owns it. They are what removed the last 
 shell-outs from the bar — `pavucontrol`, `nmtui`, `blueman-manager` and `btop` all moved from
 the click to the footer, where the design puts the "escape hatch".
 
-🚨 **`grabFocus` cannot be used.** `PopupWindow.grabFocus` makes Qt request an *xdg_popup* grab,
-and a popup whose parent is a **layer-shell** window cannot be one. Measured 2026-09-10:
-
-```
-WARN qt.qpa.wayland: Failed to create grabbing popup. Ensure popup has a transientParent set
-                     and that parent window has received input.
-WARN: Cannot attach popup ... as the popup is not an xdg_popup.
-```
-
-and the popup sets itself back to invisible. So the click-outside dismissal that flag exists for
+🚨 **`grabFocus` cannot be used.** A popup parented to a **layer-shell** window cannot be an
+*xdg_popup* (measurement and log in `.claude/rules/quickshell-qml.md`), and the popup silently
+sets itself back to invisible. So the click-outside dismissal that flag exists for
 is simply unavailable here, and the design's two open modes are built from what is:
 
 | Mode | Grab | Close signal | Ring |
@@ -675,18 +668,10 @@ you summon. Geometry was measured off the old `comp-a` artboard and sits **outsi
 something nested in it. Amendment A's transcription had the padding (14, not `padTight`), the
 tile radius (12, not `radiusTile`) and the gap (10, not `gap`) all wrong.
 
-🚨 **Three input traps, all silent:**
-
-- `exclusiveZone: 0` and a **`mask`**. An unmasked layer-shell window swallows every click over
-  its whole surface — the dock would eat clicks along the bottom of every screen, permanently.
-- Hover comes from a **`HoverHandler`**, not a `MouseArea`. A `MouseArea` only reports hover
-  while nothing above it has it, so each tile's own `MouseArea` stole it and the dock retracted
-  out from under the click. `z: -1` does not help — stacking picks the winner, not the
-  observers.
-- The revealed mask is the **union of the hot edge and the panel's live rect**, with the hot
-  edge growing to meet the panel and staying full-width. A single rect fails three ways: bound
-  to the panel alone it lags the slide, pinned static and centred it misses an off-centre
-  entry, and left short of the panel it leaves a seam to cross.
+🚨 **Three input traps, all silent** — an unmasked layer-shell window swallows every click, hover
+needs a `HoverHandler` not a `MouseArea`, and the reveal mask is the union of the hot edge and the
+panel's live rect. Full account in `.claude/rules/quickshell-qml.md`; the dock sets
+`exclusiveZone: 0` and a `mask`.
 
 Plus a `Config.dockHideDelayMs` grace period, so a momentary hover loss cannot retract it.
 
@@ -826,16 +811,8 @@ Not oversights — each replaces something that was broken or useless:
 
 ## Gotchas
 
-Full list in `.claude/rules/quickshell-qml.md`. The two that cost the most time:
-
-- **`UPowerDevice.percentage` is 0..1**, not 0..100. Waybar/`upower` say 72%, the property says 0.72
-- **Pipewire volume needs a `PwObjectTracker`** or it binds to nothing and shows 0% with no error
-- **A glyph literal can be authored as `""`** and render nothing, with no error — it has
-  happened twice here. Take codepoints from the `nerdfonts-search` skill and write them via
-  an explicit `chr(0x…)`, never a paste
-- **`escape()` is an illegal QML method name.** Renders, formats and lints clean, then the engine
-  refuses the whole file at load with *"Illegal method name"*. Only running the tree finds it
-- **A character-count truncation does not bound pixels.** `titleMaxLength` and `mediaMaxLength`
-  are gone; use `BarWidget.labelMaxWidth` plus `Text.elide`
-
-All three fail silently and look plausible on screen.
+The full list is `.claude/rules/quickshell-qml.md` ("Runtime behaviours that bite") — it loads
+whenever you work in this tree. The ones that cost the most time, all silent and plausible on
+screen: `UPowerDevice.percentage` is 0..1; Pipewire volume needs a `PwObjectTracker`; a Nerd Font
+glyph literal can be authored as `""`; `escape()` is an illegal method name; truncation is by
+pixels, never by character count.

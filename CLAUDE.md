@@ -138,6 +138,9 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 
 ### Cross-Cutting Topics (.claude/rules/)
 
+**Path-scoped**: each file loads only when you touch matching paths (`paths:` frontmatter), so
+read the relevant one explicitly when starting from elsewhere.
+
 **When working with chezmoi features across the codebase**:
 
 | File | Topics Covered |
