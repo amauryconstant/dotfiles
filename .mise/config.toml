@@ -17,7 +17,7 @@ lua-language-server = "latest"
 [tasks.lint]
 quiet = true
 description = "Run all linters"
-depends = ["lint:sh", "lint:yaml", "lint:json", "lint:lua", "lint:qml", "lint:qml-rules", "lint:md", "lint:theme-contrast", "lint:hypr-lua"]
+depends = ["lint:sh", "lint:yaml", "lint:json", "lint:lua", "lint:qml", "lint:qml-rules", "lint:md", "lint:theme-hex", "lint:theme-contrast", "lint:hypr-lua"]
 
 [tasks.format]
 quiet = true
@@ -89,14 +89,6 @@ quiet = true
 description = "Format QML files (templates are check-only, see lint:qml)"
 run = "test -d private_dot_config/quickshell && find private_dot_config/quickshell -name '*.qml' -type f -print0 | xargs -0 -r /usr/lib/qt6/bin/qmlformat --inplace || true"
 
-# Validates the Hyprland Lua tree WITHOUT flipping the entry point. The entry
-# point is excluded by .chezmoiignore (held for Waybar >= 0.16.0), so render it
-# to a temp path; everything it requires resolves through package.path against
-# the already-deployed ~/.config/hypr.
-#
-# Proves the tree parses and every require() resolves. Does NOT prove dispatcher
-# arguments are semantically correct — the 0.56.2 stub types them all as fun(...).
-#
 # lint:theme-contrast is .mise/tasks/lint/theme-contrast.py (auto-discovered).
 # It measures the Quickshell QML's colour pairs against WCAG in ALL 8 colorsets,
 # which is the rule themes/CLAUDE.md states and says nothing enforces in QML.
@@ -105,6 +97,18 @@ run = "test -d private_dot_config/quickshell && find private_dot_config/quickshe
 # when a widget changes a colour: re-harvest after touching colours in that tree.
 # Silent on success; `mise run lint:theme-contrast -- --report` prints the tables.
 
+# lint:theme-hex (.mise/tasks/lint/theme-hex.sh) rejects Hyprland colour literals
+# with the wrong digit count — a 10-digit 0x literal is silently truncated.
+
+# lint:hypr-lua validates the live Lua tree: it renders the entry point
+# (hyprland.lua.tmpl) to a temp path and runs `Hyprland --verify-config` on it;
+# everything the entry point requires resolves through package.path against the
+# already-deployed ~/.config/hypr.
+#
+# Proves the tree parses and every require() resolves. Does NOT prove dispatcher
+# arguments are semantically correct — the stub types them all as fun(...). For
+# that, use a nested Hyprland (.claude/rules/hyprland-lua.md).
+#
 # Needs the Hyprland binary plus a deployed ~/.config/hypr for package.path to
 # resolve. Silent on success; Hyprland's debug log is shown only on failure.
 [tasks."lint:hypr-lua"]

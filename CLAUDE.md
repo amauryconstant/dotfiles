@@ -108,15 +108,15 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 `mise` owns every linter/formatter and installs the pre-commit hook (`[tools]` postinstall).
 
 ```bash
-mise run lint       # sh + yaml + json + lua (+ lua-tmpl) + qml + md + theme-contrast + hypr-lua; silent unless something fails
+mise run lint       # sh + yaml + json + lua (+ lua-tmpl) + qml + qml-rules + md + theme-contrast + theme-hex + hypr-lua; silent unless something fails
 mise run format     # sh + yaml + lua + qml + md, write mode
-mise run verify     # format, then lint
+mise run verify     # format, then lint (manual — pre-commit only lints, it never rewrites)
 mise run chezmoi:orphans # targets orphaned by staged deletions
 ```
 
 Scope is deliberately narrow: `lint:md` covers `**/opencode/**` only, `lint:yaml` covers `.chezmoidata/` only. `format:lua` is `*.lua` only — templates are check-only (rendering discards the template actions).
 
-Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellcheck), `lint:chezmoi-sources` (generator marker-loss vs HEAD + `chezmoi cat` render + gitleaks), `lint:lua-staged`, `lint:json-staged`, `lint:yaml-staged`.
+Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellcheck), `lint:chezmoi-sources` (generator marker-loss vs HEAD + `chezmoi cat` render + gitleaks), `lint:lua-staged`, `lint:json-staged`, `lint:yaml-staged`, then the full `lint`.
 
 ---
 
