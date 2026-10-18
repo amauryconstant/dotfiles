@@ -20,7 +20,7 @@ Read `git diff` first, then render the touched templates (`chezmoi execute-templ
 ### Rendered whitespace
 - Stray blank lines or joined lines in the rendered output where `{{-` / `-}}` is missing or excessive. This is invisible to the linters.
 - Variables scoped correctly (`$var :=` inside `range`/`if`; `$.` for root inside `range`).
-- Only the branch rendering for this machine is checked — read the other `{{ if }}` branches by hand.
+- Only this machine's chassis branch is linted — render the other with `--override-data` (`.claude/rules/chezmoi-chassis.md`).
 
 ### Script conventions (`.chezmoiscripts/`)
 - Template log includes (`{{ includeTemplate "log_step" "…" }}`), not raw `echo`

@@ -148,6 +148,7 @@ read the relevant one explicitly when starting from elsewhere.
 | `chezmoi-data.md` | Data files (packages.yaml, ai.yaml, etc.), template variables, hash triggers |
 | `chezmoi-scripts.md` | Lifecycle scripts (run_once_*, run_onchange_*), execution order, script types |
 | `chezmoi-templates.md` | Template system, log templates, Go template syntax, validation |
+| `chezmoi-chassis.md` | Laptop/desktop gating: where the condition goes, rendering the other chassis branch |
 | `chezmoi-modify-entries.md` | `modify_*` entries — the two kinds (modify_manager vs native modify-template), merge safety, directive/validation reference |
 | `hyprland-lua.md` | Hyprland Lua config — `hl`/`o` globals, theme/monitor profile patterns, rgba format, stylua + `--verify-config` validation |
 | `quickshell-qml.md` | Quickshell QML — imports, Qt5/Qt6 tooling trap, lint exemption discipline, runtime gotchas |

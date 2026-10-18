@@ -11,8 +11,8 @@ set -euo pipefail
 # Two failure modes are caught: a Go-template error (execute-template exits
 # non-zero) and badly formatted Lua inside the template (stylua --check).
 #
-# Limitation: only the branch that renders for THIS machine is checked. A
-# {{ if ne .chassisType "laptop" }} block is invisible when run on the laptop.
+# Limitation: only the branch that renders for THIS machine is checked; render
+# the other with --override-data (.claude/rules/chezmoi-chassis.md).
 
 file="${1:?usage: mise run lint:lua-tmpl-file -- <file.lua.tmpl>}"
 

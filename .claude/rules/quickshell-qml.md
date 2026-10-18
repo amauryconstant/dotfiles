@@ -943,9 +943,9 @@ singleton, which exists in source only as `Config.qml.tmpl`. Formatting is check
 
 No `.qmlformat.ini` exists, so QML formats to **4 spaces** — unlike the Lua tree's tabs.
 
-**Limitation, shared with `lint:lua-tmpl`**: only the branch of a `.tmpl` that renders for the
-current machine is checked. `Config.qml.tmpl`'s `isLaptop` is a value rather than a branch,
-which is deliberate — it keeps chassis differences out of the template layer entirely.
+**Limitation, shared with `lint:lua-tmpl`**: only this machine's chassis is rendered.
+`Config.qml.tmpl`'s `isLaptop` is a value rather than a branch, which is deliberate — it keeps
+chassis differences out of the template layer entirely (`.claude/rules/chezmoi-chassis.md`).
 
 `mise run qml:smoke` does that for you: it renders the tree, patches the scratch copy so it contends
 for nothing singular (notification bus name, polkit agent, session lock, menu socket), runs it under

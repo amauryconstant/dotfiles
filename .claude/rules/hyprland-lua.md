@@ -133,9 +133,8 @@ template actions aren't valid Lua). `.mise/tasks/lint/lua-tmpl-file.sh` renders 
 **Check-only, never formatted in place** — rendering discards the template actions, so there is
 nothing for stylua to write back to.
 
-**Limitation**: only the branch that renders *for the current machine* is checked. A
-`{{ if ne .chassisType "laptop" }}` block is invisible when linting on the laptop. Check both
-branches by hand when editing gated code.
+**Limitation**: only the branch that renders *for the current machine* is checked. Render the other
+with `--override-data` — see `.claude/rules/chezmoi-chassis.md`.
 
 Adding this check immediately caught four previously-invisible defects: `hyprland.lua.tmpl` on
 2-space indent with aligned trailing comments; two over-120-col lines in `applications.lua.tmpl`;
