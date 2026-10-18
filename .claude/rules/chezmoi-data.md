@@ -1,3 +1,10 @@
+---
+paths:
+  - ".chezmoidata/**"
+  - "**/*.tmpl"
+  - ".chezmoiscripts/**"
+---
+
 # Chezmoi Data Files Reference
 
 **Purpose**: Template data (YAML) for Go templates

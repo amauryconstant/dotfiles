@@ -1,3 +1,8 @@
+---
+paths:
+  - ".chezmoiscripts/**"
+---
+
 # Chezmoi Lifecycle Scripts Reference
 
 **Purpose**: Automated setup, configuration, and maintenance scripts

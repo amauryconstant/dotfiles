@@ -9,7 +9,7 @@ You maintain `_plans/OMARCHY.md` as a living, actionable integration backlog for
 
 ## Dotfiles Context (critical — use to filter recommendations)
 
-- **Desktop**: Hyprland + **Quickshell** — our own shell tree at `private_dot_config/quickshell/dotfiles/` owns the bar, launcher, notifications, popovers, power menu, pickers, polkit dialog and lock screen. Waybar + Wofi + swaync + wlogout are still installed as the **fallback** stack; the two are mutually exclusive by `.chezmoiignore` on `features.quickshell_shell`
+- **Desktop**: Hyprland + **Quickshell** — our own shell tree at `private_dot_config/quickshell/dotfiles/` owns the bar, launcher, notifications, popovers, power menu, pickers, polkit dialog and lock screen. Waybar, swaync and wlogout are retired (2026-10); Wofi survives only as the `quickshell-menu` fallback and hyprlock as the lock fallback
 - **Terminal**: Ghostty — the only chezmoi-managed terminal (there is no `private_dot_config/kitty/`)
 - **Theme system**: 8 variants, `private_dot_config/themes/`, `colors.sh` holds **18 semantic role keys** (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`) since the 2026-09-09 rename
 - **Hooks**: `~/.config/dotfiles/hooks/` (not Omarchy's hook system)
@@ -23,7 +23,7 @@ Since v4.0.0 Omarchy runs a Quickshell shell too, and its **QML source is in the
 with `git -C ~/Projects/_external/omarchy show <tag>:shell/<path>`.
 
 Earlier revisions of this plan skipped everything shell-shaped on the grounds that we ran Waybar.
-We do not. A Quickshell fix upstream — a notification race, a panel leaving a scan running, a
+We no longer do. A Quickshell fix upstream — a notification race, a panel leaving a scan running, a
 `textFormat` defect — now lands on our surfaces and belongs in the plan, not in Skipped.
 
 What stays out of scope is Omarchy's **plugin system** (`manifest.json`, `PluginRegistry`,
@@ -64,7 +64,7 @@ Examples of concepts worth porting:
    - `ls` in `private_dot_local/bin/` for CLI scripts already present
    - `grep -r` in `private_dot_config/zsh/` for shell functions/aliases
    - `grep -r` in `private_dot_config/hypr/conf/` for Hyprland config (animations, windowrules, etc.)
-   - Check `private_dot_config/quickshell/dotfiles/bar/widgets/` for bar widgets when relevant (and `private_dot_config/waybar/` only for the fallback bar)
+   - Check `private_dot_config/quickshell/dotfiles/bar/widgets/` for bar widgets when relevant
 4. **Full rewrite** of the plan (not append): merge new items into P1/P2/P3 sections
 5. **Never rewrite the archive.** `_plans/archive/OMARCHY_COMPLETED.md` is append-only history — read it, don't edit it. When an item in the live plan reaches "every sub-task resolved", append it to the archive's "Closed items" section and drop it from the live plan; the live plan keeps only outstanding work
 6. **Dedup**: don't add items already tracked (any status) — check the archive too, not just the live plan
@@ -91,8 +91,8 @@ If Value=yes and Feasibility=yes: add to P3 with `**Adapt from**: omarchy path`.
 
 ## Tool-Incompatible Workflow Patterns
 
-For Tier 1 tool-incompatible items (Walker, SDDM, etc.): when the *workflow pattern* is non-trivial and potentially transferable to our equivalent tool (Wofi, hyprlock, etc.), add a brief comment in the Skipped section:
-> `[SKIPPED] Walker fuzzy matching — walker-specific; *workflow pattern* (quick action UX) may be worth exploring for Wofi`
+For Tier 1 tool-incompatible items (Walker, SDDM, etc.): when the *workflow pattern* is non-trivial and potentially transferable to our equivalent tool (the Quickshell launcher, hyprlock, etc.), add a brief comment in the Skipped section:
+> `[SKIPPED] Walker fuzzy matching — walker-specific; *workflow pattern* (quick action UX) may be worth exploring for the Quickshell launcher`
 
 Don't add these as backlog items automatically — note only when the concept is genuinely non-trivial.
 

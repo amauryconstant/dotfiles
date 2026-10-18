@@ -5,15 +5,17 @@
 # it needs no registration. But several OTHER scripts hardcode exact theme
 # names in case arms and silently no-op (or fall back to a default) for an
 # unregistered theme. This greps each for the new theme name.
+#
+# theme-switcher's theme_variant() is the one that matters most: GTK, Qt and
+# Claude Code all switch on its dark/light/other answer, and an unrecognised
+# theme answers "other".
 set -euo pipefail
 
 theme="${1:?usage: check-registrations.sh <theme-name>}"
 
 files=(
-	"private_dot_local/lib/scripts/desktop/executable_theme-apply-gtk"
-	"private_dot_local/lib/scripts/desktop/executable_theme-apply-claude-code"
+	"private_dot_local/lib/scripts/desktop/executable_theme-switcher.tmpl"
 	"private_dot_local/lib/scripts/desktop/executable_theme-apply-spotify"
-	"private_dot_local/lib/scripts/desktop/executable_theme-apply-qt"
 	"private_dot_config/nvim/lua/dotfiles_theme.lua"
 	"private_dot_local/share/dark-mode.d/executable_01-switch-theme.sh"
 	"private_dot_local/share/light-mode.d/executable_01-switch-theme.sh"
@@ -36,6 +38,7 @@ done
 
 echo ""
 echo "Not checked here (name-agnostic, no registration needed):"
+echo "  theme-apply-gtk/-qt/-claude-code (switch on theme-switcher variant, checked above),"
 echo "  theme-apply-opencode (light/dark via *latte*|*light*|*dawn* glob, not exact-name),"
 echo "  theme-apply-firefox, theme-apply-neovim (file-presence/symlink based, no theme-name branching)"
 

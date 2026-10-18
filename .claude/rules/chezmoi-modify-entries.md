@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/modify_*"
+  - "**/*.src.ini"
+---
+
 # chezmoi `modify_` Entries Reference
 
 **Purpose**: `modify_*` covers **two unrelated mechanisms**. Conflating them corrupts files.

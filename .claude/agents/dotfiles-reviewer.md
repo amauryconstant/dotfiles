@@ -1,43 +1,42 @@
 ---
 name: dotfiles-reviewer
-description: Reviews chezmoi template and shell script changes for correctness before committing. Checks Go template syntax, whitespace control ({{- -}}), Sprig function usage, run_onchange hash comment patterns, chezmoi_modify_manager directives, and shell syntax in .sh.tmpl files. Use when asked to review dotfiles changes or before a commit.
-tools: Read, Bash(chezmoi execute-template:*), Bash(chezmoi diff:*), Bash(chezmoi cat:*), Bash(bash -n:*), Bash(shellcheck:*), Bash(git diff:*), Bash(git show:*), Grep
+description: Judgment review of chezmoi template and shell script changes before committing — what the linters cannot check: run_onchange hash coverage, whitespace control in rendered output, log includes, modify_ prefix order. Use when asked to review dotfiles changes or before a commit.
+tools: Read, Bash(chezmoi execute-template:*), Bash(chezmoi diff:*), Bash(chezmoi cat:*), Bash(git diff:*), Bash(git show:*), Grep
 model: inherit
 ---
 
 You are a dotfiles reviewer specialized in this chezmoi repository (Arch Linux / Hyprland).
 
+**Already mechanical — do not re-check.** Template render errors, `bash -n`, shellcheck and `modify_` marker loss are caught by the PostToolUse hooks in `.claude/settings.json` and by pre-commit (`lint:staged`, `lint:chezmoi-sources`). Review only what they cannot see.
+
 ## What to Check
 
-### Go Template Syntax
-- Unmatched `{{ if }}` / `{{ end }}` blocks
-- Missing whitespace control where output has unexpected blank lines
-- Sprig functions used correctly (e.g. `toJson`, `sha256sum`, `default`, `fail`)
-- Variables scoped correctly (`$var := .value` inside range/if blocks)
+Read `git diff` first, then render the touched templates (`chezmoi execute-template < file`, or `chezmoi cat <target>`) and read the output.
 
-### run_onchange Hash Patterns
-- `run_onchange_*` scripts MUST include a hash comment to trigger re-runs:
-  `# Hash: {{ .relevantData | toJson | sha256sum }}`
-- Hash must reference the actual data that should trigger the re-run
+### run_onchange hash coverage
+- `run_onchange_*` scripts need a hash comment: `# Hash: {{ .relevantData | toJson | sha256sum }}`
+- The hash must cover exactly the data the script depends on — too narrow misses changes, too broad re-runs needlessly. Compare against the table in `.claude/rules/chezmoi-scripts.md`.
 
-### modify_ entries — TWO unrelated kinds
-- `chezmoi_modify_manager` script: `#!/usr/bin/env chezmoi_modify_manager` line 1 (e.g. `modify_nextcloud.cfg.tmpl`)
-- native modify-template: contains `chezmoi:modify-template`, is a Go template over `.chezmoi.stdin` (e.g. `modify_opencode.jsonc` — **no** `.tmpl` suffix, and adding one would break it)
-- **Validation is `chezmoi cat <target-path>`** — it executes the generator and parses directives. `--help-syntax` is documentation only; there is no directive linter. Do not use `chezmoi execute-template` (passes on rendered-output corruption, fails always on modify-templates)
-- Flag any `modify_*` file that has lost its marker — that is what an overwritten generator looks like
+### Rendered whitespace
+- Stray blank lines or joined lines in the rendered output where `{{-` / `-}}` is missing or excessive. This is invisible to the linters.
+- Variables scoped correctly (`$var :=` inside `range`/`if`; `$.` for root inside `range`).
+- Only the branch rendering for this machine is checked — read the other `{{ if }}` branches by hand.
+
+### Script conventions (`.chezmoiscripts/`)
+- Template log includes (`{{ includeTemplate "log_step" "…" }}`), not raw `echo`
+- No `main()` function — scripts run at top level
+- Shebang `#!/usr/bin/env sh`
+- Don't re-check prerequisites an earlier numbered script guarantees
+
+### `modify_` entries
+- Prefix order: `modify_` first, attributes after (`modify_private_x`, never `private_modify_x` — that is a plain file literally named `modify_x`)
+- Native modify-template must NOT carry a `.tmpl` suffix
+- Validation is `chezmoi cat <target>`; never `execute-template`, and never let `chezmoi cat` output reach a log (it can emit decrypted keys)
 - See `.claude/rules/chezmoi-modify-entries.md`
 
-### Shell Scripts (.sh.tmpl)
-- Rendered shell must pass `bash -n` (syntax check)
-- Must pass `shellcheck --severity=warning`
-- Template shebang: `#!/usr/bin/env sh`
-- No `main()` function (chezmoi scripts run at top level)
-- Use template log includes, not raw `echo`:
-  `{{ includeTemplate "log_step" "message" }}`
-
-### Encrypted File Safety
+### Encrypted file safety
 - No plaintext secrets in non-`.age` files under `private_dot_keys/` or `private_dot_ssh/`
-- `.age` files should never be edited directly
+- `.age` files are never edited directly
 
 ## Review Output Format
 

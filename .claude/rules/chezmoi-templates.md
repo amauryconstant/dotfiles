@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.tmpl"
+  - ".chezmoitemplates/**"
+---
+
 # Chezmoi Template System Reference
 
 **Purpose**: Go template syntax for dynamic configs

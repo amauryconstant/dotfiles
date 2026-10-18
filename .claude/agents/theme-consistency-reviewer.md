@@ -1,7 +1,7 @@
 ---
 name: theme-consistency-reviewer
 description: Reviews theme consumers for completeness and consistency — either a theme directory under private_dot_config/themes/ (full file set present, semantic contrast rules respected, hyprland.lua rgba format correct, consistent hex casing) or the Quickshell QML tree under private_dot_config/quickshell/ (no literal hex, no literal font name, no Theme.inkSecondary on an elevated ground). Use when asked to review a theme, before committing a new theme, after editing theme colors, or after editing a Quickshell widget's colours.
-tools: Read, Glob, Grep, Bash(find private_dot_config/themes:*), Bash(find private_dot_config/quickshell:*), Bash(diff:*)
+tools: Read, Glob, Grep, Bash(mise run lint\:theme-contrast:*), Bash(find private_dot_config/themes:*), Bash(find private_dot_config/quickshell:*), Bash(diff:*)
 model: inherit
 ---
 
@@ -28,13 +28,13 @@ it replaces an 8-theme eyeball pass with three greps.
 - Flag missing files as blocking; flag extra files not present in the reference as a warning to confirm intentional
 
 ### Contrast Safety
-- Elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` only — grep hover/card/input/popover/notification/modal selectors in `wofi.css` for `@fg-secondary` (or its resolved hex) used against an elevated background
-- If this theme is a documented "PRIMARY only" case (Catppuccin Latte, Rose Pine Dawn, Rose Pine Moon, Solarized Light per `themes/CLAUDE.md`'s ratio table), any `@fg-secondary`-on-elevated usage is blocking, not just a warning
-- For a genuinely new theme (not one of the 8 documented), flag `@fg-secondary`-on-elevated as a warning and recommend the author compute the actual contrast ratio
+- Run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across all 8 colorsets (4.5:1 text, 3:1 graphics). Report any failure as blocking; do not re-derive ratios by grepping `wofi.css`.
+- For `wofi.css` and the other CSS-vocabulary files, which that task does not measure: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) must pair with `@fg-primary` only. `@fg-secondary` on one is blocking for a documented "PRIMARY only" theme (Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light — `themes/CLAUDE.md`), a warning for a new theme.
 
 ### hyprland.lua Format
-- Returns `{ activeBorder = "rgba(HEXee)", inactiveBorder = "rgba(HEXee)" }`
-- 6-digit hex + 2-digit alpha, **no `#` prefix**
+- An override module calling `hl.config({ general = { col = { active_border = …, inactive_border = … } } })` — a file that `return`s a table loads and silently does nothing
+- Format `rgba(rrggbbaa)`: exactly 8 hex digits (a 10-digit `ff…` form is silently truncated and shifts every channel)
+- **No `#` prefix**
 - Cross-check the hex values against `hyprland.conf`'s equivalent `$activeBorderColor`/`$inactiveBorderColor` (or similarly named) variables — they should match
 
 ### Templated File
@@ -49,7 +49,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - Documents this theme's own contrast-ratio table if it falls into "Use PRIMARY only" per the Contrast Safety check above
 
 ### Registration (informational only — not this reviewer's blocking scope)
-- `theme-apply-gtk`, `theme-apply-claude-code`, `theme-apply-spotify`, `theme-apply-qt`, `dotfiles_theme.lua`, and the darkman `01-switch-theme.sh` scripts hardcode exact theme names in case arms
+- `theme-switcher`'s `theme_variant()` (GTK/Qt/Claude Code follow it), `theme-apply-spotify`, `dotfiles_theme.lua`, and the darkman `01-switch-theme.sh` scripts hardcode exact theme names
 - If reviewing a brand-new theme, note as a warning if it isn't grepped in these files — but treat this as a pointer to the `new-theme` skill's registration step, not something to fix inline here
 
 ---

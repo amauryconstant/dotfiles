@@ -1,3 +1,8 @@
+---
+paths:
+  - "private_dot_config/quickshell/**"
+---
+
 # Quickshell QML Configuration Reference
 
 **Location**: `private_dot_config/quickshell/dotfiles/`

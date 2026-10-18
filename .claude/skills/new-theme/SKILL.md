@@ -25,19 +25,17 @@ bash scripts/check-theme-files.sh <new-name>
 
 Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardcoded list — `themes/CLAUDE.md`'s documented file set has drifted from reality before, so a real directory is the only trustworthy source of truth. Right after a `cp -r` this should report a clean match; re-run after any file additions/removals.
 
-## Step 3: Recolor semantic variables
+## Step 3: Recolor — `colors.sh` first
 
-Full 24-variable schema (Background: `@bg-primary/secondary/tertiary/overlay`; Foreground: `@fg-primary/secondary/muted/contrast`; 8 Core + 8 Extended accents) is defined in `themes/CLAUDE.md`. Start with `wofi.css` — it's the most complete single-file reference — then propagate the same hex values into every other file in the theme dir.
+`colors.sh` is the role layer and the one Quickshell (`Theme.qml`) and the shell scripts read: **18 keys**, named by ROLE — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by CSS name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
 
-**`colors.sh` is a second vocabulary, and the one Quickshell and the shell scripts read**: semantic ROLE keys, not CSS names — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
+Then carry the same palette into the CSS-vocabulary file `wofi.css` (24 `@define-color`: `@bg-*`, `@fg-*`, `@accent-*`) and propagate the hex values into every other file in the theme dir. The two vocabularies have no translation layer — keep them in step by hand.
 
-## Step 4: Pick palette + check contrast (mandatory)
+## Step 4: Check contrast (mandatory)
 
-**Rule**: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` for all text/icons. `@fg-secondary` on an elevated surface fails WCAG AA (4.5:1) on several existing themes.
+**Rule**: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` for all text/icons. `@fg-secondary` on an elevated surface fails WCAG AA (4.5:1) on several existing themes. If your `@fg-secondary` against `@bg-secondary` is below 4.5:1, document the theme as "Use PRIMARY only" in its `STYLE-GUIDE.md` (precedent: Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light; ratio table in `themes/CLAUDE.md`).
 
-Compute the contrast ratio of your `@fg-secondary` against your `@bg-secondary`. If it's below 4.5:1, document the theme as "Use PRIMARY only" in its `STYLE-GUIDE.md`, following the precedent already set by Catppuccin Latte, Rose Pine Dawn, Rose Pine Moon, and Solarized Light (see the ratio table in `themes/CLAUDE.md`).
-
-Then run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across every colorset, including the new one. Manual-only, so it is not part of `mise run lint`.
+Run `mise run lint:theme-contrast` (`-- --report` for the tables). It reads every colorset, including the new one, and is part of `mise run lint`. Fix any failure in `colors.sh`; do not excuse it.
 
 ## Step 5: `hyprland.lua` format
 
@@ -58,13 +56,13 @@ hl.config({
 
 ## Step 6: Registration
 
-Five scripts hardcode exact theme names in `case` arms and will silently no-op (or fall back to a default) for an unregistered theme — this is NOT covered by the file-set check in Step 2.
+Several scripts hardcode exact theme names in `case` arms and will silently no-op (or fall back to a default) for an unregistered theme — this is NOT covered by the file-set check in Step 2.
 
 ```bash
 bash scripts/check-registrations.sh <new-name>
 ```
 
-Reports ✅/❌ per file across: `theme-apply-gtk`, `theme-apply-claude-code`, `theme-apply-spotify`, `theme-apply-qt` (all `case "$THEME_NAME" in ...`), `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark`-suffixed pairs may already resolve generically, check the script's own logic), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap dir creation only). `theme-apply-opencode`, `-firefox`, `-neovim` are name-agnostic and need no change.
+Reports ✅/❌ per file across: `theme-switcher`'s `theme_variant()` (**load-bearing** — GTK, Qt and Claude Code switch on its dark/light/other answer, and an unknown theme gets `other`), `theme-apply-spotify`, `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark` suffixes resolve generically), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap only). `theme-apply-gtk`/`-qt`/`-claude-code` read the variant, and `-opencode`, `-firefox`, `-neovim` are name-agnostic; none need a change.
 
 ## Step 7: Validate
 

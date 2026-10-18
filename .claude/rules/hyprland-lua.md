@@ -1,3 +1,10 @@
+---
+paths:
+  - "private_dot_config/hypr/**"
+  - "private_dot_config/themes/*/hyprland.lua"
+  - "private_dot_config/hyprdynamicmonitors/**"
+---
+
 # Hyprland Lua Configuration Reference
 
 **Location**: `private_dot_config/hypr/`

@@ -10,7 +10,6 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:wiki.hyprland.org)",
-      "WebFetch(domain:docs.astronvim.com)",
       "WebFetch(domain:mise.jdx.dev)",
       "WebFetch(domain:wiki.archlinux.org)",
       "Bash(git status:*)",
@@ -67,12 +66,8 @@
       "Bash(date:*)",
       "Bash(echo:*)",
       "Bash(cat:*)",
-      "Bash(tee:*)",
       "Bash(tr:*)",
       "Bash(cut:*)",
-      "Bash(sed:*)",
-      "Bash(awk:*)",
-      "Bash(xargs:*)",
       "Bash(column:*)",
       "Bash(printf:*)",
       "Bash(test:*)",
@@ -85,8 +80,15 @@
       "Bash(jq:*)",
       "Bash(mise run:*)",
       "Bash(mise tasks:*)",
-      "Bash(hyprctl:*)",
       "Bash(journalctl:*)",
+      "Bash(hyprctl clients:*)",
+      "Bash(hyprctl monitors:*)",
+      "Bash(hyprctl layers:*)",
+      "Bash(hyprctl workspaces:*)",
+      "Bash(hyprctl activewindow:*)",
+      "Bash(hyprctl getoption:*)",
+      "Bash(hyprctl version:*)",
+      "Bash(hyprctl -j:*)",
       "Bash(systemctl status:*)",
       "Bash(systemctl --user status:*)",
       "Bash(systemctl --user list-timers:*)",
@@ -108,7 +110,6 @@
       "Bash(fzf:*)",
       "Bash(swww query:*)",
       "Bash(darkman get:*)",
-      "Bash(code:*)",
       "Bash(yamllint:*)",
       "Bash(stylua:*)",
       "Bash(lua-language-server:*)",
@@ -116,6 +117,7 @@
       "mcp__plugin_context7_context7__query-docs"
     ],
     "deny": [
+      "Bash(chezmoi apply)",
       "Bash(chezmoi apply :*)",
       "Bash(chezmoi add --encrypt:*)",
       "Bash(chezmoi decrypt:*)",
@@ -163,39 +165,38 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.sh$ && ! \"$f\" =~ \\.tmpl$ ]] && bash -n \"$f\" && shellcheck --severity=warning \"$f\" 2>/dev/null || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.sh$ && ! \"$f\" =~ \\.tmpl$ ]] || exit 0; out=$( { bash -n \"$f\" && shellcheck --severity=warning \"$f\"; } 2>&1 ) || { echo \"$out\" >&2; exit 2; }",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.sh\\.tmpl$ ]] && { tmp=$(mktemp --suffix=.sh); chezmoi execute-template < \"$f\" > \"$tmp\" 2>/dev/null && shellcheck --severity=warning \"$tmp\" 2>/dev/null && echo \"✓ Shell OK (rendered .sh.tmpl)\"; rm -f \"$tmp\"; } || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.sh\\.tmpl$ ]] || exit 0; tmp=$(mktemp --suffix=.sh); out=$(chezmoi execute-template < \"$f\" 2>&1 > \"$tmp\") && out=$(shellcheck --severity=warning \"$tmp\" 2>&1); rc=$?; rm -f \"$tmp\"; [[ $rc -eq 0 ]] || { echo \"$out\" >&2; exit 2; }",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.tmpl$ && ! \"$f\" =~ \\.chezmoitemplates ]] && { chezmoi execute-template < \"$f\" > /dev/null && echo \"✓ Template OK\" || { echo \"✗ Template syntax error:\" >&2; chezmoi execute-template < \"$f\" 2>&1 | head -5 >&2; }; } || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.tmpl$ && ! \"$f\" =~ \\.sh\\.tmpl$ && ! \"$f\" =~ /modify_ && ! \"$f\" =~ \\.chezmoitemplates ]] || exit 0; out=$(chezmoi execute-template < \"$f\" 2>&1 >/dev/null) || { echo \"$out\" | head -5 >&2; exit 2; }",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.chezmoidata/.*\\.yaml$ ]] && mise run lint:yaml-file -- \"$f\" || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.chezmoidata/.*\\.yaml$ ]] || exit 0; out=$(mise run lint:yaml-file -- \"$f\" 2>&1) || { echo \"$out\" >&2; exit 2; }",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ private_dot_config/hypr/.*\\.lua$ ]] && mise run lint:lua-file -- \"$f\" && echo \"✓ Lua OK\" || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ private_dot_config/(hypr|themes|hyprdynamicmonitors|dotfiles)/.*\\.lua$ ]] || exit 0; out=$(mise run lint:lua-file -- \"$f\" 2>&1) || { echo \"$out\" >&2; exit 2; }",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ -n \"$f\" && \"$f\" =~ \\.(json|jsonc)$ && ! \"$f\" =~ /modify_ ]] && mise run lint:json-file -- \"$f\" && echo \"✓ JSON OK\" || true",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [[ \"$f\" =~ \\.(json|jsonc)$ && ! \"$f\" =~ /modify_ ]] || exit 0; out=$(mise run lint:json-file -- \"$f\" 2>&1) || { echo \"$out\" >&2; exit 2; }",
             "timeout": 15
           }
         ]
       }
     ]
   },
-  "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "remember@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true
