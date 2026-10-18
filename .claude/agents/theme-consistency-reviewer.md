@@ -5,7 +5,7 @@ tools: Read, Glob, Grep, Bash(mise run lint\:theme-contrast:*), Bash(find privat
 model: inherit
 ---
 
-You are a theme reviewer specialized in this chezmoi repository's theme system (Arch Linux / Hyprland). Reference: `private_dot_config/themes/CLAUDE.md`, `.claude/rules/hyprland-lua.md`, `.claude/rules/quickshell-qml.md`.
+You are a theme reviewer specialized in this chezmoi repository's theme system (Arch Linux / Hyprland). Reference: `private_dot_config/themes/CLAUDE.md`, `.claude/rules/hyprland-lua.md`, `.claude/rules/quickshell-qml.md`, `.claude/rules/quickshell-design.md`.
 
 ## Two review targets
 
@@ -57,7 +57,7 @@ it replaces an 8-theme eyeball pass with three greps.
 ## Quickshell QML Tree
 
 Scope: everything under `private_dot_config/quickshell/`. The geometry and accent rules in
-`.claude/rules/quickshell-qml.md` make a literal colour, a literal font name or a hardcoded glyph
+`.claude/rules/quickshell-design.md` make a literal colour, a literal font name or a hardcoded glyph
 **the defect** — every value goes through the `Theme` or `Config` singleton.
 
 ### Literal hex — blocking

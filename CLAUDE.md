@@ -151,7 +151,8 @@ read the relevant one explicitly when starting from elsewhere.
 | `chezmoi-chassis.md` | Laptop/desktop gating: where the condition goes, rendering the other chassis branch |
 | `chezmoi-modify-entries.md` | `modify_*` entries — the two kinds (modify_manager vs native modify-template), merge safety, directive/validation reference |
 | `hyprland-lua.md` | Hyprland Lua config — `hl`/`o` globals, theme/monitor profile patterns, rgba format, stylua + `--verify-config` validation |
-| `quickshell-qml.md` | Quickshell QML — imports, Qt5/Qt6 tooling trap, lint exemption discipline, runtime gotchas |
+| `quickshell-qml.md` | Quickshell QML — imports, Qt5/Qt6 tooling trap, lint exemption discipline, runtime gotchas, IPC |
+| `quickshell-design.md` | Quickshell geometry, accent rule, contrast, `Theme.action`, theming (loads for files that draw something) |
 
 ### Repository Utilities
 
@@ -224,7 +225,8 @@ read the relevant one explicitly when starting from elsewhere.
 **Working on the Quickshell shell?** (the bar is one of its 21 shipped surfaces)
 → `private_dot_config/quickshell/CLAUDE.md` — **start here**: what the shell is today, surface by
 surface, and why each departure
-→ `.claude/rules/quickshell-qml.md` (QML syntax, tooling, measured runtime traps)
+→ `.claude/rules/quickshell-qml.md` (QML syntax, tooling, runtime traps) and `quickshell-design.md` (geometry, accent, contrast, theming)
+→ `_research/archive/QUICKSHELL_RULE_EVIDENCE.md` (the measurements behind both)
 → `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **the ONLY open Quickshell plan**
 → `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected five times)
 

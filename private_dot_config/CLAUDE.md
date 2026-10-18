@@ -64,7 +64,7 @@
 
 **Quickshell shell** (`quickshell/`) — **the active desktop shell**:
 - One QML tree owns bar, OSDs, launcher, power menu, notifications, popovers and every picker
-- See: `quickshell/CLAUDE.md`, `.claude/rules/quickshell-qml.md`
+- See: `quickshell/CLAUDE.md`, `.claude/rules/quickshell-qml.md`, `.claude/rules/quickshell-design.md`
 
 **Wofi launcher** — **fallback only**:
 - Replaced 2026-09-09 by the Quickshell launcher, dmenu picker and clipboard picker

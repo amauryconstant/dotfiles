@@ -2,7 +2,8 @@
 
 **Location**: `private_dot_config/quickshell/dotfiles/` → `~/.config/quickshell/dotfiles/`
 **Parent**: See `../CLAUDE.md` for XDG config overview
-**Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md`
+**Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md` · **Geometry, accent, contrast, theming**:
+`.claude/rules/quickshell-design.md` · **Measurements behind both**: `_research/archive/QUICKSHELL_RULE_EVIDENCE.md`
 **What is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the only open Quickshell plan
 **Nothing is left to build** — the build closed 2026-09-13, 21 of 23 surfaces shipped and the other
 two are recorded refusals. The three that had shipped THINNER than their entry described (§9
@@ -198,7 +199,7 @@ notification).
 
 A widget sets `icon`, `label` and — only for a real state — `iconColor` on `BarWidget`. It
 does **not** declare its own `Text`, write a radius, or pick a rest colour: geometry and the
-accent rule both live one level up. See `.claude/rules/quickshell-qml.md`.
+accent rule both live one level up. See `.claude/rules/quickshell-design.md`.
 
 ## The three list surfaces — `launcher/PickerSurface.qml`
 
@@ -341,7 +342,7 @@ shell-outs from the bar — `pavucontrol`, `nmtui`, `blueman-manager` and `btop`
 the click to the footer, where the design puts the "escape hatch".
 
 🚨 **`grabFocus` cannot be used.** A popup parented to a **layer-shell** window cannot be an
-*xdg_popup* (measurement and log in `.claude/rules/quickshell-qml.md`), and the popup silently
+*xdg_popup* (measured log in `_research/archive/QUICKSHELL_RULE_EVIDENCE.md`), and the popup silently
 sets itself back to invisible. So the click-outside dismissal that flag exists for
 is simply unavailable here, and the design's two open modes are built from what is:
 

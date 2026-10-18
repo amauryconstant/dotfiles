@@ -41,7 +41,7 @@ Timer schedules/enable logic are driven by `.chezmoidata/services.yaml` (`user_t
 - **`Environment=QS_DISABLE_FILE_WATCHER=1`.** `chezmoi apply` replaces files by rename, which
   Quickshell's per-file watch does not survive, and its one directory-triggered reload can land
   mid-apply on a half-written tree. `systemctl --user restart quickshell` is the only reload path.
-  Measurements: `.claude/rules/quickshell-qml.md`.
+  Rule: `.claude/rules/quickshell-qml.md`; measurements: `_research/archive/QUICKSHELL_RULE_EVIDENCE.md`.
 - **Not `-d`** (forks and `setsid()`s, so `Type=simple` would see the parent exit) and **not `-n`**
   (`--no-duplicate` exits 0, which `Restart=always` would spin on).
 - Quickshell re-execs **itself** on a crash signal (`src/crash/handler.cpp`), so the unit exists

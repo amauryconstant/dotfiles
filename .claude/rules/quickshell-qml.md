@@ -16,6 +16,9 @@ disables subdirectory discovery for every other config, including voxtype's)
 `_plans/archive/QUICKSHELL_SHELL.md` (the build record) and
 `_plans/archive/QUICKSHELL_OPEN_WORK.md` (the contrast rulings, closed the day it was written)
 are history, not roadmaps
+**See**: `.claude/rules/quickshell-design.md` — geometry, the accent rule, contrast and theming
+(loads for files that draw something); the measurements behind the rules here and there are in
+`_research/archive/QUICKSHELL_RULE_EVIDENCE.md`
 **See**: `.claude/rules/hyprland-lua.md` — this file is its counterpart
 
 ---
@@ -150,11 +153,8 @@ Not our bugs, and not missing imports. Each needs an inline suppression:
 `Qt.mightBeRichText()` on the string and switches format by itself — no `StyledText`, no opt-in.
 Rich text then **fetches `<img src="http://…">`**, so any `Text` rendering a string this repo did
 not author is an unauthenticated outbound GET waiting for a sender to notice. The reachable path
-here was the shared `BarWidget` label, which carries the **window title** and the **MPRIS track
-title**: a web page setting `document.title = '<img src="http://…">'` makes the bar beacon.
-Omarchy shipped the same class and patched it in v4.0.2 (`shell/plugins/notifications/`), after
-its own `/<img[^>]*>/gi` strip turned out to be bypassable — `<im<img src="decoy">g src="beacon">`
-is *rewritten into* a live tag by a substring strip. Do not strip; declare the format.
+was the shared `BarWidget` label (window title, MPRIS track title). Do not strip tags — a substring
+strip can be bypassed into a live tag; declare the format.
 
 **The rule is foreign text, not every `Text`.** 18 of this tree's 83 unformatted `Text` elements
 could carry a foreign string and now pin `textFormat: Text.PlainText`; the other 65 are glyph
@@ -183,22 +183,14 @@ A floating bar is anchored `left`/`right`/`top` with a margin on all four sides,
 reserves more than the bar occupies. Assigning `exclusiveZone` also switches the mode to
 `ExclusionMode.Normal`, which is what you want.
 
-🚨 **The compositor ADDS the margin, so the zone is not the bar's bottom edge.** An
-exclusive zone is measured from the surface's own edge, so Hyprland reserves
-`margins.top + exclusiveZone`. Verified live 2026-09-10: `margins.top` 4 with a zone of 44
-gave `hyprctl monitors` `reserved=[0,48,0,0]` — four PAST the bar's own bottom edge, not at
-it. `barHeight` alone is what reserves exactly the bottom edge and leaves `gaps_out` as the
-only gap below the bar.
+🚨 **The compositor ADDS the margin, so the zone is not the bar's bottom edge.** Hyprland reserves
+`margins.top + exclusiveZone`; `barHeight` alone reserves exactly the bottom edge. This tree
+deliberately sets `exclusiveZone` to `barHeight + barInset`, so the gap under the bar is
+`barInset + gaps_out` (8) against 4 at the sides — rendered and compared 2026-09-10, so a
+symmetric-looking `barHeight` is a *change*, not a fix. See `bar/Bar.qml`.
 
-This tree deliberately does **not** do that: `exclusiveZone` is `barHeight + barInset`, so
-the inset is counted twice and the gap under the bar is `barInset + gaps_out` (8) against
-the 4 its side edges get. Both were rendered and compared on 2026-09-10 and the asymmetric
-one was chosen — the bar reads as separated from the windows rather than as one more tile.
-So a symmetric-looking `barHeight` here is a *change*, not a fix. See `bar/Bar.qml`.
-
-Check it against the compositor, never against the QML: `hyprctl monitors -j` for `reserved`,
-`hyprctl layers` for the bar's own `xywh`, and `hyprctl clients -j` for the first tiled
-window's `at` — which is inside the 2px border, so it reads `gaps_out + border_size`.
+Check against the compositor, never the QML: `hyprctl monitors -j` (`reserved`), `hyprctl layers`
+(the bar's `xywh`), `hyprctl clients -j` (first tiled window's `at` = `gaps_out + border_size`).
 
 🚨 **`barInset` and `gaps_out` are one number in two files** — `Config.qml.tmpl` and
 `hypr/conf/general.lua` (plus its `.conf` twin). The inset is what aligns the bar's side
@@ -207,16 +199,12 @@ edges with every window's, and per the paragraph above the gap under the bar is
 QML side alone. Both are 4 today; `gaps_in` is half that, keeping the screen-edge gap equal
 to the window-to-window gap.
 
-🚨 **`PopupWindow.grabFocus` does not work on a layer-shell parent.** It sets `Qt::Popup`
-(`popupwindow.cpp:63`), which makes Qt request an *xdg_popup* grab — and a popup parented to a
-layer surface is not an xdg_popup. Measured 2026-09-10 with `quickshell -p`: *"Failed to create
-grabbing popup. Ensure popup has a transientParent set and that parent window has received
-input"*, then *"Cannot attach popup … as the popup is not an xdg_popup"*, and the popup silently
-sets itself back to invisible. So a bar popup gets **no** click-outside dismissal from Qt.
-`HyprlandFocusGrab` (`Quickshell.Hyprland`, re-exported from `_FocusGrab`) is what works: keys
-reach a focused `Item` inside the popup and `cleared` fires on an outside click — but it takes
-the keyboard away from the focused application for as long as it is active, and it survives a
-workspace switch, so it is only correct for a surface the user deliberately summoned.
+🚨 **`PopupWindow.grabFocus` does not work on a layer-shell parent.** It requests an *xdg_popup*
+grab (`popupwindow.cpp:63`); a popup parented to a layer surface is not one, so it silently sets
+itself back to invisible. A bar popup therefore gets **no** click-outside dismissal from Qt.
+`HyprlandFocusGrab` works (keys reach a focused `Item`, `cleared` fires on an outside click) but
+takes the keyboard from the focused application while active and survives a workspace switch — only
+correct for a surface the user deliberately summoned.
 
 🚨 **`signal closed` on a `PopupWindow` is an override, not a new signal.** The engine reports
 *"Duplicate signal name: invalid override of property change signal or superclass signal"* at
@@ -261,17 +249,14 @@ reads a permanent 0 with no error unless a `PwObjectTracker { objects: [sink] }`
 See `bar/widgets/AudioWidget.qml`.
 
 🚨 **`Pipewire.defaultAudioSink` is resolved BY NAME, so a duplicate node wins silently.**
-`defaults.cpp` `onMetadataProperty` reads `default.audio.sink` out of the metadata as a *name*
-string and hands it to `registry->findNodeByName()` — first match, no id, no tiebreak. Every
-suspend/resume on this laptop leaks one orphaned `Audio/Sink` node whose `device.id` points at a
-device that no longer exists, all sharing the name `alsa_output.pci-…-analog-stereo`; after 17
-resumes there were 18. Quickshell bound a frozen one, so `onVolumeChanged` never fired and the OSD
-and `AudioWidget` tracked a node nothing could change — while `pamixer` was correctly moving the
-real sink all along. The symptom reads as *"the volume keys do nothing"*, and every layer below QML
-tests clean. Diagnose with `wpctl status` (the live default carries `*`) or
+`defaults.cpp` reads `default.audio.sink` as a *name* and takes the first `findNodeByName()` match.
+Every suspend/resume on the laptop leaks an orphaned `Audio/Sink` node with the same name; Quickshell
+bound a frozen one, so the OSD and `AudioWidget` tracked a node nothing could change while `pamixer`
+moved the real sink. Symptom: *"the volume keys do nothing"* with every layer below QML clean.
+Diagnose with `wpctl status` (the live default carries `*`) or
 `pw-dump | jq '.[] | select(.info.props["media.class"]=="Audio/Sink")'`; `systemctl --user restart
-wireplumber` destroys the orphans. The leak is swept on every resume by `after_sleep_cmd` in
-`.chezmoitemplates/hypridle_general` — on the laptop only, where it was measured (chassis-gated).
+wireplumber` destroys the orphans. `after_sleep_cmd` in `.chezmoitemplates/hypridle_general` sweeps
+them on resume (laptop only, where it was measured).
 
 **`WifiNetwork.signalStrength` is a 0..1 fraction too.** Same trap, different module: `nmcli`
 reports 61, the property reads 0.61. A `/ 25` banding written for a percentage pins the index at
@@ -319,14 +304,11 @@ Nothing in the QML may destroy the flow on a failure — cancelling is `cancelAu
 and nothing else.
 
 🚨 **"Is the compositor locked" is NOT "is the lock stranded", and acting on the first
-displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock is
-running, and `misc:allow_session_lock_restore` means a second client is now *accepted* rather
-than refused — which is the whole reason `immediate-lock`'s guard had to become a `flock`.
-Measured 2026-09-12: `lock/LockScreen.qml` ran `session-locked` at startup, got 0 while
-hypridle's hyprlock was up, concluded orphan, and took a second lock on top of a live one. The
-probe is `desktop/session-lock-stranded` (locked **and** the lock file free); the QML rules
-*itself* out first with `locked || lockRequested`, because the in-process locker takes no lock
-file and so cannot be seen by one.
+displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock runs, and
+`misc:allow_session_lock_restore` means a second lock client is *accepted* (2026-09-12:
+`LockScreen.qml` took a second lock on top of a live one). The probe is
+`desktop/session-lock-stranded` (locked **and** the lock file free); the QML rules *itself* out first
+with `locked || lockRequested`, since the in-process locker takes no lock file.
 
 ⚠️ **A restart while the shell holds the lock strands the session on purpose.** Use
 `desktop/quickshell-restart`, which asks `ipc call lock status` and refuses on `secure` or
@@ -346,11 +328,9 @@ member is initialised to `NotificationCloseReason::Dismissed`. `server.cpp` then
 notification the instant the `notification` signal returns if it is still untracked. Reading
 the getter's body alone gives the opposite answer; the member's initialiser is the fact.
 
-Missed, the failure is quiet and misleading: popups still appear (the handler already captured
-the pointer), then turn into a list of `null`s, while the centre stays permanently empty. The
-only symptom in the log is `TypeError: Cannot read property 'hints' of null`. Verified live
-2026-09-01. The corollary: implement `transient` by filtering it out of history, never by
-setting `tracked = false`.
+Missed, popups still appear and then turn into `null`s while the centre stays empty; the only log
+symptom is `TypeError: Cannot read property 'hints' of null`. Implement `transient` by filtering it
+out of history, never by `tracked = false`.
 
 **`NotificationServer.extraHints` does not gate `hints`.** It only extends the advertised
 `GetCapabilities` list; every hint a client sends arrives in `Notification.hints` regardless.
@@ -361,31 +341,16 @@ popup to a monitor without being declared.
 come back flagged `lastGeneration`; a fresh process starts empty. That matches swaync, which
 also loses history when its daemon restarts, so no disk persistence exists here.
 
-🚨 **`chezmoi apply` does not reliably reload a running Quickshell.** Verified 2026-09-02
-after Phase 5.5: the files on disk were correct, the shell's own log said
-*"Reloading configuration… Configuration Loaded"* — and the live generation was still the
-pre-apply one. `ipc show` listed no `overview` target and `hyprctl layers` showed no dock
-surface, while the same tree run with `quickshell -p` mapped it immediately at `1920x74 @0,1006`
-with no errors.
+🚨 **`chezmoi apply` does not reliably reload a running Quickshell.** Verified 2026-09-02: files on
+disk correct, the log said *"Configuration Loaded"*, the live generation was still the old one
+(`ipc show` had no `overview`, `hyprctl layers` no dock). The watcher compares CONTENT, not mtime
+(`touch` is not a reload), and chezmoi's temp-and-rename replace does not survive a per-file watch —
+so the watcher is **off in the deployed shell** (`QS_DISABLE_FILE_WATCHER=1` in
+`quickshell.service`): a reload must never read a half-written tree.
 
-Two facts behind it, both measured:
-
-- **The watcher compares CONTENT, not mtime.** `touch shell.qml` produces no reload at all;
-  appending a byte produces one. So `touch` is not a reload command.
-- `EngineGeneration::setWatchingFiles` (`generation.cpp:170`) adds a `QFileSystemWatcher` path
-  for every scanned file *and* its directory. chezmoi replaces files by writing a temp and
-  renaming over the target, which is exactly the pattern a per-file watch does not survive —
-  and the one directory-triggered reload can land mid-apply, re-reading files that have not
-  been replaced yet. (The mid-apply ordering is inference; the stale generation is not.)
-
-The watcher is therefore **off in the deployed shell**: `quickshell.service` sets
-`Environment=QS_DISABLE_FILE_WATCHER=1` (`qmlglobal.cpp:67`), the same call Omarchy makes in
-`bin/omarchy-launch-shell` for the same reason — an upgrade rewriting the tree must not reload
-against a half-written one. The facts above are why it is off, not a behaviour to work around.
-
-So an apply that changes this tree ends with **`desktop/quickshell-restart`** (which wraps
-`systemctl --user restart quickshell.service` in the lock guard below), the only reload path. Never verify by looking at the files — verify with
-`quickshell -c dotfiles ipc show` (is the new target there?) or `hyprctl layers`.
+So an apply that changes this tree ends with **`desktop/quickshell-restart`** (the lock-guarded
+wrapper around `systemctl --user restart quickshell.service`), the only reload path. Verify with
+`quickshell -c dotfiles ipc show` or `hyprctl layers`, never by looking at the files.
 
 🚨 **Nothing else may launch the shell.** A bare `quickshell -c dotfiles` is unsupervised, and a
 second one racing the unit is worse than none. `desktop/quickshell-toggle` starts the unit
@@ -394,11 +359,9 @@ the moment the user has no bar left to ask with). `quickshell -c dotfiles kill` 
 not a stop — `Restart=always` brings it back in 2s, because a clean exit still leaves the desktop
 with no bar, no launcher and no notification daemon.
 
-Quickshell also re-execs **itself** from its signal handlers (`src/crash/handler.cpp:148-156`), so
-an ordinary segfault never reaches systemd. The unit exists for what that cannot cover: Qt leaving
-through `_exit()` on a lost Wayland connection, a crash within 10s of launch (its own crash-loop
-guard calls `exit(-1)` instead of relaunching, `src/launch/main.cpp:68`), `SIGKILL`, and a QML tree
-that fails to load at all.
+Quickshell re-execs itself from its signal handlers, so an ordinary segfault never reaches systemd;
+the unit covers what that cannot: Qt `_exit()` on a lost Wayland connection, a crash within 10s of
+launch, `SIGKILL`, and a QML tree that fails to load.
 
 🚨 **`execDetached` detaches the PROCESS, not the CGROUP.** Everything the shell spawns stays in
 `quickshell.service`'s cgroup, and a unit restart kills the whole control group — so every app
@@ -428,18 +391,6 @@ monitor.
 `PanelWindow` reads the *item's* visibility, so a capture bound to it runs for the life of the
 session. Pass the window's visibility down as an explicit property instead.
 
-🚨 **A modal scrim cannot be built from a background token.** `GROUND_FLOAT` measures 0.71–0.96
-luminance in all four light themes, so an 86% scrim over it renders near-white — and
-`INK_CONTRAST_CANDIDATE` inverts per theme (0.006 in mocha, 0.88 in gruvbox-dark). A scrim is a *shade*,
-not a theme colour: `Theme.scrim` is a deliberate literal, under the same exemption as
-`Theme.qml`'s fallbacks.
-
-🚨 **Then everything drawn on it needs `Theme.fgOnScrim`.** The scrim is dark in every theme,
-so a light theme's own foregrounds land on it at **1.81** (gruvbox-light) and 2.63 (latte) and
-are simply not there. A computed pick, better of `INK_PRIMARY` / `GROUND_BASE`;
-worst case across all 8 becomes 6.64. `mise run lint:theme-contrast` checks both, in their own
-section — the scrim is not a colorset token, so the `PAIRS` table cannot express it.
-
 🚨 **A hover-driven reveal needs a `HoverHandler`, never a `MouseArea`.** A hover-enabled
 `MouseArea` reports hover only while nothing above it has it, so **every child `MouseArea`
 steals it** — and `z: -1` does not help, because stacking decides who *wins* the event, not
@@ -449,9 +400,8 @@ click it was about to receive. Pointer handlers are passive and run in parallel 
 grab; quickshell's own `ui/ReloadPopup.qml:126` uses one for exactly this. Symptom to
 recognise: the surface is *unclickable* and flickers worst wherever its controls are densest.
 
-🚨 **The reveal mask is the UNION of the hot edge and the panel's LIVE rect.** `regions` is
-`Region`'s default property (`region.hpp:109`) and `Intersection` defaults to `Combine`
-(`region.hpp:144`), so a nested `Region` unions in:
+🚨 **The reveal mask is the UNION of the hot edge and the panel's LIVE rect.** `Region`'s default
+property is `regions` and `Intersection` defaults to `Combine`, so a nested `Region` unions in:
 
 ```qml
 mask: Region {
@@ -460,23 +410,13 @@ mask: Region {
 }
 ```
 
-Three ways a single rect gets this wrong, all of which drop the pointer out of the input region
-and oscillate: binding it to the panel **alone** (the panel has not arrived yet while it slides),
-pinning it to one **static centred** band (an off-centre entry is outside it), and leaving a
-**seam** between the panel's resting edge and the hot edge (crossing it loses hover). Grow the
-hot edge to meet the panel while revealed, and keep it full-width so the edge can be entered
-anywhere. caelestia's `modules/drawers/Regions.qml` sizes its regions off the live animation
-(`panel.height * (1 - offsetScale) + borderThickness`) for the same reason — with slack.
-
-**Add a hide grace period anyway.** caelestia gets away with none because its hit-testing is
-exhaustive coordinate math in one `MouseArea`; anything built from real child `MouseArea`s
-wants the slack. `Config.dockHideDelayMs` (220) holds `revealed` true through a momentary loss:
-`revealed: hoverHandler.hovered || hideDelay.running`.
-
-Verified by driving the pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x = …, y = … })'`
-(note the **table** argument — a positional `move(x, y)` errors) and logging the state: hover
-held continuously from a bottom-centre entry, onto a tile, and across a far-left entry at
-x=120 against a panel spanning only x≈815–1104.
+A single rect fails three ways, each dropping the pointer out of the input region and oscillating:
+the panel **alone** (it has not arrived while it slides), one **static centred** band (an off-centre
+entry is outside it), or a **seam** between the panel's resting edge and the hot edge. Grow the hot
+edge to meet the panel while revealed and keep it full-width. Add a hide grace anyway —
+`Config.dockHideDelayMs` (220): `revealed: hoverHandler.hovered || hideDelay.running`. Drive the
+pointer with `hyprctl dispatch 'hl.dsp.cursor.move({ x = …, y = … })'` (a **table** argument;
+positional `move(x, y)` errors).
 
 🚨 **`forceActiveFocus()` from a child's `Component.onCompleted` is SILENTLY DROPPED.** The
 child completes before its window exists: `ProxyWindowBase::completeWindow()` reparents the content
@@ -537,275 +477,6 @@ never fires. That is why theming is driven by an explicit IPC call.
 
 ---
 
-## Geometry and the accent rule
-
-Both originate in Amendment A of the frozen `_plans/archive/QUICKSHELL_SHELL.md` (which cites a
-design set that no longer exists), and both live in exactly one place here.
-
-**Geometry** is the scale in `Config.qml.tmpl`, and a widget never writes a radius, a
-spacing, a font size or an animation duration of its own.
-
-🚨 **There are exactly THREE radii, and radii are NOT on the density ramp**: `radiusChip` 8
-for chips and rows, `radiusPanel` 12 for surfaces, `radiusPill` 999. The four-step ramp this
-tree used to carry (plus a fifth at 14 on the power tiles and a sixth at 6 on tooltips) was
-inventing distinctions no surface needs — a tooltip and a chip are the same kind of thing.
-Spacing is `gap` 8 and `padTight`/`pad`/`padLoose` 12/16/24; `rowH` 34 is a list row and
-`launcherRowHeight` 48 is a two-line one. `barHeight` 40, `barInset` 4, `chipSize` 26,
-`pillHeight` 24.
-
-🚨 **`hitMin` 32 does not scale with anything.** It is a pointer fact, not a density
-preference: a widget whose paint is 26 still claims 32 of pointer space. `BarWidget`'s
-`MouseArea` floors at it, which costs no layout because chips sit `gap` apart and two 32px
-areas on adjacent 26px chips are 34 apart.
-
-**Type is six steps and four glyph sizes, and nothing outside them is drawn**: `fontMeta` 11,
-`fontBody` 12, `fontTitle` 14, `fontDisplay` 20 (the OSD readout and the lock's date), with glyphs
-at `glyphRow` 13, `glyphBar` 16, `glyphOsd` 28, `glyphTile` 32. QML's `font.pixelSize` is an
-**integer**, so the design's half-pixel steps round here — meta 10.5 → 11, title 13.5 → 14.
-That is a QML constraint, not a reading of the design.
-
-🚨 **The scale is calibrated for a 40px bar and 340px panels, and the LOCK is the one
-full-screen surface.** Page 12's 220x34 field is correct against the scale and wrong against
-the surface — at 1920x1080 it reads as a popover control dropped onto a wall. So the lock
-carries panel measurements of its own in `Config.qml.tmpl`, beside `polkitDialogWidth` and for
-the same reason (the scale does not supply how wide a panel is): `lockFieldWidth` 360,
-`lockFieldHeight` 56, and `lockClockSize` 72 — the one type size outside the six steps, taken
-because there is no other display-sized thing on that screen to be consistent with. Everything
-else the lock draws still comes from the scale. This is the exception, not a licence: a surface
-that is not full-screen has no claim to one.
-
-**Motion is three durations**: `motionFast` 120 (hover and press tints, meter fills),
-`motionSlow` 180 (reflow, pill travel, OSD fade-out), `motionEnter` 220 (arrival). Never
-animated: text replacing text, the focus ring, and anything whose only change is a colour role
-— which is why a live theme switch repaints with no transition at all.
-
-🚨 **A control's boundary owes 3:1 against its ground, and a ground-tier step never supplies
-it.** The notification primary was `groundRaised` on the card's `groundFloat`: **1.00** in five
-of eight colorsets, 1.27 at best. It had no edge, stood beside 3:1 outlines, and read as the
-*disabled* button — and since `groundRaised` is also `Theme.hover`, it looked hovered at rest.
-The centre's Clear chip was the same defect one tier down (`groundRaised` on `groundBase`, 1.05
-in rose-pine-dawn). Tier steps are hover and elevation, never a boundary. Both tier pairs are
-`BANNED` rows in `lint:theme-contrast`.
-
-🚨 **Every push button is `bar/ActionButton.qml`, and colour is what ranks it.** `primary` is a
-`Theme.action` fill with an `inkOnAction` label — the one thing the surface asks for. `secondary`
-is a `Theme.action` outline and label — anything else the sender offers. `neutral` is an
-`inkSecondary` outline with an `inkPrimary` label — *ours*, not the sender's: Dismiss, Cancel,
-Clear. Colour means "does something", grey means "go away". A first pass (2026-10-06) made the
-primary an `inkPrimary` fill to keep the accent for focus; it read as one more grey button and was
-reversed the same day — an action that does not look like one blends into the card.
-
-**Truncation is by PIXELS, never by character count.** `titleMaxLength` and
-`mediaMaxLength` are gone: `WWWW…` is about three times the width of `iiii…`, so a character
-cap does not bound the bar. Set `labelMaxWidth` on `BarWidget` and let `Text.elide` do it —
-`labelElideMode: Text.ElideMiddle` for a path, whose identifying half is its tail.
-
-**The design publishes three density columns** (compact 12 / default 13 / roomy 14). Only the
-default is implemented: the one thing that could select a column is the system menu, which is
-not built, and two unreachable columns are dead configuration.
-
-**The accent rule** — *the accent marks focus and action, everything else neutral, semantic
-colours only for state* — is enforced by `BarWidget.iconColor` on the bar and by `ActionButton`
-everywhere a control is drawn. Focus is what you are on; action is what you can do (a button, a
-link). Information is never accented. A widget overrides it only
-for a genuine state (muted, disconnected, inhibited, low battery); at rest every widget is
-the same colour. Set `icon`/`label` on `BarWidget` rather than declaring your own `Text`, and
-the rule applies for free.
-
-🚨 **`iconColor`/`labelColor` are not one fixed rest colour — they default to `restColor`,
-which follows `grounded`.** A widget colouring for a state ends its ternary on `root.restColor`;
-ending it on a flat `Theme.inkSecondary` pins the ungrounded colour onto a lit ground. That was
-six widgets' worth of defect, found by the reviewer below and fixed 2026-09-01.
-`themes/CLAUDE.md` bans the second ink on an elevated ground outright, and a hovered chip, a
-pill and the launcher tint are all elevated surfaces. So the default is `inkSecondary` at rest
-and `inkPrimary` the moment a ground appears. Anything that hardcodes one of the two
-reintroduces the banned pair on half the widget's states.
-
-🚨 **`signalError` is the ONLY semantic colour a bar widget may take.** Measured across all
-eight colorsets, `SIGNAL_WARN` lands at **2.05** in rose-pine-dawn and 2.19 in
-gruvbox-light, and `SIGNAL_INFO` at **2.80–3.31** in the light sets — under the 3:1 a graphic
-owes, so a state drawn in either was *less* visible than the same state drawn neutral. Only
-`SIGNAL_ERROR` clears 3:1 everywhere (worst 3.25, on `GROUND_BASE`). The battery's low band,
-the idle inhibitor's second state, the unread bell and three dictation states all moved onto
-their own **glyph**, which is what they should always have carried. `signalInfo` and `signalOk` are bound in
-`Theme.qml` and drawn nowhere. `signalWarn` has exactly one site, and it is not a glyph:
-`MetersWidget` tints its pill's **ground** with it at 18%. That is a different job with a
-different floor, and `mise run lint:theme-contrast` measures both tints (and the battery's
-14% one) as **composites** — a `Qt.alpha` ground is not a token, so no `PAIRS` row could
-express it and no run measured either until 2026-09-13.
-
-🚨 **The tinted pill's number is 3.19 at worst (solarized-light, critical) and that is
-ACCEPTED, not a defect to fix.** Three facts settle it, all measured 2026-09-13: the
-**untinted** pill is already 3.64 in that theme and was already excused as a colorset
-property; no alpha recovers it, because the limit as alpha → 0 is `INK_PRIMARY` on
-`GROUND_BASE` = **4.13** there; and swapping the two solarized inks — the obvious palette fix
-— reaches 4.39 on `GROUND_RAISED` in solarized-light and 4.49 on the warn tint in
-solarized-dark, so it still misses while demoting Solarized's own body value to the quiet
-role. Six of eight themes clear 4.5 with margin (worst 5.21, latte). The tint is also
-load-bearing: a `signalError` **glyph** on a pill cannot replace it, because that pair is
-2.81 on `groundRaised` in solarized-dark — which is why `PowerMenu` moved its tiles off that
-tier.
-
-`signalInfo` and `signalOk` stay **bound and undrawn**. Deleting them would save two lines
-and break the rule `themes/*/colors.sh` states in its own header — the five SIGNAL roles stay
-mutually separable in every theme — so a role model with three roles is a worse thing to own
-than two unspent ones.
-
-`labelColor` is split from `iconColor` so the glyph can carry a state while the number it
-annotates stays readable — the battery pill is the case that needs it. `monoLabel: true`
-puts a number in `terminalFont`: digits only line up fixed-pitch, and a proportional face
-reflows the bar every time the value changes width.
-
-`pill: true` gives a widget its own permanent ground. **Exactly two widgets have it** — the
-battery and the meter — because charge and load are the two numbers that have to be readable
-without a hover. The design draws both grounded; what it forbids is a *second meter* beside
-the first, not a second ground.
-`tinted: true` is the same idea without the pill radius, and **only the launcher chip has
-it**: an accent ground at rest is the single fixed anchor the bar is allowed.
-Everything else is icon-only, with its number in the tooltip.
-
-`BarSeparator` binds to the group that **follows** it (`group: gPower`), so a group that
-collapses to zero width on a desktop takes its leading hairline with it instead of leaving a
-stray rule in the bar. **The hairline is `Theme.edge`** — bar border, separators, the gap dot
-and every panel border alike. `edge` resolves to `groundRaised`; use the role name, because a
-`border.color` and a ground are different jobs even where the value coincides.
-
-🚨 **This was the fill-inert tier until 2026-09-01, on a mis-mapping.** Amendment A read the canvas's
-`#313244` as "`surface0`, which is what `FILL_INERT` maps to". It does not: in
-`themes/catppuccin-mocha/colors.sh`, `GROUND_RAISED` is `#313244` and `FILL_INERT` is
-`#45475a`. The correction moved the hairline one tier the wrong way in all 8 themes. See the
-hex table below — and never map a canvas colour by its LABEL.
-
-### Contrast is measured, not eyeballed — `mise run lint:theme-contrast`
-
-`themes/CLAUDE.md` states the rules and says outright that QML gets no automatic
-enforcement. `.mise/tasks/lint/theme-contrast.py` is that enforcement: it reads all **8**
-colorsets (not just the one symlinked at `themes/current`) and measures the pairs this tree
-actually renders. Part of `mise run lint`, silent on success (`-- --report` prints the tables). Its pair table is
-harvested by hand, so it goes stale silently when a widget changes a colour: re-harvest after touching any colour here.
-
-🚨 **There is no `INHERENT` escape hatch any more.** It used to excuse five accent-as-text pairs
-on the grounds that Waybar renders the same ratios — parity with an older tool is not a reason to
-ship failing text, as design page 13 says outright. The rules changed instead, so those pairs are
-no longer drawn rather than being excused. The script also carries a `BANNED` list, measured and
-reported but asserted absent from the tree: a rule keeps its evidence, or the next reader
-reintroduces what it forbids.
-
-🚨 **Harvest by parenting, never by grepping colour lines.** Most `Theme.groundRaised` uses in
-this tree are 1px hairlines and borders, not grounds. Reading `color: Theme.groundRaised` two
-lines above an ink token and calling it a violation invents failures that are not on
-screen — the 2026-09-01 pass started with five such suspects in `NotificationCentre`,
-`PowerMenu` and `Launcher` and **all five were hairlines**.
-
-Two thresholds, per WCAG 2.1: **4.5:1 for text, 3:1 for UI components and graphics** — an
-outline, a progress fill. Getting this wrong in the strict direction is how a legitimate
-outline gets "fixed" into a `fgPrimary` that competes with the button beside it.
-
-What the first run found, all four fixed 2026-09-01 and all four invisible to the eye on the
-one theme that happened to be applied:
-
-| Site | Was | Ratio | Now |
-|---|---|---|---|
-| OSD progress fill on its track | `accentPrimary` on `bgTertiary` | **1.38** in solarized-light | track is `bgSecondary` |
-| OSD dimmed fill | `fgMuted` on `bgTertiary` | **1.00** in both solarized themes — `INK_MUTED` *equals* `FILL_INERT` there | `fgSecondary` on `bgSecondary` |
-| PowerMenu avatar initial | `accentPrimary` on `bgTertiary` | **1.46** solarized-dark | `fgPrimary` on `bgSecondary` |
-| NotificationCard action outlines | `fgMuted` on `bgOverlay` | **2.18** solarized-light | `fgSecondary` |
-
-The pattern in three of the four: **`fillInert` (`FILL_INERT`) is the trap tier**, which is
-exactly why the role system makes it a *material* rather than a ground and forbids text on it
-outright. Prefer `groundRaised` for any ground that has to carry something on top of it. The
-2026-09-08 pass found a fourth instance the first one missed: the occupied workspace pill, at
-**1.67** in solarized-light.
-
-### `Theme.action` — buttons, links, and accent fills that carry text
-
-🚨 **Raw `signalFocus` cannot be an action colour in all 8 themes.** As a fill on a card it is
-**1.81** in gruvbox-light (the shape vanishes); with the best computed label on it, the old
-`inkOnSignal`, text reached only **3.47** in rose-pine-dawn and 4.08 in both Solarized sets.
-
-So `Theme.action` is `signalFocus` pushed **away from the ground** — toward white on a dark
-`groundBase`, black on a light one — in 5% steps, stopping at the first that clears 4.5 against
-`groundBase` *and* `groundFloat` and 3.0 against `groundRaised`. It is then legal as text on both
-grounds a control sits on, and `inkOnAction` (= `groundBase`) clears 4.5 on it by construction.
-Measured 2026-10-06: mocha, gruvbox-dark and rose-pine-moon keep the raw accent; the largest
-shift is gruvbox-light's (0.45 toward black, a darker amber `#765412`). The hue survives in all
-eight, and the same derivation covers any colorset added later.
-
-Use `action` + `inkOnAction` for: every `ActionButton`, a launchable popover footer hatch, the
-focused workspace pill, the unread badge, the calendar's today, every text selection
-(`selectionColor`/`selectedTextColor`). Graphics that carry no text — carets, the slider and OSD
-fills, `PopoverRow`'s selected glyph, PowerMenu's current border, the launcher prefix glyph —
-stay on raw `signalFocus` at their own 3:1. Raw `signalFocus` as a control fill on a card is a
-`BANNED` row. `mise run lint:theme-contrast` reproduces the derivation per theme and fails if any
-floor is missed.
-
-### Reading the design source, not the transcription
-
-The canvas lives in a Claude Design project (`1d494341-deaa-47cb-ac39-32ccb9c23862`) and is
-readable through the `DesignSync` MCP tool: `list_files`, then `get_file`.
-
-🚨 **The project was REWRITTEN on 2026-09-08 and every earlier artboard id is dead.** It is
-now **fourteen pages** — `Shell-00-Index`, `Shell-01-Colour`, `Shell-02-Geometry`,
-`Shell-03-Behaviour`, then one page per surface (`04-Bar`, `05-Launcher`, `06-Popovers`,
-`07-Notifications`, `08-OSD`, `09-Session`, `10-Menu`, `11-Clipboard`, `12-Deferred`) and
-`Shell-13-Accessibility`. The nine-file set (`Foundations`, `Bar - Dock`, `Composites`,
-`Launcher - Menu`, `Panels`, `Session`, `Popovers`, `States`, `Proof`) and every id inside it
-— `f-a`, `bar-a`, `pop-g`, `st-b`, `pf-a`, `comp-a`, `comp-b`, `pan-a`, `1a`–`1i` — no longer
-resolves. `support.js` beside them is the generated dc-runtime and carries no design content.
-
-Three pages state rules and nothing else does: **01** colour, type and motion; **02**
-geometry; **03** behaviour. A surface page states only its own departures from those, so a
-number found on a surface page that contradicts a foundation page is a **defect in the
-design**, not a local override. There have been four such, all catalogued.
-
-🚨 **Read `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 before implementing anything from a
-page.** It records where the fourteen-page set contradicts itself, where its numbers are
-wrong, and which of this tree's departures are deliberate. Parts 1–4 audit the dead nine-file
-set and are kept for their measurements only.
-
-⚠️ **`DesignSync` needs its own authorization.** A session without it fails with *"DesignSync
-needs design-system authorization"*; `/design-login` grants it. Nothing in the repo can
-substitute — plan on reading the source, not a transcription of it.
-
-**Two surfaces this tree ships have no page in the current set**: the dock and the workspace
-overview. Both are dormant (`Config.dockEnabled` / `Config.overviewEnabled` are `false`) and
-both were declined in daily use, so their absence is consistent rather than an omission to
-correct. They are not deleted, and they are not updated.
-
-### 🚨 Map canvas colours by HEX, never by name
-
-The canvas names three background tiers with Catppuccin-tier names; our colorset has four,
-ordered differently. Matching on the name is how the hairline defect above happened. Verified
-against `themes/catppuccin-mocha/colors.sh`:
-
-| Canvas hex | Canvas label | **Our token** |
-|---|---|---|
-| `#1e1e2e` | bg-primary | `GROUND_BASE` |
-| `#313244` | bg-secondary | **`GROUND_RAISED`** — hairlines, chip grounds |
-| `#45475a` | (unused by the canvas) | `FILL_INERT` |
-| `#181825` | bg-tertiary | **`GROUND_FLOAT`** — notification cards, tooltips |
-| `#6c7086` | fg-muted | `INK_MUTED` (`#9399b2` here — a different value, same role) |
-
-The same trap bit `Theme.qml`: **nine of its 24 fallbacks were the canvas's Mocha palette
-rather than our colorset's** — including `accentPrimary`, mauve on the canvas and blue
-(`#89b4fa`) in `colors.sh`. Fixed 2026-09-01. Copy a fallback from `colors.sh`, never from a
-mockup.
-
-⚠️ **The canvas's fourth background tier has no single equivalent here.** Amendment A said
-`FILL_INERT` and `GROUND_FLOAT` (then `FILL_INERT` and `GROUND_FLOAT`) "are the same value in the
-shipped themes (verified in `rose-pine-moon`)" — that generalised from **one** theme. Checked across all eight, they are
-equal only in `rose-pine-moon`; mocha has `#45475a` vs `#181825`, latte `#bcc0cc` vs
-`#e6e9ef`. The canvas's separate "visible on another monitor" and "occupied" grounds still
-collapse to one, but because collapsing a tier beats inventing a colour — **not** because the
-two tokens coincide. They mostly do not.
-
-⚠️ **The "empty" workspace pill departs from the mockup on purpose.** The canvas gives it a
-faint ground; ours stays transparent, because a ground makes it an elevated surface and the
-contrast rule would then force `fg-primary` on the one state that has to recede. On the bar
-ground, `fg-muted` is allowed.
-
----
-
 ## IPC
 
 Handlers live in `shell.qml`. Current targets: `theme.reload()`, `idle.refresh()`,
@@ -843,81 +514,11 @@ absent from `ipc show`. Every handler in `shell.qml` is annotated today (`: void
 an unannotated one added later would look like a broken target rather than a syntax problem.
 
 Callers today: `desktop/theme-switcher` (theme reload), `desktop/idle-toggle{,-nolock}` (idle
-refresh, beside their existing `pkill -RTMIN+9 waybar`), and the `SUPER+B` binding in
-`hypr/conf.d/quickshell.{lua,conf}`.
+refresh), and the `SUPER+B` binding in `hypr/conf.d/quickshell.{lua,conf}`.
 
 **The OSD is deliberately not on IPC.** Both its sources already notify (Pipewire on the sink,
 `FileView.watchChanges` on the sysfs backlight), so a keybinding or a script hook would only
 add a second, less reliable trigger for a change the shell can already see.
-
----
-
-## Theming
-
-`Theme.qml` parses `~/.config/themes/current/colors.sh` at runtime — the same format-neutral
-colorset every other app reads, so there is no ninth per-theme file. A missing key falls back to
-hardcoded Catppuccin, which renders wrong colours **with no error**, so the property set must
-stay complete, and every fallback is a verbatim copy from `themes/catppuccin-mocha/colors.sh` —
-never from a mockup.
-
-🚨 **The names are SEMANTIC ROLES, in the colorset too.** A token names a meaning or it names the
-module that happens to spend it, and only the first kind can be reasoned about — a module-named
-scheme cannot even *express* the requirement that a CPU readout and a failed service must stay
-tellable apart. Until 2026-09-09 `Theme.qml` was a translation layer over module-named keys;
-the colorsets were renamed on that date, so a property here now reads **the key of the same
-name** and six keys with no consumer were deleted. `waybar.css`, `wofi.css`, `swaync.css.tmpl`,
-`btop.theme` and `ghostty.conf` carry their own variables and were never involved.
-
-| Tier | Roles | Colorset keys |
-|---|---|---|
-| Ground | `groundBase` `groundRaised` `groundFloat` | `GROUND_BASE` `GROUND_RAISED` `GROUND_FLOAT` |
-| Material | `fillInert` | `FILL_INERT` — **never accepts text**, 1.67 at worst |
-| Ink | `inkPrimary` `inkSecondary` | `INK_PRIMARY` `INK_SECONDARY` |
-| Signal | `signalFocus` `signalError` `signalWarn` `signalOk` `signalInfo` | `SIGNAL_FOCUS` `SIGNAL_ERROR` `SIGNAL_WARN` `SIGNAL_OK` `SIGNAL_INFO` |
-| Identity | `identity1`…`identity5` | `IDENTITY_1`…`IDENTITY_5` |
-
-🚨 **The colorset parser's character class is `[A-Z0-9_]+`, not `[A-Z_]+`.** `IDENTITY_1`…`_5`
-carry a digit, and a class without one drops all five silently into the hardcoded fallback —
-wrong colours, no error. The same bug was live in `theme-contrast.py`'s own parser and was
-fixed with it.
-
-🚨 **`inkSecondary` is OFFERED, not guaranteed.** Design page 01: the quiet ink is "offered per
-ground, per theme, and withdrawn where it fails". `Theme.qml` measures `inkSecondaryOffered`
-against `groundBase` and falls back to `inkPrimary` below 4.5:1 — rose-pine-dawn (4.02) and both
-Solarized sets, where the palette assigns body text to base0/base00. Withdrawing by measurement
-fixes every colorset including any added later; hand-editing two palettes fixes two. Never
-assign `inkSecondaryOffered` to a `color:` — it exists only to be measured.
-
-**Six values are derived, not read**: `edge` (every hairline), `hover` (one opaque step up the
-ground stack), `press` (`inkPrimary` at 8%), `select` (`signalFocus` at 13%, **always** paired
-with a glyph or a weight change — the tint alone reaches 1.10–1.98), `focusRing` and
-`disabledOpacity`. Plus `action`/`inkOnAction`, `scrim` and `fgOnScrim`, each because no token in the set
-works across all 8 themes. `disabledOpacity` is measured against the **live** theme rather than
-fixed — the lowest 5% step of `inkSecondary` over `groundBase` still clearing 3:1, which lands
-between 0.60 and 0.85 depending on the colorset.
-
-🚨 **`INK_MUTED` is not bound here at all.** It is banned as text (2.48 worst) and fails 3:1 as
-an outline, so every former site is `inkSecondary` or the `disabled` derivation. It survives in
-the colorset only because `core/gum-ui.sh` and `media/organize-wallpapers-by-color` spend it,
-and a terminal is not a lit surface. `INK_CONTRAST_CANDIDATE` is not bound either since `action`
-replaced the `inkOnSignal` pick it was a candidate for.
-
-**Six keys were deleted outright** in the rename, all with zero consumers: `ACCENT_BORDER`,
-`ACCENT_PERFORMANCE`, `ACCENT_MEDIA`, `ACCENT_SECONDARY`, `ACCENT_ALTERNATIVE` and
-`ACCENT_URGENT_SECONDARY`. The first four sat too near `signalFocus` or `signalError` to be
-identity slots; the last was the battery's 20–30% band, which is `signalWarn`'s job — expressed
-by the glyph, since no warn colour clears 3:1. 24 keys became 18.
-
-Contrast rules from `themes/CLAUDE.md` are measured by `mise run lint:theme-contrast` (see
-above) across all 8 colorsets; everything that task's hand-harvested pair table does not cover
-is still by-hand discipline here. The
-module → semantic-colour mapping this bar follows is `waybar/CLAUDE.md`'s table.
-
-The closest thing to enforcement is the `theme-consistency-reviewer` subagent, which takes this
-tree as a second review target: literal hex (only `Theme.qml`'s fallbacks are allowed), literal
-font name (only `Config.qml.tmpl`, and only through `globals.yaml`), and `Theme.inkSecondary` on
-a lit ground. It judges the third against `BarWidget`'s `grounded` ternary, so an override that
-pins one fixed rest colour is the finding.
 
 ---
 
