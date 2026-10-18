@@ -4,7 +4,9 @@
 
 boot:
   gpu:
-    kms: true # Write /etc/mkinitcpio.conf.d/nvidia.conf MODULES; drops the mkinitcpio kms HOOKS entry too when no iGPU is present (hasIntegratedGpu)
+    # Write /etc/mkinitcpio.conf.d/nvidia.conf MODULES; drops the mkinitcpio kms HOOKS entry
+    # too when no iGPU is present (hasIntegratedGpu)
+    kms: true
     power_management: true # Enable NVIDIA power management services (suspend/resume/hibernate)
   hibernation:
     enabled: true
