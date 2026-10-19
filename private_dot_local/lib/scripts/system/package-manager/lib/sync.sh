@@ -12,12 +12,18 @@ SYNC_MAX_REMOVALS=10
 # Lines of $2 not in $1 (both sorted, unique).
 _set_minus() { comm -13 "$2" "$1"; }
 
-# Names from stdin that are installed (pacman).
-_filter_installed_pacman() {
-	local n
-	while IFS= read -r n; do
-		[[ -n "$n" ]] && pacman -Qq "$n" >/dev/null 2>&1 && echo "$n"
+# Fetch build files for the given AUR packages in parallel (max 8) into <dir>/<name>.blob.
+_sync_prefetch() {
+	local dir="$1" n running=0
+	shift
+	for n in "$@"; do
+		(_tripwire_fetch "$n" >"$dir/$n.blob") &
+		if ((++running >= 8)); then
+			wait -n
+			((running--))
+		fi
 	done
+	wait
 }
 
 # Names from stdin (`flatpak:<id>`) that are installed.
@@ -84,17 +90,37 @@ cmd_sync() {
 	fi
 
 	# --- Classify + tripwire ------------------------------------------------
-	# Official/chaotic (in a sync repo): no local PKGBUILD → pacman. True AUR → tripwire → paru.
-	local bootstrap=false official="" aur="" blocked="" pkg
+	# One set operation, not a `pacman -Si` per package (that was ~28 s on chaotic-aur).
+	# In a sync repo (official/chaotic): no local PKGBUILD → pacman. Declared but in none → AUR.
+	local installed="$tmp/installed" repo="$tmp/repo"
+	pacman -Qq | sort -u >"$installed"
+	pacman -Sl | awk '{print $2}' | sort -u >"$repo"
+	if [[ ! -s "$repo" ]]; then
+		ui_error "pacman -Sl returned nothing (sync databases missing?) — refusing to sync"
+		return 1
+	fi
+	local off_all="$tmp/off_all" aur_all="$tmp/aur_all" off_todo="$tmp/off_todo" aur_todo="$tmp/aur_todo"
+	comm -12 "$pac_decl" "$repo" >"$off_all"
+	comm -23 "$pac_decl" "$repo" >"$aur_all"
+	comm -23 "$off_all" "$installed" >"$off_todo"
+	# AUR packages this sync would build: missing, or upgradable (paru -S rebuilds those).
+	# An installed, current one is never built here, so gating it would be wasted network.
+	{
+		comm -23 "$aur_all" "$installed"
+		paru -Qua 2>/dev/null | awk '{print $1}' | sort -u | comm -12 - "$aur_all"
+	} | sort -u >"$aur_todo"
+
+	local bootstrap=false blocked="" pkg
 	_tripwire_is_bootstrap && bootstrap=true
-	while IFS= read -r pkg; do
-		if pacman -Si "$pkg" >/dev/null 2>&1; then
-			official+=" $pkg"
-		else
-			aur+=" $pkg"
-			_tripwire_check "$pkg" || blocked+=" $pkg"
-		fi
-	done <"$pac_decl"
+	if [[ -s "$aur_todo" ]]; then
+		mkdir -p "$tmp/blobs"
+		local -a _todo=()
+		mapfile -t _todo <"$aur_todo"
+		_sync_prefetch "$tmp/blobs" "${_todo[@]}"
+		for pkg in "${_todo[@]}"; do
+			_tripwire_check "$pkg" "$tmp/blobs/$pkg.blob" || blocked+=" $pkg"
+		done
+	fi
 
 	if [[ -n "$blocked" ]]; then
 		ui_error "AUR build files new/changed/unverifiable since approval — sync blocked:"
@@ -102,6 +128,7 @@ cmd_sync() {
 		ui_warning "Review and approve, then re-apply:  package-manager approve$blocked"
 		return 1
 	fi
+	ui_info "$(wc -l <"$pac_decl") declared: $(wc -l <"$off_todo") to install, $(wc -l <"$aur_todo") to build"
 
 	# --- Removals: (previous applied − declared) ∩ installed -----------------
 	local rm_pac="$tmp/rm_pac" rm_fp="$tmp/rm_fp" first_run=false
@@ -110,7 +137,7 @@ cmd_sync() {
 	if [[ -f "$APPLIED_FILE" ]]; then
 		sort -u "$APPLIED_FILE" >"$tmp/prev"
 		_set_minus "$tmp/prev" "$declared" >"$tmp/retired"
-		grep -v '^flatpak:' "$tmp/retired" | _filter_installed_pacman >"$rm_pac" || true
+		grep -v '^flatpak:' "$tmp/retired" | comm -12 - "$installed" >"$rm_pac" || true
 		grep '^flatpak:' "$tmp/retired" | _filter_installed_flatpak >"$rm_fp" || true
 	else
 		first_run=true
@@ -126,8 +153,8 @@ cmd_sync() {
 
 	if [[ "$dry_run" == true ]]; then
 		ui_title "package-manager sync --dry-run"
-		ui_info "official/chaotic:${official:- (none)}"
-		ui_info "AUR (tripwire clean):${aur:- (none)}"
+		ui_info "install (official/chaotic): $(tr '\n' ' ' <"$off_todo")"
+		ui_info "build (AUR, tripwire clean): $(tr '\n' ' ' <"$aur_todo")"
 		ui_info "flatpak: $(wc -l <"$fp_decl") declared"
 		ui_info "remove: $(cat "$rm_pac" "$rm_fp" | tr '\n' ' ')"
 		[[ "$first_run" == true ]] && ui_info "no previous state — first sync would record only"
@@ -145,30 +172,33 @@ cmd_sync() {
 		xargs -r sudo pacman -D --asdeps <"$rm_pac" >/dev/null || ui_warning "Could not mark retired packages as deps"
 	fi
 
-	# Declared packages must be explicit, or the orphan pass would sweep one that was
-	# first installed as a dependency.
-	if [[ -n "$official" ]]; then
+	if [[ -s "$off_todo" ]]; then
 		ui_step "Installing official-repo packages (pacman)..."
-		# shellcheck disable=SC2086  # intentional word splitting
-		sudo pacman -S --needed --noconfirm $official || {
+		xargs -r sudo pacman -S --needed --noconfirm <"$off_todo" || {
 			ui_error "Official package install failed"
 			return 1
 		}
 	fi
-	if [[ -n "$aur" ]]; then
-		ui_step "Installing AUR packages (paru, tripwire-approved)..."
-		# shellcheck disable=SC2086
-		paru -S --needed --noconfirm $aur || {
+	if [[ -s "$aur_todo" ]]; then
+		ui_step "Building AUR packages (paru, tripwire-approved)..."
+		xargs -r paru -S --needed --noconfirm <"$aur_todo" || {
 			ui_error "AUR package install failed"
 			return 1
 		}
 	fi
-	_filter_installed_pacman <"$pac_decl" | xargs -r sudo pacman -D --asexplicit >/dev/null ||
-		ui_warning "Could not mark declared packages explicit — the orphan pass may misjudge them"
+
+	# Declared packages must be explicit, or the orphan pass would sweep one that was first
+	# installed as a dependency. Only the ones currently flagged as deps need touching.
+	pacman -Qq | sort -u >"$installed"
+	pacman -Qdq 2>/dev/null | sort -u | comm -12 - "$pac_decl" >"$tmp/to_explicit"
+	if [[ -s "$tmp/to_explicit" ]]; then
+		xargs -r sudo pacman -D --asexplicit <"$tmp/to_explicit" >/dev/null ||
+			ui_warning "Could not mark declared packages explicit — the orphan pass may misjudge them"
+	fi
 
 	# Bootstrap TOFU ended: record the AUR packages that just installed (only when this
 	# run started unseeded, so an established host never silently approves anything).
-	if [[ "$bootstrap" == true && -n "$aur" ]]; then
+	if [[ "$bootstrap" == true && -s "$aur_all" ]]; then
 		ui_step "Seeding AUR trust database (first sync)..."
 		_tripwire_seed
 	fi
@@ -205,10 +235,11 @@ cmd_sync() {
 	# --- Record applied set: declared ∩ actually installed ---------------------
 	# Retired packages that survived (still a dependency, failed uninstall) stay recorded so the
 	# next sync retries and warns instead of forgetting them.
+	pacman -Qq | sort -u >"$installed"
 	{
-		_filter_installed_pacman <"$pac_decl"
+		comm -12 "$pac_decl" "$installed"
 		_filter_installed_flatpak <"$fp_decl"
-		_filter_installed_pacman <"$rm_pac"
+		comm -12 "$rm_pac" "$installed"
 		_filter_installed_flatpak <"$rm_fp"
 	} | sort -u >"$tmp/applied"
 	local survivors

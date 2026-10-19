@@ -24,10 +24,18 @@ from `packages.yaml` — enabled modules flattened, **NVIDIA module chosen by `.
 not by the `enabled` flags of the two `graphics_drivers_*` modules. The tool knows nothing about
 modules, `enabled` or GPUs.
 
-Order: classify (`pacman -Si` hit = official/chaotic → pacman; else AUR → paru) → tripwire check
-(any block → exit 1, nothing changes) → compute removals → mark retired `--asdeps` → install →
-mark declared `--asexplicit` → seed tripwire if bootstrap → orphan pass (`paru -Qtdq` → `-Rns`) →
+Order: classify (one `pacman -Sl` set diff: in a sync repo = official/chaotic → pacman; declared but
+in none = AUR → paru) → tripwire check **only on the AUR packages this sync would build** (missing, or
+upgradable per `paru -Qua`; fetched in parallel) → any block → exit 1, nothing changes → compute
+removals → mark retired `--asdeps` → install **only what is missing** → mark declared `--asexplicit`
+(only those currently flagged dep) → seed tripwire if bootstrap → orphan pass (retired only) →
 Flatpak install/uninstall → write state → fire `package-sync` hook.
+
+**Performance rule**: never loop `pacman -Si`/`-Qq` per package (212 × `-Si` cost ~28 s on
+chaotic-aur; `-Sl` is 0.14 s) — snapshot once, `comm` against it. Steady-state sync ≈ 1–2 s. Installing
+only missing packages also avoids ~200 "is up to date -- skipping" warnings and pacman individually
+upgrading a declared package (a partial upgrade); upgrades are `update`'s job. An installed, current
+AUR package is not built by sync, so it is not re-checked (`update` and `approve --all` still scan it).
 
 **Removal = applied-set diff.** `~/.local/state/package-manager/applied.txt` holds *declared ∩
 installed* after the last sync. Removals = `(applied − declared) ∩ installed`. So retiring a

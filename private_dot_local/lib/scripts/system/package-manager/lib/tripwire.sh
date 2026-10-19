@@ -146,11 +146,16 @@ _tripwire_is_bootstrap() {
 
 # Check one AUR package. Returns 0 if clean, 1 if blocked (new or changed).
 # On block, prints reason + diff to stderr. Caller must have confirmed AUR tier.
+# Optional 2nd arg: file already holding `_tripwire_fetch` output (parallel prefetch).
 _tripwire_check() {
-	local name="$1"
+	local name="$1" blob_file="${2:-}"
 
 	local current_text current_hash db_hash
-	current_text=$(_tripwire_fetch "$name")
+	if [[ -n "$blob_file" ]]; then
+		current_text=$(<"$blob_file") || current_text=""
+	else
+		current_text=$(_tripwire_fetch "$name")
+	fi
 	if [[ -z "$current_text" ]]; then
 		# Fail closed: cannot verify build files → block rather than allow silently.
 		ui_warning "Tripwire: could not fetch build files for '$name' — BLOCKING (fail-closed)" >&2
