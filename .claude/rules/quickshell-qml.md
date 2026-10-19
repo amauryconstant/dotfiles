@@ -303,6 +303,17 @@ emits `authenticationFailed` on the flow, so the dialog stays up and only the fi
 Nothing in the QML may destroy the flow on a failure — cancelling is `cancelAuthenticationRequest()`
 and nothing else.
 
+🚨 **`WlSessionLock.locked` does not notify on an unlock, so a binding over it goes stale.**
+`WlSessionLock::unlock()` (`_ai/quickshell/src/wayland/session_lock.cpp:173-184`) emits
+`lockStateChanged` only `if (isLocked())`, tested AFTER `manager->unlock()` — never on a real unlock
+(ours via `locked = false`, or the compositor's). `LockScreen`'s `locked`/`sessionLocked` kept their
+cached `true`, so after ONE unlock `ipc call lock lock` answered `ok` without locking, and idle lock
+and lock-before-suspend (both via `immediate-lock`) did nothing too. Found 2026-10-19 (`lock status`
+said `sessionLocked:true` while `session-locked` said 1). `lockRev` is bumped from `finishUnlock()`
+and from `onSecureStateChanged` (the only signal that does follow an unlock, connected before the
+getter changes, hence the second bump through `Qt.callLater`); the bindings read it so they
+re-evaluate. A functions-only reader (`requestSessionLock`) re-reads the getter and was never stale.
+
 🚨 **"Is the compositor locked" is NOT "is the lock stranded", and acting on the first
 displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock runs, and
 `misc:allow_session_lock_restore` means a second lock client is *accepted* (2026-09-12:

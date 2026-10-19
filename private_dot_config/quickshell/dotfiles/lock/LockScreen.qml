@@ -30,6 +30,14 @@ Item {
     // What the user asked for, which leads sessionLock.locked by however long
     // the compositor takes to answer.
     property bool lockRequested: false
+    // 🚨 Bumped wherever sessionLock.locked can change WITHOUT a notification, so the
+    // two readonly bindings below re-read it. WlSessionLock::unlock() emits
+    // lockStateChanged only `if (isLocked())` AFTER it has already unlocked
+    // (_ai/quickshell/src/wayland/session_lock.cpp:183), i.e. never on a real
+    // unlock. A binding over `sessionLock.locked` therefore kept its cached `true`
+    // after the first unlock, `ipc call lock lock` answered "ok" without locking,
+    // and so did hypridle's lock and lock-before-suspend. Do not "simplify" away.
+    property int lockRev: 0
     property bool pendingSessionLock: false
     property bool authenticating: false
     // No lock before PAM is known good: a lock nobody can authenticate against
@@ -49,11 +57,12 @@ Item {
     // teaches the user to read a real fault as normal.
     property var wallpapers: ({})
 
-    readonly property bool locked: root.lockRequested || sessionLock.locked || sessionLock.secure
+    // `lockRev >= 0` is always true: it only makes the binding depend on lockRev.
+    readonly property bool locked: root.lockRev >= 0 && (root.lockRequested || sessionLock.locked || sessionLock.secure)
     // Both re-exported for the `lock status` IPC answer: a caller deciding
     // whether a restart is safe needs the compositor's view, not ours.
     readonly property bool secure: sessionLock.secure
-    readonly property bool sessionLocked: sessionLock.locked
+    readonly property bool sessionLocked: root.lockRev >= 0 && sessionLock.locked
 
     // `: eDP-1: 1920x1080, scale: 1, currently displaying: image: /path/to.png`
     // A line with no `image:` is an output showing a flat colour, and has no
@@ -154,6 +163,22 @@ Item {
         root.resetAuthentication();
         // There is no unlock() invokable — the property IS the control.
         sessionLock.locked = false;
+        // Synchronous, so the getter already reads false; see lockRev.
+        root.lockRev += 1;
+    }
+
+    // The compositor dropped our lock (a forced unlock, or another locker took
+    // over) without finishUnlock() running: forget that we asked for one.
+    function abandonLock(): void {
+        root.lockRequested = false;
+        root.pendingSessionLock = false;
+        stabilizeTimer.stop();
+        pendingLockTimer.stop();
+        root.resetAuthentication();
+    }
+
+    function bumpLockRev(): void {
+        root.lockRev += 1;
     }
 
     function resetAuthentication(): void {
@@ -247,26 +272,31 @@ Item {
         locked: false
 
         onLockStateChanged: {
+            root.lockRev += 1;
             if (sessionLock.locked) {
                 root.pendingSessionLock = false;
                 stabilizeTimer.stop();
                 pendingLockTimer.stop();
                 return;
             }
-            if (root.lockRequested) {
-                root.lockRequested = false;
+            if (root.lockRequested)
+                root.abandonLock();
+        }
+        // The only signal that follows a real unlock (lockStateChanged does not,
+        // see lockRev). It is connected BEFORE WlSessionLock::unlock(), so the
+        // getter can still read true here: bump now and once more after the slot
+        // chain has run.
+        onSecureStateChanged: {
+            root.lockRev += 1;
+            Qt.callLater(root.bumpLockRev);
+            if (sessionLock.secure) {
                 root.pendingSessionLock = false;
                 stabilizeTimer.stop();
                 pendingLockTimer.stop();
-                root.resetAuthentication();
-            }
-        }
-        onSecureStateChanged: {
-            if (!sessionLock.secure)
                 return;
-            root.pendingSessionLock = false;
-            stabilizeTimer.stop();
-            pendingLockTimer.stop();
+            }
+            if (root.lockRequested)
+                root.abandonLock();
         }
 
         // One surface per screen, instantiated by the engine. That is what
