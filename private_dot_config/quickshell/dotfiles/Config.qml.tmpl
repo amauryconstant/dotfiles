@@ -217,6 +217,12 @@ Singleton {
     // Raise it if a pale wallpaper ever washes the clock out.
     readonly property real lockDimOpacity: 0.7
 
+    // The output that carries the lock's password field, as an EDID description
+    // (HyprlandMonitor.description), so a port rename cannot move it. Same
+    // monitor and same string as the hyprsplit priority in
+    // hypr/conf/plugins.lua.tmpl. Empty = no preference: the focused output.
+    readonly property string lockPromptOutput: {{ if eq .chassisType "desktop" }}"GIGA-BYTE TECHNOLOGY CO. LTD. Gigabyte M32U 21411B000071"{{ else }}""{{ end }}
+
     // Dock, design page Shell-04-Bar (dock: no page in the current set). Deliberately OUTSIDE the geometry scale, the same
     // way powerTileRadius is: the scale exists so nested surfaces read as
     // nested, and the dock is a PEER of the bar, not something inside it.

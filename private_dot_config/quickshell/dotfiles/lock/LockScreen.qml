@@ -46,7 +46,8 @@ Item {
     property string failureMessage: ""
     // Which output carries the field. Page 12: every output is covered, the
     // prompt appears on ONE, "because two password fields is two places to type
-    // a secret".
+    // a secret". Elected at every lock (Config.lockPromptOutput, else the
+    // focused output), then FOLLOWS the keyboard: see LockContent.surfaceActive.
     property string promptScreenName: ""
     property bool strandedLock: false
     property bool strandedLockResolved: false
@@ -96,10 +97,23 @@ Item {
         return (Quickshell.screens ?? []).filter(s => s && s.name && s.width > 0 && s.height > 0);
     }
 
-    // The focused output at lock time, re-elected when it goes away. Omarchy
-    // draws a field on every screen and so never needs this; with one field,
-    // unplugging the output that carries it would leave a locked session with
-    // nowhere to type.
+    // The EDID description in Config.lockPromptOutput, resolved to the output
+    // name the screens are matched by. "" when unset or not plugged in.
+    function preferredScreenName(): string {
+        if (Config.lockPromptOutput === "")
+            return "";
+        // qmllint disable missing-property
+        const monitor = Hyprland.monitors.values.find(m => m.description === Config.lockPromptOutput);
+        // qmllint enable missing-property
+        return monitor?.name ?? "";
+    }
+
+    // The preferred output, else the focused one, re-elected when it goes away.
+    // Omarchy draws a field on every screen and so never needs this; with one
+    // field, unplugging the output that carries it would leave a locked session
+    // with nowhere to type. beginLock() clears the name first, so every lock
+    // elects afresh -- a name left over from shell start is not a choice (that
+    // pinned the field to whichever output happened to be focused at login).
     function electPromptScreen(): void {
         const screens = root.realScreens();
         if (screens.length === 0)
@@ -107,8 +121,35 @@ Item {
         if (screens.some(s => s.name === root.promptScreenName))
             return;
 
+        const preferred = root.preferredScreenName();
         const focused = Hyprland.focusedMonitor?.name ?? "";
-        root.promptScreenName = screens.some(s => s.name === focused) ? focused : screens[0].name;
+        if (screens.some(s => s.name === preferred))
+            root.promptScreenName = preferred;
+        else if (screens.some(s => s.name === focused))
+            root.promptScreenName = focused;
+        else
+            root.promptScreenName = screens[0].name;
+    }
+
+    // 🚨 Hyprland gives a session lock's keyboard focus to the lock surface of
+    // the output UNDER THE POINTER (InputManager.cpp, the isSessionLocked branch
+    // of mouseMoveUnified), not to the one the field is on. With two outputs, a
+    // pointer on the other one types into a surface with no field. So the
+    // pointer is moved to the elected output before the lock maps. The target is
+    // LOGICAL: HyprlandMonitor.width/height are physical, hence the scale.
+    function warpPointerToPrompt(): void {
+        if (root.realScreens().length < 2 || warpProc.running)
+            return;
+        // qmllint disable missing-property
+        const monitor = Hyprland.monitors.values.find(m => m.name === root.promptScreenName);
+        // qmllint enable missing-property
+        if (!monitor)
+            return;
+
+        const x = Math.round(monitor.x + monitor.width / monitor.scale / 2);
+        const y = Math.round(monitor.y + monitor.height / monitor.scale / 2);
+        warpProc.command = ["hyprctl", "dispatch", `hl.dsp.cursor.move({ x = ${x}, y = ${y} })`];
+        warpProc.running = true;
     }
 
     // A lock taken while outputs are still settling lands on nothing, so the
@@ -143,7 +184,9 @@ Item {
             return false;
 
         root.resetAuthentication();
+        root.promptScreenName = "";
         root.electPromptScreen();
+        root.warpPointerToPrompt();
         // Re-read at every lock: the wallpaper timer cycles it every 30 minutes.
         if (!wallpaperProc.running)
             wallpaperProc.running = true;
@@ -319,6 +362,13 @@ Item {
                 // qmllint disable missing-property redundant-optional-chaining
                 promptVisible: surface.screen?.name === root.promptScreenName
                 wallpaper: root.wallpaperFor(surface.screen?.name ?? "")
+
+                // The field goes where the keys go: whichever surface the
+                // compositor has keyboard-focused takes the prompt.
+                onSurfaceActiveChanged: {
+                    if (surfaceActive && root.lockRequested && surface.screen?.name)
+                        root.promptScreenName = surface.screen.name;
+                }
                 // qmllint enable missing-property redundant-optional-chaining
 
                 onSubmitted: password => root.submit(password)
@@ -381,6 +431,10 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: root.parseWallpapers(this.text)
         }
+    }
+
+    Process {
+        id: warpProc
     }
 
     Process {

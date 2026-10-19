@@ -1,6 +1,7 @@
 import "../"
 import Quickshell
 import QtQuick
+import QtQuick.Window
 
 // What surface §22 draws, once per output. Design page 12: "deliberately almost
 // nothing" — clock, date, one field, one line.
@@ -20,6 +21,10 @@ Item {
     // Absolute path, or "" for no wallpaper — the surface's own colour then
     // stands in.
     required property string wallpaper
+
+    // True while the compositor has THIS output's lock surface keyboard-focused.
+    // LockScreen moves the field to whichever surface that is.
+    readonly property bool surfaceActive: Window.active
 
     signal submitted(password: string)
 

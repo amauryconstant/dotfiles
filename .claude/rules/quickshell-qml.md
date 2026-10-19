@@ -314,6 +314,20 @@ and from `onSecureStateChanged` (the only signal that does follow an unlock, con
 getter changes, hence the second bump through `Qt.callLater`); the bindings read it so they
 re-evaluate. A functions-only reader (`requestSessionLock`) re-reads the getter and was never stale.
 
+🚨 **A session lock's keyboard focus goes to the output UNDER THE POINTER, not to the output
+carrying the field.** Hyprland v0.56.2 `InputManager.cpp` (the `isSessionLocked` branch of
+`mouseMoveUnified`) focuses `getSessionLockSurfaceForMonitor(<monitor under the cursor>)`. With one
+password field on one of two outputs, a pointer on the other types into a surface with no field and
+clicking the field does nothing. Found 2026-10-14 on the two-monitor desktop (laptop has one output);
+`lock status` showed `promptScreen` pinned to the output focused at shell START, and did so again on
+2026-10-19 (the field on the vertical HDMI-A-1 instead of DP-1). Fixed three ways in `lock/`: the
+prompt output is re-elected at every lock (`Config.lockPromptOutput`, an EDID description, else the
+focused output), the pointer is warped there before the lock maps, and the field FOLLOWS
+`Window.active` so it can never end up where keys are not. The warp is the tree's second
+`hyprctl dispatch` site — `hl.dsp.cursor.move({ x = …, y = … })`, logical coordinates. Verified in
+`desk` (two outputs, pointer started on the other one: field and pointer land on the elected output
+and typed keys reach it); the EDID match itself only exists on the real monitors.
+
 🚨 **"Is the compositor locked" is NOT "is the lock stranded", and acting on the first
 displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock runs, and
 `misc:allow_session_lock_restore` means a second lock client is *accepted* (2026-09-12:

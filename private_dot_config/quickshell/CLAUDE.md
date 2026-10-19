@@ -102,7 +102,7 @@ the meters payload's missing temperature
 - **Notifications are always the shell's** since swaync was retired (2026-10-15):
   `Config.notificationsOwned` is a constant `true`, and there is no second gate
 - **Launch**: `quickshell -c dotfiles`, from `hypr/conf.d/quickshell.{lua,conf}`
-- 🚨 **`PowerMenu.qml` holds the tree's only `hyprctl dispatch`** (log out). Under the Lua config
+- 🚨 **`PowerMenu.qml` (log out) and `lock/LockScreen.qml` (cursor warp) hold the tree's only `hyprctl dispatch` calls.** Under the Lua config
   provider it must be `hl.dsp.exit()`, never the legacy `exit` — it was the 30th call site the
   cutover audit had missed, because it postdates that inventory
 - **Toggle**: `desktop/quickshell-toggle [bar|launcher|power|notifications|overview|clipboard|keybindings]`
