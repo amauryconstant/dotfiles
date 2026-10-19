@@ -56,3 +56,9 @@
 # launcher's own state file, then unused).
 .config/wofi
 .config/themes/*/wofi.css
+
+# package-manager shrank to sync/update/approve (lib/ + dispatcher); the old module trees are gone.
+.local/lib/scripts/system/package-manager/core
+.local/lib/scripts/system/package-manager/operations
+.local/lib/scripts/system/package-manager/packages
+.local/lib/scripts/system/package-manager/commands

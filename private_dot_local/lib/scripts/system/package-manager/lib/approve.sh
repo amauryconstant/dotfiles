@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# Script: cmd-approve.sh
+# Script: approve.sh
 # Purpose: Approve AUR PKGBUILDs for the supply-chain tripwire
-# Requirements: pacman, paru, yq (via operations/pkgbuild-tripwire.sh)
+# Requirements: pacman, paru, yq (via lib/tripwire.sh)
 
 # Review + record a single AUR package's PKGBUILD.
 _approve_one() {
@@ -70,7 +70,7 @@ cmd_approve() {
 
 	# Seed: trust-on-first-use bootstrap of all installed AUR packages (no prompt)
 	if [[ "$seed" == "true" ]]; then
-		ui_title "$ICON_PACKAGE Seeding tripwire from installed AUR packages"
+		ui_title "Seeding tripwire from installed AUR packages"
 		_tripwire_seed
 		return 0
 	fi

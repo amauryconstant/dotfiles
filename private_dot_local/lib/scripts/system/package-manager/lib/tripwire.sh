@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Script: pkgbuild-tripwire.sh
+# Script: tripwire.sh
 # Purpose: Supply-chain tripwire — detect changed/unapproved AUR PKGBUILDs before build
 # Requirements: pacman, paru, yq, sha256sum
 #
@@ -9,7 +9,7 @@
 #   true AUR (PKGBUILD executes locally at build time)                          → gated by this tripwire
 # A package is "AUR-built" iff it is NOT in any pacman sync repo but IS resolvable via paru AUR.
 #
-# On-disk contract (shared with the self-contained chezmoi sync script):
+# On-disk contract:
 #   $STATE_DIR/pkgbuild-hashes.yaml   approved.<name>.hash (sha256) + approved.<name>.at (ISO ts)
 #   $STATE_DIR/pkgbuilds/<name>.snapshot   last-approved build-file blob (for diffing on change)
 #
@@ -58,10 +58,8 @@ _pkg_is_aur() {
 # `.install` hooks run as root via pacman -U, so they must be hashed too; `paru -Gp`
 # only emits the PKGBUILD, hence the full `paru -G` clone here.
 #
-# IMPORTANT: this recipe (PKGBUILD then sorted *.install, raw concatenation) is mirrored
-# verbatim in the self-contained chezmoi sync script (run_onchange_before_sync_packages.sh.tmpl,
-# which cannot source lib/). Keep them byte-identical or hashes diverge and every AUR package
-# falsely reads as "changed".
+# Changing this recipe (PKGBUILD then sorted *.install, raw concatenation) stales every
+# approved hash — re-seed afterwards with `package-manager approve --seed`.
 _tripwire_fetch() {
 	local name="$1"
 	local tmp clone_dir d f
@@ -155,7 +153,7 @@ _tripwire_check() {
 	current_text=$(_tripwire_fetch "$name")
 	if [[ -z "$current_text" ]]; then
 		# Fail closed: cannot verify build files → block rather than allow silently.
-		ui_warning "$ICON_WARNING Tripwire: could not fetch build files for '$name' — BLOCKING (fail-closed)" >&2
+		ui_warning "Tripwire: could not fetch build files for '$name' — BLOCKING (fail-closed)" >&2
 		return 1
 	fi
 	current_hash=$(printf '%s' "$current_text" | _tripwire_hash)
@@ -165,10 +163,10 @@ _tripwire_check() {
 		# record here (would make the DB non-empty mid-run and flip later packages to
 		# established → blocked). Established (seeded) DB → genuinely new → block.
 		if _tripwire_is_bootstrap; then
-			ui_warning "$ICON_WARNING Tripwire: '$name' new but DB not yet seeded (bootstrap) — allowing; run 'package-manager approve --seed' to enable gating" >&2
+			ui_warning "Tripwire: '$name' new but DB not yet seeded (bootstrap) — allowing; run 'package-manager approve --seed' to enable gating" >&2
 			return 0
 		fi
-		ui_warning "$ICON_WARNING Tripwire: '$name' is a NEW unapproved AUR package — BLOCKING (run 'package-manager approve $name')" >&2
+		ui_warning "Tripwire: '$name' is a NEW unapproved AUR package — BLOCKING (run 'package-manager approve $name')" >&2
 		return 1
 	fi
 
@@ -176,7 +174,7 @@ _tripwire_check() {
 		return 0
 	fi
 
-	ui_warning "$ICON_WARNING Tripwire: build files (PKGBUILD/.install) for '$name' CHANGED since approval" >&2
+	ui_warning "Tripwire: build files (PKGBUILD/.install) for '$name' CHANGED since approval" >&2
 	if [[ -f "$TRIPWIRE_SNAP_DIR/$name.snapshot" ]]; then
 		diff -u "$TRIPWIRE_SNAP_DIR/$name.snapshot" <(printf '%s\n' "$current_text") >&2 || true
 	fi
