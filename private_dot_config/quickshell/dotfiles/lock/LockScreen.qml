@@ -296,11 +296,12 @@ Item {
     // failsafe. Outputs are often still absent here, hence the retry budget.
     //
     // 🚨 The probe is session-lock-stranded, NOT session-locked. The latter
-    // answers "is the compositor locked", which is also true while hyprlock is
-    // running -- and with misc:allow_session_lock_restore a second client is
-    // accepted rather than refused, so recovering on that answer takes the
-    // screen out from under whoever is typing into the live locker. Measured
-    // 2026-09-12, on exactly that: a restart during hypridle's hyprlock.
+    // answers "is the compositor locked", which is also true while ANOTHER
+    // locker is running -- and with misc:allow_session_lock_restore a second
+    // client is accepted rather than refused, so recovering on that answer takes
+    // the screen out from under whoever is typing into the live locker.
+    // Measured 2026-09-12, on exactly that: a restart during hypridle's
+    // hyprlock (retired 2026-10-19; the rule outlives it).
     function checkStranded(): void {
         if (root.strandedLockResolved || strandedProc.running)
             return;
@@ -402,11 +403,12 @@ Item {
     PamContext {
         id: pam
 
-        // Shipped by the hyprlock package (`auth include login`), so it is
-        // package-managed and never ours to maintain — no root write, no
-        // installer script. `user` is left unset: an empty one falls back to
-        // getpwuid_r(getuid()) in qml.cpp.
-        config: "hyprlock"
+        // util-linux's own `login` service: package-managed, so no root write
+        // and no installer script. Quickshell only calls pam_authenticate, and
+        // the hyprlock file this replaced was just `auth include login`, so the
+        // password check is the same. `user` is left unset: an empty one falls
+        // back to getpwuid_r(getuid()) in qml.cpp.
+        config: "login"
 
         onCompleted: result => {
             root.authenticating = false;
@@ -428,7 +430,7 @@ Item {
     // ⚠️ An answer from before a PAM change may be stale — the failsafe can be
     // cleared from a TTY — so re-ask rather than act on what was cached.
     FileView {
-        path: "/etc/pam.d/hyprlock"
+        path: "/etc/pam.d/login"
         printErrors: false
         watchChanges: true
 

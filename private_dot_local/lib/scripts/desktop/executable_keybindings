@@ -164,7 +164,6 @@ get_description() {
                 *"playerctl play-pause"*) echo "Play/Pause" ;;
                 *"playerctl next"*) echo "Next track" ;;
                 *"playerctl previous"*) echo "Previous track" ;;
-                *"hyprlock"*) echo "Lock screen" ;;
                 *"wlogout"*) echo "Power menu" ;;
                 *) echo "Run: $(echo "$arg" | cut -d' ' -f1)" ;;
             esac

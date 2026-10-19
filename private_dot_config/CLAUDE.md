@@ -47,7 +47,7 @@
 
 ### Hyprland Compositor (`hypr/`)
 - Modular config in `conf/`; the `.lua` tree is live (cutover 2026-09-01), `.conf` twins kept as fallback
-- Templates: `hyprland.{conf,lua}.tmpl`, `hyprlock.conf.tmpl`, `hypridle{,-nolock}.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`, `conf/bindings/voice.{conf,lua}.tmpl`
+- Templates: `hyprland.{conf,lua}.tmpl`, `hypridle{,-nolock}.conf.tmpl`, `conf/monitor.{conf,lua}.tmpl`, `conf/bindings/applications.{conf,lua}.tmpl`, `conf/bindings/voice.{conf,lua}.tmpl`
 - Theme integration via `source ~/.config/themes/current/hyprland.conf`
 
 ### Desktop Components (Consolidated)
@@ -55,7 +55,7 @@
 **Theme system** (`themes/`):
 - Variants: Catppuccin (latte/mocha), Rose Pine (dawn/moon), Gruvbox (light/dark), Solarized (light/dark)
 - Semantic variables (backgrounds, foregrounds, accents)
-- Desktop apps: Wofi, Hyprland, Ghostty, Hyprlock (CSS/conf files)
+- Desktop apps: Wofi, Hyprland, Ghostty (CSS/conf files)
 - Quickshell reads the **same** `colors.sh` the shell scripts do — see `themes/CLAUDE.md` →
   "Two vocabularies, one palette"
 - CLI tools: bat, broot, btop, lazygit, starship, yazi

@@ -79,7 +79,7 @@ the patch. Related: Mozilla 2063934, egl-wayland2 #47 (different symptom).
 took keys for a few seconds, then Quickshell went silent while Hyprland stayed alive. A LOCKDBG
 journal from that day shows the shape: lock up at 17:35:18, 78 key events in 7 s including a held
 Backspace, last 3 s heartbeat at 17:35:24.96, nothing afterwards. It was first read as a focus
-problem; it is not. 670f0b2 pulled the desktop back to hyprlock.
+problem; it is not. 670f0b2 pulled the desktop back to hyprlock (retired 2026-10-19: with no fallback locker, a missing patched build now risks a frozen lock with nothing to replace it).
 
 **Reproduced** in the `desk` sandbox (`DESK_LOCK=1`, two nested outputs, lock via
 `quickshell -c dotfiles ipc call lock lock`): the lock appeared and the shell wedged at once, no

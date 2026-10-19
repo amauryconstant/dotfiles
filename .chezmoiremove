@@ -45,3 +45,8 @@
 .config/hypr/conf.d/waybar.conf
 .local/lib/scripts/desktop/waybar-toggle
 .local/lib/scripts/desktop/waybar-style
+
+# hyprlock — retired 2026-10-19; the Quickshell lock is the only locker and desktop/immediate-lock
+# has no fallback. Remove the package by hand: paru -Rns hyprlock
+.config/hypr/hyprlock.conf
+.config/themes/*/hyprlock.conf

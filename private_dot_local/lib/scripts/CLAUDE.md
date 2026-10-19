@@ -152,7 +152,7 @@ fi
 - `idle-indicator`, `idle-toggle`, `idle-toggle-nolock` - idle mode state + toggles
 - `idle-sleep` - sleep the system, hibernating when logind reports it available
 - `immediate-lock` - lock screen now (single lock entry point; also hypridle's `lock_cmd`).
-  Routes to the Quickshell lock surface at runtime, hyprlock when the shell cannot answer
+  Asks the Quickshell lock surface over IPC; when the shell cannot answer it only reports "Screen NOT locked" (hyprlock retired 2026-10-19)
 - `session-locked`, `session-lock-stranded` - is the compositor locked / is that lock an orphan
 - `screenrecord` - Screen recording
 - `system-settings` - Launch system settings

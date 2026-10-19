@@ -99,7 +99,7 @@ host's.
 
 ## Template Decisions
 
-Templated files: `hyprland.conf.tmpl`, `hyprlock.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl`.
+Templated files: `hyprland.conf.tmpl`, `hypridle.conf.tmpl`, `hypridle-nolock.conf.tmpl` (both pull timeouts from `globals.idle` and share `.chezmoitemplates/hypridle_general`), `conf/monitor.conf.tmpl` (laptop vs desktop displays), `conf/bindings/applications.conf.tmpl` (`{{ .globals.applications.terminal }}`), `conf/bindings/voice.conf.tmpl` (Parakeet bindings gated `{{ if ne .chassisType "laptop" }}`), `conf/bindings/system-control.conf.tmpl`.
 
 Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, `conf/bindings/applications.lua.tmpl`, `conf/bindings/voice.lua.tmpl`, `conf/bindings/system-control.lua.tmpl`. **A `.lua` twin of a `.conf.tmpl` must carry the `.tmpl` suffix too** — dropping it silently un-gates the template's conditionals. This has bitten twice: `environment.lua` (commit `0ab31dd`) and `voice.lua` (the chassis gate on the two Parakeet bindings). Everything else is static — Hyprland syntax rarely needs dynamic values, so prefer editing the static `.conf` directly.
 

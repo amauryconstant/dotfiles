@@ -163,14 +163,15 @@ ShellRoot {
         }
     }
 
-    // desktop/immediate-lock calls this BEFORE falling back to hyprlock, so
-    // SUPER+L still locks when the shell is down or its restart budget is
-    // spent. The handler stays registered with the feature off — answering
-    // "disabled" — for the same reason the overview's does: a switched-off
-    // feature must not look like a broken wiring.
+    // desktop/immediate-lock is the only caller. With the shell down or its
+    // restart budget spent there is no second locker (hyprlock was retired
+    // 2026-10-19): it reports "Screen NOT locked" instead. The handler stays
+    // registered with the lock off — answering "disabled" — for the same reason
+    // the overview's does: a switched-off feature must not look like a broken
+    // wiring.
     //
     // 🚨 `ipc call` exits 0 for a target that does not exist, so the caller
-    // reads the ANSWER. Anything other than "ok" means hyprlock.
+    // reads the ANSWER. Anything other than "ok" means the screen is not locked.
     IpcHandler {
         target: "lock"
 
@@ -263,8 +264,7 @@ ShellRoot {
     }
 
     // Behind a Loader so the WlSessionLock is not constructed with the feature
-    // off. Unlike polkit and notifications nothing is DISPLACED either way —
-    // the fallback is chosen at runtime by desktop/immediate-lock, not here.
+    // off (the smoke render and desk's sandbox flip it).
     Loader {
         id: lockLoader
 

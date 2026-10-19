@@ -2,7 +2,7 @@
 # Central source of truth for all shell environment and XDG configuration
 
 globals:
-  guiFont: "Inter" # GUI font for GTK, Qt, Wofi, Hyprlock
+  guiFont: "Inter" # GUI font for GTK, Qt, Wofi
   terminalFont: "GeistMono Nerd Font" # Monospace font for terminal, code, fontconfig
 
   applications:

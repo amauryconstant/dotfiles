@@ -2,38 +2,39 @@
 
 # Script: immediate-lock
 # Purpose: Lock the screen immediately (single entry point for all lock triggers)
-# Requirements: Arch Linux, quickshell OR hyprlock, flock (util-linux)
+# Requirements: Arch Linux, quickshell (the running shell), flock (util-linux), hyprctl
 #
 # Used by Super+L, the system menu, and hypridle's lock_cmd.
 #
-# Two routes, chosen at RUNTIME rather than by a template branch: the Quickshell
-# lock surface (§22) when the shell answers, hyprlock otherwise. Runtime on
-# purpose -- if the shell is down, its restart budget is spent, or its QML tree
-# will not load, Super+L must still lock the screen. `grace` is a hyprlock CLI
-# flag since 0.9.6, no longer a config key.
+# ONE route: the Quickshell lock surface (§22), asked over IPC. hyprlock was the
+# runtime fallback until 2026-10-19 and is gone, so a shell that is down, hung,
+# out of restart budget or running a broken QML tree means the screen is NOT
+# locked -- and this script says so with a critical-looking notice and exits 1.
+# 🚨 That includes lock-before-suspend: hypridle holds the sleep inhibitor only
+# until logind's InhibitDelayMaxSec (5 s), after which a machine whose shell is
+# dead sleeps UNLOCKED. Recovery from a TTY: desktop/CLAUDE.md -> Idle & Lock.
+#
+# 🚨 The notice goes through `hyprctl notify`, never notify-send: this shell IS
+# the notification daemon, so notify-send reaches nothing in exactly the case
+# this script reports. Same channel as the uwsm warning in hypr/conf/autostart.
 #
 # 🚨 `quickshell ipc call` exits 0 EVEN WHEN IT FAILS: a target that does not
-# exist prints "Target not found." and still returns 0. So the route is decided
+# exist prints "Target not found." and still returns 0. So success is decided
 # by the ANSWER, never the exit status -- the same rule quickshell-toggle's
-# shell_running() follows. Anything but "ok" falls through to hyprlock,
-# "missing-pam" included: hyprlock reads the same /etc/pam.d/hyprlock and will
-# report the real problem in its own UI rather than leaving the screen unlocked.
+# shell_running() follows.
 #
-# 🚨 The re-entrancy guard is a LOCK FILE, not `pidof hyprlock`. Since
-# hypr/conf/general sets misc:allow_session_lock_restore, the compositor accepts
-# a second locker where it used to refuse one -- so a check-then-act guard that
-# loses its race now displaces a live lock screen out from under whoever is
-# typing into it. flock closes that window: the descriptor is inherited by the
-# exec'd hyprlock and released only when it exits. On the Quickshell route it is
-# released as this script exits, which is correct -- the shell's own lock state
-# is the guard from there on, and a second call just gets "ok" back.
+# 🚨 The re-entrancy guard is a LOCK FILE. Since hypr/conf/general sets
+# misc:allow_session_lock_restore, the compositor accepts a second locker where
+# it used to refuse one, so a check-then-act guard that loses its race can
+# displace a live lock screen out from under whoever is typing into it. flock
+# serialises concurrent calls (Super+L racing hypridle); the shell's own lock
+# state is the guard from there on, and a second call just gets "ok" back.
+# desktop/session-lock-stranded reads the same file.
 #
-# That same compositor option is what makes a STRANDED lock recoverable: an
-# ext-session-lock outlives its client, so a killed locker leaves the session
-# behind Hyprland's failsafe. The lock file is gone with the dead process, so
-# this script proceeds and the new locker re-acquires the existing lock. Ask
-# `desktop/session-locked` whether that is the situation; it is not consulted
-# here because the action is the same either way.
+# An ext-session-lock outlives its client, so a killed shell leaves the session
+# behind Hyprland's failsafe. The new shell re-acquires the lock on start
+# (LockScreen.checkStranded); ask `desktop/session-locked` whether that is the
+# situation. It is not consulted here because the action is the same either way.
 
 LOCKFILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/immediate-lock.lock"
 
@@ -41,15 +42,22 @@ exec 9>"$LOCKFILE" || exit 1
 flock -n 9 || exit 0
 
 # 🚨 Bounded: a shell that is alive but hung never answers, and without the
-# timeout this blocked forever while holding the flock -- no hyprlock, every
-# later lock attempt exiting 0 on the held lock, and hypridle's inhibit_sleep=3
-# only holding suspend for logind's InhibitDelayMaxSec (5 s), after which the
-# machine sleeps UNLOCKED. 1 s, not more: a healthy answer takes ~35 ms, and
-# hyprlock needs the rest of that 5 s to map at 4K. If the shell later resumes
-# it still runs the queued call; with allow_session_lock_restore its lock then
-# replaces hyprlock's rather than stacking on it.
-if [ "$(timeout 1 quickshell -c dotfiles ipc call lock lock 2>/dev/null)" = ok ]; then
+# timeout this blocked forever while holding the flock, every later lock attempt
+# exiting 0 on the held lock. 1 s, not more: a healthy answer takes ~35 ms. If
+# the shell later resumes it still runs the queued call.
+ANSWER=$(timeout 1 quickshell -c dotfiles ipc call lock lock 2>/dev/null)
+if [ "$ANSWER" = ok ]; then
     exit 0
 fi
 
-exec hyprlock --grace 0
+# "No running instances for ..." arrives on STDOUT, with a dead-instance list.
+case "$ANSWER" in
+"" | "No running instances"*) REASON="the shell is not running or not answering" ;;
+missing-pam) REASON="/etc/pam.d/login is missing" ;;
+disabled) REASON="the lock is switched off in the shell" ;;
+*) REASON="the shell answered '$(printf '%s' "$ANSWER" | head -n 1)'" ;;
+esac
+echo "immediate-lock: screen NOT locked: $REASON" >&2
+# 10 s, icon 3 (error), red.
+hyprctl notify 3 10000 "rgb(ff4444)" "Screen NOT locked: $REASON" >/dev/null 2>&1 || true
+exit 1

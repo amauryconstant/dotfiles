@@ -48,8 +48,8 @@ the meters payload's missing temperature
   polkit offers more than one (the branch §21 called out as assumed away). Cancel (neutral) and
   Authenticate (primary) are `ActionButton`s too: until 2026-10-06 the dialog was keyboard-only
 - 🚨 **The shell draws the lock screen on both chassis** (`lock/LockScreen.qml` +
-  `lock/LockContent.qml`, surface §22, added 2026-09-12), gated on `features.quickshell_lock`
-  (`enabled` and `chassis: [laptop, desktop]`; dropping a chassis sends it back to hyprlock). On
+  `lock/LockContent.qml`, surface §22, added 2026-09-12) and is the ONLY locker since hyprlock was
+  retired 2026-10-19 (`Config.lockOwned` is a constant `true`; the `quickshell_lock` flag is gone). On
   the two-monitor NVIDIA desktop it froze a few seconds after appearing (2026-10-14: Quickshell's
   main thread stops, Hyprland stays alive) until 2026-10-19, when a gdb stack in the `desk`
   sandbox showed why: the render thread wedged in the packaged egl-wayland2's unbounded frame wait
@@ -58,12 +58,15 @@ the meters payload's missing temperature
   `Config.detach` strips the variable it sets so launched apps keep the packaged library. If the
   patched build is missing the shell still starts, on the packaged library, and the lock may
   freeze again (the build script warns). Record: `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md`.
-  Unlike the polkit and notification roles
-  **nothing is displaced**: `desktop/immediate-lock` asks the running shell and falls back to
-  hyprlock at RUNTIME, so `SUPER+L` locks the screen with the flag off, with the shell down, or
-  with its restart budget spent. PAM is `/etc/pam.d/hyprlock`, borrowed from the package — no
-  root write and no installer script. The `lock` IPC target is registered either way and answers
-  `"disabled"`, so a switched-off feature stays distinguishable from a broken wiring
+  🚨 **There is no fallback locker.** `desktop/immediate-lock` asks the running shell over IPC; with
+  the shell down, hung or out of restart budget it only reports "Screen NOT locked"
+  (`hyprctl notify`, because this shell is the notification daemon) and exits 1, and
+  lock-before-suspend then sleeps unlocked after logind's 5 s inhibit delay. TTY recovery:
+  `XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user reset-failed quickshell.service && systemctl --user restart quickshell.service`
+  — the stranded-lock recovery then takes the lock back. PAM is util-linux's `/etc/pam.d/login`
+  (hyprlock's file was only `auth include login`; Quickshell calls `pam_authenticate` alone) — no
+  root write and no installer script. The `lock` IPC target answers `"disabled"` when the lock is
+  not constructed (smoke render, desk), so that stays distinguishable from a broken wiring
   — **Background is the WALLPAPER**, read per output from `awww query` and dimmed by
   `Config.lockDimOpacity` (0.7, the knob for legible text over an arbitrary image). Not a blurred
   desktop screenshot, which is what hyprlock drew here (`path = screenshot`, `blur_passes = 3`):
@@ -144,7 +147,7 @@ decision; each is also commented at its site. Everything **not** listed here fol
 | **02** three density columns | default 13 only | The only thing that could select a column is the system menu, which is not built. Two unreachable columns are dead configuration |
 | **04** a named width-breakpoint overflow order | **not built** | No output this repo drives is narrow enough to fire it, so it could be neither observed nor tested. The parts that *do* fire are built: the title's pixel bound and the tray's 8-item cap. See the ponytail note in `Config.qml.tmpl` |
 | **07** inline reply | not built | Needs `x-kde-reply` plumbing; out of the agreed scope |
-| **12** the lock returns when "the lock process can be supervised independently of the rest of the shell" | in-shell, recovered rather than isolated | Hyprland's failsafe is **opaque**, so a crashed locker is ugly and never insecure. `Restart=always` plus `allow_session_lock_restore` plus `session-lock-stranded` turns that into ~2s of failsafe and then a prompt, and hyprlock stays as the runtime fallback for a shell that cannot come back at all. A second always-running instance buys isolation the failure mode does not need |
+| **12** the lock returns when "the lock process can be supervised independently of the rest of the shell" | in-shell, recovered rather than isolated | Hyprland's failsafe is **opaque**, so a crashed locker is ugly and never insecure. `Restart=always` plus `allow_session_lock_restore` plus `session-lock-stranded` turns that into ~2s of failsafe and then a prompt, and there is no fallback for a shell that cannot come back at all (hyprlock retired 2026-10-19; `immediate-lock` only reports it). A second always-running instance buys isolation the failure mode does not need |
 | **12** the lock draws nothing behind its content | the dimmed wallpaper | The page's own mock is a near-black card, which is also exactly what Hyprland's failsafe renders — so the drawn design makes a crashed locker and a working one look alike. The wallpaper is public, costs one `awww query`, and leaks nothing the page forbids |
 | **12** the lock's failure line in `signal-error` | `fgOnScrim` | Measured on the scrim: 3.87 (latte), 3.84 (gruvbox-light), under the 4.5 text owes. Page 12 requires the colour be "paired with words, never colour alone", so the words carry it. Row in `lint:theme-contrast` |
 | **12** the field at 220x34, the date at the meta step | 360x56, clock `lockClockSize` (72), date `fontDisplay` | **Revised 2026-09-13**, the first time the lock was typed into. The density scale is calibrated for a 40px bar and 340px panels; the lock is the one FULL-SCREEN surface, so page 12's numbers are right against the scale and wrong against the surface. Was `fontMeta` on the same reasoning that page 02 fixes what a role is worth — true, and beside the point when the ground is 1920x1080 |

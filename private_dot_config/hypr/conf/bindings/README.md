@@ -110,7 +110,7 @@ Cohere-only (RAM).
 
 ### Media keys (`media-keys.conf`)
 
-Flags: `l` = works while locked (hyprlock), `e` = repeats on hold.
+Flags: `l` = works while locked, `e` = repeats on hold.
 
 | Keys | Bind type | Action |
 |------|-----------|--------|

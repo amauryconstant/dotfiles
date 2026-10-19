@@ -328,21 +328,28 @@ and answers the `Lock` signal — killing it silently disables lock-before-suspe
 lid close suspends the machine unlocked. The inhibitor leaves `before_sleep_cmd` armed.
 
 **`immediate-lock`** is the single lock entry point (`Super+L`, system menu, and
-hypridle's `lock_cmd`). `grace` is a hyprlock **CLI flag** since 0.9.6, not a config key.
+hypridle's `lock_cmd`).
 
-**It has two routes, chosen at RUNTIME**: the Quickshell lock surface (§22) when
-`quickshell -c dotfiles ipc call lock lock` answers `ok`, hyprlock otherwise. Runtime rather than
-a `.tmpl` branch on purpose — if the shell is down, its restart budget is spent, or its QML tree
-will not load, `Super+L` must still lock the screen. ⚠️ `ipc call` **exits 0 even when it fails**,
-so the route is decided by the answer, never the status; `missing-pam` falls through too, because
-hyprlock reads the same `/etc/pam.d/hyprlock` and will report the real problem in its own UI.
+**It has ONE route**: `quickshell -c dotfiles ipc call lock lock` must answer `ok`. hyprlock was the
+runtime fallback until 2026-10-19; with the shell down, hung (1 s bound), out of restart budget or
+running broken QML, it now only reports "Screen NOT locked" via `hyprctl notify` (never
+`notify-send`: the shell is the notification daemon) and exits 1. ⚠️ `ipc call` **exits 0 even when
+it fails**, so success is decided by the answer, never the status. 🚨 Lock-before-suspend inherits
+this: hypridle holds the inhibitor only until logind's 5 s, after which a machine with a dead shell
+sleeps UNLOCKED.
 
-🚨 **Its re-entrancy guard is a `flock`, not `pidof hyprlock`.** `hypr/conf/general` now
-sets `misc:allow_session_lock_restore`, so the compositor *accepts* a second locker where it used
-to reject one. A check-then-act guard that loses its race therefore displaces a live lock screen
-out from under whoever is typing into it. The lock file is `$XDG_RUNTIME_DIR/immediate-lock.lock`;
-the descriptor is inherited by the exec'd hyprlock and released only when it exits, so the window
-is closed rather than narrowed. Proven by a stand-in run: held → second invocation exits 0
+🚨 **Recovery from a TTY or failsafe screen** (no locker to start by hand any more):
+`XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user reset-failed quickshell.service && systemctl --user restart quickshell.service`.
+The fresh shell re-acquires the stranded lock (`session-lock-stranded`) and shows the prompt. Use the
+raw `systemctl` form, not `quickshell-restart`: that one refuses while the lock is live and its
+status call can hang on a wedged shell.
+
+🚨 **Its re-entrancy guard is a `flock`, not `pidof`.** `hypr/conf/general` sets
+`misc:allow_session_lock_restore`, so the compositor *accepts* a second locker where it used to
+reject one. A check-then-act guard that loses its race therefore displaces a live lock screen out
+from under whoever is typing into it. The lock file is `$XDG_RUNTIME_DIR/immediate-lock.lock`; it
+now serialises concurrent calls (Super+L racing hypridle) for the duration of the IPC call, and
+`session-lock-stranded` reads it. Proven by a stand-in run: held → second invocation exits 0
 having run nothing; released → it runs.
 
 **`session-locked`** answers whether the compositor holds an `ext-session-lock`, by exit status
@@ -358,7 +365,7 @@ unlocked; a caller that *retries* must not treat it as an answer. Adapted from O
 `bin/omarchy-hyprland-session-locked`.
 
 🚨 **`session-locked` is NOT "is the lock stranded", and conflating the two displaces a live lock
-screen.** It is equally true while hyprlock is running, and `allow_session_lock_restore` means a
+screen.** It is equally true while another locker is running (hyprlock, until 2026-10-19), and `allow_session_lock_restore` means a
 second client is now *accepted* rather than refused. Measured 2026-09-12: the Quickshell lock's
 recovery ran `session-locked`, got 0 while hypridle's hyprlock was up, concluded orphan, and took
 a second lock on top of a live one — the exact failure the `flock` above exists to prevent.

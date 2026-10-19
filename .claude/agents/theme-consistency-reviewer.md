@@ -41,7 +41,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - No file in a theme dir is a template — any `{{ }}` found is generator corruption, not a template feature
 
 ### Hex Consistency
-- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `wofi.css`, `hyprlock.conf`, `hyprland.conf`, and `hyprland.lua`
+- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `wofi.css`, `hyprland.conf`, and `hyprland.lua`
 - A mismatch usually means one file was updated during a recolor and a sibling was missed
 
 ### STYLE-GUIDE.md

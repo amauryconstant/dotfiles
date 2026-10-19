@@ -285,7 +285,6 @@ packages:
         - hyprland # Hyprland Wayland compositor
         - uwsm # Universal Wayland Session Manager
         - xdg-desktop-portal-hyprland # Portal integration for Hyprland
-        - hyprlock # Official Hyprland screen locker
         - hypridle # Official Hyprland idle daemon
         - network-manager-applet # Network Manager GUI applet
         - darkman # Solar-based light/dark mode automation

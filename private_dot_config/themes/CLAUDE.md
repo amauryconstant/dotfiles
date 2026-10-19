@@ -22,7 +22,7 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `hyprlock.conf`, `wofi.css`, `firefox-userChrome.css`
+- **Desktop**: `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `wofi.css`, `firefox-userChrome.css`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`

@@ -344,7 +344,7 @@ focused output), the pointer is warped there before the lock maps, and the field
 and typed keys reach it); the EDID match itself only exists on the real monitors.
 
 🚨 **"Is the compositor locked" is NOT "is the lock stranded", and acting on the first
-displaces a live lock screen.** `desktop/session-locked` is equally true while hyprlock runs, and
+displaces a live lock screen.** `desktop/session-locked` is equally true while another locker runs (hyprlock, until 2026-10-19), and
 `misc:allow_session_lock_restore` means a second lock client is *accepted* (2026-09-12:
 `LockScreen.qml` took a second lock on top of a live one). The probe is
 `desktop/session-lock-stranded` (locked **and** the lock file free); the QML rules *itself* out first

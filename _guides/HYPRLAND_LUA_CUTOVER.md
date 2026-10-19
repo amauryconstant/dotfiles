@@ -35,8 +35,7 @@ Verified on the real session, not a nested one:
   module was exercised against a nested instance and produced exactly half the logical monitor.
 - **Media keys on the lock screen**, and a **workspace click on the Quickshell bar** — both
   need a human at the keyboard. The lock screen this now means is `quickshell/dotfiles/lock/`
-  (shipped 2026-09-12), not hyprlock, which is only the runtime fallback `desktop/immediate-lock`
-  routes to when the shell is down.
+  (shipped 2026-09-12), not hyprlock (retired 2026-10-19; `desktop/immediate-lock` has no fallback now).
 
 `voxtype_suppress` is worth knowing about: voxtype's `pre_output_command` still asks for it, and
 that submap is **deliberately not defined** (the former `conf.d/voxtype-submap.{lua,conf}` said so —
@@ -99,7 +98,7 @@ net; not a rollback target. The rollback target is the `.chezmoiignore` block.
      `SUPER+ALT+g` grab
    - `SUPER+ALT+m` actually crosses monitors (audit finding 3)
    - Media keys work on the lock screen (audit finding 4) — the Quickshell lock since
-     2026-09-12, hyprlock only as the fallback
+     2026-09-12 (hyprlock was the fallback until its retirement 2026-10-19)
 
 The `SUPER+ALT+M` double-bind noted in `_research/HYPRLAND_LUA_AUDIT.md` is resolved: meeting
 transcription moved to `SUPER+CTRL+M` (`conf/bindings/voice.{lua,conf}.tmpl`).

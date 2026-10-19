@@ -12,7 +12,7 @@ Technical guidance for Claude Code when developing in this repository.
 - **Target OS**: Arch Linux (archinstall + Hyprland profile)
 - **Desktop**: Hyprland + **Quickshell** (bar, launcher, notifications, power menu, popovers,
   pickers). Waybar, swaync, wlogout and polkit-gnome are retired; Wofi stays as the
-  `quickshell-menu` fallback, hyprlock as the lock fallback
+  `quickshell-menu` fallback
 - **Terminal**: Ghostty (only chezmoi-managed terminal — there is no `private_dot_config/kitty/`)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
 - **Constraint**: Security-first — manual encryption at rest + package supply-chain policy (see `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy")

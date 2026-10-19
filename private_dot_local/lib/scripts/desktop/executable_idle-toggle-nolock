@@ -2,7 +2,7 @@
 
 # Script: idle-toggle-nolock
 # Purpose: Toggle "no-lock" idle mode — display still powers off for energy
-#          saving, but hyprlock never triggers on idle
+#          saving, but the lock never triggers on idle
 # Requirements: Arch Linux, systemd, hypridle
 # Bound to: Super+Shift+I / bar idle-indicator right-click
 #

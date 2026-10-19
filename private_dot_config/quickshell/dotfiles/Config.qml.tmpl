@@ -523,15 +523,20 @@ Singleton {
     // agent installed later would race this one.
     readonly property bool polkitOwned: true
 
-    // Whether this shell draws the lock screen. NOT the same kind of flag as
-    // the two above: nothing is displaced and nothing races, because
-    // desktop/immediate-lock asks the running shell at RUNTIME and falls back
-    // to hyprlock when the answer is not "ok". So this only decides whether the
+    // Whether this shell draws the lock screen. Always true since hyprlock was
+    // retired (2026-10-19); kept as a property so the Loader reads one name and
+    // the smoke render and desk can flip it. It only decides whether the
     // WlSessionLock is constructed at all; the `lock` IPC target is registered
     // either way and answers "disabled", which is what keeps a switched-off
-    // feature distinguishable from a broken wiring. Also false on a chassis not
-    // listed in `quickshell_lock.chassis` (a per-machine off switch: features.yaml).
-    readonly property bool lockOwned: {{ and .features.quickshell_lock.enabled (has .chassisType .features.quickshell_lock.chassis) }}
+    // lock distinguishable from a broken wiring.
+    //
+    // 🚨 The desktop lock is safe only on the PATCHED egl-wayland2: the packaged
+    // one waits for a frame event with no timeout and the lock froze a few
+    // seconds after appearing on the two-monitor NVIDIA machine. The shell runs
+    // on the patched build via quickshell.service -> desktop/egl-wayland2-patched,
+    // and nothing here notices a missing build. There is no second locker to
+    // fall back to. See _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
+    readonly property bool lockOwned: true
 
     function brightnessGlyph(percent: int): string {
         return root.brightnessGlyphs[Math.min(6, Math.floor(percent / 15))];
