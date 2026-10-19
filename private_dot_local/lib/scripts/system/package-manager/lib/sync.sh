@@ -10,7 +10,7 @@
 SYNC_MAX_REMOVALS=10
 
 # Lines of $2 not in $1 (both sorted, unique).
-_set_minus() { comm -13 "$2" "$1" 2>/dev/null; }
+_set_minus() { comm -13 "$2" "$1"; }
 
 # Names from stdin that are installed (pacman).
 _filter_installed_pacman() {
@@ -141,7 +141,7 @@ cmd_sync() {
 	# dependency of something stays put instead of aborting the whole transaction.
 	if [[ -s "$rm_pac" ]]; then
 		ui_step "Retiring $(wc -l <"$rm_pac") package(s): $(tr '\n' ' ' <"$rm_pac")"
-		xargs -r sudo pacman -D --asdeps <"$rm_pac" >/dev/null
+		xargs -r sudo pacman -D --asdeps <"$rm_pac" >/dev/null || ui_warning "Could not mark retired packages as deps"
 	fi
 
 	# Declared packages must be explicit, or the orphan pass would sweep one that was
@@ -162,7 +162,8 @@ cmd_sync() {
 			return 1
 		}
 	fi
-	_filter_installed_pacman <"$pac_decl" | xargs -r sudo pacman -D --asexplicit >/dev/null
+	_filter_installed_pacman <"$pac_decl" | xargs -r sudo pacman -D --asexplicit >/dev/null ||
+		ui_warning "Could not mark declared packages explicit — the orphan pass may misjudge them"
 
 	# Bootstrap TOFU ended: record the AUR packages that just installed (only when this
 	# run started unseeded, so an established host never silently approves anything).
@@ -171,9 +172,12 @@ cmd_sync() {
 		_tripwire_seed
 	fi
 
-	# Orphan pass (retired packages marked as deps above, plus any stray orphans)
-	local orphans
-	orphans=$(paru -Qtdq 2>/dev/null || true)
+	# Orphan pass, limited to what this sync retired: orphans the user installed --asdeps or by
+	# hand are none of its business. -Rns also takes the retired package's now-unneeded deps.
+	local orphans=""
+	if [[ -s "$rm_pac" ]]; then
+		orphans=$(comm -12 "$rm_pac" <(paru -Qtdq 2>/dev/null | sort -u) || true)
+	fi
 	if [[ -n "$orphans" ]]; then
 		ui_step "Removing orphans: $(tr '\n' ' ' <<<"$orphans")"
 		# shellcheck disable=SC2086
@@ -198,10 +202,17 @@ cmd_sync() {
 	fi
 
 	# --- Record applied set: declared ∩ actually installed ---------------------
+	# Retired packages that survived (still a dependency, failed uninstall) stay recorded so the
+	# next sync retries and warns instead of forgetting them.
 	{
 		_filter_installed_pacman <"$pac_decl"
 		_filter_installed_flatpak <"$fp_decl"
+		_filter_installed_pacman <"$rm_pac"
+		_filter_installed_flatpak <"$rm_fp"
 	} | sort -u >"$tmp/applied"
+	local survivors
+	survivors=$(comm -12 <(sort -u "$rm_pac" "$rm_fp") "$tmp/applied" | tr '\n' ' ')
+	[[ -n "$survivors" ]] && ui_warning "Retired but still installed (kept as a dependency?): $survivors"
 	mv "$tmp/applied" "$APPLIED_FILE.new" && mv "$APPLIED_FILE.new" "$APPLIED_FILE"
 
 	if [[ "$first_run" == true ]]; then
