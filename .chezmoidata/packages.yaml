@@ -2,10 +2,9 @@ packages:
   # Module definitions (flat structure, pacman + flatpak at same level)
   # Note: All Flatpak packages are installed in user scope
 
-  # Optional: Backup tool configuration (package-manager v2.1+)
-  # Uncomment to explicitly configure backup tool (auto-detects if omitted)
-  # backup_tool: "snapper"        # or "timeshift" (prefers timeshift if both installed)
-  # snapper_config: "root"        # snapper config name (default: "root")
+  # Removal is automatic: a package declared by the previous sync and absent now is removed by
+  # `package-manager sync` (applied-set diff). Just delete the line. Enabled modules + the NVIDIA
+  # driver choice (.nvidiaDriverType, not the graphics_drivers_* `enabled` flags) form the set.
 
   modules:
     # ============================================================
@@ -15,8 +14,6 @@ packages:
     base:
       enabled: true
       description: "Essential system packages"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - base # Minimal Arch package set
         - base-devel # Development tools metapackage
@@ -31,8 +28,6 @@ packages:
     graphics_drivers_modern:
       enabled: true
       description: "Graphics drivers (NVIDIA modern - Turing+)"
-      conflicts: ["graphics_drivers_legacy"]
-      post_install_hook: ""
       packages:
         - intel-ucode # Intel CPU microcode updates
         - nvidia-open # NVIDIA open-source kernel modules (pre-built)
@@ -47,8 +42,6 @@ packages:
     graphics_drivers_legacy:
       enabled: false
       description: "Graphics drivers (NVIDIA legacy - Pascal/Maxwell)"
-      conflicts: ["graphics_drivers_modern"]
-      post_install_hook: ""
       packages:
         - intel-ucode # Intel CPU microcode updates
         - dkms # Dynamic kernel module support
@@ -63,8 +56,6 @@ packages:
     system_utilities:
       enabled: true
       description: "Core system utilities"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - xdg-utils # Desktop integration utilities
         - xdg-desktop-portal # Desktop portal framework (file picker, OAuth)
@@ -99,8 +90,6 @@ packages:
     network:
       enabled: true
       description: "Network connectivity and tools"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - iwd # Modern WiFi daemon
         - wpa_supplicant # WiFi authentication daemon
@@ -114,8 +103,6 @@ packages:
     package_management:
       enabled: true
       description: "Package managers and repositories"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - flatpak # Universal package manager
         - paru # AUR helper (Rust, faster than yay)
@@ -133,8 +120,6 @@ packages:
     shell_environment:
       enabled: true
       description: "Shell and terminal emulator"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - ghostty # Modern GPU terminal
         # Baseline terminal emulator, kept as the fallback if Ghostty breaks.
@@ -151,8 +136,6 @@ packages:
     terminal_tools:
       enabled: true
       description: "Essential CLI utilities"
-      conflicts: []
-      post_install_hook: ""
       packages:
         # Core CLI utilities
         - fd # Fast find with sane defaults
@@ -195,8 +178,6 @@ packages:
     fonts:
       enabled: true
       description: "Font packages"
-      conflicts: []
-      post_install_hook: ""
       packages:
         # Terminal fonts
         - ttf-firacode-nerd # Monospace font with ligatures
@@ -219,8 +200,6 @@ packages:
     development_core:
       enabled: true
       description: "Core development tools"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - neovim # Modal text editor with LSP support
         - git # Distributed version control
@@ -236,8 +215,6 @@ packages:
     development_clis:
       enabled: true
       description: "Development CLI tools"
-      conflicts: []
-      post_install_hook: ""
       packages:
         # Build tooling
         - cmake # hyprpm dependency
@@ -265,8 +242,6 @@ packages:
     ai:
       enabled: true
       description: "Local AI inference (llama.cpp CUDA backend + llama-swap proxy)"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - llama-cpp # llama.cpp inference (official repo; llama.cpp-bin AUR pkg deleted upstream, superseded by this)
         - ggml-cuda # NVIDIA CUDA backend for llama-cpp (dlopen'd at runtime, official repo)
@@ -279,8 +254,6 @@ packages:
     desktop_hyprland:
       enabled: true
       description: "Hyprland Wayland compositor"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - hyprland # Hyprland Wayland compositor
         - uwsm # Universal Wayland Session Manager
@@ -328,8 +301,6 @@ packages:
     desktop_gui_apps:
       enabled: true
       description: "GUI applications"
-      conflicts: []
-      post_install_hook: ""
       packages:
         # Web browsers
         - firefox # Privacy-focused web browser
@@ -360,8 +331,6 @@ packages:
     audio_system:
       enabled: true
       description: "Audio system (PipeWire)"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - pipewire # Modern audio/video server
         - pipewire-alsa # ALSA compatibility layer
@@ -375,8 +344,6 @@ packages:
     printing_scanning:
       enabled: true
       description: "Printing and scanning support"
-      conflicts: []
-      post_install_hook: ""
       packages:
         - cups # UNIX printing system
         - cups-pdf # PDF virtual printer — the CUPS-only path, for apps with no print-to-file
@@ -388,8 +355,3 @@ packages:
         - samsung-unified-driver-printer # Samsung printer driver
         - samsung-unified-driver-scanner # Samsung scanner driver
         - skanpage # Simple scanning application
-
-  # Packages to remove (explicit cleanup)
-  # Note: NVIDIA driver cleanup handled dynamically by sync script based on GPU detection
-  delete:
-    - yay # Replaced by paru

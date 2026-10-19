@@ -1,391 +1,44 @@
 #!/usr/bin/env bash
 
 # Script: run_onchange_before_sync_packages.sh.tmpl
-# Purpose: Install all packages from packages.yaml (simplified, self-contained)
+# Purpose: Sync the declared package set (packages.yaml) via package-manager
 # Requirements: Arch Linux, paru, yq, flatpak
-# Execution: Runs on first install AND when packages.yaml changes (hash-triggered)
-# Timing: Runs BEFORE file application (lib/scripts not yet available)
-# Design: No dependencies on lib/scripts - completely self-contained
+# Execution: First install AND whenever the declared set or the tool changes (hash-triggered)
+# Timing: BEFORE file application, so the tool runs from the chezmoi SOURCE tree, not ~/.local
+# Design: the template renders the declared set (enabled modules + NVIDIA driver choice);
+#         package-manager installs it and removes what the previous sync declared but this one doesn't.
 
+{{- $pm := printf "%s/private_dot_local/lib/scripts/system/package-manager" .chezmoi.sourceDir }}
 # Hash: {{ .packages | toJson | sha256sum }}
+# Tool: {{ include (printf "%s/executable_package-manager" $pm) | sha256sum }}
+# Tool: {{ include (printf "%s/lib/sync.sh" $pm) | sha256sum }}
+# Tool: {{ include (printf "%s/lib/tripwire.sh" $pm) | sha256sum }}
 
-{{ includeTemplate "log_start" "Installing packages from packages.yaml..." }}
+{{ includeTemplate "log_start" "Syncing packages from packages.yaml..." }}
 
 set -euo pipefail
 
-# Package data location
-PACKAGES_FILE="$HOME/.local/share/chezmoi/.chezmoidata/packages.yaml"
+DECLARED=$(mktemp)
+trap 'rm -f "$DECLARED"' EXIT
 
-# Auto-select NVIDIA driver module based on GPU detection
-NVIDIA_DRIVER_TYPE="{{ .nvidiaDriverType }}"
-TEMP_PACKAGES_FILE="/tmp/packages-$$.yaml"
-cp "$PACKAGES_FILE" "$TEMP_PACKAGES_FILE"
+# Enabled modules, flattened. NVIDIA: exactly one driver module, chosen by GPU detection
+# ({{ .nvidiaDriverType }}), not by the `enabled` flags in packages.yaml.
+cat >"$DECLARED" <<'DECLARED_EOF'
+{{- range $name, $module := .packages.modules }}
+{{- $on := $module.enabled }}
+{{- if eq $name "graphics_drivers_legacy" }}{{ $on = eq $.nvidiaDriverType "legacy" }}{{ end }}
+{{- if eq $name "graphics_drivers_modern" }}{{ $on = ne $.nvidiaDriverType "legacy" }}{{ end }}
+{{- if $on }}
+{{- range $module.packages }}
+{{ . }}
+{{- end }}
+{{- end }}
+{{- end }}
+DECLARED_EOF
 
-{{ includeTemplate "log_step" (printf "Configuring NVIDIA driver selection (type: %s)..." .nvidiaDriverType) }}
+{{ includeTemplate "log_step" "Running package-manager sync..." }}
 
-if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
-    # Enable legacy, disable modern
-    yq eval '.packages.modules.graphics_drivers_legacy.enabled = true | .packages.modules.graphics_drivers_modern.enabled = false' -i "$TEMP_PACKAGES_FILE"
-    {{ includeTemplate "log_info" "Using legacy NVIDIA drivers (nvidia-580xx-dkms)" }}
-else
-    # Enable modern, disable legacy
-    yq eval '.packages.modules.graphics_drivers_modern.enabled = true | .packages.modules.graphics_drivers_legacy.enabled = false' -i "$TEMP_PACKAGES_FILE"
-    {{ includeTemplate "log_info" "Using modern NVIDIA drivers (nvidia-open)" }}
-fi
+UI_LIB="{{ .chezmoi.sourceDir }}/private_dot_local/lib/scripts/core/executable_gum-ui.sh" \
+    bash "{{ $pm }}/executable_package-manager" sync "$DECLARED"
 
-{{ includeTemplate "log_step" "Extracting package lists from enabled modules..." }}
-
-# Extract all Arch/AUR packages (only from enabled modules)
-ARCH_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:") | not)' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
-
-# Extract all Flatpak packages (only from enabled modules, strip flatpak: prefix)
-FLATPAK_PACKAGES=$(yq eval '.packages.modules.[] | select(.enabled == true) | .packages[] | select(. | test("^flatpak:")) | sub("^flatpak:", "")' "$TEMP_PACKAGES_FILE" | sort -u) || {
-    {{ includeTemplate "log_error" "Failed to extract Flatpak packages from packages.yaml" }}
-    exit 1
-}
-
-# Extract packages to delete
-DELETE_PACKAGES=$(yq eval '.packages.delete[]' "$TEMP_PACKAGES_FILE" 2>/dev/null | sort -u)
-
-# Add conditional NVIDIA driver cleanup
-if [ "$NVIDIA_DRIVER_TYPE" = "legacy" ]; then
-    # Clean up modern drivers when using legacy
-    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open\nnvidia-open-lts\nnvidia-open-dkms" | sort -u)
-else
-    # Clean up legacy drivers when using modern
-    DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-580xx-dkms\nnvidia-580xx-utils\nlib32-nvidia-580xx-utils" | sort -u)
-    # Remove DKMS variant if switching to pre-built modern drivers
-    if pacman -Q nvidia-open-dkms >/dev/null 2>&1; then
-        DELETE_PACKAGES=$(echo -e "$DELETE_PACKAGES\nnvidia-open-dkms" | sort -u)
-        {{ includeTemplate "log_info" "Detected nvidia-open-dkms → switching to nvidia-open (pre-built)" }}
-    fi
-fi
-
-# Cleanup temp file
-rm -f "$TEMP_PACKAGES_FILE"
-
-# ============================================================
-# Refresh mirrors before package installation
-# ============================================================
-
-{{ includeTemplate "log_step" "Refreshing package mirrors..." }}
-
-if command -v rate-mirrors >/dev/null 2>&1; then
-    MIRRORLIST="/etc/pacman.d/mirrorlist"
-    if [ -f "$MIRRORLIST" ]; then
-        LAST_REFRESH=$(stat -c %Y "$MIRRORLIST" 2>/dev/null || echo 0)
-        CURRENT_TIME=$(date +%s)
-        HOURS_SINCE_REFRESH=$(( (CURRENT_TIME - LAST_REFRESH) / 3600 ))
-
-        if [ "$HOURS_SINCE_REFRESH" -gt 24 ]; then
-            {{ includeTemplate "log_info" "Mirrors stale (${HOURS_SINCE_REFRESH}h), refreshing..." }}
-            DETECTED_COUNTRY=$(curl -s ipinfo.io/country 2>/dev/null || echo "US")
-            rate-mirrors --protocol https --entry-country "$DETECTED_COUNTRY" arch | sudo tee /etc/pacman.d/mirrorlist >/dev/null 2>&1
-            sudo pacman -Sy >/dev/null 2>&1
-            {{ includeTemplate "log_success" "Mirrors refreshed for $DETECTED_COUNTRY" }}
-        else
-            {{ includeTemplate "log_info" "Mirrors up to date (${HOURS_SINCE_REFRESH}h old)" }}
-        fi
-    else
-        {{ includeTemplate "log_warning" "Mirrorlist not found, skipping refresh" }}
-    fi
-else
-    {{ includeTemplate "log_skip" "rate-mirrors not available, using existing mirrors" }}
-fi
-
-# ============================================================
-# Initialize Flatpak for user scope
-# ============================================================
-
-{{ includeTemplate "log_step" "Initializing Flatpak user environment..." }}
-
-# Ensure user directories exist
-mkdir -p "$HOME/.local/share/flatpak"
-mkdir -p "$HOME/.var/app"
-
-# Update appstream metadata for user scope (fresh install only)
-if ! flatpak remotes --user 2>/dev/null | grep -q "flathub"; then
-    {{ includeTemplate "log_step" "Flatpak will be initialized after remote is added..." }}
-    # Metadata update will happen after remote is added
-fi
-
-# Count packages
-ARCH_COUNT=$(echo "$ARCH_PACKAGES" | grep -c '^' || echo 0)
-FLATPAK_COUNT=$(echo "$FLATPAK_PACKAGES" | grep -c '^' || echo 0)
-DELETE_COUNT=$(echo "$DELETE_PACKAGES" | grep -c '^' || echo 0)
-
-{{ includeTemplate "log_success" "Found $ARCH_COUNT Arch/AUR packages, $FLATPAK_COUNT Flatpak packages, $DELETE_COUNT packages to remove" }}
-
-# ============================================================
-# Supply-chain tripwire: verify AUR build files against approved hashes
-# ============================================================
-# Self-contained (no lib/scripts dependency — this script runs before file
-# application). Shares the on-disk hash DB with 'package-manager approve'.
-# Trust model: classify packages in any pacman sync repo (official + chaotic-aur
-# signed binaries) as OFFICIAL; gate only true AUR packages whose PKGBUILD runs locally.
-# New-package gate (mirrors lib _tripwire_check):
-#   bootstrap (DB absent or .approved empty) = trust-on-first-use, fresh provisioning works;
-#   established (DB seeded) = an AUR package absent from the DB is genuinely NEW → BLOCKED.
-# Seed once after deploy via 'package-manager approve --seed'.
-# Fail-CLOSED: if build files can't be fetched, the package is blocked.
-
-{{ includeTemplate "log_step" "Checking AUR build files against approved hashes..." }}
-
-TRIPWIRE_DB="$HOME/.local/state/package-manager/pkgbuild-hashes.yaml"
-TRIPWIRE_BLOCKED=""
-
-# Emit the canonical build-file blob (PKGBUILD + sorted *.install), empty on failure.
-# MUST stay byte-identical to operations/pkgbuild-tripwire.sh:_tripwire_fetch — both sides
-# capture this into a var (command substitution strips trailing newlines) then hash via
-# `printf '%s' "$blob" | sha256sum`, so the hashed bytes match. Any drift = false blocks.
-_tripwire_blob() {
-    name="$1"
-    tmp=$(mktemp -d) || return 0
-    if ! ( cd "$tmp" && timeout 60 paru -G "$name" >/dev/null 2>&1 ); then
-        rm -rf "$tmp"; return 0
-    fi
-    # paru -G clones into a pkgbase-named dir (differs from $name for split packages,
-    # e.g. samsung-unified-driver-common → samsung-unified-driver/). Take the sole subdir.
-    clone_dir=""
-    for d in "$tmp"/*/; do
-        [ -d "$d" ] && { clone_dir="${d%/}"; break; }
-    done
-    if [ -z "$clone_dir" ] || [ ! -f "$clone_dir/PKGBUILD" ]; then
-        rm -rf "$tmp"; return 0
-    fi
-    cat "$clone_dir/PKGBUILD"
-    while IFS= read -r f; do
-        [ -n "$f" ] && cat "$f"
-    done < <(find "$clone_dir" -maxdepth 1 -type f -name '*.install' | LC_ALL=C sort)
-    rm -rf "$tmp"
-}
-
-# Trust-tier buckets (filled below): official/chaotic → pacman, true AUR → paru.
-OFFICIAL_PKGS=""
-AUR_PKGS=""
-
-# Determine bootstrap state ONCE for the whole run: unseeded DB → trust-on-first-use for
-# every package; seeded DB → a new (unknown) AUR package is blocked. Computed up front so
-# it can't flip mid-loop.
-TRIPWIRE_BOOTSTRAP=1
-if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
-    approved_count=$(yq eval '.approved | length' "$TRIPWIRE_DB" 2>/dev/null || echo 0)
-    case "$approved_count" in
-        ''|null|0) TRIPWIRE_BOOTSTRAP=1 ;;
-        *) TRIPWIRE_BOOTSTRAP=0 ;;
-    esac
-fi
-
-for pkg in $ARCH_PACKAGES; do
-    # Official / chaotic-aur (signed binary sync repos) → no local PKGBUILD → install via pacman
-    if pacman -Si "$pkg" >/dev/null 2>&1; then
-        OFFICIAL_PKGS="$OFFICIAL_PKGS $pkg"
-        continue
-    fi
-
-    # True AUR package: gate before the paru build
-    AUR_PKGS="$AUR_PKGS $pkg"
-
-    # Materialize PKGBUILD + .install hooks and hash them (needs paru)
-    blob=""
-    if command -v paru >/dev/null 2>&1; then
-        blob=$(_tripwire_blob "$pkg")
-    fi
-
-    # Fail-closed: cannot fetch build files → block (cannot verify)
-    if [ -z "$blob" ]; then
-        TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
-        continue
-    fi
-
-    current_hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
-
-    approved_hash=""
-    if [ -f "$TRIPWIRE_DB" ] && command -v yq >/dev/null 2>&1; then
-        approved_hash=$(NAME="$pkg" yq eval '.approved[env(NAME)].hash // ""' "$TRIPWIRE_DB" 2>/dev/null) || true
-    fi
-
-    # No approved hash yet → new package. Bootstrap allows (TOFU); established blocks.
-    if [ -z "$approved_hash" ] || [ "$approved_hash" = "null" ]; then
-        if [ "$TRIPWIRE_BOOTSTRAP" -eq 0 ]; then
-            TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
-        fi
-        continue
-    fi
-
-    if [ "$current_hash" != "$approved_hash" ]; then
-        TRIPWIRE_BLOCKED="$TRIPWIRE_BLOCKED $pkg"
-    fi
-done
-
-if [ -n "$TRIPWIRE_BLOCKED" ]; then
-    {{ includeTemplate "log_error" "AUR build files new/changed/unverifiable since approval — install blocked:" }}
-    for b in $TRIPWIRE_BLOCKED; do
-        {{ includeTemplate "log_error" "  • $b" }}
-    done
-    {{ includeTemplate "log_warning" "Review and approve, then re-apply:" }}
-    {{ includeTemplate "log_warning" "  package-manager approve$TRIPWIRE_BLOCKED" }}
-    exit 1
-fi
-
-# ============================================================
-# Install Arch/AUR packages
-# ============================================================
-
-if [ "$ARCH_COUNT" -gt 0 ]; then
-    # Trust-tier split: official/chaotic packages carry no local-PKGBUILD risk → pacman;
-    # tripwire-approved AUR packages → paru. Both stay --noconfirm (unattended). --needed
-    # skips packages already at target version. -r: skip the call if the bucket is empty.
-    if [ -n "$OFFICIAL_PKGS" ]; then
-        {{ includeTemplate "log_step" "Installing official-repo packages with pacman..." }}
-        if echo "$OFFICIAL_PKGS" | xargs -r sudo pacman -S --needed --noconfirm; then
-            {{ includeTemplate "log_success" "Official packages installed" }}
-        else
-            {{ includeTemplate "log_error" "Some official packages failed to install" }}
-            exit 1
-        fi
-    fi
-
-    if [ -n "$AUR_PKGS" ]; then
-        {{ includeTemplate "log_step" "Installing AUR packages with paru (tripwire-approved)..." }}
-        if echo "$AUR_PKGS" | xargs -r paru -S --needed --noconfirm; then
-            {{ includeTemplate "log_success" "AUR packages installed" }}
-        else
-            {{ includeTemplate "log_error" "Some AUR packages failed to install" }}
-            exit 1
-        fi
-    fi
-else
-    {{ includeTemplate "log_skip" "No Arch/AUR packages to install" }}
-fi
-
-# ============================================================
-# Supply-chain tripwire: auto-seed trust DB on first successful sync
-# ============================================================
-# TRIPWIRE_BOOTSTRAP (computed above, before any package changed) let every
-# AUR package through trust-on-first-use so fresh provisioning wasn't
-# bricked. Now that those exact packages installed cleanly, record their
-# build-file hashes — the same transition 'package-manager approve --seed'
-# performs manually, run automatically exactly once. Only fires when this
-# run started in bootstrap mode, so it never re-seeds (and silently
-# approves) a legitimately new or changed package on an already-seeded host.
-
-if [ "$TRIPWIRE_BOOTSTRAP" -eq 1 ] && [ -n "$AUR_PKGS" ]; then
-    {{ includeTemplate "log_step" "Seeding AUR supply-chain trust database (first sync)..." }}
-    mkdir -p "$(dirname "$TRIPWIRE_DB")/pkgbuilds"
-    [ -f "$TRIPWIRE_DB" ] || echo "approved: {}" >"$TRIPWIRE_DB"
-    SEEDED_COUNT=0
-    for pkg in $AUR_PKGS; do
-        case "$pkg" in
-            *-debug) continue ;;
-        esac
-        blob=$(_tripwire_blob "$pkg")
-        [ -z "$blob" ] && continue
-        hash=$(printf '%s' "$blob" | sha256sum | awk '{print $1}')
-        ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        printf '%s\n' "$blob" >"$(dirname "$TRIPWIRE_DB")/pkgbuilds/$pkg.snapshot"
-        NAME="$pkg" HASH="$hash" TS="$ts" yq eval -i \
-            '.approved[env(NAME)].hash = env(HASH) | .approved[env(NAME)].at = env(TS)' \
-            "$TRIPWIRE_DB"
-        SEEDED_COUNT=$((SEEDED_COUNT + 1))
-    done
-    {{ includeTemplate "log_success" "Seeded $SEEDED_COUNT AUR package(s) into the trust database" }}
-fi
-
-# ============================================================
-# Install Flatpak packages
-# ============================================================
-
-if [ "$FLATPAK_COUNT" -gt 0 ]; then
-    {{ includeTemplate "log_step" "Installing $FLATPAK_COUNT Flatpak packages..." }}
-
-    # Ensure Flathub remote configured (user scope)
-    if ! flatpak remote-list --user 2>/dev/null | grep -q "^flathub"; then
-        {{ includeTemplate "log_step" "Adding Flathub remote..." }}
-        flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
-
-        # Update appstream metadata after adding remote
-        {{ includeTemplate "log_step" "Updating Flatpak metadata..." }}
-        flatpak update --appstream --user 2>&1 | grep -v "^$" || true
-    fi
-
-    # Install all packages in single flatpak call (like Arch section)
-    # -y: Non-interactive
-    # --user: Install in user scope
-    # --noninteractive: Skip prompts
-    if echo "$FLATPAK_PACKAGES" | xargs -r flatpak install -y --user --noninteractive flathub 2>&1; then
-        {{ includeTemplate "log_success" "Flatpak packages installed successfully" }}
-    else
-        {{ includeTemplate "log_error" "Some Flatpak packages failed to install" }}
-        {{ includeTemplate "log_warning" "Check above output for specific failures" }}
-        # Continue anyway (some packages may not be available)
-    fi
-else
-    {{ includeTemplate "log_skip" "No Flatpak packages to install" }}
-fi
-
-# ============================================================
-# Remove unwanted packages
-# ============================================================
-
-# 🚨 Filter to what is ACTUALLY INSTALLED first. pacman aborts the WHOLE
-# transaction on a single unknown target ("target not found: yay"), so one
-# already-removed entry on the delete list stopped every other removal — and
-# `2>/dev/null || true` swallowed the error, so the script reported success
-# while removing nothing. Found 2026-09-13: kitty-shell-integration and
-# kitty-terminfo had been on the list for months and were still installed,
-# because `yay` sits above them and was uninstalled long ago.
-INSTALLED_TO_DELETE=""
-for pkg in $DELETE_PACKAGES; do
-    if pacman -Qq "$pkg" >/dev/null 2>&1; then
-        INSTALLED_TO_DELETE="$INSTALLED_TO_DELETE $pkg"
-    fi
-done
-INSTALLED_TO_DELETE=$(echo "$INSTALLED_TO_DELETE" | tr -s ' ' | sed 's/^ //')
-INSTALLED_DELETE_COUNT=$(echo "$INSTALLED_TO_DELETE" | tr ' ' '\n' | grep -c '[^[:space:]]' || true)
-
-if [ -n "$INSTALLED_TO_DELETE" ]; then
-    {{ includeTemplate "log_step" "Removing $INSTALLED_DELETE_COUNT unwanted packages (of $DELETE_COUNT listed)..." }}
-
-    # -Rns: remove the package, its now-unneeded dependencies, and its config.
-    # stderr is NOT discarded: a removal that fails for a real reason (a
-    # dependency still needs it) has to be visible, which is exactly what the
-    # old `2>/dev/null` hid.
-    if echo "$INSTALLED_TO_DELETE" | xargs -r paru -Rns --noconfirm; then
-        {{ includeTemplate "log_success" "Package cleanup complete" }}
-    else
-        {{ includeTemplate "log_warning" "Some packages could not be removed — see the output above" }}
-    fi
-else
-    {{ includeTemplate "log_skip" "No listed packages are installed — nothing to remove" }}
-fi
-
-# ============================================================
-# Clean orphaned packages
-# ============================================================
-
-{{ includeTemplate "log_step" "Checking for orphaned packages..." }}
-
-# Find and remove orphaned packages (dependencies no longer required)
-# -Qtdq: Query unrequired dependencies
-# -Rns: Remove with dependencies and config files
-# -r flag to xargs: Only run if input is non-empty
-ORPHANS=$(paru -Qtdq 2>/dev/null || true)
-
-if [ -n "$ORPHANS" ]; then
-    ORPHAN_COUNT=$(echo "$ORPHANS" | grep -c '^' || echo 0)
-    {{ includeTemplate "log_step" "Removing $ORPHAN_COUNT orphaned packages..." }}
-    # Same silencing bug as the delete list above, milder: orphans come from
-    # `paru -Qtdq` so they are all installed and no unknown target can abort
-    # the batch — but a removal blocked by a dependency still printed
-    # "Orphaned packages removed" and moved on.
-    if echo "$ORPHANS" | xargs -r paru -Rns --noconfirm; then
-        {{ includeTemplate "log_success" "Orphaned packages removed" }}
-    else
-        {{ includeTemplate "log_warning" "Some orphans could not be removed — see the output above" }}
-    fi
-else
-    {{ includeTemplate "log_success" "No orphaned packages found" }}
-fi
-
-{{ includeTemplate "log_complete" "Package installation and cleanup complete" }}
+{{ includeTemplate "log_complete" "Package sync complete" }}
