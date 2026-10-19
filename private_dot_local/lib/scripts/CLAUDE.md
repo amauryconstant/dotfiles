@@ -222,7 +222,7 @@ read as cancelled. See `user-interface/CLAUDE.md`.
 **UI Pattern**: All system scripts use gum-ui library (`ui_*` functions) for consistent terminal UI
 
 **Scripts** (extensionless, directly executable; `package-manager` lives in `system/package-manager/` — see its CLAUDE.md):
-- `package-manager` - Module-based package installation (pacman/paru)
+- `package-manager` - declared-set install/remove, tripwire-gated update/approve (pacman/paru/flatpak)
 - `system-health`, `system-health-dashboard` - health monitoring + live dashboard
 - `system-maintenance` - automated maintenance tasks
 - `troubleshoot` - troubleshooting wizard
@@ -263,14 +263,14 @@ read as cancelled. See `user-interface/CLAUDE.md`.
 **Executables** (in `bin/`):
 - Pattern: `executable_*`
 - No templates (static bash wrappers)
-- Example: `executable_package-manager`
+- Example: `executable_mmdc`
 
 **Implementation** (in `lib/`):
 - Pattern: `executable_<name>` — **no `.sh` extension** (scripts are in PATH, called by bare name)
 - Category subdirectories
 - Example: `system/executable_system-health` → `system-health`
 - Exception: sourced libraries keep `.sh` (`core/gum-ui.sh`, `core/state-manager.sh`, `user-interface/menu-helpers.sh`)
-- Exception: `system/package-manager/` is a **directory** (executable + `commands/`, `core/`, `operations/`, `packages/` modules), not a single script
+- Exception: `system/package-manager/` is a **directory** (executable + `lib/` modules), not a single script
 
 **Templates**:
 - Only in lib/ subdirectories

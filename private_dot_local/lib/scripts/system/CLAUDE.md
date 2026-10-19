@@ -20,7 +20,7 @@
 | `system-health-dashboard` | Interactive dashboard | TUI with gum |
 | `system-maintenance` | Maintenance tasks | `--update`, `--cleanup` modes |
 | `troubleshoot` | Diagnostic tool | Interactive troubleshooting |
-| `package-manager` | Module-based pkg management | NixOS-style version pinning; modularized (`operations/`, `commands/`, `packages/`, `core/`) — see its CLAUDE.md |
+| `package-manager` | Declared-set install/remove (chezmoi's sync) + tripwire-gated update | `sync`/`update`/`approve` — see its CLAUDE.md |
 | `pacman-lock-cleanup` | Clean stale pacman locks | Sudo required (configured in sudoers) |
 | `home-backup` | Incremental encrypted backup (Restic) | `init/backup/restore/status/prune` subcommands |
 | `rotate-age-key` | Rotate API keys / dotfiles master age keypair / restic password | `list/api/dotfiles/restic` subcommands |
@@ -117,24 +117,11 @@ troubleshoot
 
 ## package-manager
 
-Module-based declarative package management with NixOS-style version pinning (exact/`>=`/`<`), lockfile generation, and a hybrid sync+update mode. 4-layer modular design (Core/Operations/Packages/Commands) with atomic state mutations and concurrent-sync protection. **Full architecture: `package-manager/CLAUDE.md`.**
+Installs the package set chezmoi declares and **removes what the previous sync declared but this one doesn't** (applied-set diff); AUR builds are tripwire-gated. Commands: `sync`, `update`, `approve`. **Full reference: `package-manager/CLAUDE.md`.**
 
-### Quick Commands
-
-```bash
-package-manager module enable base shell   # module management
-package-manager pin firefox 120.0           # version pinning
-package-manager lock
-package-manager sync --prune                # sync + remove orphans it recorded (not the retirement path; see package-manager/CLAUDE.md)
-package-manager update
-package-manager status / validate / outdated
-```
-
-### Integration Points
-
-**packages.yaml**: `.chezmoidata/packages.yaml`
-**Run script**: `run_onchange_before_sync_packages.sh.tmpl` (hash-triggered)
-**Topgrade**: Pre-command calls `package-manager update`
+**packages.yaml**: `.chezmoidata/packages.yaml` — retire a package by deleting its line
+**Run script**: `run_onchange_before_sync_packages.sh.tmpl` (hash-triggered; calls the tool from the source tree)
+**Topgrade**: pre-command calls `package-manager update`
 **State files**: `~/.local/state/package-manager/`
 
 ## home-backup
@@ -236,7 +223,7 @@ sudo pacman-lock-cleanup --force  # No confirmation
 
 System scripts are directly in PATH (no wrappers). Call them as:
 - `system-health`, `system-maintenance`, `troubleshoot` — direct executables in `system/`
-- `package-manager` — still a wrapper (`bin/executable_package-manager`) due to complex module sourcing
+- `package-manager` — directory `package-manager/package-manager` (in PATH); no wrapper
 
 ## Integration Points
 
@@ -326,7 +313,7 @@ system-maintenance --cleanup
 **Package modules** (`packages.yaml`):
 - `graphics_drivers_modern`: nvidia-open, nvidia-open-lts, nvidia-utils (enabled by default)
 - `graphics_drivers_legacy`: nvidia-580xx-dkms, nvidia-580xx-utils (disabled by default)
-- **Dynamic selection**: Sync script enables correct module based on `.nvidiaDriverType`
+- **Dynamic selection**: the sync script template picks the module from `.nvidiaDriverType` (ignores the modules' `enabled` flags); a driver swap is an ordinary applied-set removal+install
 
 **Manual override**:
 ```bash
@@ -379,7 +366,7 @@ The package pipeline is the repo's most automated path — this is its written p
 `package-manager/CLAUDE.md` (tripwire mechanism), `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`
 (threat model), `_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap).
 
-**Trust tiers** (derived at runtime by `_pkg_is_aur`, not hand-tagged):
+**Trust tiers** (derived at runtime — `pacman -Si` hit = official/chaotic, else AUR — not hand-tagged):
 
 | Tier | Source | Trust | Gate |
 |------|--------|-------|------|
@@ -433,43 +420,22 @@ Removing it live is `sudo gpasswd -d $USER input` + re-login.
 
 ### 🚨 One unknown target aborts the whole pacman batch
 
-`packages.yaml`'s `delete:` list is handed to `paru -Rns` in a single call. pacman resolves every
-target before it does anything, and **one unresolvable target discards the entire transaction** —
-proven non-destructively on the same resolution path:
+pacman resolves every target before acting, and **one unresolvable target discards the entire
+transaction** (`pacman -Sp not-a-package bash` resolves neither). The old `packages.delete` list hit
+this for ten months (2025-11 → 2026-09-13): `yay` was gone, so `kitty-shell-integration` and
+`kitty-terminfo` sat on the list unremoved while `2>/dev/null || true` reported success.
 
-```
-$ pacman -Sp definitely-not-a-real-package-xyz bash
-error: target not found: definitely-not-a-real-package-xyz     # bash is NOT resolved
-$ pacman -Sp bash
-file:///var/cache/pacman/pkg/bash-5.3.15-1-x86_64.pkg.tar.zst
-```
-
-That made the delete path dead for most of this repo's life, and silent with it, because the call
-carried `2>/dev/null || true` and the success line printed unconditionally:
-
-| Date | What landed |
-|---|---|
-| 2025-10-29 | `yay` joins the delete list — and is uninstalled around the same time, so the list already carries an unresolvable target |
-| 2025-11-12 | `kitty-shell-integration`, `kitty-terminfo` join it |
-| 2025-12-04 | the removal call gains `2>/dev/null \|\| true`, hiding the error |
-| 2025-12-22 | the NVIDIA cleanup unconditionally appends three `nvidia-580xx-*` names that are never installed on the modern-driver path — from here every run is guaranteed ≥3 unresolvable targets |
-
-Found 2026-09-13: both kitty packages were still installed, ten months after being listed.
-
-**The delete list is now filtered to installed packages before paru sees it**, and stderr is no
-longer discarded. The orphan removal below it had the same silencing (though not the same
-unknown-target risk — `paru -Qtdq` only reports installed packages) and now reports failure too.
-
-**The install path is deliberately left alone.** It batches the same way, so one typo'd package
-name in `packages.yaml` does block all ~200 installs — but it `exit 1`s, so the apply stops and
-says so. Loud is the right behaviour there; the bug was only ever the silence.
+The current tool avoids the class: removals are `(applied − declared) ∩ installed` (never an
+unknown target), retired packages are marked `--asdeps` rather than removed by name (a still-needed
+dependency stays instead of failing the batch), and stderr is never discarded. Install still batches
+by design — one typo'd name in `packages.yaml` stops the apply loudly.
 
 ---
 
 ## Backup System
 
 **Tool**: Timeshift (preferred) for system snapshots
-**Integration**: Automatic pre-sync snapshots via package-manager
+**Integration**: none — package-manager no longer takes snapshots; Timeshift's own schedule covers it
 **Snapper**: Removed (not configured, Timeshift preferred)
 
 ### Automatic Retention Policy Configuration
@@ -494,20 +460,13 @@ Monitor disk usage:
 - `system-health` - Health monitoring dashboard
 - `df -h /` - Manual filesystem check
 
-### Integration with Package Manager
+### Manual snapshots
 
-**Automatic backups**: Package-manager auto-detects Timeshift for pre-sync snapshots.
-
-**Manual snapshots**:
 ```bash
 sudo timeshift --create --comments "Description"
 sudo timeshift --list
 sudo timeshift --restore
 ```
-
-**Workflow**: Before `package-manager sync`, interactive prompt offers snapshot creation. Backup tool auto-detected (prefers Timeshift).
-
-**Implementation**: `backup-manager.sh` (line 25-27) auto-detects Timeshift if installed.
 
 ### Scheduled Snapshots (Systemd Timers)
 

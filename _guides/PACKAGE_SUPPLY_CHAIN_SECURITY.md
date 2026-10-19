@@ -34,7 +34,7 @@ package appears on a seeded host), the build is **held** and a diff is printed:
 
 1. Read the diff. Look for added `source=` URLs, `npm`/`bun`/`curl`/`wget` in `prepare()/build()`,
    new dependencies, or `.install` hook changes (those run as **root**).
-2. If legitimate (real upstream update): `package-manager approve <pkg>` then re-run sync.
+2. If legitimate (real upstream update): `package-manager approve <pkg>` then re-run `chezmoi apply` (or `package-manager update`).
 3. If suspicious: do **not** approve. Investigate the package's AUR page / maintainer history first.
 
 Bootstrap note: on a fresh machine (unseeded hash DB) AUR packages install trust-on-first-use so

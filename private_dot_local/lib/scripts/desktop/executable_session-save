@@ -180,7 +180,7 @@ get_launch_command() {
 check_dependencies() {
     for cmd in hyprdrover hyprctl jaq; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            timeout 1 notify-send "Session Manager" "❌ Missing dependency: $cmd\nRun: package-manager sync" -u critical -t 5000 2>/dev/null || true
+            timeout 1 notify-send "Session Manager" "❌ Missing dependency: $cmd\nRun: chezmoi apply" -u critical -t 5000 2>/dev/null || true
             logger -t hypr-session "[ERROR] session-save: missing dependency $cmd"
             exit 1
         fi

@@ -17,18 +17,12 @@ case "$CHOICE" in
         "$SCRIPTS_DIR/user-interface/system-menu"
         ;;
     "󰏗 Install Package")
-        # Interactive package installation
-        if [ -f "$SCRIPTS_DIR/system/package-manager/package-manager" ]; then
-            {{ .globals.applications.terminal }} -e "$SCRIPTS_DIR/system/package-manager/package-manager" install
-        else
-            # Fallback to simple search and install
-            # An empty list: the picker answers with the typed text, which is
-            # dmenu's own contract for a query that matches nothing.
-            PACKAGE=$(printf '' | "$MENU_PICKER" --prompt "Package name to install")
-            if [ -n "$PACKAGE" ]; then
-                if confirm "Install package: $PACKAGE?"; then
-                    {{ .globals.applications.terminal }} -e sh -c "paru -S $PACKAGE; read -p 'Press Enter to continue...'"
-                fi
+        # An empty list: the picker answers with the typed text, which is
+        # dmenu's own contract for a query that matches nothing.
+        PACKAGE=$(printf '' | "$MENU_PICKER" --prompt "Package name to install")
+        if [ -n "$PACKAGE" ]; then
+            if confirm "Install package: $PACKAGE?"; then
+                {{ .globals.applications.terminal }} -e sh -c "paru -S $PACKAGE; read -p 'Press Enter to continue...'"
             fi
         fi
         ;;

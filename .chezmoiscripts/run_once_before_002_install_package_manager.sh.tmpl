@@ -116,7 +116,7 @@ else
     {{ includeTemplate "log_info" "paru already installed" }}
 fi
 
-# Install essential dependencies for package-manager.sh AND encryption key setup
+# Install essential dependencies for package-manager AND encryption key setup
 {{ includeTemplate "log_step" "Installing package-manager dependencies (yq, gum, rbw)..." }}
 paru -S --noconfirm --needed go-yq gum rbw
 {{ includeTemplate "log_success" "package-manager dependencies installed" }}
@@ -149,7 +149,7 @@ else
     {{ includeTemplate "log_info" "Flatpak already installed" }}
 fi
 
-# Add Flathub remote in user scope (matches package-manager.sh --user installs)
+# Add Flathub remote in user scope (matches package-manager --user installs)
 if ! flatpak remote-list --user | grep -q "flathub"; then
     flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     {{ includeTemplate "log_info" "Flathub remote added (user scope)" }}

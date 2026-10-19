@@ -35,7 +35,7 @@ disable = [
 
 # Package managers configuration
 [linux]
-# DISABLED: Package management handled by package-manager.sh
+# DISABLED: Package management handled by package-manager
 # arch_package_manager = "paru"
 # Show Arch news during updates
 show_arch_news = true
@@ -67,7 +67,5 @@ arguments = "--rebase --autostash --prune"
 "mise" = "mise plugins update && mise upgrade --yes && mise prune --yes"
 # Post-update system status
 "Post-update system status" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/system-health --brief"
-# Check for unmanaged packages (installed outside dotfiles)
-"Check for unmanaged packages" = "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager/package-manager merge --dry-run"
 # Remove orphaned packages (safe version - checks for orphans before attempting removal)
 "Remove orphaned packages" = "bash -c 'orphans=$(pacman -Qtdq 2>/dev/null); [ -n \"$orphans\" ] && sudo pacman -Rns $orphans --noconfirm || true'"

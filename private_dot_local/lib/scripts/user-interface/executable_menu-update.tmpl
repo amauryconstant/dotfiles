@@ -8,7 +8,7 @@
 . "$SCRIPTS_DIR/user-interface/menu-helpers.sh"
 
 # Menu options
-OPTIONS="󰁍 Back|󰚰 Full System Update|󰑓 Config Refresh (chezmoi)|󰦖 Package Sync Only|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
+OPTIONS="󰁍 Back|󰚰 Full System Update|󰑓 Config Refresh (chezmoi)|󰦖 Package Sync (chezmoi apply)|󰣐 Firmware Update|󰅐 Sync Time|󰒋 Update Mirrorlist"
 
 CHOICE=$(show_menu "Update" "$OPTIONS" "Menu" "󰁍 Back")
 
@@ -32,9 +32,9 @@ case "$CHOICE" in
             notify "󰑓 Chezmoi" "Dotfiles updated"
         fi
         ;;
-    "󰦖 Package Sync Only")
-        # Only sync to packages.yaml (no updates to other packages)
-        {{ .globals.applications.terminal }} -e sh -c "{{ .chezmoi.homeDir }}/.local/lib/scripts/system/package-manager/package-manager sync --prune; read -p 'Press Enter to continue...'"
+    "󰦖 Package Sync (chezmoi apply)")
+        # Package sync is chezmoi's job: the sync script re-runs when packages.yaml changed
+        {{ .globals.applications.terminal }} -e sh -c "chezmoi apply; read -p 'Press Enter to continue...'"
         ;;
     "󰣐 Firmware Update")
         if command -v fwupdmgr >/dev/null 2>&1; then

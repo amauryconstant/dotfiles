@@ -11,7 +11,7 @@
 Three foundation files (sourced, not on PATH for execution):
 - `gum-ui.sh` — terminal UI library (`ui_*`), sourced via `$UI_LIB` by system/ scripts.
 - `hook-runner` — user-hook dispatcher (documented in `dotfiles/CLAUDE.md`).
-- `state-manager.sh` — unified state tracking for toggle utilities (state dir `~/.local/state/dotfiles`); used by `*-toggle` scripts. (Package-manager has its own separate state-manager under `system/package-manager/core/`.)
+- `state-manager.sh` — unified state tracking for toggle utilities (state dir `~/.local/state/dotfiles`); used by `*-toggle` scripts.
 
 ## Gum UI Library - Primary Reference
 

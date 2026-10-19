@@ -391,7 +391,7 @@ if [ "$PREFLIGHT_FAILED" = true ]; then
     echo ""
     echo "  Common fixes:"
     echo "    1. Ensure desktop_hyprland module enabled in packages.yaml"
-    echo "    2. Run package sync: package-manager sync"
+    echo "    2. Run package sync: chezmoi apply"
     echo "    3. Reboot after driver installation"
     echo "    4. Enable SDDM: sudo systemctl enable sddm"
     echo ""

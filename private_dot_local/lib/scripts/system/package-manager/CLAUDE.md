@@ -1,331 +1,98 @@
-# Package-Manager v3.0 - Claude Code Reference
+# Package-Manager - Claude Code Reference
 
-**Location**: `/home/amaury/.local/share/chezmoi/private_dot_local/lib/scripts/system/package-manager/`
-**Parent**: See `../CLAUDE.md` for system scripts overview
-**Root**: See `/home/amaury/.local/share/chezmoi/CLAUDE.md` for core standards
+**Location**: `private_dot_local/lib/scripts/system/package-manager/`
+**Parent**: `../CLAUDE.md` (system scripts) · **Root**: `/CLAUDE.md` (core standards)
 
 **CRITICAL**: Be concise. Sacrifice grammar for concision and token-efficiency.
 
 ## Quick Reference
 
-- **Version**: 3.0.0
-- **Purpose**: Module-based declarative package management with NixOS-style version pinning
-- **Architecture**: 4-layer modular design
-- **Key features**: Version constraints, lockfile, hybrid update, Timeshift backup integration
-
-## Quick Commands
-
-```bash
-# Module management
-package-manager module list
-package-manager module enable base shell
-
-# Package operations
-package-manager sync              # Sync to packages.yaml
-package-manager sync --prune      # Sync + remove orphans it RECORDED (not a reliable way to retire a package — see Integration Points)
-package-manager install firefox   # Install single package
-package-manager update            # Sync + update all packages
-
-# Version pinning
-package-manager pin firefox 120.0
-package-manager lock              # Generate lockfile
-
-# Status & validation
-package-manager status
-package-manager validate
-package-manager outdated
-
-# Supply-chain tripwire (AUR PKGBUILD gate)
-package-manager approve --seed     # Bootstrap hash DB (run once after deploy)
-package-manager approve <pkg>...   # Review + approve changed/new AUR PKGBUILD
-package-manager approve --all      # Review every currently-blocked AUR package
-```
-
----
-
-## Architecture Overview
+- **Purpose**: install/remove the package set chezmoi declares; tripwire-gate AUR builds
+- **Main consumer**: `run_onchange_before_sync_packages.sh.tmpl` — runs the tool **from the chezmoi source tree** (it runs before file application, so `~/.local/lib` may not exist yet)
+- **Commands**: `sync <declared-file> [--dry-run]` · `update [--no-flatpak]` · `approve <pkg>…|--all|--seed`
 
 ```
 package-manager/
-├── executable_package-manager      # Entry point (CLI dispatch)
-├── core/               # Foundation
-│   ├── state-manager.sh     # Centralized state/cache (5 assoc. arrays) + lazy pacman/flatpak caches
-│   ├── constants.sh         # Type-safe constants (PACKAGE_TYPE_*, ICON_*, etc.)
-│   ├── config.sh            # Module access with caching (16 yq → 1)
-│   ├── state.sh             # State file I/O, atomic mutations, backups
-│   └── validation.sh        # Batch AUR validation (24x faster)
-├── operations/         # Workflows
-│   ├── sync-orchestrator.sh # 5-phase sync workflow
-│   ├── sync-pacman.sh       # Pacman sync + lockfile fast-path
-│   ├── sync-flatpak.sh      # Flatpak sync (user-scope only)
-│   ├── sync-lock.sh         # Flock-based concurrent sync protection
-│   ├── backup-manager.sh    # Timeshift/Snapper integration
-│   ├── lockfile-manager.sh  # Lockfile I/O, staleness detection
-│   └── pkgbuild-tripwire.sh # AUR PKGBUILD hash gate (tier detect + scan + record)
-├── packages/           # Logic
-│   ├── version-manager.sh   # Constraint parsing + vercmp comparison
-│   ├── batch-operations.sh  # Batch installs (5-10x faster)
-│   ├── package-operations.sh # Individual ops + state tracking
-│   └── flatpak-manager.sh   # Flatpak operations (user-scope)
-└── commands/           # CLI (cmd-sync, cmd-lock, cmd-status, cmd-approve, ...)
+├── executable_package-manager   # init (STATE_DIR, UI_LIB) + dispatch
+└── lib/  sync.sh  update.sh  approve.sh  tripwire.sh
 ```
 
-**Dependency rule**: Commands → Operations → Packages → Core (never reverse)
+## sync
 
----
+Input: a file of package names, one per line (`flatpak:` prefix for Flatpak). chezmoi renders it
+from `packages.yaml` — enabled modules flattened, **NVIDIA module chosen by `.nvidiaDriverType`**,
+not by the `enabled` flags of the two `graphics_drivers_*` modules. The tool knows nothing about
+modules, `enabled` or GPUs.
 
-## Initialization Sequence (CRITICAL)
+Order: classify (`pacman -Si` hit = official/chaotic → pacman; else AUR → paru) → tripwire check
+(any block → exit 1, nothing changes) → compute removals → mark retired `--asdeps` → install →
+mark declared `--asexplicit` → seed tripwire if bootstrap → orphan pass (`paru -Qtdq` → `-Rns`) →
+Flatpak install/uninstall → write state → fire `package-sync` hook.
 
-`STATE_DIR` **must** be defined BEFORE sourcing core modules (executable_package-manager:28-60):
+**Removal = applied-set diff.** `~/.local/state/package-manager/applied.txt` holds *declared ∩
+installed* after the last sync. Removals = `(applied − declared) ∩ installed`. So retiring a
+package is just deleting its line from `packages.yaml`; packages the tool never declared (archinstall
+base, hand installs) are never touched.
 
-```
-1. Define SCRIPT_DIR (line 26)
-2. Define global config: PACKAGES_FILE, STATE_DIR, STATE_FILE, LOCKFILE, feature flags (lines 28-52)
-3. mkdir -p "$STATE_DIR"
-4. Source core modules: constants → state-manager → config → state → validation
-```
+- Retired packages are marked `--asdeps` and left to the orphan pass, so one that is still a
+  dependency (kitty's terminfo) stays instead of aborting the transaction.
+- Removal runs **before** install so a driver swap's conflicting packages are gone first.
+- **No `applied.txt`** (first sync on a host) → record only, remove nothing. Packages retired
+  before that point are a one-time manual `paru -Rns`.
+- Guard: more than 10 removals → refuse unless `PACKAGE_MANAGER_ALLOW_REMOVE=1`. Empty pacman
+  list → refuse (a broken render must never mean "remove everything").
+- State is written from what is *actually installed*, so a tripwire-blocked or failed package is
+  not recorded as applied.
 
-**Why this matters**: `state-manager.sh` uses `CONSTRAINT_CACHE_FILE="${STATE_DIR:-.}/.constraint-cache"` — if `STATE_DIR` is undefined at load time, cache files are created in the CWD instead. This caused a real bug (v3.0.1) where `.constraint-cache` appeared in `~/.local/share/chezmoi/`. If you see stale files there: `rm ~/.local/share/chezmoi/.constraint-cache`
+**Test safely**: `PACKAGE_MANAGER_STATE_DIR=<scratch> UI_LIB=<gum-ui.sh> bash executable_package-manager sync <file> --dry-run`
+prints install/remove sets without sudo. Seed a fake `applied.txt` to see the diff; copy
+`pkgbuild-hashes.yaml` + `pkgbuilds/` into the scratch dir to test an established tripwire.
 
----
+**Hash trigger**: the template hashes `.packages` plus the dispatcher, `sync.sh` and `tripwire.sh`,
+so tool edits re-run the sync. New lib file the sync depends on → add its hash line too.
 
-## Core Module Purposes
+## update
 
-| Module | What it does |
-|--------|-------------|
-| `state-manager.sh` | 5 assoc. array caches (flatpak_apps, flatpak_versions, pacman_versions, modules, constraints); `_state_*` + `_cache_*` API; plus lazy `pacman -Q` / `flatpak list` loaders (`_get_cached_package_version`, `_is_flatpak_installed`, `_get_flatpak_version`) |
-| `constants.sh` | PACKAGE_TYPE_PACMAN/FLATPAK, CONSTRAINT_TYPE_*, scope constants, ICON_* glyphs; sourced first (no deps) |
-| `config.sh` | Single yq query loads all enabled modules into cache; subsequent calls from memory |
-| `state.sh` | Atomic state mutations (temp file + mv); auto-backup before sync; keep last 10 backups |
-| `validation.sh` | Batch AUR check (single paru query, 15s timeout, 24h disk cache) — 24x faster than sequential |
+Topgrade pre-command. **No sync, no removal** (the declared set lives only in chezmoi). Scans
+`paru -Qua` through the tripwire; any held AUR package → official `pacman -Syu` only. Then
+`flatpak update --user`.
 
----
+## State (`~/.local/state/package-manager/`)
 
-## Implementation Patterns
+| File | Purpose |
+|------|---------|
+| `applied.txt` | declared ∩ installed after the last sync (removal baseline) |
+| `pkgbuild-hashes.yaml` | tripwire approved-hash DB |
+| `pkgbuilds/<name>.snapshot` | approved PKGBUILD + `.install` blob, for diffs |
 
-### Never Use ui_spin for Interactive Operations
+Stale from the old tool, safe to delete: `locked-versions.yaml`, `package-state.yaml`, `backups/`.
 
-`ui_spin` runs in a subshell — **global state changes (cache updates) are lost** and **sudo/TTY prompts break**:
+## Supply-chain tripwire
 
-```bash
-# WRONG: Spinner breaks sudo prompts AND loses _CACHE_* updates
-ui_spin_verbose "Installing" "paru -S firefox"
+**Why**: the pipeline is unattended (`--noconfirm`); a hijacked AUR PKGBUILD would run arbitrary
+code on the next sync/update. Threat model: `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md`.
 
-# CORRECT: Direct call preserves TTY + global state
-ui_step "Installing packages..."
-if paru -S --needed firefox; then
-    ui_success "Packages installed"
-fi
-```
+- **Tiers**: official + chaotic-aur (signed binary sync repos) are never gated; only true AUR
+  (not in any sync repo) is. `wayfreeze-git`, `gpu-screen-recorder-git` are chaotic prebuilt → trusted.
+- **Hash** (`_tripwire_fetch`): `paru -G` clone; blob = `PKGBUILD` + sorted `*.install` (those run as
+  root via `pacman -U`), `sha256sum`'d against `pkgbuild-hashes.yaml`. `paru -G` clones into the
+  *pkgbase* dir (≠ pkgname for split packages) — the code takes the sole subdir. Changing the
+  recipe stales every hash → `package-manager approve --seed`.
+- **Fail-closed**: a failed fetch blocks the package.
+- **Bootstrap-aware** (`_tripwire_is_bootstrap`): DB absent/empty → trust-on-first-use, then
+  `sync` seeds it after the first successful install. Seeded DB → an AUR package not in it is NEW
+  and **blocked** until `package-manager approve <pkg>`. Capture bootstrap once, before any install.
+- **Review**: read the printed diff, `approve` only if legitimate. `--noconfirm` never bypasses the gate.
+- **SigLevel**: `Required DatabaseOptional`, enforced by `run_once_before_002`. Don't add
+  `LocalFileSigLevel`/`DatabaseRequired` — breaks the chaotic-aur bootstrap.
+- **`-git` blind spot**: a locally-built `-git` package's PKGBUILD hash is stable while HEAD moves.
+  None exist; if one is added, vendor a reviewed `#commit=`.
+- **Residual**: TOCTOU — `paru -S` re-fetches `source=()` at build time.
 
-**Safe for ui_spin**: queries (`ui_spin_silent`), build steps (`ui_spin_on_error`). Never for paru, flatpak, timeshift, snapper, or any function that mutates global caches.
+Runbook: `_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`. Trust-tier policy: `../CLAUDE.md`.
 
-### Stdout/Stderr Separation
+## Patterns
 
-Functions returning values via `echo` MUST redirect UI output to stderr:
-
-```bash
-_my_function() {
-    ui_info "Processing..." >&2    # UI → stderr
-    echo "$result"                  # Return value → stdout
-}
-```
-
-### Exit Code Capture
-
-Capture `$?` before any other statement — `if` clears it:
-
-```bash
-# WRONG: $? always 0 inside if block
-if cmd; then local status=$?; fi
-
-# CORRECT
-cmd; local status=$?
-if [[ $status -ne 0 ]]; then ...
-```
-
-### yq Variable Substitution (Security)
-
-All yq operations MUST use `env()` — `--arg` is jq-only, not supported by yq v4:
-
-```bash
-# WRONG (injection risk)
-yq eval ".packages.modules.$module.enabled = true"
-
-# CORRECT (safe, yq v4 style)
-MODULE="$module" yq eval '.packages.modules[env(MODULE)].enabled = true'
-```
-
----
-
-## packages.yaml Structure
-
-```yaml
-packages:
-  backup_tool: "timeshift"      # or "snapper" (auto-detects if omitted)
-
-  modules:
-    base:
-      enabled: true
-      packages:
-        - firefox                       # No constraint (latest)
-        - name: neovim
-          version: "0.9.5"             # Exact version
-        - name: python
-          version: ">=3.11"            # Minimum version
-        - name: nodejs
-          version: "<21.0.0"           # Maximum version
-        - flatpak:com.spotify.Client   # Flatpak (prefix required)
-```
-
-**Rules**: Flat module structure (no nesting); `enabled` required; Flatpak prefix `flatpak:`.
-
----
-
-## Integration Points
-
-**Retiring a package**: drop it from `.chezmoidata/packages.yaml`, then `paru -Rns <pkg>` by hand.
-The first step alone uninstalls nothing — it only stops *new* machines installing it.
-🚨 `--prune` is NOT the retirement path: it diffs the manifest against `package-state.yaml`
-(`_sync_prune_orphans`, `operations/sync-orchestrator.sh`), which only holds packages this tool
-installed or updated itself. Packages put there by the `run_onchange` script are unrecorded, the
-file may not exist at all, and `yq` failing behind `2>/dev/null` reads as "No orphaned packages
-found". There is no automatic path, by design: `packages.delete` is one-time migration cleanup,
-and no hook fires during `chezmoi apply`.
-
-**Chezmoi trigger**: `run_onchange_before_sync_packages.sh.tmpl` — hash change on packages.yaml
-re-runs that script, which is **self-contained and does not call `package-manager` at all** (it runs
-before `lib/scripts` is applied). It installs `packages.install` and applies `packages.delete`
-(one-time migration cleanup, not a retirement list); it never prunes. Retiring a package is a
-manual `paru -Rns`. `sync --prune` is manual, or via `package-manager update`, and only covers recorded packages.
-
-**Topgrade**: Pre-command calls `package-manager update` (sync + update all) before firmware/git/cleanup.
-
-**State file locations**:
-- `~/.local/state/package-manager/package-state.yaml` — installed package records
-- `~/.local/state/package-manager/locked-versions.yaml` — lockfile
-- `~/.local/state/package-manager/constraint-cache.yaml` — 1h TTL
-- `~/.cache/package-manager/aur-packages/` — AUR validation cache, 24h TTL
-- `~/.local/state/package-manager/pkgbuild-hashes.yaml` — tripwire approved-hash DB
-- `~/.local/state/package-manager/pkgbuilds/<name>.snapshot` — tripwire snapshots (PKGBUILD + .install, for diffs)
-
----
-
-## Supply-Chain Tripwire
-
-**Why**: pipeline was fully unattended (`--noconfirm`) — a hijacked AUR/`-git` PKGBUILD would build
-+ execute arbitrary code (build user, sudo available) on next sync/update with no review. See
-`_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (Atomic Arch / CHAOS RAT). Roadmap:
-`_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md`.
-
-**Mechanism**: hash gate between `packages.yaml` and the AUR build.
-- **Tier detection** (`_pkg_is_aur`): AUR-built iff NOT in any pacman sync repo (`pacman -Si` fails)
-  but resolvable via `paru -Si --aur`. Official + **chaotic-aur** (signed binary sync repos) are
-  never gated — only true AUR (PKGBUILD runs locally).
-- **Hash**: `paru -G` clones the AUR repo to a temp dir; the blob = `PKGBUILD` + every `*.install`
-  hook (sorted), `sha256sum`'d. `.install` hooks run as **root** via `pacman -U`, so they must be
-  covered — `paru -Gp` (PKGBUILD only) would miss them. Compared to the approved hash in
-  `pkgbuild-hashes.yaml`. Unchanged → builds unattended (`--noconfirm` kept). New/changed → **held**,
-  diff shown, requires `package-manager approve`. `paru -G` clones into a **pkgbase**-named dir
-  (≠ pkgname for split packages, e.g. samsung-unified-driver-common); the code takes the sole subdir.
-- **Fail-CLOSED**: if the clone/fetch fails, the package is **blocked** (cannot verify), not allowed.
-- **Module**: `operations/pkgbuild-tripwire.sh` (`_pkg_is_aur`, `_tripwire_fetch`, `_tripwire_check`,
-  `_tripwire_scan`, `_tripwire_record`, `_tripwire_seed`). Command: `commands/cmd-approve.sh`.
-
-**Wired into** (both pipelines): `cmd-update.sh` Phase 2 (scans `paru -Qua`; if any held → official
-`pacman -Syu` only, AUR held); `batch-operations.sh` + `package-operations.sh` (drop held AUR from
-the build); `sync-pacman.sh` `_sync_handle_downgrade` (gate AUR downgrades); and the self-contained
-`run_onchange_before_sync_packages.sh.tmpl` (inline gate sharing the same DB — it cannot source lib/,
-runs before file application). **The inline blob recipe must stay byte-identical to
-`_tripwire_fetch`** or hashes diverge and every AUR package falsely reads as "changed". That same
-script also auto-seeds the DB inline (mirrors `_tripwire_seed`, keep byte-identical for the same
-reason) — see the bootstrap-aware paragraph below.
-
-**New-package gate (bootstrap-aware)**: `_tripwire_is_bootstrap` distinguishes two states.
-- **Bootstrap** = DB file absent OR `.approved` empty → trust-on-first-use (fresh-machine
-  provisioning isn't bricked). New AUR packages build, no record written mid-run.
-- **Established** = DB seeded (non-empty) → an AUR package absent from the DB is genuinely NEW and is
-  **BLOCKED** until `package-manager approve <pkg>` (same UX as a changed PKGBUILD). This closes the
-  "add a package to `packages.yaml` → builds unreviewed" hole on any provisioned machine.
-`run_onchange_before_sync_packages.sh.tmpl` auto-seeds the DB itself right after the first
-successful sync completes in bootstrap mode (same effect as `package-manager approve --seed`, run
-once automatically instead of by hand) — this is what flips the host from bootstrap to established.
-It only fires while `TRIPWIRE_BOOTSTRAP` was true at the start of that run, so it never re-seeds
-(and silently approves) a package on an already-established host. Run `package-manager approve
---seed` manually to **re-seed after any change to the hash recipe** (`_tripwire_fetch`) — old
-hashes go stale — or on a host that was provisioned before this auto-seed existed.
-
-**Trust-tier install split**: official/chaotic packages (`pacman -Si` hit) install via
-`pacman -S --needed --noconfirm` (no local PKGBUILD); only true AUR builds through paru
-(tripwire-gated). Applied in `batch-operations.sh` and the inline sync recipe. `--noconfirm` kept on
-both — review is the tripwire block + `approve`, not an interactive paru diff (keeps topgrade
-unattended). The bootstrap-aware new-package rule is mirrored byte-consistently in the inline recipe.
-
-**`-git` note**: a *locally-built* `-git` AUR package would be a blind spot — its PKGBUILD hash is
-stable while upstream HEAD (the built code) moves. There are currently **none**: both `-git` packages
-(`wayfreeze-git`, `gpu-screen-recorder-git`) are served by **chaotic-aur as signed prebuilt binaries**
-(not local builds), so `_pkg_is_aur` treats them as trusted (same as official). If a true local-build
-`-git` package is ever added, pin it to a reviewed commit out-of-band (vendored `#commit=` PKGBUILD).
-
-**Residual limits**: TOCTOU — `paru -S` re-fetches upstream `source=()` at build time, so a tarball/
-git HEAD could change between check and build (out of scope).
-
-### Policy (the human contract)
-
-The above is the *mechanism*; this is the *policy* a human follows. Full user runbook:
-`_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md`. Trust-tier overview: `../CLAUDE.md` → "Package
-Security Policy".
-
-- **Review**: when the tripwire blocks (changed/new AUR build files), read the printed diff, then
-  `package-manager approve <pkg>` only if the change is legitimate. A blocked build is never
-  auto-confirmed — `--noconfirm` does not bypass the gate.
-- **SigLevel**: `Required DatabaseOptional` is enforced idempotently by `run_once_before_002`
-  (P1.3). Don't add stricter `LocalFileSigLevel`/`DatabaseRequired` — breaks the chaotic-aur
-  `pacman -U` bootstrap and unsigned official DBs.
-- **Pinning**: no local-build `-git` exists to pin (both are chaotic-aur signed binaries). Add a
-  reviewed `#commit=` only if a true local-build `-git` is ever introduced.
-- **chaotic-aur scrutiny**: `wayfreeze-git`, `gpu-screen-recorder-git` are the third-party
-  prebuilt-binary trust set — signature-validated, not locally built, so untripwired by design.
-
-**See**: `_research/archive/PACKAGE_SUPPLY_CHAIN_RESEARCH.md` (threat model),
-`_plans/archive/PACKAGE_SUPPLY_CHAIN_HARDENING.md` (roadmap, P0–P2 complete),
-`_guides/PACKAGE_SUPPLY_CHAIN_SECURITY.md` (runbook + IoC response).
-
----
-
-## Troubleshooting
-
-**Cache in wrong location** (STATE_DIR init order bug):
-```bash
-ls ~/.local/share/chezmoi/.constraint-cache  # Should NOT exist
-rm -f ~/.local/share/chezmoi/.constraint-cache
-```
-
-**Slow sync** (>10s for status):
-```bash
-package-manager lock  # Generate lockfile for fast-path
-rm -f ~/.local/state/package-manager/constraint-cache.yaml  # Clear stale cache
-```
-
-**Concurrent sync blocked**:
-```bash
-stat /tmp/package-manager-sync.lock  # Check age
-rm -f /tmp/package-manager-sync.lock  # Remove if stale (>30 min)
-```
-
-**YAML validation errors**:
-```bash
-package-manager validate    # Shows line numbers + context
-yq eval '.' ~/.chezmoidata/packages.yaml  # Verify syntax
-# Common: use 2-space indents, quote version constraints (">=1.0")
-```
-
-**Package state corruption**:
-```bash
-yq eval '.' ~/.local/state/package-manager/package-state.yaml  # Check syntax
-ls -t ~/.local/state/package-manager/backups/                  # List backups
-cp ~/.local/state/package-manager/backups/package-state-LATEST.yaml \
-   ~/.local/state/package-manager/package-state.yaml
-```
-
-**AUR validation timeout** (sequential fallback kicks in): Normal behavior — batch query timed out (15s), sequential with cache runs instead. Clear cache if slow repeatedly: `rm -rf ~/.cache/package-manager/aur-packages/`
+- `yq` always via `env()` (`NAME="$x" yq '.a[env(NAME)]'`) — never interpolate (injection vector).
+- Never wrap `paru`/`pacman`/`flatpak` in `ui_spin` (breaks sudo/TTY prompts).
+- Without a TTY gum-ui falls back to plain output, so the chezmoi run is safe unattended.

@@ -304,7 +304,7 @@ fi
 {{ includeTemplate "log_info" "" }}
 {{- else }}
 {{ includeTemplate "log_info" "Automated Snapshots: Disabled (manual snapshots only)" }}
-{{ includeTemplate "log_info" "  Manual snapshots via: package-manager sync (interactive)" }}
+{{ includeTemplate "log_info" "  Manual snapshots via: sudo timeshift --create" }}
 {{ includeTemplate "log_info" "" }}
 {{- end }}
 
@@ -338,8 +338,7 @@ if ! systemctl list-unit-files timeshift-hourly.timer >/dev/null 2>&1; then
     {{ includeTemplate "log_skip" "timeshift-systemd-timer not installed - automated scheduling unavailable" }}
     {{ includeTemplate "log_info" "To enable scheduled snapshots:" }}
     {{ includeTemplate "log_info" "  1. Add 'timeshift-systemd-timer' to packages.yaml" }}
-    {{ includeTemplate "log_info" "  2. Run: package-manager sync" }}
-    {{ includeTemplate "log_info" "  3. Re-run: chezmoi apply" }}
+    {{ includeTemplate "log_info" "  2. Run: chezmoi apply" }}
 else
 
 {{ includeTemplate "log_success" "timeshift-systemd-timer package detected" }}

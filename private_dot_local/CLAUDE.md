@@ -168,7 +168,7 @@ now resolve straight to `lib/scripts/utils/` and `lib/scripts/system/package-man
 1. `lib/scripts/` - Script library overview, **UI pattern standards by category**
 2. `lib/scripts/core/` - Gum UI library (system scripts only)
 3. `lib/scripts/system/` - System tools (UI library adopters)
-4. `lib/scripts/system/package-manager/` - Package manager module internals
+4. `lib/scripts/system/package-manager/` - Declared-set sync, update, tripwire
 5. `lib/scripts/desktop/` - Hyprland utilities
 6. `lib/scripts/user-interface/` - Menu system + hook tools
 7. `lib/scripts/media/` - Screenshots, wallpaper

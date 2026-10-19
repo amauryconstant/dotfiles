@@ -73,7 +73,7 @@ paths:
 
 | Script | Purpose | Trigger |
 |--------|---------|---------|
-| sync_packages | Package sync (Arch + Flatpak); also auto-seeds the AUR supply-chain trust DB on the first successful sync (bootstrap → established, equivalent to `package-manager approve --seed`) | First install AND `packages.yaml` changes |
+| sync_packages | Renders the declared set (enabled modules + NVIDIA choice) and runs `package-manager sync` from the source tree: installs it, removes what the previous sync declared but this one doesn't, tripwire-gates AUR; auto-seeds the trust DB on the first sync (bootstrap → established) | First install, `packages.yaml` change, or an edit to the tool (`executable_package-manager`, `lib/sync.sh`, `lib/tripwire.sh`) |
 
 **Timing**: Runs BEFORE file application (ensures packages exist for config scripts)
 
@@ -129,53 +129,23 @@ change. A `run_after_` script guards itself with a stamp and exits early once sa
 
 ## Package Installation Strategy
 
-**Single script approach**: `run_onchange_before_sync_packages.sh.tmpl` handles both:
+**Single script, one tool**: `run_onchange_before_sync_packages.sh.tmpl` renders the declared
+set and calls `package-manager sync` **from `{{ .chezmoi.sourceDir }}`** (it runs BEFORE file
+application, so `~/.local/lib/scripts` may not exist; none of the tool's files are templates, so
+the source copy is runnable as-is). `UI_LIB` points at the source `executable_gum-ui.sh`.
 
-- **First install**: Script runs (no prior hash) → installs all packages
-- **Updates**: Script re-runs when `packages.yaml` changes (hash-triggered sync)
-
-**Self-contained, by design**: the script shells out to `pacman`/`paru`/`flatpak` directly and
-**never calls `package-manager`** — it runs BEFORE file application, when `lib/scripts` is not yet
-on disk. Its own header says so.
-
-🚨 **Deleting a package from `packages.install` does NOT uninstall it.** The script installs what
-is declared and never prunes, so a package dropped from the list just stops being installed on new
-machines; every machine that already has it keeps it. **Retiring a package is a manual
-`paru -Rns <pkg>`.**
-
-`packages.delete` is **not** that mechanism. It is one-time migration cleanup — carrying a
-now-wrong package off a machine that was provisioned before the change (`yay` before paru, the
-kitty entries at the KDE→GTK migration). It is a poor fit for ongoing retirement: the hash covers
-all of `.packages`, so the block re-runs on *every* packages.yaml edit and no entry ever expires,
-making the list an unbounded denylist that will silently re-remove a package you deliberately
-reinstall.
-
-The block **filters to what is installed** before calling `paru -Rns`, and that guard is
-load-bearing: pacman aborts the whole transaction on one unknown target, so a single spent entry
-used to stop every other removal while `2>/dev/null || true` reported success. That is exactly what
-happened — `yay` went absent, and `kitty-shell-integration`/`kitty-terminfo` then sat on the list
-from 2025-11-12 until 2026-09-21 without being removed. With the filter in place a spent entry is
-harmless, so entries can stay as a record of the migration they came from.
+- **First install**: no prior hash → installs everything, records `applied.txt`, removes nothing.
+- **Later runs**: re-run when `.packages` or the tool's hashed files change.
+- **NVIDIA**: the template picks `graphics_drivers_legacy` or `_modern` from `.nvidiaDriverType`,
+  ignoring their `enabled` flags.
 
 ### Retiring a package
 
-Two manual steps, in order:
-
-```sh
-# 1. drop it from .chezmoidata/packages.yaml (declarative source of truth)
-# 2. remove it from this machine (every machine that has it):
-paru -Rns <pkg>
-```
-
-Step 1 alone uninstalls nothing.
-
-🚨 **`package-manager sync --prune` does NOT do this here.** It diffs `packages.yaml` against
-`~/.local/state/package-manager/package-state.yaml` (`_sync_prune_orphans`), and that file only
-records packages `package-manager` itself installed or updated. Packages installed by
-`run_onchange_before_sync_packages` (direct `pacman`/`paru`) are never recorded, so on this machine
-the file did not exist, `yq` failed behind `2>/dev/null`, and `--prune` printed "No orphaned
-packages found" with all five retired Quickshell-era packages still installed (2026-10-15). Treat a
-clean prune as *no information*, not as proof nothing is installed.
+Delete its line from `.chezmoidata/packages.yaml`; the next apply removes it. Removal is
+`(applied − declared) ∩ installed` (see `package-manager/CLAUDE.md`), so only packages a previous
+sync declared are ever removed. Exceptions: packages retired *before* `applied.txt` existed (manual
+`paru -Rns` once), and anything over the 10-removal guard (`PACKAGE_MANAGER_ALLOW_REMOVE=1`).
+A retired package that something else still depends on stays installed as a dependency.
 
 **See**: `private_dot_local/lib/scripts/system/CLAUDE.md` for package-manager details
 

@@ -52,7 +52,7 @@ paths:
 | `firefox_profiles` | manage-profiles script, `desktop/firefox-open`, `hypr/conf.d/firefox-profiles.lua.tmpl` | Chassis-filtered Firefox profile ids + `default` as JSON (`includeTemplate "firefox_profiles" . \| fromJson`); fails the render if `default` is outside the chassis set. Inside a `range`, test membership with `has .id $ff.ids` and use `$.` for root data |
 | `hypridle_general` | `hypr/hypridle.conf.tmpl`, `hypr/hypridle-nolock.conf.tmpl` | Shared `general {}` block so the two idle modes cannot drift on safety-critical settings (`before_sleep_cmd`) |
 
-NVIDIA driver selection is **not** a template include — `run_onchange_before_sync_packages.sh.tmpl` inlines the `yq` module toggle directly from `.nvidiaDriverType`.
+NVIDIA driver selection is **not** a template include — `run_onchange_before_sync_packages.sh.tmpl` picks the driver module in its `range` over `.packages.modules`, from `.nvidiaDriverType`.
 
 ---
 
