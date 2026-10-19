@@ -45,8 +45,8 @@ import Quickshell.Io
 // element menu-install's free-text prompt relies on, and the `case` statements
 // every one of them matches with are untouched.
 //
-// The caller is `desktop/quickshell-menu`, which falls back to wofi when this
-// socket is absent -- see that script for why the fallback is load-bearing.
+// The caller is `desktop/quickshell-menu`. With this socket absent it cancels
+// and says so (Wofi, its old fallback, was retired 2026-10-19).
 Singleton {
     id: root
 
@@ -86,8 +86,7 @@ Singleton {
             subtitle: item.subtitle ?? "",
             glyph: item.glyph ?? "",
             // A file:// URL, or anything else QtQuick.Image takes. It wins over
-            // the glyph, which stays the fallback for a missing file and for
-            // the Wofi path, where an image cannot be drawn at all.
+            // the glyph, which stays the fallback for a missing file.
             iconSource: item.iconSource ?? "",
             badge: item.badge ?? "",
             glyphColor: item.glyphColor ?? "",

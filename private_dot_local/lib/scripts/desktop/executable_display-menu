@@ -2,7 +2,7 @@
 
 # Script: display-menu
 # Purpose: List the connected outputs and enable/disable one
-# Requirements: Arch Linux, hyprctl, jaq, quickshell-menu (falls back to wofi)
+# Requirements: Arch Linux, hyprctl, jaq, quickshell-menu
 # Bound to: menu-setup -> Displays
 #
 # Surface §11. That entry asks for a picker over saved monitor *profiles*, and

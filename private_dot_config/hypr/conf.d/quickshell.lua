@@ -19,7 +19,6 @@ o.bind("SUPER + B", "Toggle status bar", "~/.local/lib/scripts/desktop/quickshel
 
 -- Primary keys. The old Wofi SUPER+D and wlogout SUPER+SHIFT+Q binds were
 -- removed with their tools (2026-10-15); duplicate binds STACK in Hyprland.
--- Wofi is not removable regardless: it serves cliphist and every --dmenu caller.
 o.bind("SUPER + D", "Application launcher", "~/.local/lib/scripts/desktop/quickshell-toggle launcher")
 o.bind("SUPER + SHIFT + Q", "Power menu", "~/.local/lib/scripts/desktop/quickshell-toggle power")
 

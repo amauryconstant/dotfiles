@@ -2,17 +2,17 @@
 
 # Script: quickshell-menu
 # Purpose: Present a list and print the chosen item — the dmenu contract, served
-#          by the Quickshell shell instead of Wofi
-# Requirements: Arch Linux, jaq, openbsd-netcat; wofi for the fallback path
+#          by the Quickshell shell (it replaced Wofi, retired 2026-10-19)
+# Requirements: Arch Linux, jaq, openbsd-netcat, hyprctl
 # Usage: printf 'a\nb\n' | quickshell-menu [--prompt "Title"]
 #            [--breadcrumb "Setup"] [--back "󰁍 Back"]
 #        printf '[{"title":"Dawn","payload":"rose-pine-dawn"}]' |
 #            quickshell-menu --json [--prompt "Title"]
-# Exit:  0 with the chosen line on stdout; 1 and no output when cancelled —
-#        identical to `wofi --dmenu`, because every caller tests for empty
+# Exit:  0 with the chosen line on stdout; 1 and no output when cancelled OR
+#        when the shell cannot be reached (with a `hyprctl notify` saying so) —
+#        every caller tests for empty, as it did for `wofi --dmenu`
 #
-# Reads items on stdin, newline-separated, exactly as `wofi --dmenu` does, so
-# converting a caller is a one-word change.
+# Reads items on stdin, newline-separated, exactly as `wofi --dmenu` did.
 #
 # --json takes a JSON ARRAY on stdin instead, one object per row, and answers
 # with the chosen row's `payload` rather than its visible text:
@@ -32,16 +32,14 @@
 # spend a row on 󰁍 Back — though the rows stay, because the value is a payload
 # the script dispatches through the arm it already has.
 #
-# 🚨 Both are IGNORED on the Wofi fallback path. Wofi has no header trail and no
-# key free for the gesture, so a submenu reached while the shell is down keeps
-# its 󰁍 Back row and nothing else changes. That is the reason the rows are kept
-# rather than replaced.
+# The 󰁍 Back rows stay even though the shell now answers the gesture: the value
+# is a payload the script dispatches through the arm it already has.
 #
-# 🚨 The Wofi fallback is load-bearing, not politeness. These menus run during
-# first-boot setup and while the shell is being restarted; a picker that hung
-# whenever the bar was down would take system-menu, theme-menu and every
-# menu-* script with it. Wofi therefore stays installed even though nothing
-# reaches for it while the shell is up.
+# 🚨 There is NO fallback picker (Wofi was it until 2026-10-19). These menus can
+# run during first-boot setup and while the shell is being restarted; with the
+# shell down they CANCEL, with a notice, instead of hanging. `hyprctl notify`,
+# not notify-send: the shell is the notification daemon, so a notify-send about
+# it being down has nothing to reach.
 #
 # Why a socket and not `quickshell ipc call`: an IPC handler returns
 # immediately, and `ipc call` exits 0 even for a target that does not exist. A
@@ -49,9 +47,7 @@
 
 PROMPT=""
 JSON_MODE=0
-# Optional navigation, ignored by the Wofi fallback (it has neither a header
-# trail nor a key free for it). A caller that omits both gets the surface it
-# always got.
+# Optional navigation. A caller that omits both gets the surface it always got.
 BREADCRUMB=""
 BACK=""
 
@@ -132,7 +128,7 @@ fi
 # and never answer, so liveness is probed first through the IPC socket, which
 # answers in ~35 ms (measured 2026-10-06) when the event loop runs. Only a
 # timeout (124) counts as hung; "No running instances" returns at once, and nc
-# then fails into the fallback as before.
+# then fails to connect.
 shell_responsive() {
     timeout 1 quickshell -c dotfiles ipc show >/dev/null 2>&1
     [ $? -ne 124 ]
@@ -144,36 +140,11 @@ if shell_responsive && RESULT=$(printf '%s\n' "$REQUEST" | nc -U "$SOCKET" 2>/de
     exit 0
 fi
 
-# No shell, or one that died: Wofi's own geometry, kept so the fallback looks
-# like what it replaces.
-if [ "$JSON_MODE" -eq 0 ]; then
-    printf '%s\n' "$ITEMS" | wofi --dmenu \
-        --prompt "$PROMPT" \
-        --width 295 \
-        --height 600 \
-        --cache-file /dev/null
-    exit $?
-fi
-
-# Wofi draws one string per row and answers with that string, so the structure
-# collapses here: headers are dropped, the glyph goes back in front of the
-# title, and the payload is recovered afterwards.
-#
-# ponytail: the payload is looked up by exact display text, so two rows with the
-# same title collapse into the first. Prefix the display line with the row index
-# if a menu ever needs duplicates.
-MAP=$(printf '%s' "$ITEMS" |
-    jaq -r '.[] | select(.header != true) | "\(.glyph // "")\t\(.title)\t\(.payload // .title)"')
-CHOICE=$(printf '%s\n' "$MAP" |
-    awk -F'\t' '{ print ($1 == "" ? $2 : $1 " " $2) }' |
-    wofi --dmenu \
-        --prompt "$PROMPT" \
-        --width 295 \
-        --height 600 \
-        --cache-file /dev/null)
-[ -n "$CHOICE" ] || exit 1
-
-PAYLOAD=$(printf '%s\n' "$MAP" |
-    awk -F'\t' -v choice="$CHOICE" '{ if (($1 == "" ? $2 : $1 " " $2) == choice) { print $3; exit } }')
-[ -n "$PAYLOAD" ] || exit 1
-printf '%s\n' "$PAYLOAD"
+# Only two ways here: the shell is hung (the probe timed out) or nc could not
+# connect (no shell, a stale socket file). A BUSY picker is not one of them: it
+# accepts and closes, so nc exits 0 with an empty answer, handled above.
+# Cancelled, not hung: the caller reads empty as Esc.
+MSG="Menu unavailable: the shell is not running or not answering"
+echo "quickshell-menu: $MSG" >&2
+hyprctl notify 3 5000 "rgb(ff4444)" "$MSG" >/dev/null 2>&1 || true
+exit 1

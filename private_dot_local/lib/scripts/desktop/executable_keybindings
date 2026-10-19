@@ -151,7 +151,6 @@ get_description() {
                 *"quickshell-toggle launcher"*) echo "Application launcher" ;;
                 *"quickshell-toggle power"*) echo "Power menu" ;;
                 *"quickshell-menu"*) echo "Menu" ;;
-                *"wofi"*) echo "Application launcher" ;;
                 *"dolphin"*) echo "File manager" ;;
                 *"cliphist"*) echo "Clipboard history" ;;
                 *"grim"*"slurp"*) echo "Screenshot (region)" ;;

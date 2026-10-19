@@ -111,8 +111,8 @@ fi
 
 **Theme System**:
 - `theme-switcher.tmpl` - Theme selection menu (uses `notify-send`)
-  - Reloads terminal, the bar (Quickshell via `ipc call theme reload`)
-    and wofi — each step skipped when the tool is absent or masked
+  - Reloads terminal and the bar (Quickshell via `ipc call theme reload`)
+    — each step skipped when the tool is absent or masked
   - Runs **every** `theme-apply-*` in `desktop/` via a glob loop — a new one wires itself
   - Triggers the `theme-change` hook for user customization
 
@@ -184,12 +184,12 @@ fi
 
 **UI Pattern**: All menu scripts use `menu-helpers.sh` (picker + notify-send)
 
-🚨 **The renderer is Quickshell, not Wofi.** Since 2026-09-09 `show_menu()` and `confirm()` call
+🚨 **The renderer is Quickshell; Wofi is retired (2026-10-19).** Since 2026-09-09 `show_menu()` and `confirm()` call
 `desktop/quickshell-menu`, which speaks to `MenuServer.qml` over
 `$XDG_RUNTIME_DIR/quickshell-menu.sock` — a **socket**, not `ipc call`, because a dmenu call has
-to block until the user chooses and an IPC handler returns immediately. **Wofi is the fallback**
-when the socket is unreachable, and the two paths are contract-identical: empty stdout means
-cancelled. See `user-interface/CLAUDE.md`.
+to block until the user chooses and an IPC handler returns immediately. **There is no fallback**:
+with the shell unreachable `quickshell-menu` prints a `hyprctl notify` and exits 1, which callers
+read as cancelled. See `user-interface/CLAUDE.md`.
 
 **Main menu categories**:
 | Icon | Category | Script | Purpose |
@@ -319,7 +319,7 @@ name from an earlier PATH entry — the last three were removed 2026-09-14.
 |----------|------------|-----------|
 | **System scripts** | gum-ui library (`ui_*` functions) | CLI tools, interactive, need rich terminal UI |
 | **Desktop utilities** | notify-send | Keybinding-triggered, minimal overhead, native notifications |
-| **Menu scripts** | menu-helpers.sh (`quickshell-menu` + notify-send) | One picker surface for every caller; Wofi only as fallback |
+| **Menu scripts** | menu-helpers.sh (`quickshell-menu` + notify-send) | One picker surface for every caller; no fallback (shell down = cancelled + notice) |
 | **Template scripts** | `{{ includeTemplate "log_*" }}` | Chezmoi lifecycle scripts, templated output |
 | **Other utilities** | Varies by context | git-prune-branch uses gum-ui, others as needed |
 

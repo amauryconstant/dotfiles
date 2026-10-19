@@ -293,7 +293,6 @@ packages:
         - awww # Dynamic wallpaper daemon with smooth transitions (renamed from swww)
         - cliphist # Clipboard history manager
         - gitleaks # Secret detection for clipboard filter
-        - wofi # Application launcher
         - wl-clipboard # Wayland clipboard CLI utilities
         - libqalculate # qalc, the Quickshell launcher's `=` calculator mode
         - pamixer # PulseAudio/PipeWire mixer CLI

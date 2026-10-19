@@ -84,8 +84,8 @@ the meters payload's missing temperature
   2026-09-09: 18 role keys (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_1..5`),
   six module-named ones deleted for having no consumer. `Theme.qml` is therefore no longer a
   translation layer — it reads the key of the same name and adds only the **derived** tier.
-  `waybar.css`, `wofi.css`, `swaync.css.tmpl` and the rest carry their own variables and were
-  never involved. See `.claude/rules/quickshell-qml.md`
+  the CSS-named files (`waybar.css`, `wofi.css`, `swaync.css.tmpl`, all retired) carried their own
+  variables and were never involved. See `.claude/rules/quickshell-qml.md`
 - 🚨 **The second ink is OFFERED, not guaranteed.** `Theme.inkSecondary` falls back to
   `inkPrimary` wherever it fails 4.5:1 on `groundBase` — rose-pine-dawn (4.02) and both
   Solarized sets. One derivation instead of hand-editing two palettes; design page 01 states
@@ -119,10 +119,10 @@ the meters payload's missing temperature
 - 🚨 **The primary keys are plain binds in `hypr/conf.d/quickshell.{lua,conf}`.** The old Wofi
   `SUPER+D` and wlogout `SUPER+SHIFT+Q` were gated off from 2026-09-01 and deleted with their tools
   on 2026-10-15 — duplicate binds *stack* in Hyprland, so never re-add one beside these.
-  **Wofi is now a FALLBACK, not a renderer.** `SUPER+C` was taken the same way on 2026-09-09
-  and `SUPER+SHIFT+C` retired (deletion is Shift+Delete inside the surface). It stays installed
-  because `quickshell-menu` falls back to it when the shell is unreachable — during first-boot
-  setup, and across a shell restart — which is the one thing a blocking picker must never do
+  **Wofi was retired 2026-10-19: there is no fallback renderer.** `SUPER+C` was taken the same way
+  on 2026-09-09 and `SUPER+SHIFT+C` retired (deletion is Shift+Delete inside the surface). With the
+  shell unreachable — first-boot setup, a shell restart — `quickshell-menu` and `quickshell-toggle`
+  report via `hyprctl notify` and exit 1 (callers read that as cancelled) instead of hanging
 - 🚨 **`chezmoi apply` does not reliably reload the running shell.** The log will still say
   *"Configuration Loaded"* while the live generation is the pre-apply one — chezmoi replaces
   files by rename, which a per-file watch does not survive, and the watcher compares content
@@ -250,7 +250,7 @@ modifier further and the footer says so.
 ## The dmenu substrate — `MenuServer.qml` + `desktop/quickshell-menu`
 
 Twenty-two scripts in this repo ask the user to pick from a list. Sixteen route through
-`show_menu()` in `user-interface/menu-helpers.sh`; the rest called `wofi --dmenu` directly. All of
+`show_menu()` in `user-interface/menu-helpers.sh`; the rest called `wofi --dmenu` directly (Wofi retired 2026-10-19). All of
 them now reach the shell.
 
 🚨 **A socket, not IPC.** A dmenu call is request/response and **blocking** — the script must not
@@ -295,9 +295,8 @@ both times. Esc is deliberately *not* rebound either: leaving a submenu and aban
 menu are different intents, and the caller can tell them apart because back answers with a payload
 while cancel answers with nothing.
 
-🚨 **The Back rows stay.** Both fields are ignored on the Wofi fallback path — Wofi has no header
-trail and no key free for the gesture — so a submenu reached while the shell is down would have no
-way back at all if the rows had been removed.
+🚨 **The Back rows stay.** The fields were ignored on the Wofi fallback path (retired), which is why
+the rows were kept; they are still the payload each script dispatches through its existing arm.
 
 ### Rich items — `quickshell-menu --json`
 
@@ -312,7 +311,7 @@ above rather than packing glyph, state and payload into one label:
 ```
 
 `iconSource` is any URL `QtQuick.Image` accepts and **wins over `glyph`**, which stays the
-fallback for a missing file and for the Wofi path, where no image can be drawn at all.
+fallback for a missing file.
 `theme-menu` uses it for the per-theme brand marks vendored in `themes/<name>/icon.png` — see
 `themes/CLAUDE.md` for their provenance.
 
@@ -325,9 +324,7 @@ fallback for a missing file and for the Wofi path, where no image can be drawn a
 `theme-menu` shipped its slug through the picker as a visible `|rose-pine-dawn` suffix that the
 user read and the fuzzy match hit.
 
-The Wofi fallback flattens what it cannot draw: headers dropped, glyph pasted back in front of
-the title, payload recovered afterwards by exact display text. `theme-menu` is the only caller
-using the JSON form today.
+`theme-menu` is the only caller using the JSON form today.
 
 ## Clipboard — `clipboard/ClipboardPicker.qml`
 

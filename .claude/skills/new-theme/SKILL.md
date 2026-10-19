@@ -29,11 +29,11 @@ Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardc
 
 `colors.sh` is the role layer and the one Quickshell (`Theme.qml`) and the shell scripts read: **18 keys**, named by ROLE — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by CSS name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
 
-Then carry the same palette into the CSS-vocabulary file `wofi.css` (24 `@define-color`: `@bg-*`, `@fg-*`, `@accent-*`) and propagate the hex values into every other file in the theme dir. The two vocabularies have no translation layer — keep them in step by hand.
+Then propagate the hex values into every other file in the theme dir (`ghostty.conf`, `hyprland.*`, `btop.theme`, `firefox-userChrome.css`'s `--bg-*`/`--fg-*` variables, …) by hand; there is no CSS-vocabulary reference file any more (`wofi.css`, the last one, was retired 2026-10-19), so `colors.sh` is the single source.
 
 ## Step 4: Check contrast (mandatory)
 
-**Rule**: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) MUST pair with `@fg-primary` for all text/icons. `@fg-secondary` on an elevated surface fails WCAG AA (4.5:1) on several existing themes. If your `@fg-secondary` against `@bg-secondary` is below 4.5:1, document the theme as "Use PRIMARY only" in its `STYLE-GUIDE.md` (precedent: Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light; ratio table in `themes/CLAUDE.md`).
+**Rule**: elevated surfaces (`GROUND_RAISED`, `GROUND_FLOAT`; `FILL_INERT` carries no text) MUST pair with `INK_PRIMARY` for all text/icons. `INK_SECONDARY` on an elevated surface fails WCAG AA (4.5:1) on several existing themes. If your `INK_SECONDARY` against `GROUND_RAISED` is below 4.5:1, document the theme as "Use PRIMARY only" in its `STYLE-GUIDE.md` (precedent: Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light; ratio table in `themes/CLAUDE.md`).
 
 Run `mise run lint:theme-contrast` (`-- --report` for the tables). It reads every colorset, including the new one, and is part of `mise run lint`. Fix any failure in `colors.sh`; do not excuse it.
 

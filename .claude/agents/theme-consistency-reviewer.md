@@ -28,8 +28,8 @@ it replaces an 8-theme eyeball pass with three greps.
 - Flag missing files as blocking; flag extra files not present in the reference as a warning to confirm intentional
 
 ### Contrast Safety
-- Run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across all 8 colorsets (4.5:1 text, 3:1 graphics). Report any failure as blocking; do not re-derive ratios by grepping `wofi.css`.
-- For `wofi.css` and the other CSS-vocabulary files, which that task does not measure: elevated surfaces (`@bg-secondary`, `@bg-tertiary`, `@bg-overlay`) must pair with `@fg-primary` only. `@fg-secondary` on one is blocking for a documented "PRIMARY only" theme (Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light — `themes/CLAUDE.md`), a warning for a new theme.
+- Run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across all 8 colorsets (4.5:1 text, 3:1 graphics). Report any failure as blocking; do not re-derive ratios by grepping CSS files.
+- For files that task does not measure (e.g. `firefox-userChrome.css`): elevated surfaces (`--bg-secondary`, `--bg-tertiary`, `--bg-overlay`) must pair with `--fg-primary` only. `--fg-secondary` on one is blocking for a documented "PRIMARY only" theme (Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light — `themes/CLAUDE.md`), a warning for a new theme.
 
 ### hyprland.lua Format
 - An override module calling `hl.config({ general = { col = { active_border = …, inactive_border = … } } })` — a file that `return`s a table loads and silently does nothing
@@ -41,7 +41,7 @@ it replaces an 8-theme eyeball pass with three greps.
 - No file in a theme dir is a template — any `{{ }}` found is generator corruption, not a template feature
 
 ### Hex Consistency
-- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `wofi.css`, `hyprland.conf`, and `hyprland.lua`
+- The same semantic color should render as the same hex value (and same case — pick one of upper/lower and stay consistent within the theme) across `colors.sh`, `hyprland.conf`, and `hyprland.lua`
 - A mismatch usually means one file was updated during a recolor and a sibling was missed
 
 ### STYLE-GUIDE.md

@@ -222,9 +222,9 @@ what `Super+/` reaches when the shell is down
 🚨 `quickshell-toggle` **starts `quickshell.service`**, never a bare `quickshell` — a shell
 launched any other way is unsupervised. It clears a spent restart budget (`reset-failed`) first,
 because that is exactly the state in which the user has no bar left to ask with.
-When the tree is not deployed or the unit will not come up, the targets that had a
-predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wofi`, power → `menu-system`,
-keybindings → `desktop/keybindings`, notifications → nothing (swaync is retired).
+When the tree is not deployed or the unit will not come up there is NO fallback tool (Wofi,
+wlogout and swaync are retired; `menu-system` and `desktop/keybindings` render through the shell
+too): it reports via `hyprctl notify` — not notify-send, the shell is the notification daemon.
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
 **EGL**: `egl-wayland2-patched <name> <cmd…>` runs a client on the patched egl-wayland2 (bounded

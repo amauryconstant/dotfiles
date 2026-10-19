@@ -2,7 +2,7 @@
 
 # Script: capture-menu
 # Purpose: Pick a capture mode from the Quickshell picker
-# Requirements: Arch Linux, quickshell-menu (falls back to wofi)
+# Requirements: Arch Linux, quickshell-menu
 # Bound to: CTRL ALT SHIFT + Print
 #
 # Surface §15 wants the capture modes discoverable. They already all exist as

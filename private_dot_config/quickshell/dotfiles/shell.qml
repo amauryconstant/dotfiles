@@ -73,9 +73,8 @@ ShellRoot {
     }
 
     // SUPER+D, from hypr/conf.d/quickshell.lua, via quickshell-toggle. Took
-    // the primary key on 2026-09-01; the Wofi binding is GATED OFF on the same
-    // flag rather than shadowed, because duplicate binds stack in Hyprland.
-    // Wofi itself stays — cliphist and every --dmenu caller.
+    // the primary key on 2026-09-01; the Wofi binding was removed rather than
+    // shadowed, because duplicate binds stack in Hyprland.
     IpcHandler {
         target: "launcher"
 

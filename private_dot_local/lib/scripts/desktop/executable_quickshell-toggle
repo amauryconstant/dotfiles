@@ -68,10 +68,10 @@ toggle_target() {
         return 0
         ;;
     *)
-        # Also to stderr: THIS SHELL is the notification daemon, so a
-        # notify-send about it being down has nothing to reach.
-    echo "quickshell-toggle: $TARGET not responding" >&2
-        notify-send "󰕮 Quickshell" "$TARGET not responding" -t 2000
+        # hyprctl notify, not notify-send: THIS SHELL is the notification
+        # daemon, so a notify-send about it being down has nothing to reach.
+        echo "quickshell-toggle: $TARGET not responding" >&2
+        hyprctl notify 3 5000 "rgb(ff4444)" "Quickshell: $TARGET not responding" >/dev/null 2>&1 || true
         return 1
         ;;
     esac
@@ -82,30 +82,15 @@ if shell_running; then
     exit $?
 fi
 
-# The surfaces that had a tool before the shell replaced them fall back to it
-# when the shell cannot be reached: the flag is off (no shell.qml deployed), or
-# the unit will not come up. Without this, SUPER+D and the system menu's Apps /
-# Clipboard History entries were dead whenever the shell was. Overview and the
-# popovers never had a predecessor, so they only report the failure.
-fallback() {
-    case "$TARGET" in
-    launcher) exec wofi --show drun ;;
-    clipboard)
-        # main's menu-trigger pipeline, verbatim
-        cliphist list | wofi --dmenu | cliphist decode | wl-copy
-        exit $?
-        ;;
-    power) exec "$HOME/.local/lib/scripts/user-interface/menu-system" ;;
-    keybindings) exec "$HOME/.local/lib/scripts/desktop/keybindings" ;;
-    *) ;;
-    esac
-    return 1
-}
-
 # No deployed tree (a broken apply). Starting the unit would only fail its
-# ConditionPathExists, so skip straight to the predecessor tool.
+# ConditionPathExists, so report it at once.
+#
+# 🚨 There is no fallback tool: Wofi (launcher, clipboard) and wlogout/swaync
+# are retired, and menu-system and the keybindings sheet render through the
+# shell too. And NOT notify-send: THIS SHELL is the notification daemon, so
+# `hyprctl notify` is the only channel that still reaches the screen.
 if [ ! -f "$HOME/.config/quickshell/$CONFIG/shell.qml" ]; then
-    fallback
+    hyprctl notify 3 5000 "rgb(ff4444)" "Quickshell not deployed" >/dev/null 2>&1 || true
     echo "quickshell-toggle: shell not deployed (~/.config/quickshell/$CONFIG missing)" >&2
     exit 1
 fi
@@ -139,6 +124,5 @@ while [ "$_tries" -gt 0 ]; do
 done
 
 echo "quickshell-toggle: failed to start shell" >&2
-notify-send "󰕮 Quickshell" "Failed to start shell" -t 2000
-fallback
+hyprctl notify 3 5000 "rgb(ff4444)" "Quickshell failed to start" >/dev/null 2>&1 || true
 exit 1

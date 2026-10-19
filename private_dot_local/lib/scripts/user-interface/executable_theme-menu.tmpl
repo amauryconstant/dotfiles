@@ -28,8 +28,7 @@ TAB=$(printf '\t')
 
 CURRENT_THEME=$("$THEME_SWITCHER" current --slug)
 
-# The FALLBACK mark for a theme with no icon.png, and the only thing the Wofi
-# path can draw. Presentation, so it stays here — unlike the dark/light arm,
+# The FALLBACK mark for a theme with no icon.png. Presentation, so it stays here — unlike the dark/light arm,
 # which theme-switcher owns.
 theme_glyph() {
     case "$1" in

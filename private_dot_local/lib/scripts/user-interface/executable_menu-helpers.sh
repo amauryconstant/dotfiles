@@ -2,13 +2,14 @@
 
 # Script: menu-helpers.sh
 # Purpose: Shared utilities for menu system
-# Requirements: Arch Linux, quickshell-menu (falls back to wofi on its own)
+# Requirements: Arch Linux, quickshell-menu
 
 # 🚨 THE choke point. Sixteen menu-* scripts reach the user only through these
 # two functions, so the picker is swapped here and nowhere else. quickshell-menu
 # speaks the same contract Wofi did -- items on stdin, the choice on stdout,
-# exit 1 and no output when cancelled -- and falls back to Wofi itself whenever
-# the shell is not reachable, which is why nothing below has to care.
+# exit 1 and no output when cancelled. With the shell unreachable it cancels
+# (and says so via hyprctl notify): there is no fallback picker since Wofi was
+# retired, which is why nothing below has to care.
 MENU_PICKER="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/quickshell-menu"
 
 # Show menu
@@ -17,8 +18,8 @@ MENU_PICKER="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}/desktop/quickshell-menu"
 # breadcrumb and back are design page 10's navigation model: the trail drawn
 # before the prompt, and what to answer when the user presses Left or Backspace
 # on an empty query. `back` is a payload, so pass the SAME string the script's
-# 󰁍 Back case arm already matches and nothing else has to change. Both are
-# ignored on the Wofi fallback path, which is why the Back rows stay.
+# 󰁍 Back case arm already matches and nothing else has to change. The Back
+# rows stay: the value is a payload the script already dispatches.
 show_menu() {
 	prompt="$1"
 	options="$2"

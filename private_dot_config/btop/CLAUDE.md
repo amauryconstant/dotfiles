@@ -32,15 +32,15 @@ Switching themes via `theme switch <name>` updates the `current` symlink; btop p
 
 ## Semantic Variable Mapping (Summary)
 
-Cross-reference hex values against the variant's `wofi.css` `@define-color` declarations.
+Cross-reference hex values against the variant's `colors.sh` role keys (mapping table in `../themes/CLAUDE.md`).
 
-**Key mappings** — `@`-names are `wofi.css` **CSS** variables, which `btop.theme` cross-references;
-the role-named `colors.sh` set is a separate vocabulary (see `../themes/CLAUDE.md`).
+**Key mappings** — the `@`-names are the retired `wofi.css` CSS vocabulary; read them through the role mapping in
+`../themes/CLAUDE.md`.
 `main_bg` → `@bg-primary`, `main_fg` → `@fg-primary`, `inactive_fg` → `@fg-muted`, box outlines (cpu/mem/net/proc) → distinct accent colors, gradient triplets → semantic gradient (success→warning→error for temp; info→secondary→primary for CPU).
 
 **Cross-reference command**:
 ```bash
-grep "@define-color" ~/.config/themes/{variant}/wofi.css
+grep "readonly" ~/.config/themes/{variant}/colors.sh
 ```
 
 ---

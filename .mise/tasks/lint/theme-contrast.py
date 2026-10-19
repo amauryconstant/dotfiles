@@ -17,7 +17,7 @@ taking them for grounds invents failures that do not exist on screen.
 
 Two thresholds, per WCAG 2.1: 4.5:1 for text, 3:1 for UI components and
 graphics (an outline, a progress fill). Pairs marked INHERENT are properties of
-the shipped colorsets — wofi renders the same ratios today —
+the shipped colorsets — older tools rendered the same ratios —
 so they are reported for the record and are not defects in this tree.
 """
 import glob
@@ -87,8 +87,8 @@ ACCEPTED = {
 # two lines above an FG_ token invents failures that are not on screen.
 #
 # 🚨 There is no INHERENT escape hatch any more. It used to excuse five
-# accent-as-text pairs on the grounds that wofi renders the same ratios, and
-# parity with an older tool is not a reason to ship failing text. The rules
+# accent-as-text pairs on the grounds that an older tool rendered the same ratios, and
+# parity with that tool is not a reason to ship failing text. The rules
 # changed instead: no accent is drawn as text in this tree now, and the warn and
 # info roles are not drawn as graphics either — the battery, the idle
 # indicator, the bell and the dictation widget all moved their non-error states

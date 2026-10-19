@@ -5,9 +5,9 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Application launcher, design page Shell-05-Launcher. Replaces Wofi as THE APP
-// LAUNCHER; the dmenu callers move to MenuPicker and the clipboard to
-// ClipboardPicker, so Wofi survives only as those two surfaces' fallback.
+// Application launcher, design page Shell-05-Launcher. Replaced Wofi as THE APP
+// LAUNCHER (Wofi itself was retired 2026-10-19); the dmenu callers moved to
+// MenuPicker and the clipboard to ClipboardPicker.
 //
 // The chrome -- window, panel, header, list, footer, keyboard model -- is
 // PickerSurface, shared with the clipboard and the menu. What is left here is
@@ -34,7 +34,13 @@ PickerSurface {
                 iconSource: Quickshell.iconPath(entry.icon, true),
                 glyph: Config.windowGlyphFallback
             }))
-    property var quickAccessCache: []
+    // Launch counts per desktop-entry id, persisted in Quickshell's state dir.
+    property var usageCounts: ({})
+    readonly property list<var> quickAccessCache: root.rankByUsage(root.usageCounts)
+    // Where the history came from before the launcher kept its own: Wofi's
+    // `<count> <desktop file path>` cache. Read ONCE, only when the launcher's
+    // own file does not exist yet, so the ranking survives the move.
+    property string seedPath: ""
     // The evaluated value of an `=` expression, or "" while there is none.
     property string calcResult: ""
     // 🚨 The only failure this surface can actually observe. DesktopEntry
@@ -45,33 +51,39 @@ PickerSurface {
     // the launcher refuses to close, the one place Return does not dismiss it.
     property string launchError: ""
 
-    // Empty-query quick access. Reuses Wofi's own usage cache (~/.cache/
-    // wofi-drun, "<count> <desktop file path>" per line) rather than building a
-    // second usage tracker — Wofi stays installed as the picker fallback and
-    // keeps writing that file whenever it runs, so the data is real.
-    // ponytail: read-only — a launch from here does not increment the cache, so
-    // it drifts stale as Wofi is used less. That is also why the footer's prefix
-    // hint is permanent rather than fading after a few uses: it costs one line
-    // and never claims knowledge the shell does not have.
-    function parseQuickAccess(text: string): list<var> {
-        const byId = {};
-        for (const entry of DesktopEntries.applications.values)
-            if (entry && !entry.noDisplay && entry.name)
-                byId[entry.id] = entry;
-        const counted = [];
+    // Empty-query quick access: the most-launched entries. The launcher keeps
+    // its own `<count> <id>` file; lines seeded from Wofi's cache carry a full
+    // `.desktop` path instead, so both shapes reduce to the bare entry id.
+    function parseUsage(text: string): var {
+        const counts = {};
         for (const line of text.split("\n")) {
             const m = /^(\d+)\s+(.+)$/.exec(line.trim());
             if (!m)
                 continue;
-            const entry = byId[m[2].split("/").pop().replace(/\.desktop$/, "")];
-            if (entry)
+            const id = m[2].split("/").pop().replace(/\.desktop$/, "");
+            counts[id] = (counts[id] ?? 0) + parseInt(m[1], 10);
+        }
+        return counts;
+    }
+
+    function rankByUsage(counts: var): list<var> {
+        const counted = [];
+        for (const entry of DesktopEntries.applications.values)
+            if (entry && !entry.noDisplay && entry.name && counts[entry.id])
                 counted.push({
                     entry,
-                    count: parseInt(m[1], 10)
+                    count: counts[entry.id]
                 });
-        }
         counted.sort((a, b) => b.count - a.count);
         return counted.slice(0, Config.launcherMaxResults).map(c => c.entry);
+    }
+
+    function recordLaunch(id: string): void {
+        const counts = Object.assign({}, root.usageCounts);
+        counts[id] = (counts[id] ?? 0) + 1;
+        root.usageCounts = counts;
+        // FileView creates the missing parent directory on first write.
+        usageFile.setText(Object.keys(counts).map(k => `${counts[k]} ${k}`).join("\n") + "\n");
     }
 
     // Ranking, compressed from Omarchy's services/AppSearch.js: a prefix beats
@@ -145,6 +157,7 @@ PickerSurface {
             root.launchError = String(e.message ?? e);
             return;
         }
+        root.recordLaunch(entry.id);
         root.close();
     }
 
@@ -159,10 +172,7 @@ PickerSurface {
     placeholder: qsTr("Search applications")
 
     onAccepted: root.activate()
-    onOpened: {
-        root.launchError = "";
-        usageFile.reload();
-    }
+    onOpened: root.launchError = ""
     onResultsChanged: {
         root.selected = 0;
         root.launchError = "";
@@ -171,11 +181,20 @@ PickerSurface {
     FileView {
         id: usageFile
 
-        path: `${Quickshell.env("HOME")}/.cache/wofi-drun`
+        atomicWrites: true
+        path: Quickshell.statePath("launcher-usage")
         printErrors: false
 
-        onLoadFailed: root.quickAccessCache = []
-        onLoaded: root.quickAccessCache = root.parseQuickAccess(usageFile.text())
+        // No file of our own yet: take Wofi's history once.
+        onLoadFailed: root.seedPath = `${Quickshell.env("HOME")}/.cache/wofi-drun`
+        onLoaded: root.usageCounts = root.parseUsage(usageFile.text())
+    }
+
+    FileView {
+        path: root.seedPath
+        printErrors: false
+
+        onLoaded: root.usageCounts = root.parseUsage(this.text())
     }
 
     // qalc ships in libqalculate. If it is not installed the process fails, the

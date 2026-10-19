@@ -13,16 +13,16 @@
 - **Hook tools**: `hook-create`, `hook-edit`, `hook-list`, `hook-test`
 - **Extra bindings**: `dotfiles-bindings-edit`
 - **UI pattern**: `menu-helpers.sh` (show_menu + notify) — NOT gum-ui
-- **Renderer**: `desktop/quickshell-menu` (the shell), falling back to Wofi when it is unreachable
+- **Renderer**: `desktop/quickshell-menu` (the shell); no fallback — unreachable means cancelled plus a `hyprctl notify`
 
 ## Main Menu (system-menu)
 
 Routes `Super+Space` → the picker → category script.
 
-🚨 **The picker is `desktop/quickshell-menu`, not Wofi.** Since 2026-09-09 `show_menu()` and
+🚨 **The picker is `desktop/quickshell-menu`; Wofi was retired 2026-10-19.** Since 2026-09-09 `show_menu()` and
 `confirm()` write the list to the shell over a UNIX socket
 (`$XDG_RUNTIME_DIR/quickshell-menu.sock`) and block on the reply, which is why a dmenu call could
-not be an `ipc call`: an IPC handler returns immediately. Wofi remains the fallback and the
+not be an `ipc call`: an IPC handler returns immediately. There is no fallback and the
 contract is unchanged — items on stdin, the choice on stdout, exit 1 and no output on cancel —
 so sixteen `menu-*` scripts converted without an edit of their own.
 
@@ -45,7 +45,7 @@ so sixteen `menu-*` scripts converted without an edit of their own.
 
 ## Icon Reference
 
-**Criteria**: Material Design (`md-`) primary, outlined variants preferred (Wofi visibility), emoji fallback only if no MD icon fits. Select via `/nerdfonts-search` skill (glyph data: `.claude/skills/nerdfonts-search/references/glyphnames.json`).
+**Criteria**: Material Design (`md-`) primary, outlined variants preferred (small-size legibility), emoji fallback only if no MD icon fits. Select via `/nerdfonts-search` skill (glyph data: `.claude/skills/nerdfonts-search/references/glyphnames.json`).
 
 ### Trigger Menu (menu-trigger)
 
@@ -146,7 +146,7 @@ so sixteen `menu-*` scripts converted without an edit of their own.
 |-------|------|------------|
 | ← Back | 󰁍 | md-arrow-left |
 
-**Test icon rendering**: `echo "󰀻 Apps|󰗚 Learn|󰈿 Trigger" | tr '|' '\n' | wofi --dmenu`
+**Test icon rendering**: `echo "󰀻 Apps|󰗚 Learn|󰈿 Trigger" | tr '|' '\n' | quickshell-menu`
 
 ## menu-helpers.sh Library
 
@@ -224,6 +224,6 @@ not the source name.
 
 - **Hyprland**: `~/.config/hypr/conf/bindings/system-control.conf` (`Super+Space` → `system-menu`)
 - **Picker**: menu scripts pipe lines to `desktop/quickshell-menu` (dmenu contract — lines in,
-  one line out, empty means cancelled). Wofi `--dmenu` is the fallback, never `drun`
+  one line out, empty means cancelled). there is no fallback picker
 - **Hook system**: See `dotfiles/CLAUDE.md` for hook architecture
 - **Extra bindings**: See `dotfiles/CLAUDE.md` for extra-bindings.conf

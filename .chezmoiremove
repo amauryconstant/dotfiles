@@ -50,3 +50,9 @@
 # has no fallback. Remove the package by hand: paru -Rns hyprlock
 .config/hypr/hyprlock.conf
 .config/themes/*/hyprlock.conf
+
+# Wofi — retired 2026-10-19; the Quickshell launcher/pickers have no fallback. Remove the
+# package by hand: paru -Rns wofi (its usage cache ~/.cache/wofi-drun is seeded once into the
+# launcher's own state file, then unused).
+.config/wofi
+.config/themes/*/wofi.css

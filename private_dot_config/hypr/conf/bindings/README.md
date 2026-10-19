@@ -10,7 +10,7 @@
 | Keys | Action |
 |------|--------|
 | `SUPER+Return` | Terminal in current directory |
-| `SUPER+D` | Application launcher — Quickshell, or Wofi drun when `features.quickshell_shell` is off |
+| `SUPER+D` | Application launcher — Quickshell |
 | `SUPER+E` | File manager (Thunar, launch-or-focus) |
 | `SUPER+W` | Web browser (Firefox) |
 | `SUPER+O` | Neovim workspace picker (Ghostty) |

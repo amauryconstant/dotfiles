@@ -11,8 +11,8 @@ Technical guidance for Claude Code when developing in this repository.
 - **Project**: Chezmoi dotfiles repository
 - **Target OS**: Arch Linux (archinstall + Hyprland profile)
 - **Desktop**: Hyprland + **Quickshell** (bar, launcher, notifications, power menu, popovers,
-  pickers). Waybar, swaync, wlogout and polkit-gnome are retired; Wofi stays as the
-  `quickshell-menu` fallback
+  pickers). Waybar, swaync, wlogout, polkit-gnome, hyprlock and Wofi are retired (no fallback tools; cliphist
+  stays as the clipboard store)
 - **Terminal**: Ghostty (only chezmoi-managed terminal — there is no `private_dot_config/kitty/`)
 - **Languages**: Go templates (text/template + Sprig), Shell (POSIX sh)
 - **Constraint**: Security-first — manual encryption at rest + package supply-chain policy (see `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy")
@@ -74,7 +74,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .patches/               # Patches applied to upstream sources at build time (not deployed)
 ├── .mise/                  # Lint/format tasks + pre-commit hook entrypoints
 ├── .chezmoiexternal.yaml   # Externally-fetched assets
-├── private_dot_config/     # XDG config (hypr, wofi, zsh, etc.)
+├── private_dot_config/     # XDG config (hypr, quickshell, zsh, etc.)
 │   ├── dotfiles/           # Hook system
 │   ├── quickshell/         # Quickshell shell (bar) — behind a features flag
 │   └── themes/             # Theme system
@@ -164,7 +164,6 @@ read the relevant one explicitly when starting from elsewhere.
 
 **Desktop environment**:
 - `hypr/` - Hyprland compositor config
-- `wofi/` - Launcher
 - `themes/` - Theme system (semantic variables, Firefox/Spotify integration)
 - `dotfiles/` - **Hook system** (user extensibility)
 - `hyprdynamicmonitors/` - Monitor profile manager (port-agnostic matching)

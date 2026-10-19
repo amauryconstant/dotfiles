@@ -105,7 +105,7 @@ Every one has a `.lua.tmpl` twin: `hyprland.lua.tmpl`, `conf/monitor.lua.tmpl`, 
 
 ## Theme System Integration
 
-**Static theme files**: Unlike GTK apps (Wofi), Hyprland uses static theme files per theme variant.
+**Static theme files**: Unlike GTK apps, Hyprland uses static theme files per theme variant.
 
 **Border colors** (`~/.config/themes/{theme}/hyprland.conf`):
 ```conf
