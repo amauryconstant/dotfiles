@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 
 # Script: run_after_build_egl_wayland2_patched.sh
-# Purpose: Build egl-wayland2 with the bounded frame-wait patch for the Firefox wrapper
+# Purpose: Build egl-wayland2 with the bounded frame-wait patch for Firefox and Quickshell
 # Requirements: Arch Linux, git, meson, binutils, eglexternalplatform, NVIDIA (egl-wayland2 installed)
 #
-# WHY a private build instead of replacing the Arch package: only Firefox needs the
+# WHY a private build instead of replacing the Arch package: only two clients need the
 # patch (.patches/egl-wayland2-bounded-frame-wait.patch, rationale in
 # _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md), and a replaced system package would sit
 # outside the package-manager supply-chain tooling and be overwritten by every update.
-# `bin/executable_firefox` points the EGL platform at this copy; every other client
-# keeps the packaged library. Without it the wrapper falls back to XWayland.
+# `desktop/egl-wayland2-patched` points the EGL platform at this copy for `bin/executable_firefox`
+# and `quickshell.service` (its session lock wedged on the same unbounded wait); every other
+# client, apps the shell launches included, keeps the packaged library. Without the build,
+# Firefox falls back to XWayland and the shell to the packaged library (the NVIDIA desktop's
+# lock is then freeze-prone again).
 #
 # WHY run_after (every apply) and not run_onchange: a failed build must be retried. A
 # run_onchange script that exits 0 on failure is recorded as done and never runs again,
@@ -67,7 +70,7 @@ build() {
 
 {{ includeTemplate "log_step" "Fetching, patching and compiling (pinned commit)..." }}
 if ! build; then
-    {{ includeTemplate "log_warning" "Patched egl-wayland2 build failed (retries next apply); Firefox falls back to XWayland" }}
+    {{ includeTemplate "log_warning" "Patched egl-wayland2 build failed (retries next apply); Firefox falls back to XWayland, the shell runs the packaged library (NVIDIA desktop lock may freeze)" }}
     exit 0
 fi
 

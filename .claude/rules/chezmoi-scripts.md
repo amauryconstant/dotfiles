@@ -123,7 +123,7 @@ change. A `run_after_` script guards itself with a stamp and exits early once sa
 
 | Script | Purpose | Skips when |
 |--------|---------|------------|
-| build_egl_wayland2_patched | Builds egl-wayland2 from a pinned upstream commit plus `.patches/egl-wayland2-bounded-frame-wait.patch` into `~/.local/lib/egl-wayland2-patched`; only the Firefox wrapper uses it. Verifies the patch landed (symbol check) before writing `.stamp`. A failed build warns, exits 0 and installs nothing — the wrapper falls back to XWayland and the next apply retries | `.stamp` matches pin + patch hash, or egl-wayland2 is absent |
+| build_egl_wayland2_patched | Builds egl-wayland2 from a pinned upstream commit plus `.patches/egl-wayland2-bounded-frame-wait.patch` into `~/.local/lib/egl-wayland2-patched`; only the Firefox wrapper and `quickshell.service` use it, through `desktop/egl-wayland2-patched`. Verifies the patch landed (symbol check) before writing `.stamp`. A failed build warns, exits 0 and installs nothing — the wrapper falls back to XWayland and the next apply retries | `.stamp` matches pin + patch hash, or egl-wayland2 is absent |
 
 ---
 

@@ -600,8 +600,8 @@ Both differ from every other window in this tree on two points:
 ### Launcher
 
 `DesktopEntries.applications` + `TextInput` + a ranking function compressed from Omarchy's
-`services/AppSearch.js` (prefix > substring > keyword/comment > acronym). `entry.execute()`
-launches. Icons are `IconImage` on `Quickshell.iconPath(icon, true)`, falling back to
+`services/AppSearch.js` (prefix > substring > keyword/comment > acronym). Launches through
+`execDetached(Config.detach.concat(entry.command))`, never `entry.execute()`. Icons are `IconImage` on `Quickshell.iconPath(icon, true)`, falling back to
 `Config.windowGlyphFallback` when the theme has none — same contract the workspace pills have.
 
 **340 wide** (was 760), with popover chrome: a hairline-separated header carrying the glyph, the
@@ -679,7 +679,7 @@ Plus a `Config.dockHideDelayMs` grace period, so a momentary hover loss cannot r
 **The running-indicator dot is kept against the artboard**, which drew none. A static mockup
 of one moment is weak evidence that a *state* indicator does not exist, Amendment A specifies
 it, and without it the dock is a strictly worse `SUPER+D`. Running → `workspace.activate()`;
-not running → `entry.execute()`.
+not running → `execDetached(Config.detach.concat(entry.command))`.
 
 `Config.dockApps` holds **desktop-entry ids**, deliberately not interpolated from
 `globals.yaml` `applications`: that file holds binary and MIME names, so `ghostty` and

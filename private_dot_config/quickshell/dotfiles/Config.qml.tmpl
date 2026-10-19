@@ -492,7 +492,14 @@ Singleton {
     // systemd-run rather than `uwsm app`: same effect, 18 ms against 210, and
     // the slice is the one `uwsm app` would pick. `Process` children are the
     // opposite case — the shell's own readers — and are meant to die with it.
-    readonly property list<string> detach: ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=app-graphical.slice", "--"]
+    //
+    // The leading `env -u` is for a different reason: quickshell.service runs on
+    // the patched egl-wayland2 (desktop/egl-wayland2-patched sets
+    // __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS), and the scope would hand that to
+    // every app opened from here. Only the shell and Firefox (through its own
+    // wrapper, ~/.local/bin/firefox) are meant to use it; the rest keep the
+    // packaged library, as when started from a keybind.
+    readonly property list<string> detach: ["env", "-u", "__EGL_EXTERNAL_PLATFORM_CONFIG_DIRS", "systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=app-graphical.slice", "--"]
 
     // Chassis-dependent widgets (battery, power profile, backlight) gate on
     // this ONE property. Deliberately not eight separate .tmpl widgets.

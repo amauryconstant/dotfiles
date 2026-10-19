@@ -6,6 +6,7 @@
 # ~/.config, the live compositor or the live systemd units is touched.
 #
 #   desk up | down | reload | status | shot [file] | run <cmd…> | logs [hypr|qs]
+#   DESK_LOCK=1 desk up     also build the session lock (locks the nested window only)
 #
 # Procedure and what leaks: .claude/skills/desk/SKILL.md
 set -euo pipefail
@@ -67,6 +68,12 @@ render() {
 	# shellcheck source=../../../../.mise/lib/render-qml.sh
 	source "$repo/.mise/lib/render-qml.sh"
 	neutralise_qml_singletons "$tmp/quickshell/dotfiles"
+	# Opt-in lock: a session lock belongs to its compositor, so here it locks only the nested
+	# window, and ipc is keyed by this copy's config path, so the live immediate-lock never
+	# reaches it. (qml:smoke keeps it off: that one runs against the LIVE compositor.)
+	if [[ "${DESK_LOCK:-}" == 1 ]]; then
+		sed -i -E 's/(lockOwned): .*/\1: true/' "$tmp/quickshell/dotfiles/Config.qml"
+	fi
 
 	# Swap in place: the path must stay stable for a running compositor.
 	if [[ -d "$cfg" ]]; then
@@ -79,7 +86,11 @@ render() {
 start_shell() {
 	(
 		nested_env
-		setsid quickshell -c dotfiles >"$root/quickshell.log" 2>&1 &
+		# Through the helper like quickshell.service, so the sandbox runs the library production
+		# does. The source file is not executable (hence bash) and the helper ends in exec, so
+		# the pid recorded here is quickshell's. Its own name: dirs are per client.
+		setsid bash "$repo/private_dot_local/lib/scripts/desktop/executable_egl-wayland2-patched" \
+			quickshell-desk quickshell -c dotfiles >"$root/quickshell.log" 2>&1 &
 		echo $! >"$root/qs.pid"
 	)
 	local _

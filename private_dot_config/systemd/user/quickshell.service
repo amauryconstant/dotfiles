@@ -24,7 +24,15 @@ StartLimitBurst=5
 Type=simple
 # NOT -d: it forks and setsid()s, so Type=simple would see the parent exit.
 # NOT -n either: --no-duplicate exits 0, which Restart=always would spin on.
-ExecStart=/usr/bin/quickshell -c dotfiles
+# Through desktop/egl-wayland2-patched: the packaged egl-wayland2 waits for a
+# frame event with no timeout, and the session lock's render thread wedged in it
+# a few seconds after locking on the two-monitor NVIDIA desktop, taking the main
+# thread with it (_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md). The helper ends in
+# `exec`, so MAINPID is quickshell and Type=simple / Restart=always are
+# unchanged, and with no patched build it falls back to the packaged library
+# instead of failing — a lock that may freeze beats no shell at all.
+# Apps the shell launches have the variable stripped (Config.detach).
+ExecStart=%h/.local/lib/scripts/desktop/egl-wayland2-patched quickshell /usr/bin/quickshell -c dotfiles
 # chezmoi replaces files by rename, which a per-file watch does not survive, and
 # a directory-triggered reload can land mid-apply on a half-written tree.
 # Restarting this unit is now the only reload path, so the watcher is dead

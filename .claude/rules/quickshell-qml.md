@@ -372,6 +372,9 @@ therefore takes `Config.detach` as its prefix (a `systemd-run --user --scope` in
 `execDetached({ command: Config.detach.concat(entry.command), workingDirectory })`, never
 `.execute()`. Audit: `grep -rn 'execDetached\|\.execute()'` must show `Config.detach` on every
 hit. `Process` children are the shell's own readers and are meant to die with it.
+`Config.detach` also begins with `env -u __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS`: the shell runs on
+the patched egl-wayland2 (`quickshell.service` → `desktop/egl-wayland2-patched`) and launched apps
+must not inherit it.
 
 🚨 **`ScreencopyView` needs a RENDERED window, and `captureFrame()` needs a ready context.**
 Both failures are quiet. Put the view anywhere that is not actually being painted — inside a

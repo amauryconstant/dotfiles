@@ -31,6 +31,8 @@ $D status | down
 - Real: the rendered `hypr/`, `themes/`, `quickshell/`, `dotfiles/` trees; the live theme (`themes/current`), D-Bus, MPRIS, network, tray data.
 - **Autostart is replaced** with nothing: the real one runs `dbus-update-activation-environment --systemd`, which would repoint the live units at the nested display.
 - The shell copy has its singletons off (notification bus name, polkit, lock, menu socket renamed): a second shell must not contend with the live one.
+- **The lock is the opt-in exception**: `DESK_LOCK=1 $D up` builds it. A session lock belongs to its compositor, so it locks only the nested window, and `ipc` is keyed by the copy's config path, so the live `immediate-lock` never reaches it. Recipe for the freeze/lock work: `DESK_LOCK=1 $D up`, `$D run hyprctl output create wayland` (a second output), `$D run quickshell -c dotfiles ipc call lock lock`, type with `$D run wtype`, probe `timeout 3 $D run quickshell -c dotfiles ipc call lock status` (served on the main thread: no answer = wedged). Unlock with `$D down`. 🚨 Type garbage, never the real password.
+- The sandbox shell starts through `desktop/egl-wayland2-patched` (name `quickshell-desk`), like `quickshell.service`, so it runs the patched egl-wayland2 where production does. Check with `grep egl-wayland2-patched /proc/<qs pid>/maps`.
 - `hyprsplit` is borrowed from the live checkout (an external, absent from the render). The nested monitor is not on the desktop's EDID list, so its workspace shows as 21, not 1. Cosmetic.
 - `Theme.qml` reads `$HOME/.config/themes/current/colors.sh`, the LIVE theme. Theme-switching tests do not work here.
 
