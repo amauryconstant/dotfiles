@@ -47,11 +47,18 @@ the meters payload's missing temperature
   agent's `isActive` and nothing else. Escape cancels, Return submits, Tab cycles identities when
   polkit offers more than one (the branch §21 called out as assumed away). Cancel (neutral) and
   Authenticate (primary) are `ActionButton`s too: until 2026-10-06 the dialog was keyboard-only
-- 🚨 **The shell draws the lock screen on the LAPTOP only, for now** (`lock/LockScreen.qml` +
+- 🚨 **The shell draws the lock screen on both chassis** (`lock/LockScreen.qml` +
   `lock/LockContent.qml`, surface §22, added 2026-09-12), gated on `features.quickshell_lock`
-  (`enabled` and `chassis: [laptop]`). On the two-monitor NVIDIA desktop it froze a few seconds
-  after appearing (2026-10-14: Quickshell's main thread stops, Hyprland stays alive), so there
-  `SUPER+L` takes the hyprlock fallback. Add `desktop` to the chassis list to retry. Unlike the polkit and notification roles
+  (`enabled` and `chassis: [laptop, desktop]`; dropping a chassis sends it back to hyprlock). On
+  the two-monitor NVIDIA desktop it froze a few seconds after appearing (2026-10-14: Quickshell's
+  main thread stops, Hyprland stays alive) until 2026-10-19, when a gdb stack in the `desk`
+  sandbox showed why: the render thread wedged in the packaged egl-wayland2's unbounded frame wait
+  (`QWaylandGLContext::swapBuffers` → `wl_display_dispatch_queue`) with the main thread waiting on
+  it. **`quickshell.service` therefore starts through `desktop/egl-wayland2-patched`**, and
+  `Config.detach` strips the variable it sets so launched apps keep the packaged library. If the
+  patched build is missing the shell still starts, on the packaged library, and the lock may
+  freeze again (the build script warns). Record: `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md`.
+  Unlike the polkit and notification roles
   **nothing is displaced**: `desktop/immediate-lock` asks the running shell and falls back to
   hyprlock at RUNTIME, so `SUPER+L` locks the screen with the flag off, with the shell down, or
   with its restart budget spent. PAM is `/etc/pam.d/hyprlock`, borrowed from the package — no

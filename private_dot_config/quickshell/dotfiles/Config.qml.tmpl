@@ -524,7 +524,7 @@ Singleton {
     // WlSessionLock is constructed at all; the `lock` IPC target is registered
     // either way and answers "disabled", which is what keeps a switched-off
     // feature distinguishable from a broken wiring. Also false on a chassis not
-    // listed in `quickshell_lock.chassis` (the desktop: see features.yaml).
+    // listed in `quickshell_lock.chassis` (a per-machine off switch: features.yaml).
     readonly property bool lockOwned: {{ and .features.quickshell_lock.enabled (has .chassisType .features.quickshell_lock.chassis) }}
 
     function brightnessGlyph(percent: int): string {

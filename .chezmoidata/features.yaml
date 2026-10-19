@@ -14,10 +14,14 @@ features:
   # shell down, or its restart budget spent — SUPER+L still locks via hyprlock.
   #
   # `chassis` lists the chassis types that own the lock (Config.qml.tmpl
-  # combines it with `enabled`). The desktop is left out since 2026-10-14: on
-  # the two-monitor NVIDIA machine the in-shell lock froze a few seconds after
-  # appearing, so SUPER+L takes the hyprlock fallback there. Add `desktop` back
-  # once that is solved.
+  # combines it with `enabled`); drop one to send that machine back to hyprlock.
+  # The desktop was left out 2026-10-14 to 2026-10-19: on the two-monitor NVIDIA
+  # machine the lock froze a few seconds after appearing. Cause: the packaged
+  # egl-wayland2 waits for a frame event with no timeout, the render thread
+  # wedged in it and the main thread behind it. Fixed by running the shell on
+  # the patched build (quickshell.service -> desktop/egl-wayland2-patched).
+  # If that build is missing the freeze can return, and nothing here notices.
+  # See _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
   quickshell_lock:
     enabled: true
-    chassis: [laptop]
+    chassis: [laptop, desktop]

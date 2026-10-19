@@ -1,7 +1,9 @@
-# Firefox / NVIDIA EGL Wayland Deadlock
+# NVIDIA EGL Wayland Deadlock (Firefox, Quickshell lock)
 
 Investigation into Firefox wedging permanently under native Wayland on NVIDIA, why neither EGL
-external platform library works, and which mitigations were tested and rejected.
+external platform library works, and which mitigations were tested and rejected. The same
+unbounded wait later turned out to be what froze the Quickshell session lock on the desktop
+(see "Second victim"); the filename stays because other files link to it.
 
 ## Summary
 
@@ -70,6 +72,51 @@ needs libwayland >= 1.23, which upstream would have to guard; the build script c
 **Upstream report not yet filed.** NVIDIA/egl-wayland2: evidence above, expected behaviour
 (a swap must not block indefinitely on feedback for a surface the compositor may never present),
 the patch. Related: Mozilla 2063934, egl-wayland2 #47 (different symptom).
+
+## Second victim: the Quickshell session lock (2026-10-19)
+
+**Symptom** (2026-10-14, desktop: DP-1 4K@144 scale 1.25 + HDMI-A-1): the in-shell lock came up,
+took keys for a few seconds, then Quickshell went silent while Hyprland stayed alive. A LOCKDBG
+journal from that day shows the shape: lock up at 17:35:18, 78 key events in 7 s including a held
+Backspace, last 3 s heartbeat at 17:35:24.96, nothing afterwards. It was first read as a focus
+problem; it is not. 670f0b2 pulled the desktop back to hyprlock.
+
+**Reproduced** in the `desk` sandbox (`DESK_LOCK=1`, two nested outputs, lock via
+`quickshell -c dotfiles ipc call lock lock`): the lock appeared and the shell wedged at once, no
+typing needed. `quickshell ipc call lock status` is served on the main thread, so no answer means
+wedged. Run under gdb (SIGINT then `thread apply all bt`), with the packaged egl-wayland2 1.0.2:
+
+```
+QSGRenderThread  ppoll -> wl_display_dispatch_queue -> libnvidia-egl-wayland2
+                 -> libEGL_nvidia -> QWaylandGLContext::swapBuffers -> QRhi::endFrame
+main thread      QWaitCondition::wait (Qt Quick, from QWindow::event / expose)
+                 <- QWaylandWindow::sendExposeEvent <- updateExposure
+```
+
+Same wait as Firefox's (`WaitForPreviousFrames`, no timeout), with the main thread blocked on the
+render thread exactly as GTK's was. `/proc/<pid>/task/*/wchan` agrees: main `futex_do_wait`, render
+`poll_schedule_timeout`.
+
+**Fix**: run the shell on the patched build. With `__EGL_EXTERNAL_PLATFORM_CONFIG_DIRS` pointing at
+a platform dir whose `09_nvidia_wayland2.json` names `~/.local/lib/egl-wayland2-patched`, the
+sandbox locked, typed and held Backspace for 6, then 10, rounds with no wedge. The platform dir is
+now built by `desktop/egl-wayland2-patched`, shared with the Firefox wrapper;
+`quickshell.service` starts through it, and `Config.detach` strips the variable so apps opened
+from the launcher keep the packaged library.
+
+**Caveats**
+- The patched build is upstream **1.0.3 plus the patch**; the packaged library under test was
+  1.0.2. The Firefox work showed unpatched 1.0.3 still wedges, but nobody ran unpatched 1.0.3 under
+  Quickshell, so the patch itself is inferred, not isolated, for this client.
+- The shell as a whole now runs the bounded wait: the bar, OSD and launcher too. It only changes
+  behaviour when the compositor stops sending frame events, but verify idle CPU and animation
+  smoothness over a few days.
+- Sandbox scale was 1, not the desktop's 1.25 (the nested output would not take a scale), and the
+  outputs were nested windows, not real connectors.
+- A missing patched build means the shell runs the packaged library and the freeze can return;
+  nothing alerts except the build script's warning. No runtime guard was added on purpose.
+- The laptop renders the shell through Mesa on its iGPU, so the variable is inert there, which is
+  consistent with the lock never freezing on it.
 
 ## Original investigation (superseded)
 
@@ -197,12 +244,14 @@ egl-wayland2 is dma-buf based and EGLStream-free.
 ## When to Revisit
 
 - **Drop the patch** once an egl-wayland2 release bounds or removes that wait: delete
-  `.patches/`, the build script, and the patched branch of the wrapper, then
+  `.patches/`, the build script, `desktop/egl-wayland2-patched` and the patched branch of the
+  Firefox wrapper, revert `quickshell.service`'s `ExecStart`, the `env -u` prefix of
+  `Config.detach` and the helper launch in `.claude/skills/desk/scripts/desk`, then
   `rm -rf ~/.local/lib/egl-wayland2-patched`. Test with `FIREFOX_BACKEND=` unset against the
-  packaged library and the Bitwarden popup.
-- Bump `EGL_WAYLAND2_COMMIT` in the build script only after re-running that test.
+  packaged library and the Bitwarden popup, **and** a `DESK_LOCK=1` lock-and-type run on two outputs.
+- Bump `EGL_WAYLAND2_COMMIT` in the build script only after re-running both tests.
 
-- `egl-wayland2` moves past 1.0.1 in Arch — retest wayland2 immediately; it is the supported path.
+- `egl-wayland2` moves past 1.0.2 in Arch — retest wayland2 immediately; it is the supported path.
 - Mozilla 2063934 or egl-wayland2 #47 get a fix — both are active as of 2026-08-25.
 - Hyprland #5144 / #4521 fixed — re-enables the sharp XWayland recipe.
 - If it becomes worth filing: the `WAYLAND_DEBUG` trace above is a strong reproducible report.
@@ -210,6 +259,10 @@ egl-wayland2 is dma-buf based and EGLStream-free.
 ## Related
 
 - `private_dot_local/bin/executable_firefox` — the wrapper, carries the full rationale in comments
+- `private_dot_local/lib/scripts/desktop/executable_egl-wayland2-patched` — builds the EGL platform
+  dir for Firefox and `quickshell.service`
+- `private_dot_config/systemd/user/quickshell.service`, `Config.detach` in
+  `private_dot_config/quickshell/dotfiles/Config.qml.tmpl` — the shell side
 - `.patches/egl-wayland2-bounded-frame-wait.patch` — the fix
 - `.chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl` — builds it (pinned commit,
   stamp-guarded, retried until it succeeds)
