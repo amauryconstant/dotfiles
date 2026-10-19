@@ -227,6 +227,12 @@ predecessor fall back to it — launcher → Wofi, clipboard → `cliphist | wof
 keybindings → `desktop/keybindings`, notifications → nothing (swaync is retired).
 **Restart**: `quickshell-restart` — refuses while the session is locked (see "Idle & Lock")
 **Menus**: `quickshell-menu` — the dmenu substrate every `menu-*` script renders through
+**EGL**: `egl-wayland2-patched <name> <cmd…>` runs a client on the patched egl-wayland2 (bounded
+frame wait); `--prepare <name>` prints the platform dir (exit 0 ready · 1 n/a · 2 unavailable ·
+64 bad name). Used by `bin/firefox` and `quickshell.service`; run mode always ends in `exec`, so a
+missing patched build degrades to the packaged library rather than a dead unit. One dir per name,
+rebuilt in place without ever being empty. Apps the shell launches get the variable stripped
+(`Config.detach`). Record: `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md`
 **Night light**: nightlight-toggle, nightlight-config (`nightlight-config [KELVIN]` skips the
 picker and stays quiet — that is the path the shell's night-light slider drives)
 **Workspace gaps**: workspace-gaps-toggle, workspace-gaps-reset

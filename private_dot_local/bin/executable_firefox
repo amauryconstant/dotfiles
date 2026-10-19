@@ -17,9 +17,10 @@
 #
 # Fix: a private build of egl-wayland2 whose wait is bounded
 # (.patches/egl-wayland2-bounded-frame-wait.patch, built by
-# .chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl). This launcher
-# points the EGL platform config at that build, for Firefox only. Everything else on the
-# system keeps the packaged library. Full record: _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
+# .chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl). The EGL platform dir that
+# points at it is built by desktop/egl-wayland2-patched, which Quickshell uses too (its session
+# lock hit the same wedge). Everything else keeps the packaged library.
+# Full record: _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
 #
 # Fallback when the patched build is missing (failed build, fresh install before the
 # script ran): XWayland. It has no such wedge but renders text soft on scaled monitors,
@@ -28,11 +29,10 @@
 #
 # FIREFOX_BACKEND=x11 forces the XWayland fallback.
 #
-# Config dir is rebuilt on every launch, so driver updates are picked up automatically.
+# The platform dir is refreshed on every launch, so driver updates are picked up automatically.
 
-EGL_CONFIG_DIR=/usr/share/egl/egl_external_platform.d
-WAYLAND2_CONFIG="$EGL_CONFIG_DIR/09_nvidia_wayland2.json"
-PATCHED_LIB="$HOME/.local/lib/egl-wayland2-patched/lib/libnvidia-egl-wayland2.so.1"
+WAYLAND2_CONFIG=/usr/share/egl/egl_external_platform.d/09_nvidia_wayland2.json
+EGL_HELPER="$HOME/.local/lib/scripts/desktop/egl-wayland2-patched"
 
 case "${0##*/}" in
 firefox-esr) FIREFOX_BIN=/usr/lib/firefox-esr/firefox-esr ;;
@@ -45,35 +45,12 @@ use_x11() {
 }
 
 if [[ -e "$WAYLAND2_CONFIG" ]]; then
-    if [[ "${FIREFOX_BACKEND:-}" == x11 || ! -e "$PATCHED_LIB" ]]; then
+    # Any failure of the helper (2: no patched build or no runtime dir, 127: helper missing)
+    # means there is nothing safe to point at, so XWayland.
+    if [[ "${FIREFOX_BACKEND:-}" == x11 ]] || ! platform_dir=$("$EGL_HELPER" --prepare firefox 2>/dev/null); then
         use_x11
     else
-        platform_dir="${XDG_RUNTIME_DIR:-/tmp}/firefox-egl-platforms"
-
-        if mkdir -p "$platform_dir" 2>/dev/null; then
-            rm -f "$platform_dir"/*.json
-
-            # Every platform except the packaged wayland ones...
-            for config in "$EGL_CONFIG_DIR"/*.json; do
-                [[ -e "$config" ]] || continue
-                case "${config##*/}" in
-                *wayland*) continue ;;
-                *) ;;
-                esac
-                ln -sf "$config" "$platform_dir/"
-            done
-
-            # ...plus wayland2, pointed at the patched library
-            cat >"$platform_dir/09_nvidia_wayland2.json" <<EOF
-{
-    "file_format_version" : "1.0.0",
-    "ICD" : { "library_path" : "$PATCHED_LIB" }
-}
-EOF
-            export __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS="$platform_dir"
-        else
-            use_x11
-        fi
+        export __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS="$platform_dir"
     fi
 fi
 

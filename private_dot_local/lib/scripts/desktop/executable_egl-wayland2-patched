@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+# Script: egl-wayland2-patched
+# Purpose: Run a client on the patched egl-wayland2 (bounded frame wait) instead of the packaged one
+# Requirements: Arch Linux, NVIDIA (egl-wayland2), the private build in ~/.local/lib/egl-wayland2-patched
+# Usage: egl-wayland2-patched <name> <command> [args...]    run <command> on the patched library
+#        egl-wayland2-patched --prepare <name>              build the platform dir, print its path
+#
+# Stock egl-wayland2 waits for a frame event with no timeout (WaitForPreviousFrames in
+# eplWlSwapBuffers). A compositor that never answers for a surface it is not presenting wedges the
+# render thread, and whatever waits on that thread with it. Seen twice: Firefox (never maps, or
+# freezes on an extension popup) and the Quickshell session lock (main thread blocked behind the
+# render thread a few seconds after locking). Record: _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
+# The private build bounds that wait (.patches/egl-wayland2-bounded-frame-wait.patch, built by
+# .chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl). Everything NOT started through
+# this helper keeps the packaged library, on purpose: the variable is stripped from apps the shell
+# launches (Config.detach in quickshell/dotfiles/Config.qml.tmpl).
+#
+# --prepare exit status:  0 ready (path on stdout)
+#                         1 not applicable (no NVIDIA wayland2 platform config on this machine)
+#                         2 needed but unavailable (patched build missing, no $XDG_RUNTIME_DIR,
+#                           write failure)
+#                         64 bad <name>
+# Run mode ALWAYS ends in `exec "$@"`: a client on the packaged library is better than none, and
+# a wrapper that died would make quickshell.service's Restart=always spin until its start limit.
+# The reason goes to stderr (the journal for a unit). No `set -e` for the same reason.
+#
+# One platform dir per <name>, so Firefox, the live shell and the desk shell never rebuild each
+# other's dir. A dir is rebuilt in place without ever being empty: child processes (Firefox's GPU
+# and RDD processes start late) read it at their own pace, and one that found no wayland platform
+# would fall back to something worse.
+
+EGL_CONFIG_DIR=/usr/share/egl/egl_external_platform.d
+WAYLAND2_CONFIG="$EGL_CONFIG_DIR/09_nvidia_wayland2.json"
+PATCHED_LIB="$HOME/.local/lib/egl-wayland2-patched/lib/libnvidia-egl-wayland2.so.1"
+
+# prepare <name>: prints the platform dir. Status as documented above.
+prepare() {
+    local name=$1 dir config base current tmp entry want
+
+    [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]] || {
+        echo "egl-wayland2-patched: bad name '$name'" >&2
+        return 64
+    }
+    [[ -e "$WAYLAND2_CONFIG" ]] || return 1
+    [[ -e "$PATCHED_LIB" ]] || {
+        echo "egl-wayland2-patched: patched build missing ($PATCHED_LIB)" >&2
+        return 2
+    }
+    [[ -n "${XDG_RUNTIME_DIR:-}" ]] || {
+        echo "egl-wayland2-patched: XDG_RUNTIME_DIR unset" >&2
+        return 2
+    }
+
+    dir="$XDG_RUNTIME_DIR/egl-wayland2-patched/$name"
+    mkdir -p "$dir" 2>/dev/null || {
+        echo "egl-wayland2-patched: cannot create $dir" >&2
+        return 2
+    }
+
+    # Every platform except the packaged wayland ones (10_nvidia_wayland included: the legacy
+    # egl-wayland deadlocks later instead)...
+    local -A keep=([09_nvidia_wayland2.json]=1)
+    for config in "$EGL_CONFIG_DIR"/*.json; do
+        [[ -e "$config" ]] || continue
+        base=${config##*/}
+        [[ "$base" == *wayland* ]] && continue
+        keep[$base]=1
+        # Replace only a link that is wrong: ln -f is unlink + symlink, a gap a reader can hit.
+        current=$(readlink "$dir/$base" 2>/dev/null)
+        [[ "$current" == "$config" ]] || ln -sfn "$config" "$dir/$base" 2>/dev/null || return 2
+    done
+
+    # ...plus wayland2 pointed at the patched library. Temp file + mv: atomic.
+    tmp=$(mktemp -p "$dir" .09.XXXXXX 2>/dev/null) || return 2
+    printf '{\n    "file_format_version" : "1.0.0",\n    "ICD" : { "library_path" : "%s" }\n}\n' "$PATCHED_LIB" >"$tmp"
+    if ! mv -f "$tmp" "$dir/09_nvidia_wayland2.json"; then
+        rm -f "$tmp"
+        return 2
+    fi
+
+    # Prune after writing, never before: entries for platforms a driver update removed.
+    for entry in "$dir"/*.json; do
+        [[ -e "$entry" || -L "$entry" ]] || continue
+        want=${entry##*/}
+        [[ -n "${keep[$want]:-}" ]] || rm -f "$entry"
+    done
+
+    printf '%s\n' "$dir"
+}
+
+if [[ "${1:-}" == --prepare ]]; then
+    [[ $# -eq 2 ]] || {
+        echo "usage: egl-wayland2-patched --prepare <name>" >&2
+        exit 64
+    }
+    prepare "$2"
+    exit
+fi
+
+if [[ $# -lt 2 ]]; then
+    echo "usage: egl-wayland2-patched <name> <command> [args...]" >&2
+    echo "       egl-wayland2-patched --prepare <name>" >&2
+    exit 64
+fi
+
+name=$1
+shift
+
+if platform_dir=$(prepare "$name"); then
+    export __EGL_EXTERNAL_PLATFORM_CONFIG_DIRS="$platform_dir"
+else
+    rc=$?
+    # 1 is the normal answer on a machine without the NVIDIA wayland2 platform (laptop iGPU).
+    [[ $rc -eq 1 ]] || echo "egl-wayland2-patched: running '$1' on the packaged library (status $rc)" >&2
+fi
+
+exec "$@"

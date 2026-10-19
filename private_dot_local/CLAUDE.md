@@ -127,7 +127,7 @@ PATH order is separate: the `prepath` zstyle in `private_dot_config/zsh/dot_zsty
 
 | Command | File | Reason |
 |---------|------|--------|
-| `firefox` | `bin/executable_firefox` | Overrides `/usr/bin/firefox` — NVIDIA EGL deadlock workaround (patched egl-wayland2, XWayland fallback) |
+| `firefox` | `bin/executable_firefox` | Overrides `/usr/bin/firefox` — NVIDIA EGL deadlock workaround (patched egl-wayland2 via `desktop/egl-wayland2-patched`, XWayland fallback) |
 | `firefox-esr` | `bin/symlink_firefox-esr` | Same wrapper, dispatched via `${0##*/}` |
 | `mmdc` | `bin/executable_mmdc` | Mermaid CLI shim (translates `mmdc` flags to `mmdr`) |
 | `ts` | `bin/symlink_ts` | Short name for `network/tailscale.sh` — a symlink, not a wrapper |

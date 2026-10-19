@@ -35,7 +35,7 @@ A pure rename is neither: use `symlink_<name>` holding the relative target path.
 
 | File | Kind | Why it exists |
 |---|---|---|
-| `executable_firefox` | wrapper | NVIDIA EGL deadlock workaround; shadows `/usr/bin/firefox`. Points the EGL platform at the patched egl-wayland2 in `~/.local/lib/egl-wayland2-patched` (config dir rebuilt per launch); falls back to XWayland if that build is missing, `FIREFOX_BACKEND=x11` forces it. Header comment + `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` are the record |
+| `executable_firefox` | wrapper | NVIDIA EGL deadlock workaround; shadows `/usr/bin/firefox`. Points the EGL platform at the patched egl-wayland2 in `~/.local/lib/egl-wayland2-patched`, through `desktop/egl-wayland2-patched --prepare firefox` (shared with `quickshell.service`; dir refreshed per launch); falls back to XWayland if that helper fails or the build is missing, `FIREFOX_BACKEND=x11` forces it. Header comment + `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` are the record |
 | `symlink_firefox-esr` | symlink → `firefox` | **Load-bearing**: `executable_firefox` branches on `${0##*/}` to pick `firefox-esr`'s binary. Not a convenience alias |
 | `executable_mmdc` | wrapper | Mermaid CLI shim — real flag translation (`-i/-o/--width/--height` → `mmdr`, format inferred from the output extension, `-b/-t/-s` dropped) |
 | `symlink_ts` | symlink → `../lib/scripts/network/tailscale.sh` | Short name for the Tailscale helper (`ts up`, `ts down`, `ts status`). `tailscale.sh` reads no `$0`, so the symlink is transparent |
