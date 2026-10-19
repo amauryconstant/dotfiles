@@ -226,13 +226,12 @@ read the relevant one explicitly when starting from elsewhere.
 surface, and why each departure
 → `.claude/rules/quickshell-qml.md` (QML syntax, tooling, runtime traps) and `quickshell-design.md` (geometry, accent, contrast, theming)
 → `_research/archive/QUICKSHELL_RULE_EVIDENCE.md` (the measurements behind both)
-→ `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side) — **the ONLY open Quickshell plan**
+→ `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` (the removal side, closed 2026-10-19) — **no Quickshell plan is open**
 → `_research/QUICKSHELL_QML_API.md` (the quickshell 0.3.1 API, corrected five times)
 
 🚨 **The build closed on 2026-09-13 and nine of the eleven Quickshell documents are now in
 `_research/archive/` or `_plans/archive/`.** They are evidence — measurements, rulings, what each
-surface is made of — not backlogs. Taking a task from one is the standing hazard, which is why the
-retirement plan above is kept separate.
+surface is made of — not backlogs. Taking a task from one is the standing hazard.
 
 **Testing a Hyprland/Quickshell change visually before `chezmoi apply`?**
 → `.claude/skills/desk/SKILL.md` (nested desktop on the rendered source; screenshots Claude can read)

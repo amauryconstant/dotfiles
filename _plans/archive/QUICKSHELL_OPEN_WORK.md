@@ -7,7 +7,7 @@ worth having; the live decisions moved into the files named below, beside the co
 **Created** 2026-09-13 by extracting the live items out of three documents that had become records
 of a finished build. **Closed** 2026-09-13.
 
-**Still live**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the *removal* work (wlogout, swaync,
+**Still live**: `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` — the *removal* work (wlogout, swaync,
 Waybar, the two polkit agents). It is the only open Quickshell plan.
 
 ---

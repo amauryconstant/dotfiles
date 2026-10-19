@@ -11,7 +11,7 @@ disables subdirectory discovery for every other config, including voxtype's)
 
 **See**: Root `CLAUDE.md` for core standards
 **See**: `private_dot_config/quickshell/CLAUDE.md` for what the shell is today, and
-`_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the removal work, and the only open Quickshell plan.
+`_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` — the removal work, closed 2026-10-19; no Quickshell plan is open.
 `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (what each of the 30 surfaces is made of),
 `_plans/archive/QUICKSHELL_SHELL.md` (the build record) and
 `_plans/archive/QUICKSHELL_OPEN_WORK.md` (the contrast rulings, closed the day it was written)

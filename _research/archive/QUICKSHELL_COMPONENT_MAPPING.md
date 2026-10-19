@@ -14,7 +14,7 @@ The one gap this document called genuine — **backlight** — was closed by the
 (sysfs via `FileView`, writing through `desktop/brightness-set`).
 
 The four replaced tools are still installed and still configured. Removing them is
-`_plans/QUICKSHELL_TOOL_RETIREMENT.md`, not this file.
+`_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md`, not this file.
 
 > **Scope of the 2026-09-03 pass.** The "What X does" halves were spot-checked against the
 > legacy configs still in `private_dot_config/{waybar,wofi,swaync,wlogout}/` — every line count

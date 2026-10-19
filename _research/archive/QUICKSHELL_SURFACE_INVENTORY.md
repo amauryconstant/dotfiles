@@ -19,8 +19,8 @@ and it does not expire. The Status lines are a build record.
 | Question | Read |
 |---|---|
 | What is this shell, surface by surface, and why each departure | `private_dot_config/quickshell/CLAUDE.md` |
-| What is still open | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (`_plans/archive/QUICKSHELL_OPEN_WORK.md` is closed) |
-| What is left to remove | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
+| What is still open | `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` (`_plans/archive/QUICKSHELL_OPEN_WORK.md` is closed) |
+| What is left to remove | `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` |
 | QML syntax, tooling, measured runtime traps | `.claude/rules/quickshell-qml.md` |
 | The quickshell 0.3.1 API | `_research/QUICKSHELL_QML_API.md` — the last live research doc |
 
@@ -37,7 +37,7 @@ implementation since — the status line says so where it was.
 | `private_dot_config/quickshell/CLAUDE.md` | **live** | what the shell is today, and why each departure. **Start here** |
 | `.claude/rules/quickshell-qml.md` | **live** | QML syntax, tooling, measured runtime traps |
 | `_plans/archive/QUICKSHELL_OPEN_WORK.md` | archived | the contrast rulings, closed the day they were written |
-| `_plans/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | what is left to remove, per tool |
+| `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` | **live** | what is left to remove, per tool |
 | `_research/QUICKSHELL_QML_API.md` | **live** | the 0.3.1 API, corrected four times |
 | **this file** | archived 2026-09-13 | what each of the 30 surfaces is made of, and what it shipped as |
 | `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 | archived 2026-09-13 | the fourteen-page design's defects and this tree's rulings, incl. §5.6 on page 12 |
@@ -724,7 +724,7 @@ that arrived the same day.
 
 There is no **Deferred** column any more and no **Not built** one: every entry that was either is
 now shipped, or is a decision with its reason recorded. The one piece of Quickshell work still
-genuinely open is in `_plans/QUICKSHELL_TOOL_RETIREMENT.md`, and it is *removal*, not building.
+genuinely open is in `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md`, and it is *removal*, not building.
 
 The 2026-09-03 reading — that the generic list picker (7) and the menu model on it (8) were the
 bulk of the work — held: building the picker on 2026-09-09 closed eight entries in one change,

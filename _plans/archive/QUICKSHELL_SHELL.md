@@ -5,7 +5,7 @@ shell was built the way it was — the phase design, the amendments, and the mea
 along the way. Do not read it for what the shell is now, and do not take a task from it.
 
 **Everything in it is done except the tool retirement, which moved out** to
-`_plans/QUICKSHELL_TOOL_RETIREMENT.md` on 2026-09-11 so that a live decision would stop living
+`_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` on 2026-09-11 so that a live decision would stop living
 inside an archive. Phase 6 below is superseded by that file and is stale in one row (Wofi).
 
 **Read instead:**
@@ -14,7 +14,7 @@ inside an archive. Phase 6 below is superseded by that file and is stale in one 
 |---|---|
 | what the shell is today | `private_dot_config/quickshell/CLAUDE.md` |
 | what is still not built | `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md` (statuses maintained; it also carries the full reading order) |
-| what is still to be removed | `_plans/QUICKSHELL_TOOL_RETIREMENT.md` |
+| what is still to be removed | `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` |
 | QML syntax, tooling, runtime traps | `.claude/rules/quickshell-qml.md` |
 | the design's own defects and our rulings | `_research/archive/QUICKSHELL_DESIGN_AUDIT.md` Part 5 |
 
@@ -574,7 +574,7 @@ the only thing gained by separate scripts.
 
 ### Phase 6 — Cleanup of replaced tooling (OPTIONAL)
 
-🚨 **SUPERSEDED by `_plans/QUICKSHELL_TOOL_RETIREMENT.md` (2026-09-11).** Kept here only so the
+🚨 **SUPERSEDED by `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` (2026-09-11).** Kept here only so the
 phase list reads whole. Two things below are now wrong: the **Wofi** row ("never, on current
 scope") predates the 2026-09-09 picker work that replaced its menu callers, and the
 **`waybar.css` trap** describes a generation chain that never existed — `colors.sh`'s own header
@@ -1555,5 +1555,5 @@ the `PAIRS` table cannot express one.
 **Phase 6** only — retirement, gated on each replaced tool having *lived* a month, so nothing is
 eligible before roughly 2026-10-01. Plus Phase 2's multi-monitor box, still blocked on the desktop.
 
-**Current answer**: retirement moved to `_plans/QUICKSHELL_TOOL_RETIREMENT.md`; everything not
+**Current answer**: retirement moved to `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md`; everything not
 built is listed in `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md`'s summary. This section is history.

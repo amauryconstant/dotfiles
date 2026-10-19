@@ -4,7 +4,7 @@
 **Parent**: See `../CLAUDE.md` for XDG config overview
 **Syntax, tooling, traps**: `.claude/rules/quickshell-qml.md` · **Geometry, accent, contrast, theming**:
 `.claude/rules/quickshell-design.md` · **Measurements behind both**: `_research/archive/QUICKSHELL_RULE_EVIDENCE.md`
-**What is left to remove**: `_plans/QUICKSHELL_TOOL_RETIREMENT.md` — the only open Quickshell plan
+**Nothing is left to remove**: `_plans/archive/QUICKSHELL_TOOL_RETIREMENT.md` closed 2026-10-19; no Quickshell plan is open
 **Nothing is left to build** — the build closed 2026-09-13, 21 of 23 surfaces shipped and the other
 two are recorded refusals. The three that had shipped THINNER than their entry described (§9
 keybindings, §12 session prompt, §13 colour temperature) were finished the same day, along with
