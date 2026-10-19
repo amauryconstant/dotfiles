@@ -37,14 +37,24 @@ Item {
     Image {
         anchors.fill: parent
         asynchronous: true
-        cache: false
+        // 🚨 cache: true is what lets LockScreen's wallpaperWarm decode be reused:
+        // with false every surface decoded the file again, after it appeared, and
+        // showed the dark scrim meanwhile. The cache entry is shared only for the
+        // same url, sourceSize AND fillMode (all three must match the warm Image).
+        cache: true
         fillMode: Image.PreserveAspectCrop
-        source: root.wallpaper === "" ? "" : `file://${root.wallpaper}`
+        // Not before the surface has its real size: it starts at 0x0 and then
+        // 1526x0, and every transient size is a separate decode of the whole file
+        // queued on the single reader thread, ahead of the one that is drawn.
+        source: root.wallpaper === "" || root.width <= 0 || root.height <= 0 ? "" : `file://${root.wallpaper}`
         // Decode at the size actually drawn; a 4K wallpaper decoded full-size
         // stalls the surface at exactly the moment it has to appear.
         sourceSize.height: root.height
         sourceSize.width: root.width
-        visible: root.wallpaper !== "" && this.status === Image.Ready
+        // A path that changes mid-lock keeps the old image up until the new one is
+        // ready instead of dropping to the scrim.
+        retainWhileLoading: true
+        visible: root.wallpaper !== ""
     }
 
     // The dim is what makes the text legible over an arbitrary image, so it is

@@ -39,6 +39,8 @@ Item {
     // and so did hypridle's lock and lock-before-suspend. Do not "simplify" away.
     property int lockRev: 0
     property bool pendingSessionLock: false
+    // When beginLock() ran, for the bound on waiting for the wallpaper decode.
+    property real lockRequestedAt: 0
     property bool authenticating: false
     // No lock before PAM is known good: a lock nobody can authenticate against
     // is a session nobody can re-enter.
@@ -161,11 +163,31 @@ Item {
         pendingLockTimer.start();
     }
 
+    // False while a wallpaper decode started by beginLock() is still running.
+    function wallpapersWarm(): bool {
+        for (let i = 0; i < wallpaperWarm.count; i++) {
+            // qmllint disable missing-property
+            if (wallpaperWarm.itemAt(i)?.status === Image.Loading)
+                return false;
+            // qmllint enable missing-property
+        }
+        return true;
+    }
+
     function requestSessionLock(): void {
         if (!root.lockRequested || sessionLock.locked || sessionLock.secure)
             return;
         if (stabilizeTimer.running)
             return;
+        // 🚨 The surfaces draw a scrim until their wallpaper has decoded, and a
+        // 17 MB PNG takes longer than the 500 ms settle window, so wait for the
+        // decode beginLock() started: the lock then appears with its wallpaper
+        // instead of black. BOUNDED at 1 s from the request, because a lock that
+        // waits on a decode that never finishes is a screen that stays unlocked.
+        if (!root.wallpapersWarm() && Date.now() - root.lockRequestedAt < 1000) {
+            pendingLockTimer.start();
+            return;
+        }
 
         if (root.realScreens().length === 0) {
             root.pendingSessionLock = true;
@@ -184,6 +206,7 @@ Item {
             return false;
 
         root.resetAuthentication();
+        root.lockRequestedAt = Date.now();
         root.promptScreenName = "";
         root.electPromptScreen();
         root.warpPointerToPrompt();
@@ -435,6 +458,42 @@ Item {
 
     Process {
         id: warpProc
+    }
+
+    // 🚨 The wallpaper is decoded from beginLock(), not when the surfaces appear:
+    // the surfaces come up 500 ms later (stabilizeTimer) and each one used to
+    // start its own decode of the file, through Qt's single image-reader thread,
+    // showing the dark scrim until it finished (measured 2026-10-19: Ready
+    // 250-450 ms after the surfaces for a 17 MB PNG, in a 1526x830 sandbox).
+    // These hidden Images fill Qt's pixmap cache, which is reference-counted, so
+    // the decoded pixmaps live exactly as long as the lock does. The surfaces'
+    // own Image (LockContent) hits that cache ONLY with the same url, the same
+    // sourceSize (an output's logical size is the lock surface's size) AND the
+    // same fillMode: PreserveAspectCrop is part of the key, and a warm Image
+    // without it never hit (measured 2026-10-19 by probing each property).
+    Repeater {
+        id: wallpaperWarm
+
+        model: root.lockRequested ? root.realScreens() : []
+
+        Image {
+            id: warm
+
+            required property var modelData
+
+            asynchronous: true
+            cache: true
+            // Must match LockContent's Image, see above.
+            fillMode: Image.PreserveAspectCrop
+            source: root.wallpaperFor(warm.modelData.name) === "" ? "" : `file://${root.wallpaperFor(warm.modelData.name)}`
+            sourceSize.height: warm.modelData.height
+            sourceSize.width: warm.modelData.width
+            visible: false
+
+            // A decode that finishes after the settle window is what the lock is
+            // waiting for (requestSessionLock).
+            onStatusChanged: root.requestSessionLock()
+        }
     }
 
     Process {

@@ -314,6 +314,21 @@ and from `onSecureStateChanged` (the only signal that does follow an unlock, con
 getter changes, hence the second bump through `Qt.callLater`); the bindings read it so they
 re-evaluate. A functions-only reader (`requestSessionLock`) re-reads the getter and was never stale.
 
+🚨 **The lock's wallpaper must be decoded BEFORE its surfaces exist, or the first frames are the dark
+scrim.** `LockScreen`'s `wallpaperWarm` Repeater starts one hidden `Image` per output at
+`beginLock()`, inside the 500 ms settle window, and `requestSessionLock()` waits for those decodes
+(bounded at 1 s: a lock that waits forever is a screen that stays unlocked). The surfaces' `Image`
+(`LockContent`, `cache: true`) then hits Qt's pixmap cache and is `Ready` on creation, so the first
+painted frame already has the wallpaper (measured 2026-10-19 in `desk`: `frame 1 img=1` for a 17 MB
+PNG, a 5 MB PNG and a JPEG; before, the scrim showed for about 130 ms after frame 1). Three traps,
+each found by probing: **the cache key is url + sourceSize + `fillMode`**, and a warm `Image`
+without `fillMode: Image.PreserveAspectCrop` never hits (windowless probes with the same url and
+size did; crop ones did not); a surface `Image` bound to `root.width`/`root.height` starts at
+`0x0` and `1526x0`, and every transient size is another full decode queued on Qt's single reader
+thread, so `source` is held empty until both are positive; and `cache: false` makes every surface
+decode the file again after it appears. The black before the first frame (about 130 ms after the
+surfaces are created, while the window sets up) is the compositor's and not removable from QML.
+
 🚨 **A session lock's keyboard focus goes to the output UNDER THE POINTER, not to the output
 carrying the field.** Hyprland v0.56.2 `InputManager.cpp` (the `isSessionLocked` branch of
 `mouseMoveUnified`) focuses `getSessionLockSurfaceForMonitor(<monitor under the cursor>)`. With one
