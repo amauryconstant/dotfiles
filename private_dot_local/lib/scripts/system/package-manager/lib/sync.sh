@@ -38,7 +38,8 @@ _sync_refresh_mirrors() {
 	ui_info "Mirrors stale (${hours}h), refreshing..."
 	country=$(curl -s ipinfo.io/country 2>/dev/null || echo US)
 	rate-mirrors --protocol https --entry-country "$country" arch | sudo tee "$list" >/dev/null 2>&1
-	sudo pacman -Sy >/dev/null 2>&1
+	# No bare `pacman -Sy` here: refreshing the DBs without upgrading is a partial upgrade
+	# (it broke systemd-sysvcompat once). The new mirrors take effect on the next -Syu.
 }
 
 _sync_flatpak_remote() {
