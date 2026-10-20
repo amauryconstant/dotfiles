@@ -101,6 +101,8 @@ chezmoi_modify_manager --help-syntax     # modify_manager directives are non-obv
 
 **Never run `chezmoi merge` / `merge-all` on a `modify_*` or `*.tmpl` entry.** `.Source` is the *generator*, not a prior revision of the target, so merging overwrites it with rendered data — this has destroyed files here, once silently, and once leaking a decrypted API key into a tracked file. `.scripts/chezmoi-merge-guard.sh` now refuses these via `merge.command`, but it cannot repair an already-corrupt source. Use `chezmoi_modify_manager --smart-add` (modify_manager) or hand-edit after `chezmoi diff` (templates). See `.claude/rules/chezmoi-modify-entries.md`.
 
+**Commit only through the `commit` skill.** `.claude/hooks/require-commit-skill.sh` blocks `git commit` until the session has invoked it (Skill tool or typed `/commit`); one invocation covers the rest of the session.
+
 Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed state. For a clobbered generator: `git checkout HEAD -- <path>`. For merge conflicts see `private_dot_config/git/CLAUDE.md`; for the template merge driver see `.scripts/CLAUDE.md`.
 
 ### Lint & Format (mise)
