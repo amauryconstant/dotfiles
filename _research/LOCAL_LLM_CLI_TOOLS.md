@@ -1,8 +1,8 @@
 # Local LLM CLI Helper Tools (+ Voice back-half)
 
-**Status**: Research / decision input (2026-07-13)
+**Status**: Research / decision input (2026-07-13). Dormant sub-project B (not started; `aichat` is not in `packages.yaml`). Currency note 2026-10-20: the backend is llama-swap with roles `helper` (small, resident) and `coder` (swaps in); Wofi is retired, menus are `quickshell-menu`. See `_research/LOCAL_LLM_BACKEND_INDEX.md`.
 **Scope**: Shell/CLI helper tools consuming the local llama-server (OpenAI-compat, 127.0.0.1:8080). Secondary: voice-assistant back-half (TTS).
-**Context**: RTX 4090 24GB + i9-13900K, Arch, zsh (antidote), Hyprland + Wofi + gum menus. Backend already decided: llama.cpp / `llama-server` systemd user service. See [[local-llm-backend-decision]], `_research/LLM_BACKENDS_RESEARCH.md`.
+**Context**: RTX 4090 24GB + i9-13900K, Arch, zsh (antidote), Hyprland + Quickshell menus (`quickshell-menu`) + gum. Backend already decided: llama.cpp behind llama-swap (`llama-swap.service`). See [[local-llm-backend-decision]], `_research/archive/LLM_BACKENDS_RESEARCH.md`.
 **Related repo bits**: `private_dot_local/lib/scripts/user-interface/executable_menu-ai.tmpl` (existing menu-ai submenu), `.chezmoidata/ai.yaml` (server port/host/models), `.chezmoidata/packages.yaml` (AI/LLM group).
 
 ---
@@ -30,9 +30,9 @@ Decisive advantage: **`aichat` is in the official Arch `extra` repo** (`pacman -
 1. **"We need a shell tool AND a zsh widget AND a pipe filter."** — False as three tools. `aichat` is all three. Adding `sgpt`/`zsh_codex` on top would be redundant surface area.
 2. **`mods` is a live option.** — No. Archived 2026-03-09, read-only; Charm points users to `crush`. Any doc/tutorial recommending `mods` is now stale. Don't build on it.
 3. **A CLI helper and a coding agent are the same slot.** — No. Use-case #2 (quick, unlimited, offline shell chores with a *small fast* model) is distinct from use-case #1 (coding assistant, already served by `opencode`/`claude-code` in `menu-ai`). Conflating them pulls in heavyweight agents (crush/aider/gptme) that we don't need for "explain this command."
-4. **Everything should be a Wofi menu entry.** — Partly. The high-value integration is the **zsh ZLE widget** (in-terminal, where shell work happens), not a menu. `menu-ai` stays for launching sessions/status; the quick-helper lives at the prompt.
+4. **Everything should be a launcher/menu entry.** — Partly. The high-value integration is the **zsh ZLE widget** (in-terminal, where shell work happens), not a menu. `menu-ai` stays for launching sessions/status; the quick-helper lives at the prompt.
 5. **We must pick a coding agent here.** — Out of scope; already decided elsewhere. This doc is deliberately about the *lightweight helper* layer.
-6. **Local model choice is settled.** — It is NOT (`.chezmoidata/ai.yaml` `models: []`). The helper UX assumes a small fast instruct model is loaded (e.g. Qwen2.5/3 3B–7B instruct GGUF) for snappy command-gen; the big coder model is for use-case #1. This may argue for two `llama-server` profiles or an on-demand small model — an open question below.
+6. **Local model choice is settled.** — It is NOT final (roster in `private_dot_config/llama-swap/config.yaml`; models are placeholder defaults). The helper UX assumes a small fast instruct model is loaded (e.g. Qwen2.5/3 3B–7B instruct GGUF) for snappy command-gen; the big coder model is for use-case #1. llama-swap's `resident` group keeps the small `helper` model loaded next to the swapping `coder`, which answers the question below.
 
 ---
 
@@ -136,7 +136,7 @@ Keep it push-to-talk (no always-listening), reuse the aichat/llm backend already
 
 ## Open questions
 
-1. **Which small model for the helper?** Command-gen wants a snappy 3B–7B instruct (e.g. Qwen2.5-Coder-3B / Qwen3-4B instruct GGUF), *not* the 30B coder. Do we run a second `llama-server` profile/port for the small model, swap models on demand, or accept one shared model? Affects `.chezmoidata/ai.yaml` (`models:` still `[]`) and how `aichat` `api_base`/model id are templated.
+1. **Which small model for the helper?** Command-gen wants a snappy 3B–7B instruct (e.g. Qwen2.5-Coder-3B / Qwen3-4B instruct GGUF), *not* the 30B coder. **Answered by llama-swap**: the `helper` role is a resident small model, the `coder` role swaps in. `aichat` points `api_base` at the llama-swap port and picks the role name as the model id.
 2. **Two ports or one?** If a dedicated small-model server, add a second systemd user service + port; else `aichat` and opencode share `:8080` and whatever model is loaded.
 3. **`llm` — adopt now or defer?** Only pull it in if we want programmatic/templated prompting (commit-message generation via the `commit` skill, batch summarize). Otherwise `aichat` roles cover it and we avoid a Python dep.
 4. **Keybinding collisions**: confirm `Alt-E` (or chosen chord) is free across zsh ZLE + Hyprland binds before wiring the widget.
@@ -146,7 +146,7 @@ Keep it push-to-talk (no always-listening), reuse the aichat/llm backend already
 
 ## Dotfiles integration notes
 
-- **Packages** (`.chezmoidata/packages.yaml`, AI/LLM group ~line 249): add `aichat` (official `extra` — pacman, no AUR/toolchain, no telemetry → clean supply-chain fit). Defer `python-llm`/`llm` until Q3 above is answered. Do **not** add `mods` (archived).
+- **Packages** (`.chezmoidata/packages.yaml`, AI/LLM group): add `aichat` (official `extra` — pacman, no AUR/toolchain, no telemetry → clean supply-chain fit). Defer `python-llm`/`llm` until Q3 above is answered. Do **not** add `mods` (archived).
 - **ai.yaml** (`.chezmoidata/ai.yaml`): finally populate `models:` (blocks the whole helper). Template `aichat` `api_base` from `.ai.server.host`/`.ai.server.port` so the port is single-source.
 - **zsh widget**: new sourced fragment under `private_dot_config/zsh/` (antidote-loaded) with the Alt-E `_aichat_zsh` widget + thin `ai`/`explain`/`aipipe` functions. Env via `.zstyles` if needed.
 - **aichat config**: `private_dot_config/aichat/config.yaml.tmpl` (or `private_aichat/`), rendered with host/port + default role. Keep secrets out (local endpoint, none needed).

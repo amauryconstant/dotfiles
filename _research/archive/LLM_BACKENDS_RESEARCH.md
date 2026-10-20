@@ -1,4 +1,6 @@
 # LLM Backends Research - February 2026
+
+**Status**: **ARCHIVED 2026-10-20.** Superseded by the July `LOCAL_LLM_*` research split and the llama-swap backend (ae9a5b7, 2026-07-14). Stale: it describes `llama-server.service` serving `ai.models` (now disabled / gone), recommends Ollama (not used), and names the deleted `install_ai_models` script. Start from `_research/LOCAL_LLM_BACKEND_INDEX.md`.
 **Focus**: Local LLM solutions for two-way conversation and coding/CLI assistance
 **Phase**: Future (Phase 3)
 

@@ -1,5 +1,7 @@
 # Design: Local LLM Backend Core (llama-swap multi-model serving)
 
+**Status**: **ARCHIVED 2026-10-20.** Sub-project A was implemented in ae9a5b7 (2026-07-14): llama-swap unit, `config.yaml`, `llama-models` CLI. Not done: the Voxtype meeting-summary repoint (voxtype 1.0 removed that config block). Out-of-scope sub-projects B–E are tracked in `_research/LOCAL_LLM_BACKEND_INDEX.md` → "Next".
+
 **Status**: Approved, ready for implementation-plan.
 **Type**: chezmoi config + shell CLI + systemd + docs (no research changes).
 **Sub-project A** of the Local LLM Backend program (see `_research/LOCAL_LLM_BACKEND_INDEX.md`

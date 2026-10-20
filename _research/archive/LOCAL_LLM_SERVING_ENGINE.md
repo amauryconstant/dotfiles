@@ -1,5 +1,7 @@
 # Local LLM Serving Engine — Evaluation
 
+**Status**: **ARCHIVED 2026-10-20.** Its recommendation (keep llama.cpp, `--jinja -fa`, q8_0 KV, `--metrics`) is implemented as the `llama` macro in `private_dot_config/llama-swap/config.yaml`. The `ai.server` flag schema and env-file generator it proposes were dropped (`ai.yaml` is host/port only). Open item kept: per-model `--reasoning-format` tuning.
+
 **Dispatched**: 2026-07-13 (Research track 1 of `_research/LOCAL_LLM_BACKEND_INDEX.md`)
 **Scope**: The inference/serving engine only — NOT the router/gateway (track 2), models (track 3), or RAG (track 4).
 **Hardware**: RTX 4090 24GB + i9-13900K (**no AVX-512** → keep inference on GPU). Ample system RAM.

@@ -3,14 +3,15 @@
 **Focus**: Track 4 of the Local LLM program — embeddings serving + vector store +
 retrieval tooling over a personal corpus (dotfiles, notes, technical docs).
 **Date**: 2026-07-13
+**Currency note (2026-10-20)**: dormant sub-project C (not started). The backend became llama-swap (ae9a5b7): an `embed` role already exists in `private_dot_config/llama-swap/config.yaml`, so the `ai.embeddings` keys and `llama-embed.service` proposed below are superseded. The engine, store and retrieval analysis still stand. Index: `_research/LOCAL_LLM_BACKEND_INDEX.md`.
 **Hardware**: RTX 4090 24 GB + i9-13900K (no AVX-512), ample RAM.
-**Backend**: llama.cpp / `llama-server` (OpenAI-compatible), already wired at
-`127.0.0.1:8080` via `.chezmoidata/ai.yaml` + `llama-server.service.tmpl`.
+**Backend**: llama.cpp behind llama-swap (OpenAI-compatible) at `127.0.0.1:8080`
+(`llama-swap.service`; host/port in `.chezmoidata/ai.yaml`).
 **Priority**: RAG is use case #3 (after agentic coding, shell helpers) → favor
 SIMPLE + composable over enterprise frameworks.
 
 > **See**: `_research/LOCAL_LLM_BACKEND_INDEX.md` (program framing),
-> `_research/LLM_BACKENDS_RESEARCH.md` (why llama.cpp).
+> `_research/archive/LLM_BACKENDS_RESEARCH.md` (why llama.cpp).
 
 ---
 
@@ -110,7 +111,7 @@ and reranking additionally needs `--pooling rank` with a reranker model. So the
 main chat/coding model at `:8080` and the embedding model are **necessarily
 different `llama-server` processes**. Practical layout:
 
-- `:8080` — chat/coding model (existing `llama-server.service`).
+- `:8080` — llama-swap proxy (`llama-swap.service`); it spawns the chat roles and the `embed` role on its own ports.
 - `:8081` — embedding model, `--embedding --pooling mean` (new unit).
 - `:8082` — (optional) reranker, `--embedding --pooling rank` (new unit).
 
@@ -304,40 +305,9 @@ Concrete wiring, matching existing repo conventions (feeds the later plan):
   (AUR `sqlite-vec` or pip `sqlite-vec`; pin a version). Prefer a real Arch/AUR
   package over pip per the repo's supply-chain policy.
 - Embedding + rerank **GGUF models** are *not* packages — they go through the
-  existing `ai.models` download path (`run_onchange_after_install_ai_models`).
+  `# url:` comment + `llama-models pull` path (`private_dot_local/lib/scripts/ai/`).
 
-**Config** (`.chezmoidata/ai.yaml`) — extend, don't fork:
-```yaml
-ai:
-  server: { port: 8080, host: "127.0.0.1", n_gpu_layers: 99 }   # existing chat
-  embeddings:
-    enabled: false            # feature-gate like features.voxtype
-    port: 8081
-    pooling: "mean"           # match chosen model
-    model: ""                 # GGUF filename in models_dir
-  rerank:
-    enabled: false
-    port: 8082
-    model: ""                 # bge-reranker-v2-m3 GGUF
-  rag:
-    corpus_dirs:              # what to index
-      - "~/.local/share/chezmoi"
-      - "~/notes"
-    chunk_tokens: 512
-    chunk_overlap: 64
-    index_db: "~/.local/share/rag/index.db"
-```
-Gate the new instances behind `ai.embeddings.enabled` / `ai.rerank.enabled` so
-the default install stays lean (same pattern as `features.*` toggles).
-
-**Systemd units** (`private_dot_config/systemd/user/`):
-- `llama-embed.service.tmpl` — clone of `llama-server.service.tmpl` with
-  `--embedding --pooling {{ .ai.embeddings.pooling }}`, port `:8081`, its own
-  `~/.config/llama-server/embed.env`.
-- `llama-rerank.service.tmpl` (optional) — `--embedding --pooling rank`, `:8082`.
-- Register enablement in `.chezmoidata/services.yaml` `user_services`, gated on
-  the model file existing (mirror how `llama-server.service` is gated on the
-  binary), enabled by `run_once_after_002_configure_system_services`.
+**Config / serving** (superseded by llama-swap): the `embed` role (`--embedding --pooling mean`, member of the `resident` group) is already in `private_dot_config/llama-swap/config.yaml`, so no `llama-embed.service`, `ai.embeddings` keys or `services.yaml` entry are needed. Set the role's model file and `# url:`, then `llama-models pull`. A reranker would be a second role with `--pooling rank`. Corpus settings (`corpus_dirs`, `chunk_tokens: 512`, `chunk_overlap: 64`, `index_db: ~/.local/share/rag/index.db`) belong to the retrieval CLI's own config.
 
 **Retrieval CLI** (`private_dot_local/lib/scripts/`):
 - New category or under `system/` — e.g. `lib/scripts/ai/` with

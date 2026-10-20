@@ -1,5 +1,7 @@
 # Local LLM Router / Multi-Model Serving — Evaluation
 
+**Status**: **ARCHIVED 2026-10-20.** Phase 1 is implemented: `llama-swap.service` + `private_dot_config/llama-swap/config.yaml` (resident/heavy groups). The templated `config.yaml` built from `ai.roles`/`ai.groups` it proposes was rejected in favour of a plain file; cloud gateway (LiteLLM/Olla) stays out of scope.
+
 **Status**: Research (2026-07-13). Track 2 of the Local LLM Backend research (see `LOCAL_LLM_BACKEND_INDEX.md`).
 **Scope**: Whether to put a gateway/router/multi-model serving layer in front of `llama-server` on a single 24 GB GPU — and if so, the lightest one.
 **Hardware**: RTX 4090 24 GB (single GPU) + i9-13900K (no AVX-512 → keep inference on GPU). Ample RAM.

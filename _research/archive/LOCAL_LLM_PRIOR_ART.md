@@ -1,5 +1,7 @@
 # Local LLM Backend — Prior Art & Constraints
 
+**Status**: **ARCHIVED 2026-10-20.** Point-in-time record of the gaps found before the llama-swap backend; all closed by ae9a5b7. Package is now `llama-cpp` (not `llama.cpp-bin`) and the menu uses `quickshell-menu` (Wofi retired).
+
 **Status**: Git-archaeology record (compiled 2026-07-13). Track 0 of the Local LLM research effort — see `_research/LOCAL_LLM_BACKEND_INDEX.md`.
 **Purpose**: Document every past attempt at a local LLM backend in this repo, why each was abandoned, and the hard constraints those failures impose on future work.
 **Method**: Mined `git log --all` + per-commit diffs. Facts are sourced to commit SHAs; judgement calls are labelled **[inferred]**.

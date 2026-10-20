@@ -3,7 +3,7 @@
 **Focus**: Which GGUF models to *serve* on a single RTX 4090 (24GB) for agentic
 coding, a fast shell helper, and RAG embeddings.
 **Backend**: llama.cpp / `llama-server` (GGUF, OpenAI-compatible) — already decided
-(see `_research/LLM_BACKENDS_RESEARCH.md`).
+(see `_research/archive/LLM_BACKENDS_RESEARCH.md`).
 **Date**: 2026-07 · **Hardware**: RTX 4090 24GB + i9-13900K (no AVX-512 → keep
 weights on GPU; CPU offload of prompt processing is slow) + ample system RAM.
 
@@ -226,46 +226,18 @@ for fastest bulk ingestion.
 
 ## Dotfiles integration notes
 
-Config lives in `.chezmoidata/ai.yaml` (`ai.models` list, each `{name, file, url}`);
-`ai.models_dir` = `~/.local/share/models`; downloaded by
-`run_onchange_after_install_ai_models.sh.tmpl` (resumable `wget -c`, skip-existing).
-The server env (`~/.config/llama-server/env`) is generated from the **first**
-configured model (`MODEL_FILE`, `N_GPU_LAYERS`).
+Config lives in `private_dot_config/llama-swap/config.yaml` (plain file, not a template; roles
+`coder`/`helper`/`embed`, a `llama` flag macro, `resident`/`heavy` groups: see that directory's
+`CLAUDE.md`). `.chezmoidata/ai.yaml` is only server host/port. Each role's download URL rides as a
+`# url:` comment above its `cmd`; `llama-models pull` (`private_dot_local/lib/scripts/ai/`)
+downloads into `~/.local/share/models`. An earlier draft of this section proposed an `ai.models`
+list plus an env-file generator; that route was dropped (ae9a5b7).
 
-Proposed `ai.models` entries (roles-as-models; first entry = the served coder):
-
-```yaml
-ai:
-  server:
-    port: 8080
-    host: "127.0.0.1"
-    n_gpu_layers: 99          # keep everything on GPU (no AVX-512 → avoid CPU offload)
-  models_dir: "~/.local/share/models"
-  models:
-    # --- agentic coder (primary, served) ---
-    - name: glm-4.7-flash
-      file: GLM-4.7-Flash-UD-Q4_K_XL.gguf
-      url: https://huggingface.co/unsloth/GLM-4.7-Flash-GGUF/resolve/main/GLM-4.7-Flash-UD-Q4_K_XL.gguf
-    # --- accuracy alternate (kept on disk) ---
-    - name: devstral-small-2-24b
-      file: Devstral-Small-2-24B-Instruct-2512-Q5_K_M.gguf
-      url: https://huggingface.co/unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF/resolve/main/Devstral-Small-2-24B-Instruct-2512-Q5_K_M.gguf
-    # --- shell helper ---
-    - name: qwen3-4b-2507
-      file: Qwen3-4B-Instruct-2507-Q5_K_M.gguf
-      url: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q5_K_M.gguf
-    # --- embeddings (run as a separate --embedding server) ---
-    - name: bge-m3
-      file: bge-m3-Q8_0.gguf
-      url: https://huggingface.co/<verify-repo>/bge-m3-Q8_0.gguf
-```
-
-**Server flags to add** (not yet templated in `llama-server.service.tmpl` — the env
-only sets `MODEL_FILE`/`N_GPU_LAYERS`): consider surfacing
-`--ctx-size`, `--flash-attn`, `--cache-type-k q8_0 --cache-type-v q8_0`, and a
-`--jinja`/tool-call template flag in `ai.yaml` so the coder gets 64k ctx + quantized
-KV without editing the unit. Verify exact URLs (`resolve/main/<file>`) at pull time —
-filenames above match the repos as of 2026-07.
+Roster as shipped (2026-07): `coder` = GLM-4.7-Flash UD-Q4_K_XL (65k ctx), `helper` =
+Qwen3-4B-Instruct-2507 Q5_K_M, `embed` = placeholder (url unset until the RAG sub-project).
+Devstral-Small-2 (accuracy alternate) and Qwen3-Coder-30B are **not** in the config: add a role with
+a `# url:` comment to try them. Server flags (`--jinja -fa`, q8_0 KV, `--metrics`) are the `llama`
+macro. Verify exact URLs (`resolve/main/<file>`) at pull time; filenames match the repos as of 2026-07.
 
 **Disk budget**: GLM-4.7-Flash ~18GB + Devstral Q5 ~17GB + Qwen3-4B ~3GB +
 bge-m3 ~1GB ≈ **~39GB**. Add Qwen3-Coder-30B (~18GB) if you keep all three coders →
