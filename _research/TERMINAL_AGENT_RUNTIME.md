@@ -3,7 +3,7 @@
 **Source**: Herdr v0.9.0, shallow clone of `github.com/herdrdev/herdr` (Apache-2.0), read at source level. **Not vendored** — see "Reproducing this research".
 **Created**: 2026-09-13
 **Purpose**: Decide what owns the terminal layer and what owns the agent layer, now that coding agents changed the requirement the 2026 Ghostty migration was planned against.
-**Status**: Research complete. No integration performed. Decision pending.
+**Status**: Terminal question **resolved**: zellij was removed 2026-09-21 (`c54e4cd`) for native Ghostty splits. Agent-layer question **still open**: herdr is installed through mise (`.chezmoidata/mise.yaml:30`, `herdr: latest`, `42acaa4`) but has no config, theme hook or binding, so nothing is integrated. Written 2026-09-13; Parts 1 and 6 describe the pre-removal state.
 
 **See**: `_plans/archive/ZELLIJ_TO_GHOSTTY_MIGRATION.md` (the plan this amends) · `private_dot_local/lib/scripts/system/CLAUDE.md` → "Package Security Policy"
 
@@ -13,8 +13,8 @@
 
 Three candidates have been proposed for one layer, at three different times:
 
-1. **Zellij** — installed, configured, in use.
-2. **Ghostty-native, no multiplexer** — planned, Phases 1–2 live, Phases 3–4 written and gated.
+1. **Zellij** — installed, configured, in use *(removed 2026-09-21)*.
+2. **Ghostty-native, no multiplexer** — planned, Phases 1–2 live, Phases 3–4 written and gated *(carried out in `c54e4cd`)*.
 3. **Herdr** — proposed 2026-09-13.
 
 They are not interchangeable, and the third is not a multiplexer in the sense the other two are. This document separates the *terminal* question from the *agent* question, because conflating them is what makes the choice look harder than it is.
@@ -35,26 +35,9 @@ They are not interchangeable, and the third is not a multiplexer in the sense th
 
 ---
 
-## Part 1 — The layer as it stands
+## Part 1 — The layer as it stood (pre-2026-09-21)
 
-**Zellij surface in this repo** (what a removal would touch):
-
-| Path | Role |
-|---|---|
-| `.chezmoidata/packages.yaml:173` | the package |
-| `private_dot_config/zellij/config.kdl` | `default_mode "locked"`, `on_force_close "detach"`, 50k scrollback |
-| `private_dot_config/zellij/layouts/{coding,agentic-coding,monitoring}.kdl` | declarative startup layouts |
-| `private_dot_config/zellij/themes/symlink_default.kdl.tmpl` | theme symlink |
-| `private_dot_config/themes/*/zellij.kdl` | 8 colorsets |
-| `private_dot_local/lib/scripts/desktop/executable_theme-apply-zellij` | + its hook in `executable_theme-switcher.tmpl` |
-| `private_dot_config/zsh/dot_zshrc.d/zellij-layouts.zsh.tmpl` | 99 lines: `zdl`, chpwd auto session-rename |
-| `private_dot_config/zsh/dot_zshrc.d/zellij-completions.zsh` | completions |
-| `private_dot_local/lib/scripts/terminal/executable_zellij-sessionizer.tmpl` | fzf project picker |
-| `private_dot_config/zsh/dot_zshrc.d/aliases.zsh:30` | `alias zj` |
-| `private_dot_config/hypr/conf/bindings/applications.{lua,conf}.tmpl:24` | `SUPER+O` |
-| `private_dot_config/nvim/lua/plugins/user.lua:3-28` | `zellij-nav.nvim`, `image.nvim` sixel ternary |
-
-**Ghostty-native trial**: `executable_ghostty-sessionizer.tmpl` on `SUPER+SHIFT+O`, splits confirmed native, nothing zellij-owned removed. Phases 3–4 written but gated on an explicit go-ahead that was never given.
+Zellij owned the layer: package, `private_dot_config/zellij/` (config, layouts, theme symlink), eight per-theme `zellij.kdl` colorsets, `theme-apply-zellij`, the `zellij-layouts`/`zellij-completions` zsh drop-ins, `zellij-sessionizer`, `alias zj`, a `SUPER+O` binding and `zellij-nav.nvim`. Commit `c54e4cd` removed all of it. What exists now: `private_dot_local/lib/scripts/terminal/executable_ghostty-sessionizer.tmpl` (`SUPER+SHIFT+O`), native Ghostty splits, and AstroNvim's `<C-hjkl>` window navigation. `smart-splits.nvim` was **not** adopted (no match in `private_dot_config/nvim`).
 
 ---
 
@@ -169,6 +152,8 @@ Mitigation is trivial (`version_check = false`, never invoke `self-update`) but 
 
 ### Packaging
 
+**As installed**: via mise (`herdr: latest`), not the AUR, which sidesteps the tripwire tier below. By this section's own reading of `src/update.rs:1981-1985`, a mise-managed path *is* recognised as package-managed, so `herdr self-update` should refuse. Untested here; confirm before relying on it. `version_check` and `manifest_check` still default to **on**.
+
 | Package | Version | Votes / popularity | Note |
 |---|---|---|---|
 | `herdr-bin` | 0.9.0-1 | 14 / 6.35 | prebuilt from GitHub releases — the viable option |
@@ -211,7 +196,7 @@ The Phase 4 end state scores zero on both stated drivers. That is the finding th
 
 **Position**: the terminal question and the agent question should be answered separately, and only the agent question is actually open.
 
-- **Terminal layer** — the Ghostty-native migration remains correct for interactive work. Its rationale (native splits, no multiplexer tax, layouts inside nvim) is unaffected by anything in this document. Phase 3 (`zellij-nav.nvim` → `smart-splits.nvim`) is a no-regret move under every option, because `smart-splits.nvim` supports tmux, zellij, wezterm, kitty **and herdr** (`multiplexer_integration = 'herdr'`, with upstream shipping `herdr-plugin.toml` and `scripts/herdr-navigate.sh`). It works under all three candidates simultaneously.
+- **Terminal layer** — the Ghostty-native migration remains correct for interactive work. Its rationale (native splits, no multiplexer tax, layouts inside nvim) is unaffected by anything in this document. Phase 3 (`zellij-nav.nvim` → `smart-splits.nvim`) was judged a no-regret move under every option *(not taken: zellij-nav was dropped and AstroNvim's `<C-hjkl>` used; revisit only if herdr is adopted)*, because `smart-splits.nvim` supports tmux, zellij, wezterm, kitty **and herdr** (`multiplexer_integration = 'herdr'`, with upstream shipping `herdr-plugin.toml` and `scripts/herdr-navigate.sh`). It works under all three candidates simultaneously.
 - **Agent layer** — Herdr is the only candidate that addresses the measured pain. It should be scoped as the agent layer only, not as a Zellij replacement, which keeps its blast radius to agent panes and leaves interactive work on the path already planned.
 
 **What would make this a yes**, any one of:

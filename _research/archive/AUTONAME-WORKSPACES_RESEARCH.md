@@ -1,5 +1,7 @@
 # hyprland-autoname-workspaces Research Notes
 
+**Status**: **ARCHIVED 2026-10-20.** Never implemented, and obsolete: it targets Waybar (retired 2026-10-15). The Quickshell bar already shows the top window glyph per workspace (`quickshell/dotfiles/bar/widgets/WorkspacesWidget.qml`).
+
 Investigated for future implementation of automatic workspace naming.
 
 ## Summary

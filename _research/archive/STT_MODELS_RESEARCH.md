@@ -1,4 +1,6 @@
 # STT Models Research
+
+**Status**: **ARCHIVED 2026-10-20.** Voxtype is what shipped; claims here are stale: voxtype is 1.1.1 (not 0.7.5), `engine` defaults to cohere, the `[meeting.summary]`/Ollama block left voxtype in 1.0, and the plan it cites is `_plans/archive/VOICE_STT_IMPLEMENTATION_PLAN.md`. Current config: `private_dot_config/voxtype/config.toml.tmpl`. February benchmark sections are historical.
 **Created**: February 2026 | **Updated**: June 2026 (voxtype 0.7.x)
 **Focus**: Speech-to-text engines for local voice dictation
 

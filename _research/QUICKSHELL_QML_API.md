@@ -1,9 +1,9 @@
 # Quickshell QML API Reference
 **Source**: Vendored upstream at `_ai/quickshell/` (git.outfoxxed.me/quickshell/quickshell, LGPL-3)
-**Created**: June 2026 · **Corrected five times; last 2026-09-13**
+**Created**: June 2026 · **Corrected six times; last 2026-10-20** (version, Waybar remnants)
 **Purpose**: API reference for building custom Quickshell desktop shell components (bar, launcher, notifications, etc.)
 **Status**: **LIVE reference.** Not a plan and not a record — it describes the installed
-`quickshell 0.3.1` and should be corrected in place when it is found wrong. Runtime *behaviours*
+`quickshell 0.3.1`, API-verified on 0.3.1; installed is **0.3.2** (2026-10-11). 0.3.2 broke qmllint's view of several types (see `.claude/rules/quickshell-qml.md`: `PanelWindow.margins`, `PopupAnchor.*`, `ObjectModel.values`, `ShellScreen.name`); runtime behaviour is unchanged. Correct in place when found wrong. Runtime *behaviours*
 (as opposed to API shapes) are in `.claude/rules/quickshell-qml.md`.
 
 🚨 **Corrected 2026-09-01.** This doc was written from an incomplete API picture and several of
@@ -734,7 +734,7 @@ and stops it; `stdout`/`stderr` take a `DataStreamParser` — `SplitParser` for 
 
 ```qml
 Process {
-    command: ["waybar-kanata-layer"]
+    command: ["kanata-layer"]
     running: true
     stdout: SplitParser { onRead: line => root.layer = line }
 }
@@ -1010,8 +1010,8 @@ ShellRoot {
                 anchors.fill: parent
                 anchors.margins: 5
 
-                // Workspace buttons — this monitor's only, matching Waybar's
-                // all-outputs:false.
+                // Workspace buttons — this monitor's only (the old Waybar bar
+                // used all-outputs:false).
                 Row {
                     spacing: 5
 
@@ -1101,6 +1101,6 @@ ShellRoot {
 
 Theming bridge (`Theme.qml` parses `colors.sh` at runtime), modular components, Hyprland IPC
 depth, service integration and the prototype-beside-Waybar all landed between 2026-08-31 and
-2026-09-12. The shell is the deployed one; Waybar is the fallback. This document is now a
+2026-09-12. The shell is the deployed one; Waybar was retired 2026-10-15 and there is no fallback bar. This document is now a
 **reference only** — what exists is `private_dot_config/quickshell/CLAUDE.md`, what does not is
 `_research/archive/QUICKSHELL_SURFACE_INVENTORY.md`.

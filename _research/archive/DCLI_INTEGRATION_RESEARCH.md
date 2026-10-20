@@ -1,5 +1,7 @@
 # dcli Integration Research
 
+**Status**: **ARCHIVED 2026-10-20.** Decision ("do not replace; keep package-manager") was carried out. Its description of package-manager (v3.0, 4 layers, `--json`/`search`/`defaults` proposals, tripwire docs at CLAUDE.md:201-252) predates the 2026-10-19 rework to `sync`/`update`/`approve` (`private_dot_local/lib/scripts/system/package-manager/CLAUDE.md`). dcli stays vendored in `_ai/dcli` as a reference only.
+
 **Created**: July 2026
 **Focus**: Evaluate replacing the in-tree `package-manager` with upstream `dcli` (vendored at `_ai/dcli/`) as the declarative package layer for this repo.
 **Phase**: Investigation complete. **Verdict: do not replace.** Doors left open for selective feature adoption and a non-invasive shim prototype.

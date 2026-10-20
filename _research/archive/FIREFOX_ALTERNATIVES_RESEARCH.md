@@ -1,5 +1,7 @@
 # Firefox-Based Browser Alternatives: Research
 
+**Status**: **ARCHIVED 2026-10-20.** Decision carried out: stay on Firefox and run the profiles plan (now `_plans/archive/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md`, executed). Windowrule references to `windowrules.conf` are stale (Hyprland config is Lua). The revisit triggers near the end of the file are the only part still worth rereading.
+
 Evaluates Gecko/Firefox-derived browsers as a replacement for stock Firefox, **before** committing
 to `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` (committed on branch
 `firefox-profiles`, not yet executed). Chromium-based browsers are out of scope by requirement.
