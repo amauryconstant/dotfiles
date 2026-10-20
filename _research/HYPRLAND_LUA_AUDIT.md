@@ -4,9 +4,9 @@ Closed investigation (2026-08-30): every `.conf`/`.lua` pair in the Hyprland con
 semantically for drift, before the Lua entry point cuts over. All findings below were fixed at the
 time of the audit.
 
-**See**: `_guides/HYPRLAND_LUA_CUTOVER.md` for the current hold status and the cutover/rollback
-runbook. `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit fork this cutover also
-activates.
+**See**: `_guides/archive/HYPRLAND_LUA_CUTOVER.md` for the cutover record (done 2026-09-01; its
+rollback section no longer works). `_guides/HYPRSPLIT_PLUGIN_FORK_DECISION.md` for the hyprsplit
+fork that cutover activated. All findings here are closed; live rules still cite this file.
 
 Two audits live here. The first (2026-08-30) is **config-side**: `.conf`/`.lua` parity. The
 second (2026-09-01, at the end of this file) is the **`hyprctl dispatch` script fleet** — 30
@@ -73,7 +73,7 @@ catch.
 **`Hyprland --verify-config` exists** — "Do not run Hyprland, only print if the config has any
 errors". It resolves the rest of the tree through `package.path`, proving the tree **parses** and
 every `require` resolves — it does **not** prove dispatcher arguments are semantically correct. The
-runnable recipe lives in `_guides/HYPRLAND_LUA_CUTOVER.md`, which is where it gets used.
+runnable recipe lives in `_guides/archive/HYPRLAND_LUA_CUTOVER.md`, which is where it gets used.
 
 ---
 
@@ -234,7 +234,7 @@ compares against its own hardcoded `hyprctl dispatch submap <name>` and now repo
 *"configured (but not for Hyprland)"*. Cosmetic.
 
 **Confirmed on the real session after the reboot** (full table in
-`_guides/HYPRLAND_LUA_CUTOVER.md`): DPMS goes off *and back on* (`dpmsStatus` true → false → true,
+`_guides/archive/HYPRLAND_LUA_CUTOVER.md`): DPMS goes off *and back on* (`dpmsStatus` true → false → true,
 and both `misc.*_enables_dpms` options are false here, so `dpms on` is genuinely the only way
 back); a production `session-restore` fired all four `exec_cmd` rules-table dispatches and got
 4/4 windows back; `hyprctl plugin list` reports no plugins, so hyprsplit is the Lua library;

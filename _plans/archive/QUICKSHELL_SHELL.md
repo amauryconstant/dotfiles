@@ -292,7 +292,7 @@ nothing.
   templates (fact #17), so the `{{ if }}` reading it lives in a consumer, never here.
 - Autostart is a **`conf.d/` drop-in gated in `.chezmoiignore`**, not an edit to
   `conf/autostart.{lua,conf}`. New `conf.d/quickshell.lua` + `conf.d/quickshell.conf` twins
-  (both, until the `.conf` set is retired — `_guides/HYPRLAND_LUA_CUTOVER.md`):
+  (both, until the `.conf` set is retired — `_guides/archive/HYPRLAND_LUA_CUTOVER.md`):
 
   ```
   {{ if not .features.quickshell_shell.enabled }}
@@ -379,7 +379,7 @@ clicks", which Phase 1 exit already satisfies. Waybar may keep running, degraded
 
 **Prerequisite: audit `hyprctl dispatch` across the whole tree.** Waybar was only ever the
 *named* blocker, and it is the only one either `_research/HYPRLAND_LUA_AUDIT.md` or
-`_guides/HYPRLAND_LUA_CUTOVER.md` scopes — the audit reconciled the 21 `conf/X.conf` ↔
+`_guides/archive/HYPRLAND_LUA_CUTOVER.md` scopes — the audit reconciled the 21 `conf/X.conf` ↔
 `conf/X.lua` pairs, which is config-side only. Our own script fleet was never in scope, and
 it holds ~12 call sites on the same legacy dispatch-string syntax that Lua mode changed:
 
@@ -413,12 +413,12 @@ hypridle ignores its command's status.
 - [x] Convert the sites — **30, not 29** (`PowerMenu.qml:47` postdated the inventory).
       Done 2026-09-01; per-site table and conversion notes in `_research/HYPRLAND_LUA_AUDIT.md`
 - [x] Delete the `.chezmoiignore` TEMP block
-- [x] Update `_guides/HYPRLAND_LUA_CUTOVER.md`, `hypr/CLAUDE.md` (both carried the stale
+- [x] Update `_guides/archive/HYPRLAND_LUA_CUTOVER.md`, `hypr/CLAUDE.md` (both carried the stale
       "held on Waybar #5013" reason), and the audit
 - [x] `chezmoi apply` + reboot — done 2026-09-01, `configProvider: "lua"` live
 - [x] Verify the converted sites on the real session — DPMS both ways, a production
       `session-restore` (4/4 windows), `window-pop`, submaps, hyprsplit as a Lua library.
-      Table in `_guides/HYPRLAND_LUA_CUTOVER.md`
+      Table in `_guides/archive/HYPRLAND_LUA_CUTOVER.md`
 - [ ] Still open, needs the hardware: anything multi-monitor (`SUPER+ALT+m`,
       `hl.dsp.workspace.move`'s monitor arg), a bar workspace click, media keys on hyprlock
 - [ ] Update `_plans/OMARCHY.md` P1: the blocker was routed around, not resolved upstream
@@ -648,7 +648,7 @@ Per tool, the checklist is the same:
   pointer here so "skipped" is not read as "never"
 - `_research/HYPRLAND_LUA_AUDIT.md` — the audit is config-side only; the `hyprctl dispatch`
   script fleet (Phase 2 prerequisite) belongs in it either way the verification lands
-- `_guides/HYPRLAND_LUA_CUTOVER.md` — the hold reason changes from "waiting on Waybar
+- `_guides/archive/HYPRLAND_LUA_CUTOVER.md` — the hold reason changes from "waiting on Waybar
   0.16.0" to "waiting on the Quickshell bar"; add the degraded-Waybar note
 - Root `CLAUDE.md` Quick Reference and `themes/CLAUDE.md` file list — only at Phase 6, per
   tool actually removed

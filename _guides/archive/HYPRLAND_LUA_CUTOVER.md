@@ -1,5 +1,7 @@
 # Hyprland Lua Config Cutover
 
+**Status**: **ARCHIVED 2026-10-20.** Cutover done 2026-09-01 and verified live; this is history. Validation recipe now lives in `.claude/rules/hyprland-lua.md`, open items and the rollback caveat in `private_dot_config/hypr/CLAUDE.md`. Stale below: the Waybar hold and flag text (Waybar retired 2026-10-15), and the Rollback section, which no longer works (the hyprpm plugin build was deleted in `cd09c89`; a `.conf` fallback has no hyprsplit). The validator is `run_once_after_008_validate_hyprland_config` (it still checks only `.conf` files) and `mise run lint:hypr-lua`.
+
 How the Hyprland entry point was flipped from `.conf` to `.lua`, what was verified afterwards,
 and how to roll back if it turns out worse in daily use.
 
