@@ -94,7 +94,7 @@ What exists and is correct:
 - **`.chezmoiscripts/run_onchange_after_install_ai_models.sh.tmpl`** — hash-triggered on `.ai.models`; creates `models_dir`; if models configured, checks for `llama-server`, downloads each GGUF with resumable `wget -c` (`.part` → rename), and writes `~/.config/llama-server/env` from the **first** model (`MODEL_FILE`, `N_GPU_LAYERS`). No-op with a warning when `models` is empty.
 - **`menu-ai`** (wofi submenu) — opencode, claude-code, and "llama-server Status" (`systemctl --user status`). Terminal via `{{ .globals.applications.terminal }}`.
 - **Package**: `llama.cpp-bin` (pre-compiled, not AUR source).
-- **Decision record**: `_research/LLM_BACKENDS_RESEARCH.md` (canonical: llama.cpp chosen; Ollama dropped; port 8080).
+- **Decision record**: `_research/archive/LLM_BACKENDS_RESEARCH.md` (canonical: llama.cpp chosen; Ollama dropped; port 8080).
 
 ### Gaps / rough edges in the baseline
 - **No model served.** `ai.models` empty → `llama-server` never starts (env file never created → `ConditionPathExists` false). The whole stack is dormant. This is the single biggest gap.
@@ -147,6 +147,6 @@ What exists and is correct:
 - `2d31be1` Add Manifest LLM router — **branch `manifest-server` only, never merged** (merge-base with main = `e7bb2b2` = current HEAD)
 - `4b3d802` Templatize llama-server + data-driven · `9e087c8` record decision
 
-**Current-state files:** `.chezmoidata/ai.yaml`, `.chezmoidata/services.yaml`, `private_dot_config/systemd/user/llama-server.service.tmpl`, `.chezmoiscripts/run_onchange_after_install_ai_models.sh.tmpl`, `private_dot_local/lib/scripts/user-interface/executable_menu-ai.tmpl`, `private_dot_config/voxtype/config.toml.tmpl` (stale Ollama), `_research/LLM_BACKENDS_RESEARCH.md`, `_research/LOCAL_LLM_BACKEND_INDEX.md`.
+**Current-state files:** `.chezmoidata/ai.yaml`, `.chezmoidata/services.yaml`, `private_dot_config/systemd/user/llama-server.service.tmpl`, `.chezmoiscripts/run_onchange_after_install_ai_models.sh.tmpl`, `private_dot_local/lib/scripts/user-interface/executable_menu-ai.tmpl`, `private_dot_config/voxtype/config.toml.tmpl` (stale Ollama), `_research/archive/LLM_BACKENDS_RESEARCH.md`, `_research/LOCAL_LLM_BACKEND_INDEX.md`.
 
 **Branches:** `origin/manifest-server` (abandoned, ~2026-05-06).

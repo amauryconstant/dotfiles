@@ -1,7 +1,7 @@
 # Firefox Profile Launch Behaviour (157, Wayland + XWayland)
 
 Measured record of how Firefox 157.0.1 selects, names and routes profiles on this machine, taken
-to design the multi-profile setup in `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md`. Every
+to design the multi-profile setup in `_plans/archive/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md`. Every
 result below was observed on 2026-10-14 through the real EGL wrapper
 (`private_dot_local/bin/executable_firefox`), not the bare binary. Reproduce with
 `.scripts/firefox-profile-gate.sh`.

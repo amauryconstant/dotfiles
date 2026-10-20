@@ -3,7 +3,7 @@
 **Status**: **ARCHIVED 2026-10-20.** Decision carried out: stay on Firefox and run the profiles plan (now `_plans/archive/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md`, executed). Windowrule references to `windowrules.conf` are stale (Hyprland config is Lua). The revisit triggers near the end of the file are the only part still worth rereading.
 
 Evaluates Gecko/Firefox-derived browsers as a replacement for stock Firefox, **before** committing
-to `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` (committed on branch
+to `_plans/archive/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` (committed on branch
 `firefox-profiles`, not yet executed). Chromium-based browsers are out of scope by requirement.
 
 **Date**: 2026-08-08 · **System Firefox**: 153.0.3-2 (`extra`)
@@ -28,7 +28,7 @@ The existing Firefox integration, measured:
 | Theming | `themes/*/firefox-userChrome.css` + `desktop/executable_theme-apply-firefox` | **8 files × 343 lines = 2744 lines**, 27 chrome selectors |
 | Session | `dotfiles/session-browsers.conf` | class `firefox` |
 | Hyprland | `bindings/applications.conf.tmpl` + `.lua`, `windowrules.conf` | `SUPER+W` → `firefox` |
-| **Pending** | `_plans/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` | 866 lines, 7 tasks, not yet executed |
+| **Pending** | `_plans/archive/FIREFOX_PROFILES_IMPLEMENTATION_PLAN.md` | 866 lines, 7 tasks, not yet executed |
 
 The 2744 lines of `userChrome.css` are the migration cost centre. They target Firefox chrome IDs
 (`#TabsToolbar`, `#back-button`, `.tabbrowser-tab[selected]` …). Their portability is the single
