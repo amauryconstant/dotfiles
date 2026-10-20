@@ -104,7 +104,7 @@ paths:
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
-| merge_claude_settings | jaq-merge `claude/create_private_settings.json` into the live `~/.config/claude/settings.json` | The seed file changes |
+| merge_claude_settings | jaq-merge `claude/create_settings.json` into the live `~/.config/claude/settings.json` | The seed file changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
 | apply_starship_config | Runs `theme-apply-starship`; first install, and an apply that edits the base reaches the generated file | `starship/base.toml` or any `themes/*/starship.toml` changes |

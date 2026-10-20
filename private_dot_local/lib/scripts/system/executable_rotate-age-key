@@ -457,10 +457,16 @@ cmd_restic() {
     # Re-encrypt in chezmoi
     if chezmoi managed 2>/dev/null | grep -q "\.local/share/backups/.restic-password"; then
         ui_step "Re-encrypting password in chezmoi"
-        chezmoi add --encrypt "$RESTIC_PASSWORD_FILE"
-
         local encrypted_restic
         encrypted_restic=$(chezmoi source-path "$RESTIC_PASSWORD_FILE" 2>/dev/null || true)
+
+        chezmoi add --encrypt "$RESTIC_PASSWORD_FILE"
+
+        # The 0600 file re-adds as encrypted_private_*, beside the prefix-free source; fold it back
+        local readded="${encrypted_restic%/*}/encrypted_private_${encrypted_restic##*/encrypted_}"
+        if [[ -n "$encrypted_restic" ]] && [[ -f "$readded" ]]; then
+            mv -f "$readded" "$encrypted_restic"
+        fi
         if [[ -n "$encrypted_restic" ]] && [[ ! -f "$encrypted_restic" ]]; then
             ui_error "Restic password encryption failed: $encrypted_restic not found"
             exit 1
@@ -485,7 +491,7 @@ cmd_restic() {
     ui_subtitle "NEXT STEPS"
     ui_output "Commit the change:"
     ui_output "  cd $CHEZMOI_SOURCE"
-    ui_output "  git add private_dot_local/share/private_backups/"
+    ui_output "  git add private_dot_local/share/backups/"
     ui_output "  git commit -m 'Rotate restic backup password'"
     ui_output "  git push"
 }

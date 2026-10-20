@@ -49,6 +49,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 | Prefix | Target | Example |
 |--------|--------|---------|
 | `private_dot_*` | `~/.{name}` | `private_dot_config/` → `~/.config/` |
+| (nested `private_`) | — | Only on top-level dirs and inside `private_dot_ssh/`/`private_dot_keys/`. umask 0077 already makes all targets 600/700; after `chezmoi add` run `chezmoi chattr -- noprivate <target>` (`lint:private-prefix` enforces) |
 | `encrypted_*` | Age-encrypted | `encrypted_key.txt.age` → `key.txt` |
 | `executable_*` | Executable | `executable_script` → `script` (755) |
 | `modify_*` | chezmoi_modify_manager | `modify_app.conf.tmpl` → managed |

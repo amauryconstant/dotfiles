@@ -33,7 +33,7 @@
 | `jj/` | Jujutsu VCS config | ✅ Yes |
 | `dotfiles/` | Hook system + extra bindings | ✅ Yes |
 | `opencode/` | opencode TUI config (theme-managed, `modify_opencode.jsonc`) | ❌ No |
-| `claude/` | Claude Code config (`create_private_settings.json` — seeds a missing file, `run_onchange_after_merge_claude_settings` jaq-merges it into an existing one; `accounts/<name>.json` — `ccp -a` overrides, e.g. ringstone) | ❌ No |
+| `claude/` | Claude Code config (`create_settings.json` — seeds a missing file, `run_onchange_after_merge_claude_settings` jaq-merges it into an existing one; `accounts/<name>.json` — `ccp -a` overrides, e.g. ringstone) | ❌ No |
 | `bat/` | Syntax highlighting (symlink-only, themed) | ❌ No |
 | `broot/` | File tree (conf.hjson + verbs.hjson + theme symlink) | ❌ No |
 | `lazygit/` | Git TUI (symlink-only, themed) | ❌ No |

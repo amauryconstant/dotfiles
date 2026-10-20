@@ -36,7 +36,7 @@ A modify-template re-serializes: `fromJson` → `toPrettyJson` sorts keys and no
 
 Caveman did exactly this (retired 2026-10-15): its manifest stored `after_sha256` of `~/.config/claude/settings.json`. An apply through a modify-template preserved its `env`/`hooks` intact and still flipped the integration to `owned: false` / `state: degraded`, and its reinstall then refused to touch the file. Recovery was to restore the file to the manifest's `before_sha256` and re-run its fix.
 
-Use `create_` for these files: chezmoi writes the seed only when the target is absent and never touches it again. See `private_dot_config/claude/create_private_settings.json`.
+Use `create_` for these files: chezmoi writes the seed only when the target is absent and never touches it again. See `private_dot_config/claude/create_settings.json`.
 
 To keep versioning keys on a machine that already has the file, pair the seed with a `run_onchange_after_` script that deep-merges it in with `jaq '. * $seed'` (see `.chezmoiscripts/run_onchange_after_merge_claude_settings.sh.tmpl`). jaq keeps key order and escaping, so only the declared lines change — verified by diff. Any seed edit re-asserts every declared key (reverting a later `/model` change); deleting a key from the seed does not remove it from the live file.
 

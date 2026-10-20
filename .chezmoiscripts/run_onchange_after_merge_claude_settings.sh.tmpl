@@ -5,11 +5,11 @@
 # Requirements: jaq
 #
 # settings.json is app-managed state; we only assert the keys declared in the seed.
-# create_private_settings.json only seeds a missing file, so edits to it reach an existing machine
+# create_settings.json only seeds a missing file, so edits to it reach an existing machine
 # through this merge instead. jaq keeps key order and escaping, which a chezmoi modify-template
 # does not — see .claude/rules/chezmoi-modify-entries.md.
 
-# Hash: {{ include "private_dot_config/claude/create_private_settings.json" | sha256sum }}
+# Hash: {{ include "private_dot_config/claude/create_settings.json" | sha256sum }}
 
 {{ includeTemplate "log_start" "Merging Claude Code settings..." }}
 
@@ -23,7 +23,7 @@ if [ ! -f "$target" ]; then
 fi
 
 seed=$(cat <<'SEED_EOF'
-{{ include "private_dot_config/claude/create_private_settings.json" }}
+{{ include "private_dot_config/claude/create_settings.json" }}
 SEED_EOF
 )
 

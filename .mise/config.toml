@@ -17,7 +17,7 @@ lua-language-server = "latest"
 [tasks.lint]
 quiet = true
 description = "Run all linters"
-depends = ["lint:sh", "lint:yaml", "lint:json", "lint:lua", "lint:qml", "lint:qml-rules", "lint:md", "lint:theme-hex", "lint:theme-contrast", "lint:hypr-lua"]
+depends = ["lint:sh", "lint:yaml", "lint:json", "lint:lua", "lint:qml", "lint:qml-rules", "lint:md", "lint:theme-hex", "lint:private-prefix", "lint:theme-contrast", "lint:hypr-lua"]
 
 [tasks.format]
 quiet = true
