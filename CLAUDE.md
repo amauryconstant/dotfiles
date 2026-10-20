@@ -129,10 +129,12 @@ Pre-commit runs staged-file variants: `chezmoi:orphans`, `lint:staged` (shellche
 | Directory | Purpose | Examples |
 |-----------|---------|---------|
 | `_guides/` | Operational procedures and reference guides | `MULTI_DEVICE_BTRFS_SETUP.md` |
-| `_research/` | Technology investigation and decision records | `LLM_BACKENDS_RESEARCH.md` |
-| `_plans/` | Feature roadmaps and phased implementation plans | `VOICE_STT_ROADMAP.md` |
+| `_research/` | Technology investigation and decision records | `FIREFOX_NVIDIA_EGL_DEADLOCK.md` |
+| `_plans/` | Feature roadmaps and phased implementation plans | `RESTIC_OFFSITE_BACKUP.md` |
 | `.patches/` | Patches a `.chezmoiscripts/` build applies to a pinned upstream commit; rationale lives in `_research/` | `egl-wayland2-bounded-frame-wait.patch` |
 | `_ai/` | Vendored upstream sources via `git subtree` — read-only API/code reference (see `_guides/VENDORED_SUBTREES.md`) | `_ai/quickshell/` |
+
+**Archives**: each of `_guides/`, `_plans/`, `_research/` has an `archive/` for finished or superseded docs (banner `**Status**: ARCHIVED <date>` names why). They are evidence, not backlogs: do not take work from them or trust their file paths.
 
 **`_ai/` is vendored, not ours**: ignored by chezmoi, linters, and formatters; marked `linguist-vendored`. Never hand-edit, lint, or reformat it — update via `git subtree pull`. See `_guides/VENDORED_SUBTREES.md` for per-subtree remotes + update commands.
 
