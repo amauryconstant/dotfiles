@@ -73,6 +73,14 @@ needs libwayland >= 1.23, which upstream would have to guard; the build script c
 (a swap must not block indefinitely on feedback for a surface the compositor may never present),
 the patch. Related: Mozilla 2063934, egl-wayland2 #47 (different symptom).
 
+## Third victim: Ghostty on a hidden workspace (2026-10-19)
+
+`session-restore` opens Ghostty with `workspace = "N silent"`; Hyprland's ANR dialog ("Application Not
+Responding", Terminate/Wait) appeared on every restore while the windows worked once shown. Repro with a
+single `ghostty` dispatched to `9 silent`, 15 s: dialog. Same on the visible workspace: none. Same on
+hidden `9 silent` via `egl-wayland2-patched`: none. Not confirmed by stack trace — the
+bounded-wait mechanism is inferred from the three-way result. Fix: `launch_app` wraps Ghostty in the helper.
+
 ## Second victim: the Quickshell session lock (2026-10-19)
 
 **Symptom** (2026-10-14, desktop: DP-1 4K@144 scale 1.25 + HDMI-A-1): the in-shell lock came up,

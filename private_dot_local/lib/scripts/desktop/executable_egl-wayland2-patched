@@ -10,7 +10,7 @@
 # eplWlSwapBuffers). A compositor that never answers for a surface it is not presenting wedges the
 # render thread, and whatever waits on that thread with it. Seen twice: Firefox (never maps, or
 # freezes on an extension popup) and the Quickshell session lock (main thread blocked behind the
-# render thread a few seconds after locking). Record: _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
+# render thread a few seconds after locking), and Ghostty opened on a hidden workspace by session-restore (Hyprland's ANR dialog). Record: _research/FIREFOX_NVIDIA_EGL_DEADLOCK.md.
 # The private build bounds that wait (.patches/egl-wayland2-bounded-frame-wait.patch, built by
 # .chezmoiscripts/run_after_build_egl_wayland2_patched.sh.tmpl). Everything NOT started through
 # this helper keeps the packaged library, on purpose: the variable is stripped from apps the shell

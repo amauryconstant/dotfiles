@@ -185,6 +185,16 @@ launch_app() {
         rules="{ workspace = \"$workspace_id silent\" }"
     fi
 
+    # Ghostty opens on a workspace no monitor shows, so the compositor never answers its
+    # frame feedback. Stock egl-wayland2 blocks on that, the GTK main thread stops answering
+    # xdg_wm_base pings, and Hyprland raises the "Application Not Responding" dialog. Run it on
+    # the patched (bounded-wait) library. The helper always execs, so a missing build degrades.
+    case "$class" in
+        "com.mitchellh.ghostty"|"ghostty")
+            launch_cmd="$HOME/.local/lib/scripts/desktop/egl-wayland2-patched ghostty-restore $launch_cmd"
+            ;;
+    esac
+
     # For terminal apps with CWD, append --working-directory if supported
     if [ -n "$cwd" ]; then
         case "$class" in
@@ -530,11 +540,16 @@ restore_session() {
         # For terminals: capture pre-launch window count so we can wait for the
         # window to appear before launching the next instance.  Launching multiple
         # Ghostty (or any GTK terminal) instances in rapid succession causes D-Bus
-        # startup-notification conflicts that result in "Application Not Responding".
+        # startup-notification conflicts. (The ANR dialog itself is the hidden-workspace EGL
+        # wait, handled in launch_app.) Match on the terminal's own class: a Firefox opening
+        # meanwhile must not end the wait.
+        case "$class" in
+            ghostty) wait_class="com.mitchellh.ghostty" ;;
+            *) wait_class="$class" ;;
+        esac
         case "$class" in
             ghostty|kitty|alacritty|foot|wezterm)
                 pre_launch_json=$(hyprctl clients -j 2>/dev/null || echo "[]")
-                pre_launch_count=$(echo "$pre_launch_json" | jaq '. | length')
                 pre_launch_addrs=$(echo "$pre_launch_json" | jaq '[.[].address]')
                 ;;
         esac
@@ -548,8 +563,11 @@ restore_session() {
             ghostty|kitty|alacritty|foot|wezterm)
                 elapsed=0
                 while [ "$elapsed" -lt 20 ]; do
-                    cur_count=$(hyprctl clients -j 2>/dev/null | jaq '. | length' || echo "$pre_launch_count")
-                    [ "$cur_count" -gt "$pre_launch_count" ] && break
+                    new_of_class=$(hyprctl clients -j 2>/dev/null | jaq -r \
+                        --argjson prev "$pre_launch_addrs" --arg c "$wait_class" \
+                        '[.[] | select(.class == $c and ([.address] | inside($prev) | not))] | length' \
+                        2>/dev/null || echo 0)
+                    [ "${new_of_class:-0}" -gt 0 ] && break
                     sleep 0.3
                     elapsed=$((elapsed + 1))
                 done

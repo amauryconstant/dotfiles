@@ -449,6 +449,14 @@ workspace) and moving it immediately. `post_restore_workspace_fix()` is a **fall
 run only for windows the event stream didn't place (or when socket2 is unavailable);
 it is pre-seeded with already-placed addresses so it never disturbs correct windows.
 
+🚨 **Ghostty is launched through `egl-wayland2-patched ghostty-restore`** (`launch_app`). Restore opens
+windows `workspace = "N silent"`, i.e. on a workspace no monitor shows; stock egl-wayland2 waits forever
+for frame feedback there, the GTK main thread stops answering `xdg_wm_base` pings, and Hyprland raises
+its "Application Not Responding" dialog (repro 2026-10-19: hidden ws → dialog; visible ws or patched lib
+→ none). The window works once shown, so it looked harmless. Side effect: that Ghostty and its shells
+inherit `__EGL_EXTERNAL_PLATFORM_CONFIG_DIRS` (patched lib, bounded wait). The terminal launch wait
+matches the terminal's own class, not "any new client".
+
 **Env vars**: `DOTFILES_SESSION_QUIET=1` (suppress notifications — used by the
 autosave timer), `DOTFILES_SESSION_CORR_TIMEOUT` (socket2 correlation budget, default
 8s), `DOTFILES_SESSION_LAUNCH_DELAY`, `DOTFILES_SESSION_SETTLE_DELAY`.
