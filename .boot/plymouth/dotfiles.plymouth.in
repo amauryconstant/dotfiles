@@ -1,0 +1,62 @@
+[Plymouth Theme]
+Name=dotfiles
+Description=Near-black boot splash and passphrase prompt, drawn like the lock screen
+ModuleName=two-step
+
+[two-step]
+Font=@TERMINAL_FONT@ 12
+TitleFont=@TERMINAL_FONT@ 20
+MonospaceFont=@TERMINAL_FONT@ 12
+ImageDir=/usr/share/plymouth/themes/dotfiles
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.5
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.382
+HorizontalAlignment=.5
+VerticalAlignment=.5
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.96
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=@BG_HEX@
+BackgroundEndColor=@BG_HEX@
+ProgressBarBackgroundColor=@TRACK_HEX@
+ProgressBarForegroundColor=@FOCUS_HEX@
+MessageBelowAnimation=true
+
+[boot-up]
+UseEndAnimation=false
+
+[shutdown]
+UseEndAnimation=false
+
+[reboot]
+UseEndAnimation=false
+
+[updates]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Installing Updates...
+SubTitle=Do not turn off your computer
+
+[system-upgrade]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Upgrading System...
+SubTitle=Do not turn off your computer
+
+[firmware-upgrade]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Upgrading Firmware...
+SubTitle=Do not turn off your computer
+
+[system-reset]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Resetting System...
+SubTitle=Do not turn off your computer

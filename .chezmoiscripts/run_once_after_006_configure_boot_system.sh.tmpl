@@ -327,6 +327,11 @@ else
     if [ "$CURRENT_THEME" = "$DESIRED_THEME" ]; then
         {{ includeTemplate "log_success" "Plymouth theme already set to: $DESIRED_THEME" }}
         PLYMOUTH_THEME_CHANGED=false
+    elif ! plymouth-set-default-theme -l | grep -x "$DESIRED_THEME" >/dev/null; then
+        # The "dotfiles" theme is rendered from .boot/ by run_onchange_after_render_boot_theme,
+        # which sorts after this script on a fresh install and sets the theme itself.
+        {{ includeTemplate "log_warning" "Plymouth theme '$DESIRED_THEME' not installed yet - render_boot_theme sets it" }}
+        PLYMOUTH_THEME_CHANGED=false
     else
         {{ includeTemplate "log_info" "Setting Plymouth theme to: $DESIRED_THEME (current: $CURRENT_THEME)" }}
 
@@ -446,15 +451,18 @@ EOF
 
     THEME_DIR="/usr/share/sddm/themes/$DESIRED_THEME"
 
-    if [ ! -d "$THEME_DIR" ]; then
+    if [ ! -d "$THEME_DIR" ] && [ "$DESIRED_THEME" = "dotfiles" ]; then
+        # Rendered from .boot/ by run_onchange_after_render_boot_theme, after this script.
+        {{ includeTemplate "log_warning" "Theme $THEME_DIR not rendered yet - render_boot_theme installs it" }}
+    elif [ ! -d "$THEME_DIR" ]; then
         {{ includeTemplate "log_error" "Theme not found: $THEME_DIR" }}
         {{ includeTemplate "log_info" "Available themes:" }}
         ls -1 /usr/share/sddm/themes/
         {{ includeTemplate "log_info" "Install the theme or update globals.yaml with an available theme" }}
         exit 1
+    else
+        {{ includeTemplate "log_success" "Theme installed at $THEME_DIR" }}
     fi
-
-    {{ includeTemplate "log_success" "Theme installed at $THEME_DIR" }}
 
     {{ includeTemplate "log_step" "Verify Hyprland session availability" }}
 

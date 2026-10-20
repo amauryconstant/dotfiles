@@ -48,16 +48,22 @@ globals:
     dpms: 600 # 10 min — displays off (both configs)
     suspend: 900 # 15 min — sleep, laptop only (both configs)
 
+  boot:
+    # Boot-stack theme (rEFInd, Plymouth, SDDM greeter): palette in .boot/colors.sh, rendered by
+    # .boot/render.sh via run_onchange_after_render_boot_theme. A fixed palette, not themes/current.
+    # Absolute path of the image shown behind the greeter, dimmed like the lock screen. "" = flat ground.
+    wallpaper: ""
+
   plymouth:
     # Plymouth boot splash configuration
-    # Available themes: bgrt (OEM logo), spinner, spinfinity, solar, script
-    theme: "bgrt"
+    # "dotfiles" is rendered from .boot/. Stock themes: bgrt (OEM logo), spinner, spinfinity, solar, script
+    theme: "dotfiles"
 
   sddm:
     # SDDM display manager configuration
-    # Available themes: solarized-sddm-theme, elarun, maldives, maya
+    # "dotfiles" is rendered from .boot/. Stock themes: elarun, maldives, maya
     # DisplayServer: x11 (required for stable Hyprland startup - fixes Wayland→Wayland handoff crash)
-    theme: "solarized-sddm-theme"
+    theme: "dotfiles"
     display_server: "x11"
 
   printer:

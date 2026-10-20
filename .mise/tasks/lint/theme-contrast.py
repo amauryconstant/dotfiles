@@ -361,10 +361,44 @@ for name in names:
     t, action = chosen
     print(f"  {SHORT.get(name, name):<12}step {t:.2f}  {action}  base {contrast(action, base):5.2f}  float {contrast(action, floating):5.2f}  raised {contrast(action, raised):5.2f}")
 
+# The boot stack (rEFInd, Plymouth, the SDDM greeter) follows its own fixed
+# palette, .boot/colors.sh, not a colorset -- so it is measured here rather than
+# added to `themes`, whose PAIRS describe the QML and would be wrong for it.
+# Pairs mirror what the lock screen draws: the scrim is black, so ink on it is
+# measured against #000000, the limiting case over any wallpaper.
+BOOT_PAIRS = [
+    ("INK_PRIMARY", "#000000", 4.5, "greeter clock, date and prompt line on the scrim"),
+    ("INK_PRIMARY", "GROUND_BASE", 4.5, "typed text in the field; Plymouth bullets"),
+    ("INK_SECONDARY", "GROUND_BASE", 4.5, "rEFInd icons, Plymouth caps-lock mark"),
+    ("SIGNAL_FOCUS", "GROUND_BASE", 3.0, "caret, spinner head"),
+    ("SIGNAL_FOCUS", "GROUND_FLOAT", 3.0, "spinner head on its track; rEFInd selection outline on its tile"),
+    ("INK_SECONDARY", "GROUND_FLOAT", 3.0, "rEFInd icon on the selection tile"),
+    ("SIGNAL_FOCUS", "GROUND_RAISED", 3.0, "focus ring on the field, rEFInd selection outline"),
+]
+print()
+print("boot palette (.boot/colors.sh) — rEFInd, Plymouth, SDDM greeter:")
+_boot_path = f"{REPO}/.boot/colors.sh"
+if not os.path.exists(_boot_path):
+    print("  .boot/colors.sh missing")
+    failures.append(("BOOT", "colors.sh", "boot", 0.0, 0.0))
+else:
+    with open(_boot_path) as fh:
+        boot = dict(re.findall(r'readonly\s+([A-Z0-9_]+)="(#[0-9a-fA-F]{6})"', fh.read()))
+    for fg, bg, minimum, where in BOOT_PAIRS:
+        bg_hex = bg if bg.startswith("#") else boot.get(bg)
+        if fg not in boot or bg_hex is None:
+            failures.append((fg, bg, "boot", 0.0, minimum))
+            print(f"  {fg} on {bg}: MISSING key")
+            continue
+        ratio = contrast(boot[fg], bg_hex)
+        if ratio < minimum:
+            failures.append((fg, bg, "boot", ratio, minimum))
+        print(f"  {fg + ' on ' + bg:<36}{ratio:6.2f} (min {minimum}){'  !' if ratio < minimum else ''}  {where}")
+
 print()
 if failures:
     print(f"❌ {len(failures)} pair(s) below threshold in this tree's own choices:")
     for fg, bg, name, ratio, minimum in failures:
         print(f"   {name}: {fg} on {bg} = {ratio:.2f} (needs {minimum})")
     _die()
-print("✅ every pair this tree chooses clears its threshold in all 8 themes")
+print("✅ every pair this tree chooses clears its threshold in all 8 themes and the boot palette")

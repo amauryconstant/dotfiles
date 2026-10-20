@@ -289,7 +289,6 @@ packages:
         - tesseract-data-eng # English OCR trained data
         - plymouth # Graphical boot splash screen
         - sddm # Simple Desktop Display Manager
-        - solarized-sddm-theme # Solarized theme for SDDM
         - xorg-server # X server for XWayland compatibility
         - hyprdynamicmonitors-bin # Power-aware monitor manager with TUI
         - hyprdrover # Rust-based session management for Hyprland

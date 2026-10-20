@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_render_boot_theme.sh.tmpl
+# Purpose: Render and install the boot-stack theme: SDDM greeter, Plymouth splash
+#          + passphrase prompt, rEFInd (desktop only). Owns the Plymouth/SDDM theme
+#          settings; 006 only installs and enables the packages.
+# Requirements: Arch Linux, ImageMagick; plymouth, sddm and refind each optional
+#
+# Sources live in .boot/ (repo-only, in .chezmoiignore); .boot/render.sh does the
+# rendering without root and this script installs the result. Palette: .boot/colors.sh,
+# a fixed palette rather than themes/current (boot runs before the session).
+#
+# Plymouth is on the LUKS passphrase path: a broken theme is a machine that cannot
+# show its unlock prompt. Test before rebooting (see _guides/DESKTOP_REINSTALL.md):
+#   sudo plymouthd; sudo plymouth --show-splash; plymouth ask-for-password --prompt=test; sudo plymouth quit
+# Recovery at the rEFInd/systemd-boot menu: add `plymouth.enable=0` to the kernel line.
+#
+# Hash covers every .boot source, the rendered globals and the Config.qml.tmpl
+# values the greeter mirrors; changing an asset without renaming the theme must
+# still rebuild the UKI, because the plymouth hook copies the theme into it.
+# Hash: {{ .globals.boot | toJson | sha256sum }} {{ .globals.plymouth | toJson | sha256sum }} {{ .globals.sddm | toJson | sha256sum }} {{ .globals.guiFont }} {{ .globals.terminalFont }} {{ .chassisType }}
+# Hash: {{ include ".boot/colors.sh" | sha256sum }} {{ include ".boot/render.sh" | sha256sum }}
+# Hash: {{ include ".boot/sddm/Main.qml" | sha256sum }} {{ include ".boot/sddm/metadata.desktop" | sha256sum }} {{ include ".boot/sddm/theme.conf.in" | sha256sum }}
+# Hash: {{ include ".boot/plymouth/dotfiles.plymouth.in" | sha256sum }} {{ include ".boot/refind/theme.conf.in" | sha256sum }}
+# Hash: {{ regexFindAll "property [a-z]+ (lock[A-Za-z]+|fontDisplay|fontTitle|padTight|padLoose|gap|radiusPanel|hairline): [0-9.]+" (include "private_dot_config/quickshell/dotfiles/Config.qml.tmpl") -1 | toJson | sha256sum }}
+
+{{ includeTemplate "log_start" "Render boot theme (rEFInd + Plymouth + SDDM)" }}
+
+set -euo pipefail
+
+{{- $sourceDir := .chezmoi.sourceDir }}
+SOURCE_DIR={{ $sourceDir | quote }}
+PLYMOUTH_THEME={{ .globals.plymouth.theme | quote }}
+SDDM_THEME={{ .globals.sddm.theme | quote }}
+BOOT_WALLPAPER={{ .globals.boot.wallpaper | quote }}
+
+{{ includeTemplate "log_step" "Render assets into a scratch directory" }}
+
+if ! command -v magick >/dev/null 2>&1; then
+    {{ includeTemplate "log_error" "ImageMagick (magick) not installed - cannot render the boot theme" }}
+    exit 1
+fi
+
+SCRATCH=$(mktemp -d)
+trap 'rm -rf "$SCRATCH"' EXIT
+
+GUI_FONT={{ .globals.guiFont | quote }} TERMINAL_FONT={{ .globals.terminalFont | quote }} \
+    BOOT_WALLPAPER="$BOOT_WALLPAPER" \
+    CONFIG_QML="$SOURCE_DIR/private_dot_config/quickshell/dotfiles/Config.qml.tmpl" \
+    "$SOURCE_DIR/.boot/render.sh" "$SCRATCH"
+
+{{ includeTemplate "log_success" "Rendered to $SCRATCH" }}
+
+# ----------------------------------------------------------------------------
+# SDDM
+# ----------------------------------------------------------------------------
+
+{{ includeTemplate "log_step" "SDDM greeter theme" }}
+
+if [ ! -d /usr/share/sddm/themes ]; then
+    {{ includeTemplate "log_skip" "SDDM not installed - skipping greeter theme" }}
+else
+    if [ "$SDDM_THEME" = "dotfiles" ]; then
+        sudo rm -rf /usr/share/sddm/themes/dotfiles
+        sudo install -d -m 755 /usr/share/sddm/themes/dotfiles
+        sudo cp -r "$SCRATCH/sddm/." /usr/share/sddm/themes/dotfiles/
+        sudo chmod -R a+rX /usr/share/sddm/themes/dotfiles
+        {{ includeTemplate "log_success" "Installed /usr/share/sddm/themes/dotfiles" }}
+    fi
+
+    # 006 wrote Current= once, from the then-current data; keep it in step.
+    SDDM_CONF=/etc/sddm.conf.d/10-hyprland.conf
+    if [ -f "$SDDM_CONF" ]; then
+        if grep -q "^Current=$SDDM_THEME\$" "$SDDM_CONF"; then
+            {{ includeTemplate "log_success" "$SDDM_CONF already selects $SDDM_THEME" }}
+        else
+            sudo sed -i "s/^Current=.*/Current=$SDDM_THEME/" "$SDDM_CONF"
+            {{ includeTemplate "log_success" "$SDDM_CONF now selects $SDDM_THEME" }}
+        fi
+    else
+        {{ includeTemplate "log_warning" "$SDDM_CONF missing - 006 has not configured SDDM yet" }}
+    fi
+fi
+
+# ----------------------------------------------------------------------------
+# Plymouth
+# ----------------------------------------------------------------------------
+
+{{ includeTemplate "log_step" "Plymouth theme" }}
+
+if ! command -v plymouth-set-default-theme >/dev/null 2>&1; then
+    {{ includeTemplate "log_skip" "Plymouth not installed - skipping splash theme" }}
+else
+    if [ "$PLYMOUTH_THEME" = "dotfiles" ]; then
+        sudo rm -rf /usr/share/plymouth/themes/dotfiles
+        sudo install -d -m 755 /usr/share/plymouth/themes/dotfiles
+        sudo cp -r "$SCRATCH/plymouth/." /usr/share/plymouth/themes/dotfiles/
+        sudo chmod -R a+rX /usr/share/plymouth/themes/dotfiles
+    fi
+
+    # No grep -q: it exits at the first match, the lister gets SIGPIPE, and pipefail fails the test.
+    if ! plymouth-set-default-theme -l | grep -x "$PLYMOUTH_THEME" >/dev/null; then
+        {{ includeTemplate "log_error" "Plymouth theme '$PLYMOUTH_THEME' not found" }}
+        plymouth-set-default-theme -l
+        exit 1
+    fi
+
+    # -R sets the theme AND runs mkinitcpio -P. Always, not only when the name
+    # changed: the plymouth hook copies the theme (images, fonts) into the UKI,
+    # so an asset edit is invisible until the image is rebuilt.
+    {{ includeTemplate "log_info" "Setting theme and rebuilding initramfs/UKI..." }}
+    sudo plymouth-set-default-theme -R "$PLYMOUTH_THEME"
+
+    if [ "$(plymouth-set-default-theme)" != "$PLYMOUTH_THEME" ]; then
+        {{ includeTemplate "log_error" "Theme verification failed - expected '$PLYMOUTH_THEME'" }}
+        exit 1
+    fi
+    {{ includeTemplate "log_success" "Plymouth theme: $PLYMOUTH_THEME (REBOOT to see it)" }}
+fi
+
+# ----------------------------------------------------------------------------
+# rEFInd (desktop only: the laptop's systemd-boot has no theme to apply)
+# ----------------------------------------------------------------------------
+
+{{ if eq .chassisType "desktop" }}
+{{ includeTemplate "log_step" "rEFInd theme" }}
+
+REFIND_ESP=$(bootctl --print-esp-path 2>/dev/null || echo /boot)
+REFIND_DIR="${REFIND_ESP}/EFI/refind"
+
+# /boot is root-only (0700): an unprivileged test reports a present file as missing.
+if ! sudo test -f "${REFIND_DIR}/refind.conf"; then
+    {{ includeTemplate "log_skip" "rEFInd not installed (no ${REFIND_DIR}/refind.conf) - skipping" }}
+else
+    sudo rm -rf "${REFIND_DIR}/themes/dotfiles"
+    sudo install -d "${REFIND_DIR}/themes/dotfiles"
+    sudo cp -r "$SCRATCH/refind/." "${REFIND_DIR}/themes/dotfiles/"
+    {{ includeTemplate "log_success" "Installed ${REFIND_DIR}/themes/dotfiles" }}
+
+    # The menu: exactly three entries, instead of rEFInd's autodetected pile
+    # (four UKIs incl. fallbacks, systemd-boot, BOOTX64, Fedora shim + grub).
+    # Host state, so it lives apart from the theme, in its own included file.
+    # Edit THIS list to add a kernel or an OS (scanfor manual hides the rest).
+    # The fallback UKIs and systemd-boot stay on the ESP and in the firmware
+    # BootOrder (F12), so dropping them from the menu loses no recovery path.
+    ENTRIES=$(mktemp)
+    ENTRY_COUNT=0
+    add_entry() { # name icon loader...: first loader that exists on the ESP wins
+        local name=$1 icon=$2 loader
+        shift 2
+        for loader in "$@"; do
+            if sudo test -f "${REFIND_ESP}${loader}"; then
+                printf 'menuentry "%s" {\n    icon themes/dotfiles/icons/%s\n    loader %s\n    graphics on\n}\n\n' \
+                    "$name" "$icon" "$loader" >>"$ENTRIES"
+                ENTRY_COUNT=$((ENTRY_COUNT + 1))
+                return 0
+            fi
+        done
+        {{ includeTemplate "log_warning" "No loader for '$name' on the ESP ($*) - entry left out" }}
+    }
+    add_entry "Arch Linux" os_arch.png /EFI/Linux/arch-linux.efi
+    add_entry "Arch Linux LTS" os_arch_lts.png /EFI/Linux/arch-linux-lts.efi
+    # shim first: it is what the firmware's own Fedora entry points at; the 006
+    # restore puts grubx64.efi and its stub grub.cfg beside it.
+    add_entry "Bazzite" os_fedora.png /EFI/fedora/shimx64.efi /EFI/fedora/grubx64.efi
+
+    # An empty menu must never come from a typo'd path: with nothing found,
+    # keep rEFInd's own autodetection.
+    if [ "$ENTRY_COUNT" -gt 0 ]; then
+        {
+            printf '# Managed by chezmoi (run_onchange_after_render_boot_theme) - do not edit here\n'
+            printf 'scanfor manual\n\n'
+            cat "$ENTRIES"
+        } | sudo tee "${REFIND_DIR}/dotfiles-entries.conf" >/dev/null
+        {{ includeTemplate "log_success" "Wrote dotfiles-entries.conf ($ENTRY_COUNT entries)" }}
+        ENTRIES_FILE=true
+    else
+        sudo rm -f "${REFIND_DIR}/dotfiles-entries.conf"
+        {{ includeTemplate "log_warning" "No entry found - keeping rEFInd autodetection" }}
+        ENTRIES_FILE=false
+    fi
+    rm -f "$ENTRIES"
+
+    # Include lines; refind.conf is never rewritten. Later lines win, so the
+    # theme and the entries override the stock settings above them.
+    include_once() {
+        if sudo grep -qxF "include $1" "${REFIND_DIR}/refind.conf"; then
+            {{ includeTemplate "log_success" "refind.conf already includes $1" }}
+        else
+            printf '\n# Managed by chezmoi (run_onchange_after_render_boot_theme)\ninclude %s\n' "$1" |
+                sudo tee -a "${REFIND_DIR}/refind.conf" >/dev/null
+            {{ includeTemplate "log_success" "Appended include $1 to refind.conf" }}
+        fi
+    }
+    include_once themes/dotfiles/theme.conf
+    if [ "$ENTRIES_FILE" = true ]; then
+        include_once dotfiles-entries.conf
+    fi
+fi
+{{ else }}
+{{ includeTemplate "log_skip" "Laptop: no rEFInd theme (systemd-boot cannot be themed)" }}
+{{ end }}
+
+echo ""
+{{ includeTemplate "log_info" "Before rebooting, test the Plymouth prompt (see header of this script)." }}
+{{ includeTemplate "log_complete" "Boot theme rendered and installed - REBOOT to see it" }}

@@ -1,0 +1,15 @@
+# Rendered by .boot/render.sh; pulled in by one `include` line in refind.conf.
+# Paths are relative to the rEFInd directory on the ESP. The entries themselves
+# are host state and live in dotfiles-entries.conf, written by the install script.
+icons_dir themes/dotfiles/icons
+banner themes/dotfiles/bg.png
+banner_scale fillscreen
+selection_big themes/dotfiles/selection_big.png
+selection_small themes/dotfiles/selection_small.png
+big_icon_size 256
+small_icon_size 96
+# Icons only, like the minimal reference themes. `editor` stays visible on
+# purpose: F2/Insert on an entry is how plymouth.enable=0 is added from the menu.
+hideui singleuser,safemode,hwtest,hints,arrows,label,badges
+showtools shutdown,reboot,firmware
+resolution max

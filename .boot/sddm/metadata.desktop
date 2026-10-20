@@ -1,0 +1,9 @@
+[SddmGreeterTheme]
+Name=dotfiles
+Description=Login screen drawn like the Quickshell lock screen
+Author=dotfiles
+Version=1.0
+Type=sddm-theme
+MainScript=Main.qml
+ConfigFile=theme.conf
+QtVersion=6

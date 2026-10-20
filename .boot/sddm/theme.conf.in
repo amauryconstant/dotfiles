@@ -1,0 +1,22 @@
+; Rendered by .boot/render.sh -- colours from .boot/colors.sh, geometry from
+; quickshell/dotfiles/Config.qml.tmpl (the lock*, font*, pad*, radius* values).
+[General]
+background=@BACKGROUND@
+guiFont=@GUI_FONT@
+terminalFont=@TERMINAL_FONT@
+groundBase=@GROUND_BASE@
+groundRaised=@GROUND_RAISED@
+inkPrimary=@INK_PRIMARY@
+inkSecondary=@INK_SECONDARY@
+signalFocus=@SIGNAL_FOCUS@
+lockDimOpacity=@lockDimOpacity@
+lockClockSize=@lockClockSize@
+lockFieldWidth=@lockFieldWidth@
+lockFieldHeight=@lockFieldHeight@
+fontDisplay=@fontDisplay@
+fontTitle=@fontTitle@
+radiusPanel=@radiusPanel@
+hairline=@hairline@
+padTight=@padTight@
+gap=@gap@
+padLoose=@padLoose@

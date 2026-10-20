@@ -73,6 +73,12 @@ the meters payload's missing temperature
   that puts window shapes and colours in front of whoever is at the machine, and a wallpaper is
   already public. Not flat black either — **black is what the failsafe looks like**, and a lock
   indistinguishable from a crashed one teaches the user to read a real fault as normal
+- **The SDDM greeter mirrors the lock screen** (`.boot/sddm/Main.qml`, rendered by
+  `.boot/render.sh`; palette `.boot/colors.sh`, a fixed near-black one — boot is before the session,
+  so it cannot follow `themes/current`). Geometry (`lock*`, `fontDisplay`, `fontTitle`, `pad*`, `gap`,
+  `radiusPanel`, `hairline`) is read out of `Config.qml.tmpl` by `render.sh`, so a size change flows
+  through on the next apply; a LAYOUT change in `lock/LockContent.qml` has to be copied into `Main.qml`
+  by hand. rEFInd and Plymouth share the palette
 - 🚨 **A stranded lock is recovered; a LIVE one must not be touched.** `ext-session-lock` outlives
   its client, so a shell that restarts while locked comes back holding nothing while the
   compositor still holds the failsafe. `misc:allow_session_lock_restore` lets the fresh client

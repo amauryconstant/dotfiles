@@ -48,7 +48,7 @@ paths:
    - 999: SSH remote switch
 
 5. **`run_onchange_after_*`** (hash-based; alphabetical by name like every phase —)
-   - Extensions, bat cache, plymouth theme, Timeshift retention
+   - Extensions, bat cache, boot theme, Timeshift retention
 
 **Trust execution order**: chezmoi runs scripts in order and aborts on the first failure, so a later script can assume earlier ones succeeded — e.g. `002_install_package_manager` provisions paru/yq/gum, so `003+` and all `run_onchange_before` package work assume those binaries exist. Don't re-check prerequisites a numerically-earlier script already guarantees.
 
@@ -110,7 +110,7 @@ paths:
 | apply_starship_config | Runs `theme-apply-starship`; first install, and an apply that edits the base reaches the generated file | `starship/base.toml` or any `themes/*/starship.toml` changes |
 | rebuild_bat_cache | Bat syntax highlighting cache | Theme changes |
 | sync_mise_tools | `mise install` for the tools in `.chezmoidata/mise.yaml` (rendered to `conf.d/tools.toml`). Install only: dropping a tool does not uninstall it — `mise prune` by hand | `mise.yaml` changes |
-| update_plymouth_theme | Plymouth theme | Theme changes |
+| render_boot_theme | Renders `.boot/` (palette `.boot/colors.sh`, `.boot/render.sh`) and installs the SDDM greeter theme, the Plymouth theme (`plymouth-set-default-theme -R`, which rebuilds the UKI) and, desktop only, the rEFInd theme + one `include` line in `refind.conf`. Owns the Plymouth/SDDM theme selection; 006 only installs and enables | Any `.boot/` source, `globals.{boot,plymouth,sddm}`, fonts, or the lock geometry in `Config.qml.tmpl` |
 
 ---
 
