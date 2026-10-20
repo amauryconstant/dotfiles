@@ -13,7 +13,7 @@ for AI assistants to verify APIs against actual code instead of guessing.
 | chezmoi (never deployed to `~`) | `.chezmoiignore` → `_ai/` |
 | shellcheck / shfmt (whole-repo) | `.mise/config.toml` `format:sh`, `.mise/tasks/lint/sh.sh` |
 | pre-commit shellcheck (staged) | `.mise/tasks/lint/staged.sh` (`grep -v '^_ai/'`) |
-| chezmoi destroy (staged deletions) | `.mise/tasks/destroy/staged.sh` (`grep -v '^_ai/'`) |
+| chezmoi orphans (staged deletions) | `.mise/tasks/chezmoi/orphans.sh` (skips `_ai/*`) |
 | markdownlint | `.markdownlint-cli2.jsonc` ignores |
 | prettier | `.prettierignore` |
 | GitHub language stats / diffs | `.gitattributes` → `linguist-vendored` + `linguist-generated` |
@@ -26,7 +26,7 @@ re-pulling from upstream. Treat `_ai/` as a read-only reference.
 | Prefix | Upstream | Branch | Purpose |
 |--------|----------|--------|---------|
 | `_ai/quickshell` | https://git.outfoxxed.me/quickshell/quickshell | `master` | Quickshell (QtQuick/QML shell framework) source — the API reference behind `_research/QUICKSHELL_QML_API.md` and `.claude/rules/quickshell-qml.md`, both of which cite `_ai/quickshell/src/` paths for facts that are only readable in the C++ |
-| `_ai/dcli` | https://gitlab.com/theblackdon/dcli | `main` | dcli (declarative Arch package manager, NixOS-inspired) source — reference for `system/package-manager` (which cites it as inspiration) |
+| `_ai/dcli` | https://gitlab.com/theblackdon/dcli | `main` | dcli (declarative Arch package manager, NixOS-inspired) source — design reference for `system/package-manager` (compared in `_research/archive/DCLI_INTEGRATION_RESEARCH.md`; the tool is not derived from it) |
 
 ## Managing Subtrees
 

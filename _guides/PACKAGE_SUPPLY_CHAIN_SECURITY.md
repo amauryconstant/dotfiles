@@ -29,8 +29,9 @@ No hand-maintained tags.
 
 ## Reviewing an AUR build (the tripwire)
 
-When you `package-manager sync`/`update` and an AUR package's build files changed (or a new AUR
-package appears on a seeded host), the build is **held** and a diff is printed:
+When `chezmoi apply` (which runs `package-manager sync`) or `package-manager update` finds an AUR
+package's build files changed (or a new AUR package on a seeded host), the build is **held** and a
+diff is printed:
 
 1. Read the diff. Look for added `source=` URLs, `npm`/`bun`/`curl`/`wget` in `prepare()/build()`,
    new dependencies, or `.install` hook changes (those run as **root**).
@@ -38,8 +39,9 @@ package appears on a seeded host), the build is **held** and a diff is printed:
 3. If suspicious: do **not** approve. Investigate the package's AUR page / maintainer history first.
 
 Bootstrap note: on a fresh machine (unseeded hash DB) AUR packages install trust-on-first-use so
-provisioning isn't bricked. `run_onchange_before_sync_packages.sh.tmpl` auto-seeds the DB itself
-right after the first successful sync — the same effect as `package-manager approve --seed`, run
+provisioning isn't bricked. `package-manager sync` auto-seeds the DB itself
+(`_tripwire_seed` in `private_dot_local/lib/scripts/system/package-manager/lib/sync.sh`) right
+after the first successful sync — the same effect as `package-manager approve --seed`, run
 once automatically instead of by hand. Only fires while the DB is still unseeded, so it never
 re-seeds (and silently approves) a package on an already-established host. Re-seed manually with
 `package-manager approve --seed` if the hash recipe (`_tripwire_fetch`) ever changes.
@@ -106,7 +108,7 @@ ls /tmp/systemd-initd 2>/dev/null && echo "CHAOS RAT artifact"
 
 If **anything** is found, removal alone is insufficient:
 
-1. Rotate all credentials — SSH keys (`rotate-ssh-key`), API tokens (`rotate-key api`),
+1. Rotate all credentials — SSH keys (`rotate-ssh-key`), age key (`rotate-age-key`), API tokens (rotate at each provider),
    GitHub/npm/Vault tokens, browser sessions.
 2. Reinstall from trusted media (the rootkit/infostealer survives package removal).
 
