@@ -51,14 +51,8 @@ commit to jj as primary or consciously keep git primary.
 
 ---
 
-## 3. Neovim backlog (see NEOVIM_IMPROVEMENTS.md)
+## 3. Neovim backlog
 
-Pending items from the VS Code → Neovim migration, still open:
-- Session persistence (`resession.nvim`) — lose buffer/split layout per project.
-- VS Code keybindings (`<C-p>`, `<C-S-f>`, split leaders).
-- `toggleterm` integrated terminal.
-- AI assistant — **open question whether wanted at all** given heavy Claude Code
-  use; inline completion (Supermaven/Copilot) is the only non-redundant piece,
-  a chat panel (Avante) duplicates Claude Code.
-
-Could be knocked out as a single batch.
+Tracked in `_plans/NEOVIM_IMPROVEMENTS.md` (single source; reviewed 2026-10-20: session
+persistence, VS Code keybindings and the AI-assistant question are still open, toggleterm is
+already covered by AstroNvim core). Could be knocked out as a single batch.

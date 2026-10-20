@@ -1,7 +1,8 @@
 # Neovim Improvements Backlog
 
 Remaining suggestions from the VS Code → Neovim migration review.
-Items 1 (Neogit), 2 (nvim-dap UI), 5 (LuaSnip), 10 (editor options) already implemented.
+Items 1 (Neogit), 2 (nvim-dap UI), 5 (LuaSnip), 10 (editor options) already implemented; 7 (toggleterm) is moot, see below.
+Reviewed 2026-10-20: nothing else started. Config is AstroNvim `^6`, whose picker is **snacks** (`lua/plugins/user.lua`), not Telescope.
 
 ---
 
@@ -12,8 +13,8 @@ Add VS Code-familiar shortcuts in `lua/plugins/astrocore.lua` under `opts.mappin
 ```lua
 mappings = {
   n = {
-    ["<C-p>"]   = { "<cmd>Telescope find_files<cr>",  desc = "Find files" },
-    ["<C-S-f>"] = { "<cmd>Telescope live_grep<cr>",   desc = "Find in files" },
+    ["<C-p>"]   = { function() Snacks.picker.files() end, desc = "Find files" },
+    ["<C-S-f>"] = { function() Snacks.picker.grep() end,  desc = "Find in files" },
     ["<leader>|"] = { "<cmd>vsplit<cr>",              desc = "Vertical split" },
     ["<leader>-"] = { "<cmd>split<cr>",               desc = "Horizontal split" },
   },
@@ -58,9 +59,9 @@ Choose one:
 
 ---
 
-## 7. Terminal Integration — Integrated Terminal (Priority: Medium)
+## 7. Terminal Integration — Integrated Terminal ✅ MOOT
 
-VS Code has `Ctrl+\`` for integrated terminal. Add toggleterm:
+`toggleterm.nvim` already ships with AstroNvim core (present in the lazy plugin dir; `lua/plugins/astrocore.lua` already works around its buffer names), so the community import below is unnecessary. Original note: VS Code has `Ctrl+\`` for integrated terminal. Add toggleterm:
 
 **In `lua/community.lua`:**
 ```lua
