@@ -276,6 +276,8 @@ echo 'default arch-linux.efi' >> /mnt/boot/loader/loader.conf
 
 archinstall builds `arch-linux.efi` and `arch-linux-lts.efi` but **no fallback UKI**. The LTS UKI is your fallback entry.
 
+On the desktop, the later dotfiles apply (script 006) installs rEFInd in front of systemd-boot: rEFInd becomes the first boot entry and systemd-boot stays behind it as the fallback. Everything above still applies to the systemd-boot side. See `DESKTOP_REINSTALL.md` Phase 6.
+
 ## Phase 4: Rebuild the UKIs
 
 ```bash

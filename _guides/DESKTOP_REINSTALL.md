@@ -6,7 +6,7 @@ Reinstall Arch Linux on the **desktop** (RTX 4090, no iGPU, several disks) and b
 
 > **Status**: archinstall steps come from the **archinstall 4.5 source** (tag 4.5, 2026-09-29), not from a live run. Menu labels can differ on the ISO you boot: **verify each label on screen** and treat anything marked *(unverified)* as a lead, not a fact. **Not tested on hardware.**
 
-End state: LUKS2 root + extra LUKS2 disks in one BTRFS pool, systemd-boot UKI, Hyprland + Quickshell via this repo.
+End state: LUKS2 root + extra LUKS2 disks in one BTRFS pool, systemd-boot UKI with rEFInd in front of it (desktop), Bazzite still bootable, Hyprland + Quickshell via this repo.
 
 ```mermaid
 graph LR
@@ -29,11 +29,14 @@ graph LR
 
 **This is irreversible.** The current BTRFS pool spans the root disk and the extra disks. Reinstalling the root disk destroys the **whole** filesystem, including the data on the extra disks and every Timeshift snapshot (they live on the same pool).
 
+**Bazzite dual boot**: archinstall **formats the ESP**, which wipes the Fedora loader Bazzite keeps there. The Bazzite partitions themselves (`BZ_ROOT`, `bazzite_xboot`) survive as long as you never select their disk. Script 006 restores the ESP side after the dotfiles apply (Phase 5); until then Bazzite has no boot entry.
+
 ### 0.1 Back up off-machine
 
 - `~` (documents, projects, browser profiles, game saves)
 - Anything under `/etc` you customised
 - Your Vaultwarden export is **not** a backup of this machine: it only holds secrets
+- No off-site restic target exists yet (`_plans/RESTIC_OFFSITE_BACKUP.md`, not started), so this copy is manual
 
 ### 0.2 Capture the values `chezmoi init` will ask for
 
@@ -63,7 +66,7 @@ lsblk -o NAME,SIZE,MODEL,SERIAL,FSTYPE,MOUNTPOINTS
 ls -l /dev/disk/by-id/
 ```
 
-Write down which disk is the root NVMe and which are the extras. You will pick the root disk by **serial** in archinstall.
+Write down which disk is the root NVMe and which are the extras. You will pick the root disk by **serial** in archinstall. A partition labelled `BZ_ROOT` or `bazzite_xboot` (`FSTYPE`/`LABEL` in `lsblk -f`) is the Bazzite install: it is **not** an extra for the BTRFS pool, so note its disk and leave it out of Phase 3.
 
 ### 0.5 Prepare the stick
 
@@ -120,7 +123,7 @@ Start it with `archinstall`. It opens a menu prefilled with defaults. Work **top
 | Mirrors and repositories | Select your region explicitly (4.5 no longer waits for reflector) |
 | **Disk configuration → Partitioning** | See 2.2 |
 | Swap | Yes, zram, algorithm `zstd` |
-| Bootloader | **Systemd-boot**, **Unified kernel images: on**, removable location: off, Plymouth: **off** (the dotfiles install it later) |
+| Bootloader | **Systemd-boot**, **Unified kernel images: on**, removable location: off, Plymouth: **off** (the dotfiles install it later). systemd-boot stays the installed fallback: script 006 adds rEFInd in front of it on the desktop |
 | Kernels | `linux` **and** `linux-lts` (`packages.yaml` expects both; the LTS UKI is your fallback entry) |
 | Additional firmware | None needed |
 | Hostname | As you like |
@@ -240,6 +243,8 @@ What it does on this machine:
 - Script 002 installs paru, Chaotic-AUR, yq, gum.
 - `run_onchange_before_sync_packages` installs everything in `packages.yaml`.
 - Script 006 writes `/etc/mkinitcpio.conf.d/nvidia.conf`, installs Plymouth into HOOKS (`block plymouth sd-encrypt`), appends `splash quiet` to `/etc/kernel/cmdline`, configures SDDM + the uwsm session, then runs one `mkinitcpio -P`. Hibernation is skipped on a `/dev/mapper` root, so no swapfile is created.
+- Script 006 also runs `refind-install` (desktop only, UEFI only): rEFInd goes to `ESP/EFI/refind` and first in `BootOrder`, with systemd-boot kept as the fallback entry.
+- Script 006 then restores Bazzite on the ESP, best-effort (needs `bazzite_xboot` + `BZ_ROOT` labels): Fedora's grub + stub back on the ESP, the fstab UUID fixed, stale UEFI entries removed. Without those labels it skips with a log line.
 - Script 004 clones the wallpapers repo over SSH; script 999 switches the git remotes to SSH.
 
 If a script fails, fix the cause and run `chezmoi apply` again: scripts that already succeeded are not re-run.
@@ -249,6 +254,8 @@ If a script fails, fix the cause and run `chezmoi apply` again: scripts that alr
 ```bash
 reboot
 ```
+
+The first menu is **rEFInd** (desktop): pick the Arch entry, or Bazzite to check the restore. If rEFInd is missing, firmware falls back to systemd-boot, which still boots Arch.
 
 At SDDM select **Hyprland (uwsm-managed)**. The plain `hyprland` session starts no bar, no idle lock and no notification daemon (the repo's user units hang off `graphical-session.target`, which only uwsm reaches).
 
@@ -263,6 +270,8 @@ git -C ~/.local/share/chezmoi remote -v          # git@gitlab.com
 systemctl --user --failed
 grep ^HOOKS /etc/mkinitcpio.conf                  # ... block plymouth sd-encrypt filesystems fsck
 cat /etc/kernel/cmdline                           # contains quiet splash, no cryptdevice=
+efibootmgr                                        # desktop: rEFInd first in BootOrder, Linux Boot Manager still listed
+ls "$(bootctl --print-esp-path)/EFI"              # desktop: refind present; with Bazzite also `fedora/grubx64.efi`
 ```
 
 Then follow `README.md` "First Run".
