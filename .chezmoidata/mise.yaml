@@ -34,6 +34,7 @@ mise:
       description: "Shapes what agents get: specs, context compression, skill sync"
       tools:
         "npm:@fission-ai/openspec": latest # Spec-driven development for coding agents
+        "github:amauryconstant/openspec-extended": latest # Own tool: OpenSpec extension pack
         "aqua:runkids/skillshare": latest # Sync agent skills across tools and machines
 
     ai_insight:
