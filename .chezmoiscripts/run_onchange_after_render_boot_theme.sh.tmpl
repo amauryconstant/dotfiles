@@ -19,7 +19,7 @@
 # values the greeter mirrors; changing an asset without renaming the theme must
 # still rebuild the UKI, because the plymouth hook copies the theme into it.
 # Hash: {{ .globals.boot | toJson | sha256sum }} {{ .globals.plymouth | toJson | sha256sum }} {{ .globals.sddm | toJson | sha256sum }} {{ .globals.guiFont }} {{ .globals.terminalFont }} {{ .chassisType }}
-# Hash: {{ include ".boot/colors.sh" | sha256sum }} {{ include ".boot/render.sh" | sha256sum }}
+# Hash: {{ include ".boot/wallpaper/ribbed.jpg" | sha256sum }} {{ include ".boot/colors.sh" | sha256sum }} {{ include ".boot/render.sh" | sha256sum }}
 # Hash: {{ include ".boot/sddm/Main.qml" | sha256sum }} {{ include ".boot/sddm/metadata.desktop" | sha256sum }} {{ include ".boot/sddm/theme.conf.in" | sha256sum }}
 # Hash: {{ include ".boot/plymouth/dotfiles.plymouth.in" | sha256sum }} {{ include ".boot/refind/theme.conf.in" | sha256sum }}
 # Hash: {{ regexFindAll "property [a-z]+ (lock[A-Za-z]+|fontDisplay|fontTitle|padTight|padLoose|gap|radiusPanel|hairline): [0-9.]+" (include "private_dot_config/quickshell/dotfiles/Config.qml.tmpl") -1 | toJson | sha256sum }}
@@ -45,7 +45,7 @@ SCRATCH=$(mktemp -d)
 trap 'rm -rf "$SCRATCH"' EXIT
 
 GUI_FONT={{ .globals.guiFont | quote }} TERMINAL_FONT={{ .globals.terminalFont | quote }} \
-    BOOT_WALLPAPER="$BOOT_WALLPAPER" \
+    BOOT_WALLPAPER="$BOOT_WALLPAPER" GREETER_SCALE={{ .globals.boot.greeterScale | quote }} GREETER_DIM={{ .globals.boot.greeterDim | quote }} \
     CONFIG_QML="$SOURCE_DIR/private_dot_config/quickshell/dotfiles/Config.qml.tmpl" \
     "$SOURCE_DIR/.boot/render.sh" "$SCRATCH"
 
@@ -143,6 +143,10 @@ else
     # Edit THIS list to add a kernel or an OS (scanfor manual hides the rest).
     # The fallback UKIs and systemd-boot stay on the ESP and in the firmware
     # BootOrder (F12), so dropping them from the menu loses no recovery path.
+    # A menuentry's `icon` is a path from the ESP ROOT (unlike icons_dir, banner and
+    # the selection images, which are relative to the rEFInd directory); a relative
+    # path here finds no file and rEFInd draws its generic placeholder.
+    ICON_ROOT="${REFIND_DIR#"$REFIND_ESP"}"
     ENTRIES=$(mktemp)
     ENTRY_COUNT=0
     add_entry() { # name icon loader...: first loader that exists on the ESP wins
@@ -150,8 +154,8 @@ else
         shift 2
         for loader in "$@"; do
             if sudo test -f "${REFIND_ESP}${loader}"; then
-                printf 'menuentry "%s" {\n    icon themes/dotfiles/icons/%s\n    loader %s\n    graphics on\n}\n\n' \
-                    "$name" "$icon" "$loader" >>"$ENTRIES"
+                printf 'menuentry "%s" {\n    icon %s/themes/dotfiles/icons/%s\n    loader %s\n    graphics on\n}\n\n' \
+                    "$name" "$ICON_ROOT" "$icon" "$loader" >>"$ENTRIES"
                 ENTRY_COUNT=$((ENTRY_COUNT + 1))
                 return 0
             fi

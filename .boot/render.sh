@@ -3,7 +3,10 @@
 #
 # Usage: render.sh OUTDIR
 # Env:   GUI_FONT, TERMINAL_FONT   family names (from globals.yaml)
-#        BOOT_WALLPAPER            optional image for the greeter background
+#        BOOT_WALLPAPER            image behind the greeter and rEFInd; empty = wallpaper/ribbed.jpg
+#                                  (Unsplash, see wallpaper/ATTRIBUTION.md); "none" = flat ground
+#        GREETER_DIM               black scrim over that image in the greeter
+#        GREETER_SCALE             greeter size multiplier (on top of the scale by screen height)
 #        CONFIG_QML                Config.qml.tmpl, source of the lock geometry
 #        REFIND_ICONS              rEFInd's shipped icon dir
 #
@@ -17,6 +20,8 @@ out=${1:?usage: render.sh OUTDIR}
 GUI_FONT=${GUI_FONT:-Inter}
 TERMINAL_FONT=${TERMINAL_FONT:-GeistMono Nerd Font}
 BOOT_WALLPAPER=${BOOT_WALLPAPER:-}
+GREETER_DIM=${GREETER_DIM:-0.2}
+GREETER_SCALE=${GREETER_SCALE:-0.9}
 CONFIG_QML=${CONFIG_QML:-$here/../private_dot_config/quickshell/dotfiles/Config.qml.tmpl}
 REFIND_ICONS=${REFIND_ICONS:-/usr/share/refind/icons}
 
@@ -59,6 +64,12 @@ command -v magick >/dev/null || {
 
 mkdir -p "$out/sddm" "$out/plymouth" "$out/refind/icons"
 
+# The image: the vendored Unsplash one unless globals says otherwise.
+case "$BOOT_WALLPAPER" in
+"") BOOT_WALLPAPER="$here/wallpaper/ribbed.jpg" ;;
+none) BOOT_WALLPAPER="" ;;
+esac
+
 # ------------------------------------------------------------------- SDDM
 
 background=""
@@ -72,10 +83,10 @@ fi
 
 cp "$here/sddm/Main.qml" "$here/sddm/metadata.desktop" "$out/sddm/"
 fill "$here/sddm/theme.conf.in" "$out/sddm/theme.conf" \
-	"BACKGROUND=$background" "GUI_FONT=$GUI_FONT" "TERMINAL_FONT=$TERMINAL_FONT" \
+	"BACKGROUND=$background" "DIM=$GREETER_DIM" "UI_SCALE=$GREETER_SCALE" "GUI_FONT=$GUI_FONT" "TERMINAL_FONT=$TERMINAL_FONT" \
 	"GROUND_BASE=$GROUND_BASE" "GROUND_RAISED=$GROUND_RAISED" \
 	"INK_PRIMARY=$INK_PRIMARY" "INK_SECONDARY=$INK_SECONDARY" "SIGNAL_FOCUS=$SIGNAL_FOCUS" \
-	"lockDimOpacity=$(cfg lockDimOpacity)" "lockClockSize=$(cfg lockClockSize)" \
+	"lockClockSize=$(cfg lockClockSize)" \
 	"lockFieldWidth=$(cfg lockFieldWidth)" "lockFieldHeight=$(cfg lockFieldHeight)" \
 	"fontDisplay=$(cfg fontDisplay)" "fontTitle=$(cfg fontTitle)" \
 	"radiusPanel=$(cfg radiusPanel)" "hairline=$(cfg hairline)" \
@@ -122,7 +133,15 @@ magick -size 20x20 xc:none -fill "$INK_SECONDARY" \
 rf=$out/refind
 cp "$here/refind/theme.conf.in" "$rf/theme.conf"
 
-magick -size 64x64 "xc:$GROUND_BASE" "$rf/bg.png"
+if [ -n "$BOOT_WALLPAPER" ] && [ -f "$BOOT_WALLPAPER" ]; then
+	# Same image as the greeter, at 1080p: rEFInd scales it to the screen
+	# (banner_scale fillscreen) and a decode of 4K pixels in firmware is slow.
+	# PNG, not JPEG: rEFInd's JPEG decoder has restrictions, PNG is proven here.
+	magick "$BOOT_WALLPAPER" -auto-orient -resize 1920x1080^ -gravity center -extent 1920x1080 \
+		-define png:compression-level=9 "$rf/bg.png"
+else
+	magick -size 64x64 "xc:$GROUND_BASE" "$rf/bg.png"
+fi
 
 # Labels are hidden (icons only, like the minimal reference themes), so the
 # selection tile is the ONLY cue for the current entry: GROUND_FLOAT body, 2px

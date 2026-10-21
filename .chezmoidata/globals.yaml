@@ -51,8 +51,14 @@ globals:
   boot:
     # Boot-stack theme (rEFInd, Plymouth, SDDM greeter): palette in .boot/colors.sh, rendered by
     # .boot/render.sh via run_onchange_after_render_boot_theme. A fixed palette, not themes/current.
-    # Absolute path of the image shown behind the greeter, dimmed like the lock screen. "" = flat ground.
+    # Image behind the greeter and the rEFInd menu. "" = the vendored Unsplash image (.boot/wallpaper,
+    # see ATTRIBUTION.md); "none" = flat ground; or an absolute path of your own.
     wallpaper: ""
+    # Greeter size multiplier, on top of the automatic scale by screen height (1x at 1080p, 2x at 4K).
+    greeterScale: 0.9
+    # Black scrim over the image in the greeter. The lock screen dims 0.7 over arbitrary wallpapers;
+    # this image is already near-black, so it takes far less.
+    greeterDim: 0.2
 
   plymouth:
     # Plymouth boot splash configuration

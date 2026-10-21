@@ -2,6 +2,7 @@
 ; quickshell/dotfiles/Config.qml.tmpl (the lock*, font*, pad*, radius* values).
 [General]
 background=@BACKGROUND@
+uiScale=@UI_SCALE@
 guiFont=@GUI_FONT@
 terminalFont=@TERMINAL_FONT@
 groundBase=@GROUND_BASE@
@@ -9,7 +10,7 @@ groundRaised=@GROUND_RAISED@
 inkPrimary=@INK_PRIMARY@
 inkSecondary=@INK_SECONDARY@
 signalFocus=@SIGNAL_FOCUS@
-lockDimOpacity=@lockDimOpacity@
+dimOpacity=@DIM@
 lockClockSize=@lockClockSize@
 lockFieldWidth=@lockFieldWidth@
 lockFieldHeight=@lockFieldHeight@
