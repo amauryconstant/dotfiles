@@ -5,7 +5,6 @@
 -- ============================================================================
 
 o.bind("SUPER + M", "Monitor switcher", "~/.local/lib/scripts/desktop/monitor-switch")
-o.bind("SUPER + U", "Utilities menu", "~/.local/lib/scripts/user-interface/utilities-menu")
 o.bind("SUPER + G", "Toggle gaps", "~/.local/lib/scripts/desktop/workspace-gaps-toggle")
 o.bind("SUPER + A", "Audio output switcher", "~/.local/lib/scripts/desktop/audio-switch")
 o.bind("SUPER + SHIFT + A", "Audio settings", "pavucontrol")

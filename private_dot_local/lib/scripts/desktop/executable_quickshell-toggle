@@ -4,9 +4,11 @@
 # Purpose: Toggle a Quickshell surface, starting the shell if it is not running
 # Requirements: Arch Linux, quickshell
 # Usage: quickshell-toggle [bar|launcher|power|notifications|overview|clipboard|keybindings]
+#        quickshell-toggle launcher actions   (the launcher's `>` mode)
 #        quickshell-toggle popover <audio|network|bluetooth|calendar|media|meters|power|nightlight>
 #        (default: bar)
-# Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+SHIFT+Q (power menu),
+# Bound to: SUPER+B (bar), SUPER+D (launcher), SUPER+Space (launcher actions),
+#           SUPER+SHIFT+Q (power menu),
 #           SUPER+grave (overview)
 #           — hypr/conf.d/quickshell.{lua,conf}; SUPER+SHIFT+N (notifications)
 #           — hypr/conf/bindings/system-control.{lua,conf}
@@ -26,8 +28,25 @@ TARGET=${1:-bar}
 # one surface with eight payloads.
 ARG=${2:-}
 
+# `launcher actions` is the one target whose argument picks a METHOD rather than
+# a payload, so it is split out here and toggle_target calls toggleActions.
+METHOD=toggle
+
 case "$TARGET" in
-bar | launcher | power | notifications | overview | clipboard | keybindings) ;;
+launcher)
+    case "$ARG" in
+    "") ;;
+    actions)
+        METHOD=toggleActions
+        ARG=
+        ;;
+    *)
+        echo "quickshell-toggle: launcher takes no argument but 'actions'" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+bar | power | notifications | overview | clipboard | keybindings) ;;
 popover)
     case "$ARG" in
     audio | network | bluetooth | calendar | media | meters | power | nightlight) ;;
@@ -56,7 +75,7 @@ shell_running() {
 # Every target's toggle() returns the state it actually reached, so a failure
 # is visible here rather than being assumed from an exit code that is always 0.
 toggle_target() {
-    state=$(quickshell -c "$CONFIG" ipc call "$TARGET" toggle ${ARG:+"$ARG"} 2>/dev/null)
+    state=$(quickshell -c "$CONFIG" ipc call "$TARGET" "$METHOD" ${ARG:+"$ARG"} 2>/dev/null)
     case "$state" in
     shown | hidden)
         # Only the bar reports success: it can be toggled off-screen, so what
@@ -86,7 +105,7 @@ fi
 # ConditionPathExists, so report it at once.
 #
 # 🚨 There is no fallback tool: Wofi (launcher, clipboard) and wlogout/swaync
-# are retired, and menu-system and the keybindings sheet render through the
+# are retired, and the picker menus and the keybindings sheet render through the
 # shell too. And NOT notify-send: THIS SHELL is the notification daemon, so
 # `hyprctl notify` is the only channel that still reaches the screen.
 if [ ! -f "$HOME/.config/quickshell/$CONFIG/shell.qml" ]; then

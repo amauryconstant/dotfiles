@@ -17,7 +17,7 @@ o.window("hyprpolkitagent", { float = true }) -- Polkit auth dialog
 o.window("blueman-manager", { float = true }) -- Bluetooth manager
 o.window("com.gabm.satty", { float = true, stay_focused = true }) -- Screenshot annotation editor
 
--- AI scratchpad terminals (menu-ai: opencode, claude-code, ollama) -----------
+-- AI scratchpad terminals (opencode, claude-code, ollama) -----------
 o.window("ai-scratchpad", { float = true, center = true, size = { "55%", "65%" } })
 
 -- Nextcloud (preserve existing workflow from KDE) ----------------------------

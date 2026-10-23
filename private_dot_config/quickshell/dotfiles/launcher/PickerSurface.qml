@@ -81,7 +81,7 @@ PanelWindow {
     property int listPad: Config.launcherListPad
     // The list scrolls past this: page 06's cap, and the reason a payload stays
     // a glance rather than a wall.
-    property int maxListHeight: Config.popMaxH
+    property int maxListHeight: Config.launcherMaxHeight
 
     // An alias, so a consumer's filter binding re-evaluates on every keystroke.
     readonly property alias query: queryInput.text
@@ -107,6 +107,12 @@ PanelWindow {
 
     function close(): void {
         root.visible = false;
+    }
+
+    // For a caller that opens the surface already holding a prefix. After
+    // open(), never before: open() empties the field.
+    function setQuery(text: string): void {
+        queryInput.text = text;
     }
 
     // Reports the state actually reached, matching the bar.toggle() contract so

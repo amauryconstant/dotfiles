@@ -8,137 +8,45 @@
 
 ## Quick Reference
 
-- **Entry point**: `system-menu` (keybinding: `Super+Space`)
-- **Library**: `menu-helpers.sh` (sourced by all menu scripts)
+- **Entry point**: `launcher-actions` (`Super+Space`, the launcher's `>` mode)
+- **Library**: `menu-helpers.sh` (sourced by `desktop/display-menu`)
 - **Hook tools**: `hook-create`, `hook-edit`, `hook-list`, `hook-test`
 - **Extra bindings**: `dotfiles-bindings-edit`
 - **UI pattern**: `menu-helpers.sh` (show_menu + notify) — NOT gum-ui
 - **Renderer**: `desktop/quickshell-menu` (the shell); no fallback — unreachable means cancelled plus a `hyprctl notify`
 
-## Main Menu (system-menu)
+## Actions (Super+Space) — `launcher-actions`
 
-Routes `Super+Space` → the picker → category script.
+`Super+Space` → `quickshell-toggle launcher actions` → the SUPER+D launcher opened on its `>` mode
+(`Launcher.qml`). It replaced the ten-category `system-menu` tree (Apps, Learn, Trigger, Style,
+Setup, Install, Update, AI, About, System) on 2026-10-23: that tree was 2–3 levels deep, its filter
+saw only the current level, and most rows duplicated a dedicated surface or key.
 
-🚨 **The picker is `desktop/quickshell-menu`; Wofi was retired 2026-10-19.** Since 2026-09-09 `show_menu()` and
+- **`launcher-actions --print-items`** emits the rows as item JSON (`desktop/quickshell-menu --json`
+  shape; `{header: true, title}` for sections). The launcher runs it on every open. Content lives
+  here, not in QML, so a menu change never means editing the shell.
+- **`launcher-actions run <payload>`** dispatches one row. Capture payloads are `capture:<mode>` and
+  go to `media/capture-menu --run <mode>` after a 0.15s sleep (the launcher closes in the same tick;
+  a Quickshell surface cannot exclude itself from a grim capture). Maintenance rows open a terminal
+  and wait for Enter.
+- **Capture rows are not copied**: they come from `media/capture-menu --print-items`.
+- **Only actions with no other home are listed** (Capture, Maintenance). Apps, power, clipboard,
+  audio/network/bluetooth, nightlight, themes and the keybindings sheet each have a key; do not add
+  a second route to them here.
+- 🚨 **Dotfile rows show `chezmoi diff` and ask before `chezmoi apply`** — never a blind apply.
+- **No `menu-extend` hook** — retired with the old menu. Add rows to `launcher-actions`.
+- Unrouted since the retirement: `desktop/display-menu` (display profiles), random/set wallpaper,
+  `home-backup`. Scripts kept; give them a key or a row if wanted.
+
+🚨 **The picker is `desktop/quickshell-menu`; Wofi was retired 2026-10-19.** `show_menu()` and
 `confirm()` write the list to the shell over a UNIX socket
 (`$XDG_RUNTIME_DIR/quickshell-menu.sock`) and block on the reply, which is why a dmenu call could
 not be an `ipc call`: an IPC handler returns immediately. There is no fallback and the
-contract is unchanged — items on stdin, the choice on stdout, exit 1 and no output on cancel —
-so sixteen `menu-*` scripts converted without an edit of their own.
-
-| Icon | Category | Script | Purpose |
-|------|----------|--------|---------|
-| 󰀻 | Apps | `quickshell-toggle launcher` | Application launcher |
-| 󰗚 | Learn | menu-learn | Help/documentation |
-| 󰈿 | Trigger | menu-trigger | Quick actions (capture, share, toggle) |
-| 󰏘 | Style | menu-style | Theme switching, appearance |
-| 󰒓 | Setup | menu-setup | System configuration |
-| 󰏓 | Install | menu-install | Package installation |
-| 󰚰 | Update | menu-update | System updates |
-| 󱚣 | AI | menu-ai | AI integration |
-| 󰋼 | About | menu-about | System information |
-| 󰐥 | System | menu-system | Power management |
-
-**Note**: Remove category (`menu-remove`) is commented out in system-menu. `utilities-menu` is a secondary launcher (reached from the Trigger/Setup categories, not a top-level entry).
-
-**menu-extend hook**: Unknown choices from system-menu are delegated to `~/.config/dotfiles/hooks/menu-extend` (see `dotfiles/CLAUDE.md`).
+contract is unchanged — items on stdin, the choice on stdout, exit 1 and no output on cancel.
 
 ## Icon Reference
 
 **Criteria**: Material Design (`md-`) primary, outlined variants preferred (small-size legibility), emoji fallback only if no MD icon fits. Select via `/nerdfonts-search` skill (glyph data: `.claude/skills/nerdfonts-search/references/glyphnames.json`).
-
-### Trigger Menu (menu-trigger)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Capture | 󰄀 | md-camera |
-| Share | 󰒖 | md-share |
-| Toggle | 󰔡 | md-toggle-switch |
-
-**Capture submenu**: 󰹑 md-selection (Smart) · 󰩭 md-selection-drag (Region) · 󰖲 md-window-maximize (Window) · 󰍹 md-monitor (Fullscreen) · 󰨸 md-clipboard-arrow-down (→ Clipboard) · 󰻂 md-record-circle (Screen Record) · 󰕾 md-microphone (+ Audio) · 󰴱 md-eyedropper (Color Picker)
-
-**Share submenu**: 󰈔 md-file-send (File) · 󰨸 md-clipboard-arrow-up (Clipboard)
-
-**Toggle submenu**: 󰛨 md-weather-night (Nightlight) · 󰌾 md-lock (Idle Lock) · 󰝘 md-grid-large (Workspace Gaps)
-
-### Style Menu (menu-style)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Switch Theme | 󰔎 | md-theme-light-dark |
-| Wallpaper (Random) | 󰸉 | md-image-multiple |
-| Wallpaper (Set) | 󰋩 | md-image |
-| Edit Hyprland Config | 󰒓 | md-cog |
-
-**Config submenu**: 󰍹 md-monitor (Monitor) · 󱃾 md-application-variable (Environment) · 󰌌 md-keyboard (Input) · 󰒓 md-cog (General) · 󰐮 md-palette-swatch (Decoration) · 󰫢 md-animation (Animations) · 󰌑 md-keyboard-settings (Bindings) · 󰖲 md-window-maximize (Window Rules) · 󰐊 md-application-cog (Autostart)
-
-### Learn Menu (menu-learn)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Keybindings | 󰌌 | md-keyboard |
-| Hyprland Wiki | 󰗚 | md-book-open |
-| Arch Wiki | 󰣇 | md-arch |
-| Chezmoi Docs | 󰈙 | md-file-document |
-| GitHub (Dotfiles) | 󰊤 | md-github |
-
-### Setup Menu (menu-setup)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Audio (PulseAudio) | 󰕾 | md-volume-high |
-| Audio Output Switch | 󰓃 | md-swap-horizontal |
-| Network (WiFi) | 󰖩 | md-wifi |
-| Bluetooth | 󰂯 | md-bluetooth |
-| Power Profile | 󰁹 | md-battery-charging |
-| Displays | 󰍹 | md-monitor |
-| Edit Keybindings | 󰌑 | md-keyboard-settings |
-| Input Devices | 󰖳 | md-mouse |
-
-**Power Profile submenu**: 󰓅 md-speedometer (Performance) · 󰗑 md-scale-balance (Balanced) · 󰁼 md-battery-plus (Power Saver)
-
-### Install Menu (menu-install)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Install Package | 󰏗 | md-package-variant-closed |
-| AI Models (Ollama) | 󰚩 | md-robot |
-| Development Tools | 󰙵 | md-code-braces |
-| Code Editors | 󰘐 | md-application-edit |
-
-**Ollama submenu**: 󰇚 md-download (Pull) · 󰉖 md-format-list-bulleted (List) · 󰆴 md-delete (Remove)
-**Dev Tools submenu**: 󰡨 md-docker · 󱘗 md-language-rust · 󰌠 md-language-python (mise) · 󰎙 md-nodejs (mise) · 󰟓 md-language-go (mise)
-**Code Editors submenu**: 󰨞 md-microsoft-visual-studio-code (VSCode/VSCodium) · 󰕷 md-vim (Neovim Config) · 󱓥 md-dna (Helix)
-
-### Remove Menu (menu-remove)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Remove Package | 󰏖 | md-package-down |
-| Clean Package Cache | 󰃬 | md-broom |
-| Remove Orphans | 󰩺 | md-trash-can |
-| Clean Home Cache | 󰃨 | md-folder-remove |
-
-### Update Menu (menu-update)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| System Update (topgrade) | 󰚰 | md-update |
-| Config Refresh (chezmoi) | 󰑓 | md-refresh |
-| Firmware Update | 󰣐 | md-chip |
-| Sync Time | 󰅐 | md-clock-outline |
-| Update Mirrorlist | 󰒋 | md-mirror |
-
-**Firmware submenu**: 󰋗 md-help-circle (Check) · 󰇚 md-download (Download) · 󰁯 md-arrow-up-bold-circle (Install) · 󰾰 md-devices (Show Devices)
-
-### System Menu (menu-system)
-
-| Entry | Icon | Glyph Name |
-|-------|------|------------|
-| Lock | 󰌾 | md-lock |
-| Suspend | 󰤄 | md-power-sleep |
-| Restart | 󰜉 | md-restart |
-| Shutdown | 󰐥 | md-power-off |
 
 ### Universal
 
@@ -150,7 +58,7 @@ so sixteen `menu-*` scripts converted without an edit of their own.
 
 ## menu-helpers.sh Library
 
-All menu-\* scripts source this library. Three functions:
+Menu scripts source this library (today: `desktop/display-menu`). Three functions:
 
 ```bash
 show_menu "Prompt" "option1|option2|option3"  # → quickshell-menu, returns selection
@@ -178,7 +86,7 @@ Four tools that use gum-ui (not menu-helpers.sh — these are interactive termin
 
 Opens `~/.config/dotfiles/extra-bindings.conf` in `$EDITOR` and calls `hyprctl reload` on exit.
 
-**Keybinding**: `Super+Ctrl+Shift+B` (or via menu-setup)
+**Keybinding**: `Super+Ctrl+Shift+B`
 **File managed by**: chezmoi (always present, prevents Hyprland parse error on missing source)
 
 ## theme-menu
@@ -196,33 +104,26 @@ directly, as this one does; the pipe-delimited option list has no room for a sec
 🚨 **The dark/light arm lives in `desktop/theme-switcher` (`variant <theme>`)**, not here — it
 was copied in four places. `theme-menu` owns the glyph map, which is presentation.
 
-**Usage**: `theme-menu [--print-items]` or via Style menu. `--print-items` writes the item JSON
+**Usage**: `theme-menu [--print-items]` (`Super+Shift+Ctrl+Space`). `--print-items` writes the item JSON
 and exits, which is how the grouping, ordering and badge are checked without a display.
 
 ## Non-Obvious Patterns
 
 **menu-helpers.sh keeps .sh extension**: It's a sourced library, not an executed script. Don't rename it.
 
-🚨 **Nothing else keeps a `.sh` extension, and 18 call sites said otherwise until 2026-09-12.**
-chezmoi strips `executable_` and `.tmpl` but adds nothing, so the deployed scripts are
-`system-menu`, `menu-setup`, `audio-switch`, `random-wallpaper` — never `*.sh`. Every `󰁍 Back`
-row in `menu-install`, `menu-learn`, `menu-setup`, `menu-style`, `menu-update` and
-`utilities-menu` pointed at `system-menu.sh`, which has never existed, so **Back did nothing at
-all** — the path failed, the script exited, and the menu simply closed. The same held for
-`keybindings.sh`, `audio-switch.sh`, `package-manager.sh`, `random-wallpaper.sh` and
-`set-wallpaper.sh`.
+🚨 **Nothing else keeps a `.sh` extension.** chezmoi strips `executable_` and `.tmpl` but adds
+nothing, so the deployed scripts are `launcher-actions`, `audio-switch`, `random-wallpaper` — never
+`*.sh`. (18 call sites once said otherwise, and **Back did nothing at all**: the path failed, the
+script exited, and the menu simply closed.) A leaf that exits looks exactly like a leaf that ran,
+so check the deployed name (`ls ~/.local/lib/scripts/<category>/`), not the source name.
 
-The failure is silent by construction: a menu leaf that exits looks exactly like a menu leaf that
-ran. When adding a call site, check the deployed name (`ls ~/.local/lib/scripts/<category>/`),
-not the source name.
-
-**Template scripts** (`.tmpl` suffix): menu-about.tmpl, menu-ai.tmpl, menu-install.tmpl, menu-setup.tmpl, menu-style.tmpl, menu-update.tmpl, theme-menu.tmpl — chezmoi processes these at `chezmoi apply` time, not at runtime. Template vars are build-time substitutions.
+**Template scripts** (`.tmpl` suffix): launcher-actions.tmpl, theme-menu.tmpl — chezmoi processes these at `chezmoi apply` time, not at runtime. Template vars are build-time substitutions.
 
 **hook-create/edit/list/test use gum-ui**: Unlike menu scripts (graphical picker), hook tools are interactive terminal utilities — use gum for rich UI.
 
 ## Integration Points
 
-- **Hyprland**: `~/.config/hypr/conf/bindings/system-control.conf` (`Super+Space` → `system-menu`)
+- **Hyprland**: `~/.config/hypr/conf/bindings/system-control.conf` (`Super+Space` → `quickshell-toggle launcher actions`)
 - **Picker**: menu scripts pipe lines to `desktop/quickshell-menu` (dmenu contract — lines in,
   one line out, empty means cancelled). there is no fallback picker
 - **Hook system**: See `dotfiles/CLAUDE.md` for hook architecture

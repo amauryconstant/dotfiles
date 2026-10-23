@@ -4,7 +4,7 @@
 # Purpose: Choose the blue light filter temperature (hyprsunset)
 # Requirements: Arch Linux, hyprsunset, hyprctl, quickshell-menu
 # Usage: nightlight-config [KELVIN]
-# Reachable from: menu-trigger Toggle submenu, and the shell night-light popover
+# Reachable from: the shell night-light popover
 #
 # Sets the warm preference read by nightlight-toggle, and applies it now.
 # See nightlight-toggle for why hyprctl *output* is checked rather than its

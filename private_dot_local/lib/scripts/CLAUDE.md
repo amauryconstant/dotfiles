@@ -63,7 +63,6 @@ fi
 | `dark-mode-change` | darkman scripts | `dark/light` | Web app themes |
 | `pre-maintenance` | system-maintenance | none | Backup preparation |
 | `post-maintenance` | system-maintenance | `success/failure` | Validation, cleanup |
-| `menu-extend` | system-menu | `options`/`handle <choice>` | Super+Space custom entries |
 | `idle-change` | hypridle listener 1 | `timeout`/`resume` | Idle threshold reached / activity resumed. **`resume` fires on any input, BEFORE authentication** — not an unlock signal |
 | `lock-change` | hypridle `on_lock_cmd`/`on_unlock_cmd` | `lock`/`unlock` | True session lock/unlock (authenticated) |
 | `session-start` | autostart.conf | none | Hyprland session startup |
@@ -177,8 +176,8 @@ fi
 - `set-wallpaper.tmpl` - Set specific wallpaper via swww (uses log templates)
 
 ### User Interface Menus
-**Purpose**: Omarchy-inspired hierarchical menu system
-**Entry point**: `Super+Space` → `system-menu`
+**Purpose**: Capture and maintenance actions in the launcher (`>`), plus the picker library
+**Entry point**: `Super+Space` → the launcher's `>` mode (`user-interface/launcher-actions`)
 **Integration**: `desktop/quickshell-menu`, through the `menu-helpers.sh` library
 **Icons**: Material Design glyphs
 
@@ -191,21 +190,7 @@ to block until the user chooses and an IPC handler returns immediately. **There 
 with the shell unreachable `quickshell-menu` prints a `hyprctl notify` and exits 1, which callers
 read as cancelled. See `user-interface/CLAUDE.md`.
 
-**Main menu categories**:
-| Icon | Category | Script | Purpose |
-|------|----------|--------|---------|
-| 󰀻 | Apps | the Quickshell launcher (`SUPER+D`) | Application launcher |
-| 󰗚 | Learn | `menu-learn` | Help/documentation |
-| 󰈿 | Trigger | `menu-trigger` | Quick actions (Capture, Share, Toggle) |
-| 󰏘 | Style | `menu-style` | Theme/appearance |
-| 󰒓 | Setup | `menu-setup` | System configuration |
-| 󰏓 | Install | `menu-install` | Package installation |
-| 󰩺 | Remove | `menu-remove` | Package removal |
-| 󰚰 | Update | `menu-update` | System updates |
-| 󰋼 | About | `menu-about` | System information |
-| 󰐥 | System | `menu-system` | Power management |
-
-**Submenus** (not top-level): `menu-ai` (AI actions), `utilities-menu` (utility launcher), reached from the categories above.
+**Actions** (`launcher-actions`): Capture (from `media/capture-menu`) and Maintenance (topgrade, chezmoi diff-then-apply, system health, mirrorlist). Everything else has a dedicated key — see `user-interface/CLAUDE.md`.
 
 **Hook tooling** (also in `user-interface/`): `hook-create`, `hook-edit`, `hook-list`, `hook-test`, `dotfiles-bindings-edit` — see `dotfiles/CLAUDE.md`.
 
@@ -359,16 +344,16 @@ fi
 **Menu script (menu-helpers.sh)**:
 ```bash
 #!/usr/bin/env sh
-# Script: menu-update
-# Purpose: System update menu
+# Script: menu-example
+# Purpose: Example picker menu
 
 . ~/.local/lib/scripts/user-interface/menu-helpers.sh
 
-CHOICE=$(show_menu "Update" "System|Firmware|Mirrorlist")
+CHOICE=$(show_menu "Maintenance" "System|Mirrorlist")
 case "$CHOICE" in
     "System") topgrade ;;
 esac
-notify "Update" "Complete"
+notify "Maintenance" "Complete"
 ```
 
 **Anti-patterns**:

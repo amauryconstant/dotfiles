@@ -17,16 +17,46 @@ PickerSurface {
     id: root
 
     // 🚨 A prefix takes effect on the FIRST keystroke, and Backspace out of it
-    // returns to application search. Two modes, not the five an older mockup
-    // drew: `:` runs a command in a terminal, `=` evaluates an expression.
-    readonly property string prefix: root.query.startsWith(":") ? ":" : root.query.startsWith("=") ? "=" : ""
+    // returns to application search. Three modes, not the five an older mockup
+    // drew: `:` runs a command in a terminal, `=` evaluates an expression, `>`
+    // lists actions (capture, maintenance) -- the SUPER+Space surface.
+    readonly property string prefix: root.query.startsWith(":") ? ":" : root.query.startsWith("=") ? "=" : root.query.startsWith(">") ? ">" : ""
     readonly property string term: root.prefix ? root.query.slice(1).trim() : root.query.trim()
     readonly property bool appsMode: root.prefix === ""
+    readonly property bool actionsMode: root.prefix === ">"
 
     readonly property list<var> results: root.appsMode ? (root.term ? root.rank(root.term) : root.quickAccessCache) : []
     // The picker draws rows, not desktop entries. Remapped rather than
     // special-cased inside a shared delegate: the launcher is the only one of
     // the three surfaces with a themed icon and a spawn failure to report.
+    // `>` rows: the script's items, ranked with the launcher's own score().
+    // Content is user-interface/launcher-actions, not QML, so a menu change
+    // never means editing the shell. Section headers show only while the query
+    // is empty: a ranked list has no sections.
+    property var actionItems: []
+    readonly property list<var> actionRows: {
+        if (!root.actionsMode)
+            return [];
+        if (!root.term)
+            return root.actionItems;
+        const needle = root.term.toLowerCase();
+        const scored = [];
+        for (const item of root.actionItems) {
+            if (item.header)
+                continue;
+            const s = root.score({
+                name: item.title,
+                comment: item.subtitle
+            }, needle);
+            if (s >= 0)
+                scored.push({
+                    item,
+                    s
+                });
+        }
+        scored.sort((a, b) => b.s - a.s);
+        return scored.map(m => m.item);
+    }
     readonly property list<var> rows: root.results.map((entry, i) => ({
                 title: entry.name,
                 subtitle: i === root.selected && root.launchError !== "" ? root.launchError : (entry.genericName || entry.comment || entry.execString || " "),
@@ -145,6 +175,14 @@ PickerSurface {
             root.close();
             return;
         }
+        if (root.prefix === ">") {
+            const item = root.actionRows[root.selected];
+            if (!item || item.header)
+                return;
+            Quickshell.execDetached(Config.detach.concat([Config.scriptsDir + "/user-interface/launcher-actions", "run", item.payload]));
+            root.close();
+            return;
+        }
         const entry = root.results[root.selected];
         if (!entry)
             return;
@@ -161,21 +199,53 @@ PickerSurface {
         root.close();
     }
 
-    counter: root.appsMode && root.results.length > 0 ? String(root.results.length) : ""
-    footerLeft: "↑↓ move · ↵ launch · esc clear"
-    footerRight: ": run · = calc"
+    counter: root.appsMode && root.results.length > 0 ? String(root.results.length) : (root.actionsMode ? String(root.actionRows.filter(i => !i.header).length) : "")
+    footerLeft: root.actionsMode ? "↑↓ move · ↵ run · esc clear" : "↑↓ move · ↵ launch"
+    // Empty in `>` mode: the apps hint drops `esc` so both footer
+    // hints fit.
+    footerRight: root.actionsMode ? "" : ": run · = calc · > actions"
     // The prefix stays visible in accent at the field's left edge, so the mode
     // is legible without reading the query.
     headerAccent: !root.appsMode
     headerGlyph: root.appsMode ? Config.searchGlyph : root.prefix
-    model: root.appsMode ? root.rows : []
-    placeholder: qsTr("Search applications")
+    model: root.appsMode ? root.rows : (root.actionsMode ? root.actionRows : [])
+    placeholder: root.actionsMode ? qsTr("Search actions") : qsTr("Search applications")
 
     onAccepted: root.activate()
-    onOpened: root.launchError = ""
+    onOpened: {
+        root.launchError = "";
+        actionsLoader.running = false;
+        actionsLoader.running = true;
+    }
     onResultsChanged: {
         root.selected = 0;
         root.launchError = "";
+    }
+    onActionRowsChanged: root.selected = root.firstSelectable()
+
+    // SUPER+Space. open() empties the field, so the prefix goes in afterwards.
+    function openActions(): void {
+        if (!root.visible)
+            root.open();
+        root.setQuery(">");
+    }
+
+    // Reads the action list once per open. A failure leaves the list empty, the
+    // same degradation as `=` without qalc.
+    Process {
+        id: actionsLoader
+
+        command: [Config.scriptsDir + "/user-interface/launcher-actions", "--print-items"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.actionItems = JSON.parse(this.text);
+                } catch (e) {
+                    root.actionItems = [];
+                }
+            }
+        }
     }
 
     FileView {
@@ -231,7 +301,7 @@ PickerSurface {
     // special-cased at every read.
     Item {
         height: Config.launcherRowHeight + Config.launcherListPad * 2
-        visible: !root.appsMode && root.term !== ""
+        visible: !root.appsMode && !root.actionsMode && root.term !== ""
         width: parent.width
 
         Rectangle {

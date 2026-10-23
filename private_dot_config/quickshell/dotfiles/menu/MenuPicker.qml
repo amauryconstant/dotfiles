@@ -11,7 +11,8 @@ import QtQuick
 //
 // Two deliberate departures from page 10:
 //
-//   * 340 wide, not 260. Page 10 draws a menu of short verbs; these lists carry
+//   * Wider than page 10's 260 (it now shares the launcher's 520). Page 10
+//     draws a menu of short verbs; these lists carry
 //     strings this repo already wrote, such as "Power Profile (Current:
 //     balanced)". Narrowing the surface would elide the only part that differs
 //     between two rows.
@@ -53,8 +54,8 @@ PickerSurface {
     placeholder: MenuServer.breadcrumb !== "" ? `${MenuServer.breadcrumb} › ${MenuServer.prompt}` : MenuServer.prompt
 
     // 🚨 With nothing matching, Return answers with the TYPED TEXT. That is
-    // dmenu's contract, not a nicety: menu-install asks for a package name by
-    // handing Wofi an empty list, and a picker that could only echo an existing
+    // dmenu's contract, not a nicety: a script can ask for free text by
+    // handing the picker an empty list, and a picker that could only echo an existing
     // row would break it silently -- the surface would look right and the
     // caller would get nothing.
     onAccepted: {

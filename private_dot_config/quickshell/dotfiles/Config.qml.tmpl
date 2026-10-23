@@ -120,10 +120,11 @@ Singleton {
 
     // Launcher, design page Shell-05-Launcher. The panel grows downward from
     // the input row, so only the row heights are fixed; the window height
-    // follows the results. 340 wide, matching popMaxW: it is the same kind of
-    // surface as a popover, and the old 760 came from an artboard that no
-    // longer exists.
-    readonly property int launcherWidth: 340
+    // follows the results. 520 wide: 340 (popMaxW) read as cramped once the
+    // `>` actions mode put two-line rows and a footer hint in it. The same
+    // chrome serves the menu picker and the clipboard, so they grow with it.
+    // The old 760 came from an artboard that no longer exists.
+    readonly property int launcherWidth: 520
     readonly property int launcherInputHeight: 48
     // Taller than rowH because each launcher row carries two lines.
     readonly property int launcherRowHeight: 48
@@ -131,8 +132,11 @@ Singleton {
     readonly property int launcherFooterHeight: 32
     readonly property int launcherListPad: 6
     // The canvas draws three rows. A cap is still needed for a one-letter
-    // query, and eight is what fits without the panel becoming a window.
-    readonly property int launcherMaxResults: 8
+    // query; ten two-line rows (480) fit under launcherMaxHeight.
+    readonly property int launcherMaxResults: 10
+    // The list's own height cap, apart from popMaxH: popovers keep their 420,
+    // the launcher's 520-wide panel gets room for ten rows.
+    readonly property int launcherMaxHeight: 560
 
     // Panel bounds shared by every list surface. popMaxH is CHOSEN, not
     // computed, and the row budget follows from it: 420 - 34 header - 32 footer

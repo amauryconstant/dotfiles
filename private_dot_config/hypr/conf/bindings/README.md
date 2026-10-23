@@ -64,9 +64,9 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | Keys | Action |
 |------|--------|
 | `SUPER+L` | Lock screen |
-| `SUPER+Space` | Main system menu |
+| `SUPER+Space` | Actions — launcher `>` mode (capture, maintenance) |
 | `SUPER+/` | Keybinding help (interactive viewer) |
-| `SUPER+SHIFT+Q` | Power menu — Quickshell (`menu-system` when the shell is down) |
+| `SUPER+SHIFT+Q` | Power menu — Quickshell |
 | `SUPER+SHIFT+N` | Notification center (Quickshell) |
 
 ### Desktop utilities (`desktop-utilities.conf`)
@@ -79,7 +79,6 @@ Per-monitor independent workspaces 1–10 via hyprsplit (`split:*` dispatchers).
 | `SUPER+I` / `SUPER+SHIFT+I` | Toggle idle lock / idle no-lock (display still sleeps) |
 | `SUPER+M` | Monitor switcher |
 | `SUPER+N` | Nightlight toggle |
-| `SUPER+U` | Utilities menu |
 | `SUPER+CTRL+B` / `SUPER+CTRL+W` | Bluetooth manager / WiFi (nmtui) |
 | `SUPER+CTRL+Y` | Activity monitor (btop) |
 | `SUPER+CTRL+Z` / `SUPER+CTRL+ALT+Z` | Cursor zoom in / out |

@@ -15,7 +15,7 @@ A complete, automated desktop environment for Arch Linux with dynamic theming, i
 - **Dynamic Theming**: Automatic color palette generation from wallpapers
 - **Hyprland Compositor**: Wayland-native tiling with modular configuration
 - **Smart Wallpapers**: 30-minute automatic rotation, theme-organized collections
-- **Unified Interface**: Hierarchical menu system (`Super+Space`) for all system functions
+- **Actions**: `Super+Space` opens the launcher in `>` mode (capture, maintenance)
 - **Quickshell Shell**: QML desktop shell — bar, launcher, notifications, power menu, popovers, lock screen
 - **Adaptive UI**: 13+ applications auto-theme (desktop: Hyprland, Quickshell, Ghostty; CLI: bat, btop, starship, yazi, lazygit, broot; plus Firefox)
 
@@ -71,7 +71,7 @@ reboot
 
 After reboot:
 
-1. `Super+Space` - Explore hierarchical menu system
+1. `Super+Space` - Capture and maintenance actions
 2. `commands` - See all available custom commands
 3. `random-wallpaper` - Test dynamic theme switching
 4. `Super+/` - View all keybindings
@@ -99,7 +99,7 @@ package-manager      # Package management
 
 **Desktop Control**:
 ```bash
-Super+Space          # Hierarchical menu system
+Super+Space          # Actions (launcher > mode)
 Super+Return         # Terminal
 Super+D              # App launcher (Quickshell)
 Print                # Screenshot + annotation (Satty)
@@ -283,7 +283,7 @@ chezmoi init --apply https://gitlab.com/amoconst/dotfiles.git
 
 ### Quick References
 
-- **Keybindings**: `Super+/` or `Super+Space` → Learn
+- **Keybindings**: `Super+/`
 - **Commands**: Run `commands` in terminal
 - **Template system**: [CLAUDE.md → Template System Reference](CLAUDE.md#template-system-reference)
 - **Package management**: [CLAUDE.md → Package Management](CLAUDE.md#package-management-for-development)

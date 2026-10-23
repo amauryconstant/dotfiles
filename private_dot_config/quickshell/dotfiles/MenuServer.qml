@@ -4,8 +4,8 @@ pragma ComponentBehavior: Bound
 import Quickshell
 import Quickshell.Io
 
-// The dmenu substrate. Twenty-two scripts in this repo ask the user to pick
-// from a list, and until now every one of them shelled out to `wofi --dmenu`.
+// The dmenu substrate. Scripts in this repo that ask the user to pick
+// from a list once all shelled out to `wofi --dmenu`.
 // This is the same contract served by the shell instead.
 //
 // 🚨 A dmenu call is REQUEST/RESPONSE AND BLOCKING: the script must not return
@@ -41,8 +41,8 @@ import Quickshell.Io
 // the title.
 //
 // 🚨 A plain string stays a plain string: it normalises to
-// `{title: s, payload: s}`, so all sixteen show_menu() callers, the empty-string
-// element menu-install's free-text prompt relies on, and the `case` statements
+// `{title: s, payload: s}`, so every show_menu() caller, the empty-string
+// element a free-text prompt relies on, and the `case` statements
 // every one of them matches with are untouched.
 //
 // The caller is `desktop/quickshell-menu`. With this socket absent it cancels

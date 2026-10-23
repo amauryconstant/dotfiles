@@ -4,7 +4,7 @@
 # Purpose: Shared utilities for menu system
 # Requirements: Arch Linux, quickshell-menu
 
-# 🚨 THE choke point. Sixteen menu-* scripts reach the user only through these
+# 🚨 THE choke point. The menu-* scripts reach the user only through these
 # two functions, so the picker is swapped here and nowhere else. quickshell-menu
 # speaks the same contract Wofi did -- items on stdin, the choice on stdout,
 # exit 1 and no output when cancelled. With the shell unreachable it cancels

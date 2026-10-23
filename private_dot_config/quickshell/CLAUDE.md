@@ -145,6 +145,8 @@ decision; each is also commented at its site. Everything **not** listed here fol
 | Design says | Here | Why |
 |---|---|---|
 | **09** five session tiles, no hibernate | six, hibernate kept | Hibernate does real work on this laptop, and the design's own rule — *a control that would do nothing is removed* — endorses keeping one that works |
+| **05** two prefix modes (`:` `=`) | three: `>` lists actions (SUPER+Space) | The old ten-category menu tree was retired 2026-10-23; capture and maintenance actions are launcher rows fed by `user-interface/launcher-actions`, so a menu change never edits the shell. Opened by `quickshell-toggle launcher actions` → `toggleActions` |
+| **05/10/11** list surfaces 340 wide, list capped at `popMaxH` | 520 wide (`launcherWidth`), list capped at `launcherMaxHeight` 560, 10 results | **2026-10-23**: 340 was cramped once `>` actions put two-line rows and a footer hint in it. The three list surfaces share one chrome, so the menu picker and clipboard grew with the launcher. Popovers keep 340/420 |
 | **09** nothing pre-selected | Lock pre-selected | Already safe: an accidental Return locks, which is recoverable. It is also wlogout's model, which this menu replaced without smuggling in a behaviour change |
 | **09** 88px tiles | 124px | 88 was drawn for a five-tile row; we have six. Cosmetic, no defect |
 | **08** OSD fill on `fillInert` over a `groundRaised` track | fill `signalFocus`, track `groundRaised` | The design's pair measures ≈**1.3:1**, under its own 3:1 graphic floor |
@@ -255,9 +257,8 @@ modifier further and the footer says so.
 
 ## The dmenu substrate — `MenuServer.qml` + `desktop/quickshell-menu`
 
-Twenty-two scripts in this repo ask the user to pick from a list. Sixteen route through
-`show_menu()` in `user-interface/menu-helpers.sh`; the rest called `wofi --dmenu` directly (Wofi retired 2026-10-19). All of
-them now reach the shell.
+Scripts that ask the user to pick from a list route through `show_menu()` in
+`user-interface/menu-helpers.sh` or call `quickshell-menu` directly; all reach the shell (Wofi retired 2026-10-19).
 
 🚨 **A socket, not IPC.** A dmenu call is request/response and **blocking** — the script must not
 return until the user has chosen. `quickshell ipc call` cannot do that: a handler returns
@@ -276,12 +277,12 @@ Four things that each broke it once, all now load-bearing in the wrapper:
 | a second request while one is open | refused immediately rather than queued. A menu that appears minutes later, attached to a script that has moved on, is worse than a refusal |
 
 **With nothing matching, Return answers with the TYPED TEXT.** That is dmenu's contract, not a
-nicety: `menu-install` asks for a package name by handing the picker an empty list.
+nicety: a script can ask for free text by handing the picker an empty list.
 
 ### Navigation — `--breadcrumb` and `--back` (design page 10)
 
 Page 10 asks for the navigation model to live in the shell. It does **not** ask for the *tree* to,
-and the tree stays in the thirteen `menu-*` scripts — moving thirteen scripts' worth of menu
+and the tree stays in the `menu-*` scripts — moving their menu
 content into QML would put every future menu change inside the shell for no gain.
 
 Two optional request fields carry the model instead:
@@ -322,8 +323,8 @@ fallback for a missing file.
 `themes/CLAUDE.md` for their provenance.
 
 `MenuServer.normalise()` turns both shapes into one row: a plain string becomes
-`{title: s, payload: s}`, so the sixteen `show_menu()` callers, their `case` statements and
-`menu-install`'s empty-list free-text prompt are all untouched.
+`{title: s, payload: s}`, so every `show_menu()` caller, its `case` statement and
+the empty-list free-text prompt are untouched.
 
 🚨 **`payload` is what the caller is answered with, and it is NOT in the search haystack** —
 `MenuPicker` matches on `title` and `subtitle` only. That is the whole point: before this,

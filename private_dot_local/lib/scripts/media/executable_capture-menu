@@ -4,6 +4,9 @@
 # Purpose: Pick a capture mode from the Quickshell picker
 # Requirements: Arch Linux, quickshell-menu
 # Bound to: CTRL ALT SHIFT + Print
+# Usage: capture-menu [--print-items | --run <mode>]
+#        --print-items  the item JSON, for user-interface/launcher-actions
+#        --run <mode>   dispatch one mode without the picker
 #
 # Surface §15 wants the capture modes discoverable. They already all exist as
 # scripts with Print-key chords; what was missing is a way to reach them
@@ -18,8 +21,8 @@
 
 SCRIPTS_DIR="$HOME/.local/lib/scripts"
 
-CHOICE=$(
-    cat <<'MENU_EOF' | "$SCRIPTS_DIR/desktop/quickshell-menu" --json --prompt "Capture"
+print_items() {
+    cat <<'MENU_EOF'
 [
   {"title": "Region", "subtitle": "Select an area, then annotate", "glyph": "󰆞", "payload": "region"},
   {"title": "Window", "subtitle": "Snap the selection to a window", "glyph": "󰖯", "payload": "windows"},
@@ -31,27 +34,43 @@ CHOICE=$(
   {"title": "Record screen", "subtitle": "Start or stop a recording with audio", "glyph": "󰑋", "payload": "record"}
 ]
 MENU_EOF
-)
+}
+
+run_mode() {
+    case "$1" in
+        region | windows | fullscreen | smart)
+            exec "$SCRIPTS_DIR/media/screenshot" "$1"
+            ;;
+        clipboard)
+            exec "$SCRIPTS_DIR/media/screenshot" smart clipboard
+            ;;
+        qr)
+            exec "$SCRIPTS_DIR/media/capture-qr"
+            ;;
+        ocr)
+            exec "$SCRIPTS_DIR/media/capture-text-extraction"
+            ;;
+        record)
+            exec "$SCRIPTS_DIR/desktop/screenrecord" --with-audio
+            ;;
+        *)
+            exit 1
+            ;;
+    esac
+}
+
+case "$1" in
+    --print-items)
+        print_items
+        exit 0
+        ;;
+    --run)
+        run_mode "$2"
+        ;;
+esac
+
+CHOICE=$(print_items | "$SCRIPTS_DIR/desktop/quickshell-menu" --json --prompt "Capture")
 
 [ -n "$CHOICE" ] || exit 0
 
-case "$CHOICE" in
-    region | windows | fullscreen | smart)
-        exec "$SCRIPTS_DIR/media/screenshot" "$CHOICE"
-        ;;
-    clipboard)
-        exec "$SCRIPTS_DIR/media/screenshot" smart clipboard
-        ;;
-    qr)
-        exec "$SCRIPTS_DIR/media/capture-qr"
-        ;;
-    ocr)
-        exec "$SCRIPTS_DIR/media/capture-text-extraction"
-        ;;
-    record)
-        exec "$SCRIPTS_DIR/desktop/screenrecord" --with-audio
-        ;;
-    *)
-        exit 1
-        ;;
-esac
+run_mode "$CHOICE"

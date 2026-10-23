@@ -13,7 +13,7 @@
 - **Purpose**: User-extensible event-driven architecture for custom integrations
 - **Location**: `~/.config/dotfiles/hooks/`
 - **Pattern**: Silent hook execution without modifying core scripts
-- **Hook Points**: theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, menu-extend, idle-change, lock-change, session-start
+- **Hook Points**: theme-change, package-sync, wallpaper-change, dark-mode-change, pre/post-maintenance, idle-change, lock-change, session-start
 - **Discovery**: `hook-list` CLI
 - **Creation**: `hook-create` CLI
 - **Debug**: `HOOK_DEBUG=1 hook-runner <name> [args]` → logs to `~/.local/state/dotfiles/hook.log`
@@ -73,29 +73,9 @@ fi
 | `dark-mode-change` | `darkman` scripts | `dark/light` | Web browser themes, external apps |
 | `pre-maintenance` | `system-maintenance` | none | Backup preparation, service stops |
 | `post-maintenance` | `system-maintenance` | `success/failure` | Validation, cleanup, notifications |
-| `menu-extend` | `system-menu` | `options` / `handle <choice>` | Custom entries in Super+Space menu |
 | `idle-change` | `hypridle` listener 1 | `timeout` / `resume` | Pause apps when idle. **`resume` fires on any input, BEFORE auth** — not an unlock |
 | `lock-change` | `hypridle` `on_lock_cmd` / `on_unlock_cmd` | `lock` / `unlock` | True authenticated lock/unlock — mute mic, pause syncs |
 | `session-start` | `autostart.conf` (5s delay) | none | Launch personal services, restore state |
-
-**`menu-extend` two-phase protocol** (differs from other hooks):
-- Called with `options` → print pipe-separated entries to stdout
-- Called with `handle <choice>` → route and execute the chosen entry
-
-```sh
-#!/usr/bin/env sh
-# Hook: menu-extend
-case "$1" in
-    options)
-        echo "󰀻 My Project"   # single entry, or "A|B|C" for multiple
-        ;;
-    handle)
-        case "$2" in
-            "󰀻 My Project") ghostty -e zsh -c "cd ~/Projects/my-project && exec zsh" ;;
-        esac
-        ;;
-esac
-```
 
 ---
 

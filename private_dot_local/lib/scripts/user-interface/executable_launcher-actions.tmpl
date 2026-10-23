@@ -1,0 +1,93 @@
+#!/usr/bin/env sh
+
+# Script: launcher-actions
+# Purpose: The `>` mode of the Quickshell launcher (Super+Space): capture and
+#          maintenance actions as launcher rows
+# Requirements: Arch Linux, jaq
+# Usage: launcher-actions --print-items
+#        launcher-actions run <payload>
+#
+# The launcher draws what --print-items emits and answers with the payload of
+# the row chosen. The content lives HERE rather than in Launcher.qml so a
+# change to the menu never means editing the shell. Item shape is the one
+# `desktop/quickshell-menu --json` takes: glyph, title, subtitle, payload, or
+# {header: true, title}.
+#
+# Only actions with no other home are listed. Apps, power, clipboard, audio,
+# network, nightlight, themes and the keybinding sheet each have a dedicated
+# surface and key; a second route to them here was the old menu's clutter.
+#
+# Capture rows come from media/capture-menu, so the mode list exists once.
+
+SCRIPTS_DIR="${SCRIPTS_DIR:-$HOME/.local/lib/scripts}"
+TERMINAL="{{ .globals.applications.terminal }}"
+
+# A command in a terminal that stays open until Enter, so its output is read.
+in_terminal() {
+    $TERMINAL -e sh -c "$1; printf '\\nPress Enter to close...'; read -r _"
+}
+
+# Show what chezmoi would change, then apply only on an explicit yes.
+# 🚨 Never a blind `chezmoi apply`: the diff is the review.
+APPLY_FLOW="chezmoi diff; printf '\\nApply? [y/N] '; read -r a; [ \"\$a\" = y ] && chezmoi apply"
+
+print_items() {
+    capture=$("$SCRIPTS_DIR/media/capture-menu" --print-items |
+        jaq -c 'map(.payload = "capture:" + .payload)')
+
+    maintenance='[
+  {"title": "Update system", "subtitle": "topgrade: packages (tripwire-gated), Flatpak, mise", "glyph": "󰚰", "payload": "update"},
+  {"title": "Update dotfiles", "subtitle": "Pull, review the diff, then apply", "glyph": "󰑓", "payload": "dotfiles-update"},
+  {"title": "Apply dotfiles", "subtitle": "Review the diff, then apply", "glyph": "󰦖", "payload": "dotfiles-apply"},
+  {"title": "System health", "subtitle": "Services, disks and failed units", "glyph": "󰓙", "payload": "health"},
+  {"title": "Update mirrorlist", "subtitle": "rate-mirrors, fastest Arch mirrors", "glyph": "󰒋", "payload": "mirrors"}
+]'
+
+    printf '%s\n%s\n' "$capture" "$maintenance" | jaq -s -c '
+        [{header: true, title: "CAPTURE"}] + .[0]
+        + [{header: true, title: "MAINTENANCE"}] + .[1]'
+}
+
+run_action() {
+    case "$1" in
+        capture:*)
+            # The launcher closes in the same tick it spawns this. A layer
+            # surface is not guaranteed unmapped before grim fires, and a
+            # Quickshell surface cannot exclude itself from capture.
+            sleep 0.15
+            exec "$SCRIPTS_DIR/media/capture-menu" --run "${1#capture:}"
+            ;;
+        update)
+            in_terminal topgrade
+            ;;
+        dotfiles-update)
+            in_terminal "chezmoi git pull -- --autostash --rebase && { $APPLY_FLOW; }"
+            ;;
+        dotfiles-apply)
+            in_terminal "$APPLY_FLOW"
+            ;;
+        health)
+            in_terminal "$SCRIPTS_DIR/system/system-health"
+            ;;
+        mirrors)
+            in_terminal "t=\$(mktemp) && rate-mirrors --save=\"\$t\" arch && sudo cp \"\$t\" /etc/pacman.d/mirrorlist; rm -f \"\$t\""
+            ;;
+        *)
+            echo "launcher-actions: unknown action '$1'" >&2
+            exit 1
+            ;;
+    esac
+}
+
+case "$1" in
+    --print-items)
+        print_items
+        ;;
+    run)
+        run_action "$2"
+        ;;
+    *)
+        echo "Usage: launcher-actions --print-items | run <payload>" >&2
+        exit 2
+        ;;
+esac

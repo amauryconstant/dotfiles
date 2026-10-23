@@ -81,6 +81,16 @@ ShellRoot {
         function toggle(): string {
             return launcher.toggle();
         }
+
+        // SUPER+Space. Opens on the `>` actions mode, or switches an open
+        // launcher to it; pressed again from there it closes.
+        function toggleActions(): string {
+            if (launcher.visible && launcher.actionsMode)
+                launcher.close();
+            else
+                launcher.openActions();
+            return launcher.visible ? "shown" : "hidden";
+        }
     }
 
     // SUPER+C, taken from `cliphist list | wofi --dmenu | cliphist decode |

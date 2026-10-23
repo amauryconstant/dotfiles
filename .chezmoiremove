@@ -21,7 +21,7 @@
 .config/hyprwhenthen
 .config/systemd/user/hyprwhenthen.service
 
-# wlogout — the power menu is a Quickshell surface; the shell-down fallback is menu-system.
+# wlogout — the power menu is a Quickshell surface.
 .config/wlogout
 .config/themes/*/wlogout.css
 .local/lib/scripts/desktop/wlogout

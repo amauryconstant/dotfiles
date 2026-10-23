@@ -3,7 +3,7 @@
 # Script: nightlight-toggle
 # Purpose: Toggle blue light filter using hyprsunset
 # Requirements: Arch Linux, hyprsunset, hyprctl
-# Bound to: Super+N / menu-trigger Toggle submenu
+# Bound to: Super+N
 # Adapted from: Omarchy's omarchy-toggle-nightlight
 #
 # Drives the running daemon over IPC instead of killing and respawning it on

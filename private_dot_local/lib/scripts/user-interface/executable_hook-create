@@ -24,7 +24,6 @@ wallpaper-change
 dark-mode-change
 pre-maintenance
 post-maintenance
-menu-extend
 idle-change
 lock-change
 session-start"
@@ -89,23 +88,6 @@ case "$HOOK_NAME" in
         HOOK_ARGS="\$1=status (success/failure)"
         HOOK_EXAMPLE='# Restart services, validate
 # [ "$1" = "success" ] && systemctl --user start myservice'
-        ;;
-    menu-extend)
-        HOOK_DESC="Extend system menu (Super+Space)"
-        HOOK_ARGS="\$1=options|handle, \$2=choice (when handle)"
-        HOOK_EXAMPLE='case "$1" in
-    options)
-        # Output pipe-separated menu entries
-        echo "󰀻 My Project"
-        ;;
-    handle)
-        case "$2" in
-            "󰀻 My Project")
-                ghostty --title "My Project" -e zsh -c "cd ~/Projects/my-project && exec zsh"
-                ;;
-        esac
-        ;;
-esac'
         ;;
     idle-change)
         HOOK_DESC="On hypridle idle timeout/resume (listener 1)"

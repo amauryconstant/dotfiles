@@ -240,13 +240,7 @@ System scripts are directly in PATH (no wrappers). Call them as:
 
 ### Menu System
 
-**Integration**: Called from `menu-update`, `menu-install`
-
-**Example**:
-```bash
-# menu-update
-system-maintenance --update
-```
+**Integration**: `user-interface/launcher-actions` (Super+Space `>` mode) runs `topgrade`, whose pre-command calls `package-manager update`.
 
 ## Usage Patterns
 

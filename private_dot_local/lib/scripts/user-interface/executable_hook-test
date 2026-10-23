@@ -25,7 +25,6 @@ default_arg() {
         lock-change)          echo "lock" ;;
         package-sync)         echo "sync" ;;
         post-maintenance)     echo "success" ;;
-        menu-extend)          echo "options" ;;
         *)                    echo "" ;;
     esac
 }
