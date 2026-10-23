@@ -2,9 +2,10 @@
 return {
   -- Inline image rendering via the Kitty graphics protocol, which Ghostty
   -- implements. Sixel is not an option: Ghostty will never support it.
+  -- Loaded on demand: diagram.nvim (markdown) is its only consumer.
   {
     "3rd/image.nvim",
-    lazy = false,
+    lazy = true,
     opts = {
       backend = "kitty",
       integrations = {},
@@ -64,11 +65,35 @@ return {
       layout = { default_direction = "right" },
     },
   },
-  -- mise version manager integration (ensures go/python/node from mise are available)
+  -- LSP for code embedded in other buffers: mise `run` strings (toml) and markdown fences.
+  -- Diagnostics are off: TOML escapes (`\\(`) and doc fragments give false shellcheck errors.
+  -- Needs the injection queries in after/queries/ and an LSP per embedded language.
   {
-    "https://plugins.ejri.dev/mise.nvim",
-    lazy = false,
-    opts = {},
+    "jmbuhr/otter.nvim",
+    ft = { "toml", "markdown" },
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    config = function()
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "toml", "markdown" },
+        group = vim.api.nvim_create_augroup("OtterEmbedded", {}),
+        callback = function(args)
+          if args.match == "toml" and not require("mise_files").is_mise(args.file) then return end
+          require("otter").activate(nil, true, false)
+        end,
+      })
+    end,
+  },
+  -- diffview.nvim is unmaintained upstream (last push 2024-08); same module and
+  -- commands, so the astrocommunity spec and Neogit's integration keep working.
+  {
+    "sindrets/diffview.nvim",
+    url = "https://github.com/dlyongemallo/diffview-plus.nvim",
+  },
+  -- Mise/system tools ahead of Mason's: in this repo `mise run lint` and
+  -- format-on-save then use the same pinned stylua/shellcheck/shfmt.
+  {
+    "mason-org/mason.nvim",
+    opts = { PATH = "append" },
   },
   -- Colorschemes (direct plugins, avoids AstroCommunity module loading issues)
   {

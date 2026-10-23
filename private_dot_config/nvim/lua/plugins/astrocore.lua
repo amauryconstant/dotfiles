@@ -3,6 +3,7 @@ return {
   "AstroNvim/astrocore",
   ---@type AstroCoreOpts
   opts = {
+    treesitter = { ensure_installed = { "qmljs" } },
     mason = {
       -- bash pack auto-installs this but it's not needed without bash debugging
       ["bash-debug-adapter"] = false,

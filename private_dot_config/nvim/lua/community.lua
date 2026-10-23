@@ -3,12 +3,17 @@ return {
   "AstroNvim/astrocommunity",
   -- Language packs
   { import = "astrocommunity.pack.go" },
-  { import = "astrocommunity.pack.python" },
+  -- python minus black/isort: ruff formats and sorts imports
+  { import = "astrocommunity.pack.python.base" },
+  { import = "astrocommunity.pack.python.basedpyright" },
+  { import = "astrocommunity.pack.python.ruff" },
   { import = "astrocommunity.pack.typescript" },
   { import = "astrocommunity.pack.lua" },
   { import = "astrocommunity.pack.bash" },    -- covers sh + bash
   { import = "astrocommunity.pack.yaml" },
   { import = "astrocommunity.pack.json" },
+  { import = "astrocommunity.pack.markdown" }, -- marksman
+  { import = "astrocommunity.pack.jj" },       -- neo-tree jj source
   { import = "astrocommunity.pack.chezmoi" }, -- .tmpl support + toml (included by chezmoi pack)
   -- Diagnostics
   { import = "astrocommunity.diagnostics.trouble-nvim" },
