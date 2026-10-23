@@ -62,3 +62,18 @@
 .local/lib/scripts/system/package-manager/operations
 .local/lib/scripts/system/package-manager/packages
 .local/lib/scripts/system/package-manager/commands
+
+# Super+Space menu tree — retired 2026-10-23; the launcher's `>` mode (user-interface/launcher-actions)
+# replaced system-menu and its menu-* wrappers.
+.local/lib/scripts/user-interface/system-menu
+.local/lib/scripts/user-interface/utilities-menu
+.local/lib/scripts/user-interface/menu-about
+.local/lib/scripts/user-interface/menu-ai
+.local/lib/scripts/user-interface/menu-install
+.local/lib/scripts/user-interface/menu-learn
+.local/lib/scripts/user-interface/menu-remove
+.local/lib/scripts/user-interface/menu-setup
+.local/lib/scripts/user-interface/menu-style
+.local/lib/scripts/user-interface/menu-system
+.local/lib/scripts/user-interface/menu-trigger
+.local/lib/scripts/user-interface/menu-update

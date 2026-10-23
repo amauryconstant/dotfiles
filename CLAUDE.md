@@ -114,8 +114,11 @@ Recovery: `git checkout HEAD~1 && chezmoi apply` reverts to the prior committed 
 mise run lint       # sh + yaml + json + lua (+ lua-tmpl) + qml + qml-rules + md + theme-contrast + theme-hex + hypr-lua; silent unless something fails
 mise run format     # sh + yaml + lua + qml + md, write mode
 mise run verify     # format, then lint (manual — pre-commit only lints, it never rewrites)
-mise run chezmoi:orphans # targets orphaned by staged deletions
+mise run chezmoi:orphans # staged deletions whose deployed target is not in .chezmoiremove (the pre-commit hook)
+mise run chezmoi:orphans -- --all # audit owned dirs (chezmoi unmanaged); exit 1 on leftovers, also after the commit
 ```
+
+**Deleting a deployed file's source?** Add its target to `.chezmoiremove` in the same commit: chezmoi never removes a target on its own, and `chezmoi apply` deletes the listed ones on every machine. A hand-run `rm` fixes one chassis. Stopping a running unit or process stays manual.
 
 Scope is deliberately narrow: `lint:md` covers `**/opencode/**` only, `lint:yaml` covers `.chezmoidata/` only. `format:lua` is `*.lua` only — templates are check-only (rendering discards the template actions).
 
