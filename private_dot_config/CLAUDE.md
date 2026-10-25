@@ -103,6 +103,8 @@
 - **Bash sandbox** (`sandbox.*`): Read/Edit deny rules feed its `denyRead`/`denyWrite`, so
   `cat ~/.ssh/...` is blocked too. Needs `bubblewrap` + `socat` (`packages.yaml`);
   `failIfUnavailable` refuses to launch without them
+- **`allow` = Read of the profile's own `skills/` and `plugins/{cache,marketplaces}/`** only, so
+  skills can load their sibling reference files from inside any project. Read-only: never Edit
 - **No `additionalDirectories`**: they become sandbox **write** roots — plugins, shell snapshots and
   the `--settings` file would be writable from sandboxed Bash
 - `excludedCommands` use Bash permission-rule syntax: `gh:*`, not `gh` (exact match only). Excluded:

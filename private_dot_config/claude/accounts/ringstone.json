@@ -1,6 +1,11 @@
 {
   "permissions": {
     "defaultMode": "auto",
+    "allow": [
+      "Read(//home/amaury/.config/claude-ringstone/skills/**)",
+      "Read(//home/amaury/.config/claude-ringstone/plugins/cache/**)",
+      "Read(//home/amaury/.config/claude-ringstone/plugins/marketplaces/**)"
+    ],
     "deny": [
       "Read(//home/amaury/.config/claude/.credentials.json)",
       "Edit(//home/amaury/.config/claude/.credentials.json)",
