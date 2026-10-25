@@ -30,5 +30,5 @@ and `zsa/defaults` modules, neither needed to build or flash. To get the live vi
   (`DUAL_FUNC_0`): tap `-`, hold = `layer_move(3)` (a permanent switch; `TO(0)` on layer 3 leaves).
 - LEDs: 1 = Symbols, 2 = Media, 3 = Gaming (`layer_state_set_user`).
 - Base ErgoDox has no RGB: the Oryx RGB/HSV keys were dropped in the port.
-- Tap-hold keys use QMK defaults (200 ms tapping term and quick tap term). A held tap-hold key
-  cannot also hold its tap keycode: a game's held key must be a plain keycode.
+- Gaming keys 1–5 are plain keycodes (the Oryx tap=1 / hold=F1 versions needed double-press+hold to
+  hold "1": QMK defaults are 200 ms tapping term and quick tap term). A game's held key must be plain.

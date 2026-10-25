@@ -2,11 +2,6 @@
 #include "version.h"
 
 #define DUAL_FUNC_0 LT(15, KC_F13)
-#define DUAL_FUNC_1 LT(5, KC_F22)
-#define DUAL_FUNC_2 LT(7, KC_F11)
-#define DUAL_FUNC_3 LT(14, KC_F16)
-#define DUAL_FUNC_4 LT(8, KC_F12)
-#define DUAL_FUNC_5 LT(11, KC_F13)
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [0] = LAYOUT_ergodox_pretty(
@@ -40,7 +35,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                                                                     KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_WWW_BACK
   ),
   [3] = LAYOUT_ergodox_pretty(
-    KC_ESCAPE,      DUAL_FUNC_1,    DUAL_FUNC_2,    DUAL_FUNC_3,    DUAL_FUNC_4,    DUAL_FUNC_5,    KC_BSLS,                                        KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, TO(0),
+    KC_ESCAPE,      KC_1,           KC_2,           KC_3,           KC_4,           KC_5,           KC_BSLS,                                        KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT, TO(0),
     KC_TAB,         KC_Q,           KC_W,           KC_E,           KC_R,           KC_T,           KC_LBRC,                                        KC_TRANSPARENT, KC_Y,           KC_U,           KC_I,           KC_O,           KC_P,           KC_TRANSPARENT,
     KC_TRANSPARENT, KC_A,           KC_S,           KC_D,           KC_F,           KC_G,                                                                           KC_H,           KC_J,           KC_K,           KC_L,           KC_M,           KC_TRANSPARENT,
     KC_TRANSPARENT, KC_Z,           KC_X,           KC_C,           KC_V,           KC_B,           KC_RBRC,                                        KC_TRANSPARENT, KC_N,           KC_COMMA,       KC_SCLN,        KC_TRANSPARENT, KC_TRANSPARENT, KC_TRANSPARENT,
@@ -73,81 +68,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           layer_move(3);
         } else {
           layer_move(3);
-        }  
-      }  
-      return false;
-    case DUAL_FUNC_1:
-      if (record->tap.count > 0) {
-        if (record->event.pressed) {
-          register_code16(KC_1);
-        } else {
-          unregister_code16(KC_1);
-        }
-      } else {
-        if (record->event.pressed) {
-          register_code16(KC_F1);
-        } else {
-          unregister_code16(KC_F1);
-        }  
-      }  
-      return false;
-    case DUAL_FUNC_2:
-      if (record->tap.count > 0) {
-        if (record->event.pressed) {
-          register_code16(KC_2);
-        } else {
-          unregister_code16(KC_2);
-        }
-      } else {
-        if (record->event.pressed) {
-          register_code16(KC_F2);
-        } else {
-          unregister_code16(KC_F2);
-        }  
-      }  
-      return false;
-    case DUAL_FUNC_3:
-      if (record->tap.count > 0) {
-        if (record->event.pressed) {
-          register_code16(KC_3);
-        } else {
-          unregister_code16(KC_3);
-        }
-      } else {
-        if (record->event.pressed) {
-          register_code16(KC_F3);
-        } else {
-          unregister_code16(KC_F3);
-        }  
-      }  
-      return false;
-    case DUAL_FUNC_4:
-      if (record->tap.count > 0) {
-        if (record->event.pressed) {
-          register_code16(KC_4);
-        } else {
-          unregister_code16(KC_4);
-        }
-      } else {
-        if (record->event.pressed) {
-          register_code16(KC_F4);
-        } else {
-          unregister_code16(KC_F4);
-        }  
-      }  
-      return false;
-    case DUAL_FUNC_5:
-      if (record->tap.count > 0) {
-        if (record->event.pressed) {
-          register_code16(KC_5);
-        } else {
-          unregister_code16(KC_5);
-        }
-      } else {
-        if (record->event.pressed) {
-          register_code16(KC_F5);
-        } else {
-          unregister_code16(KC_F5);
         }  
       }  
       return false;
