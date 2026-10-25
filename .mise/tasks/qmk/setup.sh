@@ -12,7 +12,7 @@ command -v qmk >/dev/null || {
 
 if [[ ! -d "$QMK_HOME/.git" ]]; then
 	mkdir -p "$(dirname "$QMK_HOME")"
-	git clone --no-checkout "$QMK_FIRMWARE_URL" "$QMK_HOME"
+	git clone "$QMK_FIRMWARE_URL" "$QMK_HOME"
 fi
 
 if [[ "$(git -C "$QMK_HOME" rev-parse HEAD 2>/dev/null)" != "$QMK_FIRMWARE_REF" ]]; then
