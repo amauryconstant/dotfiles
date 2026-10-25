@@ -235,6 +235,13 @@ packages:
         - bubblewrap # Filesystem/namespace isolation; was only a flatpak dependency
         - socat # Sandbox network proxy bridge
 
+    keyboard_firmware:
+      enabled: true
+      description: "QMK firmware build + flash for the ErgoDox EZ (qmk/)"
+      packages:
+        - qmk # QMK CLI + AVR/ARM toolchains (several hundred MB) + 50-qmk.rules udev rules
+        - teensy_loader_cli # Flashes the ErgoDox EZ's HalfKay bootloader (qmk flash calls it)
+
     # ============================================================
     # AI / LLM
     # ============================================================

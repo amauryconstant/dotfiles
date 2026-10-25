@@ -11,6 +11,8 @@
 .markdownlint.jsonc
 .prettierignore
 tests/
+# QMK userspace (ErgoDox EZ keymap): built and flashed from the repo, never deployed
+qmk/
 
 # Resources and Documentation
 _guides/

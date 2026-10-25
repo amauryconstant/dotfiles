@@ -74,6 +74,7 @@ chezmoi add --encrypt path/to/file      # Encrypt
 ├── .scripts/               # Repository utilities (merge-driver, merge-guard)
 ├── .patches/               # Patches applied to upstream sources at build time (not deployed)
 ├── .mise/                  # Lint/format tasks + pre-commit hook entrypoints
+├── qmk/                    # ErgoDox EZ firmware (QMK userspace) — repo-only, built via `mise run qmk:*`
 ├── .chezmoiexternal.yaml   # Externally-fetched assets
 ├── private_dot_config/     # XDG config (hypr, quickshell, zsh, etc.)
 │   ├── dotfiles/           # Hook system
@@ -243,6 +244,9 @@ surface is made of — not backlogs. Taking a task from one is the standing haza
 
 **Testing a Hyprland/Quickshell change visually before `chezmoi apply`?**
 → `.claude/skills/desk/SKILL.md` (nested desktop on the rendered source; screenshots Claude can read)
+
+**Working on the ErgoDox EZ keymap?**
+→ `qmk/CLAUDE.md` (mainline QMK userspace, pin, build/flash tasks)
 
 **Working on monitor automation?**
 → `private_dot_config/hyprdynamicmonitors/CLAUDE.md` (TUI, profiles, port-agnostic matching)
