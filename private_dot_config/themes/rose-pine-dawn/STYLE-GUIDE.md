@@ -199,8 +199,6 @@ Rose Pine Dawn's official palette prioritizes aesthetic minimalism over maximum 
 
 **Solution**: Use `text` color #575279 for all elevated surfaces (`surface` backgrounds) instead of `subtle`. This achieves 7.00:1 contrast while staying within the official palette.
 
-**Implementation**: Firefox userChrome.css explicitly uses `text` for all icons and buttons on `surface` backgrounds (URL bar, selected tabs, sidebar).
-
 ---
 
 ## References

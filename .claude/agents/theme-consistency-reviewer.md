@@ -29,7 +29,7 @@ it replaces an 8-theme eyeball pass with three greps.
 
 ### Contrast Safety
 - Run `mise run lint:theme-contrast` — it measures the pairs Quickshell actually renders across all 8 colorsets (4.5:1 text, 3:1 graphics). Report any failure as blocking; do not re-derive ratios by grepping CSS files.
-- For files that task does not measure (e.g. `firefox-userChrome.css`): elevated surfaces (`--bg-secondary`, `--bg-tertiary`, `--bg-overlay`) must pair with `--fg-primary` only. `--fg-secondary` on one is blocking for a documented "PRIMARY only" theme (Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light — `themes/CLAUDE.md`), a warning for a new theme.
+- For files that task does not measure (e.g. any CSS-variable file): elevated surfaces (`--bg-secondary`, `--bg-tertiary`, `--bg-overlay`) must pair with `--fg-primary` only. `--fg-secondary` on one is blocking for a documented "PRIMARY only" theme (Catppuccin Latte, Rose Pine Dawn/Moon, Solarized Light — `themes/CLAUDE.md`), a warning for a new theme.
 
 ### hyprland.lua Format
 - An override module calling `hl.config({ general = { col = { active_border = …, inactive_border = … } } })` — a file that `return`s a table loads and silently does nothing

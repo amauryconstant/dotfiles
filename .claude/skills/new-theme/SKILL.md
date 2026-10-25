@@ -29,7 +29,7 @@ Diffs against a live reference theme dir (default `rose-pine-moon`), not a hardc
 
 `colors.sh` is the role layer and the one Quickshell (`Theme.qml`) and the shell scripts read: **18 keys**, named by ROLE — `GROUND_BASE/RAISED/FLOAT`, `FILL_INERT`, `INK_PRIMARY/SECONDARY/MUTED/CONTRAST_CANDIDATE`, `SIGNAL_FOCUS/ERROR/WARN/OK/INFO`, `IDENTITY_1`…`_5`. Copy the key set from `rose-pine-moon/colors.sh` and map by role, never by CSS name (see `themes/CLAUDE.md` → "Two vocabularies, one palette"). A missing key silently falls back to Catppuccin in `Theme.qml`.
 
-Then propagate the hex values into every other file in the theme dir (`ghostty.conf`, `hyprland.*`, `btop.theme`, `firefox-userChrome.css`'s `--bg-*`/`--fg-*` variables, …) by hand; there is no CSS-vocabulary reference file any more (`wofi.css`, the last one, was retired 2026-10-19), so `colors.sh` is the single source.
+Then propagate the hex values into every other file in the theme dir (`ghostty.conf`, `hyprland.*`, `btop.theme`, …) by hand; there is no CSS-vocabulary reference file any more (`wofi.css`, the last one, was retired 2026-10-19), so `colors.sh` is the single source.
 
 ## Step 4: Check contrast (mandatory)
 
@@ -62,7 +62,7 @@ Several scripts hardcode exact theme names in `case` arms and will silently no-o
 bash scripts/check-registrations.sh <new-name>
 ```
 
-Reports ✅/❌ per file across: `theme-switcher`'s `theme_variant()` (**load-bearing** — GTK, Qt and Claude Code switch on its dark/light/other answer, and an unknown theme gets `other`), `theme-apply-spotify`, `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark` suffixes resolve generically), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap only). `theme-apply-gtk`/`-qt`/`-claude-code` read the variant, and `-opencode`, `-firefox`, `-neovim` are name-agnostic; none need a change.
+Reports ✅/❌ per file across: `theme-switcher`'s `theme_variant()` (**load-bearing** — GTK, Qt and Claude Code switch on its dark/light/other answer, and an unknown theme gets `other`), `theme-apply-spotify`, `dotfiles_theme.lua`'s theme map, `dark-mode.d`/`light-mode.d`'s `01-switch-theme.sh` (only relevant for irregular light↔dark name pairs — standard `-light`/`-dark` suffixes resolve generically), and `run_once_before_007_setup_default_theme.sh.tmpl` (low-priority — fresh-machine bootstrap only). `theme-apply-gtk`/`-qt`/`-claude-code` read the variant, and `-opencode`, `-neovim` are name-agnostic; none need a change.
 
 ## Step 7: Validate
 

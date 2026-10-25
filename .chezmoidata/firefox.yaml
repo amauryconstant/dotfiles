@@ -10,6 +10,7 @@
 # auto-creates and auto-binds a per-install dedicated profile.
 # Firefox's SQLite avatar selector is disabled (browser.profiles.enabled=false).
 # Addons remain global via firefox_policies.json.
+# Themes are native and per-profile, picked in each profile's UI — chezmoi does not manage them.
 
 firefox:
   # XDG profile root, relative to $HOME.
@@ -24,8 +25,6 @@ firefox:
   common_prefs:
     - key: "browser.profiles.enabled" # disable new SQLite selector
       value: false
-    - key: "toolkit.legacyUserProfileCustomizations.stylesheets" # allow theme userChrome.css
-      value: true
     - key: "browser.shell.checkDefaultBrowser"
       value: false
     - key: "browser.aboutConfig.showWarning"

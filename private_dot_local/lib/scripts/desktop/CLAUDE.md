@@ -11,30 +11,13 @@
 - **Purpose**: Hyprland desktop utilities
 - **UI Pattern**: notify-send for user feedback (keybinding-triggered)
 - **Integration**: Hyprland bindings, theme system
-- **Naming**: files are extensionless (`.sh` below is illustrative; actual scripts have no extension, e.g. `theme-apply-firefox`)
+- **Naming**: files are extensionless (`.sh` below is illustrative; actual scripts have no extension, e.g. `theme-apply-gtk`)
 
 ## Theme Application Scripts
 
-### Firefox Theme Integration
+### Firefox
 
-**Script**: `theme-apply-firefox`
-**Method**: CSS symlink injection via userChrome.css
-**Status**: ✅ Working
-
-**No manual setup**: each managed profile's `user.js` sets
-`toolkit.legacyUserProfileCustomizations.stylesheets=true` (`.chezmoidata/firefox.yaml` `common_prefs`).
-Restart Firefox to see a theme change.
-
-**How it works**:
-- Theme files: `~/.config/themes/{variant}/firefox-userChrome.css` (one per theme)
-- Script loops over every profile dir under `~/.config/mozilla/firefox/` (dirs holding `user.js` or `prefs.js`) and symlinks `<profile>/chrome/userChrome.css` → `~/.config/themes/current/firefox-userChrome.css`
-- Needs no chassis awareness; run it after the manage-profiles script has created the dirs, or it matches nothing and exits 0
-- Firefox restart required to see theme changes
-- All theme CSS files exist (Catppuccin, Rose Pine, Gruvbox, Solarized)
-
-**CSS Structure** (per theme ~30 lines):
-- Semantic CSS variables (--bg-primary, --fg-primary, --accent-primary, etc.)
-- Styles: Tab bar, URL bar, navigation bar, sidebar
+Not themed by the desktop (`theme-apply-firefox` retired): each profile keeps its own native Firefox theme.
 
 ---
 

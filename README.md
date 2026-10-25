@@ -17,7 +17,7 @@ A complete, automated desktop environment for Arch Linux with dynamic theming, i
 - **Smart Wallpapers**: 30-minute automatic rotation, theme-organized collections
 - **Actions**: `Super+Space` opens the launcher in `>` mode (capture, maintenance)
 - **Quickshell Shell**: QML desktop shell — bar, launcher, notifications, power menu, popovers, lock screen
-- **Adaptive UI**: 13+ applications auto-theme (desktop: Hyprland, Quickshell, Ghostty; CLI: bat, btop, starship, yazi, lazygit, broot; plus Firefox)
+- **Adaptive UI**: 13+ applications auto-theme (desktop: Hyprland, Quickshell, Ghostty; CLI: bat, btop, starship, yazi, lazygit, broot)
 
 ### System Management
 

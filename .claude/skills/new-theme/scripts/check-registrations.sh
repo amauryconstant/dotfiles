@@ -40,6 +40,6 @@ echo ""
 echo "Not checked here (name-agnostic, no registration needed):"
 echo "  theme-apply-gtk/-qt/-claude-code (switch on theme-switcher variant, checked above),"
 echo "  theme-apply-opencode (light/dark via *latte*|*light*|*dawn* glob, not exact-name),"
-echo "  theme-apply-firefox, theme-apply-neovim (file-presence/symlink based, no theme-name branching)"
+echo "  theme-apply-neovim (file-presence/symlink based, no theme-name branching)"
 
 exit $status

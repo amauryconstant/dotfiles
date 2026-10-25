@@ -22,7 +22,7 @@
 **Symlink switching**: `~/.config/themes/current` → active theme directory
 
 **Per-theme files** (each theme dir is a complete set):
-- **Desktop**: `ghostty.conf`, `hyprland.conf`, `hyprland.lua`, `firefox-userChrome.css`
+- **Desktop**: `ghostty.conf`, `hyprland.conf`, `hyprland.lua`
 - **CLI/TUI**: `bat.conf`, `broot.hjson`, `btop.theme`, `lazygit.yml`, `starship.toml` (palette fragment only), `yazi.toml`, `opencode.json`
 - **Shell**: `colors.sh` — **the role layer**, 18 keys, read by gum-ui *and* by Quickshell's `Theme.qml`. Named by role (`GROUND_*`, `FILL_INERT`, `INK_*`, `SIGNAL_*`, `IDENTITY_*`), not by the module that spends the value; see Shell Script Integration below
 - **Docs**: `STYLE-GUIDE.md`
@@ -42,7 +42,7 @@ No theme file is templated; `hyprland.lua` is the Lua-config counterpart to `hyp
 palette, read by `gum-ui.sh`, `organize-wallpapers-by-color` and Quickshell `Theme.qml`. The last
 CSS-vocabulary file (`wofi.css`, 24 `@define-color` + 4 hover tints) was retired 2026-10-19 with
 Wofi; `waybar.css` and `swaync.css` went on 2026-10-15. Every other file in a theme dir carries
-hex values (or, for `firefox-userChrome.css`, its own `--bg-*` variables) edited by hand against
+hex values edited by hand against
 `colors.sh`.
 
 **Rough mapping**, for reading an old note or the CSS-named sections below — not exact:
@@ -67,8 +67,7 @@ tables use role names because they were regenerated from `colors.sh`.
 ## Semantic Variable Schema (historical CSS names)
 
 **Variables** organized into categories. **These were the `wofi.css` names (file retired
-2026-10-19), not `colors.sh` keys**; Firefox's `--bg-*`/`--fg-*` variables still follow the same
-roles — see the mapping above.
+2026-10-19), not `colors.sh` keys**; they follow the same roles — see the mapping above.
 
 ### Background Hierarchy
 
@@ -170,7 +169,7 @@ whose distance from the foreground tokens varies enough between themes to vanish
 }
 ```
 
-**Incorrect (Firefox prior to fix):**
+**Incorrect (the retired Firefox userChrome.css, prior to fix):**
 ```css
 .tabbrowser-tab[selected] {
   background-color: var(--bg-secondary);  /* Elevated surface */
@@ -200,7 +199,7 @@ which measures 10.90). Regenerate with `mise run lint:theme-contrast` rather tha
 
 **Rationale:** combining a "secondary" background with "secondary" text is insufficient in five
 of eight themes. Both variables are designed to be subtle; pairing them fails, most visibly in
-Firefox (URL bar icons, selected tabs) on Rose Pine Dawn.
+the retired Firefox userChrome.css (URL bar icons, selected tabs) on Rose Pine Dawn.
 
 🚨 **Solarized inverts the rule.** In *both* solarized themes `INK_SECONDARY` measures **better**
 than `INK_PRIMARY` on every ground (light: 4.39 vs 3.64; dark: 4.86 vs 4.11), because Solarized
@@ -362,8 +361,7 @@ All 12 lazygit theme fields and their semantic mappings:
 
 System CLI tools source `~/.config/themes/current/colors.sh` via the gum-ui library. The keys
 are **roles**: `GROUND_BASE`, `INK_PRIMARY`, `SIGNAL_OK`, `IDENTITY_3`. They no longer mirror the
-CSS variable names (the CSS files that carried those are retired; Firefox's `--*` variables are
-the only survivors).
+CSS variable names (the CSS files that carried those are retired).
 
 ⚠️ **`INK_MUTED` is terminal-only.** It survives in the colorset for `gum-ui.sh` and
 `organize-wallpapers-by-color`, and is banned in the shell: it fails as text (2.48 worst) and
@@ -439,10 +437,11 @@ theme: three greps for a literal hex, a literal font name, and `fgSecondary` on 
 `theme-switcher` (in `lib/scripts/desktop/`) drives the full switch:
 1. Update `~/.config/themes/current` symlink
 2. Reload core apps (Hyprland, terminal, Quickshell)
-3. Call the `theme-apply-*` scripts for extended coverage: firefox, spotify, opencode, claude-code, gtk, qt, neovim (each silently skips if its app is absent)
+3. Call the `theme-apply-*` scripts for extended coverage: spotify, opencode, claude-code, gtk, qt, neovim (each silently skips if its app is absent)
 4. Trigger the `theme-change` user hook: `hook-runner theme-change $theme_name`
 
-Per-script behavior (e.g. Firefox needs `toolkit.legacyUserProfileCustomizations.stylesheets = true`) is documented in `lib/scripts/desktop/CLAUDE.md`.
+Per-script behavior (e.g. Spotify's spicetify mapping) is documented in `lib/scripts/desktop/CLAUDE.md`.
+Firefox is not themed by the desktop: each profile keeps its own native Firefox theme.
 
 **See**: `private_dot_local/lib/scripts/CLAUDE.md` for theme-apply script details
 **See**: `dotfiles/CLAUDE.md` for hook system documentation

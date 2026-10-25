@@ -54,6 +54,12 @@ mkdir -p "$PROFILE_ROOT" "$APP_DIR"
 {{ range .firefox.profiles }}{{ if has .id $ff.ids }}
 {{ includeTemplate "log_step" (printf "Configuring profile: %s" .name) }}
 mkdir -p "$PROFILE_ROOT/{{ .id }}"
+# Retired desktop-theme userChrome.css: drop only our symlink, never a hand-written file.
+if [ -L "$PROFILE_ROOT/{{ .id }}/chrome/userChrome.css" ] \
+    && case "$(readlink "$PROFILE_ROOT/{{ .id }}/chrome/userChrome.css")" in "$HOME"/.config/themes/*) true ;; *) false ;; esac; then
+    rm -f "$PROFILE_ROOT/{{ .id }}/chrome/userChrome.css"
+    rmdir "$PROFILE_ROOT/{{ .id }}/chrome" 2>/dev/null || true
+fi
 cat > "$PROFILE_ROOT/{{ .id }}/user.js" <<'USERJS_EOF'
 // Managed by chezmoi — do not edit. Source: .chezmoidata/firefox.yaml
 {{ range $.firefox.common_prefs -}}

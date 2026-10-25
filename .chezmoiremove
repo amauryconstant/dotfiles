@@ -77,3 +77,7 @@
 .local/lib/scripts/user-interface/menu-system
 .local/lib/scripts/user-interface/menu-trigger
 .local/lib/scripts/user-interface/menu-update
+
+# Firefox follows its own per-profile native themes now, not the desktop theme.
+.local/lib/scripts/desktop/theme-apply-firefox
+.config/themes/*/firefox-userChrome.css
