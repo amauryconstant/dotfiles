@@ -86,6 +86,15 @@
       "node tests/run-all.cjs:*",
       "node .localdev/seed-emulator.cjs:*"
     ],
+    "network": {
+      "tlsTerminate": {},
+      "allowedDomains": ["api.github.com"]
+    },
+    "credentials": {
+      "envVars": [
+        { "name": "GH_TOKEN", "mode": "mask", "injectHosts": ["api.github.com"] }
+      ]
+    },
     "filesystem": {
       "allowWrite": [
         "~/.cache/pnpm",

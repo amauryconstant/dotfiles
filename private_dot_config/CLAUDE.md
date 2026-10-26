@@ -110,6 +110,10 @@
 - `excludedCommands` use Bash permission-rule syntax: `gh:*`, not `gh` (exact match only). Excluded:
   credential CLIs (ssh git ops, gh, firebase, gcloud, docker) and the emulator tests — sandboxed
   node cannot reach the host's `127.0.0.1` emulator
+- **`gh` inside scripts**: matching is on command text, so `node scripts/x.cjs` calling `gh` stays
+  sandboxed, where the keyring token is unreachable. `sandbox.credentials` masks `GH_TOKEN`
+  (sentinel in the sandbox, real value injected for `api.github.com` via `network.tlsTerminate`);
+  `ccp` exports the real one from `gh auth token`. No per-script exclusions
 - `allowWrite` is download caches only (`~/.cache/{pnpm,uv}`, pnpm store) — never all of `~/.cache`
   (zsh `.zwc`, antidote, paru PKGBUILDs) or install/state dirs (mise `trusted-configs` gates code
   execution). A new violation: cache → `allowWrite`, anything else → `excludedCommands`

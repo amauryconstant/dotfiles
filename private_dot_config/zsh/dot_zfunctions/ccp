@@ -86,7 +86,21 @@ ccp() {
     || { echo "Failed to merge profiles" >&2; return 1; }
   print -r -- "$merged" >| "$tmpfile"
 
+  # Sandbox credential masking needs the real value in claude's own env: the sandbox proxy
+  # swaps it in on injectHosts requests while commands only ever see a sentinel. Exported per
+  # masked var from `gh auth token` (gh only), for this one process.
+  local -a cred_env=()
+  if [[ -z "${GH_TOKEN:-}" ]] && print -r -- "$merged" \
+      | jaq -e '[.sandbox.credentials.envVars[]? | select(.name == "GH_TOKEN" and .mode == "mask")] | length > 0' >/dev/null 2>&1; then
+    local gh_token
+    if gh_token=$(gh auth token 2>/dev/null) && [[ -n "$gh_token" ]]; then
+      cred_env+=("GH_TOKEN=$gh_token")
+    else
+      echo "ccp: GH_TOKEN is masked but 'gh auth token' failed; gh will not authenticate in the sandbox" >&2
+    fi
+  fi
+
   # CCP_SETTINGS lets the statusline name the profile and read its effective settings.
   # The config dir override is an env prefix so it applies to this one process only.
-  CLAUDE_CONFIG_DIR="$account_dir" CCP_SETTINGS="$tmpfile" claude --settings "$tmpfile" "${claude_args[@]}"
+  env "${cred_env[@]}" CLAUDE_CONFIG_DIR="$account_dir" CCP_SETTINGS="$tmpfile" claude --settings "$tmpfile" "${claude_args[@]}"
 }
