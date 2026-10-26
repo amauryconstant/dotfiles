@@ -1,0 +1,79 @@
+#!/usr/bin/env sh
+# Streams the ErgoDox EZ's active layer as Waybar JSON (persistent).
+# Firmware side: qmk/.../workman_gaming/keymap.c (raw HID, usage page 0xFF60). The board only
+# talks while pinged (0x01 every 2 s, it lapses after 5 s), then sends {'L', layer} per change.
+# Prints {"text":""} when the board is absent so the bar widget hides; rescans forever, which
+# covers unplug and reflash.
+
+# Same orphan guard as kanata-layer: this script writes only on a layer change, so it never takes
+# SIGPIPE when the bar closes, and `od` blocks in read(). See kanata-layer for the full history.
+PARENT_PID=$PPID
+MAIN_PID=$$
+
+case "$(cat /proc/"$PARENT_PID"/comm 2>/dev/null)" in
+systemd | init | "") exit 0 ;;
+*) ;;
+esac
+
+parent_alive() {
+    [ -r /proc/"$PARENT_PID"/stat ] || return 1
+    read -r _ _ state _ < /proc/"$PARENT_PID"/stat || return 1
+    [ "$state" != Z ]
+}
+
+# The raw-HID interface of the board: vendor 3297 / product 4974, report descriptor opens with
+# usage page 0xFF60 (06 60 ff). The keyboard and mouse interfaces share the VID/PID, so the
+# descriptor is what tells them apart.
+find_node() {
+    for dev in /sys/class/hidraw/hidraw*; do
+        [ -e "$dev/device/uevent" ] || continue
+        grep -qi '^HID_ID=.*:00003297:00004974$' "$dev/device/uevent" || continue
+        [ "$(od -An -tx1 -N3 "$dev/device/report_descriptor" 2>/dev/null | tr -d ' \n')" = "0660ff" ] || continue
+        echo "/dev/${dev##*/}"
+        return 0
+    done
+    return 1
+}
+
+# Report ID 0 + 32 data bytes: the kernel strips the leading 0 for a device without numbered reports.
+send() {
+    { printf '\000%b' "$1"; head -c 31 /dev/zero; } > "$NODE" 2>/dev/null
+}
+
+emit() { printf '{"text":"%s","class":"%s","tooltip":"ErgoDox layer: %s"}\n' "$1" "$2" "$1"; }
+
+last=none
+while parent_alive; do
+    if NODE=$(find_node) && [ -r "$NODE" ] && [ -w "$NODE" ]; then
+        (
+            while parent_alive && [ -e "$NODE" ]; do
+                send '\001'
+                sleep 2
+            done
+            pkill -P "$MAIN_PID" -x od 2>/dev/null
+        ) &
+        PINGER=$!
+        # od reads one 32-byte report at a time; stdbuf keeps its output line-buffered.
+        # The firmware also answers every ping with the current layer, so repeats are dropped.
+        stdbuf -oL od -An -tu1 -w32 -v < "$NODE" 2>/dev/null | while read -r tag layer _; do
+            [ "$tag" = 76 ] || continue
+            [ "$layer" != "$prev" ] || continue
+            prev=$layer
+            case "$layer" in
+                0) emit Base base ;;
+                1) emit Sym symbols ;;
+                2) emit Media media ;;
+                3) emit Game gaming ;;
+                *) emit "L$layer" other ;;
+            esac
+        done
+        kill "$PINGER" 2>/dev/null
+        send '\002'
+        last=none
+    fi
+    if [ "$last" != empty ]; then
+        printf '{"text":""}\n'
+        last=empty
+    fi
+    sleep 2
+done

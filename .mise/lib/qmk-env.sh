@@ -1,8 +1,10 @@
 # Sourced by .mise/tasks/qmk/*.sh: one place for the pin and the paths.
 #
-# Pin = release tag 0.34.7 of mainline qmk/qmk_firmware, by SHA (a tag can be moved, a SHA
-# cannot). This firmware sees every keystroke, so bump it deliberately: read the release notes,
-# change QMK_FIRMWARE_REF, then run qmk:setup and qmk:build. See qmk/CLAUDE.md.
+# Pin = a release tag of mainline qmk/qmk_firmware, by SHA (a tag can be moved, a SHA
+# cannot). QMK_FIRMWARE_TAG is the human-readable name; qmk:setup refuses a tag that no longer
+# resolves to QMK_FIRMWARE_REF. This firmware sees every keystroke, so bump it deliberately with
+# `mise run qmk:update` (it rewrites both lines). See qmk/CLAUDE.md.
+export QMK_FIRMWARE_TAG=0.34.7
 export QMK_FIRMWARE_REF=180f394b489c238cb231c2bf8b080262155e03c0
 export QMK_FIRMWARE_URL=https://github.com/qmk/qmk_firmware
 

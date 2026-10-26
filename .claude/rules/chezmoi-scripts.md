@@ -104,6 +104,7 @@ paths:
 | configure_gsettings | GSettings font config | `globals.guiFont`/`globals.terminalFont`/`gsettings` changes |
 | configure_voxtype | Voxtype STT setup | Installed voxtype version or `features.voxtype` changes |
 | configure_kanata | Kanata keyboard remapper (groups, uinput udev/module, service) — laptop only | `features.kanata` or `.chassisType` changes |
+| configure_ergodox_hidraw | udev `uaccess` rule for the ErgoDox raw-HID interface (live layer in the bar) | `keyboard_firmware` enable flag or the rule version changes |
 | merge_claude_settings | jaq-merge `claude/create_settings.json` into the live `~/.config/claude/settings.json` | The seed file changes |
 | install_extensions | Firefox policies | `firefox_policies` changes |
 | configure_firefox_egl_workaround | Route Firefox desktop entries through the `bin/executable_firefox` egl-wayland2 wrapper | Installed `firefox`/`firefox-esr`/`egl-wayland2` versions change — see `_research/FIREFOX_NVIDIA_EGL_DEADLOCK.md` |

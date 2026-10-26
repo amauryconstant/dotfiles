@@ -1,5 +1,6 @@
 #include QMK_KEYBOARD_H
 #include "version.h"
+#include "raw_hid.h"
 
 #define DUAL_FUNC_0 LT(15, KC_F13)
 
@@ -75,8 +76,43 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   return true;
 }
 
+// Live layer for the desktop bar over raw HID (usage page 0xFF60). The host pings with 0x01
+// every ~2 s and gets {'L', layer} on each layer change; with no ping for 5 s the board goes
+// quiet, because a raw HID write blocks (~10 ms) when nothing is reading. 0x02 unsubscribes.
+// Layer numbers only, never keys.
+#define LAYER_PING_TIMEOUT_MS 5000
+#define RAW_REPORT_SIZE 32 // LUFA raw endpoint; RAW_EPSIZE is not visible to keymaps
+
+static bool     layer_subscribed = false;
+static uint32_t layer_ping_timer = 0;
+
+static void send_layer(uint8_t layer) {
+  if (!layer_subscribed) return;
+  if (timer_elapsed32(layer_ping_timer) >= LAYER_PING_TIMEOUT_MS) {
+    layer_subscribed = false;
+    return;
+  }
+  uint8_t report[RAW_REPORT_SIZE] = {'L', layer};
+  raw_hid_send(report, sizeof(report));
+}
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+  if (length == 0) return;
+  switch (data[0]) {
+    case 0x01:
+      layer_subscribed = true;
+      layer_ping_timer = timer_read32();
+      send_layer(get_highest_layer(layer_state | default_layer_state));
+      break;
+    case 0x02:
+      layer_subscribed = false;
+      break;
+  }
+}
+
 layer_state_t layer_state_set_user(layer_state_t state) {
   uint8_t layer = get_highest_layer(state);
+  send_layer(layer);
   ergodox_board_led_off();
   ergodox_right_led_1_off();
   ergodox_right_led_2_off();

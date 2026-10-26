@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Script: run_onchange_after_configure_ergodox_hidraw.sh.tmpl
+# Purpose: Let the logged-in user read the ErgoDox EZ's raw-HID interface (live layer in the bar)
+# Requirements: Arch Linux, keyboard_firmware package module enabled
+#
+# The firmware (qmk/.../workman_gaming/keymap.c) enables RAW_ENABLE; desktop/ergodox-layer talks
+# to /dev/hidrawN. QMK pins the raw interface at number 1, so the rule matches that interface
+# alone (vendor 3297, product 4974): the keyboard and mouse interfaces, which see every
+# keystroke, stay root-only. TAG+="uaccess" grants the active seat's user an ACL, no group.
+# 🚨 ENV{ID_*}, not ATTRS{}: every ATTRS key in one rule must match the SAME ancestor, and the
+# vendor id lives on the USB device while bInterfaceNumber lives on the interface, so the ATTRS
+# form (v1) never matched and the node stayed root-only.
+# run_onchange so a changed rule is rewritten on the next apply, not only the first.
+#
+# Hash: {{ printf "rule=v2 enabled=%t" .packages.modules.keyboard_firmware.enabled }}
+
+{{ includeTemplate "log_start" "Configuring ErgoDox raw-HID access..." }}
+
+set -euo pipefail
+
+{{ if .packages.modules.keyboard_firmware.enabled }}
+UDEV_FILE="/etc/udev/rules.d/70-ergodox-hidraw.rules"
+UDEV_RULE='SUBSYSTEM=="hidraw", ENV{ID_VENDOR_ID}=="3297", ENV{ID_MODEL_ID}=="4974", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess"'
+
+if [[ -f "$UDEV_FILE" ]] && [[ "$(cat "$UDEV_FILE")" == "$UDEV_RULE" ]]; then
+    {{ includeTemplate "log_skip" "udev rule already current" }}
+else
+    echo "$UDEV_RULE" | sudo tee "$UDEV_FILE" > /dev/null
+    sudo chmod 644 "$UDEV_FILE"
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger --subsystem-match=hidraw
+    {{ includeTemplate "log_success" "udev rule written and applied" }}
+fi
+{{ else }}
+{{ includeTemplate "log_skip" "ErgoDox raw-HID access skipped (keyboard_firmware disabled)" }}
+{{ end }}
+
+{{ includeTemplate "log_complete" "ErgoDox raw-HID configuration completed" }}

@@ -245,6 +245,8 @@ shapes; they are **not** in the Hyprland stubs, which type every dispatcher as `
 
 **Keyboard (Kanata)**: `kanata-layer`, `kanata-layer-toggle` — query/switch layers via the kanata daemon (laptop; see `systemd/user/CLAUDE.md`).
 
+**Keyboard (ErgoDox)**: `ergodox-layer` — streams the board's active layer (raw HID, pinged every 2 s; see `qmk/CLAUDE.md`) as Waybar JSON for the bar widget. Same orphan guard as `kanata-layer`; prints `{"text":""}` while the board is absent.
+
 🚨 **A bar's persistent JSON source must guard on its parent still being alive.** `kanata-layer` is
 spawned by the Quickshell bar's
 `WaybarJsonSource`, and only writes on a state change — so it never takes SIGPIPE when the bar's

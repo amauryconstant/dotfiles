@@ -9,6 +9,8 @@ QMK; **Oryx is frozen, this directory is the source of truth** (never re-import 
 ```bash
 mise run qmk:setup   # clone mainline QMK at the pinned SHA → ~/.local/share/qmk/qmk_firmware
 mise run qmk:build   # compile; hex lands in the QMK clone / qmk/, size is printed
+mise run qmk:update  # bump the pin: report what changed, rewrite it, rebuild (never flashes);
+                     # `-- --check` reports only, `-- --to <tag>` picks a release
 mise run qmk:flash   # compile + flash; press the board's reset button when prompted
 ```
 
@@ -18,11 +20,13 @@ Pin and paths: `.mise/lib/qmk-env.sh`.
 
 ## Pin
 
-Mainline `qmk/qmk_firmware` at tag `0.34.7` by SHA (`QMK_FIRMWARE_REF`). The board sees every
-keystroke: bump deliberately (release notes, edit the SHA, `qmk:setup`, `qmk:build`, flash, check
-all four layers). No ZSA fork: its only additions are the `zsa/oryx` (live layer view in Keymapp)
-and `zsa/defaults` modules, neither needed to build or flash. To get the live view back, add
-`zsa/qmk_modules` as a submodule at `qmk/modules/zsa` and list the modules in a `keymap.json`.
+Mainline `qmk/qmk_firmware` by SHA (`QMK_FIRMWARE_REF`), named by `QMK_FIRMWARE_TAG`, both in
+`.mise/lib/qmk-env.sh`. A tag can be moved upstream, so `qmk:setup` refuses a tag that no longer
+resolves to the SHA. The board sees every keystroke: bump deliberately with `mise run qmk:update`
+(prints the ChangeLog notes and the commits touching this board, rewrites the pin, runs setup +
+build, never flashes or commits). Then flash and check all four layers and the bar's layer widget.
+No ZSA fork or `zsa/qmk_modules`: the `oryx` module serves Keymapp, which draws the frozen Oryx
+layout, and streams every key event once paired. The live layer is our own raw-HID report instead.
 
 ## Layout notes
 
@@ -32,3 +36,9 @@ and `zsa/defaults` modules, neither needed to build or flash. To get the live vi
 - Base ErgoDox has no RGB: the Oryx RGB/HSV keys were dropped in the port.
 - Gaming keys 1–5 are plain keycodes (the Oryx tap=1 / hold=F1 versions needed double-press+hold to
   hold "1": QMK defaults are 200 ms tapping term and quick tap term). A game's held key must be plain.
+- Live layer: `RAW_ENABLE`. The host pings `0x01` (~2 s) over raw HID (usage page 0xFF60) and gets
+  `{'L', layer}` per layer change; `0x02` unsubscribes. No ping for 5 s and the board goes quiet (a raw
+  write blocks ~10 ms when nothing reads). Layer numbers only, never keys. Reader:
+  `desktop/ergodox-layer` → `ErgodoxWidget` in the bar. QMK pins the raw interface at 1, so the
+  udev rule (`run_onchange_after_configure_ergodox_hidraw`) matches only that one. `RAW_EPSIZE` is not
+  visible to keymaps on LUFA: the report size is a literal 32.

@@ -212,7 +212,7 @@ dotfiles/
 
 `shell.qml` owns no widget. Widgets are added to a zone in `Bar.qml`, in
 `waybar/config.tmpl`'s `modules-right` order, inside one of the six separator-delimited
-groups (tray · network+bluetooth · backlight+battery · audio+media · kanata+idle+voxtype ·
+groups (tray · network+bluetooth · backlight+battery · audio+media · kanata+ergodox+idle+voxtype ·
 notification).
 
 A widget sets `icon`, `label` and — only for a real state — `iconColor` on `BarWidget`. It
@@ -484,6 +484,7 @@ is not offered twice. Popups are unchanged: a click hides the toast.
 | Backlight | the `Backlight` singleton (sysfs via `FileView`), writes through `desktop/brightness-set` — laptop only |
 | Meters | the `Meters` singleton (`/proc/stat` + `/proc/meminfo` via `FileView` on a 2s timer) — **new**, Waybar had no cpu/memory module here |
 | Kanata, Voxtype, Idle, NightLight, Recording | existing scripts, via `WaybarJsonSource` |
+| Ergodox (layer) | `desktop/ergodox-layer` via `WaybarJsonSource`; empty text (board unplugged) hides it. Same parent-PID guard as `kanata-layer` |
 | Microphone | `Pipewire.defaultAudioSource` — draws only when the source is muted; clicks through `desktop/mic-mute` so the ThinkPad LED stays in step |
 | Notification | the `Notifications` singleton — Phase 4 cut the last `swaync-client` call out of the tree |
 

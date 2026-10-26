@@ -281,6 +281,8 @@ PanelWindow {
 
             KanataWidget {}
 
+            ErgodoxWidget {}
+
             NightLightWidget {
                 id: nightLight
 
