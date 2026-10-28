@@ -49,6 +49,7 @@ Both are chezmoi templates (use `{{ includeTemplate "log_*" }}` for output, not 
 ## clipboard-store
 
 Silent filter script piped to `cliphist store`. Drops clipboard content from:
+- voxtype dictations (marker `$XDG_RUNTIME_DIR/voxtype-output`, touched by `pre_output_command`; copies within 2s are skipped)
 - Password manager windows (Bitwarden, KeePassXC, 1Password, etc.)
 - Browser windows on auth/login pages
 - Terminal sessions with sensitive patterns

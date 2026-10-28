@@ -74,6 +74,8 @@ auto_submit = false  # don't send Enter after transcription
 # Modifier-release guard (v0.7.2): stop held modifiers corrupting typed output
 wait_for_modifier_release = true
 modifier_release_timeout_ms = 750
+# Marks the clipboard write as a dictation so media/clipboard-store keeps it out of cliphist
+pre_output_command = "touch \"$XDG_RUNTIME_DIR/voxtype-output\""
 
 [output.notification]
 on_recording_start = false

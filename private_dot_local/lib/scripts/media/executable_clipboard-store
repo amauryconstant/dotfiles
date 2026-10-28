@@ -1,6 +1,10 @@
 #!/bin/sh
 # clipboard-store - Filter clipboard before storing in cliphist
-# Layers: password manager windows → browser auth → terminal sessions → content scan
+# Layers: voxtype dictation → password manager windows → browser auth → terminal sessions → content scan
+
+# --- Layer 0: voxtype dictation (marker touched by voxtype pre_output_command) ---
+marker="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype-output"
+if [ -f "$marker" ] && [ $(( $(date +%s) - $(stat -c %Y "$marker") )) -le 2 ]; then exit 0; fi
 
 # --- Active window context ---
 active_window=$(hyprctl activewindow -j 2>/dev/null) || active_window="{}"
