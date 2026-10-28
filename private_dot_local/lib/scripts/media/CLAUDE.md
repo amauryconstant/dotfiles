@@ -54,7 +54,9 @@ Silent filter script piped to `cliphist store`. Drops clipboard content from:
 - Browser windows on auth/login pages
 - Terminal sessions with sensitive patterns
 
-**Integration**: Called from `~/.config/hypr/conf/autostart.conf` via `wl-paste --watch clipboard-store | cliphist store`.
+**Integration**: Called from `~/.config/hypr/conf/autostart.conf` via `wl-paste --watch clipboard-store`; the script calls `cliphist store` itself.
+
+🚨 **Drain stdin first.** `--watch` pipes the clipboard into the handler's stdin; the script reads it (`content=$(cat)`) before any early exit and never re-runs `wl-paste`. An unread pipe fills at 64K and blocks the source app (a Ghostty window froze on a long copy).
 
 ## organize-wallpapers-by-color
 
