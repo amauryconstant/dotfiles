@@ -249,6 +249,21 @@ egl-wayland2 is dma-buf based and EGLStream-free.
 | [Hyprland #5144](https://github.com/hyprwm/Hyprland/issues/5144), [#4521](https://github.com/hyprwm/Hyprland/issues/4521) — XWayland click offset with `force_zero_scaling` | Open |
 | [fdo 106753](https://wayland-bugs.freedesktop.narkive.com/zvKT7IWP/bug-106753-firefox-wayland-multithread-deadlock-at-eglswapbuffers-wl-display-dispatch-queue) — Firefox multithread deadlock at `eglSwapBuffers()` | Historical precedent, exact shape |
 
+## Meet whole-screen share kills Firefox (2026-10-29, unconfirmed fix)
+
+The Ringstone profile exited silently twice (12:04, 12:06) after the xdph share picker appeared in
+Google Meet, on firefox 158.0.1 / Hyprland 0.56.2 / xdph 1.4.1 / pipewire 1.6.10. No coredump,
+minidump, `crashes/events` entry or kernel message, so it looks like a clean exit (a GDK Wayland
+protocol error would fit) rather than a segfault; unproven, because `.desktop` launches discard
+stderr. Ruled out: the patched EGL platform dir (it still holds `15_nvidia_gbm.json`), profile prefs
+(no gfx/webrtc/pipewire prefs), 10-bit output (both monitors XRGB8888).
+
+After firefox 159.0 landed (14:31, same Hyprland 0.56.2 still running) a whole-screen Meet share
+ran fine from a terminal-launched Ringstone with an empty stderr log. **Most likely fixed in 159,
+not proven.** Untested: Hyprland 0.57.0 (installed, not yet running). If it recurs, read
+`~/.local/state/firefox/firefox-<profile>.log` (written by the wrapper from now on); `Error 71` means
+a protocol error, so rerun with `WAYLAND_DEBUG=1`.
+
 ## When to Revisit
 
 - **Drop the patch** once an egl-wayland2 release bounds or removes that wait: delete

@@ -54,4 +54,26 @@ if [[ -e "$WAYLAND2_CONFIG" ]]; then
     fi
 fi
 
+# Launched from a .desktop file or Hyprland, stderr is /dev/null, so a silent death (e.g. a Wayland
+# protocol error during Meet screen share, 2026-10-29) leaves nothing. Keep it per instance
+# (--name) in the state dir; a terminal launch keeps its own stderr.
+if [[ ! -t 2 ]]; then
+    name=firefox
+    args=("$@")
+    for i in "${!args[@]}"; do
+        [[ ${args[i]} == --name ]] && name=${args[i + 1]:-firefox}
+    done
+    log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/firefox"
+    log="$log_dir/${name//[^A-Za-z0-9._-]/_}.log"
+    if mkdir -p "$log_dir"; then
+        # One rotation at 1 MiB keeps two files at most.
+        size=0
+        [[ -f $log ]] && size=$(stat -c %s "$log")
+        ((size > 1048576)) && mv -f "$log" "$log.1"
+        now=$(date -Is)
+        printf '=== %s launch pid=%s: %s\n' "$now" "$$" "$*" >>"$log"
+        exec 2>>"$log"
+    fi
+fi
+
 exec "$FIREFOX_BIN" "$@"
