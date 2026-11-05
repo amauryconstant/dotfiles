@@ -350,8 +350,31 @@ Waybar PR #5013 re-check, 2026-08-30: **merged 2026-05-04** into master; latest 
 - [x] **`try` package** (v3.2.0) — Added to `terminal_tools` in packages.yaml *(done 2026-03-05)*
 
 ---
+- [x] **Omarchy v4.0.5/v4.0.6/v4.5.0 fixes audited against our tree** (v4.0.5, v4.0.6, v4.5.0) — audited 2026-11-05; all clean, no change needed:
+  - Lock service reporting locked after unlock from a property binding missing its change notification (v4.0.6, #14978) — **clean**: `lock/LockScreen.qml` already tracks the requested state separately from `sessionLock.locked` and bumps a counter wherever the latter can change without a notification
+  - Hybrid-NVIDIA `LIBVA_DRIVER_NAME` / `__GLX_VENDOR_LIBRARY_NAME` forced only when NVIDIA drives the display (v4.0.5) — **clean**: `uwsm/env.tmpl` sets them in a desktop-only block; the hybrid laptop auto-detects
+  - Calendar month grid built in UTC (v4.0.5) — **clean**: `bar/popovers/CalendarPopover.qml` builds the grid from local `Date`
+  - Qt 6.12 shadowing of the shell's `Color` singleton (v4.0.5/v4.5.0, #14553) — **not applicable**: our singletons are `Theme`, `Config`, `Backlight`, `Notifications`, `Meters`, `MenuServer`; Qt 6.12.0 is what runs here
+  - Clipboard capture hangs (v4.5.0, #9488) — already fixed in `clipboard-store` (stdin drain, commit 5d981452)
+  - `mise` upgrade pruning (v4.5.0 ships the setting) — already set, see the live plan's `upgrade.auto_prune` item
 
 ## Skipped / Out of Scope
+
+### v4.0.5 / v4.0.6 / v4.5.0 — stabilization and the `quattro` merge
+
+- [SKIPPED] **`tensaku` replacing `satty`** (v4.0.0, v4.5.0) — Omarchy itself dropped `tensaku` in v4.5.0; `satty` stays
+- [SKIPPED] **`[omarchy]` repo ahead of Arch repos, signed-OPR requirement** (v4.0.5, v4.5.0) — OPR scope
+- [SKIPPED] **`omarchy-power-profiles-daemon`** (v4.5.0) — ARM `cppc_cpufreq` fork of an Arch package we use stock
+- [SKIPPED] **Hermes/OpenClaw self-updating installs and migrations** (v4.0.5, v4.0.6, v4.5.0) — Omarchy agent provisioning
+- [SKIPPED] **Default-browser handoff (`omarchy-browser.desktop`)** (v4.0.5) — our `mimeapps.list.tmpl` is the handler map; Omarchy's launcher plumbing does not transfer
+- [SKIPPED] **Omarchy notification engine, agents panel, Elsewhen, Omasnap, OWE, Superwhisper, dock, tray drawer** (v4.5.0) — Omarchy first-party shell features; our own tree owns each equivalent surface, and the plugin system is out of scope
+- [SKIPPED] **Per-monitor workspaces, titlebar floating mode, Quake console** (v4.5.0) — we use hyprsplit; the others are Omarchy-specific `omarchy-hyprland-titlebars` / layout cycling
+- [SKIPPED] **Signed passwordless-sudo expiry, "ordinary sudo" update flow, USB approval (reverted upstream)** (v4.5.0) — Omarchy update machinery
+- [SKIPPED] **Docker group opt-in** (v4.5.0) — confirms the v4.0.1 direction; our divergence remains the recorded accepted risk
+- [SKIPPED] **Hardware: XPS 13 PTL speakers, KEF LSX II, T2 firmware, N1x, Snapdragon, Apple Silicon, Cam Link v4l2loopback** (v4.0.5, v4.5.0) — hardware-specific
+- [SKIPPED] **Package churn (`signed`, `disktree-bin`, `gliff`, `hype`, `monologue`, `vi`, CJK fcitx5 set, Qt6 deps, `obs-studio`/`kdenlive`/`lazydocker` removals)** (v4.5.0) — Omarchy defaults; none fills a gap here
+- [SKIPPED] **i18n in 50 languages, install-media presets, first-boot progress screen** (v4.5.0) — installer/ISO scope
+- [SKIPPED] **Project `bin/` PATH injection removed from `~/Work/.mise.toml`** (v4.0.5) — we never shipped that line; `_.path` is not set in our mise config
 
 ### v4.0.4 — kernel packaging
 

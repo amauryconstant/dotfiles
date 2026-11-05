@@ -1,7 +1,7 @@
 # Omarchy Integration Backlog
 
 Living actionable backlog. Updated by `/omarchy-changes`.
-Last updated: 2026-09-17 (through v4.0.4). Trimmed to outstanding work 2026-09-21.
+Last updated: 2026-11-05 (through v4.5.0). Trimmed to outstanding work 2026-09-21.
 
 **Legend**: `[ ]` pending · `[x]` done · `[SKIPPED]` out of scope · `[REOPENED]` was skipped, premise no longer holds
 
@@ -18,6 +18,9 @@ main failure mode when this plan is rewritten.
 > **v4.0.1 context**: A security-focused patch backporting fixes from the post-Quattro `quattro` branch — four CVE-class fixes (FIDO2 authfile symlink/ownership, USB/monitor device names executed as Hyprland Lua, theme-install code execution, video-title command forging) plus hardening, and one default-behavior reversal: sudoless Docker group membership is no longer granted automatically. Our divergence from that reversal is a recorded, accepted risk (see the archive).
 >
 > **v4.0.4 context**: A kernel-packaging release — Omarchy replaces the stock Arch `linux` kernel with its own `linux-omarchy` package, retires the Dell XPS Panther Lake `linux-ptl` special case, and rewrites Limine's `BOOT_ORDER`. All of that is Omarchy/OPR/Limine scope and skipped. The one transferable current is the *second* change: **matching kernel headers for the running kernel become a base-system guarantee**, stripped out of every individual DKMS installer, backed by a new `verify_kernel_headers` acceptance check. Both halves land on us — our `linux-headers` sit inside the disabled `graphics_drivers_legacy` module (P3), and we have no running-kernel/reboot-required signal at all, a gap confirmed live on this machine (P2).
+
+>
+> **v4.0.5 / v4.0.6 / v4.5.0 context**: Two stabilization patches and the large `quattro` merge (1402 commits, 4426 files). Almost all of it is Omarchy-internal and skipped: the signed-OPR / pacman-priority work, `omarchy-power-profiles-daemon`, the plugin and agents-panel expansion, Omasnap/OWE/Elsewhen/Superwhisper, per-monitor workspaces (we run hyprsplit), titlebar floating mode, ARM/Snapdragon/N1x hardware. Three currents transfer. First, **audits that came back clean**: the lock service's stale `locked` property binding (v4.0.6 `currentlyLocked()`) is already designed around in our `lock/LockScreen.qml`; the hybrid-NVIDIA `LIBVA_DRIVER_NAME`/`__GLX_VENDOR_LIBRARY_NAME` gating (v4.0.5) is already desktop-only in `uwsm/env.tmpl`; the Qt 6.12 type-name shadowing fix (`Color` -> `Commons.Color`) does not apply because none of our singletons is named like a Qt type, and Qt 6.12.0 is what runs here. Second, **a boot-robustness fix** (`systemd.tty.term.console=dumb`, P3). Third, **small refinements** to already-tracked items (LUKS keymap, FUSE-on-resume, low-battery toast, Alt+Tab backwards, Chromium flags, `dua-cli`).
 
 ---
 
@@ -118,7 +121,7 @@ Proves the tree parses and every `require` resolves; does **not** prove dispatch
 ### Drop the `kms` hook when proprietary NVIDIA handles early KMS (v4.0.0)
 
 **What**: On NVIDIA-only machines the `kms` mkinitcpio hook pulls nouveau and ~100MB of firmware into every initramfs for no benefit, because the proprietary driver already handles early KMS via its own modules. Implemented and verified against both rendered branches; `hasIntegratedGpu` decides it at apply time (this machine is hybrid, so the hook stays here).
-**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
+**Target files**: `.chezmoiscripts/run_once_after_006_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
 **Effort**: Medium
 
 - [ ] Rebuild UKIs and reboot-test on a real NVIDIA-only machine (none available so far) — Plymouth must still theme the LUKS prompt, and UKI size should measurably drop
@@ -266,7 +269,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 ### zram swap tuning (v4.0.0)
 
 **What**: zram left at kernel defaults makes large machines reach for the hibernation swapfile earlier than necessary. Omarchy ships a `zram-generator.conf.d` drop-in. We configure hibernation (`boot.hibernation.enabled`) but do not tune zram.
-**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
+**Target files**: `.chezmoiscripts/run_once_after_006_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
 **Effort**: Medium
 **Adapt from**: `default/systemd/zram-generator.conf.d/90-omarchy.conf`, `etc/tmpfiles.d/omarchy-zswap.conf`
 
@@ -275,9 +278,9 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Power profile remembered per power source (v3.4.0, v3.5.1, v3.8.3, v4.0.0)
+### Power profile remembered per power source (v3.4.0, v3.5.1, v3.8.3, v4.0.0, v4.5.0)
 
-**What**: Power profile switches automatically on AC plug/unplug, applied at boot too (udev rules only fire on state changes). v3.8.3 fixes the udev rule failing on wakeup by dropping a fixed `--unit=` transient unit name that collided with a still-running unit from a prior trigger. v4.0.0 fixes a plug/unplug race and makes an **explicit** profile choice remembered *per power source* across reboots. Our setup only has manual switching via `menu-setup`.
+**What**: Power profile switches automatically on AC plug/unplug, applied at boot too (udev rules only fire on state changes). v3.8.3 fixes the udev rule failing on wakeup by dropping a fixed `--unit=` transient unit name that collided with a still-running unit from a prior trigger. v4.0.0 fixes a plug/unplug race and makes an **explicit** profile choice remembered *per power source* across reboots. Our setup only has manual switching via `menu-setup`. v4.5.0 swaps `power-profiles-daemon` for its own fork (ARM `cppc_cpufreq` — not ours) but also stops polling `powerprofilesctl`: the shell tracks the profile over D-Bus. Our `bar/popovers/PowerPopover.qml` is the place to check for the same polling-vs-signal choice.
 **Target files**: Systemd udev rule or hook, `private_dot_local/lib/scripts/user-interface/executable_menu-setup.tmpl`
 **Effort**: Medium
 **Adapt from**: `bin/omarchy-ac-present`, `bin/omarchy-powerprofiles-init`, `bin/omarchy-powerprofiles-set`
@@ -362,7 +365,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### Chromium-based browsers pinned to gnome-libsecret (v4.0.0)
+### Chromium-based browsers pinned to gnome-libsecret (v4.0.0, v4.0.5)
 
 **What**: Chromium password-store backend autodetection can silently fail and log you out. Omarchy pins `--password-store=gnome-libsecret`. We have `gnome-keyring` installed; primary browser is Firefox, so this only matters for Chromium usage.
 **Target files**: `private_dot_config/chromium-flags.conf` (new)
@@ -370,6 +373,7 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 - [ ] Only act if Chromium is in regular use
 - [ ] Add `--password-store=gnome-libsecret` to a managed `chromium-flags.conf`
+- [ ] v4.0.5 also appends `--no-default-browser-check` to the same file, to stop browsers nagging to become default — add it alongside
 
 ---
 
@@ -448,25 +452,14 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### `dua-cli` as a `dust` replacement (v4.0.0)
+### `dua-cli` as a `dust` replacement (v4.0.0, v4.5.0)
 
-**What**: Omarchy replaced `dust` with `dua-cli`. We have `dust` in `terminal_tools` and `alias du='dust'`. `dua` adds an interactive TUI mode (`dua i`) with deletion; `dust` is display-only.
+**What**: Omarchy replaced `dust` with `dua-cli`, then dropped `dua-cli` again in v4.5.0 for `disktree-bin` (a disk-usage TUI) — the premise is shakier than it was. We have `dust` in `terminal_tools` and `alias du='dust'`. `dua` adds an interactive TUI mode (`dua i`) with deletion; `dust` is display-only.
 **Target files**: `.chezmoidata/packages.yaml`, `private_dot_config/zsh/dot_zshrc.d/aliases.zsh`
 **Effort**: Low
 
 - [ ] Evaluate `dua i` against the current `dust` workflow — the interactive delete is the only real differentiator
 - [ ] If adopting, keep `dust` alongside rather than swapping the `du` alias out from under muscle memory
-
----
-
-### `tensaku` as a `satty` replacement (v4.0.0)
-
-**What**: Omarchy replaced Satty with Tensaku for screenshot annotation. Our `screenshot` script uses `satty`.
-**Target files**: `.chezmoidata/packages.yaml`, `private_dot_local/lib/scripts/media/executable_screenshot`
-**Effort**: Low
-
-- [ ] Check whether `tensaku` is packaged outside Omarchy's repo at all — if it is OPR-only, this is a non-starter
-- [ ] Only switch if it offers something Satty lacks; Satty works today
 
 ---
 
@@ -502,13 +495,15 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### LUKS prompt keymap in the initramfs (v3.8.3, v4.0.0)
+### LUKS prompt keymap in the initramfs (v3.8.3, v4.0.0, v4.0.6)
 
-**What**: `FILES+=(/etc/vconsole.conf)` in the mkinitcpio drop-in so the console keymap is present in the initramfs, fixing a LUKS passphrase prompt that ignores the configured keyboard layout. **Currently a no-op for us**: `kb_layout = us` and the console default is `us`, so the prompt already accepts the right characters. Becomes relevant the moment a non-US layout (e.g. `fr`) is configured.
-**Target files**: `.chezmoiscripts/run_once_after_005_configure_boot_system.sh.tmpl`
+**What**: `FILES+=(/etc/vconsole.conf)` in the mkinitcpio drop-in so the console keymap is present in the initramfs, fixing a LUKS passphrase prompt that ignores the configured keyboard layout. **Currently a no-op for us**: `kb_layout = us` and the console default is `us`, so the prompt already accepts the right characters. Becomes relevant the moment a non-US layout (e.g. `fr`) is configured. v4.0.6 adds the inverse hazard: since Arch plymouth 26.134.222-3 the plymouth hook copies `/etc/vconsole.conf` into the initramfs by itself, which makes the passphrase untypeable when the first layout has no Latin letters (ru, ua, gr, ara, ir, ...). Omarchy's answer is a mkinitcpio drop-in wrapping `add_file` to refuse `vconsole.conf` unless `FILES` lists it and the first `XKBLAYOUT` is non-Latin. Our script 006 installs Plymouth, so the same trap exists the day a non-Latin first layout is set.
+**Target files**: `.chezmoiscripts/run_once_after_006_configure_boot_system.sh.tmpl`
 **Effort**: Low
+**Adapt from**: `etc/mkinitcpio.conf.d/omarchy_vconsole.conf` (v4.0.6)
 
 - [ ] Defer while `kb_layout = us`
+- [ ] Same trigger, opposite direction: with a non-Latin first layout, keep `/etc/vconsole.conf` out of the initramfs (the plymouth hook adds it unasked) and keep a Latin console keymap for the LUKS prompt
 - [ ] If a non-US layout is ever adopted: append `FILES+=(/etc/vconsole.conf)` to the mkinitcpio drop-in and rebuild UKIs, then reboot-test the LUKS prompt before relying on it
 
 ---
@@ -550,13 +545,14 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### FUSE filesystem hang on suspend fix (v3.5.0, v4.0.3)
+### FUSE filesystem hang on suspend fix (v3.5.0, v4.0.3, v4.5.0)
 
 **What**: A `system-sleep` hook lazy-unmounts `gvfsd-fuse` filesystems before suspend/hibernate and restarts `gvfs-daemon.service` on wake.
 **Target files**: `/etc/systemd/system-sleep/` via a lifecycle script
 **Effort**: Medium
 **Adapt from**: `default/systemd/system-sleep/unmount-fuse`
 
+- [ ] v4.5.0 re-confirms the restore half ("gvfs FUSE restored after resume") — implement both halves or neither
 - [ ] Evaluate if gvfsd-fuse is relevant here (used by Thunar/GNOME Keyring)
 - [ ] If yes: create `run_once_after_setup_fuse_suspend_hook.sh.tmpl`
 - [ ] Hook: lazy-unmount gvfsd-fuse mounts before sleep; restart `gvfs-daemon.service` on wake
@@ -575,24 +571,72 @@ This directly parallels our 24-semantic-variable architecture (`colors.sh` with 
 
 ---
 
-### ALT+TAB window cycling (v1.7.0)
+### ALT+TAB window cycling (v1.7.0, v4.5.0)
 
 **What**: `Alt+Tab` cycles between windows on the active workspace including floating.
 **Target files**: `private_dot_config/hypr/conf/bindings/focus-navigation.conf`
 **Effort**: Low
-**Note**: May conflict with application-level Alt+Tab if Hyprland intercepts it globally. Also sits against the no-new-keybindings preference.
+**Note**: v4.5.0 adds `Alt+Shift+Tab` cycling backwards (#8576), so any adoption should ship both directions. May conflict with application-level Alt+Tab if Hyprland intercepts it globally. Also sits against the no-new-keybindings preference.
 
 - [ ] Evaluate whether a global `Alt+Tab` intercept is desirable given application usage
 
 ---
 
-### Battery notification persistence (v1.10.0)
+### Battery notification persistence (v1.10.0, v4.5.0)
 
-**What**: Omarchy tested battery notification persistence at 30 seconds. Our idle timeouts are intentionally more relaxed, but notification duration may differ.
-**Target files**: `private_dot_config/swaync/`
+**What**: Omarchy tested battery notification persistence at 30 seconds; v4.5.0 ships it as a 30s low-battery toast in its own notification engine. Our notifications are ours now: `Config.qml.tmpl` has `notifTimeoutMs: 5000` / `notifTimeoutLowMs: 3000`, so a low-battery warning vanishes in 3s. (The old `swaync/` target is retired.)
+**Target files**: `private_dot_config/quickshell/dotfiles/Config.qml.tmpl`, the low-battery sender under `private_dot_local/lib/scripts/`
 **Effort**: Low
 
-- [ ] Review battery notification duration in swaync config — confirm 30s persistence or adjust to taste
+- [ ] Find the low-battery notification sender and confirm it is `critical` urgency; decide whether it should bypass the 3s low-urgency timeout (a critical toast that sticks until dismissed is closer to Omarchy's 30s)
+
+---
+
+### Kernel cmdline `systemd.tty.term.console=dumb` against the Plymouth black screen (v4.0.5, v4.0.6, v4.5.0)
+
+**What**: About 1 in 10 Omarchy boots ended on a black screen under Plymouth; the fix is `systemd.tty.term.console=dumb` on the kernel command line, which skips systemd's console-size query. v4.0.6 hardened the migration for configs that drop the parameter. We boot Plymouth too (script 006 adds `splash quiet` to `/etc/kernel/cmdline`) but have never measured a black screen here, so this is a defensive parameter, not a known fix.
+**Target files**: `.chezmoiscripts/run_once_after_006_configure_boot_system.sh.tmpl`, `.chezmoidata/boot.yaml`
+**Effort**: Low
+**Adapt from**: `etc/limine-entry-tool.d/omarchy-defaults.conf`, `migrations/1791581004.sh`
+
+- [ ] Only act if an intermittent black screen at boot has actually been seen; if so, append the parameter to `/etc/kernel/cmdline`, rebuild UKIs, reboot-test
+- [ ] Parse the cmdline as systemd does (last assignment wins) when checking for it — a plain `grep` misses quoted values
+
+---
+
+### Captive-portal detection and sign-in (v4.5.0)
+
+**What**: The network panel detects a captive portal and offers a sign-in action. We have `bar/popovers/NetworkPopover.qml` but nothing that notices a Wi-Fi network held behind a login page. Laptop-relevant only.
+**Target files**: `private_dot_config/quickshell/dotfiles/bar/popovers/NetworkPopover.qml`, `private_dot_local/lib/scripts/network/`
+**Effort**: Medium
+**Adapt from**: the network panel under `shell/plugins/panels/` in the v4.5.0 tag (ping.omacom.io probe — use a neutral endpoint such as NetworkManager's own connectivity check instead)
+
+- [ ] Prefer NetworkManager's connectivity state (`nmcli networking connectivity` = `portal`) over polling a third-party URL
+- [ ] Surface it as one popover row that opens the portal URL in the browser; no new chrome
+- [ ] Gate on `chassisType` laptop
+
+---
+
+### Keyboard backlight on Ctrl+brightness keys (v4.5.0)
+
+**What**: `Ctrl` + the brightness keys drive the keyboard backlight; the shell handles the key and steps the level. Our `Backlight.qml` singleton and `brightness-set` cover the display only. Laptop-gated, and only meaningful if the machine has a `kbd_backlight` LED.
+**Target files**: `private_dot_config/quickshell/dotfiles/Backlight.qml`, `private_dot_local/lib/scripts/desktop/executable_brightness-set`, `private_dot_config/hypr/conf/bindings/media-keys.lua`
+**Effort**: Medium
+
+- [ ] Check `ls /sys/class/leds/*kbd_backlight*` on the laptop first — nothing to do without one
+- [ ] If present: extend `brightness-set` with a `--kbd` path over `brightnessctl -d '*kbd_backlight*'` and show it on the existing OSD
+
+---
+
+### End-of-options `--` on operands passed to commands (v4.0.5)
+
+**What**: Omarchy audited its `omarchy-pkg-*`, `cmd-present`, `hw-match` helpers so a package or command name beginning with `-` is a literal operand, not a flag (the `--` marker). The same class sits in our `private_dot_local/lib/scripts/` wherever a user- or data-supplied name reaches `pacman`, `grep`, `rm`, `ln` or `systemctl` unquoted-by-convention (package names from `packages.yaml` are repo-owned and low risk; menu-picker and clipboard-derived strings are the interesting ones).
+**Target files**: `private_dot_local/lib/scripts/`
+**Effort**: Low
+**Adapt from**: `bin/omarchy-pkg-add`, `bin/omarchy-pkg-present`, `bin/omarchy-cmd-present` (v4.0.5)
+
+- [ ] Grep our scripts for variables fed from picker output, notification payloads, window titles or clipboard into command arguments; add `--` where the command supports it
+- [ ] Do not blanket-edit: `--` is wrong for commands that take options after operands
 
 ---
 
@@ -685,3 +729,6 @@ evaluation and the accepted-risk decision on sudoless Docker.
 | v4.0.2 | `_research/omarchy/OMARCHY_v4.0.2.md` | 2026-09-12 |
 | v4.0.3 | `_research/omarchy/OMARCHY_v4.0.3.md` | 2026-09-12 |
 | v4.0.4 | `_research/omarchy/OMARCHY_v4.0.4.md` | 2026-09-17 |
+| v4.0.5 | `_research/omarchy/OMARCHY_v4.0.5.md` | 2026-11-05 |
+| v4.0.6 | `_research/omarchy/OMARCHY_v4.0.6.md` | 2026-11-05 |
+| v4.5.0 | `_research/omarchy/OMARCHY_v4.5.0.md` | 2026-11-05 |
