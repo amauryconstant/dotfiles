@@ -1,0 +1,27 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $config := .chezmoi.stdin | default "{}" | fromJson -}}
+
+{{- /* Declared keys only; everything else (runtime state from /settings) is kept */ -}}
+{{- $_ := set $config "$schema" "https://pi.dev/schemas/settings.schema.json" -}}
+
+{{- /* Model */ -}}
+{{- $_ = set $config "defaultProvider" "minimax" -}}
+{{- $_ = set $config "defaultModel" "MiniMax-M3" -}}
+
+{{- /* Display: `system` derives colors from the terminal palette (Ghostty follows the theme system) */ -}}
+{{- $_ = set $config "theme" "system" -}}
+
+{{- /* Telemetry off */ -}}
+{{- $_ = set $config "enableInstallTelemetry" false -}}
+{{- $_ = set $config "enableAnalytics" false -}}
+
+{{- /* Skills: reuse opencode's commit skill in place (phase 1; moved in phase 2) */ -}}
+{{- $_ = set $config "skills" (list "~/.config/opencode/skills/commit") -}}
+
+{{- /* Packages: pinned (supply-chain policy). cc-safety-net blocks destructive commands and secret-file access */ -}}
+{{- $_ = set $config "packages" (list "npm:cc-safety-net@2.7.8") -}}
+
+{{- /* Updates go through mise, never pi's own installer */ -}}
+{{- $_ = set $config "selfUpdateCommand" "mise upgrade npm:{packageName}" -}}
+
+{{- $config | toPrettyJson -}}

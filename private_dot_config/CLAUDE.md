@@ -33,6 +33,7 @@
 | `jj/` | Jujutsu VCS config | ✅ Yes |
 | `dotfiles/` | Hook system + extra bindings | ✅ Yes |
 | `opencode/` | opencode TUI config (theme-managed, `modify_opencode.jsonc`) | ❌ No |
+| `pi/` | Pi agent config (`PI_CODING_AGENT_DIR`; `modify_settings.json` + `modify_auth.json` native modify-templates; theme `system`, no theme script; MiniMax key via `!cat ~/.keys/…`) | ❌ No |
 | `claude/` | Claude Code config (`create_settings.json` — seeds a missing file, `run_onchange_after_merge_claude_settings` jaq-merges it into an existing one; `accounts/<name>.json` — `ccp -a` overrides, e.g. ringstone) | ❌ No |
 | `bat/` | Syntax highlighting (symlink-only, themed) | ❌ No |
 | `broot/` | File tree (conf.hjson + verbs.hjson + theme symlink) | ❌ No |

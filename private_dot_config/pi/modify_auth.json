@@ -1,0 +1,7 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- $config := .chezmoi.stdin | default "{}" | fromJson -}}
+
+{{- /* MiniMax key read at runtime from the deployed key file; no secret is rendered here */ -}}
+{{- $_ := set $config "minimax" (dict "type" "api_key" "key" "!cat ~/.keys/minimax-key.txt") -}}
+
+{{- $config | toPrettyJson -}}
