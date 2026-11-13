@@ -35,6 +35,20 @@ cmd_update() {
 		blocked=$(_tripwire_scan "${aur_updates[@]}") || true
 	fi
 
+	# Interactive run (topgrade pre-command has a TTY): review + approve held packages now,
+	# before anything upgrades. Skipped/declined ones stay held; non-TTY (cron) never prompts.
+	if [[ -n "$blocked" && -t 0 && -t 1 ]]; then
+		local -a held=()
+		mapfile -t held <<<"$blocked"
+		ui_warning "Third-party (AUR) packages need approval before upgrading: ${held[*]}"
+		local h
+		for h in "${held[@]}"; do
+			[[ -n "$h" ]] && _approve_one "$h"
+		done
+		# Re-scan: only what stayed unapproved remains held
+		blocked=$(_tripwire_scan "${held[@]}" 2>/dev/null) || true
+	fi
+
 	if [[ -n "$blocked" ]]; then
 		ui_warning "Tripwire held AUR upgrades (PKGBUILD changed or unapproved):"
 		while IFS= read -r b; do

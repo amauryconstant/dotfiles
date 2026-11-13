@@ -61,9 +61,10 @@ so tool edits re-run the sync. New lib file the sync depends on → add its hash
 
 ## update
 
-Topgrade pre-command. **No sync, no removal** (the declared set lives only in chezmoi). Scans
-`paru -Qua` through the tripwire; any held AUR package → official `pacman -Syu` only. Then
-`flatpak update --user`.
+Topgrade pre-command (runs before every other topgrade step). **No sync, no removal** (the declared
+set lives only in chezmoi). Scans `paru -Qua` through the tripwire. On a TTY, held packages go
+through the `approve` review (diff + confirm) **first**, then are re-scanned; non-TTY never prompts.
+Still-held AUR package → official `pacman -Syu` only. Then `flatpak update --user`.
 
 ## State (`~/.local/state/package-manager/`)
 
